@@ -32,7 +32,6 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     private final Set<String> processorClassNames = new HashSet<>();
     private final Set<String> recorderClassNames = new HashSet<>();
     private final Set<String> configRootClassNames = new HashSet<>();
-    private final Set<String> buildSteps = new HashSet<>();
     private final Map<String, Boolean> annotationUsageTracker = new ConcurrentHashMap<>();
 
     @Override
@@ -74,17 +73,15 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
          * creating a subset of processors that are not enough to run a quarkus app
          * By assuming a full compilation was made initially, all the processors are included inside the
          * META-INF/quarkus-build-steps.list file
-         * So by reading it we can ensure that all the build steps are included.
+         * So by reading it we can ensure that all the processors are included.
          * See
          * https://youtrack.jetbrains.com/issue/IJPL-196660/During-an-incremental-build-getElementsAnnotatedWith-doesnt-include-
          * all-the-elements-but-only-the-one-recompiled
          */
-        Set<String> allProcessors = utils.filer().readSet(Outputs.META_INF_QUARKUS_BUILD_STEPS);
+        Set<String> allProcessorClassNames = new TreeSet<>(processorClassNames);
+        allProcessorClassNames.addAll(utils.filer().readSet(Outputs.META_INF_QUARKUS_BUILD_STEPS));
+        utils.filer().writeSet(Outputs.META_INF_QUARKUS_BUILD_STEPS, allProcessorClassNames);
 
-        Set<String> allBuildSteps = new TreeSet<>(allProcessors);
-        allBuildSteps.addAll(buildSteps);
-
-        utils.filer().writeSet(Outputs.META_INF_QUARKUS_BUILD_STEPS, allBuildSteps);
         utils.filer().writeSet(Outputs.META_INF_QUARKUS_CONFIG_ROOTS, configRootClassNames);
     }
 
@@ -106,7 +103,6 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
             if (processorClassNames.add(binaryName)) {
                 validateRecordBuildSteps(clazz);
                 utils.accessorGenerator().generateAccessor(clazz);
-                buildSteps.add(binaryName);
             }
         }
     }

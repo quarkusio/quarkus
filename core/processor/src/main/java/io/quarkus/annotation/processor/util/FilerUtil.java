@@ -60,11 +60,11 @@ public class FilerUtil {
     }
 
     public Set<String> readSet(String filePath) {
-        Set<String> output = new TreeSet<>();
         try {
             final FileObject listResource = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "",
                     filePath);
 
+            Set<String> output = new TreeSet<>();
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(listResource.openInputStream(), StandardCharsets.UTF_8))) {
                 while (reader.ready()) {
@@ -73,7 +73,6 @@ public class FilerUtil {
             }
             return output;
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Kind.WARNING, "Failed to read " + filePath + ": " + e);
             return Set.of();
         }
     }

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -279,7 +280,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = Collections.emptyMap();
         if (bean.hasInjectionPoint()) {
-            injectionPointToProviderSupplierField = new HashMap<>();
+            injectionPointToProviderSupplierField = new LinkedHashMap<>();
             // Synthetic beans are not intercepted
             initMaps(bean, injectionPointToProviderSupplierField, null, null);
             createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, Collections.emptyMap(),
@@ -372,9 +373,9 @@ public class BeanGenerator extends AbstractGenerator {
             stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = new HashMap<>();
-        Map<InterceptorInfo, String> interceptorToProviderSupplierField = new HashMap<>();
-        Map<DecoratorInfo, String> decoratorToProviderSupplierField = new HashMap<>();
+        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = new LinkedHashMap<>();
+        Map<InterceptorInfo, String> interceptorToProviderSupplierField = new LinkedHashMap<>();
+        Map<DecoratorInfo, String> decoratorToProviderSupplierField = new LinkedHashMap<>();
         initMaps(bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
                 decoratorToProviderSupplierField);
 

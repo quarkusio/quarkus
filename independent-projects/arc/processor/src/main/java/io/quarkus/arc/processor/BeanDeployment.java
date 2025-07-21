@@ -13,11 +13,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -70,19 +76,19 @@ public class BeanDeployment {
 
     private final Predicate<DotName> applicationClassPredicate;
 
-    private final Map<DotName, ClassInfo> qualifiers;
-    private final Map<DotName, ClassInfo> repeatingQualifierAnnotations;
-    private final Map<DotName, Set<String>> qualifierNonbindingMembers;
+    private final SortedMap<DotName, ClassInfo> qualifiers;
+    private final SortedMap<DotName, ClassInfo> repeatingQualifierAnnotations;
+    private final SortedMap<DotName, Set<String>> qualifierNonbindingMembers;
 
-    private final Map<DotName, ClassInfo> interceptorBindings;
-    private final Map<DotName, ClassInfo> repeatingInterceptorBindingAnnotations;
-    private final Map<DotName, Set<String>> interceptorNonbindingMembers;
-    private final Map<DotName, Set<AnnotationInstance>> transitiveInterceptorBindings;
+    private final SortedMap<DotName, ClassInfo> interceptorBindings;
+    private final SortedMap<DotName, ClassInfo> repeatingInterceptorBindingAnnotations;
+    private final SortedMap<DotName, Set<String>> interceptorNonbindingMembers;
+    private final SortedMap<DotName, Set<AnnotationInstance>> transitiveInterceptorBindings;
 
-    private final Map<DotName, StereotypeInfo> stereotypes;
+    private final SortedMap<DotName, StereotypeInfo> stereotypes;
 
     private final List<BeanInfo> beans;
-    private volatile Map<DotName, List<BeanInfo>> beansByType;
+    private volatile SortedMap<DotName, List<BeanInfo>> beansByType;
     private final List<SkippedClass> skippedClasses;
 
     private final List<InterceptorInfo> interceptors;
@@ -105,7 +111,7 @@ public class BeanDeployment {
 
     private final List<ObserverTransformer> observerTransformers;
 
-    private final Set<DotName> resourceAnnotations;
+    private final SortedSet<DotName> resourceAnnotations;
 
     private final List<InjectionPointInfo> injectionPoints;
 
@@ -120,7 +126,7 @@ public class BeanDeployment {
     // scope -> list of funs that accept the method creator for ComponentsProvider#getComponents()
     private final Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts;
 
-    private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
+    private final SortedMap<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
 
     final boolean transformUnproxyableClasses;
 
@@ -145,14 +151,14 @@ public class BeanDeployment {
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
         this.buildContext = Objects.requireNonNull(buildContext);
         this.resourceGenerationStarted = false;
-        Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations = new HashMap<>();
+        SortedMap<DotName, BeanDefiningAnnotation> beanDefiningAnnotations = new TreeMap<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
             for (BeanDefiningAnnotation bda : builder.additionalBeanDefiningAnnotations) {
                 beanDefiningAnnotations.put(bda.getAnnotation(), bda);
             }
         }
         this.beanDefiningAnnotations = beanDefiningAnnotations;
-        this.resourceAnnotations = new HashSet<>(builder.resourceAnnotations);
+        this.resourceAnnotations = new TreeSet<>(builder.resourceAnnotations);
         this.beanArchiveComputingIndex = builder.beanArchiveComputingIndex;
         this.beanArchiveImmutableIndex = Objects.requireNonNull(builder.beanArchiveImmutableIndex);
         this.applicationIndex = builder.applicationIndex;
@@ -177,7 +183,7 @@ public class BeanDeployment {
         findScopeAnnotations(DotNames.SCOPE, beanDefiningAnnotations);
         findScopeAnnotations(DotNames.NORMAL_SCOPE, beanDefiningAnnotations);
 
-        qualifierNonbindingMembers = new HashMap<>();
+        qualifierNonbindingMembers = new TreeMap<>();
         qualifiers = findQualifiers();
         for (QualifierRegistrar registrar : builder.qualifierRegistrars) {
             for (Map.Entry<DotName, Set<String>> entry : registrar.getAdditionalQualifiers().entrySet()) {
@@ -196,7 +202,7 @@ public class BeanDeployment {
         repeatingQualifierAnnotations = findContainerAnnotations(qualifiers);
         buildContext.putInternal(Key.QUALIFIERS, Collections.unmodifiableMap(qualifiers));
 
-        interceptorNonbindingMembers = new HashMap<>();
+        interceptorNonbindingMembers = new TreeMap<>();
         interceptorBindings = findInterceptorBindings();
         for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
             for (InterceptorBindingRegistrar.InterceptorBinding binding : registrar.getAdditionalBindings()) {
@@ -217,7 +223,7 @@ public class BeanDeployment {
         repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings);
         buildContext.putInternal(Key.INTERCEPTOR_BINDINGS, Collections.unmodifiableMap(interceptorBindings));
 
-        Set<DotName> additionalStereotypes = new HashSet<>();
+        Set<DotName> additionalStereotypes = new TreeSet<>();
         for (StereotypeRegistrar stereotypeRegistrar : builder.stereotypeRegistrars) {
             additionalStereotypes.addAll(stereotypeRegistrar.getAdditionalStereotypes());
         }
@@ -227,7 +233,7 @@ public class BeanDeployment {
         buildContext.putInternal(Key.STEREOTYPES, Collections.unmodifiableMap(stereotypes));
 
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindings(interceptorBindings.keySet(),
-                new HashMap<>(), interceptorBindings, annotationStore);
+                new TreeMap<>(), interceptorBindings, annotationStore);
 
         this.injectionPoints = new CopyOnWriteArrayList<>();
         this.interceptors = new CopyOnWriteArrayList<>();
@@ -346,11 +352,12 @@ public class BeanDeployment {
 
         if (removeUnusedBeans) {
             long removalStart = System.nanoTime();
-            Set<BeanInfo> declaresObserver = observers.stream().map(ObserverInfo::getDeclaringBean).collect(Collectors.toSet());
+            Set<BeanInfo> declaresObserver = observers.stream().map(ObserverInfo::getDeclaringBean)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
             Set<BeanInfo> invokerLookups = invokers.stream().flatMap(it -> it.getLookedUpBeans().stream())
-                    .collect(Collectors.toSet());
-            Set<DecoratorInfo> removedDecorators = new HashSet<>();
-            Set<InterceptorInfo> removedInterceptors = new HashSet<>();
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            Set<DecoratorInfo> removedDecorators = new LinkedHashSet<>();
+            Set<InterceptorInfo> removedInterceptors = new LinkedHashSet<>();
             removeUnusedComponents(declaresObserver, invokerLookups, allUnusedExclusions, removedDecorators,
                     removedInterceptors);
 
@@ -370,7 +377,7 @@ public class BeanDeployment {
      * Re-initialize the map that is used to speed-up lookup requests.
      */
     public void initBeanByTypeMap() {
-        Map<DotName, List<BeanInfo>> map = new HashMap<>();
+        SortedMap<DotName, List<BeanInfo>> map = new TreeMap<>();
         for (BeanInfo bean : beans) {
             bean.types.stream().map(Type::name).distinct().forEach(rawTypeName -> {
                 if (DotNames.OBJECT.equals(rawTypeName)) {
@@ -844,8 +851,8 @@ public class BeanDeployment {
         }
     }
 
-    private Map<DotName, ClassInfo> findQualifiers() {
-        Map<DotName, ClassInfo> qualifiers = new HashMap<>();
+    private SortedMap<DotName, ClassInfo> findQualifiers() {
+        SortedMap<DotName, ClassInfo> qualifiers = new TreeMap<>();
         for (AnnotationInstance qualifier : beanArchiveImmutableIndex.getAnnotations(DotNames.QUALIFIER)) {
             ClassInfo qualifierClass = qualifier.target().asClass();
             if (!isRuntimeAnnotationType(qualifierClass)) {
@@ -859,8 +866,8 @@ public class BeanDeployment {
         return qualifiers;
     }
 
-    private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations) {
-        Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
+    private SortedMap<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations) {
+        SortedMap<DotName, ClassInfo> containerAnnotations = new TreeMap<>();
         for (ClassInfo annotation : annotations.values()) {
             AnnotationInstance repeatableMetaAnnotation = annotation.declaredAnnotation(DotNames.REPEATABLE);
             if (repeatableMetaAnnotation != null) {
@@ -872,8 +879,8 @@ public class BeanDeployment {
         return containerAnnotations;
     }
 
-    private Map<DotName, ClassInfo> findInterceptorBindings() {
-        Map<DotName, ClassInfo> bindings = new HashMap<>();
+    private SortedMap<DotName, ClassInfo> findInterceptorBindings() {
+        SortedMap<DotName, ClassInfo> bindings = new TreeMap<>();
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : beanArchiveImmutableIndex.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
             ClassInfo bindingClass = binding.target().asClass();
@@ -888,12 +895,13 @@ public class BeanDeployment {
         return bindings;
     }
 
-    private static Map<DotName, Set<AnnotationInstance>> findTransitiveInterceptorBindings(Collection<DotName> initialBindings,
-            Map<DotName, Set<AnnotationInstance>> result, Map<DotName, ClassInfo> interceptorBindings,
+    private static SortedMap<DotName, Set<AnnotationInstance>> findTransitiveInterceptorBindings(
+            Collection<DotName> initialBindings,
+            SortedMap<DotName, Set<AnnotationInstance>> result, Map<DotName, ClassInfo> interceptorBindings,
             AnnotationStore annotationStore) {
         // for all known interceptor bindings
         for (DotName annotationName : initialBindings) {
-            Set<AnnotationInstance> transitiveBindings = new HashSet<>();
+            Set<AnnotationInstance> transitiveBindings = new LinkedHashSet<>();
             // for all annotations on them; use AnnotationStore to have up-to-date info
             for (AnnotationInstance bindingCandidate : annotationStore
                     .getAnnotations(interceptorBindings.get(annotationName))) {
@@ -905,7 +913,7 @@ public class BeanDeployment {
                 }
             }
             if (!transitiveBindings.isEmpty()) {
-                result.computeIfAbsent(annotationName, k -> new HashSet<>()).addAll(transitiveBindings);
+                result.computeIfAbsent(annotationName, k -> new LinkedHashSet<>()).addAll(transitiveBindings);
             }
         }
         // now iterate over all so we can put together list for arbitrary transitive depth
@@ -927,10 +935,10 @@ public class BeanDeployment {
         return result;
     }
 
-    private Map<DotName, StereotypeInfo> findStereotypes(Map<DotName, ClassInfo> interceptorBindings,
+    private SortedMap<DotName, StereotypeInfo> findStereotypes(Map<DotName, ClassInfo> interceptorBindings,
             Set<ScopeInfo> customContextScopes, Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
-        Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
+        SortedMap<DotName, StereotypeInfo> stereotypes = new TreeMap<>();
 
         Set<DotName> stereotypeNames = new HashSet<>();
         for (AnnotationInstance annotation : beanArchiveImmutableIndex.getAnnotations(DotNames.STEREOTYPE)) {
@@ -1044,17 +1052,17 @@ public class BeanDeployment {
     private BeanDiscoveryResult findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
             List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
-        Set<ClassInfo> beanClasses = new HashSet<>();
-        Set<MethodInfo> producerMethods = new HashSet<>();
-        Set<MethodInfo> disposerMethods = new HashSet<>();
-        Set<FieldInfo> producerFields = new HashSet<>();
-        Map<MethodInfo, Set<ClassInfo>> syncObserverMethods = new HashMap<>();
-        Map<MethodInfo, Set<ClassInfo>> asyncObserverMethods = new HashMap<>();
+        Set<ClassInfo> beanClasses = new LinkedHashSet<>();
+        Set<MethodInfo> producerMethods = new LinkedHashSet<>();
+        Set<MethodInfo> disposerMethods = new LinkedHashSet<>();
+        Set<FieldInfo> producerFields = new LinkedHashSet<>();
+        Map<MethodInfo, Set<ClassInfo>> syncObserverMethods = new LinkedHashMap<>();
+        Map<MethodInfo, Set<ClassInfo>> asyncObserverMethods = new LinkedHashMap<>();
         // Stereotypes excluding additional BeanDefiningAnnotations
         Set<DotName> realStereotypes = this.stereotypes.values().stream()
                 .filter(StereotypeInfo::isGenuine)
                 .map(StereotypeInfo::getName)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
 
         List<SkippedClass> skipped = new ArrayList<>();
         List<ClassInfo> noBeanDefiningAnnotationClasses = new ArrayList<>();
@@ -1202,7 +1210,7 @@ public class BeanDeployment {
                         }
                     }
                     if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
-                        syncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
+                        syncObserverMethods.computeIfAbsent(method, ignored -> new LinkedHashSet<>())
                                 .add(beanClass);
                         // add only concrete classes
                         if (!Modifier.isAbstract(beanClass.flags())) {
@@ -1217,7 +1225,7 @@ public class BeanDeployment {
                             }
                         }
                     } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
-                        asyncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
+                        asyncObserverMethods.computeIfAbsent(method, ignored -> new LinkedHashSet<>())
                                 .add(beanClass);
                         // add only concrete classes
                         if (!Modifier.isAbstract(beanClass.flags())) {
@@ -1321,7 +1329,7 @@ public class BeanDeployment {
                 injectionPoints.addAll(injection.injectionPoints);
             }
         }
-        Set<DisposerInfo> unusedDisposers = new HashSet<>(disposers);
+        Set<DisposerInfo> unusedDisposers = new LinkedHashSet<>(disposers);
 
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
@@ -1679,12 +1687,12 @@ public class BeanDeployment {
     private void validateBeans(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
 
         Set<String> namespaces = new HashSet<>();
-        Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
-        Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
+        Map<String, List<BeanInfo>> namedBeans = new TreeMap<>();
+        Set<DotName> classesReceivingNoArgsCtor = new TreeSet<>();
 
         // this set is only used in strict compatible mode (see `Beans.validateBean()`),
         // so no need to initialize it otherwise
-        Set<BeanInfo> injectedBeans = new HashSet<>();
+        Set<BeanInfo> injectedBeans = new LinkedHashSet<>();
         if (strictCompatibility) {
             for (InjectionPointInfo injectionPoint : this.injectionPoints) {
                 if (injectionPoint.hasResolvedBean()) {

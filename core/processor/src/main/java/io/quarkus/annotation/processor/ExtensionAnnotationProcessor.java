@@ -58,8 +58,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         List<ExtensionProcessor> extensionProcessors = new ArrayList<>();
         extensionProcessors.add(new ExtensionBuildProcessor());
 
-        boolean skipDocs = Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly");
-        boolean generateDoc = !skipDocs && !"false".equals(processingEnv.getOptions().get(Options.GENERATE_DOC));
+        boolean generateDoc = !"false".equals(processingEnv.getOptions().get(Options.GENERATE_DOC));
 
         // for now, we generate the old config doc by default but we will change this behavior soon
         if (generateDoc) {

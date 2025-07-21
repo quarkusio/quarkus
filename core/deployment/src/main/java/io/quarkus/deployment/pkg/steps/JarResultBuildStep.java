@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -64,6 +65,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem.TransformedClass;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -648,9 +650,13 @@ public class JarResultBuildStep {
             Path transformedZip = quarkus.resolve(TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformed(transformedZip);
             try (FileSystem out = createNewReproducibleZipFileSystem(transformedZip, packageConfig)) {
-                for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
-                        .getTransformedClassesByJar().values()) {
-                    for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
+                // we make sure the entries are added in a reproducible order
+                // we use Path#toString() to get a reproducible order on both Unix-based OSes and Windows
+                for (Entry<Path, Set<TransformedClass>> transformedClassEntry : transformedClasses
+                        .getTransformedClassesByJar().entrySet().stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
+                    for (TransformedClass transformed : transformedClassEntry.getValue().stream()
+                            .sorted(Comparator.comparing(TransformedClass::getFileName)).toList()) {
                         Path target = out.getPath(transformed.getFileName());
                         if (transformed.getData() != null) {
                             if (target.getParent() != null) {

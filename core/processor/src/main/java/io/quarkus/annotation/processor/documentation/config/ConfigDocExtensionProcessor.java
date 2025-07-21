@@ -80,7 +80,7 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
 
             javadocProperties.put(javadocElementEntry.getKey(), javadocElementEntry.getValue().description());
         }
-        utils.filer().write(Outputs.META_INF_QUARKUS_JAVADOC, javadocProperties);
+        utils.filer().writeProperties(Outputs.META_INF_QUARKUS_JAVADOC, javadocProperties);
 
         ConfigResolver configResolver = new ConfigResolver(config, utils, configCollector);
 

@@ -3,7 +3,6 @@ package io.quarkus.annotation.processor.extension;
 import static javax.lang.model.util.ElementFilter.methodsIn;
 import static javax.lang.model.util.ElementFilter.typesIn;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -29,9 +28,9 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
 
     private Utils utils;
 
-    private final Set<String> processorClassNames = new HashSet<>();
-    private final Set<String> recorderClassNames = new HashSet<>();
-    private final Set<String> configRootClassNames = new HashSet<>();
+    private final Set<String> processorClassNames = new TreeSet<>();
+    private final Set<String> recorderClassNames = new TreeSet<>();
+    private final Set<String> configRootClassNames = new TreeSet<>();
     private final Map<String, Boolean> annotationUsageTracker = new ConcurrentHashMap<>();
 
     @Override

@@ -118,6 +118,7 @@ public class ComposeRunner {
                     }
                 })
                 .output().consumeLinesWith(8192, LOG::info)
+                .error().logOnSuccess(false).consumeLinesWith(8192, LOG::info)
                 .run();
 
         LOG.info("Compose has finished running");

@@ -97,7 +97,7 @@ public class OidcClientRegistrationTest {
 
             TextPage textPage = loginForm.getButtonByName("login").click();
 
-            assertEquals("registered-client-dynamic-tenant:Dynamic Tenant Client:alice", textPage.getContent());
+            assertEquals("registered-client-dynamic-tenant:Registered Dynamically Tenant Client:alice", textPage.getContent());
         }
     }
 

@@ -14,7 +14,35 @@ public interface OidcRequestFilter {
     /**
      * OIDC request context which provides access to the HTTP request headers and body, as well as context properties.
      */
-    record OidcRequestContext(HttpRequest<Buffer> request, Buffer requestBody, OidcRequestContextProperties contextProperties) {
+    class OidcRequestContext {
+        final HttpRequest<Buffer> request;
+        final OidcRequestContextProperties contextProperties;
+        Buffer requestBody;
+
+        public OidcRequestContext(HttpRequest<Buffer> request, Buffer requestBody,
+                OidcRequestContextProperties contextProperties) {
+            this.request = request;
+            this.requestBody = requestBody;
+            this.contextProperties = contextProperties;
+        }
+
+        public HttpRequest<Buffer> request() {
+            return request;
+        }
+
+        public Buffer requestBody() {
+            return requestBody;
+        }
+
+        public OidcRequestContextProperties contextProperties() {
+            return contextProperties;
+        }
+
+        public void requestBody(Buffer buffer) {
+            requestBody = buffer;
+            contextProperties.put(OidcRequestContextProperties.REQUEST_BODY, buffer);
+        }
+
     }
 
     /**

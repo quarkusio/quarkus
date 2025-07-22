@@ -38,6 +38,7 @@ import org.objectweb.asm.Opcodes;
  * A collection of ASM and Jandex utilities.
  */
 public class AsmUtil {
+    public static final int ASM_API_VERSION = Opcodes.ASM9;
 
     public static final List<org.objectweb.asm.Type> PRIMITIVES = asList(
             VOID_TYPE,

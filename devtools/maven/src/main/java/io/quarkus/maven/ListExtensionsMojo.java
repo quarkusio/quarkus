@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import java.util.List;
+
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -7,6 +9,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 /**
  * List the available extensions.
@@ -52,13 +57,27 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
 
     @Override
     public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log) throws MojoExecutionException {
+        final var defaultPrimaryBom = getPrimaryBom(quarkusProject.getExtensionsCatalog());
+        final var targetPrimaryBom = ArtifactCoords.pom(
+                bomGroupId != null ? bomGroupId : defaultPrimaryBom.getGroupId(),
+                bomArtifactId != null ? bomArtifactId : defaultPrimaryBom.getArtifactId(),
+                bomVersion != null ? bomVersion : defaultPrimaryBom.getVersion());
+        final ExtensionCatalog targetCatalog;
+        try {
+            targetCatalog = getExtensionCatalogResolver().resolveExtensionCatalog(List.of(targetPrimaryBom));
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException(
+                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries", e);
+        }
+
         try {
             ListExtensions listExtensions = new ListExtensions(quarkusProject)
                     .all(all)
                     .format(format)
                     .search(searchPattern)
                     .category(category)
-                    .installed(installed);
+                    .installed(installed)
+                    .targetCatalog(targetCatalog);
             listExtensions.execute();
 
             if (DEFAULT_FORMAT.equalsIgnoreCase(format)) {

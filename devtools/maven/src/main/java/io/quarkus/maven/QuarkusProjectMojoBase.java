@@ -59,13 +59,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     protected List<RemoteRepository> repos;
 
     @Parameter(property = "bomGroupId", required = false)
-    private String bomGroupId;
+    protected String bomGroupId;
 
     @Parameter(property = "bomArtifactId", required = false)
-    private String bomArtifactId;
+    protected String bomArtifactId;
 
     @Parameter(property = "bomVersion", required = false)
-    private String bomVersion;
+    protected String bomVersion;
 
     @Component
     QuarkusWorkspaceProvider workspaceProvider;
@@ -213,6 +213,10 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             }
         }
         return descriptors;
+    }
+
+    protected static ArtifactCoords getPrimaryBom(ExtensionCatalog c) {
+        return c.getDerivedFrom().isEmpty() ? c.getBom() : c.getDerivedFrom().get(0).getBom();
     }
 
     protected void validateParameters() throws MojoExecutionException {

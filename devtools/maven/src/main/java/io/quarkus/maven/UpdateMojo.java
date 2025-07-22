@@ -157,8 +157,4 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             throw new MojoExecutionException("Failed to apply the updates", e);
         }
     }
-
-    private static ArtifactCoords getPrimaryBom(ExtensionCatalog c) {
-        return c.getDerivedFrom().isEmpty() ? c.getBom() : c.getDerivedFrom().get(0).getBom();
-    }
 }

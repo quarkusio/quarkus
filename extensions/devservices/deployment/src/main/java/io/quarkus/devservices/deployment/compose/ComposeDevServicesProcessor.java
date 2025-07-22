@@ -205,6 +205,11 @@ public class ComposeDevServicesProcessor {
             }
         }
 
+        if (composeFiles.getServiceDefinitions().isEmpty()) {
+            log.info("No service definitions specified");
+            return null;
+        }
+
         ComposeProject.Builder builder = new ComposeProject.Builder(composeFiles, getComposeExecutable())
                 .withProject(projectName)
                 .withEnv(cfg.envVariables)

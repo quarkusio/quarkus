@@ -586,8 +586,7 @@ public class OidcCommonUtils {
         }
         return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
 
-            Buffer buffer = resp.body();
-            filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.DISCOVERY);
+            Buffer buffer = filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.DISCOVERY);
 
             if (resp.statusCode() == 200) {
                 return buffer.toJsonObject();
@@ -622,15 +621,34 @@ public class OidcCommonUtils {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public static void filterHttpResponse(OidcRequestContextProperties requestProps,
-            HttpResponse<Buffer> resp, Buffer buffer,
-            Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+    public static Buffer filterHttpResponse(OidcRequestContextProperties requestProps,
+            HttpResponse<Buffer> resp, Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+        Buffer responseBody = resp.body();
         if (!responseFilters.isEmpty()) {
-            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(), buffer);
+            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
+                    responseBody);
             for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
                 filter.filter(context);
             }
+            return getResponseBuffer(requestProps, responseBody);
         }
+        return responseBody;
+    }
+
+    public static Buffer getRequestBuffer(OidcRequestContextProperties requestProps, Buffer buffer) {
+        if (requestProps == null) {
+            return buffer;
+        }
+        Buffer updatedRequestBody = requestProps.get(OidcRequestContextProperties.REQUEST_BODY);
+        return updatedRequestBody == null ? buffer : updatedRequestBody;
+    }
+
+    public static Buffer getResponseBuffer(OidcRequestContextProperties requestProps, Buffer buffer) {
+        if (requestProps == null) {
+            return buffer;
+        }
+        Buffer updatedResponseBody = requestProps.get(OidcRequestContextProperties.RESPONSE_BODY);
+        return updatedResponseBody == null ? buffer : updatedResponseBody;
     }
 
     public static String getDiscoveryUri(String authServerUrl) {

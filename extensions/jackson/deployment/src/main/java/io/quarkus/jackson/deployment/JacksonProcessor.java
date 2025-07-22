@@ -3,6 +3,9 @@ package io.quarkus.jackson.deployment;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,7 +44,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.impl.Reflections;
@@ -57,11 +60,15 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.Reflection2Gizmo;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.jackson.runtime.ConfigurationCustomizer;
@@ -99,6 +106,9 @@ public class JacksonProcessor {
 
     private static final String PARAMETER_NAMES_MODULE = "com.fasterxml.jackson.module.paramnames.ParameterNamesModule";
     private static final DotName JACKSON_MIXIN = DotName.createSimple(JacksonMixin.class.getName());
+
+    private static final MethodDesc OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC = MethodDesc.of(ObjectMapper.class,
+            "registerModule", ObjectMapper.class, Module.class);
 
     // this list can probably be enriched with more modules
     private static final List<String> MODULES_NAMES_TO_AUTO_REGISTER = Arrays.asList(TIME_MODULE, JDK8_MODULE,
@@ -377,79 +387,87 @@ public class JacksonProcessor {
             return;
         }
 
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer")
-                .interfaces(ObjectMapperCustomizer.class.getName())
-                .build()) {
-            classCreator.addAnnotation(Singleton.class);
-
-            try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, ObjectMapper.class)) {
-                ResultHandle objectMapper = customize.getMethodParam(0);
-
-                for (JacksonModuleBuildItem jacksonModule : jacksonModules) {
-                    if (jacksonModule.getItems().isEmpty()) {
-                        continue;
-                    }
-
-                    /*
-                     * Create code similar to the following:
-                     *
-                     * SimpleModule module = new SimpleModule("somename");
-                     * module.addSerializer(Foo.class, new FooSerializer());
-                     * module.addDeserializer(Foo.class, new FooDeserializer());
-                     * objectMapper.registerModule(module);
-                     */
-                    ResultHandle module = customize.newInstance(
-                            MethodDescriptor.ofConstructor(SimpleModule.class, String.class),
-                            customize.load(jacksonModule.getName()));
-
-                    for (JacksonModuleBuildItem.Item item : jacksonModule.getItems()) {
-                        ResultHandle targetClass = customize.loadClassFromTCCL(item.getTargetClassName());
-
-                        String serializerClassName = item.getSerializerClassName();
-                        if (serializerClassName != null && !serializerClassName.isEmpty()) {
-                            ResultHandle serializer = customize.newInstance(
-                                    MethodDescriptor.ofConstructor(serializerClassName));
-                            customize.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(SimpleModule.class, "addSerializer", SimpleModule.class,
-                                            Class.class, JsonSerializer.class),
-                                    module, targetClass, serializer);
+        ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
+        Gizmo g = Gizmo.create(classOutput);
+        g.class_("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer", cc -> {
+            cc.implements_(ObjectMapperCustomizer.class);
+            cc.defaultConstructor();
+            cc.addAnnotation(Singleton.class);
+            cc.method("customize", mc -> {
+                ParamVar objectMapperParam = mc.parameter("objectMapper", ObjectMapper.class);
+                mc.returning(void.class);
+                mc.body(bc -> {
+                    ClassDesc simpleModuleClassDesc = Reflection2Gizmo.classDescOf(SimpleModule.class);
+                    for (JacksonModuleBuildItem jacksonModule : jacksonModules) {
+                        if (jacksonModule.getItems().isEmpty()) {
+                            continue;
                         }
 
-                        String deserializerClassName = item.getDeserializerClassName();
-                        if (deserializerClassName != null && !deserializerClassName.isEmpty()) {
-                            ResultHandle deserializer = customize.newInstance(
-                                    MethodDescriptor.ofConstructor(deserializerClassName));
-                            customize.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(SimpleModule.class, "addDeserializer", SimpleModule.class,
-                                            Class.class, JsonDeserializer.class),
-                                    module, targetClass, deserializer);
+                        /*
+                         * Create code similar to the following:
+                         *
+                         * SimpleModule module = new SimpleModule("somename");
+                         * module.addSerializer(Foo.class, new FooSerializer());
+                         * module.addDeserializer(Foo.class, new FooDeserializer());
+                         * objectMapper.registerModule(module);
+                         */
+
+                        LocalVar simpleModuleInstance = bc.localVar("simpleModule",
+                                bc.new_(SimpleModule.class, Const.of(jacksonModule.getName())));
+
+                        for (JacksonModuleBuildItem.Item item : jacksonModule.getItems()) {
+
+                            LocalVar targetClass = bc.localVar("targetClass",
+                                    Const.of(ClassDesc.of(item.getTargetClassName())));
+                            String serializerClassName = item.getSerializerClassName();
+                            if ((serializerClassName != null) && !serializerClassName.isEmpty()) {
+                                ClassDesc serializerClassDesc = ClassDesc.of(serializerClassName);
+                                Expr serializerInstance = bc.new_(serializerClassDesc);
+
+                                bc.invokeVirtual(
+                                        ClassMethodDesc.of(simpleModuleClassDesc, "addSerializer",
+                                                MethodTypeDesc.of(simpleModuleClassDesc,
+                                                        ConstantDescs.CD_Class, Reflection2Gizmo.classDescOf(
+                                                                JsonSerializer.class))),
+                                        simpleModuleInstance, targetClass, serializerInstance);
+
+                            }
+
+                            String deserializerClassName = item.getDeserializerClassName();
+                            if ((deserializerClassName != null) && !deserializerClassName.isEmpty()) {
+                                ClassDesc deserializerClassDesc = ClassDesc.of(deserializerClassName);
+                                Expr deserializerInstance = bc.new_(deserializerClassDesc);
+
+                                bc.invokeVirtual(
+                                        ClassMethodDesc.of(simpleModuleClassDesc, "addDeserializer",
+                                                MethodTypeDesc.of(simpleModuleClassDesc,
+                                                        ConstantDescs.CD_Class, Reflection2Gizmo.classDescOf(
+                                                                JsonDeserializer.class))),
+                                        simpleModuleInstance, targetClass, deserializerInstance);
+
+                            }
                         }
+
+                        bc.invokeVirtual(
+                                OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC,
+                                objectMapperParam, simpleModuleInstance);
+
                     }
 
-                    customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(ObjectMapper.class, "registerModule", ObjectMapper.class, Module.class),
-                            objectMapper, module);
-                }
+                    for (ClassPathJacksonModuleBuildItem classPathJacksonModule : classPathJacksonModules) {
+                        bc.invokeVirtual(
+                                OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC,
+                                objectMapperParam, bc.new_(ClassDesc.of(classPathJacksonModule.getModuleClassName())));
+                    }
 
-                for (ClassPathJacksonModuleBuildItem classPathJacksonModule : classPathJacksonModules) {
-                    ResultHandle module = customize
-                            .newInstance(MethodDescriptor.ofConstructor(classPathJacksonModule.getModuleClassName()));
-                    customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(ObjectMapper.class, "registerModule", ObjectMapper.class, Module.class),
-                            objectMapper, module);
-                }
-
-                customize.returnValue(null);
-            }
-
-            // ensure that the things we auto-register have the lower priority - this ensures that user registered modules take priority
-            try (MethodCreator priority = classCreator.getMethodCreator("priority", int.class)) {
-                priority.returnValue(priority.load(ObjectMapperCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
-            }
-        }
+                    bc.return_();
+                });
+            });
+            cc.method("priority", mc -> {
+                mc.returning(int.class);
+                mc.body(bc -> bc.return_(ObjectMapperCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
+            });
+        });
     }
 
     @Record(ExecutionTime.STATIC_INIT)

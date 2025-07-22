@@ -313,7 +313,7 @@ services:
 
 === Ignoring Services
 
-You can configure Compose Dev Services to ignore specific services discovery by adding the `io.quarkus.devservices.compose.ignore` label to the service in your Compose file:
+You can configure Compose Dev Services to not discover specific services by adding the `io.quarkus.devservices.compose.ignore` label to the service in your Compose file:
 
 [source, yaml]
 ----
@@ -664,7 +664,7 @@ This allows services to be reused by other applications or subsequent runs of th
 
 You can also configure the timeout for stopping services with the `quarkus.compose.devservices.stop-timeout` property.
 After the timeout, Compose Dev Services will forcefully stop the services.
-The default timeout is deliberately chosen to be 1 second for fast cleanup, but you can increase it as needed:
+The default timeout is deliberately chosen to be short (1 second) for fast cleanup, but you can increase it as needed:
 
 [source, text]
 ----

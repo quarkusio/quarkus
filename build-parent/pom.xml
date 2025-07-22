@@ -587,11 +587,6 @@
                     <version>${build-helper-plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.revapi</groupId>
-                    <artifactId>revapi-maven-plugin</artifactId>
-                    <version>${revapi-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.jetbrains.kotlin</groupId>
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
@@ -1039,6 +1034,7 @@
                     <plugin>
                         <groupId>org.revapi</groupId>
                         <artifactId>revapi-maven-plugin</artifactId>
+                        <version>${revapi-maven-plugin.version}</version>
                         <dependencies>
                             <dependency>
                                 <groupId>io.quarkus</groupId>

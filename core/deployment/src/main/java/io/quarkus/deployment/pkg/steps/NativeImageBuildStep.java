@@ -954,6 +954,10 @@ public class NativeImageBuildStep {
                     // --enable-monitoring=heapdump is not supported on Windows
                     monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
                 }
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0) {
+                    // Use built-in GraalVM thread dumper when possible
+                    monitoringOptions.add(NativeConfig.MonitoringOption.THREADDUMP);
+                }
 
                 if (nativeMonitoringItems != null && !nativeMonitoringItems.isEmpty()) {
                     monitoringOptions.addAll(nativeMonitoringItems.stream()

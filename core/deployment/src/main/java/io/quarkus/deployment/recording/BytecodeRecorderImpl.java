@@ -75,6 +75,7 @@ import io.quarkus.runtime.annotations.RelaxedValidation;
 import io.quarkus.runtime.types.GenericArrayTypeImpl;
 import io.quarkus.runtime.types.ParameterizedTypeImpl;
 import io.quarkus.runtime.types.WildcardTypeImpl;
+import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.common.constraint.Assert;
 
 /**
@@ -291,10 +292,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     @Override
-    public <T> RuntimeValue<T> newInstance(String name) {
+    public <T> RuntimeValue<T> newInstance(String className) {
+        return newInstance(className, HashUtil.sha1(className));
+    }
+
+    @Override
+    public <T> RuntimeValue<T> newInstance(String className, String identifier) {
         try {
-            ProxyInstance ret = getProxyInstance(RuntimeValue.class);
-            NewInstance instance = new NewInstance(name, ret.proxy, ret.key);
+            ProxyInstance ret = getProxyInstance(RuntimeValue.class, identifier);
+            NewInstance instance = new NewInstance(className, ret.proxy, ret.key);
             storedMethodCalls.add(instance);
             return (RuntimeValue<T>) ret.proxy;
         } catch (Exception e) {
@@ -360,7 +366,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (voidMethod) {
                     return null;
                 }
-                ProxyInstance instance = getProxyInstance(returnType);
+                ProxyInstance instance = getProxyInstance(returnType,
+                        HashUtil.sha1(method.toString()) + "_" + Arrays.hashCode(args));
                 if (instance == null) {
                     return null;
                 }
@@ -400,7 +407,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         classesToUseRecordableConstructor.add(clazz);
     }
 
-    private ProxyInstance getProxyInstance(Class<?> returnType) throws InstantiationException, IllegalAccessException {
+    private ProxyInstance getProxyInstance(Class<?> returnType, String identifier)
+            throws InstantiationException, IllegalAccessException {
         boolean returnInterface = returnType.isInterface();
         ProxyFactory<?> proxyFactory = returnValueProxy.get(returnType);
         if (proxyFactory == null) {
@@ -417,7 +425,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
             returnValueProxy.put(returnType, proxyFactory = new ProxyFactory<>(proxyConfiguration));
         }
 
-        String key = PROXY_KEY + COUNT.incrementAndGet();
+        String key = PROXY_KEY + identifier;
+
         Object proxyInstance = proxyFactory.newInstance(new ReturnValueProxyInvocationHandler(key, returnType, staticInit));
         return new ProxyInstance(proxyInstance, key);
     }

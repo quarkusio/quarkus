@@ -9,6 +9,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
 
 @ApplicationScoped
 @Unremovable
@@ -21,6 +22,9 @@ public class ClientRegistrationRequestFilter implements OidcRequestFilter {
         JsonObject body = rc.requestBody().toJsonObject();
         if ("Default Client".equals(body.getString("client_name"))) {
             LOG.debug("'Default Client' registration request");
+        } else if ("Dynamic Tenant Client".equals(body.getString("client_name"))) {
+            body.put("client_name", "Registered Dynamic Tenant Client");
+            rc.requestBody(Buffer.buffer(body.toString()));
         }
     }
 

@@ -505,7 +505,9 @@ You can persist the already registered client's registration URI and registratio
 [[oidc-client-registration-oidc-request-filters]]
 == OIDC request filters
 
-You can filter OIDC client registration and registered client requests registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
+You can filter OIDC client registration and registered client requests registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, as well as customize a request body.
+
+For example, a filter can analyze the request body and add its digest as a new header value:
 
 You can have a single filter intercepting all the OIDC registration and registered client requests, or use an `@OidcEndpoint` annotation to apply this filter to either OIDC registration or registered client endpoint responses only. For example:
 
@@ -543,6 +545,40 @@ public class ClientRegistrationRequestFilter implements OidcRequestFilter {
 
 `OidcRequestContextProperties` can be used to access request properties.
 Currently, you can use a `client_id` key to access the client tenant id and a `grant_type` key to access the grant type which the OIDC client uses to acquire tokens.
+
+`OidcRequestFilter` can customize a request body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
+and setting it on a request context, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.CLIENT_REGISTRATION)
+public class ClientRegistrationReRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext rc) {
+        // Update the client name
+        JsonObject body = rc.requestBody().toJsonObject();
+        if ("Dynamic Tenant Client".equals(body.getString("client_name"))) {
+            body.put("client_name", "Registered Dynamic Tenant Client");
+            rc.requestBody(Buffer.buffer(body.toString()));
+        }
+    }
+}
+----
 
 [[oidc-client-registration-oidc-response-filters]]
 == OIDC response filters
@@ -624,6 +660,42 @@ public class RegisteredClientResponseFilter implements OidcResponseFilter {
 <1> Restrict this filter to requests targeting the registered OIDC client endpoint only.
 <2> Check the response `Content-Type` header.
 <3> Confirm the client name property was updated.
+
+`OidcResponseFilter` can customize a response body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
+and setting it as a property on a response context, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.CLIENT_REGISTRATION)
+public class ClientRegistrationResponseFilter implements OidcResponseFilter {
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        // Update the client name
+        JsonObject body = rc.responseBody().toJsonObject();
+        if ("Registered Dynamic Tenant Client".equals(body.getString("client_name"))) {
+            body.put("client_name", "Registered Dynamically Tenant Client");
+            rc.responseContext(Buffer.buffer(body.toString()));
+        }
+    }
+}
+----
 
 [[configuration-reference]]
 == Configuration reference

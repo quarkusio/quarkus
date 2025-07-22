@@ -162,7 +162,8 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = Buffer.buffer(clientRegJson);
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, filters, buffer).sendBuffer(buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, filters, buffer)
+                .sendBuffer(OidcCommonUtils.getRequestBuffer(requestProps, buffer))
                 .onFailure(SocketException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount())
@@ -193,8 +194,8 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
             Map<Type, List<OidcRequestFilter>> requestFilters,
             Map<Type, List<OidcResponseFilter>> responseFilters,
             OidcRequestContextProperties requestProps) {
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.CLIENT_REGISTRATION);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters,
+                OidcEndpoint.Type.CLIENT_REGISTRATION);
         if (resp.statusCode() == 200 || resp.statusCode() == 201) {
             JsonObject json = buffer.toJsonObject();
             LOG.debugf("Client has been succesfully registered: %s", json.toString());

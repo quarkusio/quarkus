@@ -130,8 +130,8 @@
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>5.13.3</junit.jupiter.version>
-        <infinispan.version>15.0.16.Final</infinispan.version>
+        <junit.jupiter.version>5.13.4</junit.jupiter.version>
+        <infinispan.version>15.0.18.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.2.0</caffeine.version>
         <netty.version>4.1.121.Final</netty.version>
@@ -207,7 +207,7 @@
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>10.3.1</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>10.4</strimzi-oauth.nimbus.version>
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>

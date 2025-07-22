@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -1459,8 +1460,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
 
-        //now handle accessible fields
-        for (Field field : param.getClass().getFields()) {
+        //now handle accessible fields, in a deterministic order
+        Field[] fields = param.getClass().getFields();
+        Arrays.sort(fields, Comparator.comparing(Field::getName));
+        for (Field field : fields) {
             // check if the field is ignored
             if (ignoreField(field)) {
                 continue;

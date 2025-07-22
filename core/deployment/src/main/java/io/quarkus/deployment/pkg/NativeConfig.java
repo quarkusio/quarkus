@@ -334,6 +334,7 @@ public interface NativeConfig {
      * <li><code>jmxserver</code> for JMX server support (experimental)</li>
      * <li><code>nmt</code> for native memory tracking support</li>
      * <li><code>all</code> for all monitoring features</li>
+     * <li><code>none</code> for explicitly turning off all monitoring features</li>
      * </ul>
      */
     Optional<List<MonitoringOption>> monitoring();
@@ -590,7 +591,8 @@ public interface NativeConfig {
         JMXSERVER,
         JMXCLIENT,
         NMT,
-        ALL
+        ALL,
+        NONE
     }
 
     enum ImagePullStrategy {

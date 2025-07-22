@@ -3,9 +3,9 @@ package io.quarkus.annotation.processor.extension;
 import static javax.lang.model.util.ElementFilter.methodsIn;
 import static javax.lang.model.util.ElementFilter.typesIn;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -28,10 +28,9 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
 
     private Utils utils;
 
-    private final Set<String> processorClassNames = new HashSet<>();
-    private final Set<String> recorderClassNames = new HashSet<>();
-    private final Set<String> configRootClassNames = new HashSet<>();
-    private final Set<String> buildSteps = new HashSet<>();
+    private final Set<String> processorClassNames = new TreeSet<>();
+    private final Set<String> recorderClassNames = new TreeSet<>();
+    private final Set<String> configRootClassNames = new TreeSet<>();
     private final Map<String, Boolean> annotationUsageTracker = new ConcurrentHashMap<>();
 
     @Override
@@ -67,8 +66,22 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     public void finalizeProcessing() {
         validateAnnotationUsage();
 
-        utils.filer().write(Outputs.META_INF_QUARKUS_BUILD_STEPS, buildSteps);
-        utils.filer().write(Outputs.META_INF_QUARKUS_CONFIG_ROOTS, configRootClassNames);
+        /*
+         * During an incremental compilation (i.e. while developing extensions in Intellij IDEA)
+         * the Annotation Processor API will include only changed classes
+         * creating a subset of processors that are not enough to run a quarkus app
+         * By assuming a full compilation was made initially, all the processors are included inside the
+         * META-INF/quarkus-build-steps.list file
+         * So by reading it we can ensure that all the processors are included.
+         * See
+         * https://youtrack.jetbrains.com/issue/IJPL-196660/During-an-incremental-build-getElementsAnnotatedWith-doesnt-include-
+         * all-the-elements-but-only-the-one-recompiled
+         */
+        Set<String> allProcessorClassNames = new TreeSet<>(processorClassNames);
+        allProcessorClassNames.addAll(utils.filer().readSet(Outputs.META_INF_QUARKUS_BUILD_STEPS));
+        utils.filer().writeSet(Outputs.META_INF_QUARKUS_BUILD_STEPS, allProcessorClassNames);
+
+        utils.filer().writeSet(Outputs.META_INF_QUARKUS_CONFIG_ROOTS, configRootClassNames);
     }
 
     private void processBuildStep(RoundEnvironment roundEnv, TypeElement annotation) {
@@ -89,7 +102,6 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
             if (processorClassNames.add(binaryName)) {
                 validateRecordBuildSteps(clazz);
                 utils.accessorGenerator().generateAccessor(clazz);
-                buildSteps.add(binaryName);
             }
         }
     }

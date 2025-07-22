@@ -592,6 +592,33 @@ public interface ProtectedResourceService {
 }
 ----
 
+If you also want to refresh the token every time the `ProtectedResourceService#getUserName` call results in a 401 Unauthorized error, use the `quarkus.rest-client-oidc-filter.refresh-on-unauthorized` configuration property like in the example below:
+
+[source,properties]
+----
+quarkus.rest-client-oidc-filter.refresh-on-unauthorized=true
+----
+
+Alternatively, if you only need to enable this feature for individual endpoints, create a custom filter like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.oidc.client.reactive.filter.runtime.AbstractOidcClientRequestReactiveFilter;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+
+@Priority(Priorities.AUTHENTICATION)
+public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestReactiveFilter {
+
+    @Override
+    protected boolean refreshOnUnauthorized() {
+        return true;
+    }
+}
+----
+
 [[resteasy-client-oidc-filter]]
 === Use OidcClient in RestClient ClientFilter
 
@@ -670,6 +697,33 @@ public interface ProtectedResourceService {
 
     @GET
     String getUserName();
+}
+----
+
+If you also want to refresh the token every time the `ProtectedResourceService#getUserName` call results in a 401 Unauthorized error, use the `quarkus.resteasy-client-oidc-filter.refresh-on-unauthorized` configuration property like in the example below:
+
+[source,properties]
+----
+quarkus.resteasy-client-oidc-filter.refresh-on-unauthorized=true
+----
+
+Alternatively, if you only need to enable this feature for individual endpoints, create a custom filter like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.oidc.client.filter.runtime.AbstractOidcClientRequestFilter;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+
+@Priority(Priorities.AUTHENTICATION)
+public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilter {
+
+    @Override
+    protected boolean refreshOnUnauthorized() {
+        return true;
+    }
 }
 ----
 

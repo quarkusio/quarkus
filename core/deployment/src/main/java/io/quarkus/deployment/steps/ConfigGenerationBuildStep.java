@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -267,13 +268,13 @@ public class ConfigGenerationBuildStep {
         Set<String> configCustomizers = discoverService(SmallRyeConfigBuilderCustomizer.class, reflectiveClass);
 
         // TODO - introduce a way to ignore mappings that are only used for documentation or to prevent warnings
-        Set<ConfigClass> ignoreMappings = new HashSet<>();
+        Set<ConfigClass> ignoreMappings = new LinkedHashSet<>();
         ignoreMappings.add(ConfigClass.configClass(BuildAnalyticsConfig.class, "quarkus.analytics"));
         ignoreMappings.add(ConfigClass.configClass(BuilderConfig.class, "quarkus.builder"));
         ignoreMappings.add(ConfigClass.configClass(CommandLineRuntimeConfig.class, "quarkus"));
         ignoreMappings.add(ConfigClass.configClass(DebugRuntimeConfig.class, "quarkus.debug"));
 
-        Set<ConfigClass> allMappings = new HashSet<>();
+        Set<ConfigClass> allMappings = new LinkedHashSet<>();
         allMappings.addAll(staticSafeConfigMappings(configMappings));
         allMappings.addAll(runtimeConfigMappings(configMappings));
         allMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
@@ -284,11 +285,11 @@ public class ConfigGenerationBuildStep {
         Map<Object, FieldDescriptor> sharedFields = generateSharedConfig(generatedClass, converters, allMappings);
 
         // For Static Init Config
-        Set<ConfigClass> staticMappings = new HashSet<>();
+        Set<ConfigClass> staticMappings = new LinkedHashSet<>();
         staticMappings.addAll(staticSafeConfigMappings(configMappings));
         staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         staticMappings.removeAll(ignoreMappings);
-        Set<String> staticCustomizers = new HashSet<>(staticSafeServices(configCustomizers));
+        Set<String> staticCustomizers = new LinkedHashSet<>(staticSafeServices(configCustomizers));
         staticCustomizers.add(StaticInitConfigBuilder.class.getName());
 
         generateConfigBuilder(generatedClass, reflectiveClass, CONFIG_STATIC_NAME,
@@ -311,12 +312,12 @@ public class ConfigGenerationBuildStep {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CONFIG_STATIC_NAME).build());
 
         // For RunTime Config
-        Set<ConfigClass> runTimeMappings = new HashSet<>();
+        Set<ConfigClass> runTimeMappings = new LinkedHashSet<>();
         runTimeMappings.addAll(runtimeConfigMappings(configMappings));
         runTimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         runTimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
         runTimeMappings.removeAll(ignoreMappings);
-        Set<String> runtimeCustomizers = new HashSet<>(configCustomizers);
+        Set<String> runtimeCustomizers = new LinkedHashSet<>(configCustomizers);
         runtimeCustomizers.add(RuntimeConfigBuilder.class.getName());
 
         generateConfigBuilder(generatedClass, reflectiveClass, CONFIG_RUNTIME_NAME,
@@ -837,7 +838,7 @@ public class ConfigGenerationBuildStep {
             Class<?> serviceClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws IOException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        Set<String> services = new HashSet<>();
+        Set<String> services = new LinkedHashSet<>();
         for (String service : classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceClass.getName())) {
             // The discovery includes deployment modules, so we only include services available at runtime
             if (QuarkusClassLoader.isClassPresentAtRuntime(service)) {
@@ -850,7 +851,7 @@ public class ConfigGenerationBuildStep {
 
     private static Set<String> staticSafeServices(Set<String> services) {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        Set<String> staticSafe = new HashSet<>();
+        Set<String> staticSafe = new LinkedHashSet<>();
         for (String service : services) {
             // SmallRye Config services are always safe, but they cannot be annotated with @StaticInitSafe
             if (service.startsWith("io.smallrye.config.")) {

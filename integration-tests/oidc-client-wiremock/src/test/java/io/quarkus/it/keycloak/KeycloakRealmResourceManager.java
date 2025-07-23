@@ -109,7 +109,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                 .withHeader("GrantType", matching("password"))
                 .withHeader("client-id", containing("non-standard-response"))
                 .withRequestBody(matching(
-                        "grant_type=password&audience=audience1&username=alice&password=alice&extra_param=extra_param_value"))
+                        "grant_type=password&audience=audience1&username=alice&password=alice&extra_param=extra_param_value&custom_prop=custom_value"))
                 .willReturn(WireMock
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)

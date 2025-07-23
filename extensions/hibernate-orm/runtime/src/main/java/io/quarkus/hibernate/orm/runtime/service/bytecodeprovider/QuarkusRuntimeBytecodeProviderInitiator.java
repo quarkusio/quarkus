@@ -10,10 +10,10 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFac
 
 public final class QuarkusRuntimeBytecodeProviderInitiator implements StandardServiceInitiator<BytecodeProvider> {
 
-    private final QuarkusRuntimeProxyFactoryFactory statefulProxyFactory;
+    private final QuarkusRuntimeProxyFactoryFactory preGeneratedProxyFactory;
 
-    public QuarkusRuntimeBytecodeProviderInitiator(QuarkusRuntimeProxyFactoryFactory statefulProxyFactory) {
-        this.statefulProxyFactory = statefulProxyFactory;
+    public QuarkusRuntimeBytecodeProviderInitiator(QuarkusRuntimeProxyFactoryFactory preGeneratedProxyFactory) {
+        this.preGeneratedProxyFactory = preGeneratedProxyFactory;
     }
 
     @Override
@@ -21,7 +21,7 @@ public final class QuarkusRuntimeBytecodeProviderInitiator implements StandardSe
         //This one disables any use of bytecode enhancement at runtime, but is slightly more lenient
         //than the "none" option which will throw an exception on any attempt of using it;
         //also, needs to carry the statefulProxyFactory.
-        return new RuntimeBytecodeProvider(statefulProxyFactory);
+        return new RuntimeBytecodeProvider(preGeneratedProxyFactory);
     }
 
     @Override

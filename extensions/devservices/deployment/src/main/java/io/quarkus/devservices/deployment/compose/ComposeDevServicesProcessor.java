@@ -196,6 +196,9 @@ public class ComposeDevServicesProcessor {
         ComposeFiles composeFiles = new ComposeFiles(cfg.files);
         String projectName = (PROJECT_PREFIX + "-" + appName).toLowerCase();
         if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT && !cfg.reuseProjectForTests) {
+            if (composeFiles.getProjectName() != null) {
+                projectName = composeFiles.getProjectName();
+            }
             projectName = projectName + "-" + RandomStringUtils.insecure().nextAlphabetic(6).toLowerCase();
         } else {
             if (cfg.project != null) {

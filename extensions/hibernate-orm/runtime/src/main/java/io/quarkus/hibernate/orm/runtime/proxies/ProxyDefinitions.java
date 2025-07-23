@@ -145,11 +145,11 @@ public final class ProxyDefinitions {
             } else {
                 //TODO: this should be changed to an exception after 1.4
                 //really it should be an exception now
-                LOGGER.errorf(
+                throw new IllegalStateException(String.format(
                         "Unable to use a build time generated proxy for entity %s, as the build time proxy " +
                                 "interfaces %s are different to the runtime ones %s. This should not happen, please open an " +
                                 "issue at https://github.com/quarkusio/quarkus/issues",
-                        persistentClass.getClassName(), preProxy.getProxyInterfaces(), proxyInterfaces);
+                        persistentClass.getClassName(), preProxy.getProxyInterfaces(), proxyInterfaces));
             }
             Class<?> proxyDef = byteBuddyProxyHelper.get().buildProxy(mappedClass, toArray(proxyInterfaces));
             return proxyDef;

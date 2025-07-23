@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
@@ -53,7 +53,7 @@ class ForwardedParser {
     private final static int PORT_MIN_VALID_VALUE = 0;
     private final static int PORT_MAX_VALID_VALUE = 65535;
 
-    private final HttpServerRequest delegate;
+    private final HttpServerRequestInternal delegate;
     private final ForwardingProxyOptions forwardingProxyOptions;
     private final TrustedProxyCheck trustedProxyCheck;
 
@@ -72,7 +72,7 @@ class ForwardedParser {
 
     private HostAndPort authority;
 
-    ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions,
+    ForwardedParser(HttpServerRequestInternal delegate, ForwardingProxyOptions forwardingProxyOptions,
             TrustedProxyCheck trustedProxyCheck) {
         this.delegate = delegate;
         this.forwardingProxyOptions = forwardingProxyOptions;
@@ -135,9 +135,9 @@ class ForwardedParser {
 
         boolean isProxyAllowed = trustedProxyCheck.isProxyAllowed();
         if (isProxyAllowed) {
+            Forwarded forwardedHeaders = null;
+            Forwarded xForwardedHeaders = null;
             if (forwardingProxyOptions.allowForwarded && forwardingProxyOptions.allowXForwarded) {
-                Forwarded forwardedHeaders = null;
-                Forwarded xForwardedHeaders = null;
                 if (ProxyConfig.ForwardedPrecedence.FORWARDED == forwardingProxyOptions.forwardedPrecedence) {
                     // Forwarded values may override X-Forwarded values if strict forwarded control is disabled
                     xForwardedHeaders = processXForwarded();
@@ -158,9 +158,15 @@ class ForwardedParser {
                     log.debug("Common Forwarded and X-Forwarded properties match");
                 }
             } else if (forwardingProxyOptions.allowForwarded) {
-                processForwarded();
+                forwardedHeaders = processForwarded();
             } else if (forwardingProxyOptions.allowXForwarded) {
-                processXForwarded();
+                xForwardedHeaders = processXForwarded();
+            }
+
+            if (xForwardedHeaders != null) {
+                storeForwarded(xForwardedHeaders);
+            } else if (forwardedHeaders != null) {
+                storeForwarded(forwardedHeaders);
             }
         }
 
@@ -187,6 +193,10 @@ class ForwardedParser {
 
         absoluteURI = scheme + "://" + host + uri;
         log.debugf("Recalculated absoluteURI to %s", absoluteURI);
+    }
+
+    private void storeForwarded(Forwarded forwarded) {
+        delegate.context().putLocal(ForwardedInfo.CONTEXT_KEY, forwarded);
     }
 
     private Forwarded processForwarded() {
@@ -265,6 +275,7 @@ class ForwardedParser {
                 log.debugf("Using %s to prefix URI %s with prefix %s", forwardingProxyOptions.forwardedPrefixHeader, uri,
                         prefixHeader);
                 uri = appendPrefixToUri(prefixHeader, uri);
+                xForwardedValues.setPrefix(prefixHeader);
             }
         }
 
@@ -373,14 +384,15 @@ class ForwardedParser {
         return result;
     }
 
-    static class Forwarded {
-        private static String SCHEME = "scheme";
-        private static String HOST = "host";
-        private static String PORT = "port";
-        private static String REMOTE_HOST = "remote host";
-        private static String REMOTE_PORT = "remote port";
+    static class Forwarded implements ForwardedInfo {
+        private static final String SCHEME = "scheme";
+        private static final String HOST = "host";
+        private static final String PORT = "port";
+        private static final String REMOTE_HOST = "remote host";
+        private static final String REMOTE_PORT = "remote port";
+        private static final String PREFIX = "prefix";
 
-        private Map<String, Object> forwarded = new HashMap<>();
+        private final Map<String, Object> forwarded = new HashMap<>();
 
         public void setScheme(String scheme) {
             forwarded.put(SCHEME, scheme);
@@ -402,6 +414,10 @@ class ForwardedParser {
             forwarded.put(REMOTE_PORT, port);
         }
 
+        public void setPrefix(String prefix) {
+            forwarded.put(PREFIX, prefix);
+        }
+
         public boolean modifiedPropertiesMatch(Forwarded fw) {
             Set<String> keys = new HashSet<>(forwarded.keySet());
             keys.retainAll(fw.forwarded.keySet());
@@ -415,6 +431,36 @@ class ForwardedParser {
 
             return true;
 
+        }
+
+        @Override
+        public String getScheme() {
+            return (String) forwarded.get(SCHEME);
+        }
+
+        @Override
+        public String getHost() {
+            return (String) forwarded.get(HOST);
+        }
+
+        @Override
+        public Integer getPort() {
+            return (Integer) forwarded.get(PORT);
+        }
+
+        @Override
+        public String getRemoteHost() {
+            return forwarded.get(REMOTE_HOST).toString();
+        }
+
+        @Override
+        public Integer getRemotePort() {
+            return (Integer) forwarded.get(REMOTE_PORT);
+        }
+
+        @Override
+        public String getPrefix() {
+            return (String) forwarded.get(PREFIX);
         }
     }
 }

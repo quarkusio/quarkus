@@ -46,7 +46,7 @@
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jandex.version>3.3.2</jandex.version>
         <bytebuddy.version>1.15.11</bytebuddy.version>
-        <junit5.version>5.13.2</junit5.version>
+        <junit5.version>5.13.4</junit5.version>
         <maven.version>3.9.9</maven.version>
         <assertj.version>3.27.3</assertj.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
@@ -60,7 +60,7 @@
         <vertx.version>4.5.16</vertx.version>
         <rest-assured.version>5.5.5</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.19.1</jackson-bom.version>
+        <jackson-bom.version>2.19.2</jackson-bom.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>

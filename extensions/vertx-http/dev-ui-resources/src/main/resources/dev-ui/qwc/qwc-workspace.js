@@ -479,23 +479,31 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                                     content:newWorkspaceItemValue,
                                     type:this._selectedWorkspaceItem.type}).then(jsonRpcResponse => { 
             
-            if (!('content' in jsonRpcResponse.result.result) || !('name' in jsonRpcResponse.result.result)) {
-                const firstEntry = Object.entries(jsonRpcResponse.result.result).find(
-                    ([key]) => key !== 'path' && key !== 'name'
-                );
-                if (firstEntry) {
-                    const [key, value] = firstEntry;
-                    if (!('content' in jsonRpcResponse.result.result)) {
-                        jsonRpcResponse.result.result.content = value;
-                    }
-                    if (!('name' in jsonRpcResponse.result.result)) {
-                        jsonRpcResponse.result.result.name = key;
+            if(jsonRpcResponse.result.result && !this._isString(jsonRpcResponse.result.result)){
+                if (!('content' in jsonRpcResponse.result.result) || !('name' in jsonRpcResponse.result.result)) {
+                    const firstEntry = Object.entries(jsonRpcResponse.result.result).find(
+                        ([key]) => key !== 'path' && key !== 'name'
+                    );
+                    if (firstEntry) {
+                        const [key, value] = firstEntry;
+                        if (!('content' in jsonRpcResponse.result.result)) {
+                            jsonRpcResponse.result.result.content = value;
+                        }
+                        if (!('name' in jsonRpcResponse.result.result)) {
+                            jsonRpcResponse.result.result.name = key;
+                        }
                     }
                 }
             }
             
             if(e.detail.value.display === "notification"){
-                notifier.showInfoMessage(jsonRpcResponse.result.result);
+                if(this._isString(jsonRpcResponse.result.result)){
+                    notifier.showInfoMessage(jsonRpcResponse.result.result);
+                }else if(jsonRpcResponse.result.result.content){
+                    notifier.showInfoMessage(jsonRpcResponse.result.result.content);
+                }else{
+                    notifier.showInfoMessage(JSON.stringify(jsonRpcResponse.result.result));
+                }
             }else if(e.detail.value.display === "replace"){
                 this._selectedWorkspaceItem.content = jsonRpcResponse.result.result.content;
                 this._selectedWorkspaceItem.type = e.detail.value.displayType;
@@ -516,6 +524,10 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             }
             this._showActionProgress = false;
         });
+    }
+    
+    _isString(value){
+        return typeof value === 'string' || value instanceof String;
     }
     
     _filterActions(name) {

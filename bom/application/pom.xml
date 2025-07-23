@@ -47,7 +47,7 @@
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.12.2</smallrye-common.version>
-        <smallrye-config.version>3.13.2</smallrye-config.version>
+        <smallrye-config.version>3.13.3</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.11</smallrye-open-api.version>
@@ -89,7 +89,7 @@
         <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.9.0</gizmo.version>
-        <jackson-bom.version>2.19.1</jackson-bom.version>
+        <jackson-bom.version>2.19.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-codec.version>1.18.0</commons-codec.version>
@@ -129,8 +129,8 @@
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>5.13.2</junit.jupiter.version>
-        <infinispan.version>15.0.16.Final</infinispan.version>
+        <junit.jupiter.version>5.13.4</junit.jupiter.version>
+        <infinispan.version>15.0.18.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.2.0</caffeine.version>
         <netty.version>4.1.121.Final</netty.version>
@@ -142,7 +142,7 @@
         <kafka3.version>4.0.0</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.5</snappy.version>
-        <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
+        <strimzi-test-container.version>0.109.2</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.13.16</scala.version>
         <aws-lambda-java.version>1.3.0</aws-lambda-java.version>

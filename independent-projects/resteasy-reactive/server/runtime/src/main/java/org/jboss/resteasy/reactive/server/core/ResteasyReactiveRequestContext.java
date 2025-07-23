@@ -131,6 +131,8 @@ public abstract class ResteasyReactiveRequestContext
     // this is only set if we override the requestUri
     private String scheme;
     // this is only set if we override the requestUri
+    private String query;
+    // this is only set if we override the requestUri
     private String authority;
     private String remaining;
     private EncodedMediaType responseContentType;
@@ -510,7 +512,7 @@ public abstract class ResteasyReactiveRequestContext
         // Note: we could store our cache as normalised, but I'm not sure if the vertx one is normalised
         if (absoluteUri == null) {
             try {
-                absoluteUri = new URI(getScheme(), getAuthority(), path, null, null).toASCIIString();
+                absoluteUri = new URI(getScheme(), getAuthority(), path, query, null).toASCIIString();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -536,6 +538,7 @@ public abstract class ResteasyReactiveRequestContext
         this.path = requestURI.getPath();
         this.authority = requestURI.getRawAuthority();
         this.scheme = requestURI.getScheme();
+        this.query = requestURI.getQuery();
         setQueryParamsFrom(requestURI.toString());
         // invalidate those
         this.uriInfo = null;

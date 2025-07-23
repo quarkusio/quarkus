@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ForwardedInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 final class LocationUtil {
@@ -24,12 +25,7 @@ final class LocationUtil {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
                     }
-                    String prefix = "";
-                    Deployment deployment = request.getDeployment();
-                    if (deployment != null) {
-                        // prefix is already sanitised
-                        prefix = deployment.getPrefix();
-                    }
+                    String prefix = determinePrefix(req, request.getDeployment());
                     // Spec says relative to request, but TCK tests relative to Base URI, so we do that
                     String path = location.toString();
                     if (!path.startsWith("/")) {
@@ -43,6 +39,28 @@ final class LocationUtil {
             }
         }
         return location;
+    }
+
+    private static String determinePrefix(ServerHttpRequest serverHttpRequest, Deployment deployment) {
+        String prefix = "";
+        if (deployment != null) {
+            // prefix is already sanitised
+            prefix = deployment.getPrefix();
+        }
+        ForwardedInfo forwardedInfo = serverHttpRequest.getForwardedInfo();
+        if (forwardedInfo != null) {
+            if ((forwardedInfo.getPrefix() != null) && !forwardedInfo.getPrefix().isEmpty()) {
+                String forwardedPrefix = forwardedInfo.getPrefix();
+                if (!forwardedPrefix.startsWith("/")) {
+                    forwardedPrefix = "/" + forwardedPrefix;
+                }
+                prefix = forwardedPrefix + prefix;
+            }
+        }
+        if (prefix.endsWith("/")) {
+            prefix = prefix.substring(0, prefix.length() - 1);
+        }
+        return prefix;
     }
 
     static URI determineContentLocation(URI location) {

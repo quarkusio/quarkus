@@ -1,4 +1,4 @@
-package io.quarkus.arc.kotlin
+package io.quarkus.kotlin.arc
 
 import io.quarkus.arc.Arc
 import io.quarkus.arc.InjectableContext

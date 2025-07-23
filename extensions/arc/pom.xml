@@ -15,7 +15,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
-        <module>kotlin</module>
         <module>runtime</module>
         <module>test-supplement</module>
         <module>test-supplement-decorator</module>

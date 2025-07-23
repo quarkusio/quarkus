@@ -4,62 +4,18 @@ import io.quarkus.arc.Arc
 import io.quarkus.arc.InjectableContext
 import io.quarkus.arc.ManagedContext
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ThreadContextElement
-import kotlinx.coroutines.async
-import kotlinx.coroutines.withContext
 
 /**
- * A suspending function that executes a block of code within the Quarkus Request Context.
+ * This function extends the CoroutineContext to include the Quarkus Request Context if it is
+ * active.
  *
- * This function captures the current request context and ensures it is activated when the coroutine
- * resumes on a thread.
- *
- * If the request context is finalized before the block completes, it results in undefined behavior.
- *
- * Will not start a request context if there is none active at the time of invocation.
- *
- * @param context The CoroutineContext to use for the coroutine.
- * @param block The block of code to execute within the request context.
- * @return The result of the block execution.
- */
-suspend fun <T> withPropagatedContext(
-    context: CoroutineContext,
-    block: suspend CoroutineScope.() -> T,
-): T {
-    return withContext(context = context.appendRequestContextToCoroutineContext(), block = block)
-}
-
-/**
- * An async function that executes a block of code within the Quarkus Request Context.
- *
- * This function captures the current request context and ensures it is activated when the coroutine
- * resumes on a thread.
- *
- * If the caller finalizes the request context before the block is executed, results in undefined
+ * If the caller finalizes the request context before the coroutine resumes, it results in undefined
  * behavior.
  *
  * Will not start a request context if there is none active at the time of invocation.
- *
- * @param context The CoroutineContext to use for the coroutine.
- * @param block The block of code to execute within the request context.
  */
-fun <T> CoroutineScope.asyncWithPropagatedContext(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> T,
-): Deferred<T> {
-    return async(
-        context = context.appendRequestContextToCoroutineContext(),
-        start = start,
-        block = block,
-    )
-}
-
-fun CoroutineContext.appendRequestContextToCoroutineContext(): CoroutineContext {
+fun CoroutineContext.withCdiContext(): CoroutineContext {
     val requestContext: ManagedContext? = Arc.container()?.requestContext()
     return if (requestContext == null) {
         this

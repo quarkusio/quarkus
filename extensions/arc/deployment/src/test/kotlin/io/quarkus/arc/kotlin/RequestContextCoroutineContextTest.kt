@@ -6,10 +6,12 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.jboss.shrinkwrap.api.spec.JavaArchive
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -60,7 +62,7 @@ class RequestContextCoroutineContextTest {
 
         // WHEN we run a block
         runTest {
-            withPropagatedContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO.withCdiContext()) {
                 // THEN the request context should not be active
                 Assertions.assertFalse(
                     Arc.container().requestContext().isActive,
@@ -83,7 +85,7 @@ class RequestContextCoroutineContextTest {
         // WHEN we run a block with async
         runTest {
             coroutineScope {
-                asyncWithPropagatedContext(Dispatchers.IO) {
+                async(Dispatchers.IO.withCdiContext()) {
                         // THEN the request context should not be active
                         Assertions.assertFalse(
                             Arc.container().requestContext().isActive,
@@ -115,7 +117,7 @@ class RequestContextCoroutineContextTest {
 
         // WHEN we run a block with the request context
         runTest {
-            withPropagatedContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO.withCdiContext()) {
                 // THEN the request context should be active
                 Assertions.assertTrue(
                     Arc.container().requestContext().isActive,
@@ -169,7 +171,7 @@ class RequestContextCoroutineContextTest {
         // WHEN we run a block with async
         runTest {
             coroutineScope {
-                asyncWithPropagatedContext(Dispatchers.IO) {
+                async(Dispatchers.IO.withCdiContext()) {
                         // THEN the request context should be active
                         Assertions.assertTrue(
                             Arc.container().requestContext().isActive,
@@ -225,7 +227,7 @@ class RequestContextCoroutineContextTest {
         // WHEN we run a block with async
         runTest {
             coroutineScope {
-                asyncWithPropagatedContext(Dispatchers.IO) {
+                async(Dispatchers.IO.withCdiContext()) {
                         coroutineScope {
                             // THEN the request context should be active
                             Assertions.assertTrue(
@@ -289,7 +291,7 @@ class RequestContextCoroutineContextTest {
         // WHEN we run a block with async
         runTest {
             val job = launch {
-                asyncWithPropagatedContext(Dispatchers.IO) {
+                async(Dispatchers.IO.withCdiContext()) {
                         // THEN the request context should be active
                         Assertions.assertTrue(
                             Arc.container().requestContext().isActive,
@@ -368,7 +370,7 @@ class RequestContextCoroutineContextTest {
         runTest {
             val jobFirstRequest = launch {
                 Arc.container().requestContext().activate(firstRequestState)
-                asyncWithPropagatedContext(Dispatchers.IO) {
+                async(Dispatchers.IO.withCdiContext()) {
                         // THEN the request context should be active
                         Assertions.assertTrue(
                             Arc.container().requestContext().isActive,
@@ -402,7 +404,7 @@ class RequestContextCoroutineContextTest {
 
             val jobSecondRequest = launch {
                 Arc.container().requestContext().activate(secondRequestState)
-                asyncWithPropagatedContext(Dispatchers.IO) {
+                async(Dispatchers.IO.withCdiContext()) {
                         // THEN the request context should be active
                         Assertions.assertTrue(
                             Arc.container().requestContext().isActive,

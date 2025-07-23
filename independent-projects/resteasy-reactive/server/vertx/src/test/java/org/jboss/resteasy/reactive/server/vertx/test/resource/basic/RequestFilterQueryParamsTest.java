@@ -13,8 +13,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
 
 import org.hamcrest.Matchers;
@@ -37,15 +39,30 @@ public class RequestFilterQueryParamsTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("Hello filter"));
+
+        get("/dummy/2")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("Hello name=filter"));
     }
 
     @Path("hello")
     public static class BlockingHelloResource {
 
+        @Context
+        UriInfo uriInfo;
+
         @GET
         @Produces(MediaType.TEXT_PLAIN)
         public String hello(@QueryParam("name") @DefaultValue("world") String name) {
             return "Hello " + name;
+        }
+
+        @Path("2")
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        public String hello2() {
+            return "Hello " + uriInfo.getRequestUri().getQuery();
         }
     }
 
@@ -56,8 +73,9 @@ public class RequestFilterQueryParamsTest {
         @Override
         public void filter(ContainerRequestContext requestContext)
                 throws IOException {
-            UriBuilder builder = requestContext.getUriInfo().getRequestUriBuilder();
-            builder.replacePath("/hello");
+            UriInfo originalUriInfo = requestContext.getUriInfo();
+            UriBuilder builder = originalUriInfo.getRequestUriBuilder();
+            builder.replacePath(originalUriInfo.getPath().contains("2") ? "/hello/2" : "/hello");
             builder.replaceQueryParam("name", "filter");
             URI uri = builder.build();
             requestContext.setRequestUri(uri);

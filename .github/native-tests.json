@@ -51,7 +51,7 @@
         {
             "category": "Build tools and DevTools",
             "timeout": 75,
-            "test-modules": "maven, gradle, devtools-registry-client",
+            "test-modules": "maven, gradle, devtools-registry-client, compose-devservices",
             "os-name": "ubuntu-latest"
         },
         {

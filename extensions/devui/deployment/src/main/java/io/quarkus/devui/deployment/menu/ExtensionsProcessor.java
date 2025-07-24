@@ -44,7 +44,9 @@ public class ExtensionsProcessor {
                 ExtensionGroup.active, extensionsBuildItem.getActiveExtensions(),
                 ExtensionGroup.inactive, extensionsBuildItem.getInactiveExtensions());
 
-        extensionsPages.addBuildTimeData("extensions", response);
+        extensionsPages.addBuildTimeData("extensions", response, "All the extensions added to this Quarkus application. "
+                + "Some extensions are 'active' meaning they have actions in Dev UI, and some are 'inactive', meaning they will be listed in Dev UI, but a user can not perform any actions."
+                + "For both active and inactive all sorts of information is available about the extension, like it's name, URL to the guide, GAV and much more");
 
         // Page
         extensionsPages.addPage(Page.webComponentPageBuilder()
@@ -77,129 +79,150 @@ public class ExtensionsProcessor {
     }
 
     private void getCategories(BuildTimeActionBuildItem buildTimeActions) {
-        buildTimeActions.addAction(new Object() {
-        }.getClass().getEnclosingMethod().getName(), ignored -> {
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    QuarkusCommandOutcome outcome = new ListCategories(getQuarkusProject())
-                            .format("object")
-                            .execute();
+        buildTimeActions
+                .actionBuilder().methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
+                .description("Get all available categories for the Quarkus Extension List")
+                .function(ignored -> {
+                    return CompletableFuture.supplyAsync(() -> {
+                        try {
+                            QuarkusCommandOutcome outcome = new ListCategories(getQuarkusProject())
+                                    .format("object")
+                                    .execute();
 
-                    if (outcome.isSuccess()) {
-                        return outcome.getResult();
-                    }
-                } catch (QuarkusCommandException ex) {
-                    throw new RuntimeException(ex);
-                }
-                return null;
-            });
-        });
+                            if (outcome.isSuccess()) {
+                                return outcome.getResult();
+                            }
+                        } catch (QuarkusCommandException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                        return null;
+                    });
+                })
+                .build();
     }
 
     private void getInstallableExtensions(BuildTimeActionBuildItem buildTimeActions) {
-        buildTimeActions.addAction(new Object() {
-        }.getClass().getEnclosingMethod().getName(), ignored -> {
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
-                            .installed(false)
-                            .all(false)
-                            .format("object")
-                            .execute();
+        buildTimeActions
+                .actionBuilder().methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
+                .description(
+                        "Get all extensions that can be added to the current project (i.e it's not currently added to the pom)")
+                .function(ignored -> {
+                    return CompletableFuture.supplyAsync(() -> {
+                        try {
+                            QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
+                                    .installed(false)
+                                    .all(false)
+                                    .format("object")
+                                    .execute();
 
-                    if (outcome.isSuccess()) {
-                        return outcome.getResult();
-                    }
+                            if (outcome.isSuccess()) {
+                                return outcome.getResult();
+                            }
 
-                    return null;
-                } catch (QuarkusCommandException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
+                            return null;
+                        } catch (QuarkusCommandException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                })
+                .build();
     }
 
     private void getInstalledNamespaces(BuildTimeActionBuildItem buildTimeActions) {
-        buildTimeActions.addAction(new Object() {
-        }.getClass().getEnclosingMethod().getName(), ignored -> {
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
-                            .installed(true)
-                            .all(false)
-                            .format("object")
-                            .execute();
+        buildTimeActions
+                .actionBuilder().methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
+                .description("Get all extensions that is already part of the current project (i.e it's currently in the pom)")
+                .function(ignored -> {
+                    return CompletableFuture.supplyAsync(() -> {
+                        try {
+                            QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
+                                    .installed(true)
+                                    .all(false)
+                                    .format("object")
+                                    .execute();
 
-                    if (outcome.isSuccess()) {
+                            if (outcome.isSuccess()) {
 
-                        List<io.quarkus.registry.catalog.Extension> extensionList = (List<io.quarkus.registry.catalog.Extension>) outcome
-                                .getResult();
+                                List<io.quarkus.registry.catalog.Extension> extensionList = (List<io.quarkus.registry.catalog.Extension>) outcome
+                                        .getResult();
 
-                        List<String> namespaceList = new ArrayList<>();
+                                List<String> namespaceList = new ArrayList<>();
 
-                        if (!extensionList.isEmpty()) {
-                            for (io.quarkus.registry.catalog.Extension e : extensionList) {
-                                String groupId = e.getArtifact().getGroupId();
-                                String artifactId = e.getArtifact().getArtifactId();
-                                namespaceList.add(groupId + "." + artifactId);
+                                if (!extensionList.isEmpty()) {
+                                    for (io.quarkus.registry.catalog.Extension e : extensionList) {
+                                        String groupId = e.getArtifact().getGroupId();
+                                        String artifactId = e.getArtifact().getArtifactId();
+                                        namespaceList.add(groupId + "." + artifactId);
+                                    }
+                                }
+                                return namespaceList;
                             }
-                        }
-                        return namespaceList;
-                    }
 
-                    return null;
-                } catch (IllegalStateException e) {
-                    return null;
-                } catch (QuarkusCommandException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
+                            return null;
+                        } catch (IllegalStateException e) {
+                            return null;
+                        } catch (QuarkusCommandException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                })
+                .build();
     }
 
     private void removeExtension(BuildTimeActionBuildItem buildTimeActions) {
-        buildTimeActions.addAction(new Object() {
-        }.getClass().getEnclosingMethod().getName(), params -> {
-            return CompletableFuture.supplyAsync(() -> {
-                String extensionArtifactId = params.get("extensionArtifactId");
-                try {
-                    QuarkusCommandOutcome outcome = new RemoveExtensions(getQuarkusProject())
-                            .extensions(Set.of(extensionArtifactId))
-                            .execute();
+        buildTimeActions
+                .actionBuilder().methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
+                .description("Remove a certain extension from the current project (i.e remove it from the pom)")
+                .parameter("extensionArtifactId",
+                        "The gav string of the extension to remove in format groupId:artifactId:version")
+                .function(params -> {
+                    return CompletableFuture.supplyAsync(() -> {
+                        String extensionArtifactId = params.get("extensionArtifactId");
+                        try {
+                            QuarkusCommandOutcome outcome = new RemoveExtensions(getQuarkusProject())
+                                    .extensions(Set.of(extensionArtifactId))
+                                    .execute();
 
-                    if (outcome.isSuccess()) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } catch (QuarkusCommandException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
+                            if (outcome.isSuccess()) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        } catch (QuarkusCommandException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                })
+                .build();
     }
 
     private void addExtension(BuildTimeActionBuildItem buildTimeActions) {
-        buildTimeActions.addAction(new Object() {
-        }.getClass().getEnclosingMethod().getName(), params -> {
-            return CompletableFuture.supplyAsync(() -> {
-                String extensionArtifactId = params.get("extensionArtifactId");
+        buildTimeActions
+                .actionBuilder().methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
+                .description("Adds a certain extension to the current project (i.e add it from the pom)")
+                .parameter("extensionArtifactId",
+                        "The gav string of the extension to remove in format groupId:artifactId:version")
+                .function(params -> {
+                    return CompletableFuture.supplyAsync(() -> {
+                        String extensionArtifactId = params.get("extensionArtifactId");
 
-                try {
-                    QuarkusCommandOutcome outcome = new AddExtensions(getQuarkusProject())
-                            .extensions(Set.of(extensionArtifactId))
-                            .execute();
+                        try {
+                            QuarkusCommandOutcome outcome = new AddExtensions(getQuarkusProject())
+                                    .extensions(Set.of(extensionArtifactId))
+                                    .execute();
 
-                    if (outcome.isSuccess()) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } catch (QuarkusCommandException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
+                            return outcome.isSuccess();
+                        } catch (QuarkusCommandException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                })
+                .build();
     }
 
     private QuarkusProject getQuarkusProject() {

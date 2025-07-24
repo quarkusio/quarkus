@@ -137,11 +137,11 @@ export class JsonRpc {
 
                 const origMethod = target[prop];
 
-                if (typeof origMethod == 'undefined') {
+                if (typeof origMethod === 'undefined') {
                     return function (...args) {
                         var uid = JsonRpc.messageCounter++;
 
-                        let method = this._extensionName + "." + prop.toString();
+                        let method = this._extensionName + "_" + prop.toString();
 
                         let params = new Object();
                         if (args.length > 0) {

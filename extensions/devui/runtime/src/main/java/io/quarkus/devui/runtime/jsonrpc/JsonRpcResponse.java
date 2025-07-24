@@ -6,14 +6,20 @@ public final class JsonRpcResponse {
 
     // Public for serialization
     public final int id;
-    public final Result result;
+    public final Object result;
     public final Error error;
 
-    public JsonRpcResponse(int id, Result result) {
+    public JsonRpcResponse(int id, Object result) {
         this.id = id;
         this.result = result;
         this.error = null;
     }
+
+    //    public JsonRpcResponse(int id, Result result) {
+    //        this.id = id;
+    //        this.result = result;
+    //        this.error = null;
+    //    }
 
     public JsonRpcResponse(int id, Error error) {
         this.id = id;
@@ -34,23 +40,15 @@ public final class JsonRpcResponse {
                 '}';
     }
 
-    public static final class Result {
-        public final String messageType;
-        public final Object object;
-
-        public Result(String messageType, Object object) {
-            this.messageType = messageType;
-            this.object = object;
-        }
-
-        @Override
-        public String toString() {
-            return "Result{" +
-                    "messageType='" + messageType + '\'' +
-                    ", object=" + object +
-                    '}';
-        }
-    }
+    //    public static final class Content {
+    //        public final Object content;
+    //        public final boolean isError;
+    //
+    //        public Content(boolean isError, Object objects) {
+    //            this.isError = isError;
+    //            this.content = objects;
+    //        }
+    //    }
 
     public static final class Error {
         public final int code;

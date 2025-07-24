@@ -1,64 +1,58 @@
 package io.quarkus.devui.runtime.jsonrpc;
 
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.ID;
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.JSONRPC;
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.METHOD;
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.PARAMS;
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.VERSION;
-
 import java.util.Map;
 
-import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
-import io.vertx.core.json.JsonObject;
-
-public class JsonRpcRequest {
-
-    private final JsonMapper jsonMapper;
-    private final JsonObject jsonObject;
-
-    JsonRpcRequest(JsonMapper jsonMapper, JsonObject jsonObject) {
-        this.jsonMapper = jsonMapper;
-        this.jsonObject = jsonObject;
-    }
+public final class JsonRpcRequest {
+    private int id;
+    private String jsonrpc = JsonRpcKeys.VERSION;
+    private String method;
+    private Map params;
 
     public int getId() {
-        return jsonObject.getInteger(ID);
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getJsonrpc() {
-        String value = jsonObject.getString(JSONRPC);
-        if (value != null) {
-            return value;
-        }
-        return VERSION;
+        return jsonrpc;
+    }
+
+    public void setJsonrpc(String jsonrpc) {
+        this.jsonrpc = jsonrpc;
     }
 
     public String getMethod() {
-        return jsonObject.getString(METHOD);
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
+    }
+
+    public Map getParams() {
+        return params;
+    }
+
+    public void setParams(Map params) {
+        this.params = params;
     }
 
     public boolean hasParams() {
-        return this.getParams() != null;
+        return this.params != null && !this.params.isEmpty();
     }
 
-    public Map<?, ?> getParams() {
-        JsonObject paramsObject = jsonObject.getJsonObject(PARAMS);
-        if (paramsObject != null && paramsObject.getMap() != null && !paramsObject.getMap().isEmpty()) {
-            return paramsObject.getMap();
+    public boolean hasParam(String key) {
+        return this.params != null && this.params.containsKey(key);
+    }
+
+    public <T> T getParam(String key, Class<T> paramType) {
+        if (hasParam(key)) {
+            return (T) this.params.get(key);
         }
         return null;
     }
 
-    public <T> T getParam(String key, Class<T> paramType) {
-        Map<?, ?> params = getParams();
-        if (params == null || !params.containsKey(key)) {
-            return null;
-        }
-        return jsonMapper.fromValue(params.get(key), paramType);
-    }
-
-    @Override
-    public String toString() {
-        return jsonMapper.toString(jsonObject, true);
-    }
 }

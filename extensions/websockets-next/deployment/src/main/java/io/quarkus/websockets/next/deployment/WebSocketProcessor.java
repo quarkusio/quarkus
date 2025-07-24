@@ -112,6 +112,7 @@ import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -758,7 +759,7 @@ public class WebSocketProcessor {
         if (buildConfig.propagateSubprotocolHeaders()) {
             Handler<RoutingContext> handler = new WebSocketHeaderPropagationHandler();
             // must run after the CORS filter but before the authentication filter
-            int priority = 20 + FilterBuildItem.AUTHENTICATION;
+            int priority = 20 + SecurityHandlerPriorities.AUTHENTICATION;
             filterProducer.produce(new FilterBuildItem(handler, priority));
         }
     }

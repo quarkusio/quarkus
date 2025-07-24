@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.offline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.tool.schema.Action.CREATE_DROP;
 
+import java.util.logging.LogRecord;
+
 import jakarta.transaction.Transactional;
 
 import org.assertj.core.api.Assertions;
@@ -24,6 +26,12 @@ public class StartOfflineSchemaManagementTest {
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline.properties", "application.properties"))
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", CREATE_DROP.getExternalHbm2ddlName())
+            .setLogRecordPredicate(record -> "io.quarkus.config".equals(record.getLoggerName()))
+            .assertLogRecords(records -> {
+                assertThat(records) // Configuration keys mispelled
+                        .extracting(LogRecord::getMessage)
+                        .noneMatch(msg -> msg.contains("Unrecognized configuration key"));
+            })
             .assertException(
                     throwable -> assertThat(throwable)
                             .hasNoSuppressedExceptions()

@@ -283,7 +283,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                                     linkText="Read more about Continuous Testing">
                             ${this._renderPlayButton()}
                 </qwc-no-data>
-            `
+            `;
         }
     }
 

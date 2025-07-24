@@ -16,7 +16,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.dev.testing.TestRunResults;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.dev.testing.results.TestRunResultsInterface;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.runtime.continuoustesting.ContinuousTestingJsonRPCService;
 import io.quarkus.devui.runtime.continuoustesting.ContinuousTestingRecorder;
@@ -92,174 +91,200 @@ public class ContinuousTestingProcessor {
     }
 
     private void registerStartMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("start", ignored -> {
+        actions.actionBuilder()
+                .methodName("start")
+                .description("Start the Continuous Testing")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return false;
+                        }
+                        TestSupport testSupport = ts.get();
 
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return false;
-                }
-                TestSupport testSupport = ts.get();
-
-                if (testSupport.isStarted()) {
-                    return false; // Already running
-                } else {
-                    testSupport.start();
-                    return true;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+                        if (testSupport.isStarted()) {
+                            return false; // Already running
+                        } else {
+                            testSupport.start();
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerStopMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("stop", ignored -> {
+        actions.actionBuilder()
+                .methodName("stop")
+                .description("Stop the Continuous Testing")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return false;
+                        }
+                        TestSupport testSupport = ts.get();
 
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return false;
-                }
-                TestSupport testSupport = ts.get();
-
-                if (testSupport.isStarted()) {
-                    testSupport.stop();
-                    return true;
-                } else {
-                    return false; // Already running
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+                        if (testSupport.isStarted()) {
+                            testSupport.stop();
+                            return true;
+                        } else {
+                            return false; // Already running
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerRunAllMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("runAll", ignored -> {
-
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return false;
-                }
-                TestSupport testSupport = ts.get();
-                testSupport.runAllTests();
-                return true;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        actions.actionBuilder()
+                .methodName("runAll")
+                .description("Run all tests in Continuous Testing if it's started")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return false;
+                        }
+                        TestSupport testSupport = ts.get();
+                        testSupport.runAllTests();
+                        return true;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerRunFailedMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("runFailed", ignored -> {
-
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return false;
-                }
-                TestSupport testSupport = ts.get();
-                testSupport.runFailedTests();
-                return true;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        actions.actionBuilder()
+                .methodName("runFailed")
+                .description("Run all failed tests in Continuous Testing if it's started")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return false;
+                        }
+                        TestSupport testSupport = ts.get();
+                        testSupport.runFailedTests();
+                        return true;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerToggleBrokenOnlyMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("toggleBrokenOnly", ignored -> {
-
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return false;
-                }
-                TestSupport testSupport = ts.get();
-                return testSupport.toggleBrokenOnlyMode();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        actions.actionBuilder()
+                .methodName("toggleBrokenOnly")
+                .description("Toggle broken only in Continuous Testing")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return false;
+                        }
+                        TestSupport testSupport = ts.get();
+                        return testSupport.toggleBrokenOnlyMode();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerToggleInstrumentationMethod(LaunchModeBuildItem launchModeBuildItem,
             BuildTimeActionBuildItem actions) {
-        actions.addAction("toggleInstrumentation", ignored -> {
-
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return false;
-                }
-                TestSupport testSupport = ts.get();
-                return testSupport.toggleInstrumentation();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        actions.actionBuilder()
+                .methodName("toggleInstrumentation")
+                .description("Toggle instrumentation in Continuous Testing")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return false;
+                        }
+                        TestSupport testSupport = ts.get();
+                        return testSupport.toggleInstrumentation();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerGetStatusMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.addAction("getStatus", ignored -> {
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return null;
-                }
-                TestSupport testSupport = ts.get();
-                TestSupport.RunStatus status = testSupport.getStatus();
+        actions.actionBuilder()
+                .methodName("getStatus")
+                .description("Get the status of Continuous Testing")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return null;
+                        }
+                        TestSupport testSupport = ts.get();
+                        TestSupport.RunStatus status = testSupport.getStatus();
 
-                if (status == null) {
-                    return null;
-                }
+                        if (status == null) {
+                            return null;
+                        }
 
-                Map<String, Long> testStatus = new HashMap<>();
+                        Map<String, Long> testStatus = new HashMap<>();
 
-                long lastRun = status.getLastRun();
-                testStatus.put("lastRun", lastRun);
-                if (lastRun > 0) {
-                    TestRunResults result = testSupport.getResults();
-                    testStatus.put("testsFailed", result.getCurrentFailedCount());
-                    testStatus.put("testsPassed", result.getCurrentPassedCount());
-                    testStatus.put("testsSkipped", result.getCurrentSkippedCount());
-                    testStatus.put("testsRun", result.getFailedCount() + result.getPassedCount());
-                    testStatus.put("totalTestsFailed", result.getFailedCount());
-                    testStatus.put("totalTestsPassed", result.getPassedCount());
-                    testStatus.put("totalTestsSkipped", result.getSkippedCount());
-                }
-                //get running last, as otherwise if the test completes in the meantime you could see
-                //both running and last run being the same number
-                testStatus.put("running", status.getRunning());
-                return testStatus;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+                        long lastRun = status.getLastRun();
+                        testStatus.put("lastRun", lastRun);
+                        if (lastRun > 0) {
+                            TestRunResults result = testSupport.getResults();
+                            testStatus.put("testsFailed", result.getCurrentFailedCount());
+                            testStatus.put("testsPassed", result.getCurrentPassedCount());
+                            testStatus.put("testsSkipped", result.getCurrentSkippedCount());
+                            testStatus.put("testsRun", result.getFailedCount() + result.getPassedCount());
+                            testStatus.put("totalTestsFailed", result.getFailedCount());
+                            testStatus.put("totalTestsPassed", result.getPassedCount());
+                            testStatus.put("totalTestsSkipped", result.getSkippedCount());
+                        }
+                        //get running last, as otherwise if the test completes in the meantime you could see
+                        //both running and last run being the same number
+                        testStatus.put("running", status.getRunning());
+                        return testStatus;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private void registerGetResultsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
-        actions.<TestRunResultsInterface> addAction("getResults", ignored -> {
-            try {
-                Optional<TestSupport> ts = TestSupport.instance();
-                if (testsDisabled(launchModeBuildItem, ts)) {
-                    return null;
-                }
-                TestSupport testSupport = ts.get();
-                TestRunResults testRunResults = testSupport.getResults();
+        actions.actionBuilder()
+                .methodName("getResults")
+                .description("Get the results of a Continuous testing test run")
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return null;
+                        }
+                        TestSupport testSupport = ts.get();
+                        TestRunResults testRunResults = testSupport.getResults();
 
-                if (testRunResults == null) {
-                    return null;
-                }
+                        if (testRunResults == null) {
+                            return null;
+                        }
 
-                return testRunResults;
+                        return testRunResults;
 
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
     }
 
     private static final String NAMESPACE = "devui-continuous-testing";

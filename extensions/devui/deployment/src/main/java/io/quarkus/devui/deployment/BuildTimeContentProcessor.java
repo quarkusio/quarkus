@@ -65,10 +65,12 @@ import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.DevUIContent;
-import io.quarkus.devui.spi.buildtime.BuildTimeAction;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeData;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
+import io.quarkus.devui.spi.buildtime.jsonrpc.DeploymentJsonRpcMethod;
+import io.quarkus.devui.spi.buildtime.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.devui.spi.page.AbstractPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -76,7 +78,6 @@ import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.vertx.core.json.jackson.DatabindCodec;
 
@@ -87,6 +88,7 @@ import io.vertx.core.json.jackson.DatabindCodec;
 public class BuildTimeContentProcessor {
     private static final Logger log = Logger.getLogger(BuildTimeContentProcessor.class);
 
+    private static final String UNDERSCORE = "_";
     private static final String SLASH = "/";
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
     private static final String ES_MODULE_SHIMS = "es-module-shims";
@@ -189,7 +191,7 @@ public class BuildTimeContentProcessor {
 
         for (CardPageBuildItem card : cards) {
             String extensionPathName = card.getExtensionPathName(curateOutcomeBuildItem);
-            Map<String, Object> buildTimeData = getBuildTimeDataForCard(curateOutcomeBuildItem, card);
+            Map<String, BuildTimeData> buildTimeData = getBuildTimeDataForCard(curateOutcomeBuildItem, card);
             if (!buildTimeData.isEmpty()) {
                 buildTimeConstProducer.produce(
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
@@ -197,7 +199,7 @@ public class BuildTimeContentProcessor {
         }
         for (MenuPageBuildItem menu : menus) {
             String extensionPathName = menu.getExtensionPathName(curateOutcomeBuildItem);
-            Map<String, Object> buildTimeData = getBuildTimeDataForPage(menu);
+            Map<String, BuildTimeData> buildTimeData = getBuildTimeDataForPage(menu);
             if (!buildTimeData.isEmpty()) {
                 buildTimeConstProducer.produce(
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
@@ -205,7 +207,7 @@ public class BuildTimeContentProcessor {
         }
         for (FooterPageBuildItem footer : footers) {
             String extensionPathName = footer.getExtensionPathName(curateOutcomeBuildItem);
-            Map<String, Object> buildTimeData = getBuildTimeDataForPage(footer);
+            Map<String, BuildTimeData> buildTimeData = getBuildTimeDataForPage(footer);
             if (!buildTimeData.isEmpty()) {
                 buildTimeConstProducer.produce(
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
@@ -221,53 +223,66 @@ public class BuildTimeContentProcessor {
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
-        List<String> methodNames = new ArrayList<>();
-        List<String> subscriptionNames = new ArrayList<>();
-        Map<String, RuntimeValue> recordedValues = new HashMap<>();
+        Map<String, DeploymentJsonRpcMethod> methods = new HashMap<>();
+        Map<String, DeploymentJsonRpcMethod> subscriptions = new HashMap<>();
+        Map<String, RecordedJsonRpcMethod> recordedMethods = new HashMap<>();
+        Map<String, RecordedJsonRpcMethod> recordedSubscriptions = new HashMap<>();
+
         for (BuildTimeActionBuildItem actions : buildTimeActions) {
             String extensionPathName = actions.getExtensionPathName(curateOutcomeBuildItem);
-            for (BuildTimeAction bta : actions.getActions()) {
-                String fullName = extensionPathName + "." + bta.getMethodName();
-                if (bta.hasRuntimeValue()) {
-                    recordedValues.put(fullName, bta.getRuntimeValue());
-                    methodNames.add(fullName);
-                } else if (bta.hasAction()) {
-                    DevConsoleManager.register(fullName, bta.getAction());
-                    methodNames.add(fullName);
-                } else if (bta.hasAssistantAction() && assistantIsAvailable) {
-                    DevConsoleManager.register(fullName, bta.getAssistantAction());
-                    methodNames.add(fullName);
+
+            // Build time methods
+            for (DeploymentJsonRpcMethod deploymentJsonRpcMethod : actions.getDeploymentActions()) {
+                String fullName = extensionPathName + UNDERSCORE + deploymentJsonRpcMethod.getMethodName();
+                if (deploymentJsonRpcMethod.hasAction()) {
+                    DevConsoleManager.register(fullName, deploymentJsonRpcMethod.getAction());
+                } else if (deploymentJsonRpcMethod.hasAssistantAction()) {
+                    DevConsoleManager.register(fullName, deploymentJsonRpcMethod.getAssistantAction());
                 }
+                deploymentJsonRpcMethod.setMethodName(fullName);
+                methods.put(fullName, deploymentJsonRpcMethod);
             }
-            for (BuildTimeAction bts : actions.getSubscriptions()) {
-                String fullName = extensionPathName + "." + bts.getMethodName();
-                if (bts.hasRuntimeValue()) {
-                    recordedValues.put(fullName, bts.getRuntimeValue());
-                    subscriptionNames.add(fullName);
-                } else if (bts.hasAction()) {
-                    DevConsoleManager.register(fullName, bts.getAction());
-                    subscriptionNames.add(fullName);
-                } else if (bts.hasAssistantAction() && assistantIsAvailable) {
-                    DevConsoleManager.register(fullName, bts.getAssistantAction());
-                    subscriptionNames.add(fullName);
+
+            // Build time recorded values
+            for (RecordedJsonRpcMethod recordedJsonRpcMethod : actions.getRecordedActions()) {
+                String fullName = extensionPathName + UNDERSCORE + recordedJsonRpcMethod.getMethodName();
+                recordedJsonRpcMethod.setMethodName(fullName);
+                recordedMethods.put(fullName, recordedJsonRpcMethod);
+            }
+
+            // Build time subscriptions
+            for (DeploymentJsonRpcMethod deploymentJsonRpcSubscription : actions.getDeploymentSubscriptions()) {
+                String fullName = extensionPathName + UNDERSCORE + deploymentJsonRpcSubscription.getMethodName();
+                if (deploymentJsonRpcSubscription.hasAction()) {
+                    DevConsoleManager.register(fullName, deploymentJsonRpcSubscription.getAction());
+                } else if (deploymentJsonRpcSubscription.hasAssistantAction()) {
+                    DevConsoleManager.register(fullName, deploymentJsonRpcSubscription.getAssistantAction());
                 }
+                deploymentJsonRpcSubscription.setMethodName(fullName);
+                subscriptions.put(fullName, deploymentJsonRpcSubscription);
+            }
+            // Build time recorded subscription
+            for (RecordedJsonRpcMethod recordedJsonRpcSubscription : actions.getRecordedSubscriptions()) {
+                String fullName = extensionPathName + UNDERSCORE + recordedJsonRpcSubscription.getMethodName();
+                recordedJsonRpcSubscription.setMethodName(fullName);
+                recordedSubscriptions.put(fullName, recordedJsonRpcSubscription);
             }
         }
 
-        return new DeploymentMethodBuildItem(methodNames, subscriptionNames, recordedValues);
+        return new DeploymentMethodBuildItem(methods, subscriptions, recordedMethods, recordedSubscriptions);
     }
 
-    private Map<String, Object> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {
-        Map<String, Object> m = new HashMap<>();
+    private Map<String, BuildTimeData> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {
+        Map<String, BuildTimeData> m = new HashMap<>();
         if (pageBuildItem.hasBuildTimeData()) {
             m.putAll(pageBuildItem.getBuildTimeData());
         }
         return m;
     }
 
-    private Map<String, Object> getBuildTimeDataForCard(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    private Map<String, BuildTimeData> getBuildTimeDataForCard(CurateOutcomeBuildItem curateOutcomeBuildItem,
             CardPageBuildItem pageBuildItem) {
-        Map<String, Object> m = getBuildTimeDataForPage(pageBuildItem);
+        Map<String, BuildTimeData> m = getBuildTimeDataForPage(pageBuildItem);
 
         if (pageBuildItem.getOptionalCard().isPresent()) {
             // Make the pages available for the custom card
@@ -280,7 +295,7 @@ public class BuildTimeContentProcessor {
                 pages.add(pageBuilder.build());
             }
 
-            m.put("pages", pages);
+            m.put("pages", new BuildTimeData(pages));
         }
         return m;
     }
@@ -311,13 +326,19 @@ public class BuildTimeContentProcessor {
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
         var mapper = DatabindCodec.mapper().writerWithDefaultPrettyPrinter();
+        Map<String, String> descriptions = new HashMap<>();
         for (BuildTimeConstBuildItem buildTimeConstBuildItem : buildTimeConstBuildItems) {
             Map<String, Object> data = new HashMap<>();
             if (buildTimeConstBuildItem.hasBuildTimeData()) {
-                for (Map.Entry<String, Object> pageData : buildTimeConstBuildItem.getBuildTimeData().entrySet()) {
+                for (Map.Entry<String, BuildTimeData> pageData : buildTimeConstBuildItem.getBuildTimeData().entrySet()) {
                     try {
+                        String ns = buildTimeConstBuildItem.getExtensionPathName(curateOutcomeBuildItem);
                         String key = pageData.getKey();
-                        String value = mapper.writeValueAsString(pageData.getValue());
+                        String value = mapper.writeValueAsString(pageData.getValue().getContent());
+                        String description = pageData.getValue().getDescription();
+                        if (description != null) {
+                            descriptions.put(ns + "/" + key, description);
+                        }
                         data.put(key, value);
                     } catch (JsonProcessingException ex) {
                         log.error("Could not create Json Data for Dev UI page", ex);
@@ -330,7 +351,7 @@ public class BuildTimeContentProcessor {
 
                 String ref = buildTimeConstBuildItem.getExtensionPathName(curateOutcomeBuildItem) + "-data";
                 String file = ref + ".js";
-                quteTemplateBuildItem.add("build-time-data.js", file, qutedata);
+                quteTemplateBuildItem.add("build-time-data.js", file, qutedata, descriptions);
                 internalImportMapBuildItem.add(ref, contextRoot + file);
             }
         }
@@ -433,6 +454,7 @@ public class BuildTimeContentProcessor {
 
                 String templateName = e.getTemplateName(); // Relative to BUILD_TIME_PATH
                 Map<String, Object> data = e.getData();
+                Map<String, String> descriptions = e.getDescriptions();
                 String resourceName = BUILD_TIME_PATH + SLASH + templateName;
                 String fileName = e.getFileName();
                 // TODO: What if we find more than one ?
@@ -444,6 +466,7 @@ public class BuildTimeContentProcessor {
                                 .fileName(fileName)
                                 .template(templateContent)
                                 .addData(data)
+                                .descriptions(descriptions)
                                 .build();
                         contentPerExtension.add(content);
                     }
@@ -564,7 +587,8 @@ public class BuildTimeContentProcessor {
                 .componentLink("qwc-test-log.js").build();
         footerTabs.add(testLog);
 
-        // This is only needed when extension developers work on an extension, so we only included it if you build from source.
+        // This is only needed when extension developers work on an extension, so we only included it if you build from source,
+        // or in the case of non-core extensions, extension developers can set a config flag
         if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog()) {
             Page devUiLog = Page.webComponentPageBuilder().internal()
                     .namespace("devui-jsonrpcstream")

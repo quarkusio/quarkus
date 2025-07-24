@@ -42,7 +42,8 @@ public class DevServicesProcessor {
 
         Collection<DevServiceDescriptionBuildItem> services = getServices(devServiceDescriptions, otherDevServices);
 
-        devServicesPages.addBuildTimeData("devServices", services);
+        devServicesPages.addBuildTimeData("devServices", services,
+                "All the DevServices started by this Quarkus app, including information on container (if any) and the config that is being set automatically");
 
         if (launchModeBuildItem.getDevModeType().isPresent()
                 && launchModeBuildItem.getDevModeType().get().equals(DevModeType.LOCAL)

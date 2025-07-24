@@ -54,6 +54,11 @@ public interface ServerHttpRequest {
 
     ServerHttpResponse setReadListener(ReadCallback callback);
 
+    // this is done for compatibility reasons - we can only properly implement it in Quarkus, but we don't want the callers to throw
+    default ForwardedInfo getForwardedInfo() {
+        return null;
+    }
+
     /**
      * Unwraps a backing object
      *

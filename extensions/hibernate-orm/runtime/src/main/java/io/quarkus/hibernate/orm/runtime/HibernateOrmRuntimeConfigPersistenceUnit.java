@@ -159,7 +159,7 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         /**
          * Whether we should stop on the first error when applying the schema.
          */
-        @WithDefault("false")
+        @WithDefault("true")
         boolean haltOnError();
     }
 

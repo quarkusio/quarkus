@@ -39,6 +39,7 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "mtls-test", password = "secret", formats = Format.PKCS12, client = true))
@@ -52,7 +53,6 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                     CustomSchemeAuthenticationMechanism.class, AbstractCustomAuthenticationMechanism.class)
             .addAsResource(new StringAsset("""
                     quarkus.http.auth.form.enabled=true
-                    quarkus.http.ssl.client-auth=request
                     quarkus.http.ssl.certificate.key-store-file=server-keystore.p12
                     quarkus.http.ssl.certificate.key-store-password=secret
                     quarkus.http.ssl.certificate.trust-store-file=server-truststore.p12
@@ -222,6 +222,7 @@ public class FluentApiAuthenticationMechanismSelectionTest {
             httpSecurity
                     .mechanism(new CustomSchemeAuthenticationMechanism())
                     .basic()
+                    .mTLS(ClientAuth.REQUEST)
                     .get("/form/admin").form().authorization()
                     .policy(identity -> "admin".equals(identity.getPrincipal().getName()))
                     .put("/form/admin").basic().authorization()

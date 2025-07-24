@@ -4,6 +4,7 @@ import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.set
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
+import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
 
 import java.io.File;
 import java.io.IOException;
@@ -308,7 +309,7 @@ public class VertxHttpRecorder {
             }
             rootHandler = root;
 
-            var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildConfig, httpConfig.insecureRequests());
+            var insecureRequestStrategy = getInsecureRequestStrategy(httpConfig, httpBuildConfig, LaunchMode.DEVELOPMENT);
             //we can't really do
             doServerStart(vertx, httpBuildConfig, managementBuildTimeConfig, null, httpConfig, managementConfig,
                     LaunchMode.DEVELOPMENT,
@@ -368,8 +369,7 @@ public class VertxHttpRecorder {
                 || (managementConfig != null && managementConfig.domainSocketEnabled()))) {
             // Start the server
             if (closeTask == null) {
-                var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildTimeConfig,
-                        httpConfiguration.insecureRequests());
+                var insecureRequestStrategy = getInsecureRequestStrategy(httpConfiguration, httpBuildTimeConfig, launchMode);
                 doServerStart(vertx.get(), httpBuildTimeConfig, managementBuildTimeConfig, managementRouter,
                         httpConfiguration, managementConfig, launchMode, ioThreads, websocketSubProtocols,
                         insecureRequestStrategy,
@@ -860,7 +860,8 @@ public class VertxHttpRecorder {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
-                        launchMode, insecureRequestStrategy, httpConfig, connectionCount, registry, startEventsFired);
+                        launchMode, insecureRequestStrategy, httpConfig, connectionCount, registry, startEventsFired,
+                        httpBuildTimeConfig);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<>() {
             @Override
@@ -1187,11 +1188,13 @@ public class VertxHttpRecorder {
         private final AtomicInteger connectionCount;
         private final List<Long> reloadingTasks = new CopyOnWriteArrayList<>();
         private final AtomicBoolean startEventsFired;
+        private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
                 InsecureRequests insecureRequests, VertxHttpConfig httpConfig, AtomicInteger connectionCount,
-                TlsConfigurationRegistry registry, AtomicBoolean startEventsFired) {
+                TlsConfigurationRegistry registry, AtomicBoolean startEventsFired,
+                VertxHttpBuildTimeConfig httpBuildTimeConfig) {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
@@ -1201,6 +1204,7 @@ public class VertxHttpRecorder {
             this.connectionCount = connectionCount;
             this.registry = registry;
             this.startEventsFired = startEventsFired;
+            this.httpBuildTimeConfig = httpBuildTimeConfig;
             org.crac.Core.getGlobalContext().register(this);
         }
 
@@ -1383,7 +1387,7 @@ public class VertxHttpRecorder {
                             try {
                                 long l = TlsCertificateReloader.initCertReloadingAction(
                                         vertx, httpsServer, httpsOptions, quarkusConfig.ssl(), registry,
-                                        quarkusConfig.tlsConfigurationName());
+                                        getHttpServerTlsConfigName(quarkusConfig, httpBuildTimeConfig, launchMode));
                                 if (l != -1) {
                                     reloadingTasks.add(l);
                                 }
@@ -1396,7 +1400,8 @@ public class VertxHttpRecorder {
                         if (https) {
                             container.instance(HttpCertificateUpdateEventListener.class).get()
                                     .register(event.result(),
-                                            quarkusConfig.tlsConfigurationName().orElse(TlsConfig.DEFAULT_NAME),
+                                            getHttpServerTlsConfigName(quarkusConfig, httpBuildTimeConfig, launchMode)
+                                                    .orElse(TlsConfig.DEFAULT_NAME),
                                             "http server");
                         }
 

@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.options;
 
+import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
+import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getTlsClientAuth;
 import static io.quarkus.vertx.http.runtime.options.TlsUtils.computeKeyStoreOptions;
 import static io.quarkus.vertx.http.runtime.options.TlsUtils.computeTrustOptions;
 
@@ -82,7 +84,7 @@ public class HttpServerOptionsUtils {
         int sslPort = httpConfig.determineSslPort(launchMode);
         // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
         serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
-        serverOptions.setClientAuth(httpBuildTimeConfig.tlsClientAuth());
+        serverOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
 
         if (JdkSSLEngineOptions.isAlpnAvailable()) {
             serverOptions.setUseAlpn(httpConfig.http2());
@@ -92,7 +94,8 @@ public class HttpServerOptionsUtils {
         }
         setIdleTimeout(httpConfig, serverOptions);
 
-        TlsConfiguration bucket = getTlsConfiguration(httpConfig.tlsConfigurationName(), registry);
+        Optional<String> tlsConfigurationName = getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode);
+        TlsConfiguration bucket = getTlsConfiguration(tlsConfigurationName, registry);
         if (bucket != null) {
             applyTlsConfigurationToHttpServerOptions(bucket, serverOptions);
             applyCommonOptions(serverOptions, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
@@ -454,11 +457,13 @@ public class HttpServerOptionsUtils {
         options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
     }
 
-    public static InsecureRequests getInsecureRequestStrategy(VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            Optional<InsecureRequests> requests) {
+    public static InsecureRequests getInsecureRequestStrategy(VertxHttpConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildConfig, LaunchMode launchMode) {
+        Optional<InsecureRequests> requests = httpConfig.insecureRequests();
         if (requests.isPresent()) {
             var value = requests.get();
-            if (httpBuildTimeConfig.tlsClientAuth() == ClientAuth.REQUIRED && value == InsecureRequests.ENABLED) {
+            if (getTlsClientAuth(httpConfig, httpBuildConfig, launchMode) == ClientAuth.REQUIRED
+                    && value == InsecureRequests.ENABLED) {
                 Logger.getLogger(HttpServerOptionsUtils.class).warn(
                         "When configuring TLS client authentication to be required, it is recommended to **NOT** set `quarkus.http.insecure-requests` to `enabled`. "
                                 +
@@ -466,7 +471,7 @@ public class HttpServerOptionsUtils {
             }
             return value;
         }
-        if (httpBuildTimeConfig.tlsClientAuth() == ClientAuth.REQUIRED) {
+        if (getTlsClientAuth(httpConfig, httpBuildConfig, launchMode) == ClientAuth.REQUIRED) {
             Logger.getLogger(HttpServerOptionsUtils.class).info(
                     "TLS client authentication is required, thus disabling insecure requests. " +
                             "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");

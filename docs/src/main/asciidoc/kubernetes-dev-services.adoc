@@ -88,6 +88,11 @@ And then add the following property to your `application.properties`:
 quarkus.kubernetes-client.devservices.manifests=kubernetes/namespace.yaml
 ```
 
+It is also possible to apply manifests from a URL. So the following syntax would also be possible:
+```
+quarkus.kubernetes-client.devservices.manifests=https://example.com/kubernetes/namespace.yaml
+```
+
 === Deploying helm charts
 `quarkus.kubernetes-client.devservices.manifests` only supports manifests. If you want to deploy a helm chart, you can use the `k3s` flavor and deploy a `HelmChart` manifest. See https://docs.k3s.io/helm for more information on how to use helm charts with k3s.
 

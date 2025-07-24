@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.deployment;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -10,12 +11,6 @@ import io.vertx.ext.web.RoutingContext;
  * A handler that is applied to every route
  */
 public final class FilterBuildItem extends MultiBuildItem {
-
-    //predefined system priorities
-    public static final int CORS = 300;
-    public static final int AUTHENTICATION = 200;
-    public static final int AUTHORIZATION = 100;
-    private static final int AUTH_FAILURE_HANDLER = Integer.MIN_VALUE + 1;
 
     private final Handler<RoutingContext> handler;
     private final int priority;
@@ -52,7 +47,7 @@ public final class FilterBuildItem extends MultiBuildItem {
     private FilterBuildItem(Handler<RoutingContext> authFailureHandler) {
         this.handler = authFailureHandler;
         this.isFailureHandler = true;
-        this.priority = AUTH_FAILURE_HANDLER;
+        this.priority = SecurityHandlerPriorities.AUTH_FAILURE_HANDLER;
     }
 
     /**
@@ -69,7 +64,7 @@ public final class FilterBuildItem extends MultiBuildItem {
      * {@link FilterBuildItem#ofAuthenticationFailureHandler(Handler)}
      */
     public static FilterBuildItem ofPreAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
-        return new FilterBuildItem(authFailureHandler, AUTH_FAILURE_HANDLER + 1, false, true);
+        return new FilterBuildItem(authFailureHandler, SecurityHandlerPriorities.AUTH_FAILURE_HANDLER + 1, false, true);
     }
 
     private void checkPriority(int priority) {
@@ -94,10 +89,10 @@ public final class FilterBuildItem extends MultiBuildItem {
      * @return a filter object wrapping the handler and priority.
      */
     public Filter toFilter() {
-        if (isFailureHandler && priority == AUTH_FAILURE_HANDLER) {
+        if (isFailureHandler && priority == SecurityHandlerPriorities.AUTH_FAILURE_HANDLER) {
             // create filter for penultimate auth failure handler
             final Filters.SimpleFilter filter = new Filters.SimpleFilter();
-            filter.setPriority(AUTH_FAILURE_HANDLER);
+            filter.setPriority(SecurityHandlerPriorities.AUTH_FAILURE_HANDLER);
             filter.setFailureHandler(true);
             filter.setHandler(handler);
             return filter;

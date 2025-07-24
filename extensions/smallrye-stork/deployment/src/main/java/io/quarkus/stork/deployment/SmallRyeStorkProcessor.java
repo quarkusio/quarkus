@@ -125,6 +125,7 @@ public class SmallRyeStorkProcessor {
     private static String getDefaultHealthCheckPath(Capabilities capabilities, Config quarkusConfig) {
         String smallryeHealthCheckDefaultPath = "";
         if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            LOGGER.info("Using Smallrye Health Check defaults");
             smallryeHealthCheckDefaultPath = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
                     + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
                     + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();

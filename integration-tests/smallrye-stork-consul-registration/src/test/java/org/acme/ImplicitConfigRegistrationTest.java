@@ -2,7 +2,6 @@ package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.junit.Before;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -21,10 +20,6 @@ public class ImplicitConfigRegistrationTest {
         public String getConfigProfile() {
             return "implicit";
         }
-    }
-
-    @Before
-    public void before() {
     }
 
     @Test

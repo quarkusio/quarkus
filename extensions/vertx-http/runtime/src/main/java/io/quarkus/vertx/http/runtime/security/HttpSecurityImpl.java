@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -14,8 +15,11 @@ import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.HttpPermissionCarrier;
@@ -25,6 +29,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.Basic;
 import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.MTLS;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.ClientAuth;
@@ -39,13 +44,15 @@ final class HttpSecurityImpl implements HttpSecurity {
     private final VertxHttpConfig vertxHttpConfig;
     private RolesMapping rolesMapping;
     private ClientAuth clientAuth;
+    private Optional<String> httpServerTlsConfigName;
 
-    HttpSecurityImpl(ClientAuth clientAuth, VertxHttpConfig vertxHttpConfig) {
+    HttpSecurityImpl(ClientAuth clientAuth, VertxHttpConfig vertxHttpConfig, Optional<String> httpServerTlsConfigName) {
         this.rolesMapping = null;
         this.httpPermissions = new ArrayList<>();
         this.mechanisms = new ArrayList<>();
         this.clientAuth = clientAuth;
         this.vertxHttpConfig = vertxHttpConfig;
+        this.httpServerTlsConfigName = httpServerTlsConfigName;
     }
 
     @Override
@@ -70,6 +77,35 @@ final class HttpSecurityImpl implements HttpSecurity {
                 throw new IllegalArgumentException("Cannot configure basic authentication programmatically because "
                         + "the authentication realm has already been configured in the 'application.properties' file");
             }
+        } else if (mechanism.getClass() == MtlsAuthenticationMechanism.class) {
+            boolean mTlsEnabled = !ClientAuth.NONE.equals(clientAuth);
+            if (mTlsEnabled) {
+                // current we do not allow "merging" (or overriding) of the configuration provided in application.properties
+                // there shouldn't be a technical issue allowing that, but that's the behavior we have for other mechanisms
+                // as well, so this method only allows to "enable" mTLS, never disable or change configuration provided
+                // properties file
+                throw new IllegalArgumentException("TLS client authentication has already been enabled with this API or"
+                        + " with the 'quarkus.http.ssl.client-auth' configuration property");
+            }
+            var mTLS = ((MtlsAuthenticationMechanism) mechanism);
+            clientAuth = mTLS.getTlsClientAuth();
+            if (mTLS.getHttpServerTlsConfigName().isPresent()) {
+                if (httpServerTlsConfigName.isPresent()) {
+                    throw new IllegalArgumentException("Cannot configure TLS configuration name programmatically because it "
+                            + " has already been configured with the 'quarkus.http.tls-configuration-name' configuration property");
+                }
+                httpServerTlsConfigName = mTLS.getHttpServerTlsConfigName();
+                if (mTLS.getInitialTlsConfiguration() != null) {
+                    TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().instance(TlsConfigurationRegistry.class)
+                            .get();
+                    if (tlsConfigurationRegistry.get(httpServerTlsConfigName.get()).isPresent()) {
+                        throw new IllegalArgumentException(("Cannot register the TLS configuration '%s' in the TLS "
+                                + "Configuration registry because configuration with this name has already"
+                                + " been registered").formatted(httpServerTlsConfigName.get()));
+                    }
+                    tlsConfigurationRegistry.register(httpServerTlsConfigName.get(), mTLS.getInitialTlsConfiguration());
+                }
+            }
         }
         this.mechanisms.add(mechanism);
         return this;
@@ -83,6 +119,33 @@ final class HttpSecurityImpl implements HttpSecurity {
     @Override
     public HttpSecurity basic(String authenticationRealm) {
         return mechanism(Basic.realm(authenticationRealm));
+    }
+
+    @Override
+    public HttpSecurity mTLS() {
+        return mTLS(ClientAuth.REQUIRED);
+    }
+
+    @Override
+    public HttpSecurity mTLS(String tlsConfigurationName, TlsConfiguration tlsConfiguration) {
+        return mechanism(MTLS.required(tlsConfigurationName, tlsConfiguration));
+    }
+
+    @Override
+    public HttpSecurity mTLS(MtlsAuthenticationMechanism mTLSAuthenticationMechanism) {
+        return mechanism(mTLSAuthenticationMechanism);
+    }
+
+    @Override
+    public HttpSecurity mTLS(ClientAuth tlsClientAuth) {
+        if (tlsClientAuth == null) {
+            throw new IllegalArgumentException("Client authentication cannot be null");
+        }
+        return switch (tlsClientAuth) {
+            case REQUIRED -> mechanism(MTLS.required());
+            case REQUEST -> mechanism(MTLS.request());
+            case NONE -> throw new IllegalArgumentException("Client authentication cannot be disabled with this API");
+        };
     }
 
     @Override
@@ -305,8 +368,8 @@ final class HttpSecurityImpl implements HttpSecurity {
             boolean mTlsDisabled = ClientAuth.NONE.equals(clientAuth);
             if (mTlsDisabled) {
                 throw new IllegalStateException(
-                        "TLS client authentication is not available, please set the 'quarkus.http.ssl.client-auth'"
-                                + " configuration property to 'required' or 'request'");
+                        "TLS client authentication is not available, please enable it with this API or set the "
+                                + "'quarkus.http.ssl.client-auth' configuration property to 'required' or 'request'");
             }
             return authenticatedWith(MTLSAuthentication.AUTH_MECHANISM_SCHEME);
         }
@@ -516,5 +579,9 @@ final class HttpSecurityImpl implements HttpSecurity {
 
     ClientAuth getClientAuth() {
         return clientAuth;
+    }
+
+    Optional<String> getHttpServerTlsConfigName() {
+        return httpServerTlsConfigName;
     }
 }

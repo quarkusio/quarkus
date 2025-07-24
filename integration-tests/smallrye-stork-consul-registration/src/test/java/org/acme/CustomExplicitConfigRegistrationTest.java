@@ -18,19 +18,11 @@ import io.restassured.RestAssured;
  */
 
 @QuarkusTest
-@TestProfile(MinimalExplicitConfigRegistrationTest.MinimalExplicitConfigProfile.class)
+@TestProfile(CustomExplicitConfigRegistrationTest.CustomExplicitConfigProfile.class)
 @QuarkusTestResource(ConsulContainerWithFixedPortsTestResource.class)
-public class MinimalExplicitConfigRegistrationTest {
+public class CustomExplicitConfigRegistrationTest {
 
-    //    @Inject
-    //    @ConfigProperty(name = "consul.host")
-    //    String consulHost;
-    //
-    //    @Inject
-    //    @ConfigProperty(name = "consul.port")
-    //    String consulPort;
-
-    public static class MinimalExplicitConfigProfile implements QuarkusTestProfile {
+    public static class CustomExplicitConfigProfile implements QuarkusTestProfile {
         @Override
         public String getConfigProfile() {
             return "minimal";
@@ -39,23 +31,20 @@ public class MinimalExplicitConfigRegistrationTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.stork.my-service.service-registrar.ip-address", "145.123.145.145");
+                    "quarkus.stork.my-service.service-registrar.ip-address", "145.123.145.145",
+                    "quarkus.stork.my-service.service-registrar.port", "9090");
         }
 
     }
 
     @Test
     public void test() {
-        //        String consulUrl = "http://" + consulHost + ":" + consulPort;
-        //        RestAssured.get(consulUrl + "/v1/agent/service/my-service").then()
-        //                .statusCode(200)
-        //                .body(containsString("\"Service\": \"my-service\""));
-
         RestAssured.get("http://localhost:8500/v1/agent/service/my-service")
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"my-service\""),
-                        containsString("\"145.123.145.145\""));
+                        containsString("\"Port\": 9090"),
+                        containsString("\"Address\": \"145.123.145.145\""));
 
     }
 

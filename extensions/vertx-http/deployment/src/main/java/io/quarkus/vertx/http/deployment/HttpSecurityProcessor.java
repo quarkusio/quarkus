@@ -88,6 +88,7 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.security.VertxSecurityIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
@@ -267,9 +268,9 @@ public class HttpSecurityProcessor {
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(
                             recorder.getHttpAuthenticatorHandler(authenticationHandlerBuildItem.get().handler),
-                            FilterBuildItem.AUTHENTICATION));
+                            SecurityHandlerPriorities.AUTHENTICATION));
             filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
+                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), SecurityHandlerPriorities.AUTHORIZATION));
         }
     }
 

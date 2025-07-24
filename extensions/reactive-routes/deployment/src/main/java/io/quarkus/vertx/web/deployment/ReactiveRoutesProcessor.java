@@ -101,6 +101,7 @@ import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpCompression;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HttpMethod;
@@ -264,7 +265,8 @@ class ReactiveRoutesProcessor {
         if (capabilities.isMissing(Capability.RESTEASY_REACTIVE)) {
             // replace default auth failure handler added by vertx-http so that route failure handlers can customize response
             filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(recorder.addAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1));
+                    .produce(new FilterBuildItem(recorder.addAuthFailureHandler(),
+                            SecurityHandlerPriorities.AUTHENTICATION - 1));
         }
     }
 

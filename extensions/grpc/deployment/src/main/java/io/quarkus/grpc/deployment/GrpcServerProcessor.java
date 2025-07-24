@@ -97,6 +97,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -729,8 +730,8 @@ public class GrpcServerProcessor {
                 if (capabilities.isPresent(Capability.SECURITY)) {
                     securityHandlers = filterBuildItems
                             .stream()
-                            .filter(filter -> filter.getPriority() == FilterBuildItem.AUTHENTICATION
-                                    || filter.getPriority() == FilterBuildItem.AUTHORIZATION)
+                            .filter(filter -> filter.getPriority() == SecurityHandlerPriorities.AUTHENTICATION
+                                    || filter.getPriority() == SecurityHandlerPriorities.AUTHORIZATION)
                             .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
                     // for the moment being, the main router doesn't have QuarkusErrorHandler, but we need to make
                     // sure that exceptions raised during proactive authentication or HTTP authorization are handled

@@ -117,6 +117,7 @@ import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
@@ -489,7 +490,7 @@ public class OidcBuildStep {
     @BuildStep
     FilterBuildItem registerBackChannelLogoutHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
         Handler<RoutingContext> handler = recorder.getBackChannelLogoutHandler(beanContainerBuildItem.getValue());
-        return new FilterBuildItem(handler, FilterBuildItem.AUTHORIZATION - 50);
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
 
     @BuildStep
@@ -504,7 +505,7 @@ public class OidcBuildStep {
     @BuildStep
     FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
-        return new FilterBuildItem(handler, FilterBuildItem.AUTHORIZATION - 50);
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

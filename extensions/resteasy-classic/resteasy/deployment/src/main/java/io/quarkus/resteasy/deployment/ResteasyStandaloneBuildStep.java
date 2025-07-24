@@ -43,6 +43,7 @@ import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -177,6 +178,6 @@ public class ResteasyStandaloneBuildStep {
     @Record(value = ExecutionTime.STATIC_INIT)
     public FilterBuildItem addDefaultAuthFailureHandler(ResteasyStandaloneRecorder recorder) {
         // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
-        return new FilterBuildItem(recorder.defaultAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1);
+        return new FilterBuildItem(recorder.defaultAuthFailureHandler(), SecurityHandlerPriorities.AUTHENTICATION - 1);
     }
 }

@@ -1,28 +1,28 @@
 package io.quarkus.observability.common.config;
 
 import java.time.Duration;
-
-import io.quarkus.observability.common.ContainerConstants;
+import java.util.Optional;
 
 public abstract class AbstractGrafanaConfig extends AbstractContainerConfig implements GrafanaConfig {
 
     private final String username;
     private final String password;
-    private final int grafanaPort;
+    private final Optional<Integer> grafanaPort;
 
     public AbstractGrafanaConfig(String imageName) {
-        this(imageName, true, "admin", "admin", ContainerConstants.GRAFANA_PORT);
+        this(imageName, true, "admin", "admin", Optional.empty());
     }
 
     public AbstractGrafanaConfig(String imageName, boolean shared) {
-        this(imageName, shared, "admin", "admin", ContainerConstants.GRAFANA_PORT);
+        this(imageName, shared, "admin", "admin", Optional.empty());
     }
 
-    public AbstractGrafanaConfig(String imageName, String username, String password, int grafanaPort) {
+    public AbstractGrafanaConfig(String imageName, String username, String password, Optional<Integer> grafanaPort) {
         this(imageName, true, username, password, grafanaPort);
     }
 
-    public AbstractGrafanaConfig(String imageName, boolean shared, String username, String password, int grafanaPort) {
+    public AbstractGrafanaConfig(String imageName, boolean shared, String username, String password,
+            Optional<Integer> grafanaPort) {
         super(imageName, shared);
         this.username = username;
         this.password = password;
@@ -40,7 +40,7 @@ public abstract class AbstractGrafanaConfig extends AbstractContainerConfig impl
     }
 
     @Override
-    public int grafanaPort() {
+    public Optional<Integer> grafanaPort() {
         return grafanaPort;
     }
 

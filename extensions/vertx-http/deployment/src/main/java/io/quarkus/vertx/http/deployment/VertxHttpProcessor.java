@@ -77,6 +77,7 @@ import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
@@ -148,7 +149,7 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     FilterBuildItem cors(CORSRecorder recorder) {
-        return new FilterBuildItem(recorder.corsHandler(), FilterBuildItem.CORS);
+        return new FilterBuildItem(recorder.corsHandler(), SecurityHandlerPriorities.CORS);
     }
 
     @BuildStep

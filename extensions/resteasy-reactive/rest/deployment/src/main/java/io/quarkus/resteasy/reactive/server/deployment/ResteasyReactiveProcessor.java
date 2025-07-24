@@ -226,6 +226,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -1621,7 +1622,7 @@ public class ResteasyReactiveProcessor {
         // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
         return new FilterBuildItem(
                 recorder.defaultAuthFailureHandler(deployment.getDeployment(), observabilityIntegrationBuildItem.isPresent()),
-                FilterBuildItem.AUTHENTICATION - 1);
+                SecurityHandlerPriorities.AUTHENTICATION - 1);
     }
 
     private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {

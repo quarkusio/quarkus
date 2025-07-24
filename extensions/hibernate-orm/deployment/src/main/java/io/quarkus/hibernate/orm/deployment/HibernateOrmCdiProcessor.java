@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.hasEntities;
-import static org.apache.commons.lang3.BooleanUtils.isFalse;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -208,12 +207,8 @@ public class HibernateOrmCdiProcessor {
             }
 
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
-            // Hibernate Reactive does not use the same name for its default persistence unit,
-            // but we still want to use the @Default qualifier for that PU.
-            // We will need to fix this at some point, see https://github.com/quarkusio/quarkus/issues/21110
-            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
-            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
-            boolean isNamedPU = isFalse(isDefaultPU);
+            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
+            boolean isNamedPU = !isDefaultPU;
             AnnotationInstance sessionFactoryQualifier;
             if (isDefaultPU) {
                 sessionFactoryQualifier = defaultQualifierInstance;

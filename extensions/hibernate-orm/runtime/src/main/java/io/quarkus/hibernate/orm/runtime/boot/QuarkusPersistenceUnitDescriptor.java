@@ -20,10 +20,6 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
 public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDescriptor {
 
     private final String name;
-    // The default PU in Hibernate Reactive is named "default-reactive" instead of "<default>",
-    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
-    // use the name "<default>", so we need to convert between those.
-    private final String configurationName;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
     private final PersistenceUnitTransactionType persistenceUnitTransactionType;
@@ -33,12 +29,11 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final Properties properties;
     private final boolean reactive;
 
-    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+    public QuarkusPersistenceUnitDescriptor(String name,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
-        this.configurationName = configurationName;
         this.providerClassName = null;
         this.useQuotedIdentifiers = false;
         this.persistenceUnitTransactionType = persistenceUnitTransactionType;
@@ -56,13 +51,12 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
      */
     @Deprecated
     @RecordableConstructor
-    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+    public QuarkusPersistenceUnitDescriptor(String name,
             String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
-        this.configurationName = configurationName;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
         this.persistenceUnitTransactionType = persistenceUnitTransactionType;
@@ -88,7 +82,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         }
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(), toClone.getProviderClassName(),
+        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
@@ -102,10 +96,6 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     @Override
     public String getName() {
         return name;
-    }
-
-    public String getConfigurationName() {
-        return configurationName;
     }
 
     @Override
@@ -225,7 +215,6 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     public String toString() {
         return "QuarkusPersistenceUnitDescriptor{" +
                 "name='" + name + '\'' +
-                ", configurationName='" + configurationName + '\'' +
                 ", providerClassName='" + providerClassName + '\'' +
                 ", useQuotedIdentifiers=" + useQuotedIdentifiers +
                 ", transactionType=" + persistenceUnitTransactionType +

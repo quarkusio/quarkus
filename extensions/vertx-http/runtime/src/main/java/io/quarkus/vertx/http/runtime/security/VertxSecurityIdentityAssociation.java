@@ -6,7 +6,9 @@ import java.security.Principal;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation;
 import io.smallrye.common.vertx.ContextLocals;
@@ -15,6 +17,14 @@ import io.vertx.ext.web.RoutingContext;
 
 @RequestScoped
 public class VertxSecurityIdentityAssociation extends AbstractSecurityIdentityAssociation {
+
+    @Inject
+    public VertxSecurityIdentityAssociation() {
+    }
+
+    public VertxSecurityIdentityAssociation(IdentityProviderManager identityProviderManager) {
+        super(identityProviderManager);
+    }
 
     @Produces
     @RequestScoped

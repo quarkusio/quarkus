@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.devui;
+package io.quarkus.devui;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;

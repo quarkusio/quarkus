@@ -48,7 +48,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -77,7 +77,7 @@ public class AzureFunctionsProcessor {
         return new AzureFunctionsAppNameBuildItem(appName);
     }
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem packageFunctions(List<AzureFunctionBuildItem> functions,
             OutputTargetBuildItem target,
             AzureFunctionsConfig functionsConfig,

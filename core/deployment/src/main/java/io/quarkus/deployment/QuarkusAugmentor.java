@@ -160,7 +160,7 @@ public class QuarkusAugmentor {
             BuildResult buildResult = execBuilder.execute();
             String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
                     + "ms";
-            if (launchMode == LaunchMode.NORMAL) {
+            if (launchMode.isProduction()) {
                 log.info(message);
                 if (Boolean.parseBoolean(System.getProperty("quarkus.debug.dump-build-metrics"))) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
@@ -170,7 +170,7 @@ public class QuarkusAugmentor {
                 log.debug(message);
 
                 // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container permissions)
-                if ((launchMode == LaunchMode.DEVELOPMENT) && !LaunchMode.isRemoteDev()) {
+                if (launchMode.isDev() && !launchMode.isRemoteDev()) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
                 }
             }

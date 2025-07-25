@@ -254,7 +254,7 @@ public final class HibernateProcessorUtil {
                     .filter(s -> !NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(s))
                     .collect(Collectors.toList());
         }
-        if (launchMode == LaunchMode.NORMAL) {
+        if (launchMode.isProduction()) {
             return Collections.emptyList();
         }
         return List.of("import.sql");

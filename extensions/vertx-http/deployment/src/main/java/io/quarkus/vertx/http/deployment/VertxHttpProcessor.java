@@ -457,7 +457,7 @@ class VertxHttpProcessor {
                     .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class).reason(getClass().getName()).build());
         }
         boolean startSocket = requireSocket.isPresent() ||
-                ((!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
+                ((!startVirtual || !launchMode.getLaunchMode().isProduction())
                         && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual()));
         recorder.startServer(vertx.getVertx(), shutdown,
                 launchMode.getLaunchMode(), startVirtual, startSocket,

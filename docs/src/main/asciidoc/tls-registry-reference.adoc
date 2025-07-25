@@ -57,8 +57,8 @@ For instance, `quarkus.tls.reload-period` will only be applied to the default TL
 
 [IMPORTANT]
 ====
-As described in detail  link:https://github.com/quarkusio/quarkus/blob/main/adr/0004-using-the-tls-registry-for-clients.adoc#configuring-clients-with-the-tls-registry[here], Quarkus client extensions (REST, GRPC, etc) ignore properties, defined in default (ie unnamed) TLS configuration.
-The only exception is `quarkus.tls.trust-all` property.
+As described in detail link:https://github.com/quarkusio/quarkus/blob/main/adr/0004-using-the-tls-registry-for-clients.adoc#configuring-clients-with-the-tls-registry[here], Quarkus client extensions (such as REST, GRPC, and so on) ignore properties defined in default (that is, unnamed) TLS configurations.
+The `quarkus.tls.trust-all` property is the only exception.
 ====
 
 === Configuring HTTPS for a HTTP server
@@ -798,7 +798,7 @@ A value of `true` means the reload operation was successful, not necessarily tha
 
 After a `TlsConfiguration` has been reloaded, servers and clients using this configuration may need to perform specific actions to apply the new certificates.
 
-The recommended approach for informing clients and servers about the certificate reload is to fire a CDI event of type `io.quarkus.tls.CertificateUpdatedEvent`.
+The preferred approach for informing clients and servers about the certificate reload is to fire a CDI event of type `io.quarkus.tls.CertificateUpdatedEvent`.
 To do so, inject a CDI event of this type and fire it when a reload occurs.
 
 .An example of manually reloading a TLS configuration and notifying components by firing a `CertificateUpdatedEvent` and reacting to it:
@@ -854,8 +854,8 @@ quarkus.tls.http.key-store.pem.0.key=tls.key
 
 [IMPORTANT]
 ====
-Impacted servers and clients may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
-This is automatically done for the Quarkus HTTP server, as well as the Quarkus REST server, gRPC server, and WebSocket server, as well as the management interface if it is enabled.
+Impacted servers and clients might need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
+This is automatically handled for the Quarkus HTTP, REST, gRPC, and WebSocket servers, as well as the management interface if enabled.
 On the client side, Quarkus REST Client automatically handles certificate update events.
 ====
 

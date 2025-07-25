@@ -24,17 +24,6 @@ public enum LaunchMode {
     public static final String PROD_PROFILE = "prod";
     public static final String TEST_PROFILE = "test";
 
-    public static boolean isDev() {
-        return current() == DEVELOPMENT;
-    }
-
-    /**
-     * Returns true if the current launch is the server side of remote dev.
-     */
-    public static boolean isRemoteDev() {
-        return (current() == DEVELOPMENT) && "true".equals(System.getenv("QUARKUS_LAUNCH_DEVMODE"));
-    }
-
     private final String defaultProfile;
     private final String profileKey;
     private final boolean devServicesSupported;
@@ -54,6 +43,17 @@ public enum LaunchMode {
 
     public String getProfileKey() {
         return profileKey;
+    }
+
+    public boolean isDev() {
+        return this == DEVELOPMENT;
+    }
+
+    /**
+     * Returns true if the current launch is the server side of remote dev.
+     */
+    public boolean isRemoteDev() {
+        return (this == DEVELOPMENT) && "true".equals(System.getenv("QUARKUS_LAUNCH_DEVMODE"));
     }
 
     public boolean isDevOrTest() {

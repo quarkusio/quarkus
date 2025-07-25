@@ -124,7 +124,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 if ((exception instanceof AuthenticationCompletionException
                         || (exception instanceof AuthenticationFailedException && event.response().getStatusCode() == 401))
                         && exception.getMessage() != null
-                        && LaunchMode.isDev()) {
+                        && LaunchMode.current().isDev()) {
                     event.response().end(exception.getMessage());
                 } else {
                     event.response().end();

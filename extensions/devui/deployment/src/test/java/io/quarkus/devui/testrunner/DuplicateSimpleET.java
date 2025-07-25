@@ -1,17 +1,16 @@
-package io.quarkus.vertx.http.testrunner.brokenonly;
+package io.quarkus.devui.testrunner;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class SimpleET {
+public class DuplicateSimpleET {
 
     @Test
     public void testHelloEndpoint() {
@@ -31,10 +30,5 @@ public class SimpleET {
                 .then()
                 .statusCode(200)
                 .body(is("hello " + uuid));
-    }
-
-    //failannotation
-    void fail() {
-        Assertions.fail();
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.testrunner;
+package io.quarkus.devui.testrunner;
 
 import java.util.Iterator;
 import java.util.Map;

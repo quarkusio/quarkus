@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.hibernate.reactive.panache.test.MyEntity;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -17,9 +18,11 @@ public class ConfigDefaultPUDatasourceActiveFalseActiveRecordTest {
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.active", "false")
             .assertException(e -> assertThat(e)
+                    // Can't use isInstanceOf due to weird classloading in tests
+                    .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
                     .hasMessageContainingAll(
-                            "Unable to find datasource '<default>' for persistence unit '<default>'",
-                            "Datasource '<default>' was deactivated through configuration properties.",
+                            "Persistence unit '<default>' was deactivated automatically because its datasource '<default>' was deactivated",
+                            "Datasource '<default>' was deactivated through configuration properties",
                             "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
                             "To activate the datasource, set configuration property 'quarkus.datasource.active'"
                                     + " to 'true' and configure datasource '<default>'",

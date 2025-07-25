@@ -10,6 +10,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.config.MyEntity;
 import io.quarkus.test.QuarkusUnitTest;
@@ -22,13 +23,17 @@ public class ConfigNamedPUDatasourceActiveFalseStaticInjectionTest {
             .withConfigurationResource("application-config-named-pu.properties")
             .overrideConfigKey("quarkus.datasource.\"mydatasource\".active", "false")
             .assertException(e -> assertThat(e)
+                    // Can't use isInstanceOf due to weird classloading in tests
+                    .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
                     .hasMessageContainingAll(
-                            "Unable to find datasource 'mydatasource' for persistence unit 'mypu'",
-                            "Datasource 'mydatasource' was deactivated through configuration properties.",
+                            "Persistence unit 'mypu' was deactivated automatically because its datasource 'mydatasource' was deactivated",
+                            "Datasource 'mydatasource' was deactivated through configuration properties",
                             "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
                             "To activate the datasource, set configuration property 'quarkus.datasource.\"mydatasource\".active'"
                                     + " to 'true' and configure datasource 'mydatasource'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+                            "Refer to https://quarkus.io/guides/datasource for guidance.",
+                            "This bean is injected into",
+                            MyBean.class.getName() + "#session"));
 
     @Inject
     MyBean myBean;

@@ -20,13 +20,13 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.KotlinDotNames;
 import io.quarkus.arc.processor.KotlinUtils;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.deployment.CallbackArgument.InvocationBytecodeContext;
 import io.quarkus.websockets.next.deployment.CallbackArgument.ParameterContext;
-import io.quarkus.websockets.next.runtime.WebSocketConnectionBase;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 
@@ -176,20 +176,19 @@ public class Callback {
         UNDEFINED
     }
 
-    public ResultHandle[] generateArguments(ResultHandle endpointThis, BytecodeCreator bytecode,
+    public Expr[] generateArguments(BlockCreator bc, Expr endpointThis, Var payload,
             TransformedAnnotationsBuildItem transformedAnnotations, IndexView index) {
         if (arguments.isEmpty()) {
-            return new ResultHandle[] {};
+            return new Expr[0];
         }
-        ResultHandle[] resultHandles = new ResultHandle[arguments.size()];
+        Expr[] result = new Expr[arguments.size()];
         int idx = 0;
         for (CallbackArgument argument : arguments) {
-            resultHandles[idx] = argument.get(
-                    invocationBytecodeContext(annotation, method.parameters().get(idx), transformedAnnotations, index,
-                            endpointThis, bytecode));
+            result[idx] = argument.get(invocationBytecodeContext(annotation, method.parameters().get(idx),
+                    transformedAnnotations, index, endpointThis, payload, bc));
             idx++;
         }
-        return resultHandles;
+        return result;
     }
 
     private List<CallbackArgument> collectArguments(AnnotationInstance annotation, MethodInfo method,
@@ -209,13 +208,13 @@ public class Callback {
                         parameter.name() != null ? parameter.name() : "#" + parameter.position(),
                         asString());
                 throw new WebSocketException(msg);
-            } else if (found.size() > 1 && (found.get(0).priotity() == found.get(1).priotity())) {
+            } else if (found.size() > 1 && (found.get(0).priority() == found.get(1).priority())) {
                 String msg = String.format(
                         "Unable to inject @%s callback parameter '%s' declared on %s: ambiguous injectors found: %s",
                         DotNames.simpleName(annotation.name()),
                         parameter.name() != null ? parameter.name() : "#" + parameter.position(),
                         asString(),
-                        found.stream().map(p -> p.getClass().getSimpleName() + ":" + p.priotity()));
+                        found.stream().map(p -> p.getClass().getSimpleName() + ":" + p.priority()));
                 throw new WebSocketException(msg);
             }
             arguments.add(found.get(0));
@@ -272,7 +271,7 @@ public class Callback {
 
     private InvocationBytecodeContext invocationBytecodeContext(AnnotationInstance callbackAnnotation,
             MethodParameterInfo parameter, TransformedAnnotationsBuildItem transformedAnnotations, IndexView index,
-            ResultHandle endpointThis, BytecodeCreator bytecode) {
+            Expr endpointThis, Var payload, BlockCreator bytecode) {
         return new InvocationBytecodeContext() {
 
             @Override
@@ -307,31 +306,28 @@ public class Callback {
             }
 
             @Override
-            public BytecodeCreator bytecode() {
+            public BlockCreator bytecode() {
                 return bytecode;
             }
 
             @Override
-            public ResultHandle getPayload() {
+            public Var getPayload() {
                 return acceptsMessage() || callbackAnnotation.name().equals(WebSocketDotNames.ON_ERROR)
-                        ? bytecode.getMethodParam(0)
+                        ? payload
                         : null;
             }
 
             @Override
-            public ResultHandle getDecodedMessage(Type parameterType) {
+            public Expr getDecodedMessage(Type parameterType) {
                 return acceptsMessage()
-                        ? WebSocketProcessor.decodeMessage(endpointThis, bytecode, acceptsBinaryMessage(),
-                                parameterType,
-                                getPayload(), Callback.this)
+                        ? WebSocketProcessor.decodeMessage(bytecode, endpointThis, acceptsBinaryMessage(),
+                                parameterType, getPayload(), Callback.this)
                         : null;
             }
 
             @Override
-            public ResultHandle getConnection() {
-                return bytecode.readInstanceField(
-                        FieldDescriptor.of(WebSocketEndpointBase.class, "connection", WebSocketConnectionBase.class),
-                        endpointThis);
+            public Var getConnection() {
+                return endpointThis.field(FieldDesc.of(WebSocketEndpointBase.class, "connection"));
             }
         };
     }

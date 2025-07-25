@@ -193,7 +193,6 @@ public class WebSocketProcessor {
     AutoAddScopeBuildItem addScopeToGlobalErrorHandlers() {
         return AutoAddScopeBuildItem.builder()
                 .containsAnnotations(WebSocketDotNames.ON_ERROR)
-                .unremovable()
                 .reason("Add @Singleton to a global WebSocket error handler")
                 .defaultScope(BuiltinScope.SINGLETON).build();
     }
@@ -267,6 +266,7 @@ public class WebSocketProcessor {
     void collectGlobalErrorHandlers(BeanArchiveIndexBuildItem beanArchiveIndex,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
             BuildProducer<GlobalErrorHandlersBuildItem> globalErrorHandlers,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBean,
             CallbackArgumentsBuildItem callbackArguments,
             TransformedAnnotationsBuildItem transformedAnnotations) {
 
@@ -274,12 +274,14 @@ public class WebSocketProcessor {
 
         // Collect global error handlers, i.e. handlers that are not declared on an endpoint
         Map<DotName, GlobalErrorHandler> globalErrors = new HashMap<>();
+        Set<DotName> unremovableBeanClasses = new HashSet<>();
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
             if (beanClass.declaredAnnotation(WebSocketDotNames.WEB_SOCKET) == null
                     && beanClass.declaredAnnotation(WebSocketDotNames.WEB_SOCKET_CLIENT) == null) {
-                for (Callback callback : findErrorHandlers(Target.UNDEFINED, index, bean, beanClass, callbackArguments,
-                        transformedAnnotations, null)) {
+                List<Callback> errorHandlers = findErrorHandlers(Target.UNDEFINED, index, bean, beanClass,
+                        callbackArguments, transformedAnnotations, null);
+                for (Callback callback : errorHandlers) {
                     GlobalErrorHandler errorHandler = new GlobalErrorHandler(bean, callback);
                     DotName errorTypeName = callback.argumentType(ErrorCallbackArgument::isError).name();
                     if (globalErrors.containsKey(errorTypeName)) {
@@ -291,9 +293,13 @@ public class WebSocketProcessor {
                     }
                     globalErrors.put(errorTypeName, errorHandler);
                 }
+                if (!errorHandlers.isEmpty()) {
+                    unremovableBeanClasses.add(beanClass.name());
+                }
             }
         }
         globalErrorHandlers.produce(new GlobalErrorHandlersBuildItem(List.copyOf(globalErrors.values())));
+        unremovableBean.produce(UnremovableBeanBuildItem.beanTypes(unremovableBeanClasses));
     }
 
     @BuildStep

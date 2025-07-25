@@ -31,6 +31,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvableDependencies;
 import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.ResolvedComponentResult;
@@ -186,7 +187,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
     }
 
-    private static void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
+    private void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
             WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor) {
         final Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath
                 .resolvedArtifactsByComponentIdentifier();
@@ -195,8 +196,11 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult resolved) {
-                final byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS
-                        | COLLECT_RELOADABLE_MODULES);
+                byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS);
+                final LaunchMode launchMode = getLaunchMode().get();
+                if (!launchMode.equals(LaunchMode.NORMAL)) {
+                    flags |= COLLECT_RELOADABLE_MODULES;
+                }
                 collectDependencies(resolved, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
                         processedModules, flags, projectDescriptor);
             }
@@ -311,8 +315,15 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
             }
             if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
-                if (projectModule != null) {
-                    depBuilder.setFlags(DependencyFlags.RELOADABLE);
+                // Checking whether current dependency is a project module is a temporary workaround,
+                // that is required while projectModule for project dependencies is null (current
+                // deficiency of this task).
+                // That's why we set the workspace module flag explicitly via setWorkspaceModule().
+                // Once we have projectModule set for project dependencies, we can remove this workaround.
+                final boolean isProjectDependency = resolvedDependency.getSelected()
+                        .getId() instanceof ProjectComponentIdentifier;
+                if (projectModule != null || isProjectDependency) {
+                    depBuilder.setReloadable().setWorkspaceModule();
                     modelBuilder.addReloadableWorkspaceModule(artifactKey);
                 } else {
                     newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);

@@ -4,7 +4,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
 
 class ErrorCallbackArgument implements CallbackArgument {
 
@@ -15,7 +15,7 @@ class ErrorCallbackArgument implements CallbackArgument {
     }
 
     @Override
-    public ResultHandle get(InvocationBytecodeContext context) {
+    public Expr get(InvocationBytecodeContext context) {
         return context.getPayload();
     }
 

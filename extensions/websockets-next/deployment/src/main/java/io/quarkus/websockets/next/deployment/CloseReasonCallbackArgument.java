@@ -1,7 +1,7 @@
 package io.quarkus.websockets.next.deployment;
 
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.runtime.WebSocketConnectionBase;
 
@@ -14,9 +14,9 @@ class CloseReasonCallbackArgument implements CallbackArgument {
     }
 
     @Override
-    public ResultHandle get(InvocationBytecodeContext context) {
-        return context.bytecode().invokeVirtualMethod(
-                MethodDescriptor.ofMethod(WebSocketConnectionBase.class, "closeReason", CloseReason.class),
+    public Expr get(InvocationBytecodeContext context) {
+        return context.bytecode().invokeVirtual(
+                MethodDesc.of(WebSocketConnectionBase.class, "closeReason", CloseReason.class),
                 context.getConnection());
     }
 

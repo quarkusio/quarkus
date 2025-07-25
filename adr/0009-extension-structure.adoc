@@ -181,10 +181,10 @@ To transform an extension name into a package name, use the following pattern:
 
 
 ==== deployment module
-* `io.<quarkus|quarkiverse>.<extension-name>.deployment`: Internal build logic (processors, build steps, internal build items). Public APIs must reside in the `deployment-spi` module. May include subpackages (excluding `api`).
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment`: Internal build logic (processors, build steps, internal build items). Public APIs must reside in the `deployment-spi` module. May include subpackages (excluding `spi`).
 
 ==== deployment-spi module
-* `io.<quarkus|quarkiverse>.<extension-name>.deployment.api`: Public build items and types. Considered public API and subject to compatibility guarantees.
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`: Public build items and types. Considered public API and subject to compatibility guarantees.
 
 Build items in this module should be documented with their intended use (produced or consumed).
 

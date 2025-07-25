@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.testrunner.brokenonly;
+package io.quarkus.devui.testrunner.params;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -15,14 +15,14 @@ import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
+public class TestParameterizedTestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(BrokenOnlyResource.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(OddResource.class, Setup.class, HelloResource.class)
                             .add(new StringAsset(ContinuousTestingTestUtils.appProperties()),
                                     "application.properties");
                 }
@@ -30,73 +30,53 @@ public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
             .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(SimpleET.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClass(ParamET.class);
                 }
             });
 
-    public TestBrokenOnlyTestCase() {
+    public TestParameterizedTestCase() {
         super("devui-continuous-testing");
     }
 
     @Test
-    public void testBrokenOnlyMode() throws InterruptedException, Exception {
+    public void testParameterizedTests() throws InterruptedException, Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         TestStatus ts = utils.waitForNextCompletion();
 
         Assertions.assertEquals(1L, ts.getTestsFailed());
-        Assertions.assertEquals(1L, ts.getTestsPassed());
+        Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        //start broken only mode
-        super.executeJsonRPCMethod("toggleBrokenOnly");
+        super.executeJsonRPCMethod("runFailed");
 
-        test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
-            @Override
-            public String apply(String s) {
-                return s.replace("@QuarkusTest", "@QuarkusTest //noop change");
-            }
-        });
         ts = utils.waitForNextCompletion();
 
         Assertions.assertEquals(1L, ts.getTestsFailed());
-        Assertions.assertEquals(0L, ts.getTestsPassed()); //passing test should not have been run
+        Assertions.assertEquals(3L, ts.getTestsPassed()); //they are all re-run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
-
-        test.modifySourceFile(BrokenOnlyResource.class, new Function<String, String>() {
+        test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return s.replace("//setup(router);", "setup(router);");
+                return s.replace("4", "3");
             }
         });
         ts = utils.waitForNextCompletion();
-
         Assertions.assertEquals(0L, ts.getTestsFailed());
-        Assertions.assertEquals(1L, ts.getTestsPassed());
+        Assertions.assertEquals(5L, ts.getTestsPassed()); //passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        //now add a new failing test
-        test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
+        Assertions.assertEquals(5L, ts.getTotalTestsPassed());
+
+        test.modifySourceFile(HelloResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return s.replace("//failannotation", "@Test");
+                return s.replace("hello", "boo");
             }
         });
         ts = utils.waitForNextCompletion();
-
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(0L, ts.getTestsPassed());
-        Assertions.assertEquals(0L, ts.getTestsSkipped());
-
-        //now make it pass
-        test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
-            @Override
-            public String apply(String s) {
-                return s.replace("Assertions.fail();", "//noop");
-            }
-        });
-        ts = utils.waitForNextCompletion();
-        Assertions.assertEquals(0L, ts.getTestsFailed());
-        Assertions.assertEquals(1L, ts.getTestsPassed());
+        Assertions.assertEquals(4L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
     }

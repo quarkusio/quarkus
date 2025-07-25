@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.testrunner.params;
+package io.quarkus.devui.testrunner.params;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;

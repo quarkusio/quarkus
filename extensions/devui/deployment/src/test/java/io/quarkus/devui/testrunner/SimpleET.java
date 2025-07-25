@@ -1,16 +1,16 @@
-package io.quarkus.vertx.http.testrunner.params;
+package io.quarkus.devui.testrunner;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class ParamET {
+public class SimpleET {
 
     @Test
     public void testHelloEndpoint() {
@@ -21,13 +21,14 @@ public class ParamET {
                 .body(is("hello"));
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = { 1, 4, 11, 17 })
-    void shouldValidateOddNumbers(int x) {
+    @Test
+    public void testGreetingEndpoint() {
+        String uuid = UUID.randomUUID().toString();
         given()
-                .when().get("/odd/" + x)
+                .pathParam("name", uuid)
+                .when().get("/hello/greeting/{name}")
                 .then()
                 .statusCode(200)
-                .body(is("true"));
+                .body(is("hello " + uuid));
     }
 }

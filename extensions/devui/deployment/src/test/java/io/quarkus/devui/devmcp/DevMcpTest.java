@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.devmcp;
+package io.quarkus.devui.devmcp;
 
 import java.util.function.Supplier;
 
@@ -9,8 +9,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devui.testrunner.HelloResource;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.testrunner.HelloResource;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 

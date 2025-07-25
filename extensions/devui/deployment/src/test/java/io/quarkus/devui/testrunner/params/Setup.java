@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.testrunner.params;
+package io.quarkus.devui.testrunner.params;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;

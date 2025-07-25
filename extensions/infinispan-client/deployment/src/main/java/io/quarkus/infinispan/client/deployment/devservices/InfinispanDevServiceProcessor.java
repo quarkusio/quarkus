@@ -240,7 +240,7 @@ public class InfinispanDevServiceProcessor {
                 .map(containerAddress -> getRunningDevService(clientName, containerAddress.getId(), null,
                         containerAddress.getUrl(), DEFAULT_USERNAME, DEFAULT_PASSWORD, properties)) // TODO can this be always right ?
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(devServicesConfig.imageName().orElse(IMAGE_BASENAME), "infinispan"),
+                        List.of(devServicesConfig.imageName().orElse(IMAGE_BASENAME), "infinispan", "datagrid"),
                         DEFAULT_INFINISPAN_PORT, launchMode, useSharedNetwork)
                         .map(address -> getRunningDevService(clientName, address, properties)))
                 .orElseGet(infinispanServerSupplier);

@@ -204,6 +204,24 @@ The default service name is `infinispan`.
 Sharing is enabled by default in dev mode, but disabled in test mode.
 You can disable the sharing with `quarkus.infinispan-client.devservices.shared=false`
 
+== Compose
+
+Dev Services for Infinispan supports xref:compose-dev-services.adoc[Compose Dev Services].
+It relies on a `compose-devservices.yml`, such as:
+
+[source,yaml]
+----
+name: test-project
+services:
+  infinispan:
+    image: quay.io/infinispan/server:15.0.18.Final
+    ports:
+      - '11222'
+    environment:
+      - USER=quarkus
+      - PASS=quarkus
+----
+
 == Configuration reference
 
 include::{generated-dir}/config/quarkus-infinispan-client_quarkus.infinispan-client.devservices.adoc[opts=optional, leveloffset=+1]

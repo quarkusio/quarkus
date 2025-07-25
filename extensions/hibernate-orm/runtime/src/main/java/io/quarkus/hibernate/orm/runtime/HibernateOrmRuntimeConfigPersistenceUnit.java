@@ -112,11 +112,16 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        // TODO disable the check by default when offline startup is opted in
-        //   See https://github.com/quarkusio/quarkus/issues/13522
         @WithName("version-check.enabled")
-        @ConfigDocDefault("`true`")
+        @ConfigDocDefault("`false` if starting offline (see `start-offline`), `true` otherwise")
         Optional<Boolean> versionCheckEnabled();
+
+        /**
+         * Instructs Hibernate ORM to avoid connecting to the database on startup
+         * (for schema management, temporary table creation, DB version checking, ...).
+         */
+        @WithDefault("false")
+        boolean startOffline();
     }
 
     @ConfigGroup

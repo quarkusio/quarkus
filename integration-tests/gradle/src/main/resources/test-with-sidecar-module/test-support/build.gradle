@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation project(":my-module")
+}

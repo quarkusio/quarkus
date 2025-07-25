@@ -4,10 +4,8 @@ import java.util.concurrent.CountDownLatch;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkus.arc.Unremovable;
 import io.quarkus.websockets.next.OnError;
 
-@Unremovable
 @ApplicationScoped
 public class GlobalErrorHandler {
 

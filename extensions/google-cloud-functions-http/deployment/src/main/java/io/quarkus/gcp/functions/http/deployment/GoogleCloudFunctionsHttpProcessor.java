@@ -4,7 +4,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
 public class GoogleCloudFunctionsHttpProcessor {
@@ -23,6 +22,6 @@ public class GoogleCloudFunctionsHttpProcessor {
 
     @BuildStep
     public RequireVirtualHttpBuildItem requestVirtualHttp(LaunchModeBuildItem launchMode) {
-        return launchMode.getLaunchMode() == LaunchMode.NORMAL ? RequireVirtualHttpBuildItem.MARKER : null;
+        return launchMode.getLaunchMode().isProduction() ? RequireVirtualHttpBuildItem.MARKER : null;
     }
 }

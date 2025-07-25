@@ -25,7 +25,7 @@ import io.quarkus.runtime.SnapStartRecorder;
  */
 public class SnapStartProcessor {
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     @Record(ExecutionTime.STATIC_INIT)
     public void processSnapStart(BuildProducer<PreloadClassesEnabledBuildItem> preload,
             BuildProducer<SnapStartEnabledBuildItem> snapStartEnabled,
@@ -46,7 +46,7 @@ public class SnapStartProcessor {
         recorder.register(config.fullWarmup());
     }
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public void generateClassListFromApplication(
             SnapStartConfig config,
             Optional<SnapStartDefaultValueBuildItem> defaultVal,

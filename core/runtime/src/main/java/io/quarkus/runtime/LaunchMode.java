@@ -24,10 +24,6 @@ public enum LaunchMode {
     public static final String PROD_PROFILE = "prod";
     public static final String TEST_PROFILE = "test";
 
-    public boolean isDevOrTest() {
-        return this != NORMAL;
-    }
-
     public static boolean isDev() {
         return current() == DEVELOPMENT;
     }
@@ -58,6 +54,17 @@ public enum LaunchMode {
 
     public String getProfileKey() {
         return profileKey;
+    }
+
+    public boolean isDevOrTest() {
+        return this == DEVELOPMENT || this == TEST;
+    }
+
+    /**
+     * Returns true if the current launch is a production mode, such as NORMAL or RUN.
+     */
+    public boolean isProduction() {
+        return LaunchMode.PROD_PROFILE.equals(getDefaultProfile());
     }
 
     public boolean isDevServicesSupported() {

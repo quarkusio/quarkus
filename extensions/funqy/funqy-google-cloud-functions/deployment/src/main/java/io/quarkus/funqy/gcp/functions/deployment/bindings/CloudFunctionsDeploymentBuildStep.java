@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 
 import io.quarkus.builder.BuildException;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
@@ -19,7 +19,7 @@ public class CloudFunctionsDeploymentBuildStep {
      * Creates a target/deployment dir and copy the uber jar in it.
      * This facilitates the usage of the 'gcloud' command.
      */
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem functionDeployment(OutputTargetBuildItem target, JarBuildItem jar)
             throws BuildException, IOException {
         if (!jar.isUberJar()) {

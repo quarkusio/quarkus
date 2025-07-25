@@ -62,7 +62,7 @@ public abstract class AbstractLambdaPollLoop {
             public void run() {
                 try {
                     if (!LambdaHotReplacementRecorder.enabled
-                            && (launchMode == LaunchMode.DEVELOPMENT || launchMode == LaunchMode.NORMAL)) {
+                            && (launchMode.isDev() || launchMode.isProduction())) {
                         // when running with continuous testing, this method fails
                         // because currentApplication is not set when running as an
                         // auxiliary application.  So, just skip it if hot replacement enabled.

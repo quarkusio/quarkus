@@ -9,7 +9,6 @@ import io.quarkus.azure.functions.resteasy.runtime.Function;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
 public class AzureFunctionsHttpProcessor {
@@ -17,7 +16,7 @@ public class AzureFunctionsHttpProcessor {
 
     @BuildStep
     public RequireVirtualHttpBuildItem requestVirtualHttp(LaunchModeBuildItem launchMode) {
-        return launchMode.getLaunchMode() == LaunchMode.NORMAL ? RequireVirtualHttpBuildItem.MARKER : null;
+        return launchMode.getLaunchMode().isProduction() ? RequireVirtualHttpBuildItem.MARKER : null;
     }
 
     @BuildStep

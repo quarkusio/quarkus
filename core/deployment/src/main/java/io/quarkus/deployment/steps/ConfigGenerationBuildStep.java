@@ -44,7 +44,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -185,7 +185,7 @@ public class ConfigGenerationBuildStep {
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }
 
-    @BuildStep(onlyIfNot = { IsNormal.class }) // for dev or test
+    @BuildStep(onlyIfNot = { IsProduction.class }) // for dev or test
     void runtimeOverrideConfig(
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
@@ -425,7 +425,7 @@ public class ConfigGenerationBuildStep {
         recorder.handleConfigChange(values);
     }
 
-    @BuildStep(onlyIfNot = { IsNormal.class })
+    @BuildStep(onlyIfNot = { IsProduction.class })
     public void setupConfigOverride(
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
 
@@ -548,7 +548,7 @@ public class ConfigGenerationBuildStep {
         configRecorder.handleNativeProfileChange(config.getProfiles());
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     void persistReadConfigOptions(
             BuildProducer<ArtifactResultBuildItem> dummy,
             QuarkusBuildCloseablesBuildItem closeables,

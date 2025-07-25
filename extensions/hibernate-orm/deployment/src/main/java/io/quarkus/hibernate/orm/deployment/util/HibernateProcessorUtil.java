@@ -41,6 +41,7 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
+import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -371,5 +372,12 @@ public final class HibernateProcessorUtil {
             descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, "");
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
         }
+    }
+
+    public static JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck(Capabilities capabilities,
+            Optional<FormatMapperKind> jsonMapper) {
+        return jsonMapper.isEmpty() ? JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(false, false)
+                : JsonFormatterCustomizationCheck.jsonFormatterCustomizationCheckSupplier(true,
+                        capabilities.isPresent(Capability.JACKSON));
     }
 }

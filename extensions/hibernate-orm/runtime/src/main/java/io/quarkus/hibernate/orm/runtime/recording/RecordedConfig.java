@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
+import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
@@ -21,6 +22,7 @@ public class RecordedConfig {
     private final Map<String, String> quarkusConfigUnsupportedProperties;
     private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
     private final BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour;
+    private final JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck;
 
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
@@ -28,6 +30,7 @@ public class RecordedConfig {
             MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck,
             Map<String, String> quarkusConfigUnsupportedProperties) {
         Objects.requireNonNull(dataSource);
         Objects.requireNonNull(dbKind);
@@ -40,6 +43,7 @@ public class RecordedConfig {
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
         this.builtinFormatMapperBehaviour = builtinFormatMapperBehaviour;
+        this.jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
     }
 
@@ -69,6 +73,10 @@ public class RecordedConfig {
 
     public BuiltinFormatMapperBehaviour getBuiltinFormatMapperBehaviour() {
         return builtinFormatMapperBehaviour;
+    }
+
+    public JsonFormatterCustomizationCheck getJsonFormatterCustomizationCheck() {
+        return jsonFormatterCustomizationCheck;
     }
 
     public Map<String, String> getQuarkusConfigUnsupportedProperties() {

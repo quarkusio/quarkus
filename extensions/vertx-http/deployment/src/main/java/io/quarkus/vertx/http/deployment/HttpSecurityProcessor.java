@@ -75,6 +75,7 @@ import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -105,7 +106,7 @@ public class HttpSecurityProcessor {
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
 
-    @Consume(HttpSecurityConfigSetupComplete.class)
+    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -151,13 +152,11 @@ public class HttpSecurityProcessor {
         return null;
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        if (isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)) {
-            recorder.setMtlsCertificateRoleProperties();
-        }
+    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder) {
+        recorder.setMtlsCertificateRoleProperties();
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
@@ -288,9 +287,10 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Produce(HttpSecurityConfigSetupComplete.class)
+    @Produce(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
@@ -885,7 +885,7 @@ public class HttpSecurityProcessor {
         }
     }
 
-    static final class HttpSecurityConfigSetupComplete extends EmptyBuildItem {
+    static final class HttpSecurityConfigSetupCompleteBuildItem extends EmptyBuildItem {
 
     }
 }

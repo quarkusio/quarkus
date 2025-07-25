@@ -7,10 +7,14 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.smallrye.common.annotation.Experimental;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -103,6 +107,47 @@ public interface HttpSecurity {
      * @return HttpSecurity
      */
     HttpSecurity basic(String authenticationRealm);
+
+    /**
+     * Registers the mutual TLS client authentication mechanism in addition to all other global authentication mechanisms.
+     * This method is a shortcut for {@code mTLS(ClientAuth.REQUIRED)}, therefore the client authentication is required.
+     *
+     * @return HttpSecurity
+     * @see #mTLS(ClientAuth) for more information
+     */
+    HttpSecurity mTLS();
+
+    /**
+     * Registers the mutual TLS client authentication mechanism in addition to all other global authentication mechanisms.
+     * The TLS configuration is registered against the registry and is used by the HTTP server for the TLS communication.
+     * This method is a shortcut for the {@code httpSecurity.mTLS(MTLS.required(tlsConfigurationName, tlsConfiguration))},
+     * therefore the client authentication is required.
+     *
+     * @param tlsConfigurationName the name of the configuration, cannot be {@code null}, cannot be {@code <default>}
+     * @param tlsConfiguration the configuration cannot be {@code null}
+     * @return HttpSecurity
+     * @see VertxHttpBuildTimeConfig#tlsClientAuth() for more information about {@link ClientAuth#REQUEST}
+     * @see MTLS.Builder#tls(String, TlsConfiguration) for information about method parameters and TLS config registration
+     */
+    HttpSecurity mTLS(String tlsConfigurationName, TlsConfiguration tlsConfiguration);
+
+    /**
+     * Registers the mutual TLS client authentication mechanism in addition to all other global authentication mechanisms.
+     *
+     * @param mTLSAuthenticationMechanism {@link MtlsAuthenticationMechanism} build with the {@link MTLS} API
+     * @return HttpSecurity
+     */
+    HttpSecurity mTLS(MtlsAuthenticationMechanism mTLSAuthenticationMechanism);
+
+    /**
+     * Registers the mutual TLS client authentication mechanism in addition to all other global authentication mechanisms.
+     * If you need to define the client certificate attribute value to role mappings, please use the {@link MTLS} builder.
+     *
+     * @param tlsClientAuth either {@link ClientAuth#REQUEST} or {@link ClientAuth#REQUIRED}; for more information,
+     *        see the {@link VertxHttpBuildTimeConfig#tlsClientAuth()} configuration property
+     * @return HttpSecurity
+     */
+    HttpSecurity mTLS(ClientAuth tlsClientAuth);
 
     /**
      * Creates {@link HttpPermission} in addition to the permissions configured in the 'application.properties' file.

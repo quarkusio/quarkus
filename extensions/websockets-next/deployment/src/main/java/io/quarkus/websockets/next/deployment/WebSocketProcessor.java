@@ -1673,22 +1673,32 @@ public class WebSocketProcessor {
         }
     }
 
-    static List<Callback> findErrorHandlers(Target target, IndexView index, BeanInfo bean, ClassInfo beanClass,
+    static List<Callback> findErrorHandlers(Target expectedTarget, IndexView index, BeanInfo bean, ClassInfo beanClass,
             CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
             String endpointPath) {
         List<AnnotationInstance> annotations = findCallbackAnnotations(index, beanClass, WebSocketDotNames.ON_ERROR);
         if (annotations.isEmpty()) {
             return List.of();
         }
-        List<Callback> errorHandlers = new ArrayList<>();
+        List<Callback> errorHandlers = new ArrayList<>(annotations.size());
         for (AnnotationInstance annotation : annotations) {
             MethodInfo method = annotation.target().asMethod();
-            // If a global error handler accepts a connection param we change the target appropriately
+            Target target;
             if (method.parameterTypes().stream().map(Type::name).anyMatch(WebSocketDotNames.WEB_SOCKET_CONNECTION::equals)) {
                 target = Target.SERVER;
+                if (expectedTarget == Target.CLIENT) {
+                    throw new WebSocketException("@OnError callback on @WebSocketClient must not accept WebSocketConnection: "
+                            + method.declaringClass() + "." + method.name() + "()");
+                }
             } else if (method.parameterTypes().stream().map(Type::name)
                     .anyMatch(WebSocketDotNames.WEB_SOCKET_CLIENT_CONNECTION::equals)) {
                 target = Target.CLIENT;
+                if (expectedTarget == Target.SERVER) {
+                    throw new WebSocketException("@OnError callback on @WebSocket must not accept WebSocketClientConnection: "
+                            + method.declaringClass() + "." + method.name() + "()");
+                }
+            } else {
+                target = Target.UNDEFINED;
             }
             Callback callback = new Callback(target, annotation, bean, method,
                     executionModel(method, transformedAnnotations), callbackArguments, transformedAnnotations,
@@ -1697,8 +1707,7 @@ public class WebSocketProcessor {
             if (errorArguments != 1) {
                 throw new WebSocketException(
                         String.format("@OnError callback must accept exactly one error parameter; found %s: %s",
-                                errorArguments,
-                                callback.asString()));
+                                errorArguments, callback.asString()));
             }
             errorHandlers.add(callback);
         }

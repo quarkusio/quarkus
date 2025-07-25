@@ -10,7 +10,7 @@ public class AuthenticationCompletionExceptionMapper implements ExceptionMapper<
 
     @Override
     public Response toResponse(AuthenticationCompletionException ex) {
-        if (LaunchMode.isDev() && ex.getMessage() != null) {
+        if (LaunchMode.current().isDev() && ex.getMessage() != null) {
             return Response.status(Response.Status.UNAUTHORIZED).entity(ex.getMessage()).build();
         }
         return Response.status(Response.Status.UNAUTHORIZED).build();

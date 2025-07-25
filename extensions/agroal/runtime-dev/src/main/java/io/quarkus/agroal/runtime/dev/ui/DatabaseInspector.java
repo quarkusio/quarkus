@@ -52,7 +52,7 @@ public final class DatabaseInspector {
 
     public DatabaseInspector() {
         LaunchMode currentMode = LaunchMode.current();
-        this.isDev = currentMode == LaunchMode.DEVELOPMENT && !LaunchMode.isRemoteDev();
+        this.isDev = currentMode.isDev() && !currentMode.isRemoteDev();
 
         Config config = ConfigProvider.getConfig();
         this.allowSql = config.getOptionalValue("quarkus.datasource.dev-ui.allow-sql", Boolean.class)

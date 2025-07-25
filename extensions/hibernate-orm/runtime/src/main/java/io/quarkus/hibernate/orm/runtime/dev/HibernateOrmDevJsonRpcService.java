@@ -36,7 +36,7 @@ public class HibernateOrmDevJsonRpcService {
     private String allowedHost;
 
     public HibernateOrmDevJsonRpcService() {
-        this.isDev = LaunchMode.current() == LaunchMode.DEVELOPMENT && !LaunchMode.isRemoteDev();
+        this.isDev = LaunchMode.current().isDev() && !LaunchMode.current().isRemoteDev();
         this.allowedHost = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.datasource.dev-ui.allowed-db-host", String.class)
                 .orElse(null);

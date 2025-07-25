@@ -30,12 +30,14 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.type.format.FormatMapper;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.JsonFormat;
 import io.quarkus.hibernate.orm.XmlFormat;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
+import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.observers.QuarkusSessionFactoryObserverForDbVersionCheck;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
@@ -52,6 +54,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     private final Object validatorFactory;
     private final Object cdiBeanManager;
     private final BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour;
+    private final JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck;
 
     protected final MultiTenancyStrategy multiTenancyStrategy;
     protected final boolean shouldApplySchemaMigration;
@@ -61,7 +64,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration,
-            BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour) {
+            BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck) {
         this.puDescriptor = puDescriptor;
         this.metadata = metadata;
         this.standardServiceRegistry = standardServiceRegistry;
@@ -71,6 +75,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.shouldApplySchemaMigration = shouldApplySchemaMigration;
         this.builtinFormatMapperBehaviour = builtinFormatMapperBehaviour;
+        this.jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck;
     }
 
     @Override
@@ -216,7 +221,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         if (!jsonFormatMapper.isUnsatisfied()) {
             options.applyJsonFormatMapper(jsonFormatMapper.get());
         } else {
-            builtinFormatMapperBehaviour.jsonApply(metadata(), persistenceUnitName);
+            builtinFormatMapperBehaviour.jsonApply(metadata(), persistenceUnitName, Arc.container(),
+                    jsonFormatterCustomizationCheck);
         }
         InjectableInstance<FormatMapper> xmlFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
                 FormatMapper.class, persistenceUnitName, XmlFormat.Literal.INSTANCE);

@@ -12,6 +12,7 @@ import org.hibernate.mapping.Property;
 import org.hibernate.type.SqlTypes;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 public enum BuiltinFormatMapperBehaviour {
@@ -91,13 +92,23 @@ public enum BuiltinFormatMapperBehaviour {
         return false;
     }
 
-    public void jsonApply(MetadataImplementor metadata, String puName) {
-        if (hasJsonProperties(metadata)) {
+    public void jsonApply(MetadataImplementor metadata, String puName, ArcContainer container,
+            JsonFormatterCustomizationCheck check) {
+        if (hasJsonProperties(metadata) && check.test(container)) {
             action(puName, TYPE_JSON);
         }
     }
 
     public void xmlApply(MetadataImplementor metadata, String puName) {
+        // XML mapper can only be a JAXB based one. With Hibernate ORM 7.0 there was a change in the mapper:
+        // org.hibernate.type.format.jaxb.JaxbXmlFormatMapper -- where a new format was introduced
+        // and legacy one would be currently used for Quarkus. If we just bypass the built-in one, we will break the user data.
+        // There is:
+        //   XML_FORMAT_MAPPER_LEGACY_FORMAT = "hibernate.type.xml_format_mapper.legacy_format"
+        // for "migration" purposes.
+        //
+        // Let's fail and tell the user to migrate their data to the new format and before that is done: use a delegate to org.hibernate.type.format.jaxb.JaxbXmlFormatMapper()
+        // using a legacy format:
         if (hasXmlProperties(metadata)) {
             action(puName, TYPE_XML);
         }

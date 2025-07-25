@@ -645,6 +645,8 @@ Compose Dev Services won't try to discover any services and will be disabled.
 === Compose Dev Services used for tests
 
 For Quarkus tests, a generated project name in the format `quarkus-devservices-<application-name>-<random-suffix>` is used by default to ensure isolation between test runs and running dev mode services.
+If the top-level name attribute is specified in the Compose file, the project name in the format `<compose-name>-<random-suffix>` is used.
+
 This way, Quarkus tests start a separate copy of the services defined in the compose files.
 For example, when running continuous testing in development mode, tests will have their own isolated set of services.
 

@@ -4,6 +4,7 @@ import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPrese
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -330,9 +331,10 @@ public final class HibernateProcessorUtil {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             QuarkusPersistenceUnitDescriptor descriptor) {
-        // sql-load-scripts
+        // This defaults to 'import.sql' in non-production modes
         List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript(), launchMode);
         if (!importFiles.isEmpty()) {
+            List<String> existingImportFiles = new ArrayList<>();
             for (String importFile : importFiles) {
                 Path loadScriptPath;
                 try {
@@ -347,6 +349,7 @@ public final class HibernateProcessorUtil {
 
                 if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                     // enlist resource if present
+                    existingImportFiles.add(importFile);
                     nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
                 } else if (persistenceUnitConfig.sqlLoadScript().isPresent()) {
                     //raise exception if explicit file is not present (i.e. not the default)
@@ -361,15 +364,13 @@ public final class HibernateProcessorUtil {
                 hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
             }
 
-            // only set the found import files if configured
-            if (persistenceUnitConfig.sqlLoadScript().isPresent()) {
+            if (!existingImportFiles.isEmpty()) {
                 descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
-                        String.join(",", importFiles));
+                        String.join(",", existingImportFiles));
             }
-        } else {
-            //Disable implicit loading of the default import script (import.sql)
-            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, "");
-            descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
         }
+
+        //Disable implicit loading of the default import script (import.sql)
+        descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
     }
 }

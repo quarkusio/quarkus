@@ -1037,27 +1037,31 @@ you can just supply the code to be run in a supplier in the deployment module. T
 ----
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     BuildTimeActionBuildItem createBuildTimeActions() { //<1>
-        BuildTimeActionBuildItem generateManifestActions = new BuildTimeActionBuildItem();//<2>
-        generateManifestActions.addAction("generateManifests", params -> { //<3>
-            try {
-                List<Manifest> manifests = holder.getManifests();
-                // Avoid relying on databind.
-                Map<String, String> map = new LinkedHashMap<>();
-                for (Manifest manifest : manifests) {
-                    map.put(manifest.getName(), manifest.getContent());
+        BuildTimeActionBuildItem generateManifestActions = new BuildTimeActionBuildItem(); //<2>
+        
+        generateManifestActions.actionBuilder()
+            .methodName("generateManifests")//<3>
+            .function(params -> { //<4>
+                try {
+                    List<Manifest> manifests = holder.getManifests();
+                    // Avoid relying on databind.
+                    Map<String, String> map = new LinkedHashMap<>();
+                    for (Manifest manifest : manifests) {
+                        map.put(manifest.getName(), manifest.getContent());
+                    }
+                    return map;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-                return map;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+            }).build();
 
         return generateManifestActions;
     }
 ----
 <1> Return or use a BuildProducer to create a `BuildTimeActionBuildItem`
 <2> `BuildTimeActionBuildItem` is automatically scoped with your extension namespace
-<3> Here we add an action, that is the same as a request-response method. The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`. If there are any parameters, those will be available in a map (params)
+<3> The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`. 
+<4> Here we add an function that will execute when this action is requested from the UI. If there are any parameters, those will be available in a map (params)
 
 You can also return a `CompletableFuture`/`CompletionStage` as an action, and if you want to stream data you need to use `addSubscription` (rather than `addAction`) and return a `Flow.Publisher`. Here you can not use Uni and Multi as we need to pass data between the deployment and runtime classpaths, so sticking to JDK classes is the safe option.
 
@@ -1070,8 +1074,10 @@ Passing recorded data to the UI work the same as the above deployment classpath,
 @BuildStep(onlyIf = IsLocalDevelopment.class)
 BuildTimeActionBuildItem createBuildTimeActions() { 
     BuildTimeActionBuildItem actionBuildItem = new BuildTimeActionBuildItem();
-    actionBuildItem.addAction("getMyRecordedValue", runtimeValue); // <1>
-        
+        actionBuildItem.actionBuilder()
+                .methodName("getMyRecordedValue")
+                .runtime(runtimeValue) // <1>
+                .build();
     return actionBuildItem;
 }
 ----

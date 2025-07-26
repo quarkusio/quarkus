@@ -131,7 +131,7 @@ An extension can define Assistant features without depending on Chappie directly
 
 === Workspace participation
 
-You can add an assistant function to a workspace item using the same approach as regular https://quarkus.io/guides/dev-ui#workspace[workspace actions], with one key difference: instead of using `.function(...)`, you use `.assistantFunction(...)`.
+You can add an assistant function to a workspace item using the same approach as regular xref:dev-ui.adoc#workspace[workspace actions], with one key difference: instead of using `.function(...)`, you use `.assistantFunction(...)`.
 
 [source,java]
 ----
@@ -152,13 +152,13 @@ You can add an assistant function to a workspace item using the same approach as
         .displayType(DisplayType.markdown)
         .filter(Patterns.JAVA_SRC));
 ----
-<1> Use `assistantFunction` to receive the `Assistant` instance and https://quarkus.io/guides/dev-ui#input[input] parameters.  
+<1> Use `assistantFunction` to receive the `Assistant` instance and xref:dev-ui.adoc#input[input] parameters.  
 <2> Provide an optional *system message* to guide the assistant's behavior.  
 <3> Provide a *user message* as the primary prompt.
 
 === Assistant pages
 
-To add a standalone assistant-powered page to the Dev UI, use the https://quarkus.io/guides/dev-ui#card[`CardPageBuildItem`] and `Page.assistantPageBuilder()`:
+To add a standalone assistant-powered page to the Dev UI, use the xref:dev-ui.adoc#card[`CardPageBuildItem`] and `Page.assistantPageBuilder()`:
 
 [source,java]
 ----
@@ -170,11 +170,11 @@ cardPageBuildItem.addPage(Page.assistantPageBuilder() // <1>
 
 === Communicating to the backend 
 
-You can invoke the assistant from backend code using https://quarkus.io/guides/dev-ui#communicating-to-the-backend[standard Dev UI JSON-RPC] patterns — both against the *runtime* and *deployment* classpaths.
+You can invoke the assistant from backend code using xref:dev-ui.adoc#communicating-to-the-backend[standard Dev UI JSON-RPC] patterns — both against the *runtime* and *deployment* classpaths.
 
 ==== JsonRPC against the Runtime classpath
 
-To use the assistant in a https://quarkus.io/guides/dev-ui#jsonrpc-against-the-runtime-classpath[`JsonRpcService`] on the runtime classpath, inject the `Assistant` like this:
+To use the assistant in a xref:dev-ui.adoc#jsonrpc-against-the-runtime-classpath[`JsonRpcService`] on the runtime classpath, inject the `Assistant` like this:
 
 [source,java]
 ----
@@ -201,27 +201,29 @@ You can now use this assistant in any JsonRPC method, example:
 
 ==== JsonRPC against the Deployment classpath
 
-In https://quarkus.io/guides/dev-ui#jsonrpc-against-the-deployment-classpath[deployment-time] code, use the `BuildTimeActionBuildItem` and register assistant actions via `.addAssistantAction(...)`:
+In xref:dev-ui.adoc#jsonrpc-against-the-deployment-classpath[deployment-time] code, use the `BuildTimeActionBuildItem` and register assistant actions via `.addAssistantAction(...)`:
 
 [source,java]
 ----
     BuildTimeActionBuildItem bta = new BuildTimeActionBuildItem();
 
-        bta.addAssistantAction("getAIJokeInDeployment", (a, p) -> { // <1>
-            Assistant assistant = (Assistant) a;
+    bta.actionBuilder()
+            .methodName("getAIJokeInDeployment")
+            .assistantFunction((a, p) -> { // <1>
+                Assistant assistant = (Assistant) a;
 
-            return assistant.assistBuilder()
-                    .userMessage(USER_MESSAGE)
-                    .variables(p)
-                    .assist();
-        });
+                return assistant.assistBuilder()
+                        .userMessage(USER_MESSAGE)
+                        .variables(p)
+                        .assist();
+            }).build());
         buildTimeActionProducer.produce(bta);
 ----
-<1> Use `addAssistantAction` instead of `addAction` to access the assistant context.
+<1> Use `assistantFunction` instead of `function` to access the assistant context.
 
 === Assistant State in the UI
 
-To conditionally render assistant UI in your Web Component, you can use the https://quarkus.io/guides/dev-ui#assistant-state[assistant state] to
+To conditionally render assistant UI in your Web Component, you can use the xref:dev-ui.adoc#assistant-state[assistant state] to
 check the state of the assistant. The state can be:
 
 - notAvailable: No assistant implementation (like Chappie) is present.

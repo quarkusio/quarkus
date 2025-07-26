@@ -48,7 +48,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -446,7 +446,7 @@ public class DevUIProcessor {
 
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     void cleanProd(BuildProducer<RemovedResourceBuildItem> producer,
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {

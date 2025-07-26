@@ -218,7 +218,7 @@ public class HttpSecurityRecorder {
                 return;
             }
             throwable = extractRootCause(throwable);
-            if (LaunchMode.isDev() && throwable instanceof AuthenticationException
+            if (LaunchMode.current().isDev() && throwable instanceof AuthenticationException
                     && throwable.getMessage() != null) {
                 event.put(DEV_MODE_AUTHENTICATION_FAILURE_BODY, throwable.getMessage());
             }

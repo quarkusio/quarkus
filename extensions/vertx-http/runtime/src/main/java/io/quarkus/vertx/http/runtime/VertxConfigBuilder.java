@@ -25,7 +25,7 @@ public class VertxConfigBuilder implements ConfigBuilder {
         }
 
         // Sets the default host config value, depending on the launch mode
-        if (LaunchMode.isRemoteDev()) {
+        if (LaunchMode.current().isRemoteDev()) {
             // in remote dev mode, we want to listen on all interfaces
             // to make sure the application is accessible
             builder.withDefaultValue(configurationProperty, ALL_INTERFACES);

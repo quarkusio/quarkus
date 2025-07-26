@@ -1,6 +1,6 @@
 package io.quarkus.deployment.dev.io;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
@@ -12,7 +12,7 @@ import io.quarkus.runtime.dev.io.NioThreadPoolRecorder;
 public class NioThreadPoolDevModeProcessor {
 
     @Produce(TestSetupBuildItem.class)
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     @Record(ExecutionTime.STATIC_INIT)
     void setupTCCL(NioThreadPoolRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
         recorder.updateTccl(shutdownContextBuildItem);

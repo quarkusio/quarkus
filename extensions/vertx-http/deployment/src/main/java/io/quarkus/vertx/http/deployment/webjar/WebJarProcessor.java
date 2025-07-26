@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -25,7 +25,7 @@ import io.quarkus.vertx.http.runtime.webjar.WebJarRecorder;
 
 public class WebJarProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     WebJarResultsBuildItem processWebJarDevMode(WebJarRecorder recorder, List<WebJarBuildItem> webJars,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             ShutdownContextBuildItem shutdownContext,
@@ -62,7 +62,7 @@ public class WebJarProcessor {
         return new WebJarResultsBuildItem(results);
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     WebJarResultsBuildItem processWebJarProdMode(List<WebJarBuildItem> webJars,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,

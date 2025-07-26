@@ -18,7 +18,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.builder.BuildException;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -46,7 +46,7 @@ public class FunctionZipProcessor {
      * @param jar
      * @throws Exception
      */
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public void jvmZip(OutputTargetBuildItem target,
             PackageConfig packageConfig,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
@@ -110,7 +110,7 @@ public class FunctionZipProcessor {
      * @param nativeImage
      * @throws Exception
      */
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsProduction.class, NativeBuild.class })
     public void nativeZip(OutputTargetBuildItem target,
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,

@@ -17,43 +17,34 @@ public class JsonRpcRequestCreator {
         this.jsonMapper = jsonMapper;
     }
 
+    /**
+     * This creates a Request as is from Dev UI
+     *
+     * @param jsonObject the JsonObject from the JS
+     * @return JsonRpcRequest
+     */
     public JsonRpcRequest create(JsonObject jsonObject) {
-        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
-        jsonRpcRequest.setId(jsonObject.getInteger(ID));
-        if (jsonObject.containsKey(JSONRPC)) {
-            jsonRpcRequest.setJsonrpc(jsonObject.getString(JSONRPC));
-        }
-        jsonRpcRequest.setMethod(jsonObject.getString(METHOD));
-        if (jsonObject.containsKey(PARAMS)) {
-            jsonRpcRequest.setParams(jsonObject.getJsonObject(PARAMS).getMap());
-        }
-
-        return jsonRpcRequest;
+        return createWithFilter(jsonObject, null);
     }
 
-    // TODO: Repeat of above
+    /**
+     * This creates a Request from an MCP Client.
+     * It might contain meta data in the parameters that is not applicable for the Java method
+     *
+     * @param jsonObject the JsonObject from the MCP
+     * @return JsonRpcRequest
+     */
     public JsonRpcRequest mcpCreate(JsonObject jsonObject) {
-        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
-        if (jsonObject.containsKey(ID)) {
-            jsonRpcRequest.setId(jsonObject.getInteger(ID));
-        }
-        if (jsonObject.containsKey(JSONRPC)) {
-            jsonRpcRequest.setJsonrpc(jsonObject.getString(JSONRPC));
-        }
-
-        jsonRpcRequest.setMethod(jsonObject.getString(METHOD));
-        if (jsonObject.containsKey(PARAMS)) {
-
-            Map map = jsonObject.getJsonObject(PARAMS).getMap();
-            map.remove("_meta");
-            map.remove("cursor");
-            jsonRpcRequest.setParams(map);
-        }
-
-        return remap(jsonRpcRequest);
+        return remap(createWithFilter(jsonObject, "_meta", "cursor"));
     }
 
-    public JsonRpcRequest remap(JsonRpcRequest jsonRpcRequest) {
+    /**
+     * This remaps a MCP Tool Call to a normal json-rpc method
+     *
+     * @param jsonRpcRequest the tools call request
+     * @return JsonRpcRequest the remapped request
+     */
+    private JsonRpcRequest remap(JsonRpcRequest jsonRpcRequest) {
         if (jsonRpcRequest.getMethod().equalsIgnoreCase(TOOLS_SLASH_CALL)) {
 
             Map params = jsonRpcRequest.getParams();
@@ -73,6 +64,28 @@ public class JsonRpcRequestCreator {
 
     public String toJson(JsonRpcRequest jsonRpcRequest) {
         return jsonMapper.toString(jsonRpcRequest, true);
+    }
+
+    private JsonRpcRequest createWithFilter(JsonObject jsonObject, String... filter) {
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        if (jsonObject.containsKey(ID)) {
+            jsonRpcRequest.setId(jsonObject.getInteger(ID));
+        }
+        if (jsonObject.containsKey(JSONRPC)) {
+            jsonRpcRequest.setJsonrpc(jsonObject.getString(JSONRPC));
+        }
+        jsonRpcRequest.setMethod(jsonObject.getString(METHOD));
+        if (jsonObject.containsKey(PARAMS)) {
+            Map map = jsonObject.getJsonObject(PARAMS).getMap();
+            if (filter != null) {
+                for (String p : filter) {
+                    map.remove(p);
+                }
+            }
+            jsonRpcRequest.setParams(map);
+        }
+
+        return jsonRpcRequest;
     }
 
     private static final String TOOLS_SLASH_CALL = "tools/call";

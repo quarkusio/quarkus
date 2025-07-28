@@ -9,12 +9,16 @@ import java.util.Map;
 public class DevUIBuildTimeStaticService {
     private final Map<String, String> urlAndPath = new HashMap<>();
     private final Map<String, String> descriptions = new HashMap<>();
+    private final Map<String, String> contentTypes = new HashMap<>();
+
     private String basePath; // Like /q/dev-ui
 
-    public void addData(String basePath, Map<String, String> urlAndPath, Map<String, String> descriptions) {
+    public void addData(String basePath, Map<String, String> urlAndPath, Map<String, String> descriptions,
+            Map<String, String> contentTypes) {
         this.basePath = basePath;
         this.urlAndPath.putAll(urlAndPath);
         this.descriptions.putAll(descriptions);
+        this.contentTypes.putAll(contentTypes);
     }
 
     public Map<String, String> getUrlAndPath() {
@@ -23,6 +27,10 @@ public class DevUIBuildTimeStaticService {
 
     public Map<String, String> getDescriptions() {
         return descriptions;
+    }
+
+    public Map<String, String> getContentTypes() {
+        return contentTypes;
     }
 
     public String getBasePath() {

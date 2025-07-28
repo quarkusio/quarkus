@@ -59,6 +59,7 @@ export class QwcDevMCPInfo extends QwcHotReloadElement {
         if(this._connectedClients){
             return html`<div class="connected">
                             ${this._renderServerDetails()}
+                            <h3>Current connected clients:</h3>
                             <vaadin-grid .items="${this._connectedClients}">
                                 <vaadin-grid-column path="name"></vaadin-grid-column>
                                 <vaadin-grid-column path="version"></vaadin-grid-column>

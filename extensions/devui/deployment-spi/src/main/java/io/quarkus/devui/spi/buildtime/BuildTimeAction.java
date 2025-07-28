@@ -9,6 +9,8 @@ import io.quarkus.runtime.RuntimeValue;
 /**
  * Define a action that can be executed against the deployment classpath in runtime
  * This means a call will still be make with Json-RPC to the backend, but fall through to this action
+ *
+ * @deprecated - Rather use the Action Builder
  */
 @Deprecated
 public class BuildTimeAction {

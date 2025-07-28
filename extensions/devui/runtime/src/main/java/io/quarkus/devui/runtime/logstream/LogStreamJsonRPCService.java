@@ -58,7 +58,7 @@ public class LogStreamJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Get a specific logger in this Quarkus application")
-    public JsonObject getLogger(String loggerName) {
+    public JsonObject getLogger(@JsonRpcDescription("The name of the logger") String loggerName) {
         LogContext logContext = LogContext.getLogContext();
         if (loggerName != null && !loggerName.isEmpty()) {
             Logger logger = logContext.getLogger(loggerName);
@@ -72,7 +72,8 @@ public class LogStreamJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Update a specific logger's log level in this Quarkus application")
-    public JsonObject updateLogLevel(String loggerName, String levelValue) {
+    public JsonObject updateLogLevel(@JsonRpcDescription("The name of the logger") String loggerName,
+            @JsonRpcDescription("The new level of the logger") String levelValue) {
         LogContext logContext = LogContext.getLogContext();
         Logger logger = logContext.getLogger(loggerName);
         java.util.logging.Level level;

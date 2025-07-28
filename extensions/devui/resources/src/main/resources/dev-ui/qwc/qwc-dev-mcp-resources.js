@@ -105,9 +105,18 @@ export class QwcDevMCPResources extends observeState(LitElement) {
                                     }
                                 }}">
                                 <vaadin-grid-sort-column 
-                                    header='Name'
-                                    path="name"
-                                    auto-width>
+                                    header='Namespace'
+                                    path="name" 
+                                    auto-width
+                                    ${columnBodyRenderer(this._namespaceRenderer, [])}
+                                >
+                                </vaadin-grid-sort-column>
+                                <vaadin-grid-sort-column 
+                                    header='Resource'
+                                    path="name" 
+                                    auto-width
+                                    ${columnBodyRenderer(this._nameRenderer, [])}
+                                >
                                 </vaadin-grid-sort-column>
                                 <vaadin-grid-sort-column 
                                     header='Description'
@@ -147,6 +156,14 @@ export class QwcDevMCPResources extends observeState(LitElement) {
 
     _closeDialog(){
         this._selectedResourceContent = null;
+    }
+
+    _namespaceRenderer(prop) {
+        return html`${prop.name.split('_')[0]}`;
+    }
+    
+    _nameRenderer(prop) {
+        return html`${prop.name.split('_')[1]}`;
     }
 
     _readSelectedResourceContents(){

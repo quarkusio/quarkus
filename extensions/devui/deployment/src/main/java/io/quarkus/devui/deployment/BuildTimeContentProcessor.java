@@ -327,6 +327,7 @@ public class BuildTimeContentProcessor {
 
         var mapper = DatabindCodec.mapper().writerWithDefaultPrettyPrinter();
         Map<String, String> descriptions = new HashMap<>();
+        Map<String, String> contentTypes = new HashMap<>();
         for (BuildTimeConstBuildItem buildTimeConstBuildItem : buildTimeConstBuildItems) {
             Map<String, Object> data = new HashMap<>();
             if (buildTimeConstBuildItem.hasBuildTimeData()) {
@@ -337,7 +338,11 @@ public class BuildTimeContentProcessor {
                         String value = mapper.writeValueAsString(pageData.getValue().getContent());
                         String description = pageData.getValue().getDescription();
                         if (description != null) {
-                            descriptions.put(ns + "/" + key, description);
+                            descriptions.put(ns + UNDERSCORE + key, description);
+                        }
+                        String contentType = pageData.getValue().getContentType();
+                        if (contentType != null) {
+                            contentTypes.put(ns + UNDERSCORE + key, contentType);
                         }
                         data.put(key, value);
                     } catch (JsonProcessingException ex) {
@@ -351,7 +356,7 @@ public class BuildTimeContentProcessor {
 
                 String ref = buildTimeConstBuildItem.getExtensionPathName(curateOutcomeBuildItem) + "-data";
                 String file = ref + ".js";
-                quteTemplateBuildItem.add("build-time-data.js", file, qutedata, descriptions);
+                quteTemplateBuildItem.add("build-time-data.js", file, qutedata, descriptions, contentTypes);
                 internalImportMapBuildItem.add(ref, contextRoot + file);
             }
         }
@@ -455,6 +460,7 @@ public class BuildTimeContentProcessor {
                 String templateName = e.getTemplateName(); // Relative to BUILD_TIME_PATH
                 Map<String, Object> data = e.getData();
                 Map<String, String> descriptions = e.getDescriptions();
+                Map<String, String> contentTypes = e.getContentTypes();
                 String resourceName = BUILD_TIME_PATH + SLASH + templateName;
                 String fileName = e.getFileName();
                 // TODO: What if we find more than one ?
@@ -467,6 +473,7 @@ public class BuildTimeContentProcessor {
                                 .template(templateContent)
                                 .addData(data)
                                 .descriptions(descriptions)
+                                .contentTypes(contentTypes)
                                 .build();
                         contentPerExtension.add(content);
                     }
@@ -604,7 +611,7 @@ public class BuildTimeContentProcessor {
         }
 
         internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
-        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS);
+        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS, "All the available logger levels");
     }
 
     private void addApplicationInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,

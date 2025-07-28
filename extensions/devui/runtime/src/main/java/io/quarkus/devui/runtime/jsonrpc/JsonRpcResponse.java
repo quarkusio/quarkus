@@ -15,12 +15,6 @@ public final class JsonRpcResponse {
         this.error = null;
     }
 
-    //    public JsonRpcResponse(int id, Result result) {
-    //        this.id = id;
-    //        this.result = result;
-    //        this.error = null;
-    //    }
-
     public JsonRpcResponse(int id, Error error) {
         this.id = id;
         this.result = null;
@@ -39,16 +33,6 @@ public final class JsonRpcResponse {
                 ", error=" + error +
                 '}';
     }
-
-    //    public static final class Content {
-    //        public final Object content;
-    //        public final boolean isError;
-    //
-    //        public Content(boolean isError, Object objects) {
-    //            this.isError = isError;
-    //            this.content = objects;
-    //        }
-    //    }
 
     public static final class Error {
         public final int code;

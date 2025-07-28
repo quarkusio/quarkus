@@ -6,6 +6,7 @@ package io.quarkus.devui.spi.buildtime;
 public class BuildTimeData {
     private Object content;
     private String description;
+    private String contentType = "application/json"; // default
 
     public BuildTimeData() {
 
@@ -18,6 +19,12 @@ public class BuildTimeData {
     public BuildTimeData(Object content, String description) {
         this.content = content;
         this.description = description;
+    }
+
+    public BuildTimeData(Object content, String description, String contentType) {
+        this.content = content;
+        this.description = description;
+        this.contentType = contentType;
     }
 
     public Object getContent() {
@@ -34,5 +41,13 @@ public class BuildTimeData {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
     }
 }

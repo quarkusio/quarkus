@@ -99,9 +99,10 @@ public class DevUIRecorder {
     public Handler<RoutingContext> buildTimeStaticHandler(BeanContainer beanContainer,
             String basePath,
             Map<String, String> urlAndPath,
-            Map<String, String> descriptions) {
+            Map<String, String> descriptions,
+            Map<String, String> contentTypes) {
         DevUIBuildTimeStaticService buildTimeStaticService = beanContainer.beanInstance(DevUIBuildTimeStaticService.class);
-        buildTimeStaticService.addData(basePath, urlAndPath, descriptions);
+        buildTimeStaticService.addData(basePath, urlAndPath, descriptions, contentTypes);
 
         return new DevUIBuildTimeStaticHandler();
     }

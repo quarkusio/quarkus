@@ -139,9 +139,18 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                                     }
                                 }}">
                                 <vaadin-grid-sort-column 
-                                    header='Name'
+                                    header='Namespace'
                                     path="name" 
-                                    auto-width>
+                                    auto-width
+                                    ${columnBodyRenderer(this._namespaceRenderer, [])}
+                                >
+                                </vaadin-grid-sort-column>
+                                <vaadin-grid-sort-column 
+                                    header='Method'
+                                    path="name" 
+                                    auto-width
+                                    ${columnBodyRenderer(this._nameRenderer, [])}
+                                >
                                 </vaadin-grid-sort-column>
                                 <vaadin-grid-sort-column 
                                     header='Description'
@@ -181,14 +190,16 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
     _renderToolInput(){
         if(this._selectedTool.length>0){
             let prop = this._selectedTool[0];
-
             const keys = Object.keys(prop.inputSchema.properties);
-
+            
             return html`<vaadin-vertical-layout>
+                            <b>${prop.name}</b>
                            ${keys.map(
                                 (key) => html`
                                   <vaadin-text-field
                                     label="${key}"
+                                    helper-text="${prop.inputSchema.properties[key].description}"
+                                    placeholder="${prop.inputSchema.properties[key].type}"
                                     @input=${(e) => this._updateSelectedValue(prop.name, key, e)}
                                     @blur=${(e) => this._updateSelectedValue(prop.name, key, e)}
                                   ></vaadin-text-field>
@@ -202,6 +213,14 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
     _closeDialog(){
         this._toolResult = null;
         this._showInputDialog = false;
+    }
+
+    _namespaceRenderer(prop) {
+        return html`${prop.name.split('_')[0]}`;
+    }
+    
+    _nameRenderer(prop) {
+        return html`${prop.name.split('_')[1]}`;
     }
 
     _noOfParameterRenderer(prop) {

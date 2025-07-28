@@ -42,7 +42,7 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
         routingContext.response()
                 .setStatusCode(404)
                 .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(resourceNotFoundData.getJsonContent()));
+                .end(Json.encodePrettily(resourceNotFoundData.getAllEndpoints()));
     }
 
     private void handleText(RoutingContext routingContext) {

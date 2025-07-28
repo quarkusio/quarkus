@@ -45,6 +45,10 @@ public final class InternalPageBuildItem extends MultiBuildItem {
         this.buildTimeData.put(key, new BuildTimeData(value, description));
     }
 
+    public void addBuildTimeData(String key, Object value, String description, String contentType) {
+        this.buildTimeData.put(key, new BuildTimeData(value, description, contentType));
+    }
+
     public List<Page> getPages() {
         return pages;
     }

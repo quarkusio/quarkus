@@ -4,15 +4,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -45,30 +45,24 @@ public class McpResourcesService {
     @Inject
     DevUIBuildTimeStaticService buildTimeStaticService;
 
-    private Map<String, String> buildTimeData = null; // TODO: Find a way to set the description here.
-    private Map<String, JsonRpcMethod> recordedMethods = null;
-    // TODO: Add support for subscriptions
+    private final List<Resource> resources = new LinkedList<>();
+
+    @PostConstruct
+    public void init() {
+        if (this.resources.isEmpty()) {
+            addBuildTimeData();
+            addRecordedData();
+        }
+    }
 
     @JsonRpcDescription("This list all resources available for MCP")
     public Map<String, List<Resource>> list() {
-
-        if (this.buildTimeData == null)
-            fetchBuildTimeData();
-        if (this.recordedMethods == null)
-            fecthRecordedData();
-
-        List<Resource> resources = new ArrayList<>();
-
-        // Add all buildtime data
-        resources.addAll(toBuildTimeDataResourceList());
-        // Add all recorded values as methods
-        resources.addAll(toRecordedResourceList());
-
-        return Map.of("resources", resources);
+        return Map.of("resources", this.resources);
     }
 
     @JsonRpcDescription("This reads a certain resource given the uri as provided by resources/list")
-    public Map<String, List<Content>> read(String uri) {
+    public Map<String, List<Content>> read(
+            @JsonRpcDescription("The uri of the resources as defined in resources/list") String uri) {
         String subUri = uri.substring(URI_SCHEME.length());
         if (subUri.startsWith(SUB_SCHEME_BUILD_TIME)) {
             return readBuildTimeData(uri);
@@ -79,66 +73,11 @@ public class McpResourcesService {
         }
     }
 
-    private List<Resource> toRecordedResourceList() {
-        List<Resource> resources = new ArrayList<>();
-
-        for (JsonRpcMethod recordedJsonRpcMethod : this.recordedMethods.values()) {
-            if (recordedJsonRpcMethod.getUsage().contains(Usage.DEV_MCP)) {
-                Resource resource = new Resource();
-                resource.uri = URI_SCHEME + SUB_SCHEME_RECORDED + recordedJsonRpcMethod.getMethodName();
-                resource.name = recordedJsonRpcMethod.getMethodName();
-
-                if (recordedJsonRpcMethod.getDescription() != null && !recordedJsonRpcMethod.getDescription().isBlank()) {
-                    resource.description = recordedJsonRpcMethod.getDescription();
-                }
-                resources.add(resource);
-            }
-        }
-
-        return resources;
-    }
-
-    private List<Resource> toBuildTimeDataResourceList() {
-        List<Resource> resources = new ArrayList<>();
-
-        for (Map.Entry<String, String> method : this.buildTimeData.entrySet()) {
-            Resource resource = new Resource();
-            resource.uri = URI_SCHEME + SUB_SCHEME_BUILD_TIME + method.getKey();
-            resource.name = method.getKey();
-            resource.description = method.getValue();
-            resources.add(resource);
-        }
-
-        return resources;
-    }
-
-    private Set<String> extractBuildTimeDataMethods(String ns, String jsContent) {
-        Set<String> result = new LinkedHashSet<>();
-
-        Matcher matcher = BTD_PATTERN.matcher(jsContent);
-
-        while (matcher.find()) {
-            String name = matcher.group(1);
-            String jsonValue = matcher.group(2).trim();
-            if (!isEmptyValue(jsonValue)) { // No worth in adding empty resources
-                result.add(ns + SLASH + name);
-            }
-        }
-
-        return result;
-    }
-
-    private boolean isEmptyValue(String value) {
-        return value == null ||
-                value.trim().isEmpty() ||
-                value.trim().matches("^\\[\\s*]$");
-    }
-
     private Map<String, List<Content>> readBuildTimeData(String uri) {
         JsonMapper jsonMapper = jsonRpcRouter.getJsonMapper();
 
         String method = uri.substring((URI_SCHEME + SUB_SCHEME_BUILD_TIME).length());
-        String[] split = method.split(SLASH);
+        String[] split = method.split(UNDERSCORE);
         String ns = split[0];
         String constt = split[1];
         String filename = ns + DASH_DATA_DOT_JS;
@@ -147,7 +86,7 @@ public class McpResourcesService {
             String jsContent = Files.readString(Paths.get(path));
             Content content = new Content();
             content.uri = uri;
-            content.text = jsonMapper.toString(getBuildTimeDataConstValue(jsContent, constt), true);
+            content.text = getBuildTimeDataConstValue(jsContent, constt);
             return Map.of("contents", List.of(content));
         } catch (IOException ex) {
             throw new UncheckedIOException("Could not read " + path, ex);
@@ -156,21 +95,21 @@ public class McpResourcesService {
     }
 
     private Map<String, List<Content>> readRecordedData(String uri) {
+        Map<String, JsonRpcMethod> recordedMethodsMap = jsonRpcRouter.getRecordedMethodsMap();
         JsonMapper jsonMapper = jsonRpcRouter.getJsonMapper();
 
         String method = uri.substring((URI_SCHEME + SUB_SCHEME_RECORDED).length());
         Content content = new Content();
         content.uri = uri;
-        content.text = jsonMapper.toString(recordedMethods.get(method).getRuntimeValue().getValue(), true);
+        content.text = jsonMapper.toString(recordedMethodsMap.get(method).getRuntimeValue().getValue(), true);
         // TODO: Handle Futures Unis and Multies
 
         return Map.of("contents", List.of(content));
     }
 
-    private void fetchBuildTimeData() {
-        this.buildTimeData = new LinkedHashMap<>();
-
+    private void addBuildTimeData() {
         Map<String, String> descriptions = buildTimeStaticService.getDescriptions();
+        Map<String, String> contentTypes = buildTimeStaticService.getContentTypes();
 
         Map<String, String> urlAndPath = buildTimeStaticService.getUrlAndPath();
         for (Map.Entry<String, String> kv : urlAndPath.entrySet()) {
@@ -183,7 +122,12 @@ public class McpResourcesService {
                         Set<String> methodNames = extractBuildTimeDataMethods(key, content);
                         for (String methodName : methodNames) {
                             if (descriptions.containsKey(methodName)) {
-                                this.buildTimeData.put(methodName, descriptions.get(methodName)); // Only if a description exist
+                                Resource resource = new Resource();
+                                resource.uri = URI_SCHEME + SUB_SCHEME_BUILD_TIME + methodName;
+                                resource.name = methodName;
+                                resource.description = descriptions.get(methodName);
+                                resource.mimeType = contentTypes.get(methodName);
+                                this.resources.add(resource);
                             }
                         }
                     }
@@ -195,7 +139,46 @@ public class McpResourcesService {
         }
     }
 
-    // TODO: Find a simpler way.
+    private void addRecordedData() {
+        Map<String, JsonRpcMethod> recordedMethodsMap = jsonRpcRouter.getRecordedMethodsMap();
+
+        for (JsonRpcMethod recordedJsonRpcMethod : recordedMethodsMap.values()) {
+            if (recordedJsonRpcMethod.getUsage().contains(Usage.DEV_MCP)) {
+                Resource resource = new Resource();
+                resource.uri = URI_SCHEME + SUB_SCHEME_RECORDED + recordedJsonRpcMethod.getMethodName();
+                resource.name = recordedJsonRpcMethod.getMethodName();
+
+                if (recordedJsonRpcMethod.getDescription() != null && !recordedJsonRpcMethod.getDescription().isBlank()) {
+                    resource.description = recordedJsonRpcMethod.getDescription();
+                }
+                this.resources.add(resource);
+            }
+        }
+
+    }
+
+    private Set<String> extractBuildTimeDataMethods(String ns, String jsContent) {
+        Set<String> result = new LinkedHashSet<>();
+
+        Matcher matcher = BTD_PATTERN.matcher(jsContent);
+
+        while (matcher.find()) {
+            String name = matcher.group(1);
+            String jsonValue = matcher.group(2).trim();
+            if (!isEmptyValue(jsonValue)) { // No worth in adding empty resources
+                result.add(ns + UNDERSCORE + name);
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isEmptyValue(String value) {
+        return value == null ||
+                value.trim().isEmpty() ||
+                value.trim().matches("^\\[\\s*]$");
+    }
+
     private String getBuildTimeDataConstValue(String jsContent, String constName) {
         String patternString = "export const " + Pattern.quote(constName) + "\\s*=\\s*([^;]+);";
         Pattern pattern = Pattern.compile(patternString, Pattern.DOTALL);
@@ -208,15 +191,11 @@ public class McpResourcesService {
         return "Error: Data not found for " + constName;
     }
 
-    private void fecthRecordedData() {
-        this.recordedMethods = jsonRpcRouter.getRecordedMethodsMap();
-    }
-
     private static final Pattern BTD_PATTERN = Pattern.compile("export const (\\w+)\\s*=\\s*([^;]+);", Pattern.DOTALL);
 
     private static final String URI_SCHEME = "quarkus://resource/";
     private static final String SUB_SCHEME_BUILD_TIME = "build-time/";
     private static final String SUB_SCHEME_RECORDED = "recorded/";
-    private static final String SLASH = "/";
+    private static final String UNDERSCORE = "_";
     private static final String DASH_DATA_DOT_JS = "-data.js";
 }

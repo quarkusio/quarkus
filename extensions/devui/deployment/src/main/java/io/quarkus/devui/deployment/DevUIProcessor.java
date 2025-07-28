@@ -225,6 +225,8 @@ public class DevUIProcessor {
 
             Map<String, String> urlAndPath = new HashMap<>();
             Map<String, String> descriptions = new HashMap<>();
+            Map<String, String> contentTypes = new HashMap<>();
+
             List<DevUIContent> content = staticContentBuildItem.getContent();
             for (DevUIContent c : content) {
                 String parsedContent = Qute.fmt(new String(c.getTemplate()), c.getData());
@@ -236,9 +238,12 @@ public class DevUIProcessor {
                 if (c.getDescriptions() != null && !c.getDescriptions().isEmpty()) {
                     descriptions.putAll(c.getDescriptions());
                 }
+                if (c.getContentTypes() != null && !c.getContentTypes().isEmpty()) {
+                    contentTypes.putAll(c.getContentTypes());
+                }
             }
             Handler<RoutingContext> buildTimeStaticHandler = recorder.buildTimeStaticHandler(beanContainer.getValue(), basepath,
-                    urlAndPath, descriptions);
+                    urlAndPath, descriptions, contentTypes);
 
             routeProducer.produce(
                     nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH_ALL)
@@ -355,6 +360,8 @@ public class DevUIProcessor {
         Map<String, RuntimeJsonRpcMethod> runtimeMethodsMap = new HashMap<>();// All methods to execute against the runtime classpath
         Map<String, RuntimeJsonRpcMethod> runtimeSubscriptionsMap = new HashMap<>();// All subscriptions to execute against the runtime classpath
 
+        DotName descriptionAnnotation = DotName.createSimple(JsonRpcDescription.class);
+
         // Let's use the Jandex index to find all methods
         for (JsonRPCProvidersBuildItem jsonRPCProvidersBuildItem : jsonRPCProvidersBuildItems) {
 
@@ -372,10 +379,19 @@ public class DevUIProcessor {
 
                         Map<String, AbstractJsonRpcMethod.Parameter> parameters = new LinkedHashMap<>(); // Keep the order
                         for (int i = 0; i < method.parametersCount(); i++) {
+                            String description = null;
                             Type parameterType = method.parameterType(i);
+                            AnnotationInstance jsonRpcDescriptionAnnotation = method.parameters().get(i)
+                                    .annotation(descriptionAnnotation);
+                            if (jsonRpcDescriptionAnnotation != null) {
+                                AnnotationValue descriptionValue = jsonRpcDescriptionAnnotation.value();
+                                if (descriptionValue != null && !descriptionValue.asString().isBlank()) {
+                                    description = descriptionValue.asString();
+                                }
+                            }
                             Class<?> parameterClass = toClass(parameterType);
                             String parameterName = method.parameterName(i);
-                            parameters.put(parameterName, new AbstractJsonRpcMethod.Parameter(parameterClass, null)); // TODO: description
+                            parameters.put(parameterName, new AbstractJsonRpcMethod.Parameter(parameterClass, description));
                         }
 
                         // Look for @JsonRpcUsage annotation
@@ -393,7 +409,7 @@ public class DevUIProcessor {
                         // Look for @JsonRpcDescription annotation
                         String description = null;
                         AnnotationInstance jsonRpcDescriptionAnnotation = method
-                                .annotation(DotName.createSimple(JsonRpcDescription.class));
+                                .annotation(descriptionAnnotation);
                         if (jsonRpcDescriptionAnnotation != null) {
                             AnnotationValue descriptionValue = jsonRpcDescriptionAnnotation.value();
                             if (descriptionValue != null && !descriptionValue.asString().isBlank()) {

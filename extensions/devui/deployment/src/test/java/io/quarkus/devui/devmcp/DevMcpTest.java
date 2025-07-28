@@ -156,8 +156,8 @@ public class DevMcpTest {
                 .log().all()
                 .body("id", CoreMatchers.equalTo(5))
                 .body("jsonrpc", CoreMatchers.equalTo("2.0"))
-                .body("result.resources.name", CoreMatchers.hasItem("devui/extensions"))
-                .body("result.resources.uri", CoreMatchers.hasItem("quarkus://resource/build-time/devui/extensions"));
+                .body("result.resources.name", CoreMatchers.hasItem("devui_extensions"))
+                .body("result.resources.uri", CoreMatchers.hasItem("quarkus://resource/build-time/devui_extensions"));
 
     }
 
@@ -169,7 +169,7 @@ public class DevMcpTest {
                       "id": 6,
                       "method": "resources/read",
                       "params": {
-                           "uri": "quarkus://resource/build-time/devui/extensions"
+                           "uri": "quarkus://resource/build-time/devui_extensions"
                       }
                     }
                 """;
@@ -185,7 +185,7 @@ public class DevMcpTest {
                 .log().all()
                 .body("id", CoreMatchers.equalTo(6))
                 .body("jsonrpc", CoreMatchers.equalTo("2.0"))
-                .body("result.contents.uri", CoreMatchers.hasItem("quarkus://resource/build-time/devui/extensions"))
+                .body("result.contents.uri", CoreMatchers.hasItem("quarkus://resource/build-time/devui_extensions"))
                 .body("result.contents.text", CoreMatchers.notNullValue());
 
     }

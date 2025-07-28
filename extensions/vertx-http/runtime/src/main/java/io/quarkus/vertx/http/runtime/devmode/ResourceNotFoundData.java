@@ -138,7 +138,7 @@ public class ResourceNotFoundData {
 
     @NonBlocking
     @JsonRpcDescription("Information on endpoints exposed by this application in Dev Mode. This includes Quarkus endpoints and application endpoints")
-    public JsonObject getJsonContent() {
+    public JsonObject getAllEndpoints() {
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
         JsonObject infoMap = new JsonObject();
 

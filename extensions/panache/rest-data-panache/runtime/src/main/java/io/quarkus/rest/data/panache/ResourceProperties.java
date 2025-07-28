@@ -64,4 +64,9 @@ public @interface ResourceProperties {
      * Default: ""
      */
     String[] rolesAllowed() default {};
+
+    /**
+     * Whether the generated of the resource require an authenticated user
+     */
+    boolean authenticated() default false;
 }

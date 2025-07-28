@@ -71,7 +71,7 @@
         <plexus-utils.version>3.5.1</plexus-utils.version>
         <smallrye-common.version>2.13.7</smallrye-common.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
-        <gradle-tooling.version>9.0.0-rc-3</gradle-tooling.version>
+        <gradle-tooling.version>9.0.0-rc-4</gradle-tooling.version>
         <quarkus-fs-util.version>1.1.0</quarkus-fs-util.version>
         <crac.version>1.5.0</crac.version>
     </properties>

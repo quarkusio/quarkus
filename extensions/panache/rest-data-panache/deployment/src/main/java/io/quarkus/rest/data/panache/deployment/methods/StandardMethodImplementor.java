@@ -15,6 +15,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -45,6 +46,8 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     private static final String SCHEMA_TYPE_CLASS_NAME = "org.eclipse.microprofile.openapi.annotations.enums.SchemaType";
     private static final String SCHEMA_TYPE_ARRAY = "ARRAY";
     private static final String ROLES_ALLOWED_ANNOTATION = "jakarta.annotation.security.RolesAllowed";
+    private static final String AUTHENTICATED_ANNOTATION = "io.quarkus.security.Authenticated";
+    private static final DotName AUTHENTICATED_ANNOTATION_DOT_NAME = DotName.createSimple(AUTHENTICATED_ANNOTATION);
     private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
 
     protected final ResponseImplementor responseImplementor;
@@ -168,6 +171,13 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         String[] rolesAllowed = resourceProperties.getRolesAllowed(getResourceMethodName());
         if (rolesAllowed.length > 0 && hasSecurityCapability()) {
             element.addAnnotation(ROLES_ALLOWED_ANNOTATION).add("value", rolesAllowed);
+        }
+        // authenticatedAlreadyAdded will be true if the method has been specifically annotated with @Authenticated
+        // which means that the annotation has already been copied over to the generated method
+        boolean authenticatedAlreadyAdded = resourceProperties.getMethodAnnotations(getResourceMethodName()).stream()
+                .anyMatch(ai -> ai.name().equals(AUTHENTICATED_ANNOTATION_DOT_NAME));
+        if (resourceProperties.isAuthenticated() && !authenticatedAlreadyAdded) {
+            element.addAnnotation(AUTHENTICATED_ANNOTATION);
         }
     }
 

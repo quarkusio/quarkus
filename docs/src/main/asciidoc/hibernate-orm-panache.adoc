@@ -127,7 +127,7 @@ quarkus.datasource.password = connor
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.schema-management.strategy = drop-and-create
+quarkus.hibernate-orm.database.generation = drop-and-create
 ----
 
 == Solution 1: using the active record pattern
@@ -587,7 +587,7 @@ INSERT INTO person (id, birth, name, status) VALUES (1, '1995-09-12', 'Emily Bro
 ALTER SEQUENCE person_seq RESTART WITH 2;
 ----
 
-NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
+NOTE: If you would like to initialize the DB when you start the Quarkus app in your production environment, add `quarkus.hibernate-orm.database.generation=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
 
 After that, you can see the people list and add new person as followings:
 

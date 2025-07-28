@@ -1,3 +1,5 @@
+package io.quarkus.hibernate.orm.rest.data.panache.deployment;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -33,7 +35,8 @@ public class AuthenticatedClassAnnotationTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-h2-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-rest-jackson-deployment", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment", Version.getVersion())))
+                    Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment",
+                            Version.getVersion())))
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.security.users.embedded.enabled", "true")
             .overrideConfigKey("quarkus.security.users.embedded.plain-text", "true")
@@ -53,7 +56,8 @@ public class AuthenticatedClassAnnotationTest {
     @Authenticated
     public interface ItemsResource extends PanacheEntityResource<Item, Long> {
 
-        @Authenticated // we add it just to make sure that adding it doesn't break the generated code
+        @Authenticated
+        // we add it just to make sure that adding it doesn't break the generated code
         boolean delete(Long id);
     }
 

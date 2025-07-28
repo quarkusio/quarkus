@@ -93,4 +93,5 @@ public class AuthenticatedMethodTest {
                 .then()
                 .statusCode(204);
     }
+
 }

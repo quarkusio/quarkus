@@ -20,12 +20,14 @@ public class ResourceProperties {
 
     private final String[] rolesAllowed;
 
+    private final boolean isAuthenticated;
+
     private final Collection<AnnotationInstance> classAnnotations;
 
     private final Map<String, MethodProperties> methodProperties;
 
     public ResourceProperties(boolean exposed, String path, boolean paged, boolean hal, String halCollectionName,
-            String[] rolesAllowed, Collection<AnnotationInstance> classAnnotations,
+            String[] rolesAllowed, boolean isAuthenticated, Collection<AnnotationInstance> classAnnotations,
             Map<String, MethodProperties> methodProperties) {
         this.exposed = exposed;
         this.path = path;
@@ -33,6 +35,7 @@ public class ResourceProperties {
         this.hal = hal;
         this.halCollectionName = halCollectionName;
         this.rolesAllowed = rolesAllowed;
+        this.isAuthenticated = isAuthenticated;
         this.classAnnotations = classAnnotations;
         this.methodProperties = methodProperties;
     }
@@ -86,6 +89,10 @@ public class ResourceProperties {
         }
 
         return rolesAllowed;
+    }
+
+    public boolean isAuthenticated() {
+        return isAuthenticated;
     }
 
     public Collection<AnnotationInstance> getClassAnnotations() {

@@ -49,7 +49,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  *
@@ -95,7 +94,6 @@ public class ObserverGenerator extends AbstractGenerator {
      *
      * @param observer
      */
-    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
     void precomputeGeneratedName(ObserverInfo observer) {
         // The name of the generated class differs:
         // "org.acme.Foo_Observer_fooMethod_hash" for normal observer where hash represents the signature of the observer method
@@ -113,24 +111,6 @@ public class ObserverGenerator extends AbstractGenerator {
             }
         }
 
-        StringBuilder sigBuilder = new StringBuilder();
-        if (observer.isSynthetic()) {
-            // If a unique id is not specified then the signature is not unique but the best effort
-            if (observer.getUserId() != null) {
-                sigBuilder.append(observer.getUserId());
-            }
-            sigBuilder.append(observer.getObservedType().toString()).append(observer.getQualifiers().toString())
-                    .append(observer.isAsync()).append(observer.getPriority()).append(observer.getTransactionPhase());
-        } else {
-            sigBuilder.append(observer.getObserverMethod().name())
-                    .append(UNDERSCORE)
-                    .append(observer.getObserverMethod().returnType().name().toString());
-            for (org.jboss.jandex.Type paramType : observer.getObserverMethod().parameterTypes()) {
-                sigBuilder.append(paramType.name().toString());
-            }
-            sigBuilder.append(observer.getDeclaringBean().getIdentifier());
-        }
-
         StringBuilder baseNameBuilder = new StringBuilder();
         baseNameBuilder.append(classBase).append(OBSERVER_SUFFIX).append(UNDERSCORE);
         if (observer.isSynthetic()) {
@@ -138,7 +118,7 @@ public class ObserverGenerator extends AbstractGenerator {
         } else {
             baseNameBuilder.append(observer.getObserverMethod().name());
         }
-        baseNameBuilder.append(UNDERSCORE).append(Hashes.sha1_base64(sigBuilder.toString()));
+        baseNameBuilder.append(UNDERSCORE).append(observer.getIdentifier());
         String baseName = baseNameBuilder.toString();
         this.observerToGeneratedBaseName.put(observer, baseName);
 

@@ -31,6 +31,7 @@ import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.ObserverTransformer.ObserverTransformation;
 import io.quarkus.arc.processor.ObserverTransformer.TransformationContext;
 import io.quarkus.gizmo.MethodCreator;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * Represents an observer method.
@@ -145,6 +146,8 @@ public class ObserverInfo implements InjectionTargetInfo {
                 forceApplicationClass);
     }
 
+    private final String identifier;
+
     private final String userId;
 
     private final BeanDeployment beanDeployment;
@@ -188,6 +191,8 @@ public class ObserverInfo implements InjectionTargetInfo {
             boolean isAsync, int priority, Reception reception, TransactionPhase transactionPhase,
             Type observedType, Set<AnnotationInstance> qualifiers, Consumer<MethodCreator> notify,
             Map<String, Object> params, boolean forceApplicationClass) {
+        this.identifier = generateIdentifier(userId, declaringBean, observerMethod, isAsync, priority, transactionPhase,
+                observedType, qualifiers);
         this.userId = userId;
         this.beanDeployment = beanDeployment;
         this.beanClass = beanClass;
@@ -218,10 +223,19 @@ public class ObserverInfo implements InjectionTargetInfo {
     }
 
     /**
-     * A unique identifier should be used for multiple synthetic observer methods with the same
+     * A mandatory unique identifier automatically generated for each Observer.
+     *
+     * @return the unique identifier
+     */
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    /**
+     * A unique user id should be used for multiple synthetic observer methods with the same
      * attributes (including the bean class).
      *
-     * @return the optional identifier
+     * @return the optional user id
      * @deprecated use {@link #getUserId()} instead
      */
     @Deprecated(since = "3.26", forRemoval = true)
@@ -230,10 +244,10 @@ public class ObserverInfo implements InjectionTargetInfo {
     }
 
     /**
-     * A unique identifier should be used for multiple synthetic observer methods with the same
+     * A unique user id should be used for multiple synthetic observer methods with the same
      * attributes (including the bean class).
      *
-     * @return the optional identifier
+     * @return the optional user id
      */
     public String getUserId() {
         return userId;
@@ -397,6 +411,31 @@ public class ObserverInfo implements InjectionTargetInfo {
                 .append(isAsync).append(", reception=").append(reception).append(", transactionPhase=").append(transactionPhase)
                 .append(", observedType=").append(observedType).append(", qualifiers=").append(qualifiers).append("]");
         return builder.toString();
+    }
+
+    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+    private static String generateIdentifier(String userId, BeanInfo declaringBean, MethodInfo observerMethod,
+            boolean isAsync, int priority, TransactionPhase transactionPhase, Type observedType,
+            Set<AnnotationInstance> qualifiers) {
+        StringBuilder sigBuilder = new StringBuilder();
+        if (declaringBean == null) {
+            // If a unique id is not specified then the signature is not unique but the best effort
+            if (userId != null) {
+                sigBuilder.append(userId);
+            }
+            sigBuilder.append(observedType.toString()).append(qualifiers.toString())
+                    .append(isAsync).append(priority).append(transactionPhase);
+        } else {
+            sigBuilder.append(observerMethod.name())
+                    .append('_')
+                    .append(observerMethod.returnType().name().toString());
+            for (org.jboss.jandex.Type paramType : observerMethod.parameterTypes()) {
+                sigBuilder.append(paramType.name().toString());
+            }
+            sigBuilder.append(declaringBean.getIdentifier());
+        }
+
+        return Hashes.sha1_base64(sigBuilder.toString());
     }
 
     private static class ObserverTransformationContext extends AnnotationsTransformationContext<Set<AnnotationInstance>>

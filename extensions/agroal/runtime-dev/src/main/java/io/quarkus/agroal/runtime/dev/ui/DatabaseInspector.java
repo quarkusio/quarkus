@@ -40,6 +40,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.annotations.JsonRpcDescription;
 
 public final class DatabaseInspector {
 
@@ -94,6 +95,7 @@ public final class DatabaseInspector {
         }
     }
 
+    @JsonRpcDescription("Get all available datasources for the Database")
     public List<Datasource> getDataSources() {
         if (isDev) {
             List<Datasource> datasources = new ArrayList<>();
@@ -107,7 +109,8 @@ public final class DatabaseInspector {
         return List.of();
     }
 
-    private Datasource getDatasource(String datasource) {
+    @JsonRpcDescription("Get a spesific datasource for the Database by name")
+    private Datasource getDatasource(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             AgroalDataSource ads = checkedDataSources.get(datasource);
             if (isAllowedDatabase(ads)) {
@@ -122,7 +125,8 @@ public final class DatabaseInspector {
         return null;
     }
 
-    public List<Table> getTables(String datasource) {
+    @JsonRpcDescription("Get all the tables for a certain datasource")
+    public List<Table> getTables(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             List<Table> tableList = new ArrayList<>();
             try {
@@ -182,7 +186,8 @@ public final class DatabaseInspector {
         return null;
     }
 
-    public String generateDot(String datasource) {
+    @JsonRpcDescription("Generate an ER Diagram in dot (graphviz) format for a certain datasource")
+    public String generateDot(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             List<Table> tables = getTables(datasource);
 
@@ -232,7 +237,11 @@ public final class DatabaseInspector {
         return null;
     }
 
-    public DataSet executeSQL(String datasource, String sql, Integer pageNumber, Integer pageSize) {
+    @JsonRpcDescription("Execute SQL against a certain datasource")
+    public DataSet executeSQL(@JsonRpcDescription("Datasource name") String datasource,
+            @JsonRpcDescription("Valid SQL to execute") String sql,
+            @JsonRpcDescription("Page number for pagable rusults, starting at 1") Integer pageNumber,
+            @JsonRpcDescription("Number of rows in a page, example 10") Integer pageSize) {
         if (isDev && sqlIsValid(sql)) {
             try {
                 AgroalDataSource ads = checkedDataSources.get(datasource);
@@ -313,7 +322,8 @@ public final class DatabaseInspector {
         }
     }
 
-    public String getInsertScript(String datasource) {
+    @JsonRpcDescription("Get the import.sql script for a certain datasource")
+    public String getInsertScript(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             try {
                 AgroalDataSource ads = checkedDataSources.get(datasource);

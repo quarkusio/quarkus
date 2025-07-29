@@ -26,7 +26,7 @@ public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
                             "application.properties"));
 
     public DevUIArcBuildTimeDataTest() {
-        super("io.quarkus.quarkus-arc");
+        super("quarkus-arc");
     }
 
     @Test

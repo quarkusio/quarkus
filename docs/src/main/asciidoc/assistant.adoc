@@ -174,7 +174,17 @@ You can invoke the assistant from backend code using xref:dev-ui.adoc#communicat
 
 ==== JsonRPC against the Runtime classpath
 
-To use the assistant in a xref:dev-ui.adoc#jsonrpc-against-the-runtime-classpath[`JsonRpcService`] on the runtime classpath, inject the `Assistant` like this:
+To use the assistant in a xref:dev-ui.adoc#jsonrpc-against-the-runtime-classpath[`JsonRpcService`] on the runtime classpath, you need to make sure the `Assistant` interface is available:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-assistant-dev</artifactId>
+    </dependency>
+----
+
+Then you can inject the `Assistant` like this:
 
 [source,java]
 ----
@@ -201,7 +211,17 @@ You can now use this assistant in any JsonRPC method, example:
 
 ==== JsonRPC against the Deployment classpath
 
-In xref:dev-ui.adoc#jsonrpc-against-the-deployment-classpath[deployment-time] code, use the `BuildTimeActionBuildItem` and register assistant actions via `.addAssistantAction(...)`:
+In xref:dev-ui.adoc#jsonrpc-against-the-deployment-classpath[deployment-time] code, you need to add the assistant-deployment-spi:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-assistant-deployment-spi</artifactId>
+    </dependency>
+----
+
+Then use the `BuildTimeActionBuildItem` and register assistant actions via `.addAssistantAction(...)`:
 
 [source,java]
 ----

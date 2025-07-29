@@ -19,6 +19,7 @@ import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
@@ -249,6 +250,9 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         // Custom for Hibernate Reactive: BatchLoaderFactory
         serviceInitiators.add(ReactiveBatchLoaderFactoryInitiator.INSTANCE);
+
+        // Default implementation -- TODO use Caffeine instead
+        serviceInitiators.add(InternalCacheFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

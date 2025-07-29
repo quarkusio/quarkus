@@ -57,7 +57,7 @@ import io.quarkus.gizmo.ResultHandle;
 public class ObserverGenerator extends AbstractGenerator {
 
     static final String OBSERVER_SUFFIX = "_Observer";
-    static final String OBSERVERVED_TYPE = "observedType";
+    static final String OBSERVED_TYPE = "observedType";
     static final String QUALIFIERS = "qualifiers";
     static final String DECLARING_PROVIDER_SUPPLIER = "declaringProviderSupplier";
 
@@ -177,7 +177,7 @@ public class ObserverGenerator extends AbstractGenerator {
                 .build();
 
         // Fields
-        FieldCreator observedType = observerCreator.getFieldCreator(OBSERVERVED_TYPE, Type.class)
+        FieldCreator observedType = observerCreator.getFieldCreator(OBSERVED_TYPE, Type.class)
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
         FieldCreator observedQualifiers = null;
         if (!observer.getQualifiers().isEmpty()) {

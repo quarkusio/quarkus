@@ -1079,7 +1079,7 @@ jobs:
         run: |
           git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quarkus-version.outputs.quarkus-version }}"
-          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
+          export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml clean verify -DskipTests -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
       - name: Prepare build reports archive
         if: always()
         run: |

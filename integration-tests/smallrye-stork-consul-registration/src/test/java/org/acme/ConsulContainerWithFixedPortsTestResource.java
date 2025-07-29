@@ -32,7 +32,6 @@ public class ConsulContainerWithFixedPortsTestResource implements QuarkusTestRes
                 .withExposedPorts(8500, 8501)
                 .withCommand("agent", "-dev", "-client=0.0.0.0", "-bind=0.0.0.0", "--https-port=8501")
                 .waitingFor(Wait.forLogMessage(".*Synced node info.*", 1));
-        System.out.println(">>> Starting resource Consul container with fixed ports");
         containerWithFixedPorts.start();
 
         return Collections.emptyMap();
@@ -41,10 +40,7 @@ public class ConsulContainerWithFixedPortsTestResource implements QuarkusTestRes
 
     @Override
     public void stop() {
-        //        if (container != null && container.isRunning()) {
-        System.out.println(">>> Stopping resource Consul container with fixed ports");
         containerWithFixedPorts.stop();
-        //        }
     }
 
 }

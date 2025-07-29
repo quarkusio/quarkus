@@ -1,6 +1,6 @@
 package io.quarkus.stork;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 import java.net.InetAddress;
 import java.util.Collections;
@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,9 +33,11 @@ public class StorkConfigUtilTest {
                 .withSources(new MapBackedConfigSource("test", configMap) {
                 })
                 .build();
+    }
 
-        //Registers config for ConfigProvider.getConfig() to return
-        ConfigProviderResolver.instance().registerConfig(config, Thread.currentThread().getContextClassLoader());
+    @AfterEach
+    void tearDown() {
+        ConfigProviderResolver.instance().releaseConfig(config);
     }
 
     @Test
@@ -44,15 +47,17 @@ public class StorkConfigUtilTest {
 
         ServiceConfiguration config = StorkConfigUtil.buildDefaultRegistrarConfiguration(registrarType, healthCheckPath);
 
-        assertTrue(config.serviceRegistrar().isPresent());
+        assertThat(config.serviceRegistrar().isPresent()).isTrue();
         var registrar = config.serviceRegistrar().get();
 
-        assertTrue(registrar.type().isPresent());
-        assertEquals(registrarType, registrar.type().get());
-        assertTrue(registrar.parameters().containsKey("health-check-url"));
+        assertThat(registrar.type().isPresent()).isTrue();
+        assertThat(registrarType).isEqualTo(registrar.type().get());
+        Map<String, String> parameters = registrar.parameters();
+        assertThat(parameters).hasSize(1);
+        assertThat(parameters).containsKey("health-check-url");
 
-        String hcUrl = registrar.parameters().get("health-check-url");
-        assertTrue(hcUrl.contains("/q/health"));
+        String hcUrl = parameters.get("health-check-url");
+        assertThat(hcUrl).contains("/q/health");
     }
 
     @Test
@@ -77,12 +82,12 @@ public class StorkConfigUtilTest {
 
         ServiceConfiguration updated = StorkConfigUtil.addRegistrarTypeIfAbsent("consul", original, "/custom");
 
-        assertTrue(updated.serviceRegistrar().isPresent());
+        assertThat(updated.serviceRegistrar()).isPresent();
         var registrar = updated.serviceRegistrar().get();
 
-        assertTrue(registrar.type().isPresent());
-        assertEquals("consul", registrar.type().get());
-        assertEquals("/custom", registrar.parameters().get("health-check-url"));
+        assertThat(registrar.type()).isPresent();
+        assertThat("consul").isEqualTo(registrar.type().get());
+        assertThat("/custom").isEqualTo(registrar.parameters().get("health-check-url"));
     }
 
     @Test
@@ -95,8 +100,8 @@ public class StorkConfigUtilTest {
         int port = StorkConfigUtil.getOrDefaultPort(params, config);
 
         //should return the first IPv4 address and the quarkus port
-        assertNotEquals("localhost", host);
-        assertEquals(9090, port);
+        assertThat("localhost").isNotEqualTo(host);
+        assertThat(9090).isEqualTo(port);
     }
 
     @Test
@@ -108,15 +113,14 @@ public class StorkConfigUtilTest {
         String host = StorkConfigUtil.getOrDefaultHost(params, config);
         int port = StorkConfigUtil.getOrDefaultPort(params, config);
 
-        assertEquals("145.145.145.145", host);
-        assertEquals(9999, port);
+        assertThat("145.145.145.145").isEqualTo(host);
+        assertThat(9999).isEqualTo(port);
     }
 
     @Test
     void shouldReturnValidInetAddress() {
         InetAddress address = StorkConfigUtil.detectAddress();
-        assertNotNull(address, "Address should not be null");
-        System.out.println("Detected IP: " + address.getHostAddress());
+        assertThat(address).isNotNull();
     }
 
     @Test
@@ -141,7 +145,7 @@ public class StorkConfigUtilTest {
         };
 
         InetAddress result = StorkConfigUtil.findFirstValidAddress(List.of(mockIface));
-        assertEquals(expected, result);
+        assertThat(expected).isEqualTo(result);
     }
 
 }

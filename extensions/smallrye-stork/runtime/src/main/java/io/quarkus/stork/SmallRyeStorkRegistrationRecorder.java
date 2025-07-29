@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.stork.Stork;
@@ -15,15 +16,22 @@ import io.smallrye.stork.api.config.ServiceConfig;
 @Recorder
 public class SmallRyeStorkRegistrationRecorder {
 
-    private static final Logger LOGGER = Logger.getLogger(StorkRegistrarConfigRecorder.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(SmallRyeStorkRegistrationRecorder.class.getName());
 
-    public void registerServiceInstance(StorkConfiguration configuration) {
-        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
+    private final RuntimeValue<StorkConfiguration> runtimeConfig;
+
+    public SmallRyeStorkRegistrationRecorder(final RuntimeValue<StorkConfiguration> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public void registerServiceInstance() {
+        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
         Config quarkusConfig = ConfigProvider.getConfig();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
-            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
-                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration.serviceConfiguration()
+            if (runtimeConfig.getValue().serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
+                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = runtimeConfig.getValue()
+                        .serviceConfiguration()
                         .get(serviceName).serviceRegistrar().get();
                 if (!storkServiceRegistrarConfiguration.enabled()) {
                     LOGGER.info("Service registering disabled for  '" + serviceName + "'.");
@@ -39,11 +47,11 @@ public class SmallRyeStorkRegistrationRecorder {
         }
     }
 
-    public void deregisterServiceInstance(ShutdownContext shutdown, StorkConfiguration configuration) {
+    public void deregisterServiceInstance(ShutdownContext shutdown) {
         shutdown.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
-                deregisterServiceInstance(configuration);
+                deregisterServiceInstance(runtimeConfig.getValue());
             }
         });
     }

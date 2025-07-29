@@ -20,6 +20,7 @@ import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.loader.ast.internal.BatchLoaderFactoryInitiator;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
@@ -247,6 +248,9 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // Default implementation
         serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
+
+        // Default implementation -- TODO use Caffeine instead
+        serviceInitiators.add(InternalCacheFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

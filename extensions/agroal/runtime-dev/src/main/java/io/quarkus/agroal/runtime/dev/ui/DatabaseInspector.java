@@ -19,6 +19,9 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
@@ -34,6 +37,7 @@ import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.LaunchMode;
 
@@ -43,6 +47,9 @@ public final class DatabaseInspector {
 
     @Inject
     Instance<AgroalDataSourceSupport> agroalDataSourceSupports;
+
+    @Inject
+    Optional<Assistant> assistant;
 
     private final Map<String, AgroalDataSource> checkedDataSources = new HashMap<>();
 
@@ -333,6 +340,22 @@ public final class DatabaseInspector {
         return null;
     }
 
+    public CompletionStage<Map<String, String>> generateTableData(String datasource, String schema, String name, int rowCount) {
+        if (isDev && assistant.isPresent()) {
+            List<Table> tables = getTables(datasource);
+            Optional<Table> matchingTable = tables.stream()
+                    .filter(t -> t.tableSchema().equals(schema) && t.tableName().equals(name))
+                    .findFirst();
+
+            if (matchingTable.isPresent()) {
+                return assistant.get().assistBuilder()
+                        .userMessage(generateInsertPrompt(matchingTable.get(), rowCount))
+                        .assist();
+            }
+        }
+        return CompletableFuture.failedStage(new RuntimeException("Assistant is not available"));
+    }
+
     private void exportTable(Connection conn, StringWriter writer, String tableName) throws SQLException, IOException {
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)) {
@@ -452,6 +475,58 @@ public final class DatabaseInspector {
                 dataType == Types.BINARY ||
                 dataType == Types.JAVA_OBJECT ||
                 dataType == Types.OTHER;
+    }
+
+    private String generateInsertPrompt(Table table, int rowCount) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Generate a valid SQL script with ")
+                .append(rowCount)
+                .append(" INSERT statements for the following table:\n\n");
+
+        sb.append("Table name: ")
+                .append(table.tableSchema())
+                .append(".")
+                .append(table.tableName())
+                .append("\n\n");
+
+        sb.append("Columns:\n");
+        for (Column column : table.columns()) {
+            sb.append("- ")
+                    .append(column.columnName())
+                    .append(" (")
+                    .append(column.columnType());
+            if (column.columnType().equalsIgnoreCase("varchar")) {
+                sb.append("(").append(column.columnSize()).append(")");
+            }
+            sb.append(", nullable: ").append(column.nullable());
+            sb.append(")\n");
+        }
+
+        if (!table.primaryKeys().isEmpty()) {
+            sb.append("\nPrimary key(s): ").append(String.join(", ", table.primaryKeys())).append("\n");
+        }
+
+        if (!table.foreignKeys().isEmpty()) {
+            sb.append("\nForeign keys:\n");
+            for (ForeignKey fk : table.foreignKeys()) {
+                sb.append("- ")
+                        .append(fk.columnName())
+                        .append(" references ")
+                        .append(fk.referencedTable())
+                        .append("(")
+                        .append(fk.referencedColumn())
+                        .append(")\n");
+            }
+        }
+
+        sb.append(
+                "\nReturn the output in a field called `script` with the contents being a SQL script with valid INSERT INTO statements for ")
+                .append(table.tableSchema())
+                .append(".")
+                .append(table.tableName())
+                .append(".\n");
+
+        return sb.toString();
     }
 
     private static record Column(String columnName, String columnType, int columnSize, String nullable, boolean binary) {

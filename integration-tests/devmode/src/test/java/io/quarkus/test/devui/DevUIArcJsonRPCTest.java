@@ -25,7 +25,7 @@ public class DevUIArcJsonRPCTest extends DevUIJsonRPCTest {
                             "application.properties"));
 
     public DevUIArcJsonRPCTest() {
-        super("io.quarkus.quarkus-arc");
+        super("quarkus-arc");
     }
 
     @Test

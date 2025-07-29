@@ -48,7 +48,6 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
-import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -56,7 +55,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -460,30 +458,6 @@ public class DevUIProcessor {
         }
         buildTimeConstProducer.produce(methodInfo);
 
-    }
-
-    @BuildStep(onlyIf = IsProduction.class)
-    void cleanProd(BuildProducer<RemovedResourceBuildItem> producer,
-            List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-
-        List<RemovedResourceBuildItem> removedResourceBuildItems = new ArrayList<>();
-
-        for (JsonRPCProvidersBuildItem jsonRPCProvidersBuildItem : jsonRPCProvidersBuildItems) {
-
-            ArtifactKey artifactKey = jsonRPCProvidersBuildItem.getArtifactKey(curateOutcomeBuildItem);
-            if (artifactKey != null) {
-                removedResourceBuildItems.add(new RemovedResourceBuildItem(artifactKey,
-                        Set.of(jsonRPCProvidersBuildItem.getJsonRPCMethodProviderClass().getName())));
-            } else if (jsonRPCProvidersBuildItem.getJsonRPCMethodProviderClass().getName()
-                    .startsWith("io.quarkus.devui.runtime")
-                    || jsonRPCProvidersBuildItem.getJsonRPCMethodProviderClass().getName()
-                            .startsWith("io.quarkus.vertx.http.runtime")) {
-                removedResourceBuildItems.add(new RemovedResourceBuildItem(INTERNAL_KEY,
-                        Set.of(jsonRPCProvidersBuildItem.getJsonRPCMethodProviderClass().getName())));
-            }
-        }
-        producer.produce(removedResourceBuildItems);
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
@@ -1023,9 +997,9 @@ public class DevUIProcessor {
     }
 
     private String getNamespace(ArtifactKey artifactKey) {
-        String namespace = artifactKey.getGroupId() + "." + artifactKey.getArtifactId();
+        String namespace = artifactKey.getArtifactId();
 
-        if (namespace.equals("io.quarkus.quarkus-devui-resources")) {
+        if (namespace.equals("quarkus-devui-resources")) {
             // Internal
             namespace = "";
         } else if (namespace.endsWith("-deployment")) {
@@ -1121,24 +1095,21 @@ public class DevUIProcessor {
     }
 
     private String getExtensionNamespace(Map<String, Object> extensionMap) {
-        final String groupId;
         final String artifactId;
         final String artifact = (String) extensionMap.get("artifact");
         if (artifact == null) {
             // trying quarkus 1.x format
-            groupId = (String) extensionMap.get("group-id");
             artifactId = (String) extensionMap.get("artifact-id");
-            if (artifactId == null || groupId == null) {
+            if (artifactId == null) {
                 throw new RuntimeException(
                         "Failed to locate 'artifact' or 'group-id' and 'artifact-id' among metadata keys "
                                 + extensionMap.keySet());
             }
         } else {
             final GACTV coords = GACTV.fromString(artifact);
-            groupId = coords.getGroupId();
             artifactId = coords.getArtifactId();
         }
-        return groupId + "." + artifactId;
+        return artifactId;
     }
 
     // Sort extensions with Guide first and then alphabetical
@@ -1154,6 +1125,4 @@ public class DevUIProcessor {
             }
         }
     };
-
-    private static final ArtifactKey INTERNAL_KEY = ArtifactKey.ga("io.quarkus", "quarkus-vertx-http");
 }

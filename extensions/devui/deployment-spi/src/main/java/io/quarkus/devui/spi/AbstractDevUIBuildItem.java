@@ -18,7 +18,6 @@ public abstract class AbstractDevUIBuildItem extends MultiBuildItem {
     private final Class<?> callerClass;
     private String extensionIdentifier = null;
     private ArtifactKey artifactKey;
-    private static final String DOT = ".";
     private final boolean isInternal;
 
     public AbstractDevUIBuildItem() {
@@ -66,7 +65,7 @@ public abstract class AbstractDevUIBuildItem extends MultiBuildItem {
     public String getExtensionPathName(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (this.extensionIdentifier == null) {
             ArtifactKey ak = getArtifactKey(curateOutcomeBuildItem);
-            this.extensionIdentifier = ak.getGroupId() + DOT + ak.getArtifactId();
+            this.extensionIdentifier = ak.getArtifactId();
         }
 
         return this.extensionIdentifier;

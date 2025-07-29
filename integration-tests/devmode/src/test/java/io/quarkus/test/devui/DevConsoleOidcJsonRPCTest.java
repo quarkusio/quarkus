@@ -12,7 +12,7 @@ public class DevConsoleOidcJsonRPCTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
     public DevConsoleOidcJsonRPCTest() {
-        super("io.quarkus.quarkus-oidc");
+        super("quarkus-oidc");
     }
 
     @Test

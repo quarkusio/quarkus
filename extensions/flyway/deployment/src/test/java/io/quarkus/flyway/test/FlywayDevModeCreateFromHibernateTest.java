@@ -30,7 +30,7 @@ import io.restassured.RestAssured;
 public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
 
     public FlywayDevModeCreateFromHibernateTest() {
-        super("io.quarkus.quarkus-flyway");
+        super("quarkus-flyway");
     }
 
     @RegisterExtension

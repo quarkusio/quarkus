@@ -116,8 +116,8 @@ public class ObserverGenerator extends AbstractGenerator {
         StringBuilder sigBuilder = new StringBuilder();
         if (observer.isSynthetic()) {
             // If a unique id is not specified then the signature is not unique but the best effort
-            if (observer.getId() != null) {
-                sigBuilder.append(observer.getId());
+            if (observer.getUserId() != null) {
+                sigBuilder.append(observer.getUserId());
             }
             sigBuilder.append(observer.getObservedType().toString()).append(observer.getQualifiers().toString())
                     .append(observer.isAsync()).append(observer.getPriority()).append(observer.getTransactionPhase());
@@ -313,8 +313,8 @@ public class ObserverGenerator extends AbstractGenerator {
         StringBuilder val = new StringBuilder();
         if (observer.isSynthetic()) {
             val.append("Synthetic observer [");
-            if (observer.getId() != null) {
-                val.append("id=").append(observer.getId());
+            if (observer.getUserId() != null) {
+                val.append("id=").append(observer.getUserId());
             } else {
                 val.append("beanClass=").append(observer.getBeanClass());
             }

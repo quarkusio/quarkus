@@ -90,7 +90,7 @@ public class ObserverInfo implements InjectionTargetInfo {
                 buildContext, jtaCapabilities, null, Collections.emptyMap(), false);
     }
 
-    static ObserverInfo create(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
+    static ObserverInfo create(String userId, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
             MethodInfo observerMethod, Injection injection,
             MethodParameterInfo eventParameter, Type observedType, Set<AnnotationInstance> qualifiers, Reception reception,
             TransactionPhase transactionPhase, boolean isAsync, int priority,
@@ -140,12 +140,12 @@ public class ObserverInfo implements InjectionTargetInfo {
                     "The observer %s makes use of %s transactional observers but no JTA capabilities were detected. Transactional observers will be notified at the same time as other observers.",
                     info, transactionPhase);
         }
-        return new ObserverInfo(id, beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter,
+        return new ObserverInfo(userId, beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter,
                 isAsync, priority, reception, transactionPhase, observedType, qualifiers, notify, params,
                 forceApplicationClass);
     }
 
-    private final String id;
+    private final String userId;
 
     private final BeanDeployment beanDeployment;
 
@@ -181,14 +181,14 @@ public class ObserverInfo implements InjectionTargetInfo {
 
     private final boolean forceApplicationClass;
 
-    private ObserverInfo(String id, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
+    private ObserverInfo(String userId, BeanDeployment beanDeployment, DotName beanClass, BeanInfo declaringBean,
             MethodInfo observerMethod,
             Injection injection,
             MethodParameterInfo eventParameter,
             boolean isAsync, int priority, Reception reception, TransactionPhase transactionPhase,
             Type observedType, Set<AnnotationInstance> qualifiers, Consumer<MethodCreator> notify,
             Map<String, Object> params, boolean forceApplicationClass) {
-        this.id = id;
+        this.userId = userId;
         this.beanDeployment = beanDeployment;
         this.beanClass = beanClass;
         this.declaringBean = declaringBean;
@@ -222,9 +222,21 @@ public class ObserverInfo implements InjectionTargetInfo {
      * attributes (including the bean class).
      *
      * @return the optional identifier
+     * @deprecated use {@link #getUserId()} instead
      */
+    @Deprecated(since = "3.26", forRemoval = true)
     public String getId() {
-        return id;
+        return userId;
+    }
+
+    /**
+     * A unique identifier should be used for multiple synthetic observer methods with the same
+     * attributes (including the bean class).
+     *
+     * @return the optional identifier
+     */
+    public String getUserId() {
+        return userId;
     }
 
     BeanDeployment getBeanDeployment() {

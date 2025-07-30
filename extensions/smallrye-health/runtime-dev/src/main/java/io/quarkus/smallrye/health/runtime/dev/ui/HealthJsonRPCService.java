@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
+import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.mutiny.Multi;
@@ -79,6 +80,7 @@ public class HealthJsonRPCService {
         }
     }
 
+    @JsonRpcDescription("Get the current Health of the running Quarkus application")
     public Uni<SmallRyeHealth> getHealth() {
         return smallRyeHealthReporter.getHealthAsync();
     }

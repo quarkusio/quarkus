@@ -23,7 +23,7 @@ public class DevUISchedulerJsonRPCTest extends DevUIJsonRPCTest {
             .withApplicationRoot((jar) -> jar.addClass(Jobs.class));
 
     public DevUISchedulerJsonRPCTest() {
-        super("io.quarkus.quarkus-scheduler");
+        super("quarkus-scheduler");
     }
 
     @Test

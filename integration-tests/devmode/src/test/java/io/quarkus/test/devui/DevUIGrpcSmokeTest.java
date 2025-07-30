@@ -27,7 +27,7 @@ public class DevUIGrpcSmokeTest extends DevUIJsonRPCTest {
             .setCodeGenSources("proto");
 
     public DevUIGrpcSmokeTest() {
-        super("io.quarkus.quarkus-grpc");
+        super("quarkus-grpc");
     }
 
     @Test

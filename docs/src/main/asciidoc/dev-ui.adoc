@@ -1401,7 +1401,7 @@ public class SomeTest extends DevUIBuildTimeDataTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
     public SomeTest() {
-        super("io.quarkus.my-extension");
+        super("my-extension-artifactId");
     }
 
     @Test
@@ -1447,7 +1447,7 @@ public class SomeTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
     public SomeTest() {
-        super("io.quarkus.my-extension");
+        super("my-extension-artifactId");
     }
 
     @Test

@@ -16,7 +16,7 @@ public class DevUIContainerImageBuildTimeDataTest extends DevUIBuildTimeDataTest
             .withEmptyApplication();
 
     public DevUIContainerImageBuildTimeDataTest() {
-        super("io.quarkus.quarkus-container-image");
+        super("quarkus-container-image");
     }
 
     @Test

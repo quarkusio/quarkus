@@ -64,6 +64,7 @@ import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
+import io.quarkus.hibernate.reactive.runtime.HibernateReactivePersistenceUnitProviderHelper;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
@@ -234,7 +235,7 @@ public final class HibernateReactiveProcessor {
 
         QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
                 hibernateOrmConfig, persistenceUnitName, index, persistenceUnitConfig, jpaModel,
-                dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
+                datasourceName, dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
                 systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems,
                 enableDefaultPersistenceUnit);
@@ -338,6 +339,7 @@ public final class HibernateReactiveProcessor {
             CombinedIndexBuildItem index,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             JpaModelBuildItem jpaModel,
+            Optional<String> dataSourceName,
             Optional<String> dbKindOptional,
             Optional<String> explicitDialect,
             Optional<String> explicitDbMinVersion,
@@ -361,6 +363,7 @@ public final class HibernateReactiveProcessor {
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
+                new HibernateReactivePersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
                 new ArrayList<>(modelClassesAndPackages),
                 new Properties(),

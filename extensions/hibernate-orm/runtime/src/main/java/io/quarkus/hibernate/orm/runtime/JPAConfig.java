@@ -35,14 +35,11 @@ public class JPAConfig {
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
         for (QuarkusPersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
             String puName = descriptor.getName();
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getName());
-            if (puConfig.active().isPresent() && !puConfig.active().get()) {
-                LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
-                        puName);
-                deactivatedPersistenceUnitNames.add(puName);
-            } else {
+            if (descriptor.getProviderHelper().isActive(descriptor.getName())) {
                 persistenceUnits.put(new PersistenceUnitsHolder.RecordedStateKey(puName, descriptor.isReactive()),
                         new LazyPersistenceUnit(puName, descriptor.isReactive()));
+            } else {
+                deactivatedPersistenceUnitNames.add(puName);
             }
         }
         this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
@@ -104,14 +101,12 @@ public class JPAConfig {
         }
 
         if (lazyPersistenceUnit == null) {
-            if (deactivatedPersistenceUnitNames.contains(unitName)) {
-                throw new IllegalStateException(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit "
-                                + unitName
-                                + ": Hibernate ORM was deactivated through configuration properties");
-            }
             throw new IllegalArgumentException(
-                    String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
+                    String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'.%s",
+                            unitName,
+                            deactivatedPersistenceUnitNames.contains(unitName)
+                                    ? " This persistence unit is deactivated and should not have been created."
+                                    : ""));
         }
 
         return lazyPersistenceUnit.get();

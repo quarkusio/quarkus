@@ -38,7 +38,7 @@
         <ldrs.version>1.1.7</ldrs.version>
         <directory-tree.version>1.0.3</directory-tree.version>
         <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>
-        <yargs.version>17.7.2</yargs.version>
+        <yargs.version>18.0.0</yargs.version>
         <cliui.version>8.0.1</cliui.version>
         <escalade.version>3.1.2</escalade.version>
         <get-caller-file.version>2.0.5</get-caller-file.version>

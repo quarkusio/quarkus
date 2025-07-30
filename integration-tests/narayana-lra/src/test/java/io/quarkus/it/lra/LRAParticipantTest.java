@@ -1,4 +1,4 @@
-package org.acme.quickstart.lra;
+package io.quarkus.it.lra;
 
 import static io.restassured.RestAssured.given;
 import static org.eclipse.microprofile.lra.annotation.ws.rs.LRA.LRA_HTTP_CONTEXT_HEADER;
@@ -14,27 +14,20 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 
-import org.acme.quickstart.lra.coordinator.TransactionalResource;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.lra.annotation.LRAStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@TestProfile(AppTestProfile.class)
 @TestHTTPEndpoint(TransactionalResource.class)
 public class LRAParticipantTest {
-    private String coordinatorEndpoint;
 
-    @BeforeEach
-    public void setUp() {
-        // start an external LRA coordinator and save its address
-        coordinatorEndpoint = LRAParticipantTestResourceLifecycle.getCoordinatorEndpoint();
-    }
+    @ConfigProperty(name = "quarkus.lra.coordinator-url")
+    private String coordinatorEndpoint;
 
     // test that the JAX-RS ServerLRAFilter can start and end an LRA in a single business method
     @Test

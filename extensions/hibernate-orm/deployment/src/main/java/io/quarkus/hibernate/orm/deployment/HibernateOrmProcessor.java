@@ -998,10 +998,11 @@ public final class HibernateOrmProcessor {
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
         Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
+            String dsConfigProperty = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "datasource");
             throw new ConfigurationException(String.format(Locale.ROOT,
-                    "Datasource must be defined for persistence unit '%s'."
+                    "Datasource must be defined for persistence unit '%s'. Setting the datasource for the persistence unit can be done via the '%s' property. "
                             + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                    persistenceUnitName),
+                    persistenceUnitName, dsConfigProperty),
                     new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
                             "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
         }

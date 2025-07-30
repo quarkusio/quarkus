@@ -23,7 +23,11 @@ public class ClientResponseImpl extends ResponseImpl {
     @Override
     public boolean bufferEntity() {
         // we don't want to buffer these as they could lead to blocking the event loop
-        if (VertxClientInputStream.class.equals(getEntityStream().getClass())) {
+        InputStream entityStream = getEntityStream();
+        if (entityStream == null) {
+            return false;
+        }
+        if (VertxClientInputStream.class.equals(entityStream.getClass())) {
             return true;
         }
         return super.bufferEntity();

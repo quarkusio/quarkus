@@ -81,13 +81,13 @@ import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.qute.Qute;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
@@ -157,13 +157,13 @@ public class DevUIProcessor {
         }
 
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .orderedRoute(DEVUI + SLASH_ALL, -2 * FilterBuildItem.CORS)
+                .orderedRoute(DEVUI + SLASH_ALL, -2 * SecurityHandlerPriorities.CORS)
                 .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts().orElse(null)))
                 .build());
 
         if (devUIConfig.cors().enabled()) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)
+                    .orderedRoute(DEVUI + SLASH_ALL, -1 * SecurityHandlerPriorities.CORS)
                     .handler(recorder.createDevUICorsFilter(devUIConfig.hosts().orElse(null)))
                     .build());
         }

@@ -110,6 +110,7 @@ public class HttpSecurityRecorder {
         if (config.formAuthEnabled()) {
             httpRouter.getValue()
                     .post(config.formPostLocation())
+                    .order(-1 * SecurityHandlerPriorities.FORM_AUTHENTICATION)
                     .handler(new Handler<RoutingContext>() {
                         @Override
                         public void handle(RoutingContext event) {

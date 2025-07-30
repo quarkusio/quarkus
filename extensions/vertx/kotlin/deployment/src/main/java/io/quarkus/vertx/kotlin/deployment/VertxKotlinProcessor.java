@@ -13,9 +13,22 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.vertx.deployment.spi.EventConsumerInvokerCustomizerBuildItem;
 import io.quarkus.vertx.kotlin.runtime.ApplicationCoroutineScope;
 import io.quarkus.vertx.kotlin.runtime.CoroutineInvoker;
+import io.quarkus.vertx.kotlin.runtime.VertxKotlinCoroutinesDispatchers;
 
 public class VertxKotlinProcessor {
     private static final String KOTLIN_COROUTINE_SCOPE = "kotlinx.coroutines.CoroutineScope";
+
+    @BuildStep
+    void produceCoroutineDispatchers(BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+        if (!QuarkusClassLoader.isClassPresentAtRuntime(KOTLIN_COROUTINE_SCOPE)) {
+            return;
+        }
+
+        additionalBean.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(VertxKotlinCoroutinesDispatchers.class)
+                .setUnremovable()
+                .build());
+    }
 
     @BuildStep
     void produceCoroutineScope(BuildProducer<AdditionalBeanBuildItem> additionalBean) {

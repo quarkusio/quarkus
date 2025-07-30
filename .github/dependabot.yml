@@ -218,6 +218,9 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.apache.kafka:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Should be aligned on the version of the dependency from Hibernate artifacts.
+      - dependency-name: org.hibernate.common:*
+      - dependency-name: org.hibernate.models:*
       # Elasticsearch - major updates usually require more work and synchronization, we do them manually.
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
         update-types: ["version-update:semver-major"]

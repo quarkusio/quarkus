@@ -24,6 +24,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import kotlin.coroutines.EmptyCoroutineContext
 
 class VertxKotlinCoroutinesDispatchersTest {
 
@@ -482,6 +483,72 @@ class VertxKotlinCoroutinesDispatchersTest {
                 assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
                 // AND the number value should match the given number
                 assertEquals(givenNumber, requestData.numberValue)
+            }
+
+            // WHEN we return to the call dispatcher
+            // THEN the request context should still be active
+            assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+            // AND the number value should match the given number
+            assertEquals(givenNumber, requestData.numberValue)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["BLOCKING", "NON_BLOCKING"])
+    fun `use empty context which should propagate context`(dispatcherType: String) {
+        runTest {
+            // GIVEN an active request context
+            Arc.container().requestContext().activate()
+            assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+
+            // AND a given number and
+            val givenNumber = 1234L
+
+            requestData.numberValue = givenNumber
+
+            // WHEN we call a method that requires an active request context and that suspends the coroutine
+            requestData.sleep()
+
+            // THEN the request context should still be active
+            assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+            // AND the number value should match the given number
+            assertEquals(givenNumber, requestData.numberValue)
+
+            // WHEN we use the empty context (use current dispatcher)
+            withContext(EmptyCoroutineContext) {
+                // THEN we should be in the same dispatcher as before
+
+                // AND the request context should still be active
+                assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+                // AND the number value should match the given number
+                assertEquals(givenNumber, requestData.numberValue)
+
+                // WHEN we call a method that requires an active request context and that suspends the coroutine
+                // THEN it should not throw an exception
+                assertDoesNotThrow { requestData.sleep() }
+
+                // AND the request context should still be active
+                assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+                // AND the number value should match the given number
+                assertEquals(givenNumber, requestData.numberValue)
+
+                // WHEN we switch to a different dispatcher
+                withContext(testDispatcher(dispatcherType)) {
+
+                    // THEN the request context should still be active
+                    assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+                    // AND the number value should match the given number
+                    assertEquals(givenNumber, requestData.numberValue)
+
+                    // WHEN we call a method that requires an active request context and that suspends the coroutine
+                    // THEN it should not throw an exception
+                    assertDoesNotThrow { requestData.sleep() }
+
+                    // AND the request context should still be active
+                    assertTrue(Arc.container().requestContext().isActive, "Request context should be active")
+                    // AND the number value should match the given number
+                    assertEquals(givenNumber, requestData.numberValue)
+                }
             }
 
             // WHEN we return to the call dispatcher

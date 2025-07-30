@@ -23,7 +23,8 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'."));;
+                    .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'.")
+                    .hasMessageContainingAll("'quarkus.hibernate-orm.\"pu-1\".datasource'"));
 
     @Test
     public void testInvalidConfiguration() {

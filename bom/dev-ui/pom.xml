@@ -46,7 +46,7 @@
         <string-width.version>4.2.3</string-width.version>
         <y18n.version>5.0.8</y18n.version>
         <yargs-parser.version>21.1.1</yargs-parser.version>
-        <strip-ansi.version>6.0.1</strip-ansi.version>
+        <strip-ansi.version>7.1.0</strip-ansi.version>
         <wrap-ansi.version>7.0.0</wrap-ansi.version>
         <emoji-regex>8.0.0</emoji-regex>
         <is-fullwidth-code-point.version>3.0.0</is-fullwidth-code-point.version>

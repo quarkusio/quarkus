@@ -218,7 +218,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
-                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour());
+                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
+                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
         }
 
         log.debug("Found no matching persistence units");

@@ -17,7 +17,7 @@
         <angus-activation.version>2.0.2</angus-activation.version>
         <angus-mail.version>2.0.3</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
         <bouncycastle.version>1.81</bouncycastle.version>
-        <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
+        <bouncycastle.fips.version>2.1.0</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>

@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>quarkus-integration-test-smallrye-stork-consul-registration</artifactId>
-    <name>Quarkus - Integration Tests - Smallrye Stork Automatic Registration</name>
+    <name>Quarkus - Integration Tests - Smallrye Stork Automatic Consul Registration Prod Mode</name>
 
     <dependencies>
         <dependency>
@@ -122,9 +122,6 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
-
-
 </project>

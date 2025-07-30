@@ -15,7 +15,7 @@ public class DeregistrationTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest app = new QuarkusProdModeTest()
-            .withApplicationRoot(jar -> jar.addClasses(GreetingResource.class))
+            //            .withApplicationRoot(jar -> jar.addClasses(GreetingResource.class))
             .setApplicationName("consul-deregistration-test")
             .setApplicationVersion("1.0").setRun(true);
 

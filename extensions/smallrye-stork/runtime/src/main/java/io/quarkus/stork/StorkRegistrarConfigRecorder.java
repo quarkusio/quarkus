@@ -22,12 +22,12 @@ public class StorkRegistrarConfigRecorder {
     }
 
     public void setupServiceRegistrarConfig(String serviceRegistrarType, String healthCheckUrl) {
+        StorkConfigUtil.requireRegistrarTypeNotBlank(serviceRegistrarType);
         Config quarkusConfig = ConfigProvider.getConfig();
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
         List<ServiceConfig> registrationConfigs = serviceConfigs.stream()
                 .filter(serviceConfig -> serviceConfig.serviceRegistrar() != null).toList();
-        String serviceName = quarkusConfig.getOptionalValue("quarkus.application.name", String.class)
-                .orElse("auri-application");
+        String serviceName = quarkusConfig.getValue("quarkus.application.name", String.class);
         if (registrationConfigs.isEmpty()) {
             runtimeConfig.getValue().serviceConfiguration().put(serviceName,
                     StorkConfigUtil.buildDefaultRegistrarConfiguration(serviceRegistrarType, healthCheckUrl));
@@ -37,11 +37,11 @@ public class StorkRegistrarConfigRecorder {
                     (k, serviceConfiguration) -> StorkConfigUtil.addRegistrarTypeIfAbsent(serviceRegistrarType,
                             serviceConfiguration, healthCheckUrl));
         } else {
-            failOnMissingRegistrarTypes(registrationConfigs);
+            failOnMissingRegistrarTypesForMultipleRegistrars(registrationConfigs);
         }
     }
 
-    private static void failOnMissingRegistrarTypes(List<ServiceConfig> registrationConfigs) {
+    private static void failOnMissingRegistrarTypesForMultipleRegistrars(List<ServiceConfig> registrationConfigs) {
         List<String> servicesWithMissingType = new ArrayList<>();
         for (ServiceConfig registrationConfig : registrationConfigs) {
             if (registrationConfig.serviceRegistrar().type().isBlank()) {

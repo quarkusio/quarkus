@@ -1,6 +1,7 @@
 package io.quarkus.stork;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.InetAddress;
 import java.util.Collections;
@@ -61,6 +62,38 @@ public class StorkConfigUtilTest {
     }
 
     @Test
+    public void shouldBuildDefaultRegistrarConfigurationWithoutHealthCheck() {
+        String healthCheckPath = "";
+        String registrarType = "consul";
+
+        ServiceConfiguration config = StorkConfigUtil.buildDefaultRegistrarConfiguration(registrarType, healthCheckPath);
+
+        assertThat(config.serviceRegistrar().isPresent()).isTrue();
+        var registrar = config.serviceRegistrar().get();
+
+        assertThat(registrar.type().isPresent()).isTrue();
+        assertThat(registrarType).isEqualTo(registrar.type().get());
+        Map<String, String> parameters = registrar.parameters();
+        assertThat(parameters).hasSize(0);
+    }
+
+    @Test
+    public void shouldFailsBecauseEmptyRegistrarType() {
+        String healthCheckPath = "";
+        String registrarType = "";
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            StorkConfigUtil.buildDefaultRegistrarConfiguration(registrarType, healthCheckPath);
+        });
+
+        String expectedMessage = "Parameter type should be provided.";
+        String actualMessage = exception.getMessage();
+
+        assertThat(actualMessage).contains(expectedMessage);
+
+    }
+
+    @Test
     public void shouldAddRegistrarTypeGivenAnEmptyConfig() {
         // Given an empty registration config
         ServiceConfiguration original = new ServiceConfiguration() {
@@ -88,6 +121,36 @@ public class StorkConfigUtilTest {
         assertThat(registrar.type()).isPresent();
         assertThat("consul").isEqualTo(registrar.type().get());
         assertThat("/custom").isEqualTo(registrar.parameters().get("health-check-url"));
+    }
+
+    @Test
+    public void shouldFailWhenAddingEmptyRegistrarTypeGivenAnEmptyConfig() {
+        // Given an empty registration config
+        ServiceConfiguration original = new ServiceConfiguration() {
+            @Override
+            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
+                return Optional.empty();
+            }
+
+            @Override
+            public StorkLoadBalancerConfiguration loadBalancer() {
+                return null;
+            }
+
+            @Override
+            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
+                return Optional.empty();
+            }
+        };
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            StorkConfigUtil.addRegistrarTypeIfAbsent("", original, "/custom");
+        });
+
+        String expectedMessage = "Parameter type should be provided.";
+        String actualMessage = exception.getMessage();
+
+        assertThat(actualMessage).contains(expectedMessage);
     }
 
     @Test

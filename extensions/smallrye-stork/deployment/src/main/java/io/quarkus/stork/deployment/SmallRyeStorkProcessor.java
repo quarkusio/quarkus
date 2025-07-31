@@ -106,13 +106,14 @@ public class SmallRyeStorkProcessor {
     void checkStorkConsulRegistrar(BuildProducer<StorkRegistrationBuildItem> registration,
             StorkRegistrarConfigRecorder registrarConfigRecorder, Capabilities capabilities) {
         String smallryeHealthCheckDefaultPath = getDefaultHealthCheckPath(capabilities, ConfigProvider.getConfig());
+        String registrarType = "";
         if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
-            registrarConfigRecorder.setupServiceRegistrarConfig(CONSUL_SERVICE_REGISTRAR_TYPE,
-                    smallryeHealthCheckDefaultPath);
+            registrarType = CONSUL_SERVICE_REGISTRAR_TYPE;
         } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {
-            registrarConfigRecorder.setupServiceRegistrarConfig(EUREKA_SERVICE_REGISTRAR_TYPE,
-                    smallryeHealthCheckDefaultPath);
+            registrarType = EUREKA_SERVICE_REGISTRAR_TYPE;
         }
+        registrarConfigRecorder.setupServiceRegistrarConfig(registrarType,
+                smallryeHealthCheckDefaultPath);
         registration.produce(new StorkRegistrationBuildItem());
 
     }
@@ -120,10 +121,10 @@ public class SmallRyeStorkProcessor {
     private static String getDefaultHealthCheckPath(Capabilities capabilities, Config quarkusConfig) {
         String smallryeHealthCheckDefaultPath = "";
         if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
-            LOGGER.info("Using Smallrye Health Check defaults");
             smallryeHealthCheckDefaultPath = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
                     + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
                     + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();
+            LOGGER.infof("Using Smallrye Health Check defaults: %s", smallryeHealthCheckDefaultPath);
         }
         return smallryeHealthCheckDefaultPath;
     }

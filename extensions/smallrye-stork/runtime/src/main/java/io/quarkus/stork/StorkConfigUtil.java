@@ -58,6 +58,7 @@ public class StorkConfigUtil {
     }
 
     public static ServiceConfiguration buildDefaultRegistrarConfiguration(String serviceRegistrarType, String healthCheckPath) {
+        requireRegistrarTypeNotBlank(serviceRegistrarType);
         Map<String, String> parameters = new HashMap<>();
         Config quarkusConfig = ConfigProvider.getConfig();
         if (healthCheckPath != null && !healthCheckPath.isBlank()) {
@@ -70,6 +71,7 @@ public class StorkConfigUtil {
 
     public static ServiceConfiguration addRegistrarTypeIfAbsent(String serviceRegistrarType,
             ServiceConfiguration serviceConfiguration, String healthCheckUrl) {
+        requireRegistrarTypeNotBlank(serviceRegistrarType);
         Optional<StorkServiceRegistrarConfiguration> storkServiceRegistrarConfiguration = serviceConfiguration
                 .serviceRegistrar();
         Map<String, String> parameters = storkServiceRegistrarConfiguration
@@ -190,6 +192,12 @@ public class StorkConfigUtil {
         }
 
         return null;
+    }
+
+    public static void requireRegistrarTypeNotBlank(String type) {
+        if (type == null || type.isBlank()) {
+            throw new IllegalArgumentException("Parameter type should be provided.");
+        }
     }
 
 }

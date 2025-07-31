@@ -4,15 +4,22 @@ import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INST
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.sdk.common.Clock;
 import io.quarkus.arc.DefaultBean;
 
 @Singleton
 public class MetricsProducer {
+
+    @SuppressWarnings("unused")
+    @Inject
+    OpenTelemetry unused;
+
     @Produces
     @ApplicationScoped
     @DefaultBean

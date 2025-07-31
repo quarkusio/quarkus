@@ -51,7 +51,7 @@ public class ExecuteUtil {
         if (output.isCliTest()) {
             // We have to capture IO differently in tests..
             pb.output().consumeWith(br -> br.lines().forEach(output.out()::println))
-                    .error().consumeWith(br -> br.lines().forEach(output.err()::println))
+                    .error().transferTo(output.err())
                     .run();
         } else {
             pb.output().inherited()

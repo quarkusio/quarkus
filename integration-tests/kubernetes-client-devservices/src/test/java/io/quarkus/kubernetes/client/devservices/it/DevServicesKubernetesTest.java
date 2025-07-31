@@ -26,8 +26,15 @@ public class DevServicesKubernetesTest {
     }
 
     @Test
-    @DisplayName("specified manifest must be applied to the cluster by the dev service")
-    public void manifestIsApplied() {
+    @DisplayName("specified manifest in the resources folder must be applied to the cluster by the dev service")
+    public void resourceManifestIsApplied() {
         Assertions.assertNotNull(kubernetesClient.namespaces().withName("example-namespace").get());
+    }
+
+    @Test
+    @DisplayName("specified manifest from a URL must be applied to the cluster by the dev service")
+    public void urlManifestIsApplied() {
+        // Applied by https://k8s.io/examples/admin/namespace-dev.yaml
+        Assertions.assertNotNull(kubernetesClient.namespaces().withName("development").get());
     }
 }

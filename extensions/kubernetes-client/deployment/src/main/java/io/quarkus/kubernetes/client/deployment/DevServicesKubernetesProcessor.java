@@ -230,14 +230,14 @@ public class DevServicesKubernetesProcessor {
                             });
                         }
                     } catch (Exception ex) {
-                        log.errorf("Failed to deploy manifest %s: %s", manifestPath, ex.getMessage());
+                        log.errorf("Failed to apply manifest %s: %s", manifestPath, ex.getMessage());
                     }
                 }
 
                 log.infof("Applied manifest %s.", manifestPath);
             }
         } catch (Exception e) {
-            log.error("Failed to create Kubernetes client while trying to deploy manifests.", e);
+            log.error("Failed to create Kubernetes client while trying to apply manifests.", e);
         }
     }
 

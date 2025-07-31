@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.hibernate.AssertionFailure;
+import org.hibernate.HibernateException;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.mapping.Collection;
 import org.hibernate.mapping.Column;
@@ -76,19 +78,28 @@ public enum BuiltinFormatMapperBehaviour {
     private static boolean hasXxxProperties(MetadataImplementor metadata, Set<Integer> sqlTypeCodes) {
         for (PersistentClass persistentClass : metadata.getEntityBindings()) {
             for (Property property : persistentClass.getProperties()) {
-                List<Column> columns = property.getColumns();
-                if (columns.isEmpty()) {
-                    if (property.getValue() instanceof Collection c) {
-                        columns = c.getElement().getColumns();
+                try {
+                    if (property.getValue().hasFormula()) {
+                        // formulas do not have columns
+                        continue;
                     }
-                }
-                for (Column column : columns) {
-                    if (sqlTypeCodes.contains(column.getSqlTypeCode(metadata))) {
-                        return true;
+                    List<Column> columns = property.getColumns();
+                    if (columns.isEmpty()) {
+                        if (property.getValue() instanceof Collection c) {
+                            columns = c.getElement().getColumns();
+                        }
                     }
+                    for (Column column : columns) {
+                        if (sqlTypeCodes.contains(column.getSqlTypeCode(metadata))) {
+                            return true;
+                        }
+                    }
+                } catch (HibernateException | AssertionFailure e) {
+                    // skip the failing property and see if any remaining ones are matching the required predicate
                 }
             }
         }
+
         return false;
     }
 

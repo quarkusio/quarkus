@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -31,7 +32,7 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
         if (isJackson) {
             return new JacksonJsonFormatterCustomizationCheck();
         }
-        return new NotModifiedJsonFormatterCustomizationCheck();
+        return new JsonbJsonFormatterCustomizationCheck();
     }
 
     class NotModifiedJsonFormatterCustomizationCheck implements JsonFormatterCustomizationCheck {
@@ -65,7 +66,7 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
                         "io.quarkus.jackson.runtime.ConfigurationCustomizer",
                         "io.quarkus.jackson.runtime.VertxHybridPoolObjectMapperCustomizer");
                 for (Instance.Handle<ObjectMapperCustomizer> handle : customizers.handles()) {
-                    if (allowedCustomizers.contains(handle.getBean().getClass().getName())) {
+                    if (allowedCustomizers.contains(handle.getBean().getBeanClass().getName())) {
                         continue;
                     }
                     // ObjectMapper was potentially customized
@@ -76,9 +77,18 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
             // these won't affect representation of the objects in the DB so it's probably somewhat "safe" to allow them:
             Set<String> acceptableConfigs = Set.of("quarkus.jackson.fail-on-unknown-properties",
                     "quarkus.jackson.fail-on-empty-beans");
+            Map<String, String> expectedDefaults = Map.of(
+                    "quarkus.jackson.write-dates-as-timestamps", "true",
+                    "quarkus.jackson.write-durations-as-timestamps", "true",
+                    "quarkus.jackson.accept-case-insensitive-enums", "false",
+                    "quarkus.jackson.timezone", "UTC");
             for (String propertyName : ConfigProvider.getConfig().getPropertyNames()) {
                 if (propertyName.startsWith("quarkus.jackson.") && !acceptableConfigs.contains(propertyName)) {
-                    return true;
+                    String okValue = expectedDefaults.get(propertyName);
+                    if (okValue != null && !okValue
+                            .equalsIgnoreCase(ConfigProvider.getConfig().getConfigValue(propertyName).getRawValue())) {
+                        return true;
+                    }
                 }
             }
 
@@ -100,12 +110,12 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
             }
 
             Instance<JsonbConfigCustomizer> customizers = container.select(JsonbConfigCustomizer.class);
-            // There most likely are the following customizer available:
+            // There most likely is the following customizer available:
             //  - io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer  --- this one ... Do we need to check if any serializers were added?
             Set<String> allowedCustomizers = Set.of(
                     "io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer");
             for (Instance.Handle<JsonbConfigCustomizer> handle : customizers.handles()) {
-                if (allowedCustomizers.contains(handle.getBean().getClass().getName())) {
+                if (allowedCustomizers.contains(handle.getBean().getBeanClass().getName())) {
                     continue;
                 }
 
@@ -114,7 +124,6 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
             }
 
             // JSON-B does not have the config properties so nothing else to check..
-
             return false;
         }
     }

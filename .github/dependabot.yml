@@ -190,6 +190,13 @@ updates:
       - dependency-name: org.bitbucket.b_c:jose4j
       - dependency-name: io.fabric8:maven-model-helper
       - dependency-name: org.codejive:java-properties
+    groups:
+      # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
+      Hibernate:
+        patterns:
+          - "org.hibernate.orm*"
+          - "org.hibernate.reactive*"
+          - "org.hibernate.search*"
     ignore:
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
@@ -250,6 +257,13 @@ updates:
       - dependency-name: org.hibernate.reactive:*
       - dependency-name: org.hibernate.validator:*
       - dependency-name: org.hibernate.search:*
+    groups:
+      # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
+      Hibernate:
+        patterns:
+          - "org.hibernate.orm*"
+          - "org.hibernate.reactive*"
+          - "org.hibernate.search*"
     ignore:
       # Major/minor upgrades require more work and synchronization, we do them manually.
       # Only use dependabot for micros (patch versions).

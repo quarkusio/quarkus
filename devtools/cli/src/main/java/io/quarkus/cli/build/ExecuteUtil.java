@@ -3,10 +3,14 @@ package io.quarkus.cli.build;
 import static picocli.CommandLine.ExitCode.OK;
 import static picocli.CommandLine.ExitCode.SOFTWARE;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.devtools.exec.ExecSupport;
@@ -37,29 +41,39 @@ public class ExecuteUtil {
             output.out().println();
         }
 
-        var holder = new Object() {
-            int exitCode;
-        };
-        io.smallrye.common.process.ProcessBuilder.Input<Void> pb = io.smallrye.common.process.ProcessBuilder.newBuilder(args[0])
-                .arguments(List.of(args).subList(1, args.length))
-                .directory(parentDir.toPath())
-                .exitCodeChecker(ec -> {
-                    holder.exitCode = ec;
-                    return true;
-                })
-                .input().empty();
+        int exit = SOFTWARE;
         if (output.isCliTest()) {
             // We have to capture IO differently in tests..
-            pb.output().consumeWith(br -> br.lines().forEach(output.out()::println))
-                    .error().transferTo(output.err())
-                    .run();
+            Process process = new ProcessBuilder()
+                    .command(args)
+                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .directory(parentDir)
+                    .start();
+
+            // Drain the output/errors streams
+            ExecutorService service = Executors.newFixedThreadPool(2);
+            service.submit(() -> {
+                new BufferedReader(new InputStreamReader(process.getInputStream())).lines()
+                        .forEach(output.out()::println);
+            });
+            service.submit(() -> {
+                new BufferedReader(new InputStreamReader(process.getErrorStream())).lines()
+                        .forEach(output.err()::println);
+            });
+            process.waitFor(5, TimeUnit.MINUTES);
+            service.shutdown();
+
+            exit = process.exitValue();
         } else {
-            pb.output().inherited()
-                    .error().inherited()
-                    .run();
+            Process process = new ProcessBuilder()
+                    .command(args)
+                    .inheritIO()
+                    .directory(parentDir)
+                    .start();
+            exit = process.waitFor();
         }
 
-        if (holder.exitCode != 0) {
+        if (exit != 0) {
             return SOFTWARE;
         } else {
             return OK;

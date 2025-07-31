@@ -126,6 +126,11 @@ public class ComposeProject {
         for (ComposeServiceDefinition definition : composeFiles.getServiceDefinitions().values()) {
             String serviceName = definition.getServiceName();
             Map<String, Object> labels = definition.getLabels();
+
+            if (Boolean.TRUE.equals(labels.get(COMPOSE_IGNORE))) {
+                continue;
+            }
+
             // Skip the service if profiles doesn't match
             if (!definition.getProfiles().isEmpty() &&
                     definition.getProfiles().stream().noneMatch(profiles::contains)) {

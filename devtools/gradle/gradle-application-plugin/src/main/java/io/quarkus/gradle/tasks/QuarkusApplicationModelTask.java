@@ -70,7 +70,6 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
@@ -357,7 +356,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         Set<ArtifactKey> alreadyVisited = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, artifacts, alreadyVisited);
+                collectExtensionDependencies(result, modelBuilder, artifacts, alreadyVisited, false);
             }
         });
     }
@@ -366,7 +365,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             ResolvedDependencyResult resolvedDependency,
             ApplicationModelBuilder modelBuilder,
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
-            Set<ArtifactKey> alreadyVisited) {
+            Set<ArtifactKey> alreadyVisited,
+            boolean clearReloadableFlag) {
         List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
                 resolvedDependency.getSelected().getId());
         if (artifacts.isEmpty()) {
@@ -377,7 +377,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         for (QuarkusResolvedArtifact artifact : artifacts) {
 
             String classifier = resolveClassifier(moduleVersionIdentifier, artifact.file);
-            ArtifactKey artifactKey = new GACT(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
+            ArtifactKey artifactKey = ArtifactKey.of(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
                     classifier,
                     artifact.type);
             if (!alreadyVisited.add(artifactKey)) {
@@ -391,14 +391,17 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 modelBuilder.addDependency(dep);
             }
             dep.setDeploymentCp();
-            dep.clearFlag(DependencyFlags.RELOADABLE);
-
-        }
-        resolvedDependency.getSelected().getDependencies().forEach(d -> {
-            if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, alreadyVisited);
+            if (clearReloadableFlag) {
+                dep.clearFlag(DependencyFlags.RELOADABLE);
             }
-        });
+            clearReloadableFlag |= !dep.isReloadable();
+        }
+
+        for (DependencyResult d : resolvedDependency.getSelected().getDependencies()) {
+            if (d instanceof ResolvedDependencyResult result) {
+                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, alreadyVisited, clearReloadableFlag);
+            }
+        }
     }
 
     private static List<QuarkusResolvedArtifact> getResolvedModuleArtifacts(

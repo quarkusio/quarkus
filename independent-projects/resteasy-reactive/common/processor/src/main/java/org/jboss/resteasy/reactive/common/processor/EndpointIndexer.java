@@ -752,6 +752,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
+
+            /*
+             * TODO: At some point we need to rewrite isBlocking and isRunOnVirtualThread into
+             * one method that returns an enum.
+             * This would require passing this enum all the way to the runtime and ripping out
+             * the two flags from ResourceMethod
+             */
+
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
             boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, blocking, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
@@ -872,6 +880,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private boolean isRunOnVirtualThread(MethodInfo info, boolean blocking, BlockingDefault defaultValue) {
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
+        Map.Entry<AnnotationTarget, AnnotationInstance> blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
+        Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info, NON_BLOCKING);
 
         if (runOnVirtualThreadAnnotation != null) {
             if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
@@ -884,17 +894,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
             }
             if (!blocking) {
-                throw new DeploymentException(
-                        "Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                                + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
-                                " methods considered blocking");
+                if (blockingAnnotation != null) {
+                    return false;
+                }
+                if (nonBlockingAnnotation != null) {
+                    throw new DeploymentException(
+                            "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                                    + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
+                                    " methods considered blocking");
+                }
+                return true;
             } else {
                 return true;
             }
-        } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
-            return true;
         } else {
-            return false;
+            if (blockingAnnotation != null) {
+                return false;
+            } else {
+                return defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD;
+            }
         }
     }
 

@@ -1,8 +1,11 @@
 package io.quarkus.smallrye.openapi.deployment.devui;
 
+import java.util.Optional;
+
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -18,13 +21,18 @@ public class OpenApiDevUIProcessor {
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
+            Optional<DevContextBuildItem> devContextBuildItem,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openApiConfig) {
 
-        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
+        String devUIContextRoot = "";
+        if (devContextBuildItem.isPresent()) {
+            devUIContextRoot = devContextBuildItem.get().getDevUIContextRoot();
+        }
+        String uiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
-        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
+        String schemaPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();

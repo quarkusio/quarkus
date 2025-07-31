@@ -62,7 +62,7 @@
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
         <jakarta.activation.version>2.1.3</jakarta.activation.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
-        <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
+        <jakarta.authentication-api>3.1.0</jakarta.authentication-api>
         <jakarta.authorization-api.version>2.1.0</jakarta.authorization-api.version>
         <jakarta.el-api.version>6.0.1</jakarta.el-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>

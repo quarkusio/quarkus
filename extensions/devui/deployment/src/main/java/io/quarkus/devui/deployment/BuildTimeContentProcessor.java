@@ -64,6 +64,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.Constants;
+import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeData;
@@ -100,10 +101,16 @@ public class BuildTimeContentProcessor {
      * This will be merged into the final importmap
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    InternalImportMapBuildItem createKnownInternalImportMap(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+    void createKnownInternalImportMap(BuildProducer<InternalImportMapBuildItem> internalImportMapProducer,
+            BuildProducer<DevContextBuildItem> devContextProducer,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             DevUIConfig config) {
 
         String devUIContext = config.contextRoot().orElse("");
+
+        if (!devUIContext.isBlank())
+            devContextProducer.produce(new DevContextBuildItem(devUIContext));
+
         String contextRoot = devUIContext + nonApplicationRootPathBuildItem.getNonApplicationRootPath()
                 + Constants.DEV_UI + SLASH;
 
@@ -151,7 +158,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("assistant-state", contextRoot + "state/assistant-state.js");
         internalImportMapBuildItem.add("devui-state", contextRoot + "state/devui-state.js");
 
-        return internalImportMapBuildItem;
+        internalImportMapProducer.produce(internalImportMapBuildItem);
+
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)

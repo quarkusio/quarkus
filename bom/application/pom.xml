@@ -127,7 +127,7 @@
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.6.0.24.10</oracle-jdbc.version>
         <derby-jdbc.version>10.16.1.1</derby-jdbc.version>
-        <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
+        <db2-jdbc.version>12.1.2.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.13.4</junit.jupiter.version>

@@ -12,9 +12,11 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
+import io.quarkus.gradle.dependency.QuarkusComponentVariants;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
+import io.quarkus.runtime.LaunchMode;
 
 public class DeploymentClasspathBuilder {
 
@@ -25,12 +27,14 @@ public class DeploymentClasspathBuilder {
         this.project = project;
     }
 
-    public void exportDeploymentClasspath(String configurationName) {
+    public void exportDeploymentClasspath(String configurationName, LaunchMode mode) {
 
         String deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(configurationName);
         project.getConfigurations().create(deploymentConfigurationName, config -> {
             Configuration configuration = DependencyUtils.duplicateConfiguration(project,
                     project.getConfigurations().getByName(configurationName));
+            QuarkusComponentVariants.setDeploymentAndConditionalAttributes(configuration, project, mode);
+
             Set<ExtensionDependency<?>> extensionDependencies = collectFirstMetQuarkusExtensions(configuration);
 
             DependencyHandler dependencies = project.getDependencies();
@@ -43,6 +47,7 @@ public class DeploymentClasspathBuilder {
                 dependencies.add(deploymentConfigurationName,
                         DependencyUtils.createDeploymentDependency(dependencies, extension));
             }
+            QuarkusComponentVariants.setDeploymentAndConditionalAttributes(config, project, mode);
         });
     }
 

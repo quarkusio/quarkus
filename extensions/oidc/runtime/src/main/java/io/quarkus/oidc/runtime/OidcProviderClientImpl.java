@@ -22,11 +22,11 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
-import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcFilterStorage;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.security.credential.TokenCredential;
@@ -59,18 +59,15 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private final Key clientJwtKey;
     private final boolean jwtBearerAuthentication;
     private final ClientAssertionProvider clientAssertionProvider;
-    private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
-    private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private final boolean clientSecretQueryAuthentication;
+    private final OidcFilterStorage oidcFilterStorage;
 
     private OidcProvider oidcProvider;
 
     public OidcProviderClientImpl(WebClient client,
             Vertx vertx,
             OidcConfigurationMetadata metadata,
-            OidcTenantConfig oidcConfig,
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
-            Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
+            OidcTenantConfig oidcConfig, OidcFilterStorage oidcFilterStorage) {
         this.client = client;
         this.vertx = vertx;
         this.metadata = metadata;
@@ -81,9 +78,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientAssertionProvider = this.jwtBearerAuthentication ? createClientAssertionProvider(vertx, oidcConfig) : null;
         this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcConfig, true);
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
-        this.requestFilters = requestFilters;
-        this.responseFilters = responseFilters;
         this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
+        this.oidcFilterStorage = oidcFilterStorage;
     }
 
     private static ClientAssertionProvider createClientAssertionProvider(Vertx vertx, OidcTenantConfig oidcConfig) {
@@ -277,7 +273,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
         // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
         // However this period of time can be set to unpredictable value.
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, OidcEndpoint.Type.TOKEN_REVOCATION, oidcFilterStorage);
         return resp.statusCode() == 503 ? false : true;
     }
 
@@ -381,7 +377,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private JsonObject getJsonObject(OidcRequestContextProperties requestProps, String requestUri, HttpResponse<Buffer> resp,
             OidcEndpoint.Type endpoint) {
-        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, endpoint);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, endpoint, oidcFilterStorage);
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
             return buffer.toJsonObject();
@@ -394,7 +390,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private String getString(final OidcRequestContextProperties requestProps, String requestUri, HttpResponse<Buffer> resp,
             OidcEndpoint.Type endpoint) {
-        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, endpoint);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, endpoint, oidcFilterStorage);
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsString());
             return buffer.toString();
@@ -431,9 +427,9 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private HttpRequest<Buffer> filterHttpRequest(OidcRequestContextProperties requestProps, OidcEndpoint.Type endpointType,
             HttpRequest<Buffer> request, Buffer body) {
-        if (!requestFilters.isEmpty()) {
+        if (!oidcFilterStorage.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
-            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters, endpointType)) {
+            for (OidcRequestFilter filter : oidcFilterStorage.getOidcRequestFilters(endpointType, context)) {
                 filter.filter(context);
             }
         }
@@ -449,7 +445,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties, String grantType) {
-        if (requestFilters.isEmpty() && responseFilters.isEmpty()) {
+        if (oidcFilterStorage.isEmpty()) {
             return null;
         }
         Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
@@ -459,6 +455,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         if (grantType != null) {
             newProperties.put(OidcConstants.GRANT_TYPE, grantType);
         }
+        newProperties.putIfAbsent(OidcUtils.OIDC_AUTH_MECHANISM, OidcUtils.getOidcAuthMechanism(oidcConfig));
         return new OidcRequestContextProperties(newProperties);
     }
 

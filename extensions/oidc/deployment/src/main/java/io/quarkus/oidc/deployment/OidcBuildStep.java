@@ -16,12 +16,15 @@ import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectMeth
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Singleton;
@@ -59,6 +62,7 @@ import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -68,10 +72,16 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.GenericType;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
@@ -83,6 +93,9 @@ import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.deployment.OidcFilterPredicateBuildItem;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
@@ -100,6 +113,12 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.ResourceMetadataHandler;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
+import io.quarkus.oidc.runtime.filters.AbstractTenantFeatureRequestFilterPredicate;
+import io.quarkus.oidc.runtime.filters.AbstractTenantFeatureResponseFilterPredicate;
+import io.quarkus.oidc.runtime.filters.AuthorizationCodeFlowRequestFilterPredicate;
+import io.quarkus.oidc.runtime.filters.AuthorizationCodeFlowResponseFilterPredicate;
+import io.quarkus.oidc.runtime.filters.BearerTokenAuthenticationRequestFilterPredicate;
+import io.quarkus.oidc.runtime.filters.BearerTokenAuthenticationResponseFilterPredicate;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -143,6 +162,10 @@ public class OidcBuildStep {
 
     private static final String QUARKUS_TOKEN_PROPAGATION_PACKAGE = "io.quarkus.oidc.token.propagation";
     private static final String SMALLRYE_JWT_PACKAGE = "io.smallrye.jwt";
+    private static final DotName AUTHORIZATION_CODE_FLOW_NAME = DotName.createSimple(AuthorizationCodeFlow.class);
+    private static final DotName BEARER_TOKEN_AUTHENTICATION_NAME = DotName.createSimple(BearerTokenAuthentication.class);
+    private static final DotName OIDC_REQUEST_FILTER = DotName.createSimple(OidcRequestFilter.class.getName());
+    private static final DotName OIDC_RESPONSE_FILTER = DotName.createSimple(OidcResponseFilter.class.getName());
 
     @BuildStep
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
@@ -414,8 +437,10 @@ public class OidcBuildStep {
     @BuildStep
     List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
         return List.of(
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(AuthorizationCodeFlow.class), CODE_FLOW_CODE),
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER_SCHEME));
+                new HttpAuthMechanismAnnotationBuildItem(AUTHORIZATION_CODE_FLOW_NAME, CODE_FLOW_CODE, OIDC_REQUEST_FILTER,
+                        OIDC_RESPONSE_FILTER),
+                new HttpAuthMechanismAnnotationBuildItem(BEARER_TOKEN_AUTHENTICATION_NAME, BEARER_SCHEME, OIDC_REQUEST_FILTER,
+                        OIDC_RESPONSE_FILTER));
     }
 
     @BuildStep
@@ -506,6 +531,116 @@ public class OidcBuildStep {
     FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @BuildStep
+    List<OidcFilterPredicateBuildItem> registerOidcFilterOidcAuthMechanismPredicates() {
+        return List.of(
+                OidcFilterPredicateBuildItem.requestFilter(AUTHORIZATION_CODE_FLOW_NAME,
+                        AuthorizationCodeFlowRequestFilterPredicate.class.getName()),
+                OidcFilterPredicateBuildItem.responseFilter(AUTHORIZATION_CODE_FLOW_NAME,
+                        AuthorizationCodeFlowResponseFilterPredicate.class.getName()),
+                OidcFilterPredicateBuildItem.requestFilter(BEARER_TOKEN_AUTHENTICATION_NAME,
+                        BearerTokenAuthenticationRequestFilterPredicate.class.getName()),
+                OidcFilterPredicateBuildItem.responseFilter(BEARER_TOKEN_AUTHENTICATION_NAME,
+                        BearerTokenAuthenticationResponseFilterPredicate.class.getName()));
+    }
+
+    @BuildStep
+    List<OidcFilterPredicateBuildItem> registerOidcFilterTenantFeatureMechanismPredicates(
+            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<GeneratedClassBuildItem> generatedClassProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
+        record AnnotationInstanceInfo(String[] tenantNames, DotName annotatedClass, boolean request, boolean response) {
+
+            String tenantNamesAsStr() {
+                return String.join("_", tenantNames);
+            }
+
+            String sanitizedTenantNames() {
+                return Arrays
+                        .stream(AnnotationInstanceInfo.this.tenantNames)
+                        .map(tn -> tn.replaceAll("\\W+", ""))
+                        .collect(Collectors.joining("_"));
+            }
+
+        }
+        List<AnnotationInstanceInfo> infos = combinedIndexBuildItem.getIndex()
+                .getAnnotations(TENANT_FEATURE_NAME).stream()
+                .filter(ai -> ai.value() != null && ai.value().asStringArray() != null && ai.value().asStringArray().length > 0)
+                .filter(ai -> ai.target() != null)
+                .filter(ai -> ai.target().kind() == CLASS)
+                .filter(ai -> ai.target().asClass().interfaceNames().contains(OIDC_RESPONSE_FILTER)
+                        || ai.target().asClass().interfaceNames().contains(OIDC_REQUEST_FILTER))
+                .map(ai -> {
+                    boolean isRequestFilter = ai.target().asClass().interfaceNames().contains(OIDC_REQUEST_FILTER);
+                    boolean isResponseFilter = ai.target().asClass().interfaceNames().contains(OIDC_RESPONSE_FILTER);
+                    DotName filterClassName = ai.target().asClass().name();
+                    String[] tenantNames = ai.value().asStringArray();
+                    return new AnnotationInstanceInfo(tenantNames, filterClassName, isRequestFilter, isResponseFilter);
+                })
+                .toList();
+        if (infos.isEmpty()) {
+            return List.of();
+        }
+        Map<String, String> tenantNameToGeneratedRequestFilterClass = new HashMap<>();
+        Map<String, String> tenantNameToGeneratedResponseFilterClass = new HashMap<>();
+        for (AnnotationInstanceInfo info : infos) {
+            if (info.request) {
+                // request filter
+                if (tenantNameToGeneratedRequestFilterClass.containsKey(info.tenantNamesAsStr())) {
+                    continue;
+                }
+                var generatedClassName = "io.quarkus.oidc.codegen.TenantFeatureRequestFilterPredicate_"
+                        + info.sanitizedTenantNames();
+                tenantNameToGeneratedRequestFilterClass.put(info.tenantNamesAsStr(), generatedClassName);
+                generateTenantFeatureFilterPredicateClass(generatedClassProducer, generatedResources, info.tenantNames,
+                        generatedClassName, AbstractTenantFeatureRequestFilterPredicate.class);
+            }
+            if (info.response) {
+                // response filter
+                if (tenantNameToGeneratedResponseFilterClass.containsKey(info.tenantNamesAsStr())) {
+                    continue;
+                }
+                var generatedClassName = "io.quarkus.oidc.codegen.TenantFeatureResponseFilterPredicate_"
+                        + info.sanitizedTenantNames();
+                tenantNameToGeneratedResponseFilterClass.put(info.tenantNamesAsStr(), generatedClassName);
+                generateTenantFeatureFilterPredicateClass(generatedClassProducer, generatedResources, info.tenantNames,
+                        generatedClassName, AbstractTenantFeatureResponseFilterPredicate.class);
+            }
+        }
+        return infos.stream()
+                .<OidcFilterPredicateBuildItem> mapMulti((info, producer) -> {
+                    final Predicate<ClassInfo> appliesToPredicate = classInfo -> info.annotatedClass.equals(classInfo.name());
+                    if (info.request) {
+                        var generatedClassName = tenantNameToGeneratedRequestFilterClass.get(info.tenantNamesAsStr());
+                        producer.accept(OidcFilterPredicateBuildItem.requestFilter(appliesToPredicate, generatedClassName));
+                    }
+                    if (info.response) {
+                        var generatedClassName = tenantNameToGeneratedResponseFilterClass.get(info.tenantNamesAsStr());
+                        producer.accept(OidcFilterPredicateBuildItem.responseFilter(appliesToPredicate, generatedClassName));
+                    }
+                })
+                .toList();
+    }
+
+    private static void generateTenantFeatureFilterPredicateClass(BuildProducer<GeneratedClassBuildItem> generatedClassProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources, String[] tenantNames, String generatedClassName,
+            Class<?> filterPredicateClass) {
+        var gizmoAdaptor = new GeneratedClassGizmo2Adaptor(generatedClassProducer, generatedResources, true);
+        Gizmo.create(gizmoAdaptor).class_(generatedClassName, cc -> {
+            cc.public_();
+            cc.extends_(filterPredicateClass);
+            cc.final_();
+            cc.defaultConstructor();
+            // protected final List<String> getTenantIds() { List.of("tenant-one", "tenant-two"); }
+            cc.method("getTenantIds", mc -> {
+                mc.final_();
+                mc.protected_();
+                mc.returning(GenericType.of(List.class, List.of(TypeArgument.of(String.class))));
+                var strings = Arrays.stream(tenantNames).map(Const::of).toArray(Const[]::new);
+                mc.body(bc -> bc.return_(bc.listOf(strings)));
+            });
+        });
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

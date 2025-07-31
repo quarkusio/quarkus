@@ -1239,11 +1239,19 @@ You can use OIDC request filters to observe requests, add additional headers, cu
 
 Use xref:security-oidc-code-flow-authentication.adoc#code-flow-oidc-request-filters[quarkus.oidc.common.OidcRequestFilter] to implement a request filter and if necessary, restrict it to the specific OIDC endpoint or endpoints only with the `quarkus.oidc.common.OidcEndpoint` annotation.
 
+Optionally restrict the OIDC request filters to specific mechanism with `io.quarkus.oidc.BearerTokenAuthentication` or `io.quarkus.oidc.AuthorizationCodeFlow` annotations placed on the request filter bean class.
+
+The xref:security-openid-connect-multitenancy.adoc#oidc-filter-tenant-feature-annotation[`TenantFeature` annotation] can be used to restrict the request filter to a specific OIDC tenant.
+
 ==== OIDC responses
 
 You can use OIDC response filters to observe responses, customize a response body, and use the context properties for coordinating with OIDC request filters.
 
 Use xref:security-oidc-code-flow-authentication.adoc#code-flow-oidc-response-filters[quarkus.oidc.common.OidcResponseFilter] to implement a response filter and if necessary, restrict it to the specific OIDC endpoint or endpoints only with the `quarkus.oidc.common.OidcEndpoint` annotation.
+
+Optionally restrict the OIDC response filters to specific mechanism with `io.quarkus.oidc.BearerTokenAuthentication` or `io.quarkus.oidc.AuthorizationCodeFlow` annotations placed on the response filter bean class.
+
+The xref:security-openid-connect-multitenancy.adoc#oidc-filter-tenant-feature-annotation[`TenantFeature` annotation] can be used to restrict the response filter to a specific OIDC tenant.
 
 ==== OIDC redirects
 

@@ -7,7 +7,6 @@ import static io.quarkus.oidc.runtime.OidcRecorder.LOG;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -23,11 +22,9 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
-import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
-import io.quarkus.oidc.common.OidcRequestFilter;
-import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcFilterStorage;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -457,8 +454,7 @@ final class TenantContextFactory {
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         WebClient client = WebClient.create(mutinyVertx, options);
 
-        Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
-        Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
+        OidcFilterStorage oidcFilterStorage = OidcFilterStorage.get();
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled().orElse(true)) {
@@ -466,12 +462,11 @@ final class TenantContextFactory {
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
-                    Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID)));
+                    Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID),
+                            OidcUtils.OIDC_AUTH_MECHANISM, OidcUtils.getOidcAuthMechanism(oidcConfig)));
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters, authServerUriString,
-                            connectionDelayInMillisecs,
-                            mutinyVertx,
-                            oidcConfig.useBlockingDnsLookup())
+                    .discoverMetadata(client, contextProps, authServerUriString, connectionDelayInMillisecs,
+                            mutinyVertx, oidcConfig.useBlockingDnsLookup(), oidcFilterStorage)
                     .onItem()
                     .transform(new Function<JsonObject, OidcConfigurationMetadata>() {
                         @Override
@@ -516,8 +511,7 @@ final class TenantContextFactory {
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom()
-                                .item(new OidcProviderClientImpl(client, vertx, metadata, oidcConfig, oidcRequestFilters,
-                                        oidcResponseFilters));
+                                .item(new OidcProviderClientImpl(client, vertx, metadata, oidcConfig, oidcFilterStorage));
                     }
 
                 });

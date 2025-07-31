@@ -15,7 +15,6 @@ import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,9 +35,6 @@ import javax.crypto.SecretKey;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
@@ -539,25 +535,23 @@ public class OidcCommonUtils {
         return true;
     }
 
-    public static Uni<JsonObject> discoverMetadata(WebClient client,
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
-            OidcRequestContextProperties contextProperties, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
-            String authServerUrl,
-            long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
+    public static Uni<JsonObject> discoverMetadata(WebClient client, OidcRequestContextProperties contextProperties,
+            String authServerUrl, long connectionDelayInMillisecs, Vertx vertx,
+            boolean blockingDnsLookup, OidcFilterStorage oidcFilterStorage) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
-        final OidcRequestContextProperties requestProps = requestFilters.isEmpty() ? null
+        final OidcRequestContextProperties requestProps = oidcFilterStorage.isEmpty() ? null
                 : getDiscoveryRequestProps(contextProperties, discoveryUrl);
 
-        return doDiscoverMetadata(client, requestFilters, contextProperties, responseFilters, discoveryUrl,
-                connectionDelayInMillisecs, vertx, blockingDnsLookup, List.of())
+        return doDiscoverMetadata(client, contextProperties, discoveryUrl,
+                connectionDelayInMillisecs, vertx, blockingDnsLookup, List.of(), oidcFilterStorage)
                 .onFailure(validOidcClientRedirect(discoveryUrl))
                 .recoverWithUni(
                         new Function<Throwable, Uni<? extends JsonObject>>() {
                             @Override
                             public Uni<JsonObject> apply(Throwable t) {
                                 OidcClientRedirectException ex = (OidcClientRedirectException) t;
-                                return doDiscoverMetadata(client, requestFilters, requestProps, responseFilters,
-                                        discoveryUrl, connectionDelayInMillisecs, vertx, blockingDnsLookup, ex.getCookies());
+                                return doDiscoverMetadata(client, requestProps, discoveryUrl, connectionDelayInMillisecs, vertx,
+                                        blockingDnsLookup, ex.getCookies(), oidcFilterStorage);
                             }
                         })
                 .onFailure().transform(t -> {
@@ -568,25 +562,22 @@ public class OidcCommonUtils {
 
     }
 
-    public static Uni<JsonObject> doDiscoverMetadata(WebClient client,
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
-            OidcRequestContextProperties requestProps, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
-            String discoveryUrl,
-            long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup,
-            List<String> cookies) {
+    public static Uni<JsonObject> doDiscoverMetadata(WebClient client, OidcRequestContextProperties requestProps,
+            String discoveryUrl, long connectionDelayInMillisecs, Vertx vertx,
+            boolean blockingDnsLookup, List<String> cookies, OidcFilterStorage oidcFilterStorage) {
         HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
         if (!cookies.isEmpty()) {
             request.putHeader(COOKIE_REQUEST_HEADER, cookies);
         }
-        if (!requestFilters.isEmpty()) {
+        if (!oidcFilterStorage.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
-            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY)) {
+            for (OidcRequestFilter filter : oidcFilterStorage.getOidcRequestFilters(Type.DISCOVERY, context)) {
                 filter.filter(context);
             }
         }
         return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
 
-            Buffer buffer = filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.DISCOVERY);
+            Buffer buffer = filterHttpResponse(requestProps, resp, OidcEndpoint.Type.DISCOVERY, oidcFilterStorage);
 
             if (resp.statusCode() == 200) {
                 return buffer.toJsonObject();
@@ -621,13 +612,13 @@ public class OidcCommonUtils {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public static Buffer filterHttpResponse(OidcRequestContextProperties requestProps,
-            HttpResponse<Buffer> resp, Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+    public static Buffer filterHttpResponse(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp,
+            OidcEndpoint.Type type, OidcFilterStorage oidcFilterStorage) {
         Buffer responseBody = resp.body();
-        if (!responseFilters.isEmpty()) {
+        if (!oidcFilterStorage.isEmpty()) {
             OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
                     responseBody);
-            for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
+            for (OidcResponseFilter filter : oidcFilterStorage.getOidcResponseFilters(type, context)) {
                 filter.filter(context);
             }
             return getResponseBuffer(requestProps, responseBody);
@@ -679,64 +670,6 @@ public class OidcCommonUtils {
             out.write(buf, 0, r);
         }
         return out.toByteArray();
-    }
-
-    public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters() {
-        return getOidcFilters(OidcRequestFilter.class);
-    }
-
-    public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters() {
-        return getOidcFilters(OidcResponseFilter.class);
-    }
-
-    private static <T> Map<OidcEndpoint.Type, List<T>> getOidcFilters(Class<T> filterClass) {
-        ArcContainer container = Arc.container();
-        if (container != null) {
-            Map<OidcEndpoint.Type, List<T>> map = new HashMap<>();
-            for (T filter : container.listAll(filterClass).stream().map(handle -> handle.get())
-                    .collect(Collectors.toList())) {
-                OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
-                if (endpoint != null) {
-                    for (OidcEndpoint.Type type : endpoint.value()) {
-                        map.computeIfAbsent(type, k -> new ArrayList<T>()).add(filter);
-                    }
-                } else {
-                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<T>()).add(filter);
-                }
-            }
-            return map;
-        }
-        return Map.of();
-    }
-
-    public static List<OidcRequestFilter> getMatchingOidcRequestFilters(Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
-            OidcEndpoint.Type type) {
-        return getMatchingOidcFilters(filters, type);
-    }
-
-    public static List<OidcResponseFilter> getMatchingOidcResponseFilters(
-            Map<OidcEndpoint.Type, List<OidcResponseFilter>> filters,
-            OidcEndpoint.Type type) {
-        return getMatchingOidcFilters(filters, type);
-    }
-
-    private static <T> List<T> getMatchingOidcFilters(Map<OidcEndpoint.Type, List<T>> filters,
-            OidcEndpoint.Type type) {
-        List<T> typeSpecific = filters.get(type);
-        List<T> all = filters.get(OidcEndpoint.Type.ALL);
-        if (typeSpecific == null && all == null) {
-            return List.of();
-        }
-        if (typeSpecific != null && all == null) {
-            return typeSpecific;
-        } else if (typeSpecific == null && all != null) {
-            return all;
-        } else {
-            List<T> combined = new ArrayList<>(typeSpecific.size() + all.size());
-            combined.addAll(typeSpecific);
-            combined.addAll(all);
-            return combined;
-        }
     }
 
     public static Uni<HttpResponse<Buffer>> sendRequest(io.vertx.core.Vertx vertx, HttpRequest<Buffer> request,

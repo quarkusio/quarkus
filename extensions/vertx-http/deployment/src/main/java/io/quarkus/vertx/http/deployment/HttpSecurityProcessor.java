@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem.isExcludedAnnotationTarget;
 import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_POLICY;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -330,14 +332,17 @@ public class HttpSecurityProcessor {
         // methods annotated with @HttpAuthenticationMechanism that we should additionally secure;
         // when there is no other RBAC annotation applied
         // then by default @HttpAuthenticationMechanism("any-value") == @Authenticated
+        Set<AnnotationTarget> allAnnotatedTargets = new HashSet<>();
         Set<MethodInfo> methodsWithoutRbacAnnotations = new HashSet<>();
-
+        Predicate<AnnotationTarget> isExcludedAnnotationTarget = isExcludedAnnotationTarget(additionalHttpAuthMechAnnotations);
         Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
         DotName[] mechNames = Stream
                 .concat(Stream.of(AUTH_MECHANISM_NAME), additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName))
                 .flatMap(mechName -> {
                     var instances = combinedIndexBuildItem.getIndex().getAnnotations(mechName);
                     if (!instances.isEmpty()) {
+                        allAnnotatedTargets.addAll(instances.stream().map(AnnotationInstance::target)
+                                .filter(Objects::nonNull).filter(Predicate.not(isExcludedAnnotationTarget)).toList());
                         // e.g. collect @Basic without @RolesAllowed, @PermissionsAllowed, ..
                         methodsWithoutRbacAnnotations
                                 .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances)));
@@ -357,7 +362,9 @@ public class HttpSecurityProcessor {
                 }).toArray(DotName[]::new);
 
         if (mechNames.length > 0) {
-            validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
+            if (!allAnnotatedTargets.isEmpty()) {
+                validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
+            }
 
             // register method interceptor that will be run before security checks
             Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream()
@@ -368,9 +375,12 @@ public class HttpSecurityProcessor {
 
             // make all @HttpAuthenticationMechanism annotation targets authenticated by default
             if (!methodsWithoutRbacAnnotations.isEmpty()) {
-                // @RolesAllowed("**") == @Authenticated
-                additionalSecuredMethodsProducer.produce(
-                        new AdditionalSecuredMethodsBuildItem(methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
+                methodsWithoutRbacAnnotations.removeIf(isExcludedAnnotationTarget);
+                if (!methodsWithoutRbacAnnotations.isEmpty()) {
+                    // @RolesAllowed("**") == @Authenticated
+                    additionalSecuredMethodsProducer.produce(
+                            new AdditionalSecuredMethodsBuildItem(methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
+                }
             }
         }
     }

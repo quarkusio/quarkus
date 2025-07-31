@@ -484,6 +484,7 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
@@ -491,6 +492,7 @@ import io.quarkus.oidc.common.OidcResponseFilter;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 
+@AuthorizationCodeFlow  <1>
 @ApplicationScoped
 @Unremovable
 @OidcEndpoint(value = Type.TOKEN)
@@ -507,6 +509,11 @@ public class TokenResponseFilter implements OidcResponseFilter {
     }
 }
 ----
+<1> Optionally restrict this filter to the OpenID Connect authorization code flow mechanism.
+If this annotation is not applied, the `TokenResponseFilter` filter is applied to all the OIDC token endpoint calls.
+Please note that this feature is not supported when the `quarkus.oidc.application-type=hybrid` property is configured.
+
+TIP: The xref:security-openid-connect-multitenancy.adoc#oidc-filter-tenant-feature-annotation[`TenantFeature` annotation] can be used to restrict the `TokenResponseFilter` filter to a specific OIDC tenant.
 
 === Redirecting to and from the OIDC provider
 

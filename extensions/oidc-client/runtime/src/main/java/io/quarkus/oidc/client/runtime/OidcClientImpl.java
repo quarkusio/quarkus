@@ -7,7 +7,6 @@ import java.security.Key;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -21,10 +20,10 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
-import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.OidcFilterStorage;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
@@ -55,15 +54,13 @@ public class OidcClientImpl implements OidcClient {
     private final Key clientJwtKey;
     private final boolean jwtBearerAuthentication;
     private final OidcClientConfig oidcConfig;
-    private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
-    private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
+    private final OidcFilterStorage oidcFilterStorage;
     private final ClientAssertionProvider clientAssertionProvider;
     private volatile boolean closed;
 
     OidcClientImpl(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
-            Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters, Vertx vertx) {
+            Vertx vertx, OidcFilterStorage oidcFilterStorage) {
         this.client = client;
         this.tokenRequestUri = tokenRequestUri;
         this.tokenRevokeUri = tokenRevokeUri;
@@ -71,8 +68,6 @@ public class OidcClientImpl implements OidcClient {
         this.commonRefreshGrantParams = commonRefreshGrantParams;
         this.grantType = grantType;
         this.oidcConfig = oidcClientConfig;
-        this.requestFilters = requestFilters;
-        this.responseFilters = responseFilters;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig);
         this.jwtBearerAuthentication = oidcClientConfig.credentials().jwt().source() == Source.BEARER;
         this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcClientConfig, false);
@@ -86,6 +81,7 @@ public class OidcClientImpl implements OidcClient {
         } else {
             this.clientAssertionProvider = null;
         }
+        this.oidcFilterStorage = oidcFilterStorage;
     }
 
     @Override
@@ -132,7 +128,7 @@ public class OidcClientImpl implements OidcClient {
     }
 
     private OidcRequestContextProperties getRequestProps(String grantType) {
-        if (requestFilters.isEmpty() && responseFilters.isEmpty()) {
+        if (oidcFilterStorage.isEmpty()) {
             return null;
         }
         Map<String, Object> props = new HashMap<>();
@@ -148,7 +144,7 @@ public class OidcClientImpl implements OidcClient {
         // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
         // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
         // However this period of time can be set to unpredictable value.
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, OidcEndpoint.Type.TOKEN_REVOCATION, oidcFilterStorage);
         return resp.statusCode() == 503 ? false : true;
     }
 
@@ -256,7 +252,7 @@ public class OidcClientImpl implements OidcClient {
     }
 
     private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, boolean refresh) {
-        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, OidcEndpoint.Type.TOKEN, oidcFilterStorage);
         if (resp.statusCode() == 200) {
             LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.id().get(), (refresh ? "refreshed" : "acquired"));
             JsonObject json = buffer.toJsonObject();
@@ -357,11 +353,9 @@ public class OidcClientImpl implements OidcClient {
     private HttpRequest<Buffer> filterHttpRequest(
             OidcRequestContextProperties requestProps,
             OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body) {
-        if (!requestFilters.isEmpty()) {
-            OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
-            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters, endpointType)) {
-                filter.filter(context);
-            }
+        final OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
+        for (OidcRequestFilter filter : oidcFilterStorage.getOidcRequestFilters(endpointType, context)) {
+            filter.filter(context);
         }
         return request;
     }

@@ -1524,33 +1524,40 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.logging.Log;
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 
+@BearerTokenAuthentication  <1>
 @ApplicationScoped
 @Unremovable
-@OidcEndpoint(value = Type.DISCOVERY) <1>
+@OidcEndpoint(value = Type.DISCOVERY) <2>
 public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
 
     @Override
     public void filter(OidcResponseContext rc) {
-        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        String contentType = rc.responseHeaders().get("Content-Type"); <3>
         if (contentType.equals("application/json") {
-            String tenantId = rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
-            String metadata = rc.responseBody().toString(); <4>
+            String tenantId = rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE); <4>
+            String metadata = rc.responseBody().toString(); <5>
             Log.debugf("Tenant %s OIDC metadata: %s", tenantId, metadata);
         }
     }
 }
 
 ----
-<1> Restrict this filter to requests targeting the OIDC discovery endpoint only.
-<2> Check the response `Content-Type` header.
-<3> Use `OidcRequestContextProperties` request properties to get the tenant id.
-<4> Get the response data as String.
+<1> Optionally restrict this filter to the Bearer token authentication mechanism.
+If this annotation is not applied, the `DiscoveryEndpointResponseFilter` filter is applied to all the OIDC discovery endpoint calls.
+Please note that this feature is not supported when the `quarkus.oidc.application-type=hybrid` property is configured.
+<2> Restrict this filter to requests targeting the OIDC discovery endpoint only.
+<3> Check the response `Content-Type` header.
+<4> Use `OidcRequestContextProperties` request properties to get the tenant id.
+<5> Get the response data as String.
+
+TIP: The xref:security-openid-connect-multitenancy.adoc#oidc-filter-tenant-feature-annotation[`TenantFeature` annotation] can be used to restrict the `DiscoveryEndpointResponseFilter` filter to a specific OIDC tenant.
 
 == Programmatic OIDC start-up
 

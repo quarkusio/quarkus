@@ -2,6 +2,8 @@ package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.common.runtime.OidcCommonUtils.base64UrlDecode;
 import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
+import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
+import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
@@ -111,6 +113,7 @@ public final class OidcUtils {
     public static final String DPOP_PROOF_JWT_HEADERS = "dpop_proof_jwt_headers";
     public static final String DPOP_PROOF_JWT_CLAIMS = "dpop_proof_jwt_claims";
     public static final String CLEAR_SITE_DATA_HEADER = "Clear-Site-Data";
+    public static final String OIDC_AUTH_MECHANISM = "oidc-auth-mechanism";
 
     private static final String APPLICATION_JWT = "application/jwt";
 
@@ -948,5 +951,17 @@ public final class OidcUtils {
         }
         // if it is only '/' then return an empty value
         return "/".equals(rootPath) ? "" : rootPath;
+    }
+
+    public static String getOidcAuthMechanism(OidcTenantConfig oidcConfig) {
+        if (oidcConfig != null) {
+            if (isServiceApp(oidcConfig)) {
+                return BEARER_SCHEME;
+            }
+            if (isWebApp(oidcConfig)) {
+                return CODE_FLOW_CODE;
+            }
+        }
+        return "";
     }
 }

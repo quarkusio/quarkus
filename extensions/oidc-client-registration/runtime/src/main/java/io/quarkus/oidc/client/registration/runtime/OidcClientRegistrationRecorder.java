@@ -18,11 +18,9 @@ import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
 import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig.Metadata;
 import io.quarkus.oidc.client.registration.OidcClientRegistrations;
 import io.quarkus.oidc.client.registration.RegisteredClient;
-import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
-import io.quarkus.oidc.common.OidcRequestFilter;
-import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcFilterStorage;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -131,8 +129,7 @@ public class OidcClientRegistrationRecorder {
         final io.vertx.mutiny.core.Vertx vertx = new io.vertx.mutiny.core.Vertx(vertxSupplier.get());
         WebClient client = WebClient.create(vertx, options);
 
-        Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
-        Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
+        OidcFilterStorage oidcFilterStorage = OidcFilterStorage.get();
         Uni<OidcConfigurationMetadata> clientRegConfigUni = null;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath())) {
             clientRegConfigUni = Uni.createFrom().item(
@@ -144,9 +141,7 @@ public class OidcClientRegistrationRecorder {
                         .item(new OidcConfigurationMetadata(
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath())));
             } else {
-                clientRegConfigUni = discoverRegistrationUri(client, oidcRequestFilters, oidcResponseFilters,
-                        authServerUriString.toString(), vertx,
-                        oidcConfig);
+                clientRegConfigUni = discoverRegistrationUri(client, authServerUriString, vertx, oidcConfig, oidcFilterStorage);
             }
         }
         return clientRegConfigUni.onItemOrFailure()
@@ -173,9 +168,7 @@ public class OidcClientRegistrationRecorder {
                                     connectionDelayInMillisecs,
                                     metadata.clientRegistrationUri,
                                     oidcConfig,
-                                    null,
-                                    oidcRequestFilters,
-                                    oidcResponseFilters));
+                                    null, oidcFilterStorage));
                         } else if (clientMetadata.getJsonObject().isEmpty()) {
                             LOG.debugf("%s client registration is skipped because its metadata is not configured",
                                     oidcConfig.id().orElse(DEFAULT_ID));
@@ -183,13 +176,10 @@ public class OidcClientRegistrationRecorder {
                                     connectionDelayInMillisecs,
                                     metadata.clientRegistrationUri,
                                     oidcConfig,
-                                    null,
-                                    oidcRequestFilters,
-                                    oidcResponseFilters));
+                                    null, oidcFilterStorage));
                         } else {
-                            return OidcClientRegistrationImpl.registerClient(client,
-                                    metadata.clientRegistrationUri,
-                                    oidcConfig, oidcRequestFilters, oidcResponseFilters, clientMetadata.getMetadataString())
+                            return OidcClientRegistrationImpl.registerClient(client, metadata.clientRegistrationUri,
+                                    oidcConfig, clientMetadata.getMetadataString(), oidcFilterStorage)
                                     .onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
                                     .retry()
                                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION,
@@ -213,9 +203,7 @@ public class OidcClientRegistrationRecorder {
                                                     connectionDelayInMillisecs,
                                                     metadata.clientRegistrationUri,
                                                     oidcConfig,
-                                                    registeredClient,
-                                                    oidcRequestFilters,
-                                                    oidcResponseFilters);
+                                                    registeredClient, oidcFilterStorage);
                                         }
                                     });
                         }
@@ -228,15 +216,12 @@ public class OidcClientRegistrationRecorder {
     }
 
     private static Uni<OidcConfigurationMetadata> discoverRegistrationUri(WebClient client,
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
-            Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
-            String authServerUrl, io.vertx.mutiny.core.Vertx vertx, OidcClientRegistrationConfig oidcConfig) {
+            String authServerUrl, io.vertx.mutiny.core.Vertx vertx, OidcClientRegistrationConfig oidcConfig,
+            OidcFilterStorage oidcFilterStorage) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         return OidcCommonUtils
-                .discoverMetadata(client, oidcRequestFilters, new OidcRequestContextProperties(),
-                        oidcResponseFilters, authServerUrl,
-                        connectionDelayInMillisecs, vertx,
-                        oidcConfig.useBlockingDnsLookup())
+                .discoverMetadata(client, new OidcRequestContextProperties(), authServerUrl, connectionDelayInMillisecs,
+                        vertx, oidcConfig.useBlockingDnsLookup(), oidcFilterStorage)
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("registration_endpoint")));
     }
 

@@ -32,6 +32,7 @@ public class DynamicVerificationKeyResolver {
 
     private final OidcProviderClientImpl client;
     private final MemoryCache<Key> cache;
+    private final OidcTenantConfig config;
     final CertChainPublicKeyResolver chainResolverFallback;
 
     public DynamicVerificationKeyResolver(OidcProviderClientImpl client, OidcTenantConfig config) {
@@ -43,6 +44,7 @@ public class DynamicVerificationKeyResolver {
         } else {
             chainResolverFallback = null;
         }
+        this.config = config;
     }
 
     public Uni<VerificationKeyResolver> resolve(TokenCredential tokenCred) {
@@ -60,7 +62,9 @@ public class DynamicVerificationKeyResolver {
 
         return client.getJsonWebKeySet(new OidcRequestContextProperties(
                 Map.of(OidcRequestContextProperties.TOKEN, tokenCred.getToken(),
-                        OidcRequestContextProperties.TOKEN_CREDENTIAL, tokenCred)))
+                        OidcRequestContextProperties.TOKEN_CREDENTIAL, tokenCred,
+                        OidcUtils.OIDC_AUTH_MECHANISM, OidcUtils.getOidcAuthMechanism(config),
+                        OidcUtils.TENANT_ID_ATTRIBUTE, config.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID))))
                 .onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends VerificationKeyResolver>>() {
 
                     @Override

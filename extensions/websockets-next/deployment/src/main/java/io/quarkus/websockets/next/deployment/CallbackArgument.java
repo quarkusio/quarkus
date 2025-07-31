@@ -7,8 +7,9 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
@@ -36,17 +37,17 @@ interface CallbackArgument {
      * @param context
      * @return the result handle to be passed as an argument to a callback method
      */
-    ResultHandle get(InvocationBytecodeContext context);
+    Expr get(InvocationBytecodeContext context);
 
     /**
      *
      * @return the priority
      */
-    default int priotity() {
+    default int priority() {
         return DEFAULT_PRIORITY;
     }
 
-    static final int DEFAULT_PRIORITY = 1;
+    int DEFAULT_PRIORITY = 1;
 
     interface ParameterContext {
 
@@ -101,14 +102,14 @@ interface CallbackArgument {
          *
          * @return the bytecode
          */
-        BytecodeCreator bytecode();
+        BlockCreator bytecode();
 
         /**
          * Obtains the message or error directly in the bytecode.
          *
          * @return the message/error object or {@code null} for {@link OnOpen} and {@link OnClose} callbacks
          */
-        ResultHandle getPayload();
+        Var getPayload();
 
         /**
          * Attempts to obtain the decoded message directly in the bytecode.
@@ -116,14 +117,14 @@ interface CallbackArgument {
          * @param parameterType
          * @return the decoded message object or {@code null} for {@link OnOpen}, {@link OnClose} and {@link OnError} callbacks
          */
-        ResultHandle getDecodedMessage(Type parameterType);
+        Expr getDecodedMessage(Type parameterType);
 
         /**
          * Obtains the current connection directly in the bytecode.
          *
          * @return the current {@link WebSocketConnection}, never {@code null}
          */
-        ResultHandle getConnection();
+        Var getConnection();
 
     }
 

@@ -8,8 +8,9 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 
 import io.quarkus.arc.processor.Annotations;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.runtime.WebSocketConnectionBase;
 
@@ -41,12 +42,11 @@ class PathParamCallbackArgument implements CallbackArgument {
     }
 
     @Override
-    public ResultHandle get(InvocationBytecodeContext context) {
+    public Expr get(InvocationBytecodeContext context) {
         String paramName = getParamName(context);
-        return context.bytecode().invokeVirtualMethod(
-                MethodDescriptor.ofMethod(WebSocketConnectionBase.class, "pathParam", String.class, String.class),
-                context.getConnection(),
-                context.bytecode().load(paramName));
+        return context.bytecode().invokeVirtual(
+                MethodDesc.of(WebSocketConnectionBase.class, "pathParam", String.class, String.class),
+                context.getConnection(), Const.of(paramName));
     }
 
     private String getParamName(ParameterContext context) {

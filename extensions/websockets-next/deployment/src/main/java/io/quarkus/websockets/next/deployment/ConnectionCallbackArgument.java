@@ -2,7 +2,7 @@ package io.quarkus.websockets.next.deployment;
 
 import org.jboss.jandex.DotName;
 
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.deployment.Callback.Target;
 
@@ -30,7 +30,7 @@ class ConnectionCallbackArgument implements CallbackArgument {
     }
 
     @Override
-    public ResultHandle get(InvocationBytecodeContext context) {
+    public Expr get(InvocationBytecodeContext context) {
         return context.getConnection();
     }
 

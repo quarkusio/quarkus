@@ -13,6 +13,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
+import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonArray;
@@ -25,6 +26,7 @@ public class CacheJsonRPCService {
     CacheManager manager;
 
     @NonBlocking
+    @JsonRpcDescription("Get all available caches (name and size)")
     public JsonArray getAll() {
         Collection<String> names = manager.getCacheNames();
         List<CaffeineCache> allCaches = new ArrayList<>(names.size());
@@ -47,7 +49,8 @@ public class CacheJsonRPCService {
         return new JsonObject().put("name", cc.getName()).put("size", ((CaffeineCacheImpl) cc).getSize());
     }
 
-    public Uni<JsonObject> clear(String name) {
+    @JsonRpcDescription("Clear a specific cache")
+    public Uni<JsonObject> clear(@JsonRpcDescription("The cache name") String name) {
         Optional<Cache> cache = manager.getCache(name);
         if (cache.isPresent()) {
             return cache.get().invalidateAll().map((t) -> getJsonRepresentationForCache(cache.get()));
@@ -66,7 +69,8 @@ public class CacheJsonRPCService {
         }
     }
 
-    public JsonArray getKeys(String name) {
+    @JsonRpcDescription("The all the keys in a specific cache as a String array")
+    public JsonArray getKeys(@JsonRpcDescription("The cache name") String name) {
         Optional<Cache> cache = manager.getCache(name);
         if (cache.isPresent()) {
             CaffeineCache caffeineCache = (CaffeineCache) cache.get();

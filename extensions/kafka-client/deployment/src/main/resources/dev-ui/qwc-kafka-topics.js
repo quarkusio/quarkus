@@ -58,7 +58,7 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
         _createTopicDialogOpened: {state: true},
         
         _deleteTopicDialogOpened: {state: true},
-        _deleteTopicName: {state: false}
+        _deleteTopicName: {state: false},
     };
 
     constructor() { 
@@ -74,6 +74,16 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
     connectedCallback() {
         super.connectedCallback();
         this.hotReload();
+        this._observer = this.jsonRpc.stateNotification().onNext(jsonRpcResponse => { 
+            if(jsonRpcResponse.result && jsonRpcResponse.result==="topic"){
+                this.hotReload();
+            }
+        });
+    }
+
+    disconnectedCallback() { 
+        this._observer.cancel();
+        super.disconnectedCallback()
     }
 
     hotReload(){

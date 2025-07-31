@@ -710,7 +710,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                         Welcome to the HQL Console!
                         <a href="#" @click="${this._handleAllowHqlChange}"
                            style="color: var(--lumo-primary-color); text-decoration: underline; font-weight: bold;">
-                            Enable HQL execution
+                            Enable HQL execution in <code>application.properties</code>
                         </a>.
                     `);
                 }

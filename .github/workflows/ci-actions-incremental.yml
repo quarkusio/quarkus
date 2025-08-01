@@ -225,6 +225,7 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Play with systemd
         run: |
+          sudo mount | grep cgroup
           sudo systemctl enable libvirt-guests.service libvirtd.service qemu-kvm.service || true
           sudo systemctl start libvirt-guests.service libvirtd.service qemu-kvm.service || true
           sudo systemctl enable containerd.service docker.service systemd-machined.service || true

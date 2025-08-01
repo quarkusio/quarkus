@@ -223,6 +223,11 @@ jobs:
           fetch-depth: 0
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Play with systemd
+        run: |
+          sudo systemctl enable containerd.service docker.service systemd-machined.service
+          #find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl enable {} \;
+          sudo systemctl daemon-reload
       - name: Run Keycloak image
         run: docker run quay.io/keycloak/keycloak:19.0.3-legacy
       - name: Reclaim Disk Space

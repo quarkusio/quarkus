@@ -11,7 +11,8 @@ class EchartsBarStack extends EchartsAbstractCanvas {
             xdata:{type: String}, 
             xdataName: {type: String},
             series: { type: String},
-            ydataName: {type: String}
+            ydataName: {type: String},
+            showLegend: {type: Boolean}
         };
     }
 
@@ -22,6 +23,7 @@ class EchartsBarStack extends EchartsAbstractCanvas {
         this.xdataName = null;
         this.series = null;
         this.primaryTextColor = "--lumo-body-text-color";
+        this.showLegend = false;
     }
 
     getOption(){
@@ -46,10 +48,14 @@ class EchartsBarStack extends EchartsAbstractCanvas {
                  <b>${params.seriesName}</b></br>
                   ${namesUL}`;
         };
-        barStackOption.legend = new Object();
-        barStackOption.legend.textStyle = new Object();
-        barStackOption.legend.textStyle.color = textColor;
-
+        if(this.showLegend){
+            barStackOption.legend = new Object();
+            barStackOption.legend.textStyle = new Object();
+            barStackOption.legend.textStyle.color = textColor;
+            barStackOption.legend.orient = "left";
+            barStackOption.legend.right = "0";
+            barStackOption.legend.align = "right";
+        }
         barStackOption.grid = new Object();
         barStackOption.grid.top = "20%";
         barStackOption.grid.left = "3%";
@@ -119,6 +125,12 @@ class EchartsBarStack extends EchartsAbstractCanvas {
 
         return barStackOption;
 
+    }
+
+    updated(changedProps) {
+        if (changedProps.has('showLegend')) {
+            this.reload();
+        }
     }
 
 }

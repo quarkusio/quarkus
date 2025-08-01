@@ -88,7 +88,7 @@ class EchartsAbstractCanvas extends LitElement {
 
     reload(){
         this._option = this.getOption();
-        this._chart.setOption(this._option);
+        this._chart.setOption(this._option, true);
         this.requestUpdate();
     }
 

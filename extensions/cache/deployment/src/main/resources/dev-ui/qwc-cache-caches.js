@@ -102,7 +102,7 @@ export class QwcCacheCaches extends LitElement {
     }
     
     _renderCacheKeys(){
-        return html`<qwc-cache-keys 
+        return html`<qwc-cache-keys extensionName="${this.jsonRpc.getExtensionName()}"
                         cacheName="${this._selectedCache.name}"
                         @cache-keys-back=${this._showCacheTable}></qwc-cache-keys>`;
     }

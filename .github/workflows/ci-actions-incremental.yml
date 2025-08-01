@@ -225,7 +225,7 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Play with systemd
         run: |
-          sudo systemctl enable containerd.service docker.service systemd-machined.service
+          sudo systemctl start containerd.service docker.service systemd-machined.service
           #find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl enable {} \;
           sudo systemctl daemon-reload
       - name: Run Keycloak image

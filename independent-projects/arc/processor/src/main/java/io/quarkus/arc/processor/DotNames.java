@@ -142,6 +142,10 @@ public final class DotNames {
     public static final DotName VETOED_PRODUCER = create(VetoedProducer.class);
     public static final DotName LIST = create(List.class);
     public static final DotName ALL = create(All.class);
+    /**
+     * @see Identified
+     */
+    @Deprecated(forRemoval = true, since = "3.26")
     public static final DotName IDENTIFIED = create(Identified.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);

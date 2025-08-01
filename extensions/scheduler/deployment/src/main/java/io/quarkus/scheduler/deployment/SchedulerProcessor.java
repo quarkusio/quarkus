@@ -5,9 +5,9 @@ import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 import static org.jboss.jandex.AnnotationValue.createArrayValue;
 import static org.jboss.jandex.AnnotationValue.createBooleanValue;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
-import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -64,7 +64,6 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -74,6 +73,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
@@ -393,9 +393,8 @@ public class SchedulerProcessor {
             }
         };
 
-        Gizmo gizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedToBaseNameFun));
-        io.quarkus.gizmo.ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, generatedToBaseNameFun);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedToBaseNameFun);
+        Gizmo gizmo = Gizmo.create(classOutput);
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MutableScheduledMethod metadata = new MutableScheduledMethod();
@@ -502,7 +501,7 @@ public class SchedulerProcessor {
                 if (isSuspendMethod) {
                     mc.returning(Object.class);
                     execution = mc.parameter("execution", ScheduledExecution.class);
-                    continuation = mc.parameter("continuation", ClassDesc.of(SchedulerDotNames.CONTINUATION.toString()));
+                    continuation = mc.parameter("continuation", classDescOf(SchedulerDotNames.CONTINUATION));
                 } else {
                     // The descriptor is: CompletionStage invoke(ScheduledExecution execution)
                     mc.returning(CompletionStage.class);
@@ -572,7 +571,7 @@ public class SchedulerProcessor {
                             } else if (method.returnType().name().equals(SchedulerDotNames.UNI)) {
                                 // Subscribe to the returned Uni
                                 tryBlock.return_(tryBlock.invokeInterface(
-                                        InterfaceMethodDesc.of(ClassDesc.of(SchedulerDotNames.UNI.toString()),
+                                        InterfaceMethodDesc.of(classDescOf(SchedulerDotNames.UNI),
                                                 "subscribeAsCompletionStage", CompletableFuture.class),
                                         ret));
                             } else {

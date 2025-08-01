@@ -11,6 +11,7 @@ import io.quarkus.devtools.commands.handlers.ListExtensionsCommandHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 /**
  * Instances of this class are not thread-safe. They are created per single invocation.
@@ -25,6 +26,7 @@ public class ListExtensions {
     public static final String CATEGORY = "quarkus.list-extensions.category";
     public static final String BATCH_MODE = "quarkus.list-extensions.batch-mode";
     public static final String EXTENSION_MANAGER = "quarkus.list-extensions.extension-manager";
+    public static final String TARGET_CATALOG = "quarkus.list-extensions.target-catalog";
 
     public static final String MORE_INFO_HINT = "To get more information, append `%s` to your command line.";
     public static final String FILTER_HINT = "To list only extensions from specific category, append " +
@@ -80,6 +82,11 @@ public class ListExtensions {
 
     public ListExtensions batchMode(boolean batchMode) {
         invocation.setValue(BATCH_MODE, batchMode);
+        return this;
+    }
+
+    public ListExtensions targetCatalog(ExtensionCatalog targetCatalog) {
+        invocation.setValue(TARGET_CATALOG, targetCatalog);
         return this;
     }
 

@@ -26,6 +26,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 
 /**
@@ -55,9 +56,11 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         final boolean batchMode = invocation.getValue(ListExtensions.BATCH_MODE, false);
         final ExtensionManager extensionManager = invocation.getValue(ListExtensions.EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
+        final ExtensionCatalog extensionCatalog = invocation.getValue(ListExtensions.TARGET_CATALOG,
+                invocation.getQuarkusProject().getExtensionsCatalog());
 
-        final Collection<Extension> extensions = search == null ? invocation.getExtensionsCatalog().getExtensions()
-                : QuarkusCommandHandlers.listExtensions(search, invocation.getExtensionsCatalog().getExtensions(), true)
+        final Collection<Extension> extensions = search == null ? extensionCatalog.getExtensions()
+                : QuarkusCommandHandlers.listExtensions(search, extensionCatalog.getExtensions(), true)
                         .getExtensions();
 
         if (extensions.isEmpty()) {

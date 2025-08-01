@@ -190,7 +190,7 @@ Typically, Quarkus must be configured with `quarkus.oidc.application-type=servic
 You also need to configure the Auth0 application to allow the callbacks to the OIDC Dev UI.
 Use the following URL format:
 
-`http://localhost:8080/q/dev-ui/io.quarkus.quarkus-oidc/${provider-name}-provider`
+`http://localhost:8080/q/dev-ui/quarkus-oidc/${provider-name}-provider`
 
 * Where in this example, the `${provider-name}` is `auth0`
 

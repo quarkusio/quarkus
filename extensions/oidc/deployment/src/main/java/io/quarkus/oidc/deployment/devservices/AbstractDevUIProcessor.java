@@ -76,9 +76,9 @@ public abstract class AbstractDevUIProcessor {
             graphqlUiPath = null;
         }
 
-        final String devUiLogoutPath = nonApplicationRootPathBuildItem.resolvePath("io.quarkus.quarkus-oidc/logout");
+        final String devUiLogoutPath = nonApplicationRootPathBuildItem.resolvePath("quarkus-oidc/logout");
         final String devUiReadSessionCookiePath = nonApplicationRootPathBuildItem
-                .resolvePath("io.quarkus.quarkus-oidc/readSessionCookie");
+                .resolvePath("quarkus-oidc/readSessionCookie");
 
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
@@ -116,11 +116,11 @@ public abstract class AbstractDevUIProcessor {
     protected static void registerOidcWebAppRoutes(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .nestedRoute("io.quarkus.quarkus-oidc", "readSessionCookie")
+                .nestedRoute("quarkus-oidc", "readSessionCookie")
                 .handler(recorder.readSessionCookieHandler())
                 .build());
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .nestedRoute("io.quarkus.quarkus-oidc", "logout")
+                .nestedRoute("quarkus-oidc", "logout")
                 .handler(recorder.logoutHandler())
                 .build());
     }

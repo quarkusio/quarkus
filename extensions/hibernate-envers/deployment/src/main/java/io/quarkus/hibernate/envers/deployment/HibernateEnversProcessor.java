@@ -3,6 +3,7 @@ package io.quarkus.hibernate.envers.deployment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -28,10 +29,18 @@ public final class HibernateEnversProcessor {
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
         return Arrays.asList(
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping"),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping"));
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity",
+                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
+                        Set.of()),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
+                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
+                        Set.of()),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping",
+                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
+                        Set.of()),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping",
+                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
+                        Set.of()));
     }
 
     @BuildStep

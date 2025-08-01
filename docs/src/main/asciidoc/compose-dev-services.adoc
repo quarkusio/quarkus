@@ -213,6 +213,10 @@ The following is the list of platform extensions with dev services support:
 | kube-apiserver, k3s, kindest/node
 | 6443
 
+| LRA
+| lra-coordinator
+| 8080
+
 | MongoDB
 | mongo
 | 27017

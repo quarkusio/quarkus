@@ -340,6 +340,7 @@ public final class HibernateOrmProcessor {
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                    Optional.empty(),
                                     jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                     Optional.ofNullable(xmlDescriptor.getProperties().getProperty(AvailableSettings.DIALECT)),
                                     getMultiTenancyStrategy(
@@ -950,7 +951,8 @@ public final class HibernateOrmProcessor {
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
-        collectDialectConfig(persistenceUnitName, persistenceUnitConfig,
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
+                persistenceUnitConfig,
                 dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
                 systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty, storageEngineCollector);
 
@@ -972,6 +974,7 @@ public final class HibernateOrmProcessor {
                         new RecordedConfig(
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 persistenceUnitConfig.dialect().dialect(),
                                 multiTenancyStrategy,
@@ -985,7 +988,7 @@ public final class HibernateOrmProcessor {
                         isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
     }
 
-    private static void collectDialectConfig(String persistenceUnitName,
+    private static Optional<DatabaseKind.SupportedDatabaseKind> collectDialectConfig(String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems,
             Optional<JdbcDataSourceBuildItem> jdbcDataSource,
@@ -994,7 +997,10 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BiConsumer<String, String> puPropertiesCollector,
             Set<String> storageEngineCollector) {
-        Optional<String> dialect = persistenceUnitConfig.dialect().dialect();
+        final HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
+                .dialect();
+
+        Optional<String> dialect = dialectConfig.dialect();
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
         Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
@@ -1007,11 +1013,12 @@ public final class HibernateOrmProcessor {
                             "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
         }
 
-        setDialectAndStorageEngine(
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
                 persistenceUnitName,
                 dbKind,
                 dialect,
                 explicitDbMinVersion,
+                dialectConfig,
                 dbKindMetadataBuildItems,
                 persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
@@ -1025,6 +1032,8 @@ public final class HibernateOrmProcessor {
                     "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
                     true, "org.postgresql.jdbc.PgConnection", "getSchema"));
         }
+
+        return supportedDatabaseKind;
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,

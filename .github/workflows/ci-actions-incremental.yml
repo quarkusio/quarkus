@@ -181,6 +181,7 @@ jobs:
           main-repository: quarkusio/quarkus
           runs-on: true
           magic-cache: true
+          ubuntu-latest: family=m7i.xlarge/image=ubuntu22-full-x64
       - name: Determines if GIB should be disabled
         id: gib-status
         run: |

@@ -57,6 +57,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
@@ -113,6 +114,7 @@ public final class HibernateReactiveProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
@@ -156,7 +158,7 @@ public final class HibernateReactiveProcessor {
                     enableDefaultPersistenceUnit,
                     reactiveDataSources,
                     jdbcDataSources,
-                    applicationArchivesBuildItem, jpaModel, launchMode, capabilities,
+                    applicationArchivesBuildItem, additionalJpaModelBuildItems, jpaModel, launchMode, capabilities,
                     systemProperties, nativeImageResources,
                     hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     unremovableBeans, dbKindDialectBuildItems);
@@ -172,7 +174,7 @@ public final class HibernateReactiveProcessor {
 
             producePersistenceUnitFromConfig(hibernateOrmConfig, namedPersistenceUnitName, persistenceUnitConfig, index,
                     enableDefaultPersistenceUnit, reactiveDataSources, jdbcDataSources,
-                    applicationArchivesBuildItem, jpaModel, launchMode, capabilities,
+                    applicationArchivesBuildItem, additionalJpaModelBuildItems, jpaModel, launchMode, capabilities,
                     systemProperties, nativeImageResources,
                     hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     unremovableBeans, dbKindDialectBuildItems);
@@ -185,6 +187,7 @@ public final class HibernateReactiveProcessor {
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel, LaunchModeBuildItem launchMode,
             Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
@@ -233,7 +236,7 @@ public final class HibernateReactiveProcessor {
         }
 
         QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
-                hibernateOrmConfig, persistenceUnitName, index, persistenceUnitConfig, jpaModel,
+                hibernateOrmConfig, persistenceUnitName, index, persistenceUnitConfig, additionalJpaModelBuildItems, jpaModel,
                 dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
                 systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems,
@@ -337,6 +340,7 @@ public final class HibernateReactiveProcessor {
             String persistenceUnitName,
             CombinedIndexBuildItem index,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Optional<String> dbKindOptional,
             Optional<String> explicitDialect,
@@ -349,7 +353,8 @@ public final class HibernateReactiveProcessor {
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems, boolean enableDefaultPersistenceUnit) {
 
         Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = HibernateOrmProcessor
-                .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, jpaModel, index.getIndex(),
+                .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, additionalJpaModelBuildItems, jpaModel,
+                        index.getIndex(),
                         enableDefaultPersistenceUnit);
 
         Set<String> modelClassesAndPackages = modelClassesAndPackagesPerPersistencesUnits

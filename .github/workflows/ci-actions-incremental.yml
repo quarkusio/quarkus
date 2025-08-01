@@ -225,9 +225,10 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Play with systemd
         run: |
+          sudo systemctl enable containerd.service docker.service systemd-machined.service
           sudo systemctl start containerd.service docker.service systemd-machined.service
-          #find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl enable {} \;
-          sudo systemctl daemon-reload
+          find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl enable {} \;
+          find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl start {} \;
       - name: Run Keycloak image
         run: docker run quay.io/keycloak/keycloak:19.0.3-legacy
       - name: Reclaim Disk Space

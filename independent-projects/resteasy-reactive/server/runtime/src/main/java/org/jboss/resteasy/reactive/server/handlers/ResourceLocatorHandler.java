@@ -79,18 +79,22 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         }
 
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
-        boolean hadNullMethodMapper = false;
-        if (mapper == null) {
-            mapper = target.get(null); //another layer of resource locators maybe
+        RequestMapper.RequestMatch<RuntimeResource> res;
+        boolean hadNullMethodMapper;
+        if (mapper != null) {
+            res = findRequestMatch(mapper, requestContext);
+            hadNullMethodMapper = false;
+        } else {
+            res = findRequestMatch(target.get(null), requestContext); //another layer of resource locators maybe
             // we set this without checking if we matched, but we only use it after
             // we check for a null mapper, so by the time we use it, it must have meant that
             // we had a matcher for a null method
             hadNullMethodMapper = true;
 
-            if (mapper == null) {
+            if (res == null) {
                 String requestMethod = requestContext.getMethod();
                 if (requestMethod.equals(HttpMethod.HEAD)) {
-                    mapper = target.get(HttpMethod.GET);
+                    res = findRequestMatch(target.get(HttpMethod.GET), requestContext);
                 } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
                     Set<String> allowedMethods = new HashSet<>();
                     for (String method : target.keySet()) {
@@ -106,11 +110,6 @@ public class ResourceLocatorHandler implements ServerRestHandler {
                 }
             }
         }
-        if (mapper == null) {
-            throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
-        }
-        RequestMapper.RequestMatch<RuntimeResource> res = mapper
-                .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (res == null) {
             // the TCK checks for both these return statuses
             if (hadNullMethodMapper)
@@ -131,6 +130,12 @@ public class ResourceLocatorHandler implements ServerRestHandler {
             requestContext.setPathParamValue(i, pathParamValue);
         }
 
+    }
+
+    private RequestMapper.RequestMatch<RuntimeResource> findRequestMatch(RequestMapper<RuntimeResource> mapper,
+            ResteasyReactiveRequestContext requestContext) {
+        return mapper == null ? null
+                : mapper.map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
     }
 
     private Map<String, RequestMapper<RuntimeResource>> findTarget(Class<?> locatorClass) {

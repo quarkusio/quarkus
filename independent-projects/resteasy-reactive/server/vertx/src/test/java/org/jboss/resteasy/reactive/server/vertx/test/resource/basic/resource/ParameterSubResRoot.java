@@ -9,4 +9,7 @@ public interface ParameterSubResRoot {
 
     @Path("subclass")
     Class<ParameterSubResClassSub> getSubClass();
+
+    @Path("sub2")
+    ParameterSubResSubImpl2 getAnotherSubresource();
 }

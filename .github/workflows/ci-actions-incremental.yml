@@ -225,8 +225,8 @@ jobs:
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Play with systemd
         run: |
-          sudo systemctl enable qemu-kvm.service || true
-          sudo systemctl start qemu-kvm.service || true
+          sudo systemctl enable libvirt-guests.service libvirtd.service qemu-kvm.service || true
+          sudo systemctl start libvirt-guests.service libvirtd.service qemu-kvm.service || true
           sudo systemctl enable containerd.service docker.service systemd-machined.service || true
           sudo systemctl start containerd.service docker.service systemd-machined.service || true
           find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl enable {} \;

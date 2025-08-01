@@ -74,7 +74,7 @@
         <!--jakarta.persistence-api.version is located in the root pom -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version>
         <jakarta.resource-api.version>2.1.0</jakarta.resource-api.version>
-        <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
+        <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
         <jakarta.validation-api.version>3.1.0</jakarta.validation-api.version>
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>

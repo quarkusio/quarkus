@@ -1,15 +1,11 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.mapping.Collection;
-import org.hibernate.mapping.Column;
-import org.hibernate.mapping.PersistentClass;
-import org.hibernate.mapping.Property;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.java.spi.JsonJavaType;
+import org.hibernate.type.descriptor.java.spi.XmlJavaType;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
@@ -66,30 +62,23 @@ public enum BuiltinFormatMapperBehaviour {
     }
 
     public static boolean hasJsonProperties(MetadataImplementor metadata) {
-        return hasXxxProperties(metadata, Set.of(SqlTypes.JSON, SqlTypes.JSON_ARRAY));
+        AtomicBoolean hasJsonProperties = new AtomicBoolean(false);
+        metadata.getTypeConfiguration().getJavaTypeRegistry().forEachDescriptor(javaType -> {
+            if (javaType instanceof JsonJavaType<?>) {
+                hasJsonProperties.set(true);
+            }
+        });
+        return hasJsonProperties.get();
     }
 
     public static boolean hasXmlProperties(MetadataImplementor metadata) {
-        return hasXxxProperties(metadata, Set.of(SqlTypes.SQLXML, SqlTypes.XML_ARRAY));
-    }
-
-    private static boolean hasXxxProperties(MetadataImplementor metadata, Set<Integer> sqlTypeCodes) {
-        for (PersistentClass persistentClass : metadata.getEntityBindings()) {
-            for (Property property : persistentClass.getProperties()) {
-                List<Column> columns = property.getColumns();
-                if (columns.isEmpty()) {
-                    if (property.getValue() instanceof Collection c) {
-                        columns = c.getElement().getColumns();
-                    }
-                }
-                for (Column column : columns) {
-                    if (sqlTypeCodes.contains(column.getSqlTypeCode(metadata))) {
-                        return true;
-                    }
-                }
+        AtomicBoolean hasXmlProperties = new AtomicBoolean(false);
+        metadata.getTypeConfiguration().getJavaTypeRegistry().forEachDescriptor(javaType -> {
+            if (javaType instanceof XmlJavaType<?>) {
+                hasXmlProperties.set(true);
             }
-        }
-        return false;
+        });
+        return hasXmlProperties.get();
     }
 
     public void jsonApply(MetadataImplementor metadata, String puName, ArcContainer container,

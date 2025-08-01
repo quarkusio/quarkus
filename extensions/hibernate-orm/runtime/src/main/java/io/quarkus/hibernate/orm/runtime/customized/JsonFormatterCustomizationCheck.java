@@ -1,7 +1,10 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.json.bind.Jsonb;
@@ -19,9 +22,9 @@ import io.quarkus.jsonb.JsonbConfigCustomizer;
  * Test whether the underlying Jackson Object Mapper / JSON-B used to create the "built-in" format mapper
  * were modified and cannot be safely replaced by the Hibernate ORM's default ones.
  */
-public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer> {
+public interface JsonFormatterCustomizationCheck extends Function<ArcContainer, List<String>> {
     @Override
-    boolean test(ArcContainer container);
+    List<String> apply(ArcContainer container);
 
     static JsonFormatterCustomizationCheck jsonFormatterCustomizationCheckSupplier(boolean required, boolean isJackson) {
         if (!required) {
@@ -31,27 +34,29 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
         if (isJackson) {
             return new JacksonJsonFormatterCustomizationCheck();
         }
-        return new NotModifiedJsonFormatterCustomizationCheck();
+        return new JsonbJsonFormatterCustomizationCheck();
     }
 
     class NotModifiedJsonFormatterCustomizationCheck implements JsonFormatterCustomizationCheck {
         @Override
-        public boolean test(ArcContainer container) {
-            return false;
+        public List<String> apply(ArcContainer container) {
+            return List.of();
         }
     }
 
     class JacksonJsonFormatterCustomizationCheck implements JsonFormatterCustomizationCheck {
         @Override
-        public boolean test(ArcContainer container) {
+        public List<String> apply(ArcContainer container) {
             InstanceHandle<ObjectMapper> objectMapperInstance = container.instance(ObjectMapper.class);
             if (!objectMapperInstance.isAvailable()) {
                 // We have no mapper so it wasn't modified, and we've probably used the JSONB instead.
-                return false;
+                return List.of();
             }
+            List<String> causes = new ArrayList<>();
             if (!objectMapperInstance.getBean().isDefaultBean()) {
                 // A bean producer was used and the ObjectMapper is a user custom bean...
-                return true;
+                causes.add(
+                        "ObjectMapper instance is not the Quarkus default one. A bean producer was likely used to replace it.");
             }
 
             Instance<ObjectMapperCustomizer> customizers = container.select(ObjectMapperCustomizer.class);
@@ -65,57 +70,71 @@ public interface JsonFormatterCustomizationCheck extends Predicate<ArcContainer>
                         "io.quarkus.jackson.runtime.ConfigurationCustomizer",
                         "io.quarkus.jackson.runtime.VertxHybridPoolObjectMapperCustomizer");
                 for (Instance.Handle<ObjectMapperCustomizer> handle : customizers.handles()) {
-                    if (allowedCustomizers.contains(handle.getBean().getClass().getName())) {
+                    if (allowedCustomizers.contains(handle.getBean().getBeanClass().getName())) {
                         continue;
                     }
                     // ObjectMapper was potentially customized
-                    return true;
+                    causes.add("Detected '" + handle.getBean().getBeanClass().getName() + "' bean registered. "
+                            + "It may have customized the ObjectMapper in a way not compatible with the default one.");
                 }
             }
 
             // these won't affect representation of the objects in the DB so it's probably somewhat "safe" to allow them:
             Set<String> acceptableConfigs = Set.of("quarkus.jackson.fail-on-unknown-properties",
                     "quarkus.jackson.fail-on-empty-beans");
+            Map<String, String> expectedDefaults = Map.of(
+                    "quarkus.jackson.write-dates-as-timestamps", "true",
+                    "quarkus.jackson.write-durations-as-timestamps", "true",
+                    "quarkus.jackson.accept-case-insensitive-enums", "false",
+                    "quarkus.jackson.timezone", "UTC");
             for (String propertyName : ConfigProvider.getConfig().getPropertyNames()) {
                 if (propertyName.startsWith("quarkus.jackson.") && !acceptableConfigs.contains(propertyName)) {
-                    return true;
+                    String okValue = expectedDefaults.get(propertyName);
+                    if (okValue != null && !okValue
+                            .equalsIgnoreCase(ConfigProvider.getConfig().getConfigValue(propertyName).getRawValue())) {
+                        causes.add("Detected '" + propertyName + "' property set to '"
+                                + ConfigProvider.getConfig().getConfigValue(propertyName).getRawValue() + "'. "
+                                + "For ObjectMapper being compatible with the clean, default one the expected value is: '"
+                                + okValue + "'.");
+                    }
                 }
             }
 
-            return false;
+            return causes;
         }
     }
 
     class JsonbJsonFormatterCustomizationCheck implements JsonFormatterCustomizationCheck {
         @Override
-        public boolean test(ArcContainer container) {
+        public List<String> apply(ArcContainer container) {
             InstanceHandle<Jsonb> jsonbInstance = container.instance(Jsonb.class);
             if (!jsonbInstance.isAvailable()) {
                 // We have no JSON-B bean so it wasn't modified.
-                return false;
+                return List.of();
             }
+            List<String> causes = new ArrayList<>();
             if (!jsonbInstance.getBean().isDefaultBean()) {
                 // A bean producer was used and the JSON-B is a user custom bean...
-                return true;
+                causes.add("Jsonb instance is not the Quarkus default one. A bean producer was likely used to replace it.");
             }
 
             Instance<JsonbConfigCustomizer> customizers = container.select(JsonbConfigCustomizer.class);
-            // There most likely are the following customizer available:
+            // There most likely is the following customizer available:
             //  - io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer  --- this one ... Do we need to check if any serializers were added?
             Set<String> allowedCustomizers = Set.of(
                     "io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer");
             for (Instance.Handle<JsonbConfigCustomizer> handle : customizers.handles()) {
-                if (allowedCustomizers.contains(handle.getBean().getClass().getName())) {
+                if (allowedCustomizers.contains(handle.getBean().getBeanClass().getName())) {
                     continue;
                 }
 
                 // JSON-B was potentially customized
-                return true;
+                causes.add("Detected '" + handle.getBean().getBeanClass().getName() + "' bean registered. "
+                        + "It may have customized the Jsonb in a way not compatible with the default one.");
             }
 
             // JSON-B does not have the config properties so nothing else to check..
-
-            return false;
+            return causes;
         }
     }
 }

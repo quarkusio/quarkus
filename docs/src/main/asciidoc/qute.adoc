@@ -72,21 +72,23 @@ For more information about Qute Web options, see the https://docs.quarkiverse.io
 [[hello-qute-rest]]
 === Hello Qute and REST
 
-For finer control, you can combine Qute Web with Quarkus REST or Quarkus RESTEasy to control how your template will be served
+For finer control, you can combine Qute Web with Quarkus REST (formerly RESTEasy Reactive) or the legacy RESTEasy Classic-based extension to control how your template will be served
+
+Using the `quarkus-rest-qute` extension:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest</artifactId>
+    <artifactId>quarkus-rest-qute</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-rest")
+implementation("io.quarkus:quarkus-rest-qute")
 ----
 
 A very simple text template:
@@ -130,7 +132,7 @@ public class HelloResource {
 ----
 <1> If there is no `@Location` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering.
-<3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+<3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation provided by `quarkus-rest-qute`.
 
 If your application is running, you can request the endpoint:
 
@@ -195,7 +197,7 @@ public class HelloResource {
 }
 ----
 <1> This declares a template with path `templates/HelloResource/hello`.
-<2> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+<2> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation provided by `quarkus-rest-qute`.
 
 NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -19,7 +20,7 @@ public enum BuiltinFormatMapperBehaviour {
      */
     IGNORE {
         @Override
-        protected void action(String puName, String type) {
+        protected void action(String puName, String type, List<String> causes) {
         }
     },
     /**
@@ -28,8 +29,8 @@ public enum BuiltinFormatMapperBehaviour {
      */
     WARN {
         @Override
-        protected void action(String puName, String type) {
-            LOGGER.warn(message(puName, type));
+        protected void action(String puName, String type, List<String> causes) {
+            LOGGER.warn(message(puName, type, causes));
         }
     },
     /**
@@ -37,8 +38,8 @@ public enum BuiltinFormatMapperBehaviour {
      */
     FAIL {
         @Override
-        protected void action(String puName, String type) {
-            throw new IllegalStateException(message(puName, type));
+        protected void action(String puName, String type, List<String> causes) {
+            throw new IllegalStateException(message(puName, type, causes));
         }
     };
 
@@ -46,7 +47,7 @@ public enum BuiltinFormatMapperBehaviour {
     private static final String TYPE_JSON = "JSON";
     private static final String TYPE_XML = "XML";
 
-    private static String message(String puName, String type) {
+    private static String message(String puName, String type, List<String> causes) {
         return String.format(Locale.ROOT,
                 "Persistence unit [%1$s] uses Quarkus' main formatting facilities for %2$s columns in the database. "
                         + "\nAs these facilities are primarily meant for REST endpoints, and they might have been customized for such use, "
@@ -58,6 +59,8 @@ public enum BuiltinFormatMapperBehaviour {
                         + " and @PersistenceUnitExtension"
                         + (PersistenceUnitUtil.isDefaultPersistenceUnit(puName) ? "" : "(\"%1$s\")")
                         + " to address your database serialization/deserialization needs."
+                        + "\nThe reasons why the check was triggered are: \n\t-"
+                        + String.join("\n\t-", causes)
                         + "\nSee the migration guide for more details and how to proceed.",
                 puName, type);
     }
@@ -94,8 +97,11 @@ public enum BuiltinFormatMapperBehaviour {
 
     public void jsonApply(MetadataImplementor metadata, String puName, ArcContainer container,
             JsonFormatterCustomizationCheck check) {
-        if (hasJsonProperties(metadata) && check.test(container)) {
-            action(puName, TYPE_JSON);
+        if (hasJsonProperties(metadata)) {
+            List<String> causes = check.apply(container);
+            if (!causes.isEmpty()) {
+                action(puName, TYPE_JSON, causes);
+            }
         }
     }
 
@@ -110,9 +116,10 @@ public enum BuiltinFormatMapperBehaviour {
         // Let's fail and tell the user to migrate their data to the new format and before that is done: use a delegate to org.hibernate.type.format.jaxb.JaxbXmlFormatMapper()
         // using a legacy format:
         if (hasXmlProperties(metadata)) {
-            action(puName, TYPE_XML);
+            action(puName, TYPE_XML,
+                    List.of("The XML format mapper uses the legacy format. It is not compatible with the new default one."));
         }
     }
 
-    protected abstract void action(String puName, String type);
+    protected abstract void action(String puName, String type, List<String> causes);
 }

@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -169,8 +170,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     public void additionalJpaModel(BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME));
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME));
+        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME,
+                // Only added to persistence units actually using this class, using Jandex-based discovery
+                Set.of()));
+        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME,
+                // Only added to persistence units actually using this class, using Jandex-based discovery
+                Set.of()));
     }
 
     /**

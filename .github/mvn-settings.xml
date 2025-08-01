@@ -30,6 +30,41 @@
         </pluginRepository>
       </pluginRepositories>
     </profile>
+    <profile>
+      <id>snapshots</id>
+      <repositories>
+        <repository>
+          <id>sonatype-maven-central</id>
+          <name>Sonatype Maven Central Snapshots</name>
+          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <layout>default</layout>
+          <releases>
+            <enabled>false</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>sonatype-maven-central</id>
+          <name>Sonatype Maven Central Snapshots</name>
+          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <layout>default</layout>
+          <releases>
+            <enabled>false</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
   </profiles>
   <activeProfiles>
     <activeProfile>google-mirror</activeProfile>

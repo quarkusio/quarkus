@@ -357,27 +357,41 @@ public class SomeTest {
 ----
 ====
 
-[[hr-named-datasource]]
-==== Named data sources
+[[multiple-persistence-units]]
+=== Multiple persistence units
 
-Hibernate Reactive supports having named data sources
+==== Setting up multiple persistence units
+
+In a similar fashion to Hibernate ORM, Hibernate Reactive supports multiple persistence units.
+
+You can define multiple persistence units and datasources, and they can mix blocking and reactive datasources.
+To ensure that a datasource supports reactive, you need to set the `reactive` property to `true`.
 
 [source,properties]
 .Example `{config-file}`
 ----
-# datasource configuration
-quarkus.hibernate-orm.datasource = named-datasource
-quarkus.datasource."named-datasource".db-kind" = postgresql
+quarkus.datasource."users".reactive.url=vertx-reactive:postgresql://localhost/users <1>
+quarkus.datasource."users".db-kind=postgresql
+%prod.quarkus.datasource."users".username=hibernate_orm_test
+%prod.quarkus.datasource."users".password=hibernate_orm_test
 
-# drop and create the database at startup (use `update` to only update the schema)
-%prod.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
-%prod.quarkus.datasource."named-datasource".reactive" = true
-%prod.quarkus.datasource."named-datasource".username" = quarkus_test
-%prod.quarkus.datasource."named-datasource".password" = quarkus_test
-%prod.quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
+quarkus.datasource."inventory".reactive.url=vertx-reactive:postgresql://localhost/inventory <2>
+quarkus.datasource."inventory".db-kind=postgresql
+%prod.quarkus.datasource."inventory".username=hibernate_orm_test
+%prod.quarkus.datasource."inventory".password=hibernate_orm_test
+
+quarkus.hibernate-orm."users".datasource=users <3>
+quarkus.hibernate-orm."users".packages=io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.user
+
+quarkus.hibernate-orm."inventory".datasource=inventory <4>
+quarkus.hibernate-orm."inventory".packages=io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory
 ----
+<1> Define a reactive datasource named `users`.
+<2> Define a reactive datasource named `inventory`.
+<3> Define a persistence unit named `users` and specify the datasource.
+<4> Define a persistence unit named `inventory` and specify the datasource.
 
-When using a named data source, you need to set the `quarkus.hibernate-orm.datasource` property to the name of the data source.
+When using named persistence units, you must set the `datasource` property to the name of the corresponding datasource.
 
 [[hr-limitations]]
 == Limitations and other things you should know

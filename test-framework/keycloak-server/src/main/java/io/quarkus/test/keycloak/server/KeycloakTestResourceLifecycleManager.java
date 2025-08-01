@@ -71,7 +71,6 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         realm.setClients(new ArrayList<>());
         realm.setAccessTokenLifespan(3);
         realm.setSsoSessionMaxLifespan(3);
-        realm.setRequiredActions(List.of());
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
@@ -113,6 +112,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         client.setDirectAccessGrantsEnabled(true);
         client.setServiceAccountsEnabled(true);
         client.setEnabled(true);
+        client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;
     }
@@ -125,6 +125,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         client.setSecret("secret");
         client.setRedirectUris(Arrays.asList("*"));
         client.setEnabled(true);
+        client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;
     }
@@ -138,7 +139,8 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         user.setRealmRoles(realmRoles);
         user.setEmail(username + "@gmail.com");
         user.setEmailVerified(true);
-        user.setRequiredActions(List.of());
+        user.setFirstName(username);
+        user.setLastName(username);
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

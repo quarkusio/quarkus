@@ -2,6 +2,7 @@ package io.quarkus.hibernate.search.orm.outboxpolling.deployment;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 import org.hibernate.search.mapper.orm.outboxpolling.mapping.spi.HibernateOrmMapperOutboxPollingClasses;
@@ -27,7 +28,8 @@ class HibernateSearchOutboxPollingProcessor {
     private static final String HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING = "Hibernate Search ORM - Outbox polling";
 
     @BuildStep
-    void registerInternalModel(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
+    void registerInternalModel(List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
         String[] avroTypes = HibernateOrmMapperOutboxPollingClasses.avroTypes().toArray(String[]::new);
@@ -37,7 +39,9 @@ class HibernateSearchOutboxPollingProcessor {
                 .reason(getClass().getName())
                 .methods().fields().build());
         for (String className : hibernateOrmTypes) {
-            additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className));
+            additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className,
+                    // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
+                    Set.of()));
         }
     }
 

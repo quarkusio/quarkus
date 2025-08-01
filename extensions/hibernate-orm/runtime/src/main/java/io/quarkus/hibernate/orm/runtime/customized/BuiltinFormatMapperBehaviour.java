@@ -4,6 +4,7 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.hibernate.boot.spi.MetadataImplementor;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.type.descriptor.java.spi.JsonJavaType;
 import org.hibernate.type.descriptor.java.spi.XmlJavaType;
 import org.jboss.logging.Logger;
@@ -68,7 +69,12 @@ public enum BuiltinFormatMapperBehaviour {
                 hasJsonProperties.set(true);
             }
         });
-        return hasJsonProperties.get();
+        if (hasJsonProperties.get()) {
+            return true;
+        } else {
+            // for JSON_ARRAY we need to check the jdbc type registry instead
+            return metadata.getTypeConfiguration().getJdbcTypeRegistry().hasRegisteredDescriptor(SqlTypes.JSON_ARRAY);
+        }
     }
 
     public static boolean hasXmlProperties(MetadataImplementor metadata) {
@@ -78,7 +84,12 @@ public enum BuiltinFormatMapperBehaviour {
                 hasXmlProperties.set(true);
             }
         });
-        return hasXmlProperties.get();
+        if (hasXmlProperties.get()) {
+            return true;
+        } else {
+            // for XML_ARRAY we need to check the jdbc type registry instead
+            return metadata.getTypeConfiguration().getJdbcTypeRegistry().hasRegisteredDescriptor(SqlTypes.XML_ARRAY);
+        }
     }
 
     public void jsonApply(MetadataImplementor metadata, String puName, ArcContainer container,

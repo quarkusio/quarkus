@@ -35,6 +35,9 @@ export class QwcBuildSteps extends QwcHotReloadElement {
 
       .summary {
         margin-bottom: 15px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
       }
 
       .datatable {
@@ -123,7 +126,9 @@ export class QwcBuildSteps extends QwcHotReloadElement {
 
       return html`<div class="build-steps">
             <div class="summary">
-                Executed <strong>${this._buildMetrics.records.length}</strong> build steps on <strong>${this._buildMetrics.numberOfThreads}</strong> threads in <strong>${this._buildMetrics.duration} ms</strong>.
+                <div>
+                    Executed <strong>${this._buildMetrics.records.length}</strong> build steps on <strong>${this._buildMetrics.numberOfThreads}</strong> threads in <strong>${this._buildMetrics.duration} ms</strong>.
+                </div>    
                 <vaadin-button theme="tertiary" @click="${this._showBuildStepsChart}">
                     <vaadin-icon icon="font-awesome-solid:chart-simple" slot="prefix"></vaadin-icon>
                     Build Steps Concurrent Execution Chart

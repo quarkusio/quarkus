@@ -564,6 +564,19 @@ public final class LoggingResourceProcessor {
         }
     }
 
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void closeBuildTimeLogging(List<DevServicesResultBuildItem> devServices) {
+        if (devServices.isEmpty()) {
+            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+                }
+            });
+        }
+    }
+
     private static boolean allRootMinLevelOrHigher(
             int rootMinLogLevel,
             Map<String, CategoryBuildTimeConfig> categories,

@@ -223,6 +223,8 @@ jobs:
           fetch-depth: 0
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Run Keycloak image
+        run: docker run quay.io/keycloak/keycloak:19.0.3-legacy
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 17

@@ -1228,9 +1228,7 @@ public final class HibernateOrmProcessor {
                         // also add the hierarchy to the persistence unit
                         // we would need to add all the underlying model to it but adding the hierarchy
                         // is necessary for Panache as we need to add PanacheEntity to the PU
-                        for (String relatedModelClassName : relatedModelClassNames) {
-                            modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(relatedModelClassName);
-                        }
+                        modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).addAll(relatedModelClassNames);
                     }
                 }
             }
@@ -1281,17 +1279,29 @@ public final class HibernateOrmProcessor {
             return Collections.emptySet();
         }
 
-        modelClassInfo = index.getClassByName(modelClassInfo.superName());
-
-        while (modelClassInfo != null && !modelClassInfo.name().equals(DotNames.OBJECT)) {
-            String modelSuperClassName = modelClassInfo.name().toString();
-            if (knownModelClassNames.contains(modelSuperClassName)) {
-                relatedModelClassNames.add(modelSuperClassName);
-            }
-            modelClassInfo = index.getClassByName(modelClassInfo.superName());
-        }
+        addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames, modelClassInfo);
 
         return relatedModelClassNames;
+    }
+
+    private static void addRelatedModelClassNamesRecursively(IndexView index, Set<String> knownModelClassNames,
+            Set<String> relatedModelClassNames, ClassInfo modelClassInfo) {
+        if (modelClassInfo == null || modelClassInfo.name().equals(DotNames.OBJECT)) {
+            return;
+        }
+
+        String modelClassName = modelClassInfo.name().toString();
+        if (knownModelClassNames.contains(modelClassName)) {
+            relatedModelClassNames.add(modelClassName);
+        }
+
+        addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames,
+                index.getClassByName(modelClassInfo.superName()));
+
+        for (DotName interfaceName : modelClassInfo.interfaceNames()) {
+            addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames,
+                    index.getClassByName(interfaceName));
+        }
     }
 
     private static String normalizePackage(String pakkage) {

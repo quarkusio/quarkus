@@ -44,7 +44,7 @@ public class CustomIdentityProviderTestCase {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
 
@@ -67,7 +67,7 @@ public class CustomIdentityProviderTestCase {
             loginForm.getInputByName("password").setValueAttribute("jdoe");
 
             try {
-                loginForm.getInputByName("login").click();
+                loginForm.getButtonByName("login").click();
                 fail("Exception is expected because `jdoe` is not allowed to access the service");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());

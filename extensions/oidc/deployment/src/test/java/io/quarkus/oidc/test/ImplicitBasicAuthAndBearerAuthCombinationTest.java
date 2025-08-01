@@ -28,6 +28,9 @@ public class ImplicitBasicAuthAndBearerAuthCombinationTest {
                     .addClasses(BasicBearerResource.class, BearerPathBasedResource.class)
                     .addAsResource(
                             new StringAsset("""
+                                    # Disable Dev Services, we use a test resource manager
+                                    quarkus.keycloak.devservices.enabled=false
+
                                     quarkus.security.users.embedded.enabled=true
                                     quarkus.security.users.embedded.plain-text=true
                                     quarkus.security.users.embedded.users.alice=alice

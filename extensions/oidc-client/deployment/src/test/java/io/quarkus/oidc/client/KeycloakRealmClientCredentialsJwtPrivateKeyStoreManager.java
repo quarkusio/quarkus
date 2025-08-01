@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.keycloak.representations.AccessTokenResponse;
@@ -64,6 +65,7 @@ public class KeycloakRealmClientCredentialsJwtPrivateKeyStoreManager implements 
         realm.setRefreshTokenMaxReuse(0);
         realm.setDefaultGroups(Arrays.asList("user"));
         realm.setDefaultRoles(Arrays.asList("user"));
+        realm.setRequiredActions(List.of());
 
         return realm;
     }

@@ -18,6 +18,9 @@ public class OidcClientKeycloakDevServiceStartupTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar
                     .addAsResource(new StringAsset("""
+                            # Disable Dev Services, Keycloak is started by a Maven plugin
+                            quarkus.keycloak.devservices.enabled=false
+
                             quarkus.oidc.provider=slack
                             quarkus.oidc.client-id=irrelevant-client-id
                             """), "application.properties"))

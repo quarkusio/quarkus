@@ -112,6 +112,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         client.setDirectAccessGrantsEnabled(true);
         client.setServiceAccountsEnabled(true);
         client.setEnabled(true);
+        client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;
     }
@@ -124,6 +125,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         client.setSecret("secret");
         client.setRedirectUris(Arrays.asList("*"));
         client.setEnabled(true);
+        client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;
     }
@@ -136,6 +138,9 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(realmRoles);
         user.setEmail(username + "@gmail.com");
+        user.setEmailVerified(true);
+        user.setFirstName(username);
+        user.setLastName(username);
 
         CredentialRepresentation credential = new CredentialRepresentation();
 
@@ -154,6 +159,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
                 .param("password", userName)
                 .param("client_id", KEYCLOAK_SERVICE_CLIENT)
                 .param("client_secret", "secret")
+                .param("scope", "openid")
                 .when()
                 .post(keycloak.getServerUrl() + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();

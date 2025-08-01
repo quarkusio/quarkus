@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.keycloak.representations.AccessTokenResponse;
@@ -61,6 +62,7 @@ public class KeycloakRealmClientCredentialsJwtSecretManager implements QuarkusTe
         realm.setAccessTokenLifespan(3);
         realm.setRevokeRefreshToken(true);
         realm.setRefreshTokenMaxReuse(0);
+        realm.setRequiredActions(List.of());
 
         realm.setDefaultGroups(Arrays.asList("user"));
         realm.setDefaultRoles(Arrays.asList("user"));

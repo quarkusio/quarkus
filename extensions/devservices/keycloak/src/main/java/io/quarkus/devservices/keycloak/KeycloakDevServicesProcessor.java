@@ -859,6 +859,7 @@ public class KeycloakDevServicesProcessor {
         realm.setAccessTokenLifespan(600);
         realm.setSsoSessionMaxLifespan(600);
         realm.setRefreshTokenMaxReuse(10);
+        realm.setRequiredActions(List.of());
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
@@ -907,6 +908,8 @@ public class KeycloakDevServicesProcessor {
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(realmRoles);
+        user.setEmailVerified(true);
+        user.setRequiredActions(List.of());
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

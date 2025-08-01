@@ -15,8 +15,8 @@
     <description>Module that contains OpenID Connect Client tests</description>
 
     <properties>
-        <keycloak.url>http://localhost:8180/auth</keycloak.url>
-        <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
+        <keycloak.url>http://localhost:8180</keycloak.url>
+        <keycloak.ssl.url>https://localhost:8543</keycloak.ssl.url>
     </properties>
 
     <dependencies>
@@ -148,7 +148,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.url>${keycloak.ssl.url}</keycloak.url>
+                                <keycloak.url>${keycloak.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -157,7 +157,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.url>${keycloak.ssl.url}</keycloak.url>
+                                <keycloak.url>${keycloak.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -191,7 +191,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.legacy.image}</name>
+                                    <name>${keycloak.docker.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>
@@ -199,9 +199,12 @@
                                             <port>8543:8443</port>
                                         </ports>
                                         <env>
-                                            <KEYCLOAK_USER>admin</KEYCLOAK_USER>
-                                            <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
+                                            <KC_BOOTSTRAP_ADMIN_USERNAME>admin</KC_BOOTSTRAP_ADMIN_USERNAME>
+                                            <KC_BOOTSTRAP_ADMIN_PASSWORD>admin</KC_BOOTSTRAP_ADMIN_PASSWORD>
                                         </env>
+                                        <cmd>
+                                            <arg>start-dev</arg>
+                                        </cmd>
                                         <log>
                                             <prefix>Keycloak:</prefix>
                                             <date>default</date>

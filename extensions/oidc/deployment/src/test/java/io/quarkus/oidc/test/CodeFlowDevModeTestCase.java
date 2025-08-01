@@ -2,6 +2,7 @@ package io.quarkus.oidc.test;
 
 import static org.awaitility.Awaitility.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -15,16 +16,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.htmlunit.CookieManager;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.WebClient;
@@ -96,7 +92,7 @@ public class CodeFlowDevModeTestCase {
                 loginForm.getInputByName("username").setValueAttribute("alice");
                 loginForm.getInputByName("password").setValueAttribute("alice");
 
-                page = loginForm.getInputByName("login").click();
+                page = loginForm.getButtonByName("login").click();
                 fail("Exception is expected because an invalid client secret is used");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
@@ -115,15 +111,13 @@ public class CodeFlowDevModeTestCase {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
 
-            List<Cookie> sessionCookies = getSessionCookies(webClient, null);
-            assertEquals(2, sessionCookies.size());
-            assertEquals("q_session_chunk_1", sessionCookies.get(0).getName());
-            assertEquals("q_session_chunk_2", sessionCookies.get(1).getName());
-            String sessionCookieValue = sessionCookies.get(0).getValue() + sessionCookies.get(1).getValue();
+            Cookie sessionCookie = getSessionCookie(webClient, null);
+            assertNotNull(sessionCookie);
+            String sessionCookieValue = sessionCookie.getValue();
             assertEquals("custom", sessionCookieValue.split("\\|")[1]);
 
             webClient.getOptions().setRedirectEnabled(false);
@@ -153,7 +147,7 @@ public class CodeFlowDevModeTestCase {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
         }
@@ -170,7 +164,7 @@ public class CodeFlowDevModeTestCase {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("tenant-config-resolver:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
@@ -227,16 +221,9 @@ public class CodeFlowDevModeTestCase {
         assertTrue(checkPassed.get(), "Can not confirm Secret key for encrypting state cookie has been generated");
     }
 
-    private List<Cookie> getSessionCookies(WebClient webClient, String tenantId) {
-        String sessionCookieNameChunk = "q_session" + (tenantId == null ? "" : "_" + tenantId) + "_chunk_";
-        CookieManager cookieManager = webClient.getCookieManager();
-        SortedMap<String, Cookie> sessionCookies = new TreeMap<>();
-        for (Cookie cookie : cookieManager.getCookies()) {
-            if (cookie.getName().startsWith(sessionCookieNameChunk)) {
-                sessionCookies.put(cookie.getName(), cookie);
-            }
-        }
+    private Cookie getSessionCookie(WebClient webClient, String tenantId) {
+        String sessionCookieName = "q_session" + (tenantId == null ? "" : "_" + tenantId);
 
-        return sessionCookies.isEmpty() ? null : new ArrayList<Cookie>(sessionCookies.values());
+        return webClient.getCookieManager().getCookie(sessionCookieName);
     }
 }

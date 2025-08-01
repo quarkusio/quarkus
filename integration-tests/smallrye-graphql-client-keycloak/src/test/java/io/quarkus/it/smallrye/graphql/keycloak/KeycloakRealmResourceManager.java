@@ -23,7 +23,7 @@ import io.restassured.response.Response;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180");
     //private static String KEYCLOAK_SERVER_URL;
     private static final String KEYCLOAK_REALM = "quarkus";
     //private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:22.0.5";
@@ -36,6 +36,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.setRevokeRefreshToken(true);
         realm.setRefreshTokenMaxReuse(0);
         realm.setAccessTokenLifespan(3);
+        realm.setRequiredActions(List.of());
 
         realm.getClients().add(createClient("quarkus-app"));
         realm.getUsers().add(createUser("alice", "user"));
@@ -50,7 +51,6 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                     .post(KEYCLOAK_SERVER_URL + "/admin/realms");
             response.then()
                     .statusCode(201);
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -80,10 +80,13 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
         realm.setRealm(name);
         realm.setEnabled(true);
+        realm.setRequiredActions(List.of());
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
         realm.setAccessTokenLifespan(3);
         realm.setSsoSessionMaxLifespan(3);
+        realm.setRequiredActions(List.of());
+
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
 
@@ -116,9 +119,10 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
         user.setUsername(username);
         user.setEnabled(true);
-        user.setCredentials(new ArrayList<>());
         user.setRealmRoles(Arrays.asList(realmRoles));
         user.setEmail(username + "@gmail.com");
+        user.setRequiredActions(List.of());
+        user.setEmailVerified(true);
 
         CredentialRepresentation credential = new CredentialRepresentation();
 
@@ -126,7 +130,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         credential.setValue(username);
         credential.setTemporary(false);
 
-        user.getCredentials().add(credential);
+        user.setCredentials(List.of(credential));
 
         return user;
     }

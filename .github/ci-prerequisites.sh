@@ -32,6 +32,10 @@
 # alpine           3.14        dd53f409bf0b   4 months ago   5.6MB
 # alpine           3.15        c4fc93816858   4 months ago   5.58MB
 
+sudo systemctl enable containerd.service docker.service systemd-machined.service
+#find /lib/systemd/system -name 'podman*' -type f -exec sudo systemctl enable {} \;
+sudo systemctl daemon-reload
+
 time sudo docker image prune --all --force || true
 # That is 979M
 time sudo rm -rf /usr/share/dotnet || true

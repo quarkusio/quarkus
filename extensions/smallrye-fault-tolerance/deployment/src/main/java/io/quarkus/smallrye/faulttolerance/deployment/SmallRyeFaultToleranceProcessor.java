@@ -33,7 +33,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -50,7 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.faulttolerance.deployment.devui.FaultToleranceInfoBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
@@ -247,6 +248,7 @@ public class SmallRyeFaultToleranceProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
@@ -269,7 +271,7 @@ public class SmallRyeFaultToleranceProcessor {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         // only generating annotation literal classes for MicroProfile/SmallRye Fault Tolerance annotations,
         // none of them are application classes
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, false);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, false);
 
         FaultToleranceScanner scanner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
                 recorderContext, reflectiveMethod);

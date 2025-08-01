@@ -181,7 +181,7 @@ jobs:
           main-repository: quarkusio/quarkus
           runs-on: true
           magic-cache: true
-          ami: runs-on-v2.2-ubuntu24-full-x64-20250717120342
+          ami: ami-0679ee265ebddd0da
       - name: Determines if GIB should be disabled
         id: gib-status
         run: |

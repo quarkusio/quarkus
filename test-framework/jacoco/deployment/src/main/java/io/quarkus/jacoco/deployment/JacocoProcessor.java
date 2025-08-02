@@ -6,7 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -33,11 +35,12 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.jacoco.runtime.JacocoConfig;
 import io.quarkus.jacoco.runtime.ReportCreator;
 import io.quarkus.jacoco.runtime.ReportInfo;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class JacocoProcessor {
 
-    private static final Logger log = Logger.getLogger(JacocoProcessor.class);
+    private static final Logger LOG = Logger.getLogger(JacocoProcessor.class);
 
     @BuildStep(onlyIf = IsTest.class)
     FeatureBuildItem feature() {
@@ -57,7 +60,7 @@ public class JacocoProcessor {
             return;
         }
         if (!config.enabled()) {
-            log.debug("quarkus-jacoco is disabled via config");
+            LOG.debug("quarkus-jacoco is disabled via config");
             return;
         }
 
@@ -68,9 +71,25 @@ public class JacocoProcessor {
             Files.deleteIfExists(Paths.get(dataFile));
         }
 
+        Map<ArtifactKey, ResolvedDependency> applicationModules = new HashMap<>();
+        final ApplicationModel model = curateOutcomeBuildItem.getApplicationModel();
+        if (model.getApplicationModule() != null) {
+            applicationModules.put(model.getAppArtifact().getKey(), model.getAppArtifact());
+        }
+        for (ResolvedDependency dependency : model.getDependencies()) {
+            if (dependency.isRuntimeCp() && dependency.isWorkspaceModule()) {
+                applicationModules.put(dependency.getKey(), dependency);
+            }
+        }
+
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
         Set<String> seen = new HashSet<>();
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            // only instrument classes that are part of the workspace, we don't want to instrument all dependencies
+            if (!applicationModules.containsKey(archive.getKey())) {
+                continue;
+            }
+
             for (ClassInfo i : archive.getIndex().getKnownClasses()) {
                 String className = i.name().toString();
                 if (seen.contains(className)) {
@@ -90,7 +109,16 @@ public class JacocoProcessor {
                                             }
                                             return enhanced;
                                         } catch (IOException e) {
-                                            throw new RuntimeException(e);
+                                            if (!LOG.isDebugEnabled()) {
+                                                LOG.warnf(
+                                                        "Unable to instrument class %s with Jacoco: %s, keeping the original class",
+                                                        className, e.getMessage());
+                                            } else {
+                                                LOG.warnf(e,
+                                                        "Unable to instrument class %s with Jacoco, keeping the original class",
+                                                        className);
+                                            }
+                                            return bytes;
                                         }
                                     }
                                 }).build());
@@ -110,14 +138,8 @@ public class JacocoProcessor {
             info.classFiles = classes;
 
             Set<String> sources = new HashSet<>();
-            final ApplicationModel model = curateOutcomeBuildItem.getApplicationModel();
-            if (model.getApplicationModule() != null) {
-                addProjectModule(model.getAppArtifact(), config, info, includes, excludes, classes, sources);
-            }
-            for (ResolvedDependency d : model.getDependencies()) {
-                if (d.isRuntimeCp() && d.isWorkspaceModule()) {
-                    addProjectModule(d, config, info, includes, excludes, classes, sources);
-                }
+            for (ResolvedDependency applicationModule : applicationModules.values()) {
+                addProjectModule(applicationModule, config, info, includes, excludes, classes, sources);
             }
 
             info.sourceDirectories = sources;

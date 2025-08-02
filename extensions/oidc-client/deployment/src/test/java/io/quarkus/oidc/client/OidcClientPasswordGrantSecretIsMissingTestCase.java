@@ -17,7 +17,9 @@ public class OidcClientPasswordGrantSecretIsMissingTestCase {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
-                            "quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
+                            "# Disable Dev Services, Keycloak is started by a Maven plugin\n"
+                                    + "quarkus.keycloak.devservices.enabled=false\n"
+                                    + "quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
                                     + "quarkus.oidc-client.client-id=quarkus\n"
                                     + "quarkus.oidc-client.credentials.secret=secret\n"
                                     + "quarkus.oidc-client.grant.type=password\n"

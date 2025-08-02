@@ -406,7 +406,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     private static OIDCException responseException(String requestUri, HttpResponse<Buffer> resp, Buffer buffer) {
-        String errorMessage = buffer.toString();
+        String errorMessage = buffer == null ? null : buffer.toString();
 
         if (errorMessage != null && !errorMessage.isEmpty()) {
             LOG.errorf("Request %s has failed: status: %d, error message: %s", requestUri, resp.statusCode(), errorMessage);

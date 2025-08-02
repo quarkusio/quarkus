@@ -631,7 +631,8 @@ public class InteractiveQueries {
     private ReadOnlyKeyValueStore<Integer, Aggregation> getWeatherStationStore() {
         while (true) {
             try {
-                return streams.store(TopologyProducer.WEATHER_STATIONS_STORE, QueryableStoreTypes.keyValueStore());
+                return streams.store(StoreQueryParameters
+                    .fromNameAndType(TopologyProducer.WEATHER_STATIONS_STORE, QueryableStoreTypes.keyValueStore()));
             } catch (InvalidStateStoreException e) {
                 // ignore, store not ready yet
             }

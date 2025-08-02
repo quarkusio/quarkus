@@ -18,6 +18,7 @@ import jakarta.persistence.LockModeType;
 import org.hibernate.Filter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.hibernate.reactive.panache.common.ConstructorForProjection;
 import io.quarkus.hibernate.reactive.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
@@ -114,11 +115,8 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
         StringBuilder selectClause = new StringBuilder();
-        // We use the first constructor that we found and use the parameter names,
-        // so the projection class must have only one constructor,
-        // and the application must be built with parameter names.
-        // TODO: Maybe this should be improved some days ...
-        Constructor<?> constructor = getConstructor(type); //type.getDeclaredConstructors()[0];
+        Constructor<?> constructor = getConstructor(type);
+
         selectClause.append("new ").append(type.getName()).append(" (");
         String parametersListStr = Stream.of(constructor.getParameters())
                 .map(parameter -> getParameterName(type, parentParameter, parameter))
@@ -129,7 +127,37 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     private Constructor<?> getConstructor(Class<?> type) {
-        return type.getDeclaredConstructors()[0];
+        Constructor<?>[] typeConstructors = type.getDeclaredConstructors();
+
+        //We start to look for constructors with @ConstructorForProjection
+        for (Constructor<?> typeConstructor : typeConstructors) {
+            if (typeConstructor.isAnnotationPresent(ConstructorForProjection.class)) {
+                return typeConstructor;
+            }
+        }
+
+        //If didn't find anything early,
+        //we try to find a constructor with parameters annotated with @ProjectedFieldName
+        for (Constructor<?> typeConstructor : typeConstructors) {
+            for (Parameter parameter : typeConstructor.getParameters()) {
+                if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
+                    return typeConstructor;
+                }
+            }
+        }
+
+        //We fall back to the first constructor that has parameters
+        for (Constructor<?> typeConstructor : typeConstructors) {
+            Parameter[] parameters = typeConstructor.getParameters();
+            if (parameters.length == 0) {
+                continue;
+            }
+
+            return typeConstructor;
+        }
+
+        //If everything fails, we return the first available constructor
+        return typeConstructors[0];
     }
 
     private String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {

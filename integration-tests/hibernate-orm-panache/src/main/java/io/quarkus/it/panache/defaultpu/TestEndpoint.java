@@ -31,6 +31,7 @@ import jakarta.xml.bind.annotation.XmlTransient;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.jpa.QueryHints;
+import org.hibernate.query.SemanticException;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -1419,6 +1420,261 @@ public class TestEndpoint {
         Assertions.assertEquals("kit", dogDto2.name);
         Assertions.assertEquals("hum", dogDto2.owner.name);
 
+        return "OK";
+    }
+
+    @GET
+    @Path("projection-constructor-annotation")
+    @Transactional(dontRollbackOn = SemanticException.class)
+    public String testConstructorForProjection() {
+        Assertions.assertEquals(1, Person.count());
+
+        //Test class with multiple constructors but one with @ConstructorForProjection annotation
+        PersonName person = Person.findAll().project(PersonNameDoubleConstructorWithConstructorAnnotation.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name", "2").project(PersonNameDoubleConstructorWithConstructorAnnotation.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = ?1", "2").project(PersonNameDoubleConstructorWithConstructorAnnotation.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.defaultpu.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonNameDoubleConstructorWithConstructorAnnotation.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = :name", Parameters.with("name", "2"))
+                .project(PersonNameDoubleConstructorWithConstructorAnnotation.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("#Person.getByName", Parameters.with("name", "2"))
+                .project(PersonNameDoubleConstructorWithConstructorAnnotation.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        PanacheQuery<PersonNameDoubleConstructorWithConstructorAnnotation> query = Person.findAll()
+                .project(PersonNameDoubleConstructorWithConstructorAnnotation.class).page(0, 2);
+        Assertions.assertEquals(1, query.list().size());
+        query.nextPage();
+        Assertions.assertEquals(0, query.list().size());
+
+        Assertions.assertEquals(1,
+                Person.findAll().project(PersonNameDoubleConstructorWithConstructorAnnotation.class).count());
+
+        //Test class with multiple constructors but none with @ConstructorForProjection annotation
+        SemanticException semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.findAll().project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("name", "2").project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("name = ?1", "2").project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.defaultpu.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonNameDoubleConstructor.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> Person
+                .find("name = :name", Parameters.with("name", "2")).project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("#Person.getByName", Parameters.with("name", "2")).project(PersonNameDoubleConstructor.class)
+                        .firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        final PanacheQuery<? extends PersonName> failQuery = Person.findAll().project(PersonNameDoubleConstructor.class).page(0,
+                2);
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> failQuery.list().size());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        failQuery.nextPage();
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> failQuery.list().size());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.findAll().project(PersonNameDoubleConstructor.class).count());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+        return "OK";
+    }
+
+    @GET
+    @Path("projection-projected-field-name")
+    @Transactional(dontRollbackOn = SemanticException.class)
+    public String testConstructorWithProjectedFieldNameProjection() {
+        Assertions.assertEquals(1, Person.count());
+
+        //Test class with multiple constructors but some parameters with @ProjectedFieldName annotation
+        PersonName person = Person.findAll().project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name", "2").project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = ?1", "2").project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.defaultpu.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = :name", Parameters.with("name", "2"))
+                .project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("#Person.getByName", Parameters.with("name", "2"))
+                .project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        PanacheQuery<PersonNameDoubleConstructorWithProjectFieldNameAnnotation> query = Person.findAll()
+                .project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class).page(0, 2);
+        Assertions.assertEquals(1, query.list().size());
+        query.nextPage();
+        Assertions.assertEquals(0, query.list().size());
+
+        Assertions.assertEquals(1,
+                Person.findAll().project(PersonNameDoubleConstructorWithProjectFieldNameAnnotation.class).count());
+
+        //Test class with multiple constructors but no parameters with @ProjectedFieldName annotation
+        SemanticException semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.findAll().project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("name", "2").project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("name = ?1", "2").project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.defaultpu.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonNameDoubleConstructor.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> Person
+                .find("name = :name", Parameters.with("name", "2")).project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("#Person.getByName", Parameters.with("name", "2")).project(PersonNameDoubleConstructor.class)
+                        .firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        final PanacheQuery<? extends PersonName> failQuery = Person.findAll().project(PersonNameDoubleConstructor.class).page(0,
+                2);
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> failQuery.list().size());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        failQuery.nextPage();
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> failQuery.list().size());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.findAll().project(PersonNameDoubleConstructor.class).count());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+        return "OK";
+    }
+
+    @GET
+    @Path("projection-no-arguments-constructor")
+    @Transactional(dontRollbackOn = SemanticException.class)
+    public String testConstructorWithNoArgsProjection() {
+        Assertions.assertEquals(1, Person.count());
+
+        //Test class with multiple constructors but some parameters with @ProjectedFieldName annotation
+        PersonName person = Person.findAll().project(PersonNameDoubleConstructorWithOneEmpty.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name", "2").project(PersonNameDoubleConstructorWithOneEmpty.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = ?1", "2").project(PersonNameDoubleConstructorWithOneEmpty.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.defaultpu.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonNameDoubleConstructorWithOneEmpty.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = :name", Parameters.with("name", "2"))
+                .project(PersonNameDoubleConstructorWithOneEmpty.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("#Person.getByName", Parameters.with("name", "2"))
+                .project(PersonNameDoubleConstructorWithOneEmpty.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        PanacheQuery<PersonNameDoubleConstructorWithOneEmpty> query = Person.findAll()
+                .project(PersonNameDoubleConstructorWithOneEmpty.class).page(0, 2);
+        Assertions.assertEquals(1, query.list().size());
+        query.nextPage();
+        Assertions.assertEquals(0, query.list().size());
+
+        Assertions.assertEquals(1, Person.findAll().project(PersonNameDoubleConstructorWithOneEmpty.class).count());
+
+        //Test class with multiple constructors but no parameters with @ProjectedFieldName annotation
+        SemanticException semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.findAll().project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("name", "2").project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("name = ?1", "2").project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.defaultpu.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonNameDoubleConstructor.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> Person
+                .find("name = :name", Parameters.with("name", "2")).project(PersonNameDoubleConstructor.class).firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.find("#Person.getByName", Parameters.with("name", "2")).project(PersonNameDoubleConstructor.class)
+                        .firstResult());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        final PanacheQuery<? extends PersonName> failQuery = Person.findAll().project(PersonNameDoubleConstructor.class).page(0,
+                2);
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> failQuery.list().size());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        failQuery.nextPage();
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class, () -> failQuery.list().size());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
+
+        semanticException = Assertions.assertThrowsExactly(SemanticException.class,
+                () -> Person.findAll().project(PersonNameDoubleConstructor.class).count());
+        Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());
         return "OK";
     }
 

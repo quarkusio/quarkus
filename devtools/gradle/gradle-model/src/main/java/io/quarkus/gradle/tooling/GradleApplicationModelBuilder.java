@@ -348,7 +348,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             boolean workspaceDiscovery, Project project, ApplicationModelBuilder modelBuilder,
             WorkspaceModule.Mutable wsModule) {
 
-        final Set<File> artifactFiles = getArtifactFilesOrNull(configuration);
+        final Set<File> artifactFiles = getArtifactFilesOrNull(configuration, dependencies);
         for (ResolvedDependency d : configuration.getFirstLevelModuleDependencies()) {
             collectDependencies(d, workspaceDiscovery, project, artifactFiles, new HashSet<>(),
                     modelBuilder,
@@ -393,11 +393,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    private static Set<File> getArtifactFilesOrNull(ResolvedConfiguration configuration) {
+    private static Set<File> getArtifactFilesOrNull(ResolvedConfiguration configuration, ResolvableDependencies dependencies) {
         final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedArtifacts();
         // if the number of artifacts is less than the number of files then probably
         // the project includes direct file dependencies
-        return resolvedArtifacts.size() < configuration.getFiles().size()
+        return resolvedArtifacts.size() < dependencies.getFiles().getFiles().size()
                 ? new HashSet<>(resolvedArtifacts.size())
                 : null;
     }

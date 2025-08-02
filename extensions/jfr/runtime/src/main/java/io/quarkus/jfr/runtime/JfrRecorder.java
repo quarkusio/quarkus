@@ -10,8 +10,10 @@ import io.quarkus.jfr.runtime.http.rest.RestEndEvent;
 import io.quarkus.jfr.runtime.http.rest.RestPeriodEvent;
 import io.quarkus.jfr.runtime.http.rest.RestStartEvent;
 import io.quarkus.jfr.runtime.runtime.QuarkusRuntimeInfo;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import jdk.jfr.FlightRecorder;
 
 @Recorder
@@ -47,20 +49,19 @@ public class JfrRecorder {
         this.disabledRestJfr();
     }
 
-    public Supplier<QuarkusRuntimeInfo> quarkusInfoSupplier(String version, List<String> features, String imageMode,
-            String profiles) {
+    public Supplier<QuarkusRuntimeInfo> quarkusInfoSupplier(String version, List<String> features) {
         return new Supplier<>() {
             @Override
             public QuarkusRuntimeInfo get() {
                 return new QuarkusRuntimeInfo() {
                     @Override
                     public String imageMode() {
-                        return imageMode;
+                        return ImageMode.current().name();
                     }
 
                     @Override
                     public String profiles() {
-                        return profiles;
+                        return String.join(",", ConfigUtils.getProfiles());
                     }
 
                     @Override

@@ -915,7 +915,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _getEncodedPath() {
-        // this is the last part of this path: /q/dev-ui/io.quarkus.quarkus-oidc/keycloak-provider -> keycloak-provider
+        // this is the last part of this path: /q/dev-ui/quarkus-oidc/keycloak-provider -> keycloak-provider
         const subPath = window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1);
         return QwcOidcProvider._getEncodedCurrentBaseUrl() + this._devRoot + "%2Fio.quarkus.quarkus-oidc%2F" + subPath;
     }

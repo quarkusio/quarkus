@@ -15,7 +15,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.jfr.runtime.JfrRecorder;
@@ -43,7 +42,7 @@ public class JfrProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerVersion(List<FeatureBuildItem> features, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<SyntheticBeanBuildItem> beanProduce, JfrRecorder recorder, ApplicationInfoBuildItem applicationInfo) {
+            BuildProducer<SyntheticBeanBuildItem> beanProduce, JfrRecorder recorder) {
 
         List<String> featureNames = features.stream().map(f -> f.getName()).toList();
         String quarkusVersion = Version.getVersion();

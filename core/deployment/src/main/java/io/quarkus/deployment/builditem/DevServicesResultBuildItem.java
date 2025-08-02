@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -76,6 +77,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      * A map of application config that is dependent on the started service
      */
     private final Map<String, Function<Startable, String>> applicationConfigProvider;
+    private final Set<String> highPriorityConfig;
 
     public static DiscoveredServiceBuilder discovered() {
         return new DiscoveredServiceBuilder();
@@ -105,6 +107,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.serviceName = null;
         this.serviceConfig = null;
         this.applicationConfigProvider = null;
+        this.highPriorityConfig = null;
         this.startableSupplier = null;
         this.postStartAction = null;
     }
@@ -120,7 +123,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             Map<String, String> config,
             Supplier<Startable> startableSupplier,
             Consumer<Startable> postStartAction,
-            Map<String, Function<Startable, String>> applicationConfigProvider) {
+            Map<String, Function<Startable, String>> applicationConfigProvider, Set<String> highPriorityConfig) {
         this.name = name;
         this.description = description;
         this.containerId = null;
@@ -130,6 +133,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.startableSupplier = startableSupplier;
         this.postStartAction = postStartAction;
         this.applicationConfigProvider = applicationConfigProvider;
+        this.highPriorityConfig = highPriorityConfig;
     }
 
     public String getName() {
@@ -174,11 +178,30 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
     public Map<String, String> getConfig(Startable startable) {
         SupplierMap<String, String> map = new SupplierMap<>();
+        // To make sure static config does make it into a config source, include it here
         if (config != null && !config.isEmpty()) {
             map.putAll(config);
         }
         for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
             map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+        }
+        return map;
+    }
+
+    /**
+     * Gets config which should be inserted with extra-high priority.
+     *
+     * @param startable
+     * @return
+     */
+    public Map<String, String> getOverrideConfig(Startable startable) {
+
+        SupplierMap<String, String> map = new SupplierMap<>();
+
+        if (highPriorityConfig != null) {
+            for (String key : highPriorityConfig) {
+                map.put(key, () -> applicationConfigProvider.get(key).apply(startable));
+            }
         }
         return map;
     }
@@ -228,6 +251,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Supplier<? extends Startable> startableSupplier;
         private Consumer<? extends Startable> postStartAction;
         private Map<String, Function<Startable, String>> applicationConfigProvider;
+        private Set<String> highPriorityConfig;
 
         public OwnedServiceBuilder<T> name(String name) {
             this.name = name;
@@ -241,11 +265,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
         public OwnedServiceBuilder<T> description(String description) {
             this.description = description;
-            return this;
-        }
-
-        public OwnedServiceBuilder<T> config(Map<String, String> config) {
-            this.config = config;
             return this;
         }
 
@@ -269,6 +288,22 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public OwnedServiceBuilder<T> config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        /**
+         * Set config which should be have an extra-high priority, so that it overrides config from other sources.
+         *
+         * @param highPriorityConfig
+         * @return
+         */
+        public OwnedServiceBuilder<T> highPriorityConfig(Set<String> highPriorityConfig) {
+            this.highPriorityConfig = highPriorityConfig;
+            return this;
+        }
+
         public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {
             this.applicationConfigProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;
             return this;
@@ -278,7 +313,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider);
+                    applicationConfigProvider, highPriorityConfig);
         }
     }
 

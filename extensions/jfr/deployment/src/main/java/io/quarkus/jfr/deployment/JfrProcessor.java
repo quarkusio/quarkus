@@ -31,8 +31,6 @@ import io.quarkus.jfr.runtime.runtime.QuarkusRuntimeInfo;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.GlobalHandlerCustomizerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
-import io.quarkus.runtime.ImageMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
 
 @BuildSteps
 public class JfrProcessor {
@@ -51,8 +49,7 @@ public class JfrProcessor {
         String quarkusVersion = Version.getVersion();
 
         beanProduce.produce(SyntheticBeanBuildItem.configure(QuarkusRuntimeInfo.class)
-                .supplier(recorder.quarkusInfoSupplier(quarkusVersion, featureNames, ImageMode.current().name(),
-                        String.join(",", ConfigUtils.getProfiles())))
+                .supplier(recorder.quarkusInfoSupplier(quarkusVersion, featureNames))
                 .scope(ApplicationScoped.class)
                 .setRuntimeInit().done());
 

@@ -5630,6 +5630,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.hibernate.tool</groupId>
+                <artifactId>hibernate-tools-language</artifactId>
+                <version>${hibernate-tools.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql-jdbc.version}</version>

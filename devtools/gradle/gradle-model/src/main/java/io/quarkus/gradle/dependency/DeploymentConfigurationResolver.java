@@ -150,16 +150,11 @@ public class DeploymentConfigurationResolver {
                     !allRuntimeDeps.containsKey(
                             ArtifactKey.of(processedDep.ext.getDeploymentGroup(), processedDep.ext.getDeploymentName(),
                                     ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_JAR))) {
-                directDeploymentDeps.add(getDeploymentDependency(processedDep.ext));
+                directDeploymentDeps
+                        .add(DependencyUtils.createDeploymentDependency(project.getDependencies(), processedDep.ext));
             }
         }
         return directDeploymentDeps;
-    }
-
-    private Dependency getDeploymentDependency(ExtensionDependency<?> ext) {
-        return ext.isProjectDependency()
-                ? DependencyUtils.createDeploymentProjectDependency((Project) ext.getDeploymentModule(), taskDependencyFactory)
-                : DependencyUtils.createDeploymentDependency(project.getDependencies(), ext);
     }
 
     private boolean isWalkingFlagsOn(byte flags) {

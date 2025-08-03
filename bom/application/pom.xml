@@ -133,7 +133,7 @@
         <junit.jupiter.version>5.13.4</junit.jupiter.version>
         <infinispan.version>15.0.18.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
-        <caffeine.version>3.2.0</caffeine.version>
+        <caffeine.version>3.2.2</caffeine.version>
         <netty.version>4.1.121.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>

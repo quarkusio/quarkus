@@ -53,7 +53,7 @@
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <gizmo.version>1.9.0</gizmo.version>
-        <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
+        <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version>
 
         <mutiny.version>2.9.4</mutiny.version>
         <smallrye-common.version>2.13.8</smallrye-common.version>

@@ -41,7 +41,7 @@
         <!-- specification versions -->
         <version.cdi>4.1.0</version.cdi>
         <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
-        <version.jpa>3.1.0</version.jpa>
+        <version.jpa>3.2.0</version.jpa>
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.9.0</version.gizmo>

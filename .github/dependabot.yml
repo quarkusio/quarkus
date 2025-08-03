@@ -197,6 +197,10 @@ updates:
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"
+      Mvnpm:
+        patterns:
+          - "org.mvnpm:*"
+          - "org.mvnpm.*:*"
     ignore:
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]

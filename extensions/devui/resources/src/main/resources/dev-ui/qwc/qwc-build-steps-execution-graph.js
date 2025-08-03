@@ -18,6 +18,7 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
             gap: 20px;
             padding-left: 20px;
             padding-right: 20px;
+            justify-content: space-between;
         }
     
         .top-bar h4 {
@@ -28,13 +29,15 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
     static properties = {
         extensionName: {type: String}, // TODO: Add 'pane' concept in router to register internal extension pages.
         _threadSlotRecords: {state: true},
-        _slots: {state: true}
+        _slots: {state: true},
+        _showLegend: {state: true}
     };
 
     constructor() {
         super();
         this._threadSlotRecords = null;
         this._slots = null;
+        this._showLegend = false;
     }
 
     connectedCallback() {
@@ -61,7 +64,8 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
                         xdata="${xdata}"
                         xdataName="${xname}"
                         ydataName="${yname}"
-                        series="${JSON.stringify(this._threadSlotRecords)}">
+                        series="${JSON.stringify(this._threadSlotRecords)}"
+                        .showLegend=${this._showLegend}>
                     </echarts-bar-stack>
             `;
         }else{
@@ -84,6 +88,11 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
                             Back
                         </vaadin-button>
                         <h4>Build Steps Concurrent Execution Chart</h4>
+                        <vaadin-checkbox label="Legend"
+                            @change="${(event) => {
+                                this._checkedChanged(event, event.target.checked);
+                            }}"
+                        ></vaadin-checkbox>
                     </div>`;
     }
     
@@ -95,6 +104,11 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
             composed: false,
         });
         this.dispatchEvent(back);
+    }
+    
+    _checkedChanged(event, value) {
+        event.preventDefault();
+        this._showLegend = value;
     }
 }
 customElements.define('qwc-build-steps-execution-graph', QwcBuildStepsExecutionGraph);

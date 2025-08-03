@@ -174,6 +174,11 @@ public interface TestConfig {
     Container container();
 
     /**
+     * RestAssured related test settings
+     */
+    RestAssured restAssured();
+
+    /**
      * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
      * When the artifact is a {@code jar}, this string is passed right after the {@code java} command.
      * When the artifact is a {@code container}, this string is passed right after the {@code docker run} command.

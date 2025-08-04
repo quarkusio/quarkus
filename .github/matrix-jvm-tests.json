@@ -8,7 +8,7 @@
 , {
   "name": "21",
   "java-version": 21,
-  "java-version-gradle": 20,
+  "java-version-gradle": 17,
   "maven_args": "$JVM_TEST_MAVEN_ARGS",
   "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
   "os-name": "ubuntu-22.04"

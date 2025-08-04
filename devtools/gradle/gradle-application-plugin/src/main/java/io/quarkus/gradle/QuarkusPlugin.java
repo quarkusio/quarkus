@@ -638,7 +638,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     private void afterEvaluate(Project project) {
 
-        visitProjectDependencies(project, project, new HashSet<>());
+        visitProjectDependencies(project, new HashSet<>());
 
         ConfigurationContainer configurations = project.getConfigurations();
 
@@ -696,7 +696,7 @@ public class QuarkusPlugin implements Plugin<Project> {
             }
         });
 
-        visitProjectDependencies(project, dep, visited);
+        visitProjectDependencies(dep, visited);
     }
 
     private void addDependencyOnJandexIfConfigured(Project project, TaskProvider<? extends Task> quarkusTask) {
@@ -709,37 +709,38 @@ public class QuarkusPlugin implements Plugin<Project> {
         }
     }
 
-    protected void visitProjectDependencies(Project project, Project dep, Set<String> visited) {
+    protected void visitProjectDependencies(Project dep, Set<String> visited) {
         final Configuration compileConfig = dep.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
         if (compileConfig != null) {
-            final Configuration compilePlusRuntimeConfig = dep.getConfigurations().maybeCreate("compilePlusRuntime");
-            compilePlusRuntimeConfig.extendsFrom(compileConfig);
-            final Configuration runtimeOnlyConfig = dep.getConfigurations()
-                    .findByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME);
-            if (runtimeOnlyConfig != null) {
-                compilePlusRuntimeConfig.extendsFrom(runtimeOnlyConfig);
-            }
-            compilePlusRuntimeConfig.getIncoming().getDependencies()
-                    .forEach(d -> {
-                        Project depProject = null;
-
-                        if (d instanceof ProjectDependency projectDep) {
-                            depProject = dep.project(projectDep.getPath());
-                        } else if (d instanceof ExternalModuleDependency externalModuleDep) {
-                            depProject = ToolingUtils.findIncludedProject(project, externalModuleDep);
-                        }
-
-                        if (depProject == null) {
-                            return;
-                        }
-
-                        if (depProject.getState().getExecuted()) {
-                            visitLocalProject(project, depProject, visited);
-                        } else {
-                            depProject.afterEvaluate(p -> visitLocalProject(project, p, visited));
-                        }
-                    });
+            processDependencyProjectClasspath(dep, compileConfig, visited);
         }
+        final Configuration runtimeOnlyConfig = dep.getConfigurations().findByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME);
+        if (runtimeOnlyConfig != null) {
+            processDependencyProjectClasspath(dep, runtimeOnlyConfig, visited);
+        }
+    }
+
+    private void processDependencyProjectClasspath(Project dependencyProject, Configuration config, Set<String> visited) {
+        config.getIncoming().getDependencies()
+                .forEach(d -> {
+                    Project depProject = null;
+
+                    if (d instanceof ProjectDependency projectDep) {
+                        depProject = dependencyProject.project(projectDep.getPath());
+                    } else if (d instanceof ExternalModuleDependency externalModuleDep) {
+                        depProject = ToolingUtils.findIncludedProject(dependencyProject, externalModuleDep);
+                    }
+
+                    if (depProject == null) {
+                        return;
+                    }
+
+                    if (depProject.getState().getExecuted()) {
+                        visitLocalProject(dependencyProject, depProject, visited);
+                    } else {
+                        depProject.afterEvaluate(p -> visitLocalProject(dependencyProject, p, visited));
+                    }
+                });
     }
 
     private void visitLocalProject(Project project, Project localProject, Set<String> visited) {

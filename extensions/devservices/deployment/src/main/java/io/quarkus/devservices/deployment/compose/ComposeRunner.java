@@ -12,6 +12,7 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.dockerclient.TransportConfig;
 import org.testcontainers.utility.CommandLine;
 
+import io.smallrye.common.os.OS;
 import io.smallrye.common.process.ProcessBuilder;
 
 /**
@@ -117,6 +118,7 @@ public class ComposeRunner {
                         env.put(COMPOSE_PROFILES_ENV, String.join(",", this.profiles));
                     }
                 })
+                .specialQuoting(OS.WINDOWS.isCurrent())
                 .output().consumeLinesWith(8192, LOG::info)
                 .error().logOnSuccess(false).consumeLinesWith(8192, LOG::info)
                 .run();

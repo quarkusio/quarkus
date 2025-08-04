@@ -53,7 +53,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                         int exitCode;
                     };
                     ProcessBuilder.newBuilder(containerRuntime.getExecutableName())
-                            .arguments("image", "inspect", "-f", "{{ .Id }}")
+                            .arguments("image", "inspect", "-f", "{{ .Id }}", effectiveBuilderImage)
                             .exitCodeChecker(ec -> {
                                 holder.exitCode = ec;
                                 return true;

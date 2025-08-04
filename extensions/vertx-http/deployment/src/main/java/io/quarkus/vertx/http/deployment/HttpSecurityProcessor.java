@@ -155,8 +155,10 @@ public class HttpSecurityProcessor {
     @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder) {
-        recorder.setMtlsCertificateRoleProperties();
+    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            recorder.setMtlsCertificateRoleProperties();
+        }
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)

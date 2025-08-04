@@ -29,6 +29,7 @@ import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
+import io.quarkus.hibernate.orm.runtime.service.internalcache.QuarkusInternalCacheFactoryInitiator;
 
 /**
  * Here we define the list of standard Service Initiators to be used by
@@ -108,6 +109,9 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
 
         // Default implementation
         serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
+
+        // Custom Quarkus implementation: overrides the internal cache to leverage Caffeine
+        serviceInitiators.add(QuarkusInternalCacheFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
 

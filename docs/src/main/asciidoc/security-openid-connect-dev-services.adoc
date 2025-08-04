@@ -178,7 +178,7 @@ It is recommended to do this in production to avoid the users being redirected t
 
 If Keycloak enforces it, you see an authentication error informing you that the `redirect_uri` value is wrong.
 
-In this case, select the *Keycloak Admin* option in the top right corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with, and add `http://localhost:8080/q/dev-ui/io.quarkus.quarkus-oidc/keycloak-provider` to `Valid Redirect URIs`.
+In this case, select the *Keycloak Admin* option in the top right corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with, and add `http://localhost:8080/q/dev-ui/quarkus-oidc/keycloak-provider` to `Valid Redirect URIs`.
 If you used `-Dquarkus.http.port` when starting Quarkus, then change `8080` to the value of `quarkus.http.port`
 
 If the container is shared between multiple applications running on different ports, you must register `redirect_uri` values for each application.
@@ -364,7 +364,7 @@ Follow the link to log in to your provider, get the tokens, and test the applica
 The experience is the same as described in the <<keycloak-authorization-code-grant,Authorization code grant for Keycloak>> section, where the Dev Services for Keycloak container has been started, especially if you work with Keycloak.
 
 You likely need to configure your OpenID Connect provider to support redirecting back to the `Dev Console`.
-You add `http://localhost:8080/q/dev-ui/io.quarkus.quarkus-oidc/<providerName>-provider` as one of the supported redirect and logout URLs, where `<providerName>` must be replaced by the name of the provider shown in the Dev UI, for example, `auth0`.
+You add `http://localhost:8080/q/dev-ui/quarkus-oidc/<providerName>-provider` as one of the supported redirect and logout URLs, where `<providerName>` must be replaced by the name of the provider shown in the Dev UI, for example, `auth0`.
 
 The Dev UI experience described in the <<keycloak-authorization-code-grant,Authorization code grant for Keycloak>> section might differ slightly if you work with other providers.
 For example, an access token might not be in JWT format, so it would not be possible to show its internal content.

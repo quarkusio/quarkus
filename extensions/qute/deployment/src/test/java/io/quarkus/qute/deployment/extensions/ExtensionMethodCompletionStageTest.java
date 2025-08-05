@@ -35,7 +35,7 @@ public class ExtensionMethodCompletionStageTest {
                 .toCompletableFuture();
         assertFalse(result.isDone());
         FooParentService.parent.complete(new Foo("bravo", 1l));
-        assertEquals("bravo", result.toCompletableFuture().get());
+        assertEquals("bravo", result.get());
     }
 
     @Unremovable

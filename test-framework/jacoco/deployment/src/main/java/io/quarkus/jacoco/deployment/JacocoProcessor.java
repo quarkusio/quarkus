@@ -90,7 +90,16 @@ public class JacocoProcessor {
                                             }
                                             return enhanced;
                                         } catch (IOException e) {
-                                            throw new RuntimeException(e);
+                                            if (!log.isDebugEnabled()) {
+                                                log.warnf(
+                                                        "Unable to instrument class %s with JaCoCo: %s, keeping the original class",
+                                                        className, e.getMessage());
+                                            } else {
+                                                log.warnf(e,
+                                                        "Unable to instrument class %s with JaCoCo, keeping the original class",
+                                                        className);
+                                            }
+                                            return bytes;
                                         }
                                     }
                                 }).build());

@@ -11,6 +11,7 @@ import static java.util.Collections.singletonList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.*;
@@ -253,14 +254,19 @@ public class DevServicesKubernetesProcessor {
     }
 
     private InputStream getManifestStream(String manifestPath) throws IOException {
-        if (manifestPath.startsWith("http://") || manifestPath.startsWith("https://")) {
-            // Option 1: The manifest is a URL, in which case we download it
-            return new URL(manifestPath).openStream();
-        } else {
-            // Option 2: The manifest is a file in the resources directory
-            return Thread.currentThread()
+        try {
+            URL url = new URL(manifestPath);
+            // For file:// URLs, optionally check if you want to support those or not
+            return url.openStream();
+        } catch (MalformedURLException e) {
+            // Not a URL, so treat as classpath resource
+            InputStream stream = Thread.currentThread()
                     .getContextClassLoader()
                     .getResourceAsStream(manifestPath);
+            if (stream == null) {
+                throw new IOException("Resource not found: " + manifestPath);
+            }
+            return stream;
         }
     }
 

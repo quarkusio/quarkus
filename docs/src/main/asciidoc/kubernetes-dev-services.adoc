@@ -90,8 +90,7 @@ quarkus.kubernetes-client.devservices.manifests=kubernetes/namespace.yaml
 
 When applying multiple properties, you can apply them as:
 ```
-quarkus.kubernetes-client.devservices.manifests[0]=kubernetes/first_manifest.yaml
-quarkus.kubernetes-client.devservices.manifests[1]=kubernetes/second_manifest.yaml
+quarkus.kubernetes-client.devservices.manifests=kubernetes/first_manifest.yaml,kubernetes/second_manifest.yaml
 ```
 
 It is also possible to apply manifests from a URL. So the following syntax would also be possible:

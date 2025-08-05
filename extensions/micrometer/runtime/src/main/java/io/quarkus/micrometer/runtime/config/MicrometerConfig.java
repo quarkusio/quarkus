@@ -73,6 +73,29 @@ public interface MicrometerConfig {
         return false;
     }
 
+    default boolean isEnabled(Optional<Boolean> aBoolean) {
+        if (enabled()) {
+            if (this.binder().enableAll()) {
+                return true;
+            } else {
+                return aBoolean.orElse(false);
+            }
+        }
+
+        return false;
+    }
+
+    default boolean isEnabled(CapabilityEnabled config) {
+        if (enabled()) {
+            if (this.binder().enableAll()) {
+                return true;
+            } else {
+                return checkBinderEnabledWithDefault(config);
+            }
+        }
+        return false;
+    }
+
     /** Build / static runtime config for binders */
     @ConfigGroup
     interface BinderConfig {
@@ -117,6 +140,38 @@ public interface MicrometerConfig {
         VertxConfigGroup vertx();
 
         NettyConfigGroup netty();
+
+        /**
+         * Enable all binders.
+         */
+        @WithDefault("false")
+        boolean enableAll();
+
+        /**
+         * Enable all binders or use the config value.
+         *
+         * @param config the config value
+         * @return {@link Optional<Boolean>}
+         */
+        default Optional<Boolean> enableAllOr(Optional<Boolean> config) {
+            if (enableAll()) {
+                return Optional.of(enableAll());
+            }
+            return config;
+        }
+
+        /**
+         * Enable all binders or use the capabilityEnabled value.
+         *
+         * @param capabilityEnabled the capability enabled
+         * @return {@link Optional<Boolean>}
+         */
+        default Optional<Boolean> enableAllOr(CapabilityEnabled capabilityEnabled) {
+            if (enableAll()) {
+                return Optional.of(enableAll());
+            }
+            return capabilityEnabled.enabled();
+        }
     }
 
     /** Build / static runtime config for exporters */

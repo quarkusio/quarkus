@@ -147,31 +147,6 @@ public interface MicrometerConfig {
         @WithDefault("false")
         boolean enableAll();
 
-        /**
-         * Enable all binders or use the config value.
-         *
-         * @param config the config value
-         * @return {@link Optional<Boolean>}
-         */
-        default Optional<Boolean> enableAllOr(Optional<Boolean> config) {
-            if (enableAll()) {
-                return Optional.of(enableAll());
-            }
-            return config;
-        }
-
-        /**
-         * Enable all binders or use the capabilityEnabled value.
-         *
-         * @param capabilityEnabled the capability enabled
-         * @return {@link Optional<Boolean>}
-         */
-        default Optional<Boolean> enableAllOr(CapabilityEnabled capabilityEnabled) {
-            if (enableAll()) {
-                return Optional.of(enableAll());
-            }
-            return capabilityEnabled.enabled();
-        }
     }
 
     /** Build / static runtime config for exporters */

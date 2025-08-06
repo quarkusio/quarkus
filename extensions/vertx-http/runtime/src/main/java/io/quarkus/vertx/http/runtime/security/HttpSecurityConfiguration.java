@@ -228,7 +228,8 @@ public final class HttpSecurityConfiguration {
             }
 
             instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
-                    basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, httpConfig, httpBuildTimeConfig);
+                    basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, vertxHttpConfig,
+                    vertxHttpBuildTimeConfig);
             HttpServerTlsConfig.setConfiguration(
                     new ProgrammaticTlsConfig(httpSecurity.getClientAuth(), httpSecurity.getHttpServerTlsConfigName()));
         }

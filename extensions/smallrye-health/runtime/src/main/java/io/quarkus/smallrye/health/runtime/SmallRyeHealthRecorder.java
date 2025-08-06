@@ -42,7 +42,7 @@ public class SmallRyeHealthRecorder {
     public Handler<RoutingContext> uiHandler(String healthUiFinalDestination, String healthUiPath,
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations, ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.getValue().enable()) {
+        if (runtimeConfig.getValue().enable().orElse(runtimeConfig.getValue().enabled())) {
             WebJarStaticHandler handler = new WebJarStaticHandler(healthUiFinalDestination, healthUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));

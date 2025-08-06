@@ -40,7 +40,7 @@ public class OpenApiRecorder {
     }
 
     public Handler<RoutingContext> handler() {
-        if (openApiConfig.getValue().enable()) {
+        if (openApiConfig.getValue().enable().orElse(openApiConfig.getValue().enabled())) {
             return new OpenApiHandler();
         } else {
             return new OpenApiNotFoundHandler();

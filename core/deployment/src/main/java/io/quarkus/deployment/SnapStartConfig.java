@@ -23,6 +23,17 @@ public interface SnapStartConfig {
      * Default value is dependent on extensions deployed
      * (i.e. when using AWS Lambda extensions, this will be set to true by default)
      */
+    Optional<Boolean> enabled();
+
+    /**
+     * Enable/Disable SnapStart integration
+     * <p>
+     * Default value is dependent on extensions deployed
+     * (i.e. when using AWS Lambda extensions, this will be set to true by default)
+     *
+     * @deprecated use {@code quarkus.snapstart.enabled} instead
+     */
+    @Deprecated(since = "3.26", forRemoval = true)
     Optional<Boolean> enable();
 
     /**

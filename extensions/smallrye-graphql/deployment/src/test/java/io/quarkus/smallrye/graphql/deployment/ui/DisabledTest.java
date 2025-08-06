@@ -12,7 +12,7 @@ public class DisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.ui.enable=false"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.ui.enabled=false"), "application.properties"));
 
     @Test
     public void shouldUseDefaultConfig() {

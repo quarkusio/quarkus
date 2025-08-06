@@ -7,12 +7,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-class DisabledTest {
+class LegacyDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.smallrye-health.ui.enabled=false"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.smallrye-health.ui.enable=false"), "application.properties"));
 
     @Test
     void shouldUseDefaultConfig() {

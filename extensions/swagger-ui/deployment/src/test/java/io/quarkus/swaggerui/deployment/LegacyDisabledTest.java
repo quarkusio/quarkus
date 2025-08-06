@@ -7,12 +7,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class DisabledTest {
+public class LegacyDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.swagger-ui.enabled=false"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.swagger-ui.enable=false"), "application.properties"));
 
     @Test
     public void shouldUseDefaultConfig() {

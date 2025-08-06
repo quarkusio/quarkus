@@ -36,7 +36,7 @@ jobs:
     name: OpenShift Integration Tests
     needs: cache
     runs-on: ubuntu-20.04
-    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +44,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -83,3 +87,5 @@ jobs:
           status: ${{ job.status }}
           issue-repository: ${{ github.repository }}
           issue-number: 26582
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

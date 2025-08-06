@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.runtime.dev;
+package io.quarkus.hibernate.orm.dev;
 
 import java.util.Collection;
 import java.util.Objects;

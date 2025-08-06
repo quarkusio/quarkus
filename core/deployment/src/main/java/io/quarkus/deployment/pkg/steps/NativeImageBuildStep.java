@@ -1046,7 +1046,7 @@ public class NativeImageBuildStep {
                 if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {
                     final String errs = unsupportedOSes.stream()
                             .filter(o -> o.triggerError(containerBuild))
-                            .map(o -> o.error)
+                            .map(UnsupportedOSBuildItem::error)
                             .collect(Collectors.joining(", "));
                     if (!errs.isEmpty()) {
                         throw new UnsupportedOperationException(errs);

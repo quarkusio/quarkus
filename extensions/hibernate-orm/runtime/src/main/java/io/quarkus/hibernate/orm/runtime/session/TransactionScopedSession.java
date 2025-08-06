@@ -199,6 +199,22 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public Object find(String entityName, Object primaryKey) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.find(entityName, primaryKey);
+        }
+    }
+
+    @Override
+    public Object find(String entityName, Object primaryKey, FindOption... options) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.find(entityName, primaryKey, options);
+        }
+    }
+
+    @Override
     public <T> T find(Class<T> entityClass, Object primaryKey, Map<String, Object> properties) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {

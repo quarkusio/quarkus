@@ -35,14 +35,19 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         vaadin-grid {
             height: 100%;
         }
+        .filterText {
+            width: 100%;
+        }
     `;
 
     static properties = {
         _tools: {state: true},
+        _filtered: {state: true, type: Array},
         _showInputDialog: {state: true, type: Boolean},
         _selectedTool: {state: true},
         _inputvalues: { type: Object },
-        _toolResult: {state: true}
+        _toolResult: {state: true},
+        _searchTerm: {state: true}
     }
 
     constructor() {
@@ -51,12 +56,16 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         this._selectedTool = [];
         this._inputvalues = new Map();
         this._toolResult = null;
+        this._tools = null;
+        this._filtered = null;
     }
 
     connectedCallback() {
         super.connectedCallback();
+        this._filteredValue = null;
         this._loadTools();
         this._inputvalues.clear();
+        
     }
 
     render() {
@@ -78,8 +87,96 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
     }
 
     _renderTools(){
-        return html`
-                    <vaadin-dialog
+        return html`${this._renderToolInvovationResultDialog()}
+                    ${this._renderToolInvocationInputDialog()}
+                    ${this._renderTabsheet()}`;
+    }
+
+    _renderTabsheet(){
+        return html`<vaadin-tabsheet>
+                        <vaadin-tabs slot="tabs">
+                            <vaadin-tab id="list-tab">List</vaadin-tab>
+                            <vaadin-tab id="raw-tab">Raw json</vaadin-tab>
+                        </vaadin-tabs>
+                        ${this._renderGridTab()}
+                        ${this._renderRawTab()}
+                    </vaadin-tabsheet>`;
+    }
+
+    _renderGridTab(){
+        return html`<div tab="list-tab">
+                        ${this._renderFilterTextbar()}
+        
+                        <vaadin-grid .items="${this._filtered}" .selectedItems="${this._selectedTool}" theme="row-stripes" all-rows-visible
+                            @active-item-changed="${(e) => {
+                                const item = e.detail.value;
+                                this._selectedTool = item ? [item] : [];
+
+                                if(this._selectedTool.length>0){
+                                    let parameters = Object.keys(this._selectedTool[0].inputSchema.properties);
+                                    const propertyCount = parameters.length;
+                                    if(propertyCount>0) {
+                                        this._showInputDialog = true;
+                                    }else {
+                                        this._testJsonRpcCall(this._selectedTool[0], null);
+                                    }
+                                }
+                            }}">
+                            <vaadin-grid-sort-column 
+                                header='Namespace'
+                                path="name" 
+                                auto-width
+                                ${columnBodyRenderer(this._namespaceRenderer, [])}
+                            >
+                            </vaadin-grid-sort-column>
+                            <vaadin-grid-sort-column 
+                                header='Method'
+                                path="name" 
+                                auto-width
+                                ${columnBodyRenderer(this._nameRenderer, [])}
+                            >
+                            </vaadin-grid-sort-column>
+                            <vaadin-grid-sort-column 
+                                header='Description'
+                                path="description" 
+                                auto-width>
+                            </vaadin-grid-sort-column>
+                            <vaadin-grid-column
+                                header="Params"
+                                frozen-to-end
+                                auto-width
+                                flex-grow="0"
+                                ${columnBodyRenderer(this._noOfParameterRenderer, [])}
+                            ></vaadin-grid-column>    
+                        </vaadin-grid>
+                    </div>`;
+    }
+
+    _renderFilterTextbar(){
+        return html`<vaadin-text-field class="filterText"
+                                placeholder="Filter"
+                                value="${this._filteredValue}"
+                                style="flex: 1;"
+                                @value-changed="${(e) => this._filterTextChanged(e)}">
+                            <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
+                            <qui-badge slot="suffix"><span>${this._filtered?.length}</span></qui-badge>
+                        </vaadin-text-field>`;
+    }
+
+    _renderRawTab(){
+        return html`<div tab="raw-tab">
+                            <div class="codeBlock">
+                                <qui-themed-code-block 
+                                    mode='json'
+                                    content='${JSON.stringify(this._tools, null, 2)}'
+                                    showLineNumbers>
+                                </qui-themed-code-block>
+                            </div>
+                        </div>`;
+    }
+
+    _renderToolInvovationResultDialog(){
+        return html`<vaadin-dialog
                         header-title="Tool invocation result"
                         .opened="${this._toolResult!==null}"
                         @opened-changed="${(event) => {
@@ -96,9 +193,11 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                             []
                         )}
                         ${dialogRenderer(() => this._renderToolResult())}
-                    ></vaadin-dialog>  
-                    
-                    <vaadin-dialog
+                    ></vaadin-dialog>`;
+    }
+
+    _renderToolInvocationInputDialog(){
+        return html `<vaadin-dialog
                         header-title="Input"
                         .opened="${this._showInputDialog}"
                         @opened-changed="${(event) => {
@@ -115,67 +214,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                             []
                         )}
                         ${dialogRenderer(this._renderToolInput)}
-                    ></vaadin-dialog>
-                    
-                    <vaadin-tabsheet>
-                        <vaadin-tabs slot="tabs">
-                            <vaadin-tab id="list-tab">List</vaadin-tab>
-                            <vaadin-tab id="raw-tab">Raw json</vaadin-tab>
-                        </vaadin-tabs>
-                        <div tab="list-tab">
-                            <vaadin-grid .items="${this._tools.tools}" .selectedItems="${this._selectedTool}" theme="row-stripes" all-rows-visible
-                                @active-item-changed="${(e) => {
-                                    const item = e.detail.value;
-                                    this._selectedTool = item ? [item] : [];
-                                    
-                                    if(this._selectedTool.length>0){
-                                        let parameters = Object.keys(this._selectedTool[0].inputSchema.properties);
-                                        const propertyCount = parameters.length;
-                                        if(propertyCount>0) {
-                                            this._showInputDialog = true;
-                                        }else {
-                                            this._testJsonRpcCall(this._selectedTool[0], null);
-                                        }
-                                    }
-                                }}">
-                                <vaadin-grid-sort-column 
-                                    header='Namespace'
-                                    path="name" 
-                                    auto-width
-                                    ${columnBodyRenderer(this._namespaceRenderer, [])}
-                                >
-                                </vaadin-grid-sort-column>
-                                <vaadin-grid-sort-column 
-                                    header='Method'
-                                    path="name" 
-                                    auto-width
-                                    ${columnBodyRenderer(this._nameRenderer, [])}
-                                >
-                                </vaadin-grid-sort-column>
-                                <vaadin-grid-sort-column 
-                                    header='Description'
-                                    path="description" 
-                                    auto-width>
-                                </vaadin-grid-sort-column>
-                                <vaadin-grid-column
-                                    header="Params"
-                                    frozen-to-end
-                                    auto-width
-                                    flex-grow="0"
-                                    ${columnBodyRenderer(this._noOfParameterRenderer, [])}
-                                ></vaadin-grid-column>    
-                            </vaadin-grid>
-                        </div>
-                        <div tab="raw-tab">
-                            <div class="codeBlock">
-                                <qui-themed-code-block 
-                                    mode='json'
-                                    content='${JSON.stringify(this._tools, null, 2)}'
-                                    showLineNumbers>
-                                </qui-themed-code-block>
-                            </div>
-                    </vaadin-tabsheet>
-                `;
+                    ></vaadin-dialog>`;
     }
 
     _renderToolResult(){
@@ -208,6 +247,29 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                               <vaadin-button @click="${() => this._getInputValuesAndTest(prop)}">Test</vaadin-button>
                         </vaadin-vertical-layout>`;
         }
+    }
+
+    _filterTextChanged(e) {
+        this._searchTerm = (e.detail.value || '').trim();
+        return this._filterGrid();
+    }
+
+    _filterGrid(){
+        if (this._searchTerm === '') {
+            this._filtered = this._tools;
+            return;
+        }
+
+        this._filtered = this._tools.filter((prop) => {
+           return  this._match(prop.name, this._searchTerm) || this._match(prop.description, this._searchTerm)
+        });
+    }
+
+    _match(value, term) {
+        if (! value) {
+            return false;
+        }
+        return value.toLowerCase().includes(term.toLowerCase());
     }
 
     _closeDialog(){
@@ -279,7 +341,8 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     _loadTools(){
         this.jsonRpc.list().then(jsonRpcResponse => {
-            this._tools = jsonRpcResponse.result;            
+            this._tools = jsonRpcResponse.result.tools;
+            this._filtered = this._tools;
         });
     }
 

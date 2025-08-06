@@ -13,7 +13,7 @@ jobs:
   cache:
     name: Build and save artifacts
     runs-on: ubuntu-latest
-    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -36,7 +36,7 @@ jobs:
     name: Istio + Kubernetes Integration Tests
     needs: cache
     runs-on: ubuntu-latest
-    if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +44,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -91,3 +95,5 @@ jobs:
           status: ${{ job.status }}
           issue-repository: ${{ github.repository }}
           issue-number: 29536
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

@@ -20,6 +20,10 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * @deprecated since 3.25.1 in favor of {@link QuarkusComponentVariants}
+ */
+@Deprecated(forRemoval = true)
 public class ConditionalDependenciesEnabler {
 
     /**

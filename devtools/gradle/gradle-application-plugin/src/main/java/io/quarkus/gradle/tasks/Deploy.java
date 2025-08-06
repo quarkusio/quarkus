@@ -29,6 +29,7 @@ import io.quarkus.deployment.cmd.DeployCommandDeclarationHandler;
 import io.quarkus.deployment.cmd.DeployCommandDeclarationResultBuildItem;
 import io.quarkus.deployment.cmd.DeployCommandHandler;
 import io.quarkus.deployment.util.DeploymentUtil;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public abstract class Deploy extends QuarkusBuildTask {
 
@@ -65,6 +66,10 @@ public abstract class Deploy extends QuarkusBuildTask {
     Optional<String> deployer = Optional.empty();
     boolean imageBuild = false;
     Optional<String> imageBuilder = Optional.empty();
+
+    public Optional<String> getDeployer() {
+        return deployer;
+    }
 
     @Option(option = "deployer", description = "The deployer to use")
     public void setDeployer(String deployer) {
@@ -115,7 +120,7 @@ public abstract class Deploy extends QuarkusBuildTask {
             if (targets.isEmpty() && target == null) {
                 // Currently forcedDependencies() is not implemented for gradle.
                 // So, let's give users a meaningful warning message.
-                Deployer deployer = getDeployer();
+                Deployer deployer = getDeployerFromDependencies(appModel);
                 extension().forcedPropertiesProperty().convention(
                         getProject().provider(() -> {
                             Map<String, String> props = new HashMap<>();
@@ -125,12 +130,11 @@ public abstract class Deploy extends QuarkusBuildTask {
                             return props;
                         }));
                 String requiredDeployerExtension = deployer.getExtension();
-                Optional<String> requiredContainerImageExtension = requiredContainerImageExtension();
+                Optional<String> requiredContainerImageExtension = requiredContainerImageExtension(appModel);
 
-                List<String> projectDependencies = getProject().getConfigurations().stream()
-                        .flatMap(c -> c.getDependencies().stream())
-                        .map(d -> d.getName())
-                        .collect(Collectors.toList());
+                List<String> projectDependencies = appModel.getDependencies().stream()
+                        .map(ArtifactCoords::getArtifactId)
+                        .toList();
 
                 if (!projectDependencies.contains(requiredDeployerExtension)) {
                     abort("Task: {} requires extensions: {}\n" +
@@ -188,27 +192,28 @@ public abstract class Deploy extends QuarkusBuildTask {
         }
     }
 
-    public Deployer getDeployer() {
-        return getDeployer(Deployer.kubernetes);
+    public Deployer getDeployerFromDependencies(ApplicationModel appModel) {
+        return getDeployerFromDependencies(appModel, Deployer.kubernetes);
     }
 
-    public Deployer getDeployer(Deployer defaultDeployer) {
+    public Deployer getDeployerFromDependencies(ApplicationModel appModel, Deployer defaultDeployer) {
         return deployer
-                .or(() -> DeploymentUtil.getEnabledDeployer())
-                .or(() -> getProjectDeployers().stream().findFirst())
+                .or(DeploymentUtil::getEnabledDeployer)
+                .or(() -> getProjectDeployers(appModel).stream().findFirst())
                 .map(Deployer::valueOf)
                 .orElse(defaultDeployer);
     }
 
-    public Optional<String> requiredContainerImageExtension() {
+    public Optional<String> requiredContainerImageExtension(ApplicationModel appModel) {
         return imageBuilder.map(b -> "quarkus-container-image-" + b)
-                .or(() -> imageBuild ? Arrays.stream(getDeployer().requiresOneOf).findFirst() : Optional.empty());
+                .or(() -> imageBuild ? Arrays.stream(getDeployerFromDependencies(appModel).requiresOneOf).findFirst()
+                        : Optional.empty());
     }
 
-    private Set<String> getProjectDeployers() {
-        return getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
-                .map(d -> d.getName())
-                .filter(d -> Arrays.stream(Deployer.values()).map(Deployer::getExtension).anyMatch(e -> d.equals(e)))
+    private Set<String> getProjectDeployers(ApplicationModel appModel) {
+        return appModel.getRuntimeDependencies().stream()
+                .map(ArtifactCoords::getArtifactId)
+                .filter(d -> Arrays.stream(Deployer.values()).map(Deployer::getExtension).anyMatch(d::equals))
                 .map(d -> d.replaceAll("^quarkus\\-", ""))
                 .collect(Collectors.toSet());
     }

@@ -124,7 +124,8 @@ public class JacocoProcessor {
                 addProjectModule(model.getAppArtifact(), config, info, includes, excludes, classes, sources);
             }
             for (ResolvedDependency d : model.getDependencies()) {
-                if (d.isRuntimeCp() && d.isWorkspaceModule()) {
+                // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
+                if (d.isRuntimeCp() && d.getWorkspaceModule() != null) {
                     addProjectModule(d, config, info, includes, excludes, classes, sources);
                 }
             }

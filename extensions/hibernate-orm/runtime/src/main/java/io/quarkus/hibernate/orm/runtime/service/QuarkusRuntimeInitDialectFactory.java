@@ -113,4 +113,9 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
             return Optional.empty();
         }
     }
+
+    // Used for testing purposes
+    public boolean isVersionCheckEnabled() {
+        return versionCheckEnabled;
+    }
 }

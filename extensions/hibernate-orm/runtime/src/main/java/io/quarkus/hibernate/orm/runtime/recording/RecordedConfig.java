@@ -16,6 +16,7 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
 public class RecordedConfig {
     private final Optional<String> dataSource;
     private final Optional<String> dbKind;
+    private final Optional<String> supportedDBkind;
     private final Optional<String> dbVersion;
     private final Optional<String> explicitDialect;
     private final MultiTenancyStrategy multiTenancyStrategy;
@@ -26,6 +27,7 @@ public class RecordedConfig {
 
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
+            Optional<String> supportedDBkind,
             Optional<String> dbVersion, Optional<String> explicitDialect,
             MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
@@ -34,10 +36,12 @@ public class RecordedConfig {
             Map<String, String> quarkusConfigUnsupportedProperties) {
         Objects.requireNonNull(dataSource);
         Objects.requireNonNull(dbKind);
+        Objects.requireNonNull(supportedDBkind);
         Objects.requireNonNull(dbVersion);
         Objects.requireNonNull(multiTenancyStrategy);
         this.dataSource = dataSource;
         this.dbKind = dbKind;
+        this.supportedDBkind = supportedDBkind;
         this.dbVersion = dbVersion;
         this.explicitDialect = explicitDialect;
         this.multiTenancyStrategy = multiTenancyStrategy;
@@ -53,6 +57,10 @@ public class RecordedConfig {
 
     public Optional<String> getDbKind() {
         return dbKind;
+    }
+
+    public Optional<String> getSupportedDBkind() {
+        return supportedDBkind;
     }
 
     public Optional<String> getDbVersion() {

@@ -249,10 +249,9 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
-      - name: Populate the cache
-        if: github.event_name == 'push' && github.repository == 'quarkusio/quarkus' && github.actor != 'dependabot[bot]'
+      - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@v4
         if: github.event_name == 'pull_request'

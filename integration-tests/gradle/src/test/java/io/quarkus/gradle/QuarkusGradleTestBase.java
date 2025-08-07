@@ -6,27 +6,50 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
+
+import io.quarkus.bootstrap.util.IoUtils;
 
 public class QuarkusGradleTestBase {
 
-    protected static File getProjectDir(final String projectName)
-            throws URISyntaxException, IOException {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource(projectName);
+    protected File getProjectDir(final String projectName) {
+        return getProjectDir(projectName, null);
+    }
+
+    protected File getProjectDir(final String baseProjectName, String testSuffix) {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource(baseProjectName);
         if (projectUrl == null) {
-            throw new IllegalStateException("Failed to locate test project " + projectName);
+            throw new IllegalStateException("Failed to locate test project " + baseProjectName);
         }
-        final File projectDir = new File(projectUrl.toURI());
+        File projectDir;
+        try {
+            projectDir = new File(projectUrl.toURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
         if (!projectDir.isDirectory()) {
             throw new IllegalStateException(projectDir + " is not a directory");
+        }
+
+        if (testSuffix != null && !testSuffix.isBlank()) {
+            var testProjectName = new StringBuilder().append(projectDir.getName());
+            if (testSuffix.charAt(0) != '-') {
+                testProjectName.append("-");
+            }
+            testProjectName.append(testSuffix);
+            Path targetDir = projectDir.getParentFile().toPath().resolve(testProjectName.toString());
+            try {
+                IoUtils.copy(projectDir.toPath(), targetDir);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            projectDir = targetDir.toFile();
         }
 
         final Properties props = new Properties();
@@ -34,6 +57,8 @@ public class QuarkusGradleTestBase {
         if (projectProps.exists()) {
             try (InputStream is = new FileInputStream(projectProps)) {
                 props.load(is);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         } else {
             props.setProperty("quarkusPlatformGroupId", "io.quarkus");
@@ -45,31 +70,25 @@ public class QuarkusGradleTestBase {
         props.setProperty("quarkusPluginVersion", quarkusVersion);
         try (OutputStream os = new FileOutputStream(projectProps)) {
             props.store(os, "Quarkus Gradle TS");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
         return projectDir;
     }
 
-    protected static String getQuarkusVersion() throws IOException {
+    protected static String getQuarkusVersion() {
         final Path curDir = Paths.get("").toAbsolutePath().normalize();
         final Path gradlePropsFile = curDir.resolve("gradle.properties");
         Properties props = new Properties();
         try (InputStream is = Files.newInputStream(gradlePropsFile)) {
             props.load(is);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
         final String quarkusVersion = props.getProperty("version");
         if (quarkusVersion == null) {
             throw new IllegalStateException("Failed to locate Quarkus version in " + gradlePropsFile);
         }
         return quarkusVersion;
-    }
-
-    protected List<String> arguments(String... argument) {
-        List<String> arguments = new ArrayList<>();
-        arguments.addAll(Arrays.asList(argument));
-        String mavenRepoLocal = System.getProperty("maven.repo.local", System.getenv("MAVEN_LOCAL_REPO"));
-        if (mavenRepoLocal != null) {
-            arguments.add("-Dmaven.repo.local=" + mavenRepoLocal);
-        }
-        return arguments;
     }
 }

@@ -58,7 +58,6 @@ public class DevServicesRedisContinuousTestingTest {
         stopAllContainers();
     }
 
-    //    @Disabled("Not currently working")
     @Test
     public void testContinuousTestingDisablesDevServicesWhenPropertiesChange() {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();

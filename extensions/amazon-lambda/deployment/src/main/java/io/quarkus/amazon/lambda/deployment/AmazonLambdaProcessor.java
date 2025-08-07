@@ -114,6 +114,8 @@ public final class AmazonLambdaProcessor {
             final DotName name = info.name();
             final String lambda = name.toString();
             builder.addBeanClass(lambda);
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
 
             String cdiName = null;
             AnnotationInstance named = info.declaredAnnotation(NAMED);
@@ -148,18 +150,9 @@ public final class AmazonLambdaProcessor {
                         }
                     }
                 }
-                if (!done) {
-                    current = combinedIndexBuildItem.getIndex().getClassByName(current.superName());
-                }
+                current = combinedIndexBuildItem.getIndex().getClassByName(current.superName());
             }
-            if (done) {
-                String handlerClass = current.name().toString();
-                ret.add(new AmazonLambdaBuildItem(handlerClass, cdiName, streamHandler));
-                reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(handlerClass).methods()
-                        .reason(getClass().getName()
-                                + ": reflectively accessed in io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder.discoverHandlerMethod")
-                        .build());
-            }
+            ret.add(new AmazonLambdaBuildItem(lambda, cdiName, streamHandler));
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());
         reflectiveClassBuildItemBuildProducer
@@ -256,7 +249,7 @@ public final class AmazonLambdaProcessor {
             }
         } else if (lambdas == null || lambdas.isEmpty()) {
             String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
-                    + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
+                    + RequestHandler.class.getName() + " or " + RequestStreamHandler.class.getName() + " implementation";
             throw new RuntimeException(errorMessage);
         }
     }

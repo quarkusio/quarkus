@@ -248,8 +248,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                     profile,
                     copyEntriesFromProfile(profileInstance, startupAction.getClassLoader()),
                     profileInstance != null && profileInstance.disableGlobalTestResources(),
-                    startupAction.getDevServicesProperties(),
-                    Optional.ofNullable(startupAction.getDevServicesNetworkId()));
+                    startupAction.getOrInitialiseDevServicesProperties(),
+                    Optional.ofNullable(startupAction.getOrInitialiseDevServicesNetworkId()));
             TestResourceUtil.TestResourceManagerReflections.initReflectively(testResourceManager, profile);
             Map<String, String> properties = TestResourceUtil.TestResourceManagerReflections
                     .startReflectively(testResourceManager);

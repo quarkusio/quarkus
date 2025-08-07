@@ -984,7 +984,9 @@ public class NativeImageBuildStep {
                     }
 
                     if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0) {
-                        // Use built-in GraalVM thread dumper when possible
+                        /* After GraalVM/Mandrel 24.2, JCMD becomes available. The Quarkus thread dumper handles
+                        SIGQUIT which interferes with JCMD. To avoid this problem, Quarkus must use the GraalVM
+                        built-in thread dumper instead for versions beyond 24.2. */
                         monitoringOptions.add(NativeConfig.MonitoringOption.THREADDUMP);
                     }
                 }

@@ -1,9 +1,6 @@
-package io.quarkus.hibernate.orm.runtime.dev;
+package io.quarkus.hibernate.orm.dev;
 
 import static org.hibernate.cfg.AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
@@ -12,31 +9,27 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 
 public class HibernateOrmDevIntegrator implements Integrator {
-    private static final Map<String, QuarkusPersistenceUnitDescriptor> puDescriptorMap = new ConcurrentHashMap<>();
-
-    public static void clearPuMap() {
-        puDescriptorMap.clear();
-    }
-
-    public static void mapPersistenceUnit(String pu, QuarkusPersistenceUnitDescriptor descriptor) {
-        puDescriptorMap.put(pu, descriptor);
-    }
-
     @Override
-    public void integrate(Metadata metadata, BootstrapContext bootstrapContext,
-            SessionFactoryImplementor sessionFactoryImplementor) {
-        String name = (String) sessionFactoryImplementor.getProperties()
+    public void integrate(Metadata metadata, BootstrapContext bootstrapContext, SessionFactoryImplementor sf) {
+        String name = (String) sf.getProperties()
                 .get(AvailableSettings.PERSISTENCE_UNIT_NAME);
         HibernateOrmDevController.get().pushPersistenceUnit(
-                sessionFactoryImplementor,
-                puDescriptorMap.get(name),
+                sf,
+                getPersistenceUnitDescriptor(name, sf),
                 name,
                 metadata,
-                sessionFactoryImplementor.getServiceRegistry(),
-                (String) sessionFactoryImplementor.getProperties().get(JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
+                sf.getServiceRegistry(),
+                (String) sf.getProperties().get(JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
+    }
+
+    private static QuarkusPersistenceUnitDescriptor getPersistenceUnitDescriptor(String name, SessionFactoryImplementor sf) {
+        // This is not great but avoids needing to depend on reactive
+        boolean isReactive = sf.getClass().getPackage().getName().contains("reactive");
+        return PersistenceUnitsHolder.getPersistenceUnitDescriptor(name, isReactive);
     }
 
     @Override

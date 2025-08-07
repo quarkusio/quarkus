@@ -27,22 +27,23 @@ public class JPAConfig {
 
     public static final String IS_REACTIVE_KEY = "isReactive";
 
-    private final Map<PersistenceUnitsHolder.RecordedStateKey, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
+    private final Map<PersistenceUnitKey, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
     private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
     private final boolean requestScopedSessionEnabled;
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
-        for (QuarkusPersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+        for (Map.Entry<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> entry : PersistenceUnitsHolder
+                .getPersistenceUnits().entrySet()) {
+            QuarkusPersistenceUnitDescriptor descriptor = entry.getValue();
             String puName = descriptor.getName();
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getName());
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(puName);
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
                         puName);
                 deactivatedPersistenceUnitNames.add(puName);
             } else {
-                persistenceUnits.put(new PersistenceUnitsHolder.RecordedStateKey(puName, descriptor.isReactive()),
-                        new LazyPersistenceUnit(puName, descriptor.isReactive()));
+                persistenceUnits.put(entry.getKey(), new LazyPersistenceUnit(puName, descriptor.isReactive()));
             }
         }
         this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
@@ -57,7 +58,7 @@ public class JPAConfig {
         //don't access the datasource directly, but only over HTTP calls
         boolean moreThanOneThread = persistenceUnits.size() > 1;
         //start PUs in parallel, for faster startup
-        for (Map.Entry<PersistenceUnitsHolder.RecordedStateKey, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
+        for (Map.Entry<PersistenceUnitKey, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             CompletableFuture<Object> future = new CompletableFuture<>();
             start.add(future);
             new Thread(new Runnable() {
@@ -100,7 +101,7 @@ public class JPAConfig {
                 lazyPersistenceUnit = persistenceUnits.values().iterator().next();
             }
         } else {
-            lazyPersistenceUnit = persistenceUnits.get(new PersistenceUnitsHolder.RecordedStateKey(unitName, reactive));
+            lazyPersistenceUnit = persistenceUnits.get(new PersistenceUnitKey(unitName, reactive));
         }
 
         if (lazyPersistenceUnit == null) {

@@ -1321,6 +1321,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-orm-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1536,6 +1541,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-search-orm-elasticsearch-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1552,6 +1562,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-standalone-elasticsearch</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-search-standalone-elasticsearch-dev</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

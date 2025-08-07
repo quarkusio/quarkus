@@ -1,10 +1,11 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
@@ -25,65 +26,63 @@ public final class PersistenceUnitsHolder {
     /**
      * Initialize JPA for use in Quarkus. In a native image. This must be called
      * from within a static init method.
-     *
+     * <p>
      * The scanner may be null to use the default scanner, or a custom scanner can be
      * used to stop Hibernate scanning. It is expected that the scanner will be
      * provided by Quarkus via its hold of Jandex info.
-     *
-     * @param puDefinitions
-     * @param scanner
      */
-    static void initializeJpa(List<QuarkusPersistenceUnitDefinition> puDefinitions,
-            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
+    static void initializeJpa(
+            List<QuarkusPersistenceUnitDefinition> puDefinitions,
+            Scanner scanner,
+            Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies preGeneratedProxies) {
-        final List<QuarkusPersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
-        final Map<RecordedStateKey, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner,
-                additionalIntegrators,
-                preGeneratedProxies);
-
-        persistenceUnits = new PersistenceUnits(units, metadata);
+        persistenceUnits = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators, preGeneratedProxies);
     }
 
-    public static List<QuarkusPersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+    public static Map<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> getPersistenceUnits() {
         checkJPAInitialization();
         return persistenceUnits.units;
     }
 
+    public static Collection<QuarkusPersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+        return getPersistenceUnits().values();
+    }
+
+    public static QuarkusPersistenceUnitDescriptor getPersistenceUnitDescriptor(String persistenceUnitName,
+            boolean isReactive) {
+        checkJPAInitialization();
+        return persistenceUnits.units.get(new PersistenceUnitKey(unitName(persistenceUnitName), isReactive));
+    }
+
     public static RecordedState popRecordedState(String persistenceUnitName, boolean isReactive) {
         checkJPAInitialization();
-        RecordedStateKey key = new RecordedStateKey(persistenceUnitName, isReactive);
-        if (persistenceUnitName == null) {
-            key = new RecordedStateKey(NO_NAME_TOKEN, isReactive);
-        }
+        PersistenceUnitKey key = new PersistenceUnitKey(unitName(persistenceUnitName), isReactive);
         return persistenceUnits.recordedStates.remove(key);
     }
 
-    private static List<QuarkusPersistenceUnitDescriptor> convertPersistenceUnits(
-            final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors) {
-        return parsedPersistenceXmlDescriptors.stream().map(QuarkusPersistenceUnitDefinition::getPersistenceUnitDescriptor)
-                .collect(Collectors.toList());
-    }
-
-    record RecordedStateKey(String name, boolean isReactive) {
-    }
-
-    private static Map<RecordedStateKey, RecordedState> constructMetadataAdvance(
+    private static PersistenceUnits constructMetadataAdvance(
             final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyClassDefinitions) {
-        Map<RecordedStateKey, RecordedState> recordedStates = new HashMap<>();
+        int size = parsedPersistenceXmlDescriptors.size();
+        Map<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> units = new HashMap<>(size);
+        Map<PersistenceUnitKey, RecordedState> recordedStates = new HashMap<>(size);
 
         for (QuarkusPersistenceUnitDefinition unit : parsedPersistenceXmlDescriptors) {
-            RecordedState m = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions);
-            String name = unitName(unit);
-            RecordedStateKey key = new RecordedStateKey(name, unit.isReactive());
-            Object previous = recordedStates.put(key, m);
+            PersistenceUnitKey key = new PersistenceUnitKey(unitName(unit.getName()), unit.isReactive());
+            Object previous = units.put(key, unit.getPersistenceUnitDescriptor());
             if (previous != null) {
-                throw new IllegalStateException("Duplicate persistence unit name: " + unit.getName());
+                throw new IllegalStateException(String.format(
+                        Locale.ROOT,
+                        "Duplicate persistence unit name: %s",
+                        unit.getName() + (unit.isReactive() ? " (reactive)" : "")));
             }
+
+            RecordedState metadata = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions);
+            recordedStates.put(key, metadata);
         }
 
-        return recordedStates;
+        return new PersistenceUnits(units, recordedStates);
     }
 
     private static void checkJPAInitialization() {
@@ -92,8 +91,7 @@ public final class PersistenceUnitsHolder {
         }
     }
 
-    private static String unitName(QuarkusPersistenceUnitDefinition unit) {
-        String name = unit.getName();
+    private static String unitName(String name) {
         if (name == null) {
             return NO_NAME_TOKEN;
         }
@@ -109,13 +107,13 @@ public final class PersistenceUnitsHolder {
 
     private static class PersistenceUnits {
 
-        private final List<QuarkusPersistenceUnitDescriptor> units;
+        private final Map<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> units;
 
-        private final Map<RecordedStateKey, RecordedState> recordedStates;
+        private final Map<PersistenceUnitKey, RecordedState> recordedStates;
 
-        public PersistenceUnits(final List<QuarkusPersistenceUnitDescriptor> units,
-                final Map<RecordedStateKey, RecordedState> recordedStates) {
-            this.units = units;
+        public PersistenceUnits(final Map<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> units,
+                final Map<PersistenceUnitKey, RecordedState> recordedStates) {
+            this.units = Collections.unmodifiableMap(units);
             this.recordedStates = recordedStates;
         }
     }

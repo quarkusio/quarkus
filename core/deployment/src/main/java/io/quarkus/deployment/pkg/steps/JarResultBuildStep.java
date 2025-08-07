@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -64,6 +65,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem.TransformedClass;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -350,7 +352,7 @@ public class JarResultBuildStep {
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
             Path runnerJar) throws Exception {
-        try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
+        try (FileSystem runnerZipFs = createNewReproducibleZipFileSystem(runnerJar, packageConfig)) {
 
             log.info("Building uber jar: " + runnerJar);
 
@@ -549,7 +551,7 @@ public class JarResultBuildStep {
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
 
-        try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
+        try (FileSystem runnerZipFs = createNewReproducibleZipFileSystem(runnerJar, packageConfig)) {
 
             log.info("Building thin jar: " + runnerJar);
 
@@ -647,10 +649,14 @@ public class JarResultBuildStep {
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
             Path transformedZip = quarkus.resolve(TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformed(transformedZip);
-            try (FileSystem out = createNewZip(transformedZip, packageConfig)) {
-                for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
-                        .getTransformedClassesByJar().values()) {
-                    for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
+            try (FileSystem out = createNewReproducibleZipFileSystem(transformedZip, packageConfig)) {
+                // we make sure the entries are added in a reproducible order
+                // we use Path#toString() to get a reproducible order on both Unix-based OSes and Windows
+                for (Entry<Path, Set<TransformedClass>> transformedClassEntry : transformedClasses
+                        .getTransformedClassesByJar().entrySet().stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
+                    for (TransformedClass transformed : transformedClassEntry.getValue().stream()
+                            .sorted(Comparator.comparing(TransformedClass::getFileName)).toList()) {
                         Path target = out.getPath(transformed.getFileName());
                         if (transformed.getData() != null) {
                             if (target.getParent() != null) {
@@ -668,9 +674,11 @@ public class JarResultBuildStep {
         //now generated classes and resources
         Path generatedZip = quarkus.resolve(GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGenerated(generatedZip);
-        try (FileSystem out = createNewZip(generatedZip, packageConfig)) {
-            for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = fromClassNameToResourceName(i.getName());
+        try (FileSystem out = createNewReproducibleZipFileSystem(generatedZip, packageConfig)) {
+            // make sure we write the elements in order
+            for (GeneratedClassBuildItem i : generatedClasses.stream()
+                    .sorted(Comparator.comparing(GeneratedClassBuildItem::binaryName)).toList()) {
+                String fileName = fromClassNameToResourceName(i.internalName());
                 Path target = out.getPath(fileName);
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -678,7 +686,9 @@ public class JarResultBuildStep {
                 Files.write(target, i.getClassData());
             }
 
-            for (GeneratedResourceBuildItem i : generatedResources) {
+            // make sure we write the elements in order
+            for (GeneratedResourceBuildItem i : generatedResources.stream()
+                    .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 Path target = out.getPath(i.getName());
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -703,7 +713,7 @@ public class JarResultBuildStep {
                     .setResolvedDependency(applicationArchivesBuildItem.getRootArchive().getResolvedDependency())
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
-            try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
+            try (FileSystem runnerZipFs = createNewReproducibleZipFileSystem(runnerJar, packageConfig)) {
                 copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
             }
         }
@@ -793,7 +803,7 @@ public class JarResultBuildStep {
             }
         }
         if (!rebuild) {
-            try (FileSystem runnerZipFs = createNewZip(initJar, packageConfig)) {
+            try (FileSystem runnerZipFs = createNewReproducibleZipFileSystem(initJar, packageConfig)) {
                 ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
                 generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
@@ -997,7 +1007,7 @@ public class JarResultBuildStep {
     }
 
     private void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig) throws IOException {
-        try (FileSystem runnerZipFs = createNewZip(targetPath, packageConfig)) {
+        try (FileSystem runnerZipFs = createNewReproducibleZipFileSystem(targetPath, packageConfig)) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override
@@ -1063,7 +1073,7 @@ public class JarResultBuildStep {
         Path libDir = targetDirectory.resolve(LIB);
         Files.createDirectories(libDir);
 
-        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+        try (FileSystem runnerZipFs = createNewReproducibleZipFileSystem(runnerJar, packageConfig)) {
 
             log.info("Building native image source jar: " + runnerJar);
 
@@ -1657,12 +1667,13 @@ public class JarResultBuildStep {
         }
     }
 
-    private static FileSystem createNewZip(Path runnerJar, PackageConfig config) throws IOException {
+    private static FileSystem createNewReproducibleZipFileSystem(Path runnerJar, PackageConfig config) throws IOException {
         boolean useUncompressedJar = !config.jar().compress();
         if (useUncompressedJar) {
-            return ZipUtils.newZip(runnerJar, Map.of("compressionMethod", "STORED"));
+            return ZipUtils.createNewReproducibleZipFileSystem(runnerJar, Map.of("compressionMethod", "STORED"),
+                    config.outputTimestamp().orElse(null));
         }
-        return ZipUtils.newZip(runnerJar);
+        return ZipUtils.createNewReproducibleZipFileSystem(runnerJar, config.outputTimestamp().orElse(null));
     }
 
 }

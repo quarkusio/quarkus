@@ -445,28 +445,28 @@ public class StartupActionImpl implements StartupAction {
 
     private static Map<String, byte[]> extractGeneratedResources(BuildResult buildResult, boolean applicationClasses) {
         Map<String, byte[]> data = new HashMap<>();
+        String debugClassesDir = BootstrapDebug.debugClassesDir();
+        String debugSourcesDir = BootstrapDebug.debugSourcesDir();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
                 data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
-                var debugClassesDir = BootstrapDebug.debugClassesDir();
                 if (debugClassesDir != null) {
                     try {
                         File debugPath = new File(debugClassesDir);
                         if (!debugPath.exists()) {
                             debugPath.mkdir();
                         }
-                        File classFile = new File(debugPath, i.getName() + ".class");
+                        File classFile = new File(debugPath, i.internalName() + ".class");
                         classFile.getParentFile().mkdirs();
                         try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                             classWriter.write(i.getClassData());
                         }
                         log.infof("Wrote %s", classFile.getAbsolutePath());
                     } catch (Exception t) {
-                        log.errorf(t, "Failed to write debug class files %s", i.getName());
+                        log.errorf(t, "Failed to write debug class file for %s", i.binaryName());
                     }
                 }
 
-                String debugSourcesDir = BootstrapDebug.debugSourcesDir();
                 if (debugSourcesDir != null) {
                     try {
                         if (i.getSource() != null) {
@@ -474,16 +474,16 @@ public class StartupActionImpl implements StartupAction {
                             if (!debugPath.exists()) {
                                 debugPath.mkdir();
                             }
-                            File sourceFile = new File(debugPath, i.getName() + ".zig");
+                            File sourceFile = new File(debugPath, i.internalName() + ".zig");
                             sourceFile.getParentFile().mkdirs();
                             Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
                                     StandardOpenOption.CREATE);
                             log.infof("Wrote source %s", sourceFile.getAbsolutePath());
                         } else {
-                            log.infof("Source not available: %s", i.getName());
+                            log.infof("Source not available: %s", i.binaryName());
                         }
                     } catch (Exception t) {
-                        log.errorf(t, "Failed to write debug source file %s", i.getName());
+                        log.errorf(t, "Failed to write debug source file for %s", i.binaryName());
                     }
                 }
             }

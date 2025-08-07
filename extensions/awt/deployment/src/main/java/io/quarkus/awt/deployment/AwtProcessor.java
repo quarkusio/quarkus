@@ -1,8 +1,5 @@
 package io.quarkus.awt.deployment;
 
-import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Arch.AARCH64;
-import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.MAC;
-import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
 import static io.quarkus.runtime.graal.GraalVM.Version.CURRENT;
 
 import java.util.ArrayList;
@@ -32,6 +29,8 @@ import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.runtime.graal.GraalVM;
+import io.smallrye.common.cpu.CPU;
+import io.smallrye.common.os.OS;
 
 class AwtProcessor {
 
@@ -51,10 +50,10 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        unsupported.produce(new UnsupportedOSBuildItem(WINDOWS,
+        unsupported.produce(new UnsupportedOSBuildItem(OS.WINDOWS,
                 "Windows AWT integration is not ready in Quarkus native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: no awt in java.library.path."));
-        unsupported.produce(new UnsupportedOSBuildItem(MAC,
+        unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
                 "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
         final GraalVM.Version v;
@@ -68,7 +67,7 @@ class AwtProcessor {
 
         if (v.compareTo(io.quarkus.deployment.pkg.steps.GraalVM.Version.VERSION_24_2_0) >= 0
                 && v.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
-            unsupported.produce(new UnsupportedOSBuildItem(AARCH64,
+            unsupported.produce(new UnsupportedOSBuildItem(CPU.aarch64,
                     "AWT needs JDK's JEP 454 FFI/FFM support and that is not available for AArch64 with " +
                             "GraalVM's native-image prior to JDK 25, see: " +
                             "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions"));

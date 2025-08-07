@@ -50,6 +50,20 @@ public class AvroEndpoint {
         send(p, pet, "test-avro-apicurio-producer");
     }
 
+    @GET
+    @Path("/companion")
+    public JsonObject getCompanion() {
+        return get(creator.createApicurioConsumer("test-avro-apicurio-companion-consumer",
+                "test-avro-apicurio-companion-consumer"));
+    }
+
+    @POST
+    @Path("/companion")
+    public void sendCompanion(Pet pet) {
+        KafkaProducer<Integer, Pet> p = creator.createApicurioProducer("test-avro-apicurio-companion");
+        send(p, pet, "test-avro-apicurio-companion-producer");
+    }
+
     private JsonObject get(KafkaConsumer<Integer, Pet> consumer) {
         final ConsumerRecords<Integer, Pet> records = consumer.poll(Duration.ofMillis(60000));
         if (records.isEmpty()) {

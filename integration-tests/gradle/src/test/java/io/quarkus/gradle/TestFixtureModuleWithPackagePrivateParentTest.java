@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 public class TestFixtureModuleWithPackagePrivateParentTest extends QuarkusGradleWrapperTestBase {
 
-    //@Disabled("See https://github.com/quarkusio/quarkus/issues/47760")
     @Test
     public void testTaskShouldUseTestFixtures() throws IOException, URISyntaxException, InterruptedException {
         final File projectDir = getProjectDir("test-fixtures-module-with-package-private-parent");

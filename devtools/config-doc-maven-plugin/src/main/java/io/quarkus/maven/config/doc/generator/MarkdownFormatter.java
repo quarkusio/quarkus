@@ -38,4 +38,9 @@ final class MarkdownFormatter extends AbstractFormatter {
         // we don't have tooltip support in Markdown
         return "`" + value + "`";
     }
+
+    @Override
+    protected String escapeDefaultValue(String defaultValue) {
+        return "```" + defaultValue + "```";
+    }
 }

@@ -1,19 +1,19 @@
 package io.quarkus.qute.deployment;
 
-import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.i18n.MessageBundles;
 
 final class Descriptors {
 
-    static final MethodDescriptor TEMPLATE_INSTANCE = MethodDescriptor.ofMethod(Template.class, "instance",
+    static final MethodDesc TEMPLATE_INSTANCE = MethodDesc.of(Template.class, "instance",
             TemplateInstance.class);
-    static final MethodDescriptor TEMPLATE_INSTANCE_DATA = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
+    static final MethodDesc TEMPLATE_INSTANCE_DATA = MethodDesc.of(TemplateInstance.class, "data",
             TemplateInstance.class, String.class, Object.class);
-    static final MethodDescriptor TEMPLATE_INSTANCE_RENDER = MethodDescriptor.ofMethod(TemplateInstance.class, "render",
+    static final MethodDesc TEMPLATE_INSTANCE_RENDER = MethodDesc.of(TemplateInstance.class, "render",
             String.class);
-    static final MethodDescriptor BUNDLES_GET_TEMPLATE = MethodDescriptor.ofMethod(MessageBundles.class, "getTemplate",
+    static final MethodDesc BUNDLES_GET_TEMPLATE = MethodDesc.of(MessageBundles.class, "getTemplate",
             Template.class, String.class);
 
 }

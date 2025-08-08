@@ -1,5 +1,7 @@
 package io.quarkus.narayana.lra.deployment;
 
+import io.quarkus.narayana.lra.deployment.devservice.LRACoordinatorDevServicesBuildTimeConfig;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -19,4 +21,12 @@ public interface LRABuildTimeConfiguration {
     @WithName("openapi.included")
     @WithDefault("false")
     boolean openapiIncluded();
+
+    /**
+     * Dev Services.
+     * <p>
+     * Dev Services that automatically start Narayana LRA coordinator in dev and test modes.
+     */
+    @ConfigDocSection(generated = true)
+    LRACoordinatorDevServicesBuildTimeConfig devservices();
 }

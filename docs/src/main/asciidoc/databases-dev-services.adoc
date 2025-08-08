@@ -321,6 +321,8 @@ services:
       ORACLE_DATABASE: quarkus
       APP_USER: quarkus
       APP_USER_PASSWORD: quarkus
+    labels:
+      io.quarkus.devservices.compose.wait_for.logs: .*DATABASE IS READY TO USE.*
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     ports:

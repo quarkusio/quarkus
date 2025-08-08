@@ -55,6 +55,8 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
                                 quarkus.oidc-client.grant.type=password
                                 quarkus.oidc-client.grant-options.password.username=alice
                                 quarkus.oidc-client.grant-options.password.password=alice
+                                quarkus.oidc-client.scopes=openid
+                                quarkus.oidc-client.named.scopes=openid
                                 quarkus.oidc-client.named.auth-server-url=${quarkus.oidc.auth-server-url}
                                 quarkus.oidc-client.named.client-id=${quarkus.oidc.client-id}
                                 quarkus.oidc-client.named.credentials.client-secret.value=${quarkus.oidc.credentials.secret}

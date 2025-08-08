@@ -74,7 +74,7 @@ public class SmallRyeJwtOidcWebAppTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();

@@ -88,6 +88,21 @@ And then add the following property to your `application.properties`:
 quarkus.kubernetes-client.devservices.manifests=kubernetes/namespace.yaml
 ```
 
+When applying multiple properties, you can apply them as:
+```
+quarkus.kubernetes-client.devservices.manifests=kubernetes/first_manifest.yaml,kubernetes/second_manifest.yaml
+```
+
+It is also possible to apply manifests from a URL. So the following syntax would also be possible:
+```
+quarkus.kubernetes-client.devservices.manifests=https://example.com/kubernetes/namespace.yaml
+```
+
+NOTE: Quarkus will apply the manifests in the order they are specified in the list.
+
+NOTE: Quarkus will await resources such as deployments to be ready before moving on to the next manifest.
+All applied resources are guaranteed to be ready by the time your application finishes startup.
+
 === Deploying helm charts
 `quarkus.kubernetes-client.devservices.manifests` only supports manifests. If you want to deploy a helm chart, you can use the `k3s` flavor and deploy a `HelmChart` manifest. See https://docs.k3s.io/helm for more information on how to use helm charts with k3s.
 

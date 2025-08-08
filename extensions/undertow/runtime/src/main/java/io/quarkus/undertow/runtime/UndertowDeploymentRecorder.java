@@ -206,7 +206,7 @@ public class UndertowDeploymentRecorder {
             resourceManager = new DelegatingResourceManager(managers.toArray(new ResourceManager[0]));
         }
 
-        if (launchMode == LaunchMode.NORMAL) {
+        if (launchMode.isProduction()) {
             //todo: cache configuration
             resourceManager = new CachingResourceManager(1000, 0, null, resourceManager, 2000);
         }

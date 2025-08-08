@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.validator.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -76,7 +77,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -86,6 +87,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
@@ -100,12 +102,14 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.StaticFieldVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.DisableLoggingFeature;
 import io.quarkus.hibernate.validator.runtime.HibernateBeanValidationConfigValidator;
@@ -243,6 +247,7 @@ class HibernateValidatorProcessor {
             List<ConfigClassBuildItem> configClasses,
             BeanValidationAnnotationsBuildItem beanValidationAnnotations,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
@@ -332,57 +337,45 @@ class HibernateValidatorProcessor {
                 .methods().build());
 
         String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
-                .className(builderClassName)
-                .interfaces(ConfigBuilder.class)
-                .setFinal(true)
-                .build()) {
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true));
+        gizmo.class_(builderClassName, cc -> {
+            cc.final_();
+            cc.implements_(ConfigBuilder.class);
 
-            // Static Init Validator
-            MethodCreator clinit = classCreator
-                    .getMethodCreator(MethodDescriptor.ofMethod(builderClassName, "<clinit>", void.class));
-            clinit.setModifiers(Opcodes.ACC_STATIC);
+            StaticFieldVar configValidator = cc.staticField("configValidator", fc -> {
+                fc.private_();
+                fc.final_();
+                fc.setType(BeanValidationConfigValidator.class);
+                fc.setInitializer(bc -> {
+                    LocalVar constraints = bc.localVar("constraints", bc.new_(HashSet.class));
+                    for (String configMappingsConstraint : configMappingsConstraints) {
+                        bc.withSet(constraints).add(Const.of(configMappingsConstraint));
+                    }
 
-            ResultHandle constraints = clinit.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (String configMappingsConstraint : configMappingsConstraints) {
-                clinit.invokeVirtualMethod(MethodDescriptor.ofMethod(HashSet.class, "add", boolean.class, Object.class),
-                        constraints, clinit.load(configMappingsConstraint));
-            }
+                    LocalVar classes = bc.localVar("classes", bc.new_(HashSet.class));
+                    for (DotName configClassToValidate : configClassesToValidate) {
+                        bc.withSet(classes).add(Const.of(classDescOf(configClassToValidate)));
+                    }
 
-            ResultHandle classes = clinit.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (DotName configClassToValidate : configClassesToValidate) {
-                clinit.invokeVirtualMethod(MethodDescriptor.ofMethod(HashSet.class, "add", boolean.class, Object.class),
-                        classes, clinit.loadClass(configClassToValidate.toString()));
-            }
+                    bc.yield(bc.new_(ConstructorDesc.of(HibernateBeanValidationConfigValidator.class, Set.class, Set.class),
+                            constraints, classes));
+                });
+            });
 
-            ResultHandle configValidator = clinit.newInstance(
-                    MethodDescriptor.ofConstructor(HibernateBeanValidationConfigValidator.class, Set.class, Set.class),
-                    constraints, classes);
+            cc.defaultConstructor();
 
-            FieldDescriptor configValidatorField = FieldDescriptor.of(builderClassName, "configValidator",
-                    BeanValidationConfigValidator.class);
-            classCreator.getFieldCreator(configValidatorField)
-                    .setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE);
-            clinit.writeStaticField(configValidatorField, configValidator);
+            cc.method("configBuilder", mc -> {
+                mc.returning(SmallRyeConfigBuilder.class);
+                ParamVar builder = mc.parameter("builder", SmallRyeConfigBuilder.class);
+                mc.body(bc -> {
+                    MethodDesc withValidator = MethodDesc.of(SmallRyeConfigBuilder.class, "withValidator",
+                            SmallRyeConfigBuilder.class, ConfigValidator.class);
 
-            clinit.returnNull();
-            clinit.close();
-
-            MethodCreator configBuilderMethod = classCreator.getMethodCreator(
-                    MethodDescriptor.ofMethod(
-                            ConfigBuilder.class, "configBuilder",
-                            SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class));
-            ResultHandle configBuilder = configBuilderMethod.getMethodParam(0);
-
-            // Add Validator to the builder
-            configBuilderMethod.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withValidator", SmallRyeConfigBuilder.class,
-                            ConfigValidator.class),
-                    configBuilder, configBuilderMethod.readStaticField(configValidatorField));
-
-            configBuilderMethod.returnValue(configBuilder);
-        }
+                    bc.invokeVirtual(withValidator, builder, configValidator);
+                    bc.return_(builder);
+                });
+            });
+        });
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(builderClassName).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
@@ -717,14 +710,14 @@ class HibernateValidatorProcessor {
                 .setClassToTransform(Validation.class.getName())
                 .setCacheable(true)
                 .setVisitorFunction(
-                        (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                        (className, classVisitor) -> new ClassVisitor(AsmUtil.ASM_API_VERSION, classVisitor) {
                             @Override
                             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
                                     String[] exceptions) {
                                 MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
 
                                 if (name.equals("buildDefaultValidatorFactory")) {
-                                    return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                    return new MethodVisitor(AsmUtil.ASM_API_VERSION, visitor) {
                                         @Override
                                         public void visitCode() {
                                             super.visitCode();

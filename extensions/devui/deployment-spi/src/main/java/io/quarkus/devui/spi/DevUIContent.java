@@ -10,11 +10,15 @@ public class DevUIContent {
     private final String fileName;
     private final byte[] template;
     private final Map<String, Object> data;
+    private final Map<String, String> descriptions;
+    private final Map<String, String> contentTypes;
 
     private DevUIContent(DevUIContent.Builder builder) {
         this.fileName = builder.fileName;
         this.template = builder.template;
         this.data = builder.data;
+        this.descriptions = builder.descriptions;
+        this.contentTypes = builder.contentTypes;
     }
 
     public String getFileName() {
@@ -29,6 +33,14 @@ public class DevUIContent {
         return data;
     }
 
+    public Map<String, String> getDescriptions() {
+        return descriptions;
+    }
+
+    public Map<String, String> getContentTypes() {
+        return contentTypes;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -37,6 +49,8 @@ public class DevUIContent {
         private String fileName;
         private byte[] template;
         private Map<String, Object> data;
+        private Map<String, String> descriptions;
+        private Map<String, String> contentTypes;
 
         private Builder() {
             this.data = new HashMap<>();
@@ -66,6 +80,16 @@ public class DevUIContent {
 
         public Builder addData(String key, Object value) {
             this.data.put(key, value);
+            return this;
+        }
+
+        public Builder descriptions(Map<String, String> descriptions) {
+            this.descriptions = descriptions;
+            return this;
+        }
+
+        public Builder contentTypes(Map<String, String> contentTypes) {
+            this.contentTypes = contentTypes;
             return this;
         }
 

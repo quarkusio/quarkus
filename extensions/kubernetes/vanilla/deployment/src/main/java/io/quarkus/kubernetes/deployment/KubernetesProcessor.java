@@ -56,7 +56,6 @@ import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
-import io.quarkus.runtime.LaunchMode;
 
 class KubernetesProcessor {
 
@@ -148,7 +147,7 @@ class KubernetesProcessor {
                         project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), targets);
                 sessionWriter.setProject(project);
 
-                if (launchMode.getLaunchMode() != LaunchMode.NORMAL) {
+                if (!launchMode.getLaunchMode().isProduction()) {
                     // needed for a fresh run
                     Session.clearSession();
                 }
@@ -248,7 +247,7 @@ class KubernetesProcessor {
                 log.warn("No project was detected, skipping generation of kubernetes manifests!");
             }
         } catch (Exception e) {
-            if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
+            if (launchMode.getLaunchMode().isProduction()) {
                 throw e;
             }
 

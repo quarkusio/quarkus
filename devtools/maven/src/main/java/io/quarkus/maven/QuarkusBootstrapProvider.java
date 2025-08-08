@@ -265,7 +265,7 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             final ResolvedDependencyBuilder appArtifact = getApplicationArtifactBuilder(mojo);
             Set<ArtifactKey> reloadableModules = Set.of();
-            if (mode == LaunchMode.NORMAL) {
+            if (mode.isProduction()) {
                 // collect reloadable artifacts for remote-dev
                 final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
                 final Set<ArtifactKey> localProjectKeys = new HashSet<>(localProjects.size());

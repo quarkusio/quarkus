@@ -29,7 +29,7 @@ public abstract class ResourcePropertiesProvider {
     private static final DotName REPOSITORY_REST_RESOURCE_ANNOTATION = DotName
             .createSimple(RepositoryRestResource.class.getName());
 
-    private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName());
+    private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName(), "io.quarkus.security");
 
     private final IndexView index;
 
@@ -49,7 +49,8 @@ public abstract class ResourcePropertiesProvider {
         String halCollectionName = getHalCollectionName(annotation, ResourceName.fromClass(interfaceName));
 
         return new ResourceProperties(isExposed(annotation), resourcePath, paged, true, halCollectionName,
-                new String[0], collectAnnotationsToCopy(repositoryInterfaceName), getMethodProperties(repositoryInterfaceName));
+                new String[0], isAuthenticated(annotation), collectAnnotationsToCopy(repositoryInterfaceName),
+                getMethodProperties(repositoryInterfaceName));
     }
 
     private Map<String, MethodProperties> getMethodProperties(DotName interfaceName) {
@@ -154,6 +155,14 @@ public abstract class ResourcePropertiesProvider {
             return annotation.value("collectionResourceRel").asString();
         }
         return defaultValue;
+    }
+
+    private boolean isAuthenticated(AnnotationInstance annotation) {
+        if (annotation != null && annotation.value("authenticated") != null) {
+            return annotation.value("authenticated").asBoolean();
+        }
+
+        return false;
     }
 
     class MethodWithAnnotation {

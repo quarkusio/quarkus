@@ -17,6 +17,8 @@ public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProdu
         implements ResteasyReactiveClientRequestFilter {
     private static final Logger LOG = Logger.getLogger(AbstractOidcClientRequestReactiveFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = OidcConstants.BEARER_SCHEME + " ";
+    static final String REQUEST_FILTER_KEY = "io.quarkus.oidc.client.reactive.filter.runtime.AbstractOidcClientRequestReactiveFilter#this";
+    private volatile boolean accessTokenNeedsRefresh = false;
 
     protected void initTokens() {
         if (earlyTokenAcquisition) {
@@ -32,6 +34,10 @@ public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProdu
             return;
         }
         requestContext.suspend();
+
+        if (refreshOnUnauthorized() && !accessTokenNeedsRefresh) {
+            requestContext.setProperty(REQUEST_FILTER_KEY, this);
+        }
 
         super.getTokens().subscribe().with(new Consumer<>() {
             @Override
@@ -54,4 +60,27 @@ public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProdu
         });
     }
 
+    @Override
+    protected boolean isForceNewTokens() {
+        if (accessTokenNeedsRefresh()) {
+            this.accessTokenNeedsRefresh = false;
+            return true;
+        }
+        return super.isForceNewTokens();
+    }
+
+    /**
+     * @return true if token that appears valid should be refreshed the next time this filter is applied
+     */
+    protected boolean refreshOnUnauthorized() {
+        return false;
+    }
+
+    void refreshAccessToken() {
+        this.accessTokenNeedsRefresh = true;
+    }
+
+    private boolean accessTokenNeedsRefresh() {
+        return refreshOnUnauthorized() && accessTokenNeedsRefresh;
+    }
 }

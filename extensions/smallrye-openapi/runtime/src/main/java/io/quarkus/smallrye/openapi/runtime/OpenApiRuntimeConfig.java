@@ -16,7 +16,15 @@ public interface OpenApiRuntimeConfig {
      * Enable the openapi endpoint. By default it's enabled.
      */
     @WithDefault("true")
-    boolean enable();
+    boolean enabled();
+
+    /**
+     * Enable the openapi endpoint. By default it's enabled.
+     *
+     * @deprecated use {@code quarkus.smallrye-openapi.enabled} instead
+     */
+    @Deprecated(since = "3.26", forRemoval = true)
+    Optional<Boolean> enable();
 
     /**
      * Specify the list of global servers that provide connectivity information

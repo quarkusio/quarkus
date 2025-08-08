@@ -29,18 +29,18 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.3.2</jandex.version>
+        <jandex.version>3.4.0</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.13.0</htmlunit.version>
+        <htmlunit.version>4.14.0</htmlunit.version>
         <javaparser-core.version>3.27.0</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.25.0</commonmark.version>
+        <commonmark.version>0.25.1</commonmark.version>
         <jgit.version>7.3.0.202506031305-r</jgit.version>
 
         <!-- Arquillian BOM -->
@@ -62,7 +62,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.9</proposed-maven-version>
         <maven-wrapper.version>3.3.2</maven-wrapper.version>
-        <gradle-wrapper.version>8.14</gradle-wrapper.version>
+        <gradle-wrapper.version>9.0.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -73,12 +73,12 @@
         <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>9.0.2</elasticsearch-server.version>
+        <elasticsearch-server.version>9.1.0</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
         <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
         <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>3.0.0</opensearch-server.version>
+        <opensearch-server.version>3.1.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.2.0</junit-pioneer.version>
@@ -103,13 +103,13 @@
 
         <unboundid-ldap.version>7.0.3</unboundid-ldap.version>
 
-        <assertj.version>3.27.3</assertj.version>
+        <assertj.version>3.27.4</assertj.version>
 
         <wiremock.version>3.13.1</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.41.0</artemis.version>
+        <artemis.version>2.42.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -587,11 +587,6 @@
                     <version>${build-helper-plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.revapi</groupId>
-                    <artifactId>revapi-maven-plugin</artifactId>
-                    <version>${revapi-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.jetbrains.kotlin</groupId>
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
@@ -607,7 +602,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.27</version>
+                            <version>4.0.28</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -1039,6 +1034,7 @@
                     <plugin>
                         <groupId>org.revapi</groupId>
                         <artifactId>revapi-maven-plugin</artifactId>
+                        <version>${revapi-maven-plugin.version}</version>
                         <dependencies>
                             <dependency>
                                 <groupId>io.quarkus</groupId>
@@ -1149,11 +1145,6 @@
             <properties>
                 <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
                 <volume.access.modifier></volume.access.modifier>
-
-                <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
-                and https://www.emmanuelgautier.com/blog/mysql-docker-arm-m1
-                This hopefully should be temporary -->
-                <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
 
                 <!-- See
                 https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.

@@ -83,9 +83,13 @@ public class DevServicesProcessor {
     private void getDevServices(BuildTimeActionBuildItem buildTimeActions,
             List<DevServiceDescriptionBuildItem> devServiceDescriptions,
             List<DevServiceDescriptionBuildItem> otherDevServices) {
-        buildTimeActions.addAction(new Object() {
-        }.getClass().getEnclosingMethod().getName(),
-                ignored -> CompletableFuture.supplyAsync(() -> getServices(devServiceDescriptions, otherDevServices)));
+        buildTimeActions.actionBuilder()
+                .methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
+                .function(ignored -> CompletableFuture.supplyAsync(() -> getServices(devServiceDescriptions, otherDevServices)))
+                .description(
+                        "Get all the DevServices started by this Quarkus app, including information on container (if any) and the config that is being set automatically")
+                .build();
     }
 
     private Collection<DevServiceDescriptionBuildItem> getServices(List<DevServiceDescriptionBuildItem> devServiceDescriptions,

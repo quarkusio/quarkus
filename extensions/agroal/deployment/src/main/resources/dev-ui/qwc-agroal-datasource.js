@@ -157,6 +157,10 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             text-decoration: none; 
             color: var(--lumo-primary-text-color);
         }
+        .generateTableDataButton {
+            align-self: center;
+            padding-top: 50px;
+        }
     `;
     
     static properties = {
@@ -365,6 +369,29 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         }
     }
     
+    _generateInitialData(){
+        this._showBusyLoadingDialog = "Quarkus Assistant is generating data ... please wait";
+        this.jsonRpc.generateTableData({
+                                    datasource:this._selectedDataSource.name,
+                                    schema: this._selectedTable.tableSchema,
+                                    name: this._selectedTable.tableName,
+                                    rowCount: 5
+                                }).then(jsonRpcResponse => {
+                                    const script = jsonRpcResponse.result.script;
+                                    if (Array.isArray(script)) {
+                                        this._currentSQL = script.join('\n');
+                                    } else {
+                                        this._currentSQL = script;
+                                    }
+                                    this._showBusyLoadingDialog = null;
+                                    this._showImportSQLDialog = true;
+                                    this._showAssistantWarning = true;
+                                    
+                                    
+                                    
+                                });
+    }
+    
     _saveInsertScript(){
         try {
             const blob = new Blob([this.value], { type: 'text/sql' });
@@ -525,13 +552,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         if(this._selectedTable && this._currentDataSet && this._currentDataSet.cols){
             return html`<div class="data">
                             ${this._renderSqlInput()}
-                            <vaadin-grid .items="${this._currentDataSet.data}" theme="row-stripes no-border" class="fill" column-reordering-allowed>
-                                ${this._currentDataSet.cols.map((col) => 
-                                    this._renderTableHeader(col)
-                                )}
-                                <span slot="empty-state">No data.</span>
-                            </vaadin-grid>
-                            ${this._renderPager()}
+                            ${this._renderTableDataGrid()}
                         </div>    
                     `;
         }else if(this._displaymessage){
@@ -541,6 +562,20 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 <div>Fetching data...</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>`;
+        }
+    }
+    
+    _renderTableDataGrid(){
+        if((this._currentDataSet.data && this._currentDataSet.data.length>0)|| !assistantState.current.isConfigured){
+            return html`<vaadin-grid .items="${this._currentDataSet.data}" theme="row-stripes no-border" class="fill" column-reordering-allowed>
+                                ${this._currentDataSet.cols.map((col) => 
+                                    this._renderTableHeader(col)
+                                )}
+                                <span slot="empty-state">No data.</span>
+                            </vaadin-grid>
+                            ${this._renderPager()}`;
+        }else {
+            return html`<qui-assistant-button class="generateTableDataButton" title="Use Quarkus Assistant to generate some data" @click="${this._generateInitialData}">Generate some data</qui-assistant-button>`;
         }
     }
     

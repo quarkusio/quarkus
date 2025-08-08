@@ -7,7 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
@@ -19,7 +19,7 @@ import io.quarkus.runtime.LaunchMode;
 
 public class FileSystemResourcesBuildStep {
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     public void notNormalMode(OutputTargetBuildItem outputTargetBuildItem,
             LaunchModeBuildItem launchMode,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources,
@@ -30,7 +30,7 @@ public class FileSystemResourcesBuildStep {
         producer.produce(new GeneratedFileSystemResourceHandledBuildItem());
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     public void normalMode(OutputTargetBuildItem outputTargetBuildItem,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources,
             // this is added to ensure that the build step will be run

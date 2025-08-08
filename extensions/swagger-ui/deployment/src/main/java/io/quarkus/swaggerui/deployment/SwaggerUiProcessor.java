@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.devui.spi.Constants;
+import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -86,6 +87,7 @@ public class SwaggerUiProcessor {
     @BuildStep
     public void getSwaggerUiFinalDestination(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Optional<DevContextBuildItem> devContextBuildItem,
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openapi,
@@ -107,9 +109,14 @@ public class SwaggerUiProcessor {
 
             }
 
-            String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+            String devUIContextRoot = "";
+            if (devContextBuildItem.isPresent()) {
+                devUIContextRoot = devContextBuildItem.get().getDevUIContextRoot();
+            }
 
-            String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
+            String openApiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+
+            String swaggerUiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
 
             NonApplicationRootPathBuildItem indexRootPathBuildItem = null;

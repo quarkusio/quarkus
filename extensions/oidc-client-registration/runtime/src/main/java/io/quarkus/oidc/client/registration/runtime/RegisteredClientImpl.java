@@ -161,7 +161,8 @@ public class RegisteredClientImpl implements RegisteredClient {
             request.putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + registrationToken);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, buffer).sendBuffer(buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, buffer)
+                .sendBuffer(OidcCommonUtils.getRequestBuffer(requestProps, buffer))
                 .onFailure(SocketException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount())
@@ -186,8 +187,8 @@ public class RegisteredClientImpl implements RegisteredClient {
     }
 
     private RegisteredClient newRegisteredClient(HttpResponse<Buffer> resp, OidcRequestContextProperties requestProps) {
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.REGISTERED_CLIENT);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters,
+                OidcEndpoint.Type.REGISTERED_CLIENT);
         if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
             io.vertx.core.json.JsonObject json = buffer.toJsonObject();
             LOG.debugf("Client metadata has been succesfully updated: %s", json.toString());
@@ -208,8 +209,8 @@ public class RegisteredClientImpl implements RegisteredClient {
     }
 
     private Uni<Void> deleteResponse(HttpResponse<Buffer> resp, OidcRequestContextProperties requestProps) {
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.REGISTERED_CLIENT);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters,
+                OidcEndpoint.Type.REGISTERED_CLIENT);
         if (resp.statusCode() == 200) {
             LOG.debug("Client has been succesfully deleted");
             return Uni.createFrom().voidItem();

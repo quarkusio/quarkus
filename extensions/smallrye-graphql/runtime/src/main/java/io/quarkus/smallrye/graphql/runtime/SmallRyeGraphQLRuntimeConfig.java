@@ -16,9 +16,18 @@ public interface SmallRyeGraphQLRuntimeConfig {
     /**
      * If GraphQL UI should be enabled. By default, GraphQL UI is enabled if it is included (see {@code always-include}).
      */
-    @WithName("ui.enable")
+    @WithName("ui.enabled")
     @WithDefault("true")
-    boolean enable();
+    boolean enabled();
+
+    /**
+     * If GraphQL UI should be enabled. By default, GraphQL UI is enabled if it is included (see {@code always-include}).
+     *
+     * @deprecated use {@code quarkus.smallrye-graphql.ui.enabled} instead
+     */
+    @WithName("ui.enable")
+    @Deprecated(since = "3.26", forRemoval = true)
+    Optional<Boolean> enable();
 
     /**
      * Specifies the field visibility for the GraphQL schema.

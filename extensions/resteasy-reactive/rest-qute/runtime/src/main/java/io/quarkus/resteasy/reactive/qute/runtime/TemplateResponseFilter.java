@@ -26,12 +26,11 @@ public class TemplateResponseFilter {
     @ServerResponseFilter
     public Uni<Void> filter(ResteasyReactiveContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         Object entity = responseContext.getEntity();
-        if (!(entity instanceof TemplateInstance)) {
+        if (!(entity instanceof TemplateInstance instance)) {
             return null;
         }
 
         MediaType mediaType;
-        TemplateInstance instance = (TemplateInstance) entity;
         MediaType selectedMediaType = setSelectedVariant(instance, requestContext.getRequest(),
                 HeaderUtil.getAcceptableLanguages(requestContext.getHeaders()));
         if (selectedMediaType == null) {

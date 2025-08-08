@@ -9,7 +9,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,7 +33,7 @@ public class CliDriver {
     public static class CliDriverBuilder {
 
         private Path startingDir;
-        private final List<String> args = new ArrayList<>();
+        private List<String> args = new ArrayList<>();
         private String mavenLocalRepo;
         private String mavenSettings;
 
@@ -47,7 +46,9 @@ public class CliDriver {
         }
 
         public CliDriverBuilder addArgs(String... args) {
-            Collections.addAll(this.args, args);
+            for (String s : args) {
+                this.args.add(s);
+            }
             return this;
         }
 
@@ -150,26 +151,34 @@ public class CliDriver {
         getMavenSettingsProperty().map(SETTINGS_ARG_FORMATTER).ifPresent(args::add);
     }
 
-    public static Result executeArbitraryCommand(Path startingDir, String... args) {
+    public static Result executeArbitraryCommand(Path startingDir, String... args) throws Exception {
         System.out.println("$ " + String.join(" ", args));
 
-        StringBuilder errorBuilder = new StringBuilder();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream outPs = new PrintStream(out);
+        System.setOut(outPs);
+
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        PrintStream errPs = new PrintStream(err);
+        System.setErr(errPs);
+
         Result result = new Result();
+        try {
+            ProcessBuilder pb = new ProcessBuilder(args);
+            pb.directory(startingDir.toFile());
+            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
-        String output = io.smallrye.common.process.ProcessBuilder.newBuilder(Path.of(args[0]))
-                .arguments(Arrays.copyOfRange(args, 1, args.length))
-                .exitCodeChecker(ec -> {
-                    result.exitCode = ec;
-                    return true;
-                })
-                .directory(startingDir)
-                .output().toSingleString(65536)
-                .error().consumeLinesWith(65536, line -> errorBuilder.append(line).append(System.lineSeparator()))
-                .run();
-        String error = errorBuilder.toString();
-
-        result.stdout = output;
-        result.stderr = error;
+            Process p = pb.start();
+            p.waitFor();
+            outPs.flush();
+            errPs.flush();
+        } finally {
+            System.setOut(stdout);
+            System.setErr(stderr);
+        }
+        result.stdout = out.toString();
+        result.stderr = err.toString();
         return result;
     }
 

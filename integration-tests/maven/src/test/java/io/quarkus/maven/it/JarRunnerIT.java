@@ -39,8 +39,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
@@ -607,7 +605,6 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_11)
     public void testThatAppCDSAreUsable() throws Exception {
         File testDir = initProject("projects/classic", "projects/project-classic-console-output-appcds");
         RunningInvoker running = new RunningInvoker(testDir, false);

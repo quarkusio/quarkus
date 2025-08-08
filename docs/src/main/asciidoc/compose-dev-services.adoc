@@ -22,7 +22,7 @@ _The Compose Specification is a developer-focused standard for defining cloud an
 
 Compose is a widely used tool for defining and managing multi-container applications, for development and testing purposes.
 A YAML description file, typically named `compose.yml`, defines the services, networks, and volumes required for your application.
-https://docs.docker.com/compose/[Docker Compose] is the reference implementation and https://podman-desktop.io/docs/compose[Podman Desktop] also provides out-of-box support for the Compose specification.
+https://docs.docker.com/compose/[Docker Compose] is the reference implementation and https://podman-desktop.io/docs/compose[Podman Desktop] also provides out-of-the-box support for the Compose specification.
 
 Quarkus detects Compose files named `compose-devservices.yml` (or <<compose-devservices-compose-files>>) in your project and starts the defined services when your application runs in development or test mode.
 Extensions providing dev services discover these custom services and use them instead of creating default ones.
@@ -78,7 +78,7 @@ When you run the application in dev mode or execute tests, Compose Dev Services 
 instead of using the default dev service provided by the `quarkus-jdbc-postgresql` extension.
 
 As per the above configuration, the PostgreSQL container port `5432` will be exposed to a random host port
-and the application datasource will be configured by extracting connection information such as _user_, _password_ and the _database name_.
+and the application datasource will be configured by extracting connection information such as _user_, _password_, and the _database name_.
 
 === Multi-Service Example: Custom Network and Dependencies
 
@@ -154,7 +154,7 @@ For example, the PostgreSQL Dev Service looks for a service with the image name 
 
 When a match is found, the extension will:
 
-1. Extract connection information from the container (connection url, credentials, database name, etc.)
+1. Extract connection information from the container (connection URL, credentials, database name, etc.)
 2. Configure the application to use the discovered service
 3. Skip creating its own default Dev Service container
 
@@ -287,7 +287,7 @@ quarkus.compose.devservices.files=src/main/docker/base-compose.yml,src/main/dock
 
 ==== Using Compose profiles
 
-With profiles, Compose files can define a set of active profiles so started services is adjusted for various usages and environments.
+With profiles, Compose files can define a set of active profiles so that started services are adjusted for various usages and environments.
 You can specify the profiles to activate by setting the `quarkus.compose.devservices.profiles` property in the `application.properties` file:
 
 [source, yaml]
@@ -313,7 +313,7 @@ services:
 
 === Ignoring Services
 
-You can configure Compose Dev Services to ignore specific services by adding the `io.quarkus.devservices.compose.ignore` label to the service in your Compose file:
+You can configure Compose Dev Services to not discover specific services by adding the `io.quarkus.devservices.compose.ignore` label to the service in your Compose file:
 
 [source, yaml]
 ----
@@ -378,7 +378,7 @@ services:
 ----
 
 You can also specify how many times a log message should appear by setting the numeric suffix value:
-`io.quarkus.devservices.compose.wait_for.logs.3: .*Worker started.*`
+`io.quarkus.devservices.compose.wait_for.logs.3: .\*Worker started.*`
 
 === Wait for Ports
 
@@ -469,7 +469,7 @@ The host is set to the Docker host IP address, and the port is set to the mapped
 
 [NOTE]
 ====
-For database services, if the label `io.quarkus.compose.devservices.jdbc.parameters` is set, the parameters are added to the JDBC URL.
+For database services, if the label `io.quarkus.devservices.compose.jdbc.parameters` is set, the parameters are added to the JDBC URL.
 ====
 
 === Custom config mapping using service labels
@@ -481,7 +481,7 @@ You can customize how environment variables and exposed ports are mapped to appl
 To map an environment variable to a specific application configuration property,
 use the `io.quarkus.devservices.compose.config_map.env.<env-var-name>` label.
 
-Let's take the example of a MQTT broker:
+Let's take the example of an MQTT broker:
 
 [source, yaml]
 ----
@@ -611,7 +611,7 @@ export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:$PORT_9092;
 
 Compose Dev Services provides several configuration options to control how services are started, stopped and shared between application instances.
 
-When the application starts in development or test mode, Compose Dev Services decide whether to start services or to discover already running services based on the configuration.
+When the application starts in development or test mode, Compose Dev Services decides whether to start services or to discover already running services based on the configuration.
 When the application stops, Compose Dev Services stops the services it started.
 
 === Compose Project Name
@@ -627,9 +627,9 @@ Compose Dev Services determines the project name as follows:
 
 === Discovering already started Compose Services
 
-Once the project name is determined, Compose Dev Services first tries discovering existing services with that project name.
+Once the project name is determined, Compose Dev Services first tries to discover existing services with that project name.
 
-The already started compose project may have been already started by another Quarkus application running locally with the same project name,
+The already started compose project may have been started by another Quarkus application running locally with the same project name,
 or manually using the `docker compose up` or `podman compose up` commands.
 
 Regardless of how the services were started,
@@ -664,7 +664,7 @@ This allows services to be reused by other applications or subsequent runs of th
 
 You can also configure the timeout for stopping services with the `quarkus.compose.devservices.stop-timeout` property.
 After the timeout, Compose Dev Services will forcefully stop the services.
-The default timeout is chosen deliberately short to 1 second for fast cleanup, but you can increase it as needed:
+The default timeout is deliberately chosen to be short (1 second) for fast cleanup, but you can increase it as needed:
 
 [source, text]
 ----

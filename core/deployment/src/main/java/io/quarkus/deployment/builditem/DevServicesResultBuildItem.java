@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -190,7 +191,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private String description;
 
         public DiscoveredServiceBuilder name(String name) {
-            this.name = name;
+            this.name = Objects.requireNonNull(name, "name cannot be null");
             return this;
         }
 
@@ -215,6 +216,9 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         public DevServicesResultBuildItem build() {
+            if (name == null) {
+                throw new IllegalStateException("name cannot be null");
+            }
             return new DevServicesResultBuildItem(name, description, containerId, config);
         }
     }

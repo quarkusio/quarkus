@@ -18,7 +18,7 @@ public class DevConsoleOidcNoDiscoveryJsonRPCTest extends DevUIJsonRPCTest {
                     "application.properties"));
 
     public DevConsoleOidcNoDiscoveryJsonRPCTest() {
-        super("io.quarkus.quarkus-oidc");
+        super("quarkus-oidc");
     }
 
     @Test

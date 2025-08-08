@@ -872,11 +872,12 @@ public class CodeFlowAuthorizationTest {
     private void defineCodeFlowOpaqueAccessTokenStub() {
         wireMockServer
                 .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/opaque-access-token"))
+                        .withRequestBody(containing("&opaque_token_param=opaque_token_value"))
                         .willReturn(WireMock.aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \"alice\","
-                                        + "  \"scope\": \"laptop phone\","
+                                        + "  \"scope\": \"laptop,phone\","
                                         + "\"expires_in\": 299}")));
     }
 

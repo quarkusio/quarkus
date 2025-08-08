@@ -77,10 +77,10 @@ participants:
           maxIssues: 10
       stale:
         maxIssues: 5
-  - username: "mbladel"
+  - username: "mbellade"
     timezone: "Europe/Rome"
     maintenance:
-      labels: [ "area/hibernate-orm", "area/jdbc" ]
+      labels: [ "area/hibernate-orm", "area/hibernate-reactive", "area/jdbc" ]
       days: [ "WEDNESDAY" ]
       created:
         maxIssues: 3

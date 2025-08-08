@@ -30,7 +30,13 @@ public abstract class DevUIBuildTimeDataTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonFactory factory = mapper.getFactory();
 
+    private static final String DOT = ".";
+
     public DevUIBuildTimeDataTest(String namespace) {
+        // The namespace changed to be compatible with MCP. We add some code here to be backward compatible
+        if (namespace.contains(DOT)) {
+            namespace = namespace.substring(namespace.lastIndexOf(DOT) + 1);
+        }
         Config config = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT);
         String testUrl = config.getValue("test.url", String.class);
         String nonApplicationRoot = config.getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");

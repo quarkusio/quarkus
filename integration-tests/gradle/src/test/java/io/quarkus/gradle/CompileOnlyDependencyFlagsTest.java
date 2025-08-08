@@ -20,11 +20,11 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.runtime.LaunchMode;
 
-public class CompileOnlyDependencyFlagsTest {
+public class CompileOnlyDependencyFlagsTest extends QuarkusGradleTestBase {
 
     @Test
     public void compileOnlyFlags() throws Exception {
-        var projectDir = QuarkusGradleTestBase.getProjectDir("compile-only-dependency-flags");
+        var projectDir = getProjectDir("compile-only-dependency-flags");
 
         final String componly = ArtifactCoords.jar("org.acme", "componly", "1.0.0-SNAPSHOT").toCompactCoords();
         final String common = ArtifactCoords.jar("org.acme", "common", "1.0.0-SNAPSHOT").toCompactCoords();

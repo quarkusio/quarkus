@@ -30,6 +30,7 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -950,6 +951,9 @@ public final class ExtensionLoader {
             declaredMethods.addAll(getMethods(clazz.getSuperclass()));
             declaredMethods.addAll(asList(clazz.getDeclaredMethods()));
         }
+
+        declaredMethods.sort(MethodComparator.INSTANCE);
+
         return declaredMethods;
     }
 
@@ -969,6 +973,40 @@ public final class ExtensionLoader {
                     + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
+        }
+    }
+
+    private static class MethodComparator implements Comparator<Method> {
+
+        private static final MethodComparator INSTANCE = new MethodComparator();
+
+        @Override
+        public int compare(Method m1, Method m2) {
+            int compare = m1.getDeclaringClass().getName().compareTo(m2.getDeclaringClass().getName());
+            if (compare != 0) {
+                return compare;
+            }
+
+            compare = m1.getName().compareTo(m2.getName());
+            if (compare != 0) {
+                return compare;
+            }
+
+            Class<?>[] p1 = m1.getParameterTypes();
+            Class<?>[] p2 = m2.getParameterTypes();
+            compare = Integer.compare(p1.length, p2.length);
+            if (compare != 0) {
+                return compare;
+            }
+            for (int i = 0; i < p1.length; i++) {
+                compare = p1[i].getName().compareTo(p2[i].getName());
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+
+            // this shouldn't be useful, except if we have bridge methods, but let's be safe
+            return m1.getReturnType().getName().compareTo(m2.getReturnType().getName());
         }
     }
 }

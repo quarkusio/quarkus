@@ -25,7 +25,7 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
 
     public AbstractDevUIHibernateOrmTest(String expectedPersistenceUnitName, String expectedTableName,
             String expectedClassName, Integer expectedResults, boolean reactive) {
-        super("io.quarkus.quarkus-hibernate-orm");
+        super("quarkus-hibernate-orm");
         this.expectedPersistenceUnitName = expectedPersistenceUnitName;
         this.expectedTableName = expectedTableName;
         this.expectedClassName = expectedClassName;

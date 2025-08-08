@@ -27,7 +27,7 @@ The `quarkus-jdbc-\*` and `quarkus-reactive-*-client` extensions provide build t
 
 For more information about consuming and using a reactive datasource, see the Quarkus xref:reactive-sql-clients.adoc[Reactive SQL clients] guide.
 
-Additionally, refer to the Quarkus xref:hibernate-orm.adoc[Hibernate ORM] guide for information on consuming and using a JDBC datasource.
+Additionally, refer to the Quarkus xref:hibernate-orm.adoc[Hibernate ORM] guide for information about consuming and using a JDBC datasource.
 
 
 == Get started with configuring `datasources` in Quarkus
@@ -190,7 +190,7 @@ It is possible to use JDBC and a reactive driver simultaneously.
 
 JDBC is the most common database connection pattern, typically needed when used in combination with non-reactive Hibernate ORM.
 
-. To use a JDBC datasource, start with adding the necessary dependencies:
+. To use a JDBC datasource, start by adding the necessary dependencies:
 
 .. For use with a built-in JDBC driver, choose and add the Quarkus extension for your relational database driver from the list below:
 +
@@ -201,9 +201,9 @@ include::_includes/snip-note-derby.adoc[]
 +
 [NOTE]
 ====
-H2 and Derby databases can be configured to run in "embedded mode"; however, the Derby extension does not support compiling the embedded database engine into native executables.
+You can configure H2 and Derby databases to run in "embedded mode"; however, the Derby extension does not support compiling the embedded database engine into native executables.
 
-Read <<in-memory-databases,Testing with in-memory databases>> for suggestions regarding integration testing.
+For suggestions regarding integration testing, see <<in-memory-databases,Testing with in-memory databases>> .
 ====
 * DB2 - `quarkus-jdbc-db2`
 * MariaDB - `quarkus-jdbc-mariadb`
@@ -225,9 +225,8 @@ For example, to add the PostgreSQL driver dependency:
 [NOTE]
 ====
 Using a built-in JDBC driver extension automatically includes the Agroal extension, which is the JDBC connection pool implementation applicable for custom and built-in JDBC drivers.
-However, for custom drivers, Agroal needs to be added explicitly.
+However, for custom drivers, you must add Agroal explicitly.
 ====
-
 
 .. For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
 +
@@ -276,8 +275,7 @@ quarkus.datasource.username=scott
 quarkus.datasource.password=tiger
 ----
 
-For all the details about the JDBC configuration options and configuring other aspects,
-such as the connection pool size, refer to the <<jdbc-configuration,JDBC configuration reference>> section.
+For details about JDBC configuration options and configuring other aspects, such as the connection pool size, refer to the <<jdbc-configuration,JDBC configuration reference>> section.
 
 ===== Consuming the datasource
 
@@ -303,7 +301,7 @@ Because this behavior is unexpected and can lead to data loss, an interceptor ro
 However, if you use XA transactions, the transaction manager handles the rollback.
 
 If the behavior introduced in 3.18 causes issues for your workload, disable it by setting the `-Dquarkus-oracle-no-automatic-rollback-on-connection-close` system property to `true`.
-Make sure to report your use case in our link:https://github.com/quarkusio/quarkus/issues[issue tracker] so we can adjust this behavior if needed, for example, with more permanent settings.
+Make sure to report your use case in the link:https://github.com/quarkusio/quarkus/issues[issue tracker] so we can adjust this behavior if needed, for example, with more permanent settings.
 
 
 [[reactive-datasource]]
@@ -680,11 +678,12 @@ You can override this by setting the `transactions` configuration property:
 * `quarkus.datasource.jdbc.transactions` for default unnamed datasource
 * `quarkus.datasource._<datasource-name>_.jdbc.transactions` for named datasource
 
-When a datasource is enabled for XA (by setting `quarkus.datasource[.optional name].jdbc.transactions to xa)` and the transaction recovery system is enabled (by setting the property `quarkus.transaction-manager.enable-recovery` to true) then the datasource is automatically registered for recovery. This is a safe default, but you can override this behaviour on a per-datasource basis by setting `quarkus.datasource.jdbc.enable-recovery`/`quarkus.datasource."datasource-name".jdbc.enable-recovery` to `false`. Only use this for advanced use cases and if you know recovery will not be necessary, otherwise it may result in data loss and/or data unavailability because resources may become locked indefinitely.
+When a datasource is enabled for XA (by setting `quarkus.datasource[.optional name].jdbc.transactions` to `xa`) and the transaction recovery system is enabled (by setting the property `quarkus.transaction-manager.enable-recovery` to `true`), then the datasource is automatically registered for recovery.
+This is a safe default, but you can override this behaviour on a per-datasource basis by setting `quarkus.datasource.jdbc.enable-recovery` or `quarkus.datasource."datasource-name".jdbc.enable-recovery` to `false`.
+Use only for advanced use cases and if you know recovery will not be necessary; otherwise it can result in data loss, data unavailability, or both, because resources can become locked indefinitely.
 
 For more information, see the <<configuration-reference,Configuration reference>> section below.
-
-To facilitate the storage of transaction logs in a database by using JDBC, see xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.
+To facilitate the storage of transaction logs in a database by using JDBC, see the xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.
 
 ==== Named datasources
 

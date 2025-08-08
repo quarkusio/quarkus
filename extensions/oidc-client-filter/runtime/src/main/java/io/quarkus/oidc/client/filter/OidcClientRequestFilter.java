@@ -22,4 +22,9 @@ public class OidcClientRequestFilter extends AbstractOidcClientRequestFilter {
     protected Optional<String> clientId() {
         return oidcClientFilterConfig.clientName();
     }
+
+    @Override
+    protected boolean refreshOnUnauthorized() {
+        return oidcClientFilterConfig.refreshOnUnauthorized();
+    }
 }

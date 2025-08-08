@@ -9,6 +9,7 @@ import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
@@ -88,6 +89,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
+    @JsonRpcDescription("Get information on the scheduler in the system")
     public JsonObject getData() {
         SchedulerContext c = context.get();
         Scheduler s = scheduler.get();
@@ -130,6 +132,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
+    @JsonRpcDescription("Pause the scheduler")
     public JsonObject pauseScheduler() {
         Scheduler s = scheduler.get();
         if (!s.isRunning()) {
@@ -141,6 +144,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
+    @JsonRpcDescription("Resume the scheduler")
     public JsonObject resumeScheduler() {
         Scheduler s = scheduler.get();
         if (s.isRunning()) {
@@ -152,7 +156,8 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject pauseJob(String identity) {
+    @JsonRpcDescription("Pause a specific job in the scheduler")
+    public JsonObject pauseJob(@JsonRpcDescription("The job identification") String identity) {
         Scheduler s = scheduler.get();
         if (s.isPaused(identity)) {
             return newFailure("Job with identity " + identity + " is already paused");
@@ -163,7 +168,8 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject resumeJob(String identity) {
+    @JsonRpcDescription("Resume a specific job in the scheduler")
+    public JsonObject resumeJob(@JsonRpcDescription("The job identification") String identity) {
         Scheduler s = scheduler.get();
         if (!s.isPaused(identity)) {
             return newFailure("Job with identity " + identity + " is not paused");
@@ -174,7 +180,8 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject executeJob(String methodDescription) {
+    @JsonRpcDescription("Execute a specific job in the scheduler")
+    public JsonObject executeJob(@JsonRpcDescription("The method description") String methodDescription) {
         SchedulerContext c = context.get();
         for (ScheduledMethod metadata : c.getScheduledMethods()) {
             if (metadata.getMethodDescription().equals(methodDescription)) {

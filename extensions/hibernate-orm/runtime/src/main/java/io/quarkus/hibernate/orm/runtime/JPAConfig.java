@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManagerFactory;
@@ -17,26 +19,31 @@ import jakarta.persistence.Persistence;
 import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
-    private final Map<String, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
+    public static final String IS_REACTIVE_KEY = "isReactive";
+
+    private final Map<PersistenceUnitKey, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
     private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
     private final boolean requestScopedSessionEnabled;
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
-        for (QuarkusPersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+        for (Map.Entry<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> entry : PersistenceUnitsHolder
+                .getPersistenceUnits().entrySet()) {
+            QuarkusPersistenceUnitDescriptor descriptor = entry.getValue();
             String puName = descriptor.getName();
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getConfigurationName());
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(puName);
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
                         puName);
                 deactivatedPersistenceUnitNames.add(puName);
             } else {
-                persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
+                persistenceUnits.put(entry.getKey(), new LazyPersistenceUnit(puName, descriptor.isReactive()));
             }
         }
         this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
@@ -51,7 +58,7 @@ public class JPAConfig {
         //don't access the datasource directly, but only over HTTP calls
         boolean moreThanOneThread = persistenceUnits.size() > 1;
         //start PUs in parallel, for faster startup
-        for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
+        for (Map.Entry<PersistenceUnitKey, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             CompletableFuture<Object> future = new CompletableFuture<>();
             start.add(future);
             new Thread(new Runnable() {
@@ -78,14 +85,23 @@ public class JPAConfig {
         }
     }
 
-    public EntityManagerFactory getEntityManagerFactory(String unitName) {
+    public List<Tuple2<String, EntityManagerFactory>> getEntityManagerFactories() {
+        List<Tuple2<String, EntityManagerFactory>> allEntityManagerFactories = new ArrayList<>();
+        for (LazyPersistenceUnit pu : persistenceUnits.values()) {
+            allEntityManagerFactories.add(Tuple2.of(pu.name, getEntityManagerFactory(pu.name, pu.isReactive)));
+        }
+
+        return allEntityManagerFactories;
+    }
+
+    public EntityManagerFactory getEntityManagerFactory(String unitName, boolean reactive) {
         LazyPersistenceUnit lazyPersistenceUnit = null;
         if (unitName == null) {
             if (persistenceUnits.size() == 1) {
                 lazyPersistenceUnit = persistenceUnits.values().iterator().next();
             }
         } else {
-            lazyPersistenceUnit = persistenceUnits.get(unitName);
+            lazyPersistenceUnit = persistenceUnits.get(new PersistenceUnitKey(unitName, reactive));
         }
 
         if (lazyPersistenceUnit == null) {
@@ -108,7 +124,7 @@ public class JPAConfig {
      * @return Set containing the names of all registered, actives persistence units.
      */
     public Set<String> getPersistenceUnits() {
-        return persistenceUnits.keySet();
+        return persistenceUnits.keySet().stream().map(k -> k.name()).collect(Collectors.toSet());
     }
 
     /**
@@ -148,11 +164,13 @@ public class JPAConfig {
     static final class LazyPersistenceUnit {
 
         private final String name;
+        private final boolean isReactive;
         private volatile EntityManagerFactory value;
         private volatile boolean closed = false;
 
-        LazyPersistenceUnit(String name) {
+        LazyPersistenceUnit(String name, boolean isReactive) {
             this.name = name;
+            this.isReactive = isReactive;
         }
 
         EntityManagerFactory get() {
@@ -162,7 +180,8 @@ public class JPAConfig {
                         throw new IllegalStateException("Persistence unit is closed");
                     }
                     if (value == null) {
-                        value = Persistence.createEntityManagerFactory(name);
+                        value = Persistence.createEntityManagerFactory(name,
+                                Collections.singletonMap(IS_REACTIVE_KEY, isReactive));
                     }
                 }
             }

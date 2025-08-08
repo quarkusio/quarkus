@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Random;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
@@ -23,6 +22,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -35,6 +35,7 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
+import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
 
 class NettyProcessor {
@@ -65,17 +66,11 @@ class NettyProcessor {
     }
 
     @BuildStep
-    public SystemPropertyBuildItem setNettyMachineId() {
+    public GeneratedRuntimeSystemPropertyBuildItem setNettyMachineId() {
         // we set the io.netty.machineId system property so to prevent potential
         // slowness when generating/inferring the default machine id in io.netty.channel.DefaultChannelId
         // implementation, which iterates over the NetworkInterfaces to determine the "best" machine id
-
-        // borrowed from io.netty.util.internal.MacAddressUtil.EUI64_MAC_ADDRESS_LENGTH
-        final int EUI64_MAC_ADDRESS_LENGTH = 8;
-        final byte[] machineIdBytes = new byte[EUI64_MAC_ADDRESS_LENGTH];
-        new Random().nextBytes(machineIdBytes);
-        final String nettyMachineId = io.netty.util.internal.MacAddressUtil.formatAddress(machineIdBytes);
-        return new SystemPropertyBuildItem("io.netty.machineId", nettyMachineId);
+        return new GeneratedRuntimeSystemPropertyBuildItem("io.netty.machineId", MachineIdGenerator.class);
     }
 
     @BuildStep

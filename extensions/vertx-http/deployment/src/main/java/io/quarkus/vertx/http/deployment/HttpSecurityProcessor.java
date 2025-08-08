@@ -75,6 +75,7 @@ import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -88,6 +89,7 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.security.VertxSecurityIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
@@ -104,7 +106,7 @@ public class HttpSecurityProcessor {
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
 
-    @Consume(HttpSecurityConfigSetupComplete.class)
+    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -150,11 +152,11 @@ public class HttpSecurityProcessor {
         return null;
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        if (isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)) {
+    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
             recorder.setMtlsCertificateRoleProperties();
         }
     }
@@ -267,9 +269,9 @@ public class HttpSecurityProcessor {
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(
                             recorder.getHttpAuthenticatorHandler(authenticationHandlerBuildItem.get().handler),
-                            FilterBuildItem.AUTHENTICATION));
+                            SecurityHandlerPriorities.AUTHENTICATION));
             filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
+                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), SecurityHandlerPriorities.AUTHORIZATION));
         }
     }
 
@@ -287,9 +289,10 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Produce(HttpSecurityConfigSetupComplete.class)
+    @Produce(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
@@ -884,7 +887,7 @@ public class HttpSecurityProcessor {
         }
     }
 
-    static final class HttpSecurityConfigSetupComplete extends EmptyBuildItem {
+    static final class HttpSecurityConfigSetupCompleteBuildItem extends EmptyBuildItem {
 
     }
 }

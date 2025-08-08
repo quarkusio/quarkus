@@ -6,6 +6,7 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.co
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.hasEntities;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonFormatterCustomizationCheck;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
@@ -45,6 +46,8 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
+import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
@@ -110,6 +113,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRu
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -121,7 +125,7 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevIntegrator;
+import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -166,6 +170,22 @@ public final class HibernateOrmProcessor {
         }
 
         return new NativeImageFeatureBuildItem(RegisterServicesForReflectionFeature.class);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void registerStrategyForReflection(
+            BuildProducer<ReflectiveClassBuildItem> reflective) {
+
+        // Hibernate ORM uses reflection at runtime two create these two strategies,
+        // So we need this to support native-image
+        // These strategies are only used in offline mode https://github.com/quarkusio/quarkus/pull/48130 so far
+        // When Hibernate will support temporary table creation inside the `hbm2ddl` tool
+        // https://hibernate.atlassian.net/browse/HHH-15525 the strategies won't be needed anymore and this can be removed
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                LocalTemporaryTableInsertStrategy.class,
+                LocalTemporaryTableMutationStrategy.class)
+                .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
+                .methods().fields().build());
     }
 
     @BuildStep
@@ -330,19 +350,24 @@ public final class HibernateOrmProcessor {
                     .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
             xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
                     .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(
+                    capabilities, jsonMapper);
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(
                             QuarkusPersistenceUnitDescriptor.validateAndReadFrom(xmlDescriptor),
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                    Optional.empty(),
                                     jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                     Optional.ofNullable(xmlDescriptor.getProperties().getProperty(AvailableSettings.DIALECT)),
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                                     hibernateOrmConfig.database().ormCompatibilityVersion(),
-                                    hibernateOrmConfig.mapping().format().global(), Collections.emptyMap()),
+                                    hibernateOrmConfig.mapping().format().global(),
+                                    jsonFormatterCustomizationCheck,
+                                    Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
@@ -698,7 +723,7 @@ public final class HibernateOrmProcessor {
         boolean multitenancyEnabled = false;
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
-            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
+            String persistenceUnitConfigName = persistenceUnitDescriptor.getPersistenceUnitName();
             var multitenancyStrategy = persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy();
             switch (multitenancyStrategy) {
                 case NONE -> {
@@ -926,7 +951,7 @@ public final class HibernateOrmProcessor {
         }
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
-                persistenceUnitName, persistenceUnitName,
+                persistenceUnitName,
                 PersistenceUnitTransactionType.JTA,
                 // That's right, we're pushing both class names and package names
                 // to a method called "addClasses".
@@ -944,7 +969,8 @@ public final class HibernateOrmProcessor {
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
-        collectDialectConfig(persistenceUnitName, persistenceUnitConfig,
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
+                persistenceUnitConfig,
                 dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
                 systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty, storageEngineCollector);
 
@@ -959,16 +985,20 @@ public final class HibernateOrmProcessor {
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
+        JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(
+                capabilities, jsonMapper);
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
+                                supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 persistenceUnitConfig.dialect().dialect(),
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
                                 hibernateOrmConfig.mapping().format().global(),
+                                jsonFormatterCustomizationCheck,
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         xmlMappings,
@@ -976,7 +1006,7 @@ public final class HibernateOrmProcessor {
                         isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
     }
 
-    private static void collectDialectConfig(String persistenceUnitName,
+    private static Optional<DatabaseKind.SupportedDatabaseKind> collectDialectConfig(String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems,
             Optional<JdbcDataSourceBuildItem> jdbcDataSource,
@@ -985,23 +1015,28 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BiConsumer<String, String> puPropertiesCollector,
             Set<String> storageEngineCollector) {
-        Optional<String> dialect = persistenceUnitConfig.dialect().dialect();
+        final HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
+                .dialect();
+
+        Optional<String> dialect = dialectConfig.dialect();
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
         Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
+            String dsConfigProperty = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "datasource");
             throw new ConfigurationException(String.format(Locale.ROOT,
-                    "Datasource must be defined for persistence unit '%s'."
+                    "Datasource must be defined for persistence unit '%s'. Setting the datasource for the persistence unit can be done via the '%s' property. "
                             + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                    persistenceUnitName),
+                    persistenceUnitName, dsConfigProperty),
                     new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
                             "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
         }
 
-        setDialectAndStorageEngine(
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
                 persistenceUnitName,
                 dbKind,
                 dialect,
                 explicitDbMinVersion,
+                dialectConfig,
                 dbKindMetadataBuildItems,
                 persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
@@ -1015,6 +1050,8 @@ public final class HibernateOrmProcessor {
                     "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
                     true, "org.postgresql.jdbc.PgConnection", "getSchema"));
         }
+
+        return supportedDatabaseKind;
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,

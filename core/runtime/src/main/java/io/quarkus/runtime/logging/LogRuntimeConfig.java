@@ -178,7 +178,16 @@ public interface LogRuntimeConfig {
          * If file logging should be enabled
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If file logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.file.enabled} instead
+         */
+        // when dropping this property also adjust OpenTelemetryLogHandler
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          * The log format
@@ -269,11 +278,20 @@ public interface LogRuntimeConfig {
     }
 
     interface ConsoleConfig {
+
         /**
          * If console logging should be enabled
          */
         @WithDefault("true")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If console logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.console.enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          * If console logging should go to {@link System#err} instead of {@link System#out}.
@@ -331,7 +349,15 @@ public interface LogRuntimeConfig {
          * If syslog logging should be enabled
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If syslog logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.syslog.enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          *
@@ -442,7 +468,15 @@ public interface LogRuntimeConfig {
          * If socket logging should be enabled
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If socket logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.socket.enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          *
@@ -507,10 +541,18 @@ public interface LogRuntimeConfig {
     interface AsyncConfig {
 
         /**
-         * Indicates whether to log asynchronously
+         * Whether to log asynchronously
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * Whether to log asynchronously
+         *
+         * @deprecated use {@code .enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          * Indicates whether to log asynchronously

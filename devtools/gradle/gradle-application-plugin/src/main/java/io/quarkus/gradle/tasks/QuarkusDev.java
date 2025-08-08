@@ -28,6 +28,7 @@ import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -74,6 +75,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.ExtensionDevModeJvmOptionFilter;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
+import io.quarkus.gradle.dependency.QuarkusComponentVariants;
 import io.quarkus.gradle.dsl.CompilerOption;
 import io.quarkus.gradle.dsl.CompilerOptions;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
@@ -89,6 +91,7 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private final Configuration quarkusDevConfiguration;
     private final SourceSet mainSourceSet;
+    private final ObjectFactory objectFactory;
 
     private final CompilerOptions compilerOptions = new CompilerOptions();
     private final ExtensionDevModeJvmOptionFilter extensionJvmOptions = new ExtensionDevModeJvmOptionFilter();
@@ -123,7 +126,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        final ObjectFactory objectFactory = getProject().getObjects();
+        objectFactory = getProject().getObjects();
 
         workingDirectory = objectFactory.property(File.class);
         workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
@@ -556,13 +559,16 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private void addQuarkusDevModeDeps(DevModeCommandLineBuilder builder, ApplicationModel appModel) {
 
-        var devModeDependencyConfiguration = getProject().getConfigurations()
+        final ConfigurationContainer configContainer = getProject().getConfigurations();
+        var devModeDependencyConfiguration = configContainer
                 .findByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         if (devModeDependencyConfiguration == null) {
-            final Configuration platformConfig = getProject().getConfigurations().findByName(
+            final Configuration platformConfig = configContainer.findByName(
                     ToolingUtils.toPlatformConfigurationName(
                             ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT)));
-            getProject().getConfigurations().register(
+            final boolean disableComponentVariants = ApplicationDeploymentClasspathBuilder
+                    .isDisableComponentVariants(getProject());
+            configContainer.register(
                     ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION,
                     configuration -> {
                         configuration.setCanBeConsumed(false);
@@ -570,8 +576,12 @@ public abstract class QuarkusDev extends QuarkusTask {
                         configuration.getDependencies().add(getQuarkusGradleBootstrapResolver());
                         configuration.getDependencies().add(getQuarkusMavenBootstrapResolver());
                         configuration.getDependencies().add(getQuarkusCoreDeployment(appModel));
+                        if (!disableComponentVariants) {
+                            configuration.attributes(
+                                    attrs -> QuarkusComponentVariants.setCommonAttributes(attrs, objectFactory));
+                        }
                     });
-            devModeDependencyConfiguration = getProject().getConfigurations()
+            devModeDependencyConfiguration = configContainer
                     .getByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         }
 

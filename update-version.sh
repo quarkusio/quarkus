@@ -9,7 +9,13 @@ if [ $# -eq 0 ]; then
 fi
 VERSION=$1
 
-./mvnw -e -B -Dscan=false -Ddevelocity.cache.local.enabled=false -Ddevelocity.cache.remote.enabled=false versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations -DupdateBuildOutputTimestampPolicy=always
+if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
+  BUILD_TIMESTAMP_POLICY="-DupdateBuildOutputTimestampPolicy=never"
+else
+  BUILD_TIMESTAMP_POLICY="-DupdateBuildOutputTimestampPolicy=always"
+fi
+
+./mvnw -e -B -Dscan=false -Ddevelocity.cache.local.enabled=false -Ddevelocity.cache.remote.enabled=false versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations ${BUILD_TIMESTAMP_POLICY}
 
 if [ -f independent-projects/enforcer-rules/src/it/smoketest/pom.xml ]; then
     # update the parent version only using indentation

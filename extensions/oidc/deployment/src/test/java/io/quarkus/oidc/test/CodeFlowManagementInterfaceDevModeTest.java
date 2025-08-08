@@ -42,7 +42,7 @@ public class CodeFlowManagementInterfaceDevModeTest {
                                     quarkus.management.auth.permission.code-flow.policy=authenticated
                                     quarkus.management.auth.permission.code-flow.auth-mechanism=code
                                     quarkus.log.category."org.htmlunit".level=ERROR
-                                    quarkus.log.file.enable=true
+                                    quarkus.log.file.enabled=true
                                     """),
                             "application.properties"));
 

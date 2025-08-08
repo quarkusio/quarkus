@@ -84,7 +84,7 @@ public class MetricsTest {
 
     @Test
     void testAllJvmMetrics() {
-        // Force GC to run
+        // Force GC to run in order to generate metrics data
         System.gc();
 
         // generate load
@@ -103,38 +103,64 @@ public class MetricsTest {
                     .isGreaterThanOrEqualTo(allMetrics.size());
         });
 
-        //        System.out.println(getAllMetricNames("jvm."));
-
         allMetrics.forEach(metricToAssert -> {
 
+            // metric is there and has at least 1 reading
             await().atMost(10, SECONDS)
                     .untilAsserted(() -> assertThat(getMetrics(metricToAssert.name()).size())
                             .withFailMessage("The metric " + metricToAssert.name())
                             .isGreaterThan(0));
 
-            List<Map<String, Object>> metrics = getMetrics(metricToAssert.name());
-
-            assertThat(metrics.size())
-                    .withFailMessage(metricToAssert.name() + " not found")
-                    .isGreaterThan(0);
-
-            Map<String, Object> lastMetric = metrics.size() > 0 ? metrics.get(metrics.size() - 1) : null;
-
-            Double value = ((Number) ((Map) ((List) ((Map) (lastMetric.get("data")))
-                    .get("points"))
-                    .get(0))
-                    .get(metricToAssert.metricType().equals(HISTOGRAM) ? "sum" : "value"))
-                    .doubleValue();
-
+            // skip assertions from flaky metrics
             if (!metricToAssert.name().equals("jvm.memory.used_after_last_gc") &&
                     !metricToAssert.name().equals("jvm.cpu.limit") &&
-                    !metricToAssert.name().equals("jvm.cpu.recent_utilization") && // skip value assertions on flaky metrics
+                    !metricToAssert.name().equals("jvm.cpu.recent_utilization") &&
                     !metricToAssert.name().equals("jvm.system.cpu.utilization")) {
-                assertThat(value)
-                        .withFailMessage("Metric should be greater than 0: " + metricToAssert.name + " value: " + value)
-                        .isGreaterThan(0d);
+
+                // Correct values might take some time to register
+                await().atMost(10, SECONDS).untilAsserted(() -> assertThat(getLastReading(metricToAssert))
+                        .withFailMessage("Metric must be greater than 0: " + metricToAssert.name)
+                        .isGreaterThan(0d));
             }
         });
+    }
+
+    @Test
+    void testServerRequestDuration() {
+        given()
+                .when()
+                .get("/nopath")
+                .then()
+                .statusCode(200);
+
+        await().atMost(10, SECONDS).until(() -> getMetrics("http.server.request.duration").size() > 2);
+
+        List<Map<String, Object>> metrics = getMetrics("http.server.request.duration");
+
+        Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics("http.server.request.duration")
+                .get(metrics.size() - 1)
+                .get("data")))
+                .get("points"))
+                .get(0))
+                .get("count");
+
+        assertThat(value).isGreaterThanOrEqualTo(1); // at least one endpoint was called once
+    }
+
+    private static Set<String> getAllMetricNames(String prefix) {
+        List<Map<String, Object>> foundMetrics = given()
+                .when()
+                .get("/export/metrics")
+                .body().as(new TypeRef<>() {
+                });
+
+        return foundMetrics.stream()
+                .filter(m -> ((String) m.get("name")).startsWith(prefix))
+                .map(m -> ((String) m.get("name")))
+                .collect(Collectors.toSet());
+    }
+
+    record MetricToAssert(String name, String description, String metricUnit, MetricDataType metricType) {
     }
 
     protected Set<MetricToAssert> getJvmMetricsToAssert() {
@@ -174,41 +200,19 @@ public class MetricsTest {
                         LONG_SUM));
     }
 
-    @Test
-    void testServerRequestDuration() {
-        given()
-                .when()
-                .get("/nopath")
-                .then()
-                .statusCode(200);
+    private Double getLastReading(MetricToAssert metricToAssert) {
 
-        await().atMost(10, SECONDS).until(() -> getMetrics("http.server.request.duration").size() > 2);
+        List<Map<String, Object>> metrics = getMetrics(metricToAssert.name());
 
-        List<Map<String, Object>> metrics = getMetrics("http.server.request.duration");
+        // assumes metric is there. The test asserts that already.
+        Map<String, Object> lastReading = metrics.size() > 0 ? metrics.get(metrics.size() - 1) : null;
 
-        Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics("http.server.request.duration")
-                .get(metrics.size() - 1)
-                .get("data")))
-                .get("points"))
-                .get(0))
-                .get("count");
+        List pointsList = (List) ((Map) (lastReading.get("data"))).get("points");
 
-        assertThat(value).isGreaterThanOrEqualTo(1); // at least one endpoint was called once
-    }
-
-    private static Set<String> getAllMetricNames(String prefix) {
-        List<Map<String, Object>> foundMetrics = given()
-                .when()
-                .get("/export/metrics")
-                .body().as(new TypeRef<>() {
-                });
-
-        return foundMetrics.stream()
-                .filter(m -> ((String) m.get("name")).startsWith(prefix))
-                .map(m -> ((String) m.get("name")))
-                .collect(Collectors.toSet());
-    }
-
-    record MetricToAssert(String name, String description, String metricUnit, MetricDataType metricType) {
+        // get last data point from the last reading
+        return ((Number) ((Map) pointsList
+                .get(pointsList.size() > 0 ? pointsList.size() - 1 : null))
+                .get(metricToAssert.metricType().equals(HISTOGRAM) ? "sum" : "value"))
+                .doubleValue();
     }
 }

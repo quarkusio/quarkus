@@ -181,6 +181,7 @@ jobs:
           main-repository: quarkusio/quarkus
           runs-on: true
           magic-cache: true
+          ubuntu-latest: family=m7i.xlarge/image=ubuntu22-full-x64
       - name: Determines if GIB should be disabled
         id: gib-status
         run: |
@@ -248,10 +249,9 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
-      - name: Populate the cache
-        if: github.event_name == 'push' && github.repository == 'quarkusio/quarkus' && github.actor != 'dependabot[bot]'
+      - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@v4
         if: github.event_name == 'pull_request'
@@ -501,7 +501,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -637,7 +637,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -744,7 +744,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -773,7 +773,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle -Pgradle-8
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -843,7 +843,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -946,7 +946,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -1034,7 +1034,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -1079,7 +1079,7 @@ jobs:
         run: |
           git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quarkus-version.outputs.quarkus-version }}"
-          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
+          export LANG=en_US && ./mvnw -e -B -fae --global-settings ../.github/mvn-settings.xml --settings .github/mvn-settings.xml clean verify -DskipTests -Dquarkus.platform.group-id=io.quarkus $QUARKUS_VERSION_ARGS
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -1132,7 +1132,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -1225,7 +1225,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -1313,7 +1313,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -1431,7 +1431,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: m2-content
           path: .
@@ -1513,7 +1513,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: runs-on/action@v2
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           pattern: build-stats-*
           path: .
@@ -1572,7 +1572,7 @@ jobs:
     if: always()
     steps:
       - uses: runs-on/action@v2
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: build-reports-artifacts
       - name: Set up JDK 21

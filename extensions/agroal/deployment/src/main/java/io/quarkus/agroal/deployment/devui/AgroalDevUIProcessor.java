@@ -43,16 +43,18 @@ class AgroalDevUIProcessor {
     void createBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
         BuildTimeActionBuildItem bta = new BuildTimeActionBuildItem();
 
-        // TODO: If currentInsertScript is empty, maybe send tables schema. This might mean we need to move this to runtime
+        bta.actionBuilder()
+                .methodName("generateMoreData")
+                .assistantFunction((a, p) -> {
+                    Assistant assistant = (Assistant) a;
+                    return assistant.assistBuilder()
+                            .userMessage(ADD_DATA_MESSAGE)
+                            .variables(p)
+                            .assist();
+                }).build();
 
-        bta.addAssistantAction("generateMoreData", (a, p) -> {
-            Assistant assistant = (Assistant) a;
-            return assistant.assistBuilder()
-                    .userMessage(USER_MESSAGE)
-                    .variables(p)
-                    .assist();
-        });
         buildTimeActionProducer.produce(bta);
+
     }
 
     @BuildStep
@@ -60,7 +62,7 @@ class AgroalDevUIProcessor {
         return new JsonRPCProvidersBuildItem(DatabaseInspector.class);
     }
 
-    private static final String USER_MESSAGE = """
+    private static final String ADD_DATA_MESSAGE = """
             Given the provided sql script:
             {{currentInsertScript}}
             Can you add 10 more inserts into the script and return the result

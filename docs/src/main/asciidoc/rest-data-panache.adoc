@@ -344,6 +344,23 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 Additionally, if you are only interested in specifying the roles that are allowed to use the resources, the `@ResourceProperties` and `@MethodProperties` annotations have the field `rolesAllowed` to list the security roles permitted to access the resource or operation.
 
+=== Using @Authenticated
+
+Additionally, REST Data with Panache can be used in conjunction with `io.quarkus.security.Authenticated`, by either:
+
+* Setting `@ResourceProperties(authenticated=true)` which results in all methods of the resource requiring authentication
+* The same result can also be achieved by adding the `@Authenticated` annotation on the interface instead of using the `authenticated` property
+* Finally, the `@Authenticated` annotation can be used on specific methods, meaning that only those will require an authenticated user. An example might look like so:
+
+[source,java]
+----
+@ResourceProperties
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+    @Authenticated
+    boolean delete(Long id);
+}
+----
+
 == Query parameters to list entities
 
 REST Data with Panache supports the following query parameters to get the list of entities:

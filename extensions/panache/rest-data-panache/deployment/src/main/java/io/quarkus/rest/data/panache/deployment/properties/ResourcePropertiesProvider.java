@@ -16,6 +16,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.rest.data.panache.deployment.utils.ResourceName;
+import io.quarkus.security.Authenticated;
 
 public class ResourcePropertiesProvider {
 
@@ -26,6 +27,7 @@ public class ResourcePropertiesProvider {
             io.quarkus.rest.data.panache.MethodProperties.class.getName());
 
     private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName(),
+            Authenticated.class.getPackageName(),
             // To also support `@EndpointDisabled` if used
             "io.quarkus.resteasy.reactive.server");
 
@@ -49,6 +51,7 @@ public class ResourcePropertiesProvider {
                 isHal(annotation),
                 getHalCollectionName(annotation, resourceClass),
                 getRolesAllowed(annotation),
+                isAuthenticated(annotation),
                 collectAnnotationsToCopy(resourceClassName),
                 collectMethodProperties(resourceClassName));
     }
@@ -164,5 +167,13 @@ public class ResourcePropertiesProvider {
         }
 
         return new String[0];
+    }
+
+    private boolean isAuthenticated(AnnotationInstance annotation) {
+        if (annotation != null && annotation.value("authenticated") != null) {
+            return annotation.value("authenticated").asBoolean();
+        }
+
+        return false;
     }
 }

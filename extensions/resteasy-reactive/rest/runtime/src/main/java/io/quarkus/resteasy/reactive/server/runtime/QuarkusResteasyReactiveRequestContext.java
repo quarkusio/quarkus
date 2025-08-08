@@ -8,6 +8,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
+import org.jboss.resteasy.reactive.server.spi.ForwardedInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -17,6 +18,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactiveRequestContext {
@@ -96,6 +98,46 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     @Override
     public void handleUnmappedException(Throwable throwable) {
         throw sneakyThrow(throwable);
+    }
+
+    @Override
+    public ForwardedInfo getForwardedInfo() {
+        io.quarkus.vertx.http.runtime.ForwardedInfo vertxForwardedInfo = ((HttpServerRequestInternal) request).context()
+                .getLocal(io.quarkus.vertx.http.runtime.ForwardedInfo.CONTEXT_KEY);
+        if (vertxForwardedInfo == null) {
+            return null;
+        }
+        return new ForwardedInfo() {
+            @Override
+            public String getScheme() {
+                return vertxForwardedInfo.getScheme();
+            }
+
+            @Override
+            public String getHost() {
+                return vertxForwardedInfo.getHost();
+            }
+
+            @Override
+            public Integer getPort() {
+                return vertxForwardedInfo.getPort();
+            }
+
+            @Override
+            public String getRemoteHost() {
+                return vertxForwardedInfo.getRemoteHost();
+            }
+
+            @Override
+            public Integer getRemotePort() {
+                return vertxForwardedInfo.getRemotePort();
+            }
+
+            @Override
+            public String getPrefix() {
+                return vertxForwardedInfo.getPrefix();
+            }
+        };
     }
 
     @SuppressWarnings("unchecked")

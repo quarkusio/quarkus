@@ -1,5 +1,8 @@
 package io.quarkus.deployment;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -12,13 +15,34 @@ public class GeneratedClassGizmo2Adaptor implements ClassOutput {
 
     private final BuildProducer<GeneratedClassBuildItem> generatedClasses;
     private final BuildProducer<GeneratedResourceBuildItem> generatedResources;
-    private final boolean applicationClass;
+    private final Predicate<String> applicationClassPredicate;
 
     public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
             final BuildProducer<GeneratedResourceBuildItem> generatedResources, boolean applicationClass) {
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
-        this.applicationClass = applicationClass;
+        this.applicationClassPredicate = ignored -> applicationClass;
+    }
+
+    public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            Predicate<String> applicationClassPredicate) {
+        this.generatedClasses = generatedClasses;
+        this.generatedResources = generatedResources;
+        this.applicationClassPredicate = applicationClassPredicate;
+    }
+
+    public GeneratedClassGizmo2Adaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            Function<String, String> generatedToBaseNameFunction) {
+        this.generatedClasses = generatedClasses;
+        this.generatedResources = generatedResources;
+        this.applicationClassPredicate = new Predicate<String>() {
+            @Override
+            public boolean test(String s) {
+                return isApplicationClass(generatedToBaseNameFunction.apply(s));
+            }
+        };
     }
 
     @Override
@@ -26,7 +50,7 @@ public class GeneratedClassGizmo2Adaptor implements ClassOutput {
         if (resourceName.endsWith(".class")) {
             String className = resourceName.substring(0, resourceName.length() - 6).replace('/', '.');
             generatedClasses.produce(
-                    new GeneratedClassBuildItem(applicationClass, className, bytes));
+                    new GeneratedClassBuildItem(applicationClassPredicate.test(className), className, bytes));
         } else {
             generatedResources.produce(
                     new GeneratedResourceBuildItem(resourceName, bytes));

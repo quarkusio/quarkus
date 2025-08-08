@@ -21,7 +21,7 @@ public abstract class AbstractDevUITest extends DevUIJsonRPCTest {
     private final String expectedClassName;
 
     public AbstractDevUITest(String expectedClassName) {
-        super("io.quarkus.quarkus-hibernate-search-standalone-elasticsearch");
+        super("quarkus-hibernate-search-standalone-elasticsearch");
         this.expectedClassName = expectedClassName;
     }
 

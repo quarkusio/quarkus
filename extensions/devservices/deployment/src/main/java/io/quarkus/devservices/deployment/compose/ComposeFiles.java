@@ -1,6 +1,7 @@
 package io.quarkus.devservices.deployment.compose;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,10 +16,14 @@ public class ComposeFiles {
 
     public ComposeFiles(List<File> composeFiles) {
         this.serviceDefinitions = new HashMap<>();
-        this.files = composeFiles;
+        this.files = new ArrayList<>();
         String name = null;
         for (File composeFile : composeFiles) {
             ComposeFile compose = new ComposeFile(composeFile);
+            if ((compose.getProjectName() == null) && compose.getServiceDefinitions().isEmpty()) {
+                continue;
+            }
+            files.add(composeFile);
             for (Map.Entry<String, ComposeServiceDefinition> service : compose.getServiceDefinitions().entrySet()) {
                 if (this.serviceDefinitions.containsKey(service.getKey())) {
                     throw new IllegalArgumentException("Service name conflict: " + service.getKey());

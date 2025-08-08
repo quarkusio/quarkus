@@ -21,7 +21,7 @@ public class DevUICacheJsonRPCTest extends DevUIJsonRPCTest {
             .withApplicationRoot((jar) -> jar.addClass(MyBean.class));
 
     public DevUICacheJsonRPCTest() {
-        super("io.quarkus.quarkus-cache");
+        super("quarkus-cache");
     }
 
     @Test

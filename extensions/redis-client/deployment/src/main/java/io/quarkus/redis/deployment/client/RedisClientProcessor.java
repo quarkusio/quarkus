@@ -300,7 +300,7 @@ public class RedisClientProcessor {
             return scripts.get().stream()
                     .filter(s -> !NO_REDIS_SCRIPT_FILE.equalsIgnoreCase(s))
                     .collect(Collectors.toList());
-        } else if (launchMode == LaunchMode.NORMAL) {
+        } else if (launchMode.isProduction()) {
             return Collections.emptyList();
         } else {
             return List.of("import.redis");

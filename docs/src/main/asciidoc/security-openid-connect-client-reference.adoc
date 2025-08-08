@@ -592,6 +592,33 @@ public interface ProtectedResourceService {
 }
 ----
 
+If you also want to refresh the token every time the `ProtectedResourceService#getUserName` call results in a 401 Unauthorized error, use the `quarkus.rest-client-oidc-filter.refresh-on-unauthorized` configuration property like in the example below:
+
+[source,properties]
+----
+quarkus.rest-client-oidc-filter.refresh-on-unauthorized=true
+----
+
+Alternatively, if you only need to enable this feature for individual endpoints, create a custom filter like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.oidc.client.reactive.filter.runtime.AbstractOidcClientRequestReactiveFilter;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+
+@Priority(Priorities.AUTHENTICATION)
+public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestReactiveFilter {
+
+    @Override
+    protected boolean refreshOnUnauthorized() {
+        return true;
+    }
+}
+----
+
 [[resteasy-client-oidc-filter]]
 === Use OidcClient in RestClient ClientFilter
 
@@ -670,6 +697,33 @@ public interface ProtectedResourceService {
 
     @GET
     String getUserName();
+}
+----
+
+If you also want to refresh the token every time the `ProtectedResourceService#getUserName` call results in a 401 Unauthorized error, use the `quarkus.resteasy-client-oidc-filter.refresh-on-unauthorized` configuration property like in the example below:
+
+[source,properties]
+----
+quarkus.resteasy-client-oidc-filter.refresh-on-unauthorized=true
+----
+
+Alternatively, if you only need to enable this feature for individual endpoints, create a custom filter like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.oidc.client.filter.runtime.AbstractOidcClientRequestFilter;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+
+@Priority(Priorities.AUTHENTICATION)
+public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilter {
+
+    @Override
+    protected boolean refreshOnUnauthorized() {
+        return true;
+    }
 }
 ----
 
@@ -1166,7 +1220,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[oidc-client-ref-oidc-request-filters]]
 == OIDC request filters
 
-You can filter OIDC requests made by OIDC client to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, or analyze the request body.
+You can filter OIDC requests made by OIDC client to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, customize or analyze the request body.
 
 You can have a single filter intercepting requests to all OIDC provider endpoints, or use an `@OidcEndpoint` annotation to apply this filter to requests to specific endpoints only. For example:
 
@@ -1203,6 +1257,35 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
 
 `OidcRequestContextProperties` can be used to access request properties.
 Currently, you can use a `client_id` key to access the client tenant id and a `grant_type` key to access the grant type which the OIDC client uses to acquire tokens.
+
+`OidcRequestFilter` can customize a request body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
+and setting it on a request context, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.mutiny.core.buffer.Buffer;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.TOKEN)
+public class TokenRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext rc) {
+        // Add more required properties to the token request
+        rc.requestBody(rc.requestBody().toString() + "&opaque_token_param=opaque_token_value"));
+    }
+}
+----
 
 [[oidc-client-ref-oidc-response-filters]]
 == OIDC response filters
@@ -1247,6 +1330,40 @@ public class TokenEndpointResponseFilter implements OidcResponseFilter {
 <2> Check the response `Content-Type` header.
 <3> Use `OidcRequestContextProperties` request properties to confirm it is a `refresh_grant` token grant response.
 <4> Confirm the response JSON contains a `refresh_token` property.
+
+`OidcResponseFilter` can customize a response body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
+and setting it as a property on a response context, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.TOKEN)
+public class TokenResponseFilter implements OidcResponseFilter {
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        JsonObject body = rc.responseBody().toJsonObject();
+        // JSON `scope` property has multiple values separated by a comma character.
+        // It must be replaced with a space character.
+        String scope = body.getString("scope");
+        body.put("scope", scope.replace(",", " "));
+        rc.responseBody(Buffer.buffer(body.toString()));
+    }
+}
+----
 
 [[token-propagation-rest]]
 == Token Propagation for Quarkus REST

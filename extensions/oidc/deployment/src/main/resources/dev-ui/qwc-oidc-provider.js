@@ -279,7 +279,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             window.addEventListener('vaadin-router-location-changed', evt => {
                 // I'm a bit worried what would happen if we were listening but route already changed to another
                 // extension (if that's possible?) so let's check this is our extension that is displayed
-                if (window.location.pathname.includes('io.quarkus.quarkus-oidc')) {
+                if (window.location.pathname.includes('quarkus-oidc')) {
                     QwcOidcProvider._updateQueryParamsProperties(this.jsonRpc, () => this.requestUpdate());
                 }
             });
@@ -915,9 +915,9 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _getEncodedPath() {
-        // this is the last part of this path: /q/dev-ui/io.quarkus.quarkus-oidc/keycloak-provider -> keycloak-provider
+        // this is the last part of this path: /q/dev-ui/quarkus-oidc/keycloak-provider -> keycloak-provider
         const subPath = window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1);
-        return QwcOidcProvider._getEncodedCurrentBaseUrl() + this._devRoot + "%2Fio.quarkus.quarkus-oidc%2F" + subPath;
+        return QwcOidcProvider._getEncodedCurrentBaseUrl() + this._devRoot + "%2Fquarkus-oidc%2F" + subPath;
     }
 
     _getClientId() {

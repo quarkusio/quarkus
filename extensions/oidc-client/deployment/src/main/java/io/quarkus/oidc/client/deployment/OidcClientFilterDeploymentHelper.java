@@ -1,15 +1,20 @@
 package io.quarkus.oidc.client.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -30,12 +35,15 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     private final Class<T> baseClass;
     private final ClassOutput classOutput;
     private final String targetPackage;
+    private final boolean refreshOnUnauthorized;
 
-    public OidcClientFilterDeploymentHelper(Class<T> baseClass, BuildProducer<GeneratedBeanBuildItem> generatedBean) {
+    public OidcClientFilterDeploymentHelper(Class<T> baseClass, BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            boolean refreshOnUnauthorized) {
         this.baseClass = baseClass;
         this.classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
         this.targetPackage = DotNames
                 .internalPackageNameWithTrailingSlash(DotName.createSimple(baseClass.getName()));
+        this.refreshOnUnauthorized = refreshOnUnauthorized;
     }
 
     /**
@@ -73,6 +81,17 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
                                 MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
                                 clientIdMethod.load(oidcClientName)));
                     }
+
+                    if (refreshOnUnauthorized) {
+                        // protected boolean refreshOnUnauthorized() {
+                        //  return true;
+                        // }
+                        try (MethodCreator methodCreator = creator.getMethodCreator("refreshOnUnauthorized",
+                                boolean.class)) {
+                            methodCreator.setModifiers(Modifier.PROTECTED);
+                            methodCreator.returnBoolean(true);
+                        }
+                    }
                 }
 
                 return generatedName.replace('/', '.');
@@ -94,5 +113,29 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
 
     public static String sanitize(String oidcClientName) {
         return oidcClientName.replaceAll("\\W+", "");
+    }
+
+    public static List<ClassInfo> detectCustomFiltersThatRequireResponseFilter(Class<?> abstractFilterClass,
+            Class<?> registerProviderClass, IndexView index) {
+        List<ClassInfo> result = new ArrayList<>();
+        for (ClassInfo subClass : index.getKnownDirectSubclasses(abstractFilterClass)) {
+            if (!subClass.isInterface() && !subClass.isAbstract()) {
+                var refreshOnUnauthorizedMethod = subClass.method("refreshOnUnauthorized");
+                if (refreshOnUnauthorizedMethod != null) {
+                    final DotName declaringClassName = refreshOnUnauthorizedMethod.declaringClass().name();
+                    boolean declaredOnThisClass = declaringClassName.equals(subClass.name());
+                    if (declaredOnThisClass) {
+                        result.addAll(index
+                                .getAnnotations(registerProviderClass).stream()
+                                .filter(ai -> ai.value() != null)
+                                .filter(ai -> ai.value().asClass().name().equals(declaringClassName))
+                                .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                                .map(ai -> ai.target().asClass())
+                                .toList());
+                    }
+                }
+            }
+        }
+        return result;
     }
 }

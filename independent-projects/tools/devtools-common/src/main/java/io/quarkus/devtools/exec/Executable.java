@@ -26,7 +26,7 @@ public class Executable {
         }
         if (path == null)
             return null;
-        return new File(path, executable);
+        return new File(path);
     }
 
     public static String findExecutable(String exec) {

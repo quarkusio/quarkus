@@ -62,7 +62,7 @@ Configuration can be done directly in Dev UI via the assistant settings pane. Yo
 - An API key (for OpenAI)
 - A local running model (for Ollama or Podman AI)
 
-Settings are stored in local storage per browser.
+Settings are stored in `~/.quarkus/chappie/chappie-assistant.properties`.
 
 image::dev_assistant_configuration.png[Dev Assistant Configuration, width=100%]
 
@@ -94,6 +94,23 @@ This provides a fast and focused troubleshooting workflow without needing to cop
 
 image::dev_assistant_errorpage.png[Dev Assistant Error page, width=100%]
 
+===== Exception Help in the Log
+
+In addition to error page support, the Dev Assistant can also help with exceptions via the quarkus log.
+
+When an exception is detected, you can press the `h` key in the quarkus log to open the *shortcut menu*. Under the `Assistant` heading, you'll see a new option like:
+
+[source,text]
+----
+== Assistant
+
+[a] - Help with the latest exception (Cannot invoke "String.length()" because "str" is null)
+----
+
+Press `a` to send the exception to the assistant for analysis.
+
+This is especially useful if the exception occurred outside a visible page or during startup. The assistant will analyze the error and suggest potential causes or fixes — without needing to navigate elsewhere.
+
 == Assistant log
 
 You can access the log of the assistant in the Dev UI Footer:
@@ -108,12 +125,13 @@ Quarkus extensions can enhance the developer experience by contributing to the D
 - Assistant-specific pages
 - Backend integration via JSON-RPC
 - UI features for assistant-aware components
+- Quarkus log participation
 
 An extension can define Assistant features without depending on Chappie directly. The interfaces and associated structures are located in the `assistant` extension.
 
 === Workspace participation
 
-You can add an assistant function to a workspace item using the same approach as regular https://quarkus.io/guides/dev-ui#workspace[workspace actions], with one key difference: instead of using `.function(...)`, you use `.assistantFunction(...)`.
+You can add an assistant function to a workspace item using the same approach as regular xref:dev-ui.adoc#workspace[workspace actions], with one key difference: instead of using `.function(...)`, you use `.assistantFunction(...)`.
 
 [source,java]
 ----
@@ -134,13 +152,13 @@ You can add an assistant function to a workspace item using the same approach as
         .displayType(DisplayType.markdown)
         .filter(Patterns.JAVA_SRC));
 ----
-<1> Use `assistantFunction` to receive the `Assistant` instance and https://quarkus.io/guides/dev-ui#input[input] parameters.  
+<1> Use `assistantFunction` to receive the `Assistant` instance and xref:dev-ui.adoc#input[input] parameters.  
 <2> Provide an optional *system message* to guide the assistant's behavior.  
 <3> Provide a *user message* as the primary prompt.
 
 === Assistant pages
 
-To add a standalone assistant-powered page to the Dev UI, use the https://quarkus.io/guides/dev-ui#card[`CardPageBuildItem`] and `Page.assistantPageBuilder()`:
+To add a standalone assistant-powered page to the Dev UI, use the xref:dev-ui.adoc#card[`CardPageBuildItem`] and `Page.assistantPageBuilder()`:
 
 [source,java]
 ----
@@ -152,11 +170,21 @@ cardPageBuildItem.addPage(Page.assistantPageBuilder() // <1>
 
 === Communicating to the backend 
 
-You can invoke the assistant from backend code using https://quarkus.io/guides/dev-ui#communicating-to-the-backend[standard Dev UI JSON-RPC] patterns — both against the *runtime* and *deployment* classpaths.
+You can invoke the assistant from backend code using xref:dev-ui.adoc#communicating-to-the-backend[standard Dev UI JSON-RPC] patterns — both against the *runtime* and *deployment* classpaths.
 
 ==== JsonRPC against the Runtime classpath
 
-To use the assistant in a https://quarkus.io/guides/dev-ui#jsonrpc-against-the-runtime-classpath[`JsonRpcService`] on the runtime classpath, inject the `Assistant` like this:
+To use the assistant in a xref:dev-ui.adoc#jsonrpc-against-the-runtime-classpath[`JsonRpcService`] on the runtime classpath, you need to make sure the `Assistant` interface is available:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-assistant-dev</artifactId>
+    </dependency>
+----
+
+Then you can inject the `Assistant` like this:
 
 [source,java]
 ----
@@ -183,27 +211,39 @@ You can now use this assistant in any JsonRPC method, example:
 
 ==== JsonRPC against the Deployment classpath
 
-In https://quarkus.io/guides/dev-ui#jsonrpc-against-the-deployment-classpath[deployment-time] code, use the `BuildTimeActionBuildItem` and register assistant actions via `.addAssistantAction(...)`:
+In xref:dev-ui.adoc#jsonrpc-against-the-deployment-classpath[deployment-time] code, you need to add the assistant-deployment-spi:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-assistant-deployment-spi</artifactId>
+    </dependency>
+----
+
+Then use the `BuildTimeActionBuildItem` and register assistant actions via `.addAssistantAction(...)`:
 
 [source,java]
 ----
     BuildTimeActionBuildItem bta = new BuildTimeActionBuildItem();
 
-        bta.addAssistantAction("getAIJokeInDeployment", (a, p) -> { // <1>
-            Assistant assistant = (Assistant) a;
+    bta.actionBuilder()
+            .methodName("getAIJokeInDeployment")
+            .assistantFunction((a, p) -> { // <1>
+                Assistant assistant = (Assistant) a;
 
-            return assistant.assistBuilder()
-                    .userMessage(USER_MESSAGE)
-                    .variables(p)
-                    .assist();
-        });
+                return assistant.assistBuilder()
+                        .userMessage(USER_MESSAGE)
+                        .variables(p)
+                        .assist();
+            }).build());
         buildTimeActionProducer.produce(bta);
 ----
-<1> Use `addAssistantAction` instead of `addAction` to access the assistant context.
+<1> Use `assistantFunction` instead of `function` to access the assistant context.
 
 === Assistant State in the UI
 
-To conditionally render assistant UI in your Web Component, you can use the https://quarkus.io/guides/dev-ui#assistant-state[assistant state] to
+To conditionally render assistant UI in your Web Component, you can use the xref:dev-ui.adoc#assistant-state[assistant state] to
 check the state of the assistant. The state can be:
 
 - notAvailable: No assistant implementation (like Chappie) is present.
@@ -244,6 +284,65 @@ To maintain visual consistency with other Dev Assistant features, use the follow
 - `<qui-assistant-warning>`: A standard warning message with the text: `"Quarkus assistant can make mistakes. Check responses."`
 
 You can also use the CSS var `--quarkus-assistant` anywhere you want to apply the assistant's theme color.
+
+=== Quarkus Log Participation
+
+Extensions can contribute entries to the interactive *Quarkus log menu* by integrating with the Dev Assistant. 
+This allows developers to invoke assistant-powered actions directly from the quarkus log using keyboard shortcuts.
+
+First, add the `quarkus-assistant-deployment-spi` to the *deployment* module of your extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-assistant-deployment-spi</artifactId>
+</dependency>
+----
+
+Next, produce a `AssistantConsoleBuildItem` in a `@BuildStep`:
+
+[source,java]
+----
+@BuildStep
+AssistantConsoleBuildItem createCliAssistantEntry() {
+    return AssistantConsoleBuildItem.builder()
+            .description("Let assistant tell you a joke") // <1>
+            .key('@')                                     // <2>
+            .function((a) -> {
+                return a.assistBuilder()
+                        .userMessage("Tell a funny joke")
+                        .assist();
+            })
+            .build();
+}
+----
+<1> This is the description that appears in the Assistant section of the log menu.  
+<2> This is the keyboard shortcut that triggers the assistant function.
+
+When added, this will result in a new entry under the `Assistant` heading in the log shortcut menu:
+
+[source,text]
+----
+== Assistant
+
+[a] - Help with the latest exception (none)
+[@] - Let assistant tell you a joke
+----
+
+When the user presses `@`, the Dev Assistant is invoked and responds in the log:
+
+[source,text]
+----
+=========================================
+Talking to Quarkus Assistant, please wait
+..
+  .
+
+Why do programmers prefer dark mode? Because light attracts bugs!
+----
+
+This feature provides a simple and delightful way to offer quick-access AI actions through the Quarkus log.
 
 == Feedback
 

@@ -352,12 +352,179 @@ quarkus.http.auth.policy.role-policy-cert.roles-allowed=user,admin     <2>
 
 Given the preceding configuration, the request is authorized if the client certificate's CN attribute is equal to `alice` or `bob` and forbidden if it is equal to `jdoe`.
 
+[[use-cert-attrs-to-augment-identity]]
 ==== Using certificate attributes to augment SecurityIdentity
 
 You can always register `SecurityIdentityAugmentor` if the automatic <<map-certificate-attributes-to-roles>> option does not suit.
 Custom `SecurityIdentityAugmentor` can check the values of different client certificate attributes and augment the `SecurityIdentity` accordingly.
 
 For more information about customizing `SecurityIdentity`, see the xref:security-customization.adoc#security-identity-customization[Security identity customization] section in the Quarkus "Security tips and tricks" guide.
+
+[[mtls-programmatic-set-up]]
+==== Set up the mutual TLS client authentication programmatically
+
+In the <<mutual-tls>> section we configured the mutual TLS client authentication in the `application.properties` file like this:
+
+----
+quarkus.tls.tls-config-1.key-store.p12.path=server-keystore.p12
+quarkus.tls.tls-config-1.key-store.p12.password=the_key_store_secret
+quarkus.tls.tls-config-1.trust-store.p12.path=server-truststore.p12
+quarkus.tls.tls-config-1.trust-store.p12.password=the_trust_store_secret
+quarkus.http.ssl.client-auth=required   <1>
+quarkus.http.tls-configuration-name=tls-config-1    <2>
+----
+<1> Enable and require the mutual TLS client authentication.
+<2> Use the `tls-config-1` TLS configuration for the HTTP server TLS communication.
+
+The `io.quarkus.vertx.http.security.HttpSecurity` CDI event enable you to configuration the mutual TLS authentication programmatically like in the example below:
+
+.Example TLS configuration
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.tls.BaseTlsConfiguration;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.KeyStoreOptions;
+import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.TrustOptions;
+
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+public class MyTlsConfiguration extends BaseTlsConfiguration {
+
+    @Override
+    public KeyCertOptions getKeyStoreOptions() {
+        return new KeyStoreOptions()
+                .setPath("/tmp/certs/server-keystore.p12")
+                .setPassword("the_key_store_secret")
+                .setType("PKCS12");
+    }
+
+    @Override
+    public TrustOptions getTrustStoreOptions() {
+        return new KeyStoreOptions()
+                .setPath("/tmp/certs/server-truststore.jks")
+                .setPassword("the_trust_store_secret")
+                .setType("PKCS12");
+    }
+
+    @Override
+    public SSLOptions getSSLOptions() {
+        SSLOptions options = new SSLOptions();
+        options.setKeyCertOptions(getKeyStoreOptions());
+        options.setTrustOptions(getTrustStoreOptions());
+        options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
+        options.setSslHandshakeTimeout(10);
+        options.setEnabledSecureTransportProtocols(Set.of("TLSv1.3", "TLSv1.2"));
+        return options;
+    }
+
+}
+----
+
+.Example mutual TLS client authentication configuration
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class MutualTlsClientAuthConfig {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.mTLS("tls-config-1", new MyTlsConfiguration());    <1>
+    }
+
+}
+----
+<1> Enable and require the mutual TLS client authentication and use the `tls-config-1` TLS configuration for the HTTP server TLS communication.
+The `tls-config-1` TLS configuration is registered in the TLS registry.
+
+It is also possible to map certificate attributes to roles.
+Let's consider the example explained in the <<map-certificate-attributes-to-roles>> section:
+
+[source,properties]
+----
+quarkus.tls.tls-config-1.key-store.p12.path=server-keystore.p12
+quarkus.tls.tls-config-1.key-store.p12.password=the_key_store_secret
+quarkus.tls.tls-config-1.trust-store.p12.path=server-truststore.p12
+quarkus.tls.tls-config-1.trust-store.p12.password=the_trust_store_secret
+quarkus.http.ssl.client-auth=required
+quarkus.http.tls-configuration-name=tls-config-1
+quarkus.http.auth.certificate-role-properties=cert-role-mappings.properties
+----
+
+The configuration with the programmatic set up would look like this:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.MTLS;
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class MutualTlsClientAuthConfig {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.mTLS(MTLS.builder()
+                .tls("tls-config-1", new MyTlsConfiguration())
+                .rolesMapping("CN-value", "user", "admin")
+                .build());
+    }
+
+}
+----
+
+This API also enables you to use certificate to augment `SecurityIdentity`:
+
+[source,properties]
+----
+quarkus.http.tls-configuration-name=tls-config-1
+quarkus.tls.tls-config-1.key-store.p12.path=server-keystore.p12
+quarkus.tls.tls-config-1.key-store.p12.password=the_key_store_secret
+quarkus.tls.tls-config-1.trust-store.p12.path=server-truststore.jks
+quarkus.tls.tls-config-1.trust-store.p12.password=the_trust_store_secret
+----
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.MTLS;
+import jakarta.enterprise.event.Observes;
+
+import java.util.Set;
+
+public class MutualTlsClientAuthConfig {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.mTLS(MTLS.builder()
+                .certificateToRolesMapper(x509Certificate -> {   <1>
+                    final Set<String> securityIdentityRoles;
+
+                    // replace this logic with your own certificate to roles mapping
+                    if (x509Certificate.getIssuerX500Principal() != null
+                            && "CN=quarkus.io".equals(x509Certificate.getIssuerX500Principal().getName())) {
+                        securityIdentityRoles = Set.of("admin");
+                    } else {
+                        securityIdentityRoles = Set.of();
+                    }
+                    return securityIdentityRoles;
+                })
+                .build());
+    }
+
+}
+----
+<1> In the <<use-cert-attrs-to-augment-identity>> section we have mentioned that the `SecurityIdentityAugmentor` can be used to map the client certificate attribute values to the `SecurityIdentity` roles.
+The `MTLS` API allows you to define such roles mapping as well.
+
+IMPORTANT: If Quarkus starts the HTTP server in DEV mode after a failed start, Quarkus may need to fallback to the configuration provided in the `application.properties` file. This is a known limitation.
 
 [[other-supported-authentication-mechanisms]]
 == Other supported authentication mechanisms

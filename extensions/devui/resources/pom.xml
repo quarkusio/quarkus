@@ -23,6 +23,11 @@
             <artifactId>path-to-regexp</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>type-fest</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <!-- Vaadin Web components -->
         <dependency>
             <groupId>org.mvnpm.at.mvnpm</groupId>

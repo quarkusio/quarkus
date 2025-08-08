@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
+import static io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.isPostgresOrDB2;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +21,8 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.JdbcSettings;
+import org.hibernate.cfg.QuerySettings;
 import org.hibernate.jpa.HibernateHints;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -37,10 +41,12 @@ import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
+import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -80,6 +86,18 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     @Override
     public EntityManagerFactory createEntityManagerFactory(String emName, Map properties) {
+
+        boolean isReactive = (boolean) properties.get(JPAConfig.IS_REACTIVE_KEY);
+        if (!isReactive) {
+            log.debug(
+                    "FastBootHibernateReactivePersistenceProvider called on a non reactive initialization thread, skipping this provider");
+            return null;
+        }
+
+        // There's a check to not have any init properties later
+        properties = new HashMap(properties);
+        properties.remove(JPAConfig.IS_REACTIVE_KEY);
+
         if (properties == null)
             properties = new HashMap<Object, Object>();
         // These are pre-parsed during image generation:
@@ -152,23 +170,25 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 continue;
             }
 
-            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName);
+            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName, true);
 
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
             final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
+            unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
 
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
-            if (puConfig.active().isPresent() && !puConfig.active().get()) {
+            HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig = hibernateOrmRuntimeConfig.persistenceUnits()
+                    .get(persistenceUnit.getName());
+            if (persistenceUnitConfig.active().isPresent() && !persistenceUnitConfig.active().get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate Reactive persistence unit");
             }
 
             // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
             if (!recordedState.isFromPersistenceXml()) {
-                injectRuntimeConfiguration(puConfig, runtimeSettingsBuilder);
+                injectRuntimeConfiguration(persistenceUnitConfig, runtimeSettingsBuilder);
             }
 
             for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
@@ -179,15 +199,27 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 }
             }
 
-            // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-            runtimeSettingsBuilder.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "true");
+            boolean startsOffline = persistenceUnitConfig.database().startOffline();
+
+            // Allow detection of driver/database capabilities on runtime init if required
+            // (was disabled during static init)
+            runtimeSettingsBuilder.put(JdbcSettings.ALLOW_METADATA_ON_BOOT, !startsOffline);
+
+            // Postgres and DB2 supports CTE so we don't need to disable global temporary tables
+            if (startsOffline && !isPostgresOrDB2(buildTimeSettings)) {
+                runtimeSettingsBuilder.put(QuerySettings.QUERY_MULTI_TABLE_INSERT_STRATEGY,
+                        "org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy");
+                runtimeSettingsBuilder.put(QuerySettings.QUERY_MULTI_TABLE_MUTATION_STRATEGY,
+                        "org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy");
+            }
+
             // Remove database version information, if any;
             // it was necessary during static init to force creation of a dialect,
             // but now the dialect is there, and we'll reuse it.
             // Keeping this information would prevent us from getting the actual information from the database on start.
             runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, null);
 
-            if (!puConfig.unsupportedProperties().isEmpty()) {
+            if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
                 log.warnf("Persistence-unit [%s] sets unsupported properties."
                         + " These properties may not work correctly, and even if they do,"
                         + " that may change when upgrading to a newer version of Quarkus (even just a micro/patch version)."
@@ -196,10 +228,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                         + " and more importantly so that the configuration property is tested regularly."
                         + " Unsupported properties being set: %s",
                         persistenceUnitName,
-                        puConfig.unsupportedProperties().keySet());
+                        persistenceUnitConfig.unsupportedProperties().keySet());
             }
             Set<String> overriddenProperties = new HashSet<>();
-            for (Map.Entry<String, String> entry : puConfig.unsupportedProperties().entrySet()) {
+            for (Map.Entry<String, String> entry : persistenceUnitConfig.unsupportedProperties().entrySet()) {
                 var key = entry.getKey();
                 var value = runtimeSettingsBuilder.get(key);
                 if (value != null && !(value instanceof String stringValue && stringValue.isBlank())) {
@@ -219,8 +251,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    persistenceUnitName, persistenceUnit.getConfigurationName(),
-                    recordedState, runtimeSettings, puConfig);
+                    persistenceUnitName, persistenceUnit.getName(),
+                    recordedState, runtimeSettings, persistenceUnitConfig);
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -232,11 +264,18 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     PersistenceUnitsHolder.getPersistenceUnitDescriptors().size() == 1,
-                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour());
+                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
+                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
         }
 
         log.debug("Found no matching persistence units");
         return null;
+    }
+
+    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
+        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+                (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName,
@@ -337,10 +376,17 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
+
+        String generationStrategy = persistenceUnitConfig.schemaManagement().strategy();
+        if (!"none".equals(generationStrategy) && persistenceUnitConfig.database().startOffline()) {
+            throw new PersistenceException(
+                    "When using offline mode with `quarkus.hibernate-orm.database.start-offline=true`, the schema management strategy `quarkus.hibernate-orm.schema-management.strategy` must be unset or set to `none`");
+        }
+
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()
-                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
+                        .orElse(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database().generation().createSchemas()

@@ -17,6 +17,9 @@ import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaAclInfo;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaInfo;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaMessagePage;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaTopic;
+import io.quarkus.runtime.annotations.JsonRpcDescription;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 
 public class KafkaJsonRPCService {
 
@@ -26,32 +29,50 @@ public class KafkaJsonRPCService {
     @Inject
     KafkaAdminClient kafkaAdminClient;
 
+    private final BroadcastProcessor<String> stateNotification = BroadcastProcessor.create(); // Send a notification that the state (topic/message) has changed
+    private static final String TOPIC = "topic";
+    private static final String MESSAGE = "message";
+
+    public Multi<String> stateNotification() {
+        return stateNotification;
+    }
+
+    @JsonRpcDescription("Get all the current Kafka topics")
     public List<KafkaTopic> getTopics() throws InterruptedException, ExecutionException {
         return kafkaUiUtils.getTopics();
     }
 
-    public List<KafkaTopic> createTopic(final String topicName, final int partitions, final int replications,
-            Map<String, String> configs)
+    @JsonRpcDescription("Create a new Kafka topic")
+    public List<KafkaTopic> createTopic(@JsonRpcDescription("The Kafka topic name") final String topicName,
+            @JsonRpcDescription("The number of partitions, example 1") final int partitions,
+            @JsonRpcDescription("The number of replications, example 1") final int replications,
+            @JsonRpcDescription("Other config in map format (key/value)") Map<String, String> configs)
             throws InterruptedException, ExecutionException {
 
         KafkaCreateTopicRequest createTopicRequest = new KafkaCreateTopicRequest(topicName, partitions, (short) replications,
                 configs);
         boolean created = kafkaAdminClient.createTopic(createTopicRequest);
         if (created) {
+            stateNotification.onNext(TOPIC);
             return kafkaUiUtils.getTopics();
         }
         throw new RuntimeException("Topic [" + topicName + "] not created");
     }
 
-    public List<KafkaTopic> deleteTopic(final String topicName) throws InterruptedException, ExecutionException {
+    @JsonRpcDescription("Delete an existing Kafka topic")
+    public List<KafkaTopic> deleteTopic(@JsonRpcDescription("The Kafka topic name") final String topicName)
+            throws InterruptedException, ExecutionException {
         boolean deleted = kafkaAdminClient.deleteTopic(topicName);
         if (deleted) {
+            stateNotification.onNext(TOPIC);
             return kafkaUiUtils.getTopics();
         }
         throw new RuntimeException("Topic [" + topicName + "] not deleted");
     }
 
-    public KafkaMessagePage topicMessages(final String topicName) throws ExecutionException, InterruptedException {
+    @JsonRpcDescription("Get all the current messages for a certain Kafka topics")
+    public KafkaMessagePage topicMessages(@JsonRpcDescription("The Kafka topic name") final String topicName)
+            throws ExecutionException, InterruptedException {
         List<Integer> partitions = getPartitions(topicName);
         KafkaOffsetRequest offsetRequest = new KafkaOffsetRequest(topicName, partitions, Order.NEW_FIRST);
         Map<Integer, Long> offset = kafkaUiUtils.getOffset(offsetRequest);
@@ -59,8 +80,12 @@ public class KafkaJsonRPCService {
         return kafkaUiUtils.getMessages(request);
     }
 
-    public KafkaMessagePage createMessage(String topicName, Integer partition, String key, String value,
-            Map<String, String> headers)
+    @JsonRpcDescription("Create a new message on a specific Kafka topic")
+    public KafkaMessagePage createMessage(@JsonRpcDescription("The Kafka topic name") String topicName,
+            @JsonRpcDescription("The partition number, example 1") Integer partition,
+            @JsonRpcDescription("The message key") String key,
+            @JsonRpcDescription("The message value") String value,
+            @JsonRpcDescription("The message headers in map format (key/value)") Map<String, String> headers)
             throws ExecutionException, InterruptedException {
 
         if (partition < 0)
@@ -69,18 +94,23 @@ public class KafkaJsonRPCService {
         KafkaMessageCreateRequest request = new KafkaMessageCreateRequest(topicName, partition, value, key, headers);
 
         kafkaUiUtils.createMessage(request);
+        stateNotification.onNext(MESSAGE);
 
         return topicMessages(topicName);
     }
 
-    public List<Integer> getPartitions(final String topicName) throws ExecutionException, InterruptedException {
+    @JsonRpcDescription("Get the partitions for a specific Kafka topic")
+    public List<Integer> getPartitions(@JsonRpcDescription("The Kafka topic name") final String topicName)
+            throws ExecutionException, InterruptedException {
         return new ArrayList<>(kafkaUiUtils.partitions(topicName));
     }
 
+    @JsonRpcDescription("Get all know information on the Kafka instance")
     public KafkaInfo getInfo() throws ExecutionException, InterruptedException {
         return kafkaUiUtils.getKafkaInfo();
     }
 
+    @JsonRpcDescription("Get all know information about the use access control lists for authorization in Kafka")
     public KafkaAclInfo getAclInfo() throws InterruptedException, ExecutionException {
         return kafkaUiUtils.getAclInfo();
     }

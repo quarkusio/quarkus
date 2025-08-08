@@ -16,7 +16,7 @@ import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -69,7 +69,7 @@ public class GeneratedStaticResourcesProcessor {
                 }
             }
             // We can't use the vert.x StaticHandler for tests as it doesn't support 'quarkus' protocol
-            if (launchModeBuildItem.getLaunchMode() == LaunchMode.NORMAL) {
+            if (launchModeBuildItem.getLaunchMode().isProduction()) {
                 additionalStaticResourcesProducer.produce(
                         new AdditionalStaticResourceBuildItem(generatedStaticResource.getEndpoint(), false));
                 nativeImageResourcesProducer.produce(new NativeImageResourceBuildItem(generatedStaticResourceLocation));
@@ -77,7 +77,7 @@ public class GeneratedStaticResourcesProcessor {
         }
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void process(List<GeneratedStaticResourceBuildItem> generatedStaticResources,
             LaunchModeBuildItem launchModeBuildItem,

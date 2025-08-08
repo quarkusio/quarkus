@@ -22,7 +22,7 @@ public class DevUIQuteBuildTimeDataTest extends DevUIBuildTimeDataTest {
                     "templates/hello.txt"));
 
     public DevUIQuteBuildTimeDataTest() {
-        super("io.quarkus.quarkus-qute");
+        super("quarkus-qute");
     }
 
     @Test

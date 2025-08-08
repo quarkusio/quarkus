@@ -94,6 +94,32 @@
 
     <profiles>
         <profile>
+            <!-- Unfortunately, the go-offline plugin doesn't respect exclusions, see https://github.com/apache/maven-dependency-plugin/issues/1350 -->
+            <id>go-offline</id>
+            <activation>
+                <property>
+                    <name>go-offline</name>
+                </property>
+            </activation>
+            <repositories>
+                <repository>
+                    <id>central</id>
+                    <name>Maven Central</name>
+                    <url>https://repo.maven.apache.org/maven2</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+                <repository>
+                    <id>confluent</id>
+                    <url>https://packages.confluent.io/maven/</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
             <id>bom-descriptor-json-hollow</id>
             <activation>
                 <property>

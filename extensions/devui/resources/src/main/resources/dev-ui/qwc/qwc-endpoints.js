@@ -50,7 +50,7 @@ export class QwcEndpoints extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this.jsonRpc.getJsonContent().then(jsonRpcResponse => {
+        this.jsonRpc.getAllEndpoints().then(jsonRpcResponse => {
             this._info = jsonRpcResponse.result;
         });
     }

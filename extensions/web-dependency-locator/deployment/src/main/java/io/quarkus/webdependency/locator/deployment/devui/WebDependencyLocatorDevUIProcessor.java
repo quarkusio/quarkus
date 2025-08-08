@@ -37,7 +37,8 @@ public class WebDependencyLocatorDevUIProcessor {
                     .staticLabel(String.valueOf(webDependencyLibraries.size())));
 
             if (importMapBuildItem.isPresent()) {
-                cardPageBuildItem.addBuildTimeData("importMap", importMapBuildItem.get().getImportMap());
+                cardPageBuildItem.addBuildTimeData("importMap", importMapBuildItem.get().getImportMap(),
+                        "An importmap that maps all available JavaScript libraries that can be used in the application");
 
                 // ImportMap
                 cardPageBuildItem.addPage(Page.webComponentPageBuilder()

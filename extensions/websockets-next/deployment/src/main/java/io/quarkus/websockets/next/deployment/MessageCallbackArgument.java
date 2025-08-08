@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.deployment;
 
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
 
 class MessageCallbackArgument implements CallbackArgument {
 
@@ -10,12 +10,12 @@ class MessageCallbackArgument implements CallbackArgument {
     }
 
     @Override
-    public ResultHandle get(InvocationBytecodeContext context) {
+    public Expr get(InvocationBytecodeContext context) {
         return context.getDecodedMessage(context.parameter().type());
     }
 
     @Override
-    public int priotity() {
+    public int priority() {
         return DEFAULT_PRIORITY - 1;
     }
 

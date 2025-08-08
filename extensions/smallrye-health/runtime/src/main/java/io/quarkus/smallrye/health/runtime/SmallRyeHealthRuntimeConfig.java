@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.health.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -17,9 +18,18 @@ public interface SmallRyeHealthRuntimeConfig {
     /**
      * If Health UI should be enabled. By default, Health UI is enabled if it is included (see {@code always-include}).
      */
-    @WithName("ui.enable")
+    @WithName("ui.enabled")
     @WithDefault("true")
-    boolean enable();
+    boolean enabled();
+
+    /**
+     * If Health UI should be enabled. By default, Health UI is enabled if it is included (see {@code always-include}).
+     *
+     * @deprecated use {@code quarkus.smallrye-health.ui.enabled} instead
+     */
+    @WithName("ui.enable")
+    @Deprecated(since = "3.26", forRemoval = true)
+    Optional<Boolean> enable();
 
     /**
      * Additional top-level properties to be included in the resulting JSON object.

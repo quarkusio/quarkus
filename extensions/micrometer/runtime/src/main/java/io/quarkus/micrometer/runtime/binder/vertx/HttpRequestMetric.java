@@ -18,10 +18,10 @@ public class HttpRequestMetric extends RequestMetricInfo {
     /** Cache of vert.x resolved paths: /item/:id --> /item/{id} */
     final static ConcurrentHashMap<String, String> vertxWebToUriTemplate = new ConcurrentHashMap<>();
 
-    protected HttpServerRequestInternal request;
-    protected String initialPath;
-    protected String templatePath;
-    protected String currentRoutePath;
+    private HttpServerRequestInternal request;
+    private String initialPath;
+    private String templatePath;
+    private String currentRoutePath;
     private final LongAdder activeRequests;
 
     private boolean requestActive = false;
@@ -42,6 +42,10 @@ public class HttpRequestMetric extends RequestMetricInfo {
             return filterIgnored("/cors-preflight", ignorePatterns);
         }
         return super.getNormalizedUriPath(matchPatterns, ignorePatterns, initialPath);
+    }
+
+    public String getInitialPath() {
+        return initialPath;
     }
 
     public String applyTemplateMatching(String path) {

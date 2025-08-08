@@ -211,7 +211,7 @@ public class OidcClientTest {
         RestAssured.when().get("/frontend/echoTokenNonStandardResponse")
                 .then()
                 .statusCode(200)
-                .body(equalTo("access_token_n refresh_token_n"));
+                .body(equalTo("access_token_n refresh_token_non_standard"));
     }
 
     @Order(4)

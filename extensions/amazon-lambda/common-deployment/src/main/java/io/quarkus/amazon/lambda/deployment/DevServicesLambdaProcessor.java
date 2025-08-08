@@ -13,7 +13,7 @@ import io.quarkus.amazon.lambda.runtime.LambdaHotReplacementRecorder;
 import io.quarkus.amazon.lambda.runtime.MockEventServer;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsLiveReloadSupportedByLaunchMode;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
@@ -49,7 +49,7 @@ public class DevServicesLambdaProcessor {
     }
 
     @Produce(ServiceStartBuildItem.class)
-    @BuildStep(onlyIfNot = IsNormal.class) // This is required for testing so run it even if devservices.enabled=false
+    @BuildStep(onlyIfNot = IsProduction.class) // This is required for testing so run it even if devservices.enabled=false
     public void startEventServer(LaunchModeBuildItem launchModeBuildItem,
             LambdaConfig config,
             Optional<EventServerOverrideBuildItem> override,

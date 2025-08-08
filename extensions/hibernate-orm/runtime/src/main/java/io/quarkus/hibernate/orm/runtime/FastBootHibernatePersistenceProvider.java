@@ -19,6 +19,8 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.JdbcSettings;
+import org.hibernate.cfg.QuerySettings;
 import org.hibernate.jpa.HibernateHints;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -29,6 +31,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
@@ -65,6 +68,17 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     @Override
     public EntityManagerFactory createEntityManagerFactory(String persistenceUnitName, Map properties) {
         log.tracef("Starting createEntityManagerFactory for persistenceUnitName %s", persistenceUnitName);
+
+        boolean isReactive = (boolean) properties.get(JPAConfig.IS_REACTIVE_KEY);
+        if (isReactive) {
+            log.debug(
+                    "FastBootHibernatePersistenceProvider called on a reactive initialization thread, skipping this provider");
+            return null;
+        }
+
+        // There's a check to not have any init properties later
+        properties = null;
+
         final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(persistenceUnitName,
                 properties);
         if (builder == null) {
@@ -180,14 +194,14 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 continue;
             }
 
-            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName);
+            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName, false);
 
             if (recordedState.isReactive()) {
                 throw new IllegalStateException(
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getName());
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");
@@ -207,7 +221,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
-                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour());
+                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
+                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
         }
 
         log.debug("Found no matching persistence units");
@@ -219,6 +234,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
+        unzipZipFilesAndReplaceZipsInImportFiles(runtimeSettingsBuilder);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
@@ -240,8 +256,20 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-        runtimeSettingsBuilder.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "true");
+        boolean startsOffline = persistenceUnitConfig.database().startOffline();
+
+        // Allow detection of driver/database capabilities on runtime init if required
+        // (was disabled during static init)
+        runtimeSettingsBuilder.put(JdbcSettings.ALLOW_METADATA_ON_BOOT, !startsOffline);
+
+        // Postgres and DB2 supports CTE so we don't need to disable global temporary tables
+        if (startsOffline && !isPostgresOrDB2(buildTimeSettings)) {
+            runtimeSettingsBuilder.put(QuerySettings.QUERY_MULTI_TABLE_INSERT_STRATEGY,
+                    "org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy");
+            runtimeSettingsBuilder.put(QuerySettings.QUERY_MULTI_TABLE_MUTATION_STRATEGY,
+                    "org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy");
+        }
+
         // Remove database version information, if any;
         // it was necessary during static init to force creation of a dialect,
         // but now the dialect is there, and we'll reuse it.
@@ -308,6 +336,18 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         return runtimeSettingsBuilder.build();
+    }
+
+    public static boolean isPostgresOrDB2(BuildTimeSettings buildTimeSettings) {
+        Optional<String> dbKind = buildTimeSettings.getSource().getSupportedDBkind();
+        return dbKind.isPresent() && DatabaseKind.isPostgreSQL(dbKind.toString())
+                || DatabaseKind.isDB2(dbKind.toString());
+    }
+
+    private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
+        String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+                (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,
@@ -436,10 +476,16 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
-        // Database
+
+        String generationStrategy = persistenceUnitConfig.schemaManagement().strategy();
+        if (!"none".equals(generationStrategy) && persistenceUnitConfig.database().startOffline()) {
+            throw new PersistenceException(
+                    "When using offline mode with `quarkus.hibernate-orm.database.start-offline=true`, the schema management strategy `quarkus.hibernate-orm.schema-management.strategy` must be unset or set to `none`");
+        }
+
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()
-                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
+                        .orElse(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database().generation().createSchemas()

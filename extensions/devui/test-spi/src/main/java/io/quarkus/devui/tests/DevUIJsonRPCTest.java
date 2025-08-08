@@ -42,12 +42,19 @@ public class DevUIJsonRPCTest {
     private final String namespace;
     private final String testUrl;
 
+    private static final String DOT = ".";
+
     public DevUIJsonRPCTest(String namespace) {
         this(namespace, ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
                 .getValue("test.url", String.class));
     }
 
     public DevUIJsonRPCTest(String namespace, String testUrl) {
+        // The namespace changed to be compatible with MCP. We add some code here to be backward compatible
+        if (namespace.contains(DOT)) {
+            namespace = namespace.substring(namespace.lastIndexOf(DOT) + 1);
+        }
+
         this.namespace = namespace;
         this.testUrl = testUrl;
         String nonApplicationRoot = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
@@ -178,7 +185,7 @@ public class DevUIJsonRPCTest {
 
         request.put("jsonrpc", "2.0");
         request.put("id", id);
-        request.put("method", this.namespace + "." + methodName);
+        request.put("method", this.namespace + "_" + methodName);
         ObjectNode jsonParams = mapper.createObjectNode();
         if (params != null && !params.isEmpty()) {
             for (Map.Entry<String, Object> p : params.entrySet()) {

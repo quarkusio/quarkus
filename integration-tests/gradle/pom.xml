@@ -545,6 +545,37 @@
             </properties>
         </profile>
         <profile>
+            <id>gradle-8</id>
+            <!-- Adds an execution to the surefire plugin that runs selected tests with Gradle 8 -->
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>gradle-wrapper-8.14</id>
+                                    <phase>test</phase>
+                                    <goals>
+                                        <goal>test</goal>
+                                    </goals>
+                                    <configuration>
+                                        <systemPropertyVariables>
+                                            <quarkus-test-gradle-wrapper-version>8.14</quarkus-test-gradle-wrapper-version>
+                                        </systemPropertyVariables>
+                                        <includes>
+                                            <include>BasicMultiModuleQuarkusBuildTest</include>
+                                        </includes>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
             <id>native-image</id>
             <!-- Since there is no quarkus-maven-plugin build goal in this pom,
                  this profile will not directly yield a native image like in the other modules.

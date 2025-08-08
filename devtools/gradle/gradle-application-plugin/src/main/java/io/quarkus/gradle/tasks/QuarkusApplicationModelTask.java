@@ -31,6 +31,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvableDependencies;
 import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.ResolvedComponentResult;
@@ -69,7 +70,6 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
@@ -186,7 +186,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
     }
 
-    private static void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
+    private void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
             WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor) {
         final Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath
                 .resolvedArtifactsByComponentIdentifier();
@@ -195,8 +195,11 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult resolved) {
-                final byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS
-                        | COLLECT_RELOADABLE_MODULES);
+                byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS);
+                final LaunchMode launchMode = getLaunchMode().get();
+                if (!launchMode.equals(LaunchMode.NORMAL)) {
+                    flags |= COLLECT_RELOADABLE_MODULES;
+                }
                 collectDependencies(resolved, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
                         processedModules, flags, projectDescriptor);
             }
@@ -311,8 +314,15 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
             }
             if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
-                if (projectModule != null) {
-                    depBuilder.setFlags(DependencyFlags.RELOADABLE);
+                // Checking whether current dependency is a project module is a temporary workaround,
+                // that is required while projectModule for project dependencies is null (current
+                // deficiency of this task).
+                // That's why we set the workspace module flag explicitly via setWorkspaceModule().
+                // Once we have projectModule set for project dependencies, we can remove this workaround.
+                final boolean isProjectDependency = resolvedDependency.getSelected()
+                        .getId() instanceof ProjectComponentIdentifier;
+                if (projectModule != null || isProjectDependency) {
+                    depBuilder.setReloadable().setWorkspaceModule();
                     modelBuilder.addReloadableWorkspaceModule(artifactKey);
                 } else {
                     newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
@@ -346,7 +356,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         Set<ArtifactKey> alreadyVisited = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, artifacts, alreadyVisited);
+                collectExtensionDependencies(result, modelBuilder, artifacts, alreadyVisited, false);
             }
         });
     }
@@ -355,7 +365,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             ResolvedDependencyResult resolvedDependency,
             ApplicationModelBuilder modelBuilder,
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
-            Set<ArtifactKey> alreadyVisited) {
+            Set<ArtifactKey> alreadyVisited,
+            boolean clearReloadableFlag) {
         List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
                 resolvedDependency.getSelected().getId());
         if (artifacts.isEmpty()) {
@@ -366,7 +377,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         for (QuarkusResolvedArtifact artifact : artifacts) {
 
             String classifier = resolveClassifier(moduleVersionIdentifier, artifact.file);
-            ArtifactKey artifactKey = new GACT(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
+            ArtifactKey artifactKey = ArtifactKey.of(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
                     classifier,
                     artifact.type);
             if (!alreadyVisited.add(artifactKey)) {
@@ -380,14 +391,17 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 modelBuilder.addDependency(dep);
             }
             dep.setDeploymentCp();
-            dep.clearFlag(DependencyFlags.RELOADABLE);
-
-        }
-        resolvedDependency.getSelected().getDependencies().forEach(d -> {
-            if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, alreadyVisited);
+            if (clearReloadableFlag) {
+                dep.clearFlag(DependencyFlags.RELOADABLE);
             }
-        });
+            clearReloadableFlag |= !dep.isReloadable();
+        }
+
+        for (DependencyResult d : resolvedDependency.getSelected().getDependencies()) {
+            if (d instanceof ResolvedDependencyResult result) {
+                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, alreadyVisited, clearReloadableFlag);
+            }
+        }
     }
 
     private static List<QuarkusResolvedArtifact> getResolvedModuleArtifacts(

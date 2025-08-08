@@ -6,10 +6,10 @@ public final class JsonRpcResponse {
 
     // Public for serialization
     public final int id;
-    public final Result result;
+    public final Object result;
     public final Error error;
 
-    public JsonRpcResponse(int id, Result result) {
+    public JsonRpcResponse(int id, Object result) {
         this.id = id;
         this.result = result;
         this.error = null;
@@ -32,24 +32,6 @@ public final class JsonRpcResponse {
                 ", result=" + result +
                 ", error=" + error +
                 '}';
-    }
-
-    public static final class Result {
-        public final String messageType;
-        public final Object object;
-
-        public Result(String messageType, Object object) {
-            this.messageType = messageType;
-            this.object = object;
-        }
-
-        @Override
-        public String toString() {
-            return "Result{" +
-                    "messageType='" + messageType + '\'' +
-                    ", object=" + object +
-                    '}';
-        }
     }
 
     public static final class Error {

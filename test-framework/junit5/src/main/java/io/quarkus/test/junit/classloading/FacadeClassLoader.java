@@ -25,6 +25,7 @@ import java.util.Set;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -93,12 +94,15 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     // JUnit extensions can be registered by a service loader - see https://junit.org/junit5/docs/current/user-guide/#extensions-registration
     private boolean isServiceLoaderMechanism;
     private Method osIsCurrent;
+
+    // These annotations can't be statically loaded because they need to be on the inspection classloader
     private Class<? extends Annotation> quarkusTestAnnotation;
     private Class<? extends Annotation> disabledAnnotation;
     private Class<? extends Annotation> disabledOnOsAnnotation;
     private Method disabledOnOsAnnotationValue;
     private Class<? extends Annotation> quarkusIntegrationTestAnnotation;
     private Class<? extends Annotation> profileAnnotation;
+    private Class<? extends Annotation> nestedAnnotation;
     private Class<? extends Annotation> extendWithAnnotation;
     private Class<? extends Annotation> registerExtensionAnnotation;
     private Class<? extends Annotation> testAnnotation;
@@ -176,6 +180,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                     .loadClass(QuarkusIntegrationTest.class.getName());
             profileAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass(TestProfile.class.getName());
+            nestedAnnotation = (Class<? extends Annotation>) annotationLoader
+                    .loadClass(Nested.class.getName());
             testAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(Test.class.getName());
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             // If QuarkusTest is not on the classpath, that's fine; it just means we definitely won't have QuarkusTests. That means we can bypass a whole bunch of logic.
@@ -295,10 +301,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                             // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
 
                             isQuarkusTest = isQuarkusTest
-                                    || AnnotationSupport.isAnnotated(inspectionClass,
-                                            quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
-                                    || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
-                                    || registersQuarkusTestExtensionOnField(inspectionClass);
+                                    || isQuarkusTest(inspectionClass);
 
                             if (isQuarkusTest) {
                                 // Many integration tests have Quarkus higher up in the hierarchy, but they do not count as QuarkusTests and have to be run differently
@@ -340,6 +343,29 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         } catch (IllegalAccessException e) {
             log.error("Could not access " + e);
             throw new RuntimeException(e);
+        }
+
+    }
+
+    private boolean isQuarkusTest(Class<?> inspectionClass) throws ClassNotFoundException {
+        boolean isQuarkusAtTopLevel = AnnotationSupport.isAnnotated(inspectionClass,
+                quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
+                || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
+                || registersQuarkusTestExtensionOnField(inspectionClass);
+
+        if (isQuarkusAtTopLevel) {
+            return true;
+        } else {
+            // Normally we wouldn't load nested classes but when launched in an IDE at package level, they're sometimes included; make sure we identify them correctly
+            boolean isNested = AnnotationSupport.isAnnotated(inspectionClass, nestedAnnotation);
+            if (isNested) {
+                String parentName = inspectionClass.getName().substring(0,
+                        inspectionClass.getName().lastIndexOf("$"));
+                Class<?> inspectionParentClass = peekingClassLoader.loadClass(parentName);
+                return isQuarkusTest(inspectionParentClass);
+            } else {
+                return false;
+            }
         }
 
     }

@@ -16,6 +16,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
@@ -35,7 +36,21 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
             realm.getUsers().add(createUser("admin", "user", "admin"));
             realm.getUsers().add(createUser("jdoe", "user", "confidential"));
 
-            client.createRealm(realm);
+            try {
+                client.createRealm(realm);
+            } catch (Throwable throwable) {
+                System.err.println("///////////////// so create realm failed as expected over " + throwable.getMessage());
+                try {
+                    ProcessBuilder.newBuilder("docker")
+                            .arguments("ps")
+                            .output().consumeLinesWith(8192, System.out::println)
+                            .error().logOnSuccess(false).consumeLinesWith(8192, System.err::println)
+                            .run();
+                } catch (Throwable throwable1) {
+                    System.err.println("printing out ps failed");
+                }
+                throw throwable;
+            }
         }
         return Collections.emptyMap();
     }

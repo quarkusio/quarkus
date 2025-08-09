@@ -14,9 +14,15 @@ public class CORSRecorder {
         this.httpConfig = httpConfig;
     }
 
-    public Handler<RoutingContext> corsHandler() {
-        if (httpConfig.getValue().corsEnabled()) {
-            return new CORSFilter(httpConfig.getValue().cors());
+    public Handler<RoutingContext> corsHandler(RuntimeValue<CORSConfig> programmaticCorsConfig) {
+        final CORSConfig corsConfig;
+        if (programmaticCorsConfig != null && programmaticCorsConfig.getValue() != null) {
+            corsConfig = programmaticCorsConfig.getValue();
+        } else {
+            corsConfig = httpConfig.getValue().cors();
+        }
+        if (corsConfig.enabled()) {
+            return new CORSFilter(corsConfig);
         }
         return null;
     }

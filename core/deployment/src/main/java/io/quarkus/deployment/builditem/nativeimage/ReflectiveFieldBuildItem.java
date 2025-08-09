@@ -6,6 +6,9 @@ import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Registering fields for reflective access during the build
+ */
 public final class ReflectiveFieldBuildItem extends MultiBuildItem {
 
     final String declaringClass;

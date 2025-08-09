@@ -83,6 +83,8 @@ import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
@@ -140,7 +142,10 @@ public class OidcBuildStep {
     private static final DotName USER_INFO_NAME = DotName.createSimple(UserInfo.class);
     private static final DotName JSON_WEB_TOKEN_NAME = DotName.createSimple(JsonWebToken.class);
     private static final DotName ID_TOKEN_NAME = DotName.createSimple(IdToken.class);
-
+    private static final DotName AUTHORIZATION_CODE_FLOW_NAME = DotName.createSimple(AuthorizationCodeFlow.class);
+    private static final DotName BEARER_TOKEN_AUTHENTICATION_NAME = DotName.createSimple(BearerTokenAuthentication.class);
+    private static final DotName OIDC_REQUEST_FILTER = DotName.createSimple(OidcRequestFilter.class.getName());
+    private static final DotName OIDC_RESPONSE_FILTER = DotName.createSimple(OidcResponseFilter.class.getName());
     private static final String QUARKUS_TOKEN_PROPAGATION_PACKAGE = "io.quarkus.oidc.token.propagation";
     private static final String SMALLRYE_JWT_PACKAGE = "io.smallrye.jwt";
 
@@ -414,8 +419,10 @@ public class OidcBuildStep {
     @BuildStep
     List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
         return List.of(
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(AuthorizationCodeFlow.class), CODE_FLOW_CODE),
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER_SCHEME));
+                new HttpAuthMechanismAnnotationBuildItem(AUTHORIZATION_CODE_FLOW_NAME, CODE_FLOW_CODE, OIDC_REQUEST_FILTER,
+                        OIDC_RESPONSE_FILTER),
+                new HttpAuthMechanismAnnotationBuildItem(BEARER_TOKEN_AUTHENTICATION_NAME, BEARER_SCHEME, OIDC_REQUEST_FILTER,
+                        OIDC_RESPONSE_FILTER));
     }
 
     @BuildStep

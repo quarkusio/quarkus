@@ -197,6 +197,7 @@ updates:
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"
+          - "org.hibernate.tool*"
       Mvnpm:
         patterns:
           - "org.mvnpm:*"

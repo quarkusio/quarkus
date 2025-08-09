@@ -79,6 +79,7 @@
         <module>bom</module>
         <module>bom-test</module>
         <module>app-model</module>
+        <module>maven4-resolver</module>
         <module>maven-resolver</module>
         <module>core</module>
         <module>runner</module>

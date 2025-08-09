@@ -15,7 +15,7 @@
     <description>Module that tests that Smallrye JWT and OIDC WebApp authentication can be combined</description>
 
     <properties>
-        <keycloak.url>http://localhost:8180/auth</keycloak.url>
+        <keycloak.url>http://localhost:8180</keycloak.url>
         <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
     </properties>
 
@@ -225,16 +225,19 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.legacy.image}</name>
+                                    <name>${keycloak.docker.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>
                                             <port>8180:8080</port>
                                         </ports>
                                         <env>
-                                            <KEYCLOAK_USER>admin</KEYCLOAK_USER>
-                                            <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
+                                            <KC_BOOTSTRAP_ADMIN_USERNAME>admin</KC_BOOTSTRAP_ADMIN_USERNAME>
+                                            <KC_BOOTSTRAP_ADMIN_PASSWORD>admin</KC_BOOTSTRAP_ADMIN_PASSWORD>
                                         </env>
+                                        <cmd>
+                                            <arg>start-dev</arg>
+                                        </cmd>
                                         <log>
                                             <prefix>Keycloak:</prefix>
                                             <date>default</date>

@@ -20,8 +20,8 @@ import org.hibernate.Session;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.spi.SqmQuery;
 
-import io.quarkus.hibernate.orm.panache.common.ConstructorForProjection;
 import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -141,9 +141,9 @@ public class CommonPanacheQueryImpl<Entity> {
     private Constructor<?> getConstructor(Class<?> type) {
         Constructor<?>[] typeConstructors = type.getDeclaredConstructors();
 
-        //We start to look for constructors with @ConstructorForProjection
+        //We start to look for constructors with @ProjectedConstructor
         for (Constructor<?> typeConstructor : typeConstructors) {
-            if (typeConstructor.isAnnotationPresent(ConstructorForProjection.class)) {
+            if (typeConstructor.isAnnotationPresent(ProjectedConstructor.class)) {
                 return typeConstructor;
             }
         }

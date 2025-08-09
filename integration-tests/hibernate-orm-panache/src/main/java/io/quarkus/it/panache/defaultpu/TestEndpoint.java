@@ -1426,10 +1426,10 @@ public class TestEndpoint {
     @GET
     @Path("projection-constructor-annotation")
     @Transactional(dontRollbackOn = SemanticException.class)
-    public String testConstructorForProjection() {
+    public String testProjectedConstructor() {
         Assertions.assertEquals(1, Person.count());
 
-        //Test class with multiple constructors but one with @ConstructorForProjection annotation
+        //Test class with multiple constructors but one with @ProjectedConstructor annotation
         PersonName person = Person.findAll().project(PersonNameDoubleConstructorWithConstructorAnnotation.class).firstResult();
         Assertions.assertEquals("2", person.name);
 
@@ -1464,7 +1464,7 @@ public class TestEndpoint {
         Assertions.assertEquals(1,
                 Person.findAll().project(PersonNameDoubleConstructorWithConstructorAnnotation.class).count());
 
-        //Test class with multiple constructors but none with @ConstructorForProjection annotation
+        //Test class with multiple constructors but none with @ProjectedConstructor annotation
         SemanticException semanticException = Assertions.assertThrowsExactly(SemanticException.class,
                 () -> Person.findAll().project(PersonNameDoubleConstructor.class).firstResult());
         Assertions.assertEquals("Could not interpret path expression 'fakeParameter'", semanticException.getMessage());

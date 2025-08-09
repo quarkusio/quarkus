@@ -1,6 +1,6 @@
 package io.quarkus.it.panache.defaultpu;
 
-import io.quarkus.hibernate.orm.panache.common.ConstructorForProjection;
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
@@ -10,7 +10,7 @@ public class PersonNameDoubleConstructorWithConstructorAnnotation extends Person
         super(uniqueName, name);
     }
 
-    @ConstructorForProjection
+    @ProjectedConstructor
     @SuppressWarnings("unused")
     public PersonNameDoubleConstructorWithConstructorAnnotation(String uniqueName, String name) {
         super(uniqueName, name);

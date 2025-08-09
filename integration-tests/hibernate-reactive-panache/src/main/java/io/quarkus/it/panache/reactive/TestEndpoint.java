@@ -1799,7 +1799,7 @@ public class TestEndpoint {
     @WithTransaction
     @GET
     @Path("projection-constructor-annotation")
-    public Uni<String> testConstructorForProjection() {
+    public Uni<String> testProjectedConstructor() {
         String ownerName = "Julie";
         String catName = "Bubulle";
         Double catWeight = 8.5d;

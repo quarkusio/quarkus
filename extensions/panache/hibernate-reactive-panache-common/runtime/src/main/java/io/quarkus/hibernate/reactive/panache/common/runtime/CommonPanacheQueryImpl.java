@@ -18,8 +18,8 @@ import jakarta.persistence.LockModeType;
 import org.hibernate.Filter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import io.quarkus.hibernate.reactive.panache.common.ConstructorForProjection;
 import io.quarkus.hibernate.reactive.panache.common.NestedProjectedClass;
+import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
 import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -129,9 +129,9 @@ public class CommonPanacheQueryImpl<Entity> {
     private Constructor<?> getConstructor(Class<?> type) {
         Constructor<?>[] typeConstructors = type.getDeclaredConstructors();
 
-        //We start to look for constructors with @ConstructorForProjection
+        //We start to look for constructors with @ProjectedConstructor
         for (Constructor<?> typeConstructor : typeConstructors) {
-            if (typeConstructor.isAnnotationPresent(ConstructorForProjection.class)) {
+            if (typeConstructor.isAnnotationPresent(ProjectedConstructor.class)) {
                 return typeConstructor;
             }
         }

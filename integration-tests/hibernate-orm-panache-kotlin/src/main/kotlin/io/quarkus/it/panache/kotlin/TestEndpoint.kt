@@ -1,6 +1,6 @@
 package io.quarkus.it.panache.kotlin
 
-import io.quarkus.hibernate.orm.panache.common.ConstructorForProjection
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
@@ -1220,7 +1220,7 @@ class TestEndpoint {
     @GET
     @Path("projection-constructor-annotation")
     @Transactional
-    fun testConstructorForProjection(): String {
+    fun testProjectedConstructor(): String {
         @RegisterForReflection
         @Suppress("unused")
         class MyProjectionDoubleConstructorWithConstructorAnnotation {
@@ -1230,7 +1230,7 @@ class TestEndpoint {
                 this.name = name
             }
 
-            @ConstructorForProjection constructor(name: String) : this(name, null)
+            @ProjectedConstructor constructor(name: String) : this(name, null)
         }
 
         @RegisterForReflection

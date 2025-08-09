@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.panache.common;
+package io.quarkus.hibernate.orm.panache.common;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -12,5 +12,5 @@ import java.lang.annotation.Target;
 @Documented
 @Target({ ElementType.CONSTRUCTOR })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ConstructorForProjection {
+public @interface ProjectedConstructor {
 }

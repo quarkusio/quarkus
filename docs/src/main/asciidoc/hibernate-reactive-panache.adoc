@@ -729,18 +729,18 @@ PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.we
 ----
 ====
 
-If you need to have multiple constructors in your DTO, you must annotate the constructor intended to generate a SELECT clause with @ConstructorForProjection:
+If you need to have multiple constructors in your DTO, you must annotate the constructor intended to generate a SELECT clause with @ProjectedConstructor:
 
 [source,java]
 ----
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.quarkus.hibernate.reactive.panache.common.ConstructorForProjection;
+import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
 
 @RegisterForReflection
 public class PersonName {
     public final String name;
 
-    @ConstructorForProjection // <1>
+    @ProjectedConstructor // <1>
     public PersonName(String name) {
         this.name = name;
     }
@@ -762,7 +762,7 @@ If a DTO used in a projection has multiple constructors and is not properly anno
 
 The constructor resolution process follows this order:
 
-1. Look for a constructor annotated with `@ConstructorForProjection`
+1. Look for a constructor annotated with `@ProjectedConstructor`
 This is the most explicit and preferred way to indicate which constructor should be used.
 2. Look for parameters annotated with `@ProjectedFieldName`
 3. Use the first non-parameterless constructor

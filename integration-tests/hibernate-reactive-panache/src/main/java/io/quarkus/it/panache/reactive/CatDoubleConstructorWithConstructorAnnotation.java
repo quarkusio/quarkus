@@ -1,6 +1,6 @@
 package io.quarkus.it.panache.reactive;
 
-import io.quarkus.hibernate.reactive.panache.common.ConstructorForProjection;
+import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
@@ -16,7 +16,7 @@ public class CatDoubleConstructorWithConstructorAnnotation {
         this.ownerName = ownerName;
     }
 
-    @ConstructorForProjection
+    @ProjectedConstructor
     @SuppressWarnings("unused")
     public CatDoubleConstructorWithConstructorAnnotation(String name) {
         this(name, null);

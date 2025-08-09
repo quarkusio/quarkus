@@ -978,6 +978,47 @@ PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.we
 ----
 ====
 
+If you need to have multiple constructors in your DTO, you must annotate the constructor intended to generate a SELECT clause with @ProjectedConstructor:
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
+
+@RegisterForReflection
+public class PersonName {
+    public final String name;
+
+    @ProjectedConstructor // <1>
+    public PersonName(String name) {
+        this.name = name;
+    }
+
+    public PersonName(String name, String otherField) {
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+<1> This will use your annotated constructor to create the query. (`select new PersonName(name) from ...`)
+
+[WARNING]
+====
+If a DTO used in a projection has multiple constructors and is not properly annotated, it may lead to *unexpected behavior*.
+
+The constructor resolution process follows this order:
+
+1. Look for a constructor annotated with `@ProjectedConstructor`
+This is the most explicit and preferred way to indicate which constructor should be used.
+2. Look for parameters annotated with `@ProjectedFieldName`
+3. Use the first non-parameterless constructor
+If no annotations are found.
+4. Fallback to the first constructor it finds, this could lead to multiple problems or inconsistencies.
+====
+
 == Multiple Persistence Units
 
 The support for multiple persistence units is described in detail in xref:hibernate-orm.adoc#multiple-persistence-units[the Hibernate ORM guide].

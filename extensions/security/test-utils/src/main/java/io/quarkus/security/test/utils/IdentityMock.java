@@ -18,7 +18,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.BaseAuthenticationRequest;
-import io.quarkus.security.runtime.SecurityIdentityAssociation;
+import io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -104,13 +104,18 @@ public class IdentityMock implements SecurityIdentity {
     @Alternative
     @ApplicationScoped
     @Priority(1)
-    public static class IdentityAssociationMock extends SecurityIdentityAssociation {
+    public static class IdentityAssociationMock extends AbstractSecurityIdentityAssociation {
 
         @Inject
         IdentityMock identity;
 
         @Inject
         IdentityProviderManager identityProviderManager;
+
+        @Override
+        protected IdentityProviderManager getIdentityProviderManager() {
+            return identityProviderManager;
+        }
 
         @Override
         public Uni<SecurityIdentity> getDeferredIdentity() {

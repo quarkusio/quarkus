@@ -261,6 +261,28 @@ public class MyReflectionConfiguration {
 Note that the order of the specified proxy interfaces is significant. For more information, see link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Proxy.html[Proxy javadoc].
 ====
 
+=== Registering resource bundles and resource files
+
+Resource bundles can be registered to be included in the native image by using `@RegisterResourceBundle`:
+
+[source,java]
+----
+@RegisterResourceBundle(bundleName = "messages")
+@RegisterResourceBundle(bundleName = "errors", moduleName = "foo")
+public class NativeConfiguration {
+}
+----
+
+Other resources files can be registered to be included in the native image by using `@RegisterResources`:
+
+[source,java]
+----
+@RegisterResources(globs = ["path1/level*/**", "path2/level5/**"])
+@RegisterResources(globs = ["**.txt"])
+public class NativeConfiguration {
+}
+----
+
 [[delay-class-init-in-your-app]]
 === Delaying class initialization
 

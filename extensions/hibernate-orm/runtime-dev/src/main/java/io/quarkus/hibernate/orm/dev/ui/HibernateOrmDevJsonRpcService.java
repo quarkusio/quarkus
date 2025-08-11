@@ -1,14 +1,18 @@
 package io.quarkus.hibernate.orm.dev.ui;
 
+import static org.hibernate.internal.util.StringHelper.isBlank;
 import static org.hibernate.query.sqm.internal.SqmUtil.isMutation;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
-import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.ScrollMode;
@@ -18,10 +22,13 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.Query;
 import org.hibernate.query.spi.SqmQuery;
+import org.hibernate.tool.language.internal.MetamodelJsonSerializerImpl;
+import org.hibernate.tool.language.internal.ResultsJsonSerializerImpl;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.devui.runtime.comms.JsonRpcMessage;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
@@ -34,8 +41,11 @@ public class HibernateOrmDevJsonRpcService {
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmDevJsonRpcService.class);
 
-    private boolean isDev;
-    private String allowedHost;
+    private final boolean isDev;
+    private final String allowedHost;
+
+    @Inject
+    Optional<Assistant> assistant;
 
     public HibernateOrmDevJsonRpcService() {
         this.isDev = LaunchMode.current().isDev() && !LaunchMode.current().isRemoteDev();
@@ -64,6 +74,31 @@ public class HibernateOrmDevJsonRpcService {
         return getInfo().getPersistenceUnits().stream().filter(pu -> pu.getName().equals(persistenceUnitName)).findFirst();
     }
 
+    private static final String SYSTEM_MESSAGE = """
+            You are an expert in writing Hibernate Query Language (HQL) queries.
+            You have access to a entity model with the following structure:
+
+            {{metamodel}}
+
+            If a user asks a question that can be answered by querying this model, generate an HQL SELECT query.
+            The query must not include any input parameters.
+            Your response must only contain one field called `hql` containing the HQL query, nothing else, no explanation, and do not put the query in backticks.
+            Example response: {"hql": "select e from Entity e where e.property = :value"}
+            """;
+
+    private static final String INTERACTIVE_PROMPT = """
+            The following HQL query:
+            {{query}}
+            returned the following data (in JSON format):
+            {{data}}
+
+            Based on the data above, answer this request in natural language:
+            {{user_request}}
+            Your response must only contain one field called `answer` containing the natural language response.
+            Do not include any HQL query in your response, nor suggest any further steps to take.
+            Example response: {"answer": "..."}
+            """;
+
     /**
      * Execute an arbitrary {@code hql} query in the given {@code persistence unit}. The query might be both a selection or a
      * mutation statement. For selection queries, the result count is retrieved though a count query and the results, paginated
@@ -74,17 +109,25 @@ public class HibernateOrmDevJsonRpcService {
      * further processing by the {@link JsonRpcRouter}.
      *
      * @param persistenceUnit The name of the persistence unit within which the query will be executed
-     * @param hql The Hibernate Query Language (HQL) statement to execute
+     * @param query The user query (be it an HQL query or a plain-text statement when using assistant)
      * @param pageNumber The page number, used for selection query results pagination
      * @param pageSize The page size, used for selection query results pagination
+     * @param assistant Whether to use the assistant to generate the HQL query based on the user input
+     * @param interactive Enable assistant's interactive mode, answering the original user request in natural language
      * @return a {@link JsonRpcMessage<String>} containing the resulting {@link DataSet} serialized to JSON.
      */
-    public JsonRpcMessage<Object> executeHQL(String persistenceUnit, String hql, Integer pageNumber, Integer pageSize) {
+    public CompletionStage<JsonRpcMessage<String>> executeHQL(
+            String persistenceUnit,
+            String query,
+            Integer pageNumber,
+            Integer pageSize,
+            Boolean assistant,
+            Boolean interactive) {
         if (!isDev) {
             return errorDataSet("This method is only allowed in dev mode");
         }
 
-        if (!hqlIsValid(hql)) {
+        if (!hqlIsValid(query)) {
             return errorDataSet("The provided HQL was not valid");
         }
 
@@ -93,7 +136,6 @@ public class HibernateOrmDevJsonRpcService {
             return errorDataSet("No such persistence unit: " + persistenceUnit);
         }
 
-        //noinspection resource
         SessionFactoryImplementor sf = pu.get().sessionFactory();
 
         // Check the connection for this persistence unit points to an allowed datasource
@@ -108,6 +150,58 @@ public class HibernateOrmDevJsonRpcService {
             return errorDataSet("Unsupported Connection Provider type for specified persistence unit.");
         }
 
+        if (Boolean.TRUE.equals(assistant)) {
+            Assistant a = this.assistant.orElse(null);
+            if (a == null || !a.isAvailable()) {
+                return errorDataSet(
+                        "The assistant is not available, please check the Quarkus assistant extension is correctly configured.");
+            }
+
+            String metamodel = MetamodelJsonSerializerImpl.INSTANCE.toString(sf.getMetamodel());
+
+            CompletionStage<Map<String, String>> queryCompletionStage = a.assistBuilder()
+                    .systemMessage(SYSTEM_MESSAGE)
+                    .userMessage(query)
+                    .addVariable("metamodel", metamodel)
+                    .assist();
+
+            CompletionStage<DataSet> dataSetCompletionStage = queryCompletionStage.thenApply(response -> {
+                String hql = response.get("hql");
+                if (hql == null || hql.isBlank()) {
+                    return new DataSet(null, null, -1, null, "The assistant did not return a valid HQL query.");
+                }
+                return executeHqlQuery(hql, sf, null, null);
+            });
+
+            if (Boolean.TRUE.equals(interactive)) {
+                return dataSetCompletionStage.thenCompose(dataSet -> {
+                    if (dataSet.error() != null) {
+                        // If there was an error executing the query, return it directly
+                        return CompletableFuture.completedStage(toJson(dataSet));
+                    }
+                    CompletionStage<Map<String, String>> interactiveCompletionStage = a.assistBuilder()
+                            .systemMessage(SYSTEM_MESSAGE)
+                            .addVariable("metamodel", metamodel)
+                            .userMessage(INTERACTIVE_PROMPT)
+                            .addVariable("query", dataSet.query())
+                            .addVariable("data", dataSet.data())
+                            .addVariable("user_request", query)
+                            .assist();
+                    return interactiveCompletionStage.thenApply(response -> {
+                        String answer = response.get("answer");
+                        return messageDataset(dataSet.query(), answer, dataSet.resultCount());
+                    });
+                });
+            } else {
+                return dataSetCompletionStage.thenApply(HibernateOrmDevJsonRpcService::toJson);
+            }
+        } else {
+            DataSet result = executeHqlQuery(query, sf, pageNumber, pageSize);
+            return CompletableFuture.completedStage(toJson(result));
+        }
+    }
+
+    private static DataSet executeHqlQuery(String hql, SessionFactoryImplementor sf, Integer pageNumber, Integer pageSize) {
         return sf.fromSession(session -> {
             Transaction transaction = session.beginTransaction();
             try {
@@ -116,56 +210,82 @@ public class HibernateOrmDevJsonRpcService {
                     // DML query, execute update within transaction and return custom message with affected rows
                     int updateCount = query.executeUpdate();
                     transaction.commit();
-                    return new JsonRpcMessage<>(
-                            new DataSet(
-                                    null,
-                                    -1,
-                                    "Query executed correctly. Rows affected: " + updateCount,
-                                    null),
-                            MessageType.Response);
+                    return new DataSet(
+                            null,
+                            hql,
+                            -1,
+                            "Query executed correctly. Rows affected: " + updateCount,
+                            null);
                 } else {
                     // selection query, execute count query and return paged results
+                    List<Object> results;
+                    long resultCount;
+                    if (pageNumber != null && pageSize != null) {
+                        // This executes a separate count query
+                        resultCount = query.getResultCount();
 
-                    // This executes a separate count query
-                    long resultCount = query.getResultCount();
-
-                    try (ScrollableResults<Object> scroll = query.scroll(ScrollMode.SCROLL_INSENSITIVE)) {
-                        boolean hasNext = scroll.scroll((pageNumber - 1) * pageSize + 1);
-                        List<Object> results = new ArrayList<>();
-                        int i = 0;
-                        while (hasNext && i++ < pageSize) {
-                            results.add(scroll.get());
-                            hasNext = scroll.next();
+                        // scroll the current page results
+                        try (ScrollableResults<Object> scroll = query.scroll(ScrollMode.SCROLL_INSENSITIVE)) {
+                            boolean hasNext = scroll.scroll((pageNumber - 1) * pageSize + 1);
+                            results = new ArrayList<>(pageSize);
+                            int i = 0;
+                            while (hasNext && i++ < pageSize) {
+                                results.add(scroll.get());
+                                hasNext = scroll.next();
+                            }
                         }
-
-                        // manually serialize data within the transaction to ensure lazy-loading can function
-                        String result = writeValueAsString(new DataSet(results, resultCount, null, null));
-                        JsonRpcMessage<Object> message = new JsonRpcMessage<>(result, MessageType.Response);
-                        message.setAlreadySerialized(true);
-                        transaction.commit();
-                        return message;
+                    } else {
+                        results = query.getResultList();
+                        resultCount = results.size();
                     }
+
+                    // manually serialize data within the transaction to ensure lazy-loading can function
+                    ResultsJsonSerializerImpl serializer = new ResultsJsonSerializerImpl(sf);
+                    String json = serializer.toString(results, query);
+                    DataSet ds = new DataSet(
+                            json,
+                            hql,
+                            resultCount,
+                            null,
+                            null);
+                    transaction.commit();
+                    return ds;
                 }
             } catch (Exception ex) {
+                LOG.error("Error executing HQL query", ex);
                 // an error happened, rollback the transaction
                 transaction.rollback();
-                return new JsonRpcMessage<>(new DataSet(null, -1, null, ex.getMessage()), MessageType.Response);
+                return new DataSet(null, null, -1, null, ex.getMessage());
             }
         });
     }
 
-    private static JsonRpcMessage<Object> errorDataSet(String errorMessage) {
-        return new JsonRpcMessage<>(new DataSet(null, -1, null, errorMessage), MessageType.Response);
+    private static CompletionStage<JsonRpcMessage<String>> errorDataSet(String errorMessage) {
+        return CompletableFuture.completedStage(toJson(new DataSet(null, null, -1, null, errorMessage)));
     }
 
-    private static String writeValueAsString(DataSet value) {
-        try {
-            JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
-            return jsonRpcRouter.getJsonMapper().toString(value, true);
-        } catch (Exception ex) {
-            throw new RuntimeException(
-                    "Unable to encode results as JSON. Note circular associations are not supported at the moment, use `@JsonIgnore` to break circles.",
-                    ex);
+    private static JsonRpcMessage<String> messageDataset(String query, String message, long resultCount) {
+        return toJson(new DataSet(null, query, resultCount, message, null));
+    }
+
+    private static JsonRpcMessage<String> toJson(DataSet dataSet) {
+        StringBuilder jsonBuilder = new StringBuilder("{");
+        jsonBuilder.append("\"resultCount\":").append(dataSet.resultCount());
+        if (dataSet.data() != null) {
+            jsonBuilder.append(",\"data\":").append(dataSet.data());
+        }
+        appendIfNonNull(jsonBuilder, "query", dataSet.query());
+        appendIfNonNull(jsonBuilder, "message", dataSet.message());
+        appendIfNonNull(jsonBuilder, "error", dataSet.error());
+        jsonBuilder.append("}");
+        JsonRpcMessage<String> message = new JsonRpcMessage<>(jsonBuilder.toString(), MessageType.Response);
+        message.setAlreadySerialized(true);
+        return message;
+    }
+
+    private static void appendIfNonNull(StringBuilder sb, String fieldName, String value) {
+        if (value != null) {
+            sb.append(",\"").append(fieldName).append("\":\"").append(value).append("\"");
         }
     }
 
@@ -174,7 +294,7 @@ public class HibernateOrmDevJsonRpcService {
     }
 
     private boolean isAllowedDatabase(AgroalDataSource ads) {
-        final String allowedHost = this.allowedHost == null ? null : this.allowedHost.trim();
+        String allowedHost = this.allowedHost == null ? null : this.allowedHost.trim();
         if (allowedHost != null && allowedHost.equals("*")) {
             // special value indicating to allow any host
             return true;
@@ -207,6 +327,6 @@ public class HibernateOrmDevJsonRpcService {
         return false;
     }
 
-    private record DataSet(List<Object> data, long totalNumberOfElements, String message, String error) {
+    public record DataSet(String data, String query, long resultCount, String message, String error) {
     }
 }

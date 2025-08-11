@@ -229,13 +229,13 @@ public class DevServicesKubernetesProcessor {
                                         + " to be ready...");
                                 client.resource(resource).waitUntilReady(60, TimeUnit.SECONDS);
                             });
+
+                            log.infof("Applied manifest %s.", manifestPath);
                         }
                     } catch (Exception ex) {
                         log.errorf("Failed to apply manifest %s: %s", manifestPath, ex.getMessage());
                     }
                 }
-
-                log.infof("Applied manifest %s.", manifestPath);
             }
         } catch (Exception e) {
             log.error("Failed to create Kubernetes client while trying to apply manifests.", e);

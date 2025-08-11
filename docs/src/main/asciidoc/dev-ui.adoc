@@ -380,6 +380,21 @@ Dev UI uses https://lit.dev/[Lit] to make building these web components easier. 
 - https://www.webcomponents.org/introduction[Web components Getting started]
 - https://lit.dev/docs/[Lit documentation]
 
+Most of the JavaScript code in Dev UI is written using Lit, so look for the available operations in the Lit documentation. For instance, for each cycle can be done like this:
+
+[source,javascript]
+----
+render() {
+  return html`
+    <ul>
+      ${this.colors.map((color) =>
+        html`<li style="color: ${color}">${color}</li>`
+      )}
+    </ul>
+  `;
+}
+----
+
 ===== Basic structure of a Web component page
 
 A Web component page is just a JavaScript Class that creates a new HTML Element:
@@ -1027,6 +1042,23 @@ JsonRPCProvidersBuildItem createJokesJsonRPCService() {// <1>
 ----
 <1> Produce or return a `JsonRPCProvidersBuildItem`
 <2> Define the class in your runtime or runtime-dev module that will contain methods that make data available in the UI
+
+If you are creating a new runtime-dev module, you must also add the conditional Dev dependency in
+the *runtime* module `pom.xml`:
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
+    <configuration>
+        <conditionalDevDependencies>
+            <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+        </conditionalDevDependencies>
+        ...
+    </configuration>
+</plugin>
+----
 
 ==== JsonRPC against the Deployment classpath
 

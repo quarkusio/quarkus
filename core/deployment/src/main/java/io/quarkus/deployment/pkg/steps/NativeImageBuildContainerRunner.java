@@ -99,13 +99,15 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         // todo: maybe this should just be logged or something?
         if (processInheritIODisabled) {
             pb.output().consumeLinesWith(8192, System.out::println);
-            pb.error().consumeLinesWith(8192, System.err::println);
+            // logOnSuccess(false) avoids WARNING from io.smallrye.common.process.Logging
+            pb.error().logOnSuccess(false).consumeLinesWith(8192, System.err::println);
         } else {
-            pb.output().inherited().error().inherited();
+            pb.output().inherited();
+            // logOnSuccess(false) avoids WARNING from io.smallrye.common.process.Logging
+            pb.error().logOnSuccess(false).inherited();
         }
         try {
-            // logOnSuccess(false) avoids WARNING from io.smallrye.common.process.Logging
-            pb.error().logOnSuccess(false).run();
+            pb.run();
         } catch (Exception e) {
             throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'", e);
         }

@@ -1,7 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Arch.AMD64;
-import static io.smallrye.common.process.ProcessBuilder.newBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +59,7 @@ import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.AbnormalExitException;
+import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.common.process.ProcessUtil;
 
 public class NativeImageBuildStep {
@@ -566,8 +566,9 @@ public class NativeImageBuildStep {
 
     private static String testGCCArgument(String argument) {
         try {
-            newBuilder("cc", "-v", "-E", argument, "-")
-                    .error().logOnSuccess(log.isTraceEnabled()).run();
+            ProcessBuilder<Void> pb = ProcessBuilder.newBuilder("cc", "-v", "-E", argument, "-");
+            pb.error().logOnSuccess(log.isTraceEnabled());
+            pb.run();
             return argument;
         } catch (Exception ignored) {
             return "";

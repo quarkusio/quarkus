@@ -70,7 +70,7 @@ public abstract class NativeImageBuildRunner {
                             Runtime.getRuntime().removeShutdownHook(hook);
                         }
                     })
-                    .output().consumeLinesWith(8192, log::info)
+                    .output().consumeLinesWith(8192, System.out::println)
                     // Why logOnSuccess(false) and then consumeWith? Because we get the stdErr twice otherwise.
                     .error().logOnSuccess(false)
                     .consumeWith(br -> new ErrorReplacingProcessReader(br, outputDir.resolve("reports").toFile()).run())

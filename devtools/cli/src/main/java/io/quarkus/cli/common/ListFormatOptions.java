@@ -21,6 +21,10 @@ public class ListFormatOptions {
             "--origins" }, order = 7, description = "Display extension artifactId, name, version, and platform origins.")
     boolean origins = false;
 
+    @CommandLine.Option(names = {
+            "--support-scope" }, order = 7, description = "Display extension artifactId, name, version, and support scope in case it's associated with an extension.")
+    boolean supportScope = false;
+
     /**
      * Check if any format has been specified on the command line.
      */
@@ -38,6 +42,8 @@ public class ListFormatOptions {
             formatString = "full";
         else if (origins)
             formatString = "origins";
+        else if (supportScope)
+            formatString = "support-scope";
         return formatString;
     }
 }

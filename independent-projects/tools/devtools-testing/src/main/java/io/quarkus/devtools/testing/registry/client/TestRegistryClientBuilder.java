@@ -336,6 +336,16 @@ public class TestRegistryClientBuilder {
             return this;
         }
 
+        public TestRegistryBuilder setOffering(String offering) {
+            var extra = config.getExtra();
+            if (extra == null || extra.isEmpty()) {
+                extra = new HashMap<>(1);
+                config.setExtra(extra);
+            }
+            extra.put(Constants.OFFERING, offering);
+            return this;
+        }
+
         public TestRegistryClientBuilder clientBuilder() {
             return parent;
         }
@@ -751,13 +761,20 @@ public class TestRegistryClientBuilder {
 
         public TestPlatformCatalogMemberBuilder addExtensionWithCodestart(String groupId, String artifactId, String version,
                 String codestart) {
+            return addExtensionWithMetadata(groupId, artifactId, version,
+                    codestart == null ? Map.of()
+                            : Map.of("codestart", Map.of("name", codestart, "languages", List.of("java"))));
+        }
+
+        public TestPlatformCatalogMemberBuilder addExtensionWithMetadata(String groupId, String artifactId, String version,
+                Map<String, Object> metadata) {
             final ArtifactCoords coords = ArtifactCoords.jar(groupId, artifactId, version);
             final Extension.Mutable e = Extension.builder()
                     .setArtifact(coords)
                     .setName(artifactId)
                     .setOrigins(Collections.singletonList(extensions));
-            if (codestart != null) {
-                e.getMetadata().put("codestart", Map.of("name", codestart, "languages", List.of("java")));
+            if (metadata != null) {
+                e.getMetadata().putAll(metadata);
             }
             extensions.addExtension(e);
 

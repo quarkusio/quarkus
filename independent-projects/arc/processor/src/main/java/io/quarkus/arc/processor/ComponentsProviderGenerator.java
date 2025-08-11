@@ -8,6 +8,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -55,6 +57,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     static final String ADD_OBSERVERS = "addObservers";
     static final String ADD_REMOVED_BEANS = "addRemovedBeans";
     static final String ADD_BEANS = "addBeans";
+    private static final Comparator<BeanInfo> BEAN_INFO_COMPARATOR = Comparator.comparing(BeanInfo::getIdentifier);
+    private static final Comparator<ObserverInfo> OBSERVER_INFO_COMPARATOR = Comparator.comparing(ObserverInfo::getIdentifier);
 
     private final AnnotationLiteralProcessor annotationLiterals;
     private final boolean detectUnusedFalsePositives;
@@ -264,7 +268,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
         }
         // Finally process beans and interceptors that are not dependencies
-        for (BeanInfo bean : beanDeployment.getBeans()) {
+        // We need to iterate in a deterministic order for build time reproducibility
+        for (BeanInfo bean : beanDeployment.getBeans().stream().sorted(BEAN_INFO_COMPARATOR)
+                .toList()) {
             if (!processed.contains(bean)) {
                 beanAdder.addComponent(bean);
             }
@@ -303,7 +309,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             ResultHandle beanIdToBeanHandle, ResultHandle observersHandle, Map<ObserverInfo, String> observerToGeneratedName) {
         try (ObserverAdder observerAdder = new ObserverAdder(componentsProvider, getComponents, observerToGeneratedName,
                 beanIdToBeanHandle, observersHandle)) {
-            for (ObserverInfo observer : beanDeployment.getObservers()) {
+            // We need to iterate in a deterministic order for build time reproducibility
+            for (ObserverInfo observer : beanDeployment.getObservers().stream().sorted(OBSERVER_INFO_COMPARATOR).toList()) {
                 observerAdder.addComponent(observer);
             }
         }
@@ -314,8 +321,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             ClassOutput classOutput) {
         try (RemovedBeanAdder removedBeanAdder = new RemovedBeanAdder(componentsProvider, targetMethod, removedBeansHandle,
                 typeCacheHandle, classOutput)) {
-            for (BeanInfo remnovedBean : beanDeployment.getRemovedBeans()) {
-                removedBeanAdder.addComponent(remnovedBean);
+            // We need to iterate in a deterministic order for build time reproducibility
+            for (BeanInfo removedBean : beanDeployment.getRemovedBeans().stream()
+                    .sorted(BEAN_INFO_COMPARATOR).toList()) {
+                removedBeanAdder.addComponent(removedBean);
             }
         }
     }
@@ -362,7 +371,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
         };
 
-        Map<BeanInfo, List<BeanInfo>> beanToInjections = new HashMap<>();
+        // We need to iterate in a deterministic order for build time reproducibility
+        Map<BeanInfo, List<BeanInfo>> beanToInjections = new TreeMap<>(BEAN_INFO_COMPARATOR);
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (bean.isProducer() && !bean.isStaticProducer()) {
                 // `static` producer doesn't depend on its declaring bean
@@ -706,7 +716,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
 
             List<InjectionPointInfo> injectionPoints = bean.getInjections().stream().flatMap(i -> i.injectionPoints.stream())
-                    .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip)).collect(toList());
+                    .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip)).toList();
             List<ResultHandle> params = new ArrayList<>();
             List<String> paramTypes = new ArrayList<>();
 

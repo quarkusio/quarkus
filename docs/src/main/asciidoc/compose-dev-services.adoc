@@ -170,7 +170,7 @@ The following is the list of platform extensions with dev services support:
 |Exposed Port
 
 | AMQP
-| amqp, activemq-artemis, rabbitmq
+| amqp, activemq-artemis, amq-broker, rabbitmq
 | 5672
 
 | Apicurio Registry
@@ -234,7 +234,7 @@ The following is the list of platform extensions with dev services support:
 | 6379
 
 | Infinispan
-| infinispan
+| infinispan, datagrid
 | 11222
 
 | Elasticsearch

@@ -211,7 +211,7 @@ public class AmqpDevServicesProcessor {
         return amqpContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .map(containerAddress -> getRunningService(config, launchMode, containerAddress))
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(config.imageName, "amqp", "activemq-artemis", "rabbitmq"),
+                        List.of(config.imageName, "amqp", "activemq-artemis", "amq-broker", "rabbitmq"),
                         AMQP_PORT,
                         launchMode.getLaunchMode(), useSharedNetwork)
                         .map(this::getRunningService))

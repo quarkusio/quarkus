@@ -5,6 +5,7 @@ import '@vaadin/icon';
 import 'qui-themed-code-block';
 import '@qomponent/qui-card';
 import 'qwc-no-data';
+import { notifier } from 'notifier';
 
 /**
  * This component shows the Dev Services Page
@@ -23,7 +24,18 @@ export class QwcDevServices extends QwcHotReloadElement {
     
         .configHeader {
             padding: 10px;
+            display: flex;
+            justify-content: space-between;
         }
+        .copyButtons {
+            display: flex;
+            gap:5px;
+            color: var(--lumo-contrast-40pct);
+        }
+        qui-badge{
+            cursor: pointer;
+        }
+    
         .containerDetails{
             padding: 15px;
         }
@@ -115,17 +127,26 @@ export class QwcDevServices extends QwcHotReloadElement {
 
     _renderConfigDetails(devService){
         if (devService.configs) {
-            const list = [];
-            for (const [key, value] of Object.entries(devService.configs)) {
-                list.push(key + "=" + value + "\n");
-            }
-
-            let properties = ''.concat(...list);
-            return html`<span class="configHeader">Config:</span>
+            let properties = this._configToText(devService);
+            return html`<div class="configHeader">Config: 
+                            <div class="copyButtons">
+                                Make a copy for: 
+                                <qui-badge 
+                                    title="Copy config for test environment"
+                                    @click="${() => this._copyForTest(devService)}">
+                                        <span>Test</span>
+                                </qui-badge>
+                                <qui-badge 
+                                    title="Copy config for prod environment"
+                                    @click="${() => this._copyForProd(devService)}">
+                                        <span>Prod</span>
+                                </qui-badge> 
+                            </div>
+                        </div>
                         <div class="config">
                             <qui-themed-code-block 
                                 mode='properties'
-                                content='${properties.trim()}'>
+                                content='${properties}'>
                             </qui-themed-code-block>
                         </div>`;
         }
@@ -167,6 +188,35 @@ export class QwcDevServices extends QwcHotReloadElement {
 
             return html`<span class="row"><vaadin-icon icon="font-awesome-solid:diagram-project"></vaadin-icon>${p}</span>`;
         }
+    }
+
+    _copyForTest(devService){
+        let properties = this._configToText(devService, "%test.");
+        this._copyToClipboard(properties);
+    }
+    
+    _copyForProd(devService){
+        let properties = this._configToText(devService, "%prod.");
+        this._copyToClipboard(properties);
+    }
+
+    _configToText(devService, pre = ""){
+        const list = [];
+        for (const [key, value] of Object.entries(devService.configs)) {
+            list.push(pre + key + "=" + value + "\n");
+        }
+        
+        return ''.concat(...list).trim();
+    }
+
+    _copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                notifier.showInfoMessage("Copied to clipboard");
+            })
+            .catch(err => {
+                notifier.showErrorMessage("Clipboard write failed [" + err + "]");
+            });
     }
 
 }

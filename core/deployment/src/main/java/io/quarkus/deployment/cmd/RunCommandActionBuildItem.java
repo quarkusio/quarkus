@@ -5,6 +5,9 @@ import java.util.List;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Represents an action to run a specific command during the build process.
+ */
 public final class RunCommandActionBuildItem extends MultiBuildItem {
     private final String commandName;
     private final List<String> args;

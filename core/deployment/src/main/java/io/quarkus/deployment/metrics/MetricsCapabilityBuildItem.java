@@ -2,6 +2,22 @@ package io.quarkus.deployment.metrics;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * A build item indicating the presence and capabilities of a metrics system in the application.
+ * <p>
+ * This build item provides:
+ * <ul>
+ * <li>A {@link MetricsCapability} instance via {@link #metricsCapability} to check if specific metrics backends (like
+ * Micrometer or MP Metrics) are supported. This is typically used by extensions to conditionally register metrics. See
+ * {@link #metricsSupported(String)}.</li>
+ * <li>The configured path for the metrics endpoint via {@link #path}, if one is enabled. See {@link #metricsEndpoint()}.</li>
+ * </ul>
+ * It extends {@link io.quarkus.builder.item.SimpleBuildItem}.
+ * The inner functional interface {@link MetricsCapability} defines the contract for checking backend support.
+ *
+ * @see io.quarkus.runtime.metrics.MetricsFactory#MICROMETER
+ * @see io.quarkus.runtime.metrics.MetricsFactory#MP_METRICS
+ */
 public final class MetricsCapabilityBuildItem extends SimpleBuildItem {
     @FunctionalInterface
     public interface MetricsCapability<String> {

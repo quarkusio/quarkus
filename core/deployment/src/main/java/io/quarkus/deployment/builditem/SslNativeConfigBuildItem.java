@@ -4,6 +4,13 @@ import java.util.Optional;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * Represents the configuration for SSL native support.
+ * <p>
+ * This build item allows specifying whether SSL native support is enabled,
+ * disabled, or left unspecified during the build process.
+ * </p>
+ */
 public final class SslNativeConfigBuildItem extends SimpleBuildItem {
 
     private Optional<Boolean> enableSslNativeConfig;

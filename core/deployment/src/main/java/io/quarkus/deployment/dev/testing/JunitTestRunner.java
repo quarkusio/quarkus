@@ -153,9 +153,7 @@ public class JunitTestRunner {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader();
             deploymentClassLoader = tcl;
-            if (firstDeploymentClassLoader == null) {
-                firstDeploymentClassLoader = deploymentClassLoader;
-            }
+
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance()
                             .get()::isDisplayTestOutput);
@@ -724,9 +722,13 @@ public class JunitTestRunner {
         ClassLoader classLoaderForLoadingTests;
         Closeable classLoaderToClose = null;
         ClassLoader orig = Thread.currentThread().getContextClassLoader();
+        // JUnitTestRunner is loaded with an augmentation classloader which does not have visibility of FacadeClassLoader, but the deployment classloader can see it
+        // We need a consistent classloader or we leak curated applications, so use a static classloader we stashed away
+        // In a multi-module project we will have several deployment classloaders, but it's ok
+        if (firstDeploymentClassLoader == null) {
+            firstDeploymentClassLoader = deploymentClassLoader;
+        }
         try {
-            // JUnitTestRunner is loaded with an augmentation classloader which does not have visibility of FacadeClassLoader, but the deployment classloader can see it
-            // We need a consistent classloader or we leak curated applications, so use a static classloader we stashed away
             Class fclClazz = firstDeploymentClassLoader.loadClass(FACADE_CLASS_LOADER_NAME);
             Constructor constructor = fclClazz.getConstructor(ClassLoader.class, boolean.class, CuratedApplication.class,
                     Map.class,
@@ -746,6 +748,8 @@ public class JunitTestRunner {
                     .setContextClassLoader(classLoaderForLoadingTests);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException
                 | InvocationTargetException e) {
+            // If the first deployment classloader cannot load a facade classloader, don't keep using it, let the next module provide one
+            firstDeploymentClassLoader = null;
             // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
             // In that case, fallback to loading classes as we normally would, using a TCCL
             log.debug(

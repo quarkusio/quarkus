@@ -117,6 +117,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         this(parent, false, null, null, null, System.getProperty("java.class.path"));
     }
 
+    // Also called reflectively by JUnitTestRunner
     public FacadeClassLoader(ClassLoader parent, boolean isAuxiliaryApplication, CuratedApplication curatedApplication,
             final Map<String, String> profileNames,
             final Set<String> quarkusTestClasses, final String classesPath) {
@@ -550,6 +551,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         // If the try block fails, this would be null, but there's no catch, so we'd never get to this code
         QuarkusClassLoader loader = startupAction.getClassLoader();
 
+        // Make sure that our new classloader has config on it; this is a bit of a scattergun approach to setting config, but it helps cover most paths
         Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
 
         Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());

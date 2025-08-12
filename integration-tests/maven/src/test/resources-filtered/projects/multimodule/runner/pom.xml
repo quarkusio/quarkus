@@ -25,6 +25,10 @@
             <artifactId>quarkus-quickstart-multimodule-rest</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.acme</groupId>
+            <artifactId>quarkus-quickstart-multimodule-dependency</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>

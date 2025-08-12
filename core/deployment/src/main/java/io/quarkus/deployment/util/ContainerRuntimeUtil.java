@@ -245,7 +245,7 @@ public final class ContainerRuntimeUtil {
         }
 
         public boolean isDocker() {
-            return this.executableName.equals("docker");
+            return this == DOCKER || this == DOCKER_ROOTLESS || this == WSL || this == WSL_ROOTLESS;
         }
 
         public boolean isPodman() {
@@ -258,6 +258,10 @@ public final class ContainerRuntimeUtil {
 
         public boolean isRootless() {
             return rootless;
+        }
+
+        public boolean isUnavailable() {
+            return this == UNAVAILABLE;
         }
 
         public static ContainerRuntime of(String value) {

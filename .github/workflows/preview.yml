@@ -20,12 +20,12 @@ jobs:
       pull-requests: write
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: quarkusio/quarkusio.github.io
           fetch-depth: 5000
           fetch-tags: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: quarkusio/quarkus
           path: quarkus-main

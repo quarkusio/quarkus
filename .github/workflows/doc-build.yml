@@ -52,7 +52,7 @@ jobs:
     # Skip main in forks
     if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

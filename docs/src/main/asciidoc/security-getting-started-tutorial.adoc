@@ -293,11 +293,27 @@ The `quarkus-security-jpa` extension only initializes if a single entity is anno
 By default, it uses bcrypt-hashed passwords.
 You can configure it to use plain text or custom passwords.
 <4> Indicates the comma-separated list of roles added to the target principal representation attributes.
-<5> Allows us to add users while hashing passwords with the proper bcrypt hash.
+<5> Provides a helper method to add users with properly hashed passwords. The `BcryptUtil.bcryptHash()` method:
+* Automatically generates a random salt for each password.
+* Hashes the password using bcrypt with 10 iterations (default).
+* Returns the hash in Modular Crypt Format (MCF), which includes the algorithm identifier, cost parameter, salt, and hash.
+
+[TIP]
+====
+**Password hashing best practices:**
+
+* Always pass plain text passwords to `BcryptUtil.bcryptHash()` - never pre-hash them.
+* The bcrypt hash includes the salt, so no separate salt storage is needed.
+* To verify passwords during authentication, the framework automatically uses `BcryptUtil.matches(plainPassword, hashedPassword)`.
+* For custom iterations: `BcryptUtil.bcryptHash(password, iterationCount)` where higher iterations (12-14) provide more security but slower performance.
+====
+
+- For more information about configuring passwords and roles, see xref:configure-the-application[Configure the application]. 
+- For more information on hashing passwords and available options, see xref:security-jpa.adoc#password-storage-and-hashing[Password storage and hashing].
 
 [NOTE]
 ====
-Don’t forget to set up the Panache and PostgreSQL JDBC driver, please see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache] for more information.
+Remember to set up the Panache and PostgreSQL JDBC driver. For more information, see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache].
 ====
 ifndef::no-quarkus-security-jpa-reactive[]
 [NOTE]
@@ -307,6 +323,7 @@ For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-qui
 ====
 endif::no-quarkus-security-jpa-reactive[]
 
+[id="configure-the-application"]
 == Configure the application
 
 . Enable the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] mechanism by setting the `quarkus.http.auth.basic` property to `true`:

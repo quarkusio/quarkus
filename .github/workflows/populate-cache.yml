@@ -53,7 +53,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Cache Maven Repository

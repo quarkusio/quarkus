@@ -18,6 +18,7 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
     private final Type typeOfField;
     private final Type typeOfValue;
     private long cursor;
+    private boolean initial;
     private final List<String> extra = new ArrayList<>();
 
     public <K> HScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfField,
@@ -27,24 +28,21 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
         this.key = marshaller.encode(key);
         this.typeOfField = typeOfField;
         this.typeOfValue = typeOfValue;
-        this.cursor = INITIAL_CURSOR_ID;
+        this.cursor = 0;
+        this.initial = true;
         this.extra.addAll(extra);
     }
 
     @Override
     public boolean hasNext() {
-        return cursor != 0;
+        return initial || cursor != 0;
     }
 
     @Override
     public Uni<Map<F, V>> next() {
-        long pos = cursor == INITIAL_CURSOR_ID ? 0 : cursor;
-        RedisCommand cmd = RedisCommand.of(Command.HSCAN);
-        cmd.put(key);
-        cmd.put(pos);
-        cmd.putAll(extra);
-        return execute(cmd)
-                .invoke(response -> cursor = response.get(0).toLong())
+        initial = false;
+        return execute(RedisCommand.of(Command.HSCAN).put(key).put(Long.toUnsignedString(cursor)).putAll(extra))
+                .invoke(response -> cursor = Long.parseUnsignedLong(response.get(0).toString()))
                 .map(response -> decode(response.get(1)));
     }
 

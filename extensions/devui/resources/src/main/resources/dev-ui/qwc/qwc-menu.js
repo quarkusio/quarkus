@@ -124,6 +124,9 @@ export class QwcMenu extends observeState(LitElement) {
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateSelection(event);
         });
+        window.addEventListener('storage-changed', (event) => {
+            this._storageChange(event);
+        });
         this._customMenuNamespaces = [];
         this._dynamicMenuNamespaces = null;
     }
@@ -250,6 +253,13 @@ export class QwcMenu extends observeState(LitElement) {
             }
             this._storeDynamicMenuItems(storedMenu);
             this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();  
+        }
+    }
+    
+    _storageChange(event){
+        if(event.detail.method === "remove" && event.detail.key.startsWith("qwc-menu-")){
+            this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
+            this._restoreState();
         }
     }
     

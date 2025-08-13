@@ -662,6 +662,42 @@ this.storageControl.set('height', 123); // Set some val
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
 
+======= Per Application
+
+You can narrow the score of the storage further by the current application:
+
+[source,javascript]
+----
+storageControl = new StorageController(this, true); // Passing in true will scope per application
+----
+
+======= Storage Setting
+
+Users can have a raw view on the storage in the settings page:
+
+image::dev-ui-storage-settings.png[alt=Dev UI Storage Settings,role="center"]
+
+Because users can clean/revert to default in this screen by deleting the storage item, an extension might want to react on this:
+
+[source,javascript]
+----
+connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener('storage-changed', this._storageChange); // Listen for storage changes
+}
+
+disconnectedCallback() {
+        window.removeEventListener('storage-changed', this._storageChange); // Clean up
+        super.disconnectedCallback();
+}
+
+_storageChange = (e) => {
+    if(e.detail.method === "remove" && e.detail.key.startsWith("qwc-myextensionname-")){ // Only care about remove and your extension
+        // React on storage removal
+    }
+}
+
+----
 
 ====== Log
 

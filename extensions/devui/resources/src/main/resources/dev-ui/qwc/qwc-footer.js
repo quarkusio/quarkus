@@ -192,6 +192,9 @@ export class QwcFooter extends observeState(LitElement) {
     constructor() {
         super();
         LogController.addListener(this);
+        window.addEventListener('storage-changed', (event) => {
+            this._storageChange(event);
+        });
     }
 
     loaded(){
@@ -203,9 +206,7 @@ export class QwcFooter extends observeState(LitElement) {
         this._controlButtons = [];
         this._originalMouseY = 0;
         
-        this._restoreState();
-        this._restoreHeight();
-        this._restoreSelectedTab();
+        this._restoreFromLocalStorage();
     }
 
     _restoreHeight(){
@@ -234,6 +235,18 @@ export class QwcFooter extends observeState(LitElement) {
         }else {
             this._tabSelected(0);
         }
+    }
+
+    _storageChange(event){
+        if(event.detail.method === "remove" && event.detail.key.startsWith("qwc-footer-")){
+            this._restoreFromLocalStorage();
+        }
+    }
+
+    _restoreFromLocalStorage(){
+        this._restoreState();
+        this._restoreHeight();
+        this._restoreSelectedTab();
     }
 
     render() {

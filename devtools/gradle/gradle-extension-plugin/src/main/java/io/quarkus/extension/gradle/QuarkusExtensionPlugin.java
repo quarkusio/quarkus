@@ -113,7 +113,12 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                         }
                     });
                 });
-                exportDeploymentClasspath(deploymentProject);
+                if (ApplicationDeploymentClasspathBuilder.isDisableComponentVariants(project)) {
+                    // This seems to override the deployment configuration that otherwise would be created
+                    // by the ApplicationDeploymentClasspathBuilder, which will not work
+                    // especially for the component variant-based approach.
+                    exportDeploymentClasspath(deploymentProject);
+                }
             }
         });
     }

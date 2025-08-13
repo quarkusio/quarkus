@@ -47,32 +47,34 @@ public abstract class NativeImageBuildRunner {
         try {
             final String[] buildCommand = getBuildCommand(outputDir, args);
             log.info(String.join(" ", buildCommand).replace("$", "\\$"));
-            ProcessBuilder.newBuilder(buildCommand[0])
+            ProcessBuilder<Void> pb = ProcessBuilder.newBuilder(buildCommand[0])
                     .arguments(Arrays.copyOfRange(buildCommand, 1, buildCommand.length))
-                    .directory(outputDir)
-                    .whileRunning(ph -> {
-                        if (!ph.isAlive()) {
-                            return;
-                        }
-                        // todo: maybe have a "destroy-on-shutdown" switch?
-                        Thread hook = new Thread(() -> {
-                            if (ph.supportsNormalTermination()) {
-                                // ask nicely (not supported on Windows)
-                                ph.destroy();
-                            }
-                            ph.waitUninterruptiblyFor(10, TimeUnit.SECONDS);
-                            ProcessUtil.destroyAllForcibly(ph);
-                        }, "GraalVM terminator");
-                        Runtime.getRuntime().addShutdownHook(hook);
-                        try {
-                            ph.waitUninterruptiblyFor();
-                        } finally {
-                            Runtime.getRuntime().removeShutdownHook(hook);
-                        }
-                    })
-                    .output().consumeLinesWith(8192, log::info)
-                    .error().consumeWith(br -> new ErrorReplacingProcessReader(br, outputDir.resolve("reports").toFile()).run())
-                    .run();
+                    .directory(outputDir);
+            pb.whileRunning(ph -> {
+                if (!ph.isAlive()) {
+                    return;
+                }
+                // todo: maybe have a "destroy-on-shutdown" switch?
+                Thread hook = new Thread(() -> {
+                    if (ph.supportsNormalTermination()) {
+                        // ask nicely (not supported on Windows)
+                        ph.destroy();
+                    }
+                    ph.waitUninterruptiblyFor(10, TimeUnit.SECONDS);
+                    ProcessUtil.destroyAllForcibly(ph);
+                }, "GraalVM terminator");
+                Runtime.getRuntime().addShutdownHook(hook);
+                try {
+                    ph.waitUninterruptiblyFor();
+                } finally {
+                    Runtime.getRuntime().removeShutdownHook(hook);
+                }
+            });
+            pb.output().consumeLinesWith(8192, System.out::println);
+            // Why logOnSuccess(false) and then consumeWith? Because we get the stdErr twice otherwise.
+            pb.error().logOnSuccess(false)
+                    .consumeWith(br -> new ErrorReplacingProcessReader(br, outputDir.resolve("reports").toFile()).run());
+            pb.run();
             boolean objcopyExists = objcopyExists();
 
             if (!debugSymbolsEnabled) {
@@ -121,11 +123,13 @@ public abstract class NativeImageBuildRunner {
     static void runCommand(String[] command, String errorMsg, File workingDirectory) {
         log.info(String.join(" ", command).replace("$", "\\$"));
         try {
-            var pb = ProcessBuilder.newBuilder(command[0])
+            final ProcessBuilder<Void> pb = ProcessBuilder.newBuilder(command[0])
                     .arguments(Arrays.copyOfRange(command, 1, command.length));
             if (workingDirectory != null) {
                 pb.directory(workingDirectory.toPath());
             }
+            // Without logOnSuccess(false) the error stream is printed twice and with a "WARNING".
+            pb.error().logOnSuccess(false);
             pb.run();
         } catch (Exception e) {
             if (errorMsg != null) {

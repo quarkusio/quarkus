@@ -159,7 +159,7 @@ public class DevServicesProcessor {
         return new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class);
     }
 
-    @BuildStep(onlyIf = { IsDevelopment.class })
+    @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })
     public List<DevServiceDescriptionBuildItem> config(
             DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<ConsoleCommandBuildItem> commandBuildItemBuildProducer,

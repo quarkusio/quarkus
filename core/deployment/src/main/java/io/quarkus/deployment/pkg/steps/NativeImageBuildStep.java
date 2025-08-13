@@ -566,7 +566,9 @@ public class NativeImageBuildStep {
 
     private static String testGCCArgument(String argument) {
         try {
-            ProcessBuilder.exec("cc", "-v", "-E", argument, "-");
+            ProcessBuilder<Void> pb = ProcessBuilder.newBuilder("cc", "-v", "-E", argument, "-");
+            pb.error().logOnSuccess(log.isTraceEnabled());
+            pb.run();
             return argument;
         } catch (Exception ignored) {
             return "";

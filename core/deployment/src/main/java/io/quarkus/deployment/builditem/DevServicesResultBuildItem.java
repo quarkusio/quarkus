@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -177,8 +178,10 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         if (config != null && !config.isEmpty()) {
             map.putAll(config);
         }
-        for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
-            map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+        if (applicationConfigProvider != null) {
+            for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
+                map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+            }
         }
         return map;
     }
@@ -190,7 +193,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private String description;
 
         public DiscoveredServiceBuilder name(String name) {
-            this.name = name;
+            this.name = Objects.requireNonNull(name, "name cannot be null");
             return this;
         }
 
@@ -215,6 +218,9 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         public DevServicesResultBuildItem build() {
+            if (name == null) {
+                throw new IllegalStateException("name cannot be null");
+            }
             return new DevServicesResultBuildItem(name, description, containerId, config);
         }
     }
@@ -259,6 +265,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         public <S extends Startable> OwnedServiceBuilder<S> startable(Supplier<S> startableSupplier) {
             this.startableSupplier = startableSupplier;
             return (OwnedServiceBuilder<S>) this;
@@ -269,11 +276,13 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {
             this.applicationConfigProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;
             return this;
         }
 
+        @SuppressWarnings("unchecked")
         public DevServicesResultBuildItem build() {
             return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,

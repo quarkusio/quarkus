@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -100,6 +101,10 @@ final class FaultToleranceScanner {
             }
             if (method.isSynthetic()) {
                 // synthetic methods can't be intercepted
+                continue;
+            }
+            if (Modifier.isPrivate(method.flags())) {
+                // private methods can't be intercepted
                 continue;
             }
             if (annotationStore.hasAnnotation(method, io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS)

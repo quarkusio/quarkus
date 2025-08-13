@@ -194,7 +194,7 @@ public class OidcClientImpl implements OidcClient {
             if (clientAssertion == null && clientAssertionProvider != null) {
                 clientAssertion = clientAssertionProvider.getClientAssertion();
                 if (clientAssertion != null) {
-                    body.add(OidcConstants.CLIENT_ASSERTION, clientAssertion);
+                    body.set(OidcConstants.CLIENT_ASSERTION, clientAssertion);
                 }
             }
             if (clientAssertion == null) {
@@ -204,7 +204,7 @@ public class OidcClientImpl implements OidcClient {
                 LOG.error(errorMessage);
                 throw new OidcClientException(errorMessage);
             }
-            body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+            body.set(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
         } else if (clientJwtKey != null) {
             // if it is a refresh then a map has already been copied
             body = !refresh ? copyMultiMap(body) : body;

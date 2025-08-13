@@ -169,6 +169,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             collectDestinationDirs(module.getMainSources().getSourceDirs(), paths);
             collectDestinationDirs(module.getMainSources().getResourceDirs(), paths);
             appArtifact.setResolvedPaths(paths.build());
+            appArtifact.setReloadable().setWorkspaceModule();
         } else {
             appArtifact.setResolvedPaths(PathList.empty());
         }
@@ -287,7 +288,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     artifact.type);
             if (!isDependency(artifact)
                     || modelBuilder.getDependency(artifactKey) != null
-                    || modelBuilder.getApplicationArtifact().getKey().equals(artifactKey)) {
+                    // test fixtures depend on the default jar artifact, which could be the root one
+                    || isApplicationRoot(modelBuilder, artifactKey)) {
                 continue;
             }
 
@@ -341,6 +343,10 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
     }
 
+    private static boolean isApplicationRoot(ApplicationModelBuilder modelBuilder, ArtifactKey artifactKey) {
+        return modelBuilder.getApplicationArtifact().getKey().equals(artifactKey);
+    }
+
     private static ModuleVersionIdentifier getModuleVersion(ResolvedDependencyResult resolvedDependency) {
         return Objects.requireNonNull(resolvedDependency.getSelected().getModuleVersion());
     }
@@ -353,10 +359,10 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     private static void collectExtensionDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder) {
         Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath.resolvedArtifactsByComponentIdentifier();
-        Set<ArtifactKey> alreadyVisited = new HashSet<>();
+        final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, artifacts, alreadyVisited, false);
+                collectExtensionDependencies(result, modelBuilder, artifacts, processedModules, false);
             }
         });
     }
@@ -365,8 +371,12 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             ResolvedDependencyResult resolvedDependency,
             ApplicationModelBuilder modelBuilder,
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
-            Set<ArtifactKey> alreadyVisited,
+            Set<ModuleVersionIdentifier> processedModules,
             boolean clearReloadableFlag) {
+        final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
+        if (!processedModules.add(moduleId)) {
+            return;
+        }
         List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
                 resolvedDependency.getSelected().getId());
         if (artifacts.isEmpty()) {
@@ -374,14 +384,17 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
 
         final ModuleVersionIdentifier moduleVersionIdentifier = getModuleVersion(resolvedDependency);
+        boolean clearReloadableFlagChildren = clearReloadableFlag;
         for (QuarkusResolvedArtifact artifact : artifacts) {
 
             String classifier = resolveClassifier(moduleVersionIdentifier, artifact.file);
             ArtifactKey artifactKey = ArtifactKey.of(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
                     classifier,
                     artifact.type);
-            if (!alreadyVisited.add(artifactKey)) {
-                return;
+            if (!isDependency(artifact)
+                    // test fixtures depend on the default jar artifact, which could be the root one
+                    || isApplicationRoot(modelBuilder, artifactKey)) {
+                continue;
             }
 
             ResolvedDependencyBuilder dep = modelBuilder.getDependency(artifactKey);
@@ -393,13 +406,15 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             dep.setDeploymentCp();
             if (clearReloadableFlag) {
                 dep.clearFlag(DependencyFlags.RELOADABLE);
+            } else if (!dep.isReloadable()) {
+                clearReloadableFlagChildren = true;
             }
-            clearReloadableFlag |= !dep.isReloadable();
         }
 
         for (DependencyResult d : resolvedDependency.getSelected().getDependencies()) {
             if (d instanceof ResolvedDependencyResult result) {
-                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, alreadyVisited, clearReloadableFlag);
+                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, processedModules,
+                        clearReloadableFlagChildren);
             }
         }
     }

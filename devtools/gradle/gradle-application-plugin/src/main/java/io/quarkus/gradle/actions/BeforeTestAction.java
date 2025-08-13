@@ -60,15 +60,14 @@ public class BeforeTestAction implements Action<Task> {
             Test task = (Test) t;
             final Map<String, Object> props = task.getSystemProperties();
 
-            ApplicationModel applicationModel = ToolingUtils
-                    .deserializeAppModel(applicationModelPath.get().getAsFile().toPath());
+            final Path serializedModel = applicationModelPath.get().getAsFile().toPath();
+            ApplicationModel applicationModel = ToolingUtils.deserializeAppModel(serializedModel);
 
             SmallRyeConfig config = effectiveProvider().buildEffectiveConfiguration(applicationModel, new HashMap<>())
                     .getConfig();
             config.getOptionalValue(TEST.getProfileKey(), String.class)
                     .ifPresent(value -> props.put(TEST.getProfileKey(), value));
 
-            final Path serializedModel = applicationModelPath.get().getAsFile().toPath();
             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
 
             StringJoiner outputSourcesDir = new StringJoiner(",");

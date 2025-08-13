@@ -131,7 +131,7 @@ public abstract class MultiplePlatformBomsTestBase {
     }
 
     protected List<ArtifactCoords> toPlatformBomCoords(String... artifactIds) {
-        return toPlatformBomCoords(Arrays.asList(artifactIds));
+        return toPlatformBomCoords(List.of(artifactIds));
     }
 
     protected List<ArtifactCoords> toPlatformBomCoords(final List<String> extraBoms) {

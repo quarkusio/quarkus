@@ -20,4 +20,15 @@ public interface Constants {
     String JSON = "json";
 
     String LAST_UPDATED = "last-updated";
+
+    /**
+     * Registry configuration option allowing users to limit the extension catalog from a registry to a specific offering
+     */
+    String OFFERING = "offering";
+
+    /**
+     * An internal metadata key optionally added to extension metadata by a registry client
+     * to indicate a user configured offering-based support key that should be displayed by extension listing commands
+     */
+    String REGISTRY_USER_SELECTED_SUPPORT_KEY = "registry-user-selected-support-key";
 }

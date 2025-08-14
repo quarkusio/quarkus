@@ -27,7 +27,7 @@ final class Execution {
 
     private final BuildChain chain;
     private final ConcurrentHashMap<ItemId, BuildItem> singles;
-    private final ConcurrentHashMap<ItemId, List<BuildItem>> multis;
+    private final MultiBuildItems multis;
     private final Set<ItemId> finalIds;
     private final ConcurrentHashMap<StepInfo, BuildContext> contextCache = new ConcurrentHashMap<>();
     private final EnhancedQueueExecutor executor;
@@ -50,7 +50,7 @@ final class Execution {
     Execution(final BuildExecutionBuilder builder, final Set<ItemId> finalIds) {
         chain = builder.getChain();
         this.singles = new ConcurrentHashMap<>(builder.getInitialSingle());
-        this.multis = new ConcurrentHashMap<>(builder.getInitialMulti());
+        this.multis = builder.getMultis();
         this.finalIds = finalIds;
         final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
         executorBuilder.setRegisterMBean(false);
@@ -86,7 +86,7 @@ final class Execution {
         runningThread = Thread.currentThread();
 
         // run the build
-        final List<StepInfo> startSteps = chain.getStartSteps();
+        final Set<StepInfo> startSteps = chain.getStartSteps();
         for (StepInfo startStep : startSteps) {
             executor.execute(getBuildContext(startStep)::run);
         }
@@ -157,7 +157,7 @@ final class Execution {
         return singles;
     }
 
-    ConcurrentHashMap<ItemId, List<BuildItem>> getMultis() {
+    MultiBuildItems getMultis() {
         return multis;
     }
 

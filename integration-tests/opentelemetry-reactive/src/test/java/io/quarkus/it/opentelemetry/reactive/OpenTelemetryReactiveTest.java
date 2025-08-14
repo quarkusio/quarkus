@@ -12,6 +12,7 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanEventAttrs;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -19,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -26,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.awaitility.core.ConditionTimeoutException;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -336,6 +340,45 @@ public class OpenTelemetryReactiveTest {
         Map<String, Object> helloGetUniExecutorInternal = getSpanByKindAndParentId(spans, INTERNAL,
                 helloGetUniExecutorServer.get("spanId"));
         assertEquals("helloGetUniExecutor", helloGetUniExecutorInternal.get("name"));
+    }
+
+    @Test
+    public void potentialTracelessResourceMethods() {
+        when().get("/reactive/potentially-traceless")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("@Traceless"));
+
+        // should throw because there is no span
+        assertThrows(ConditionTimeoutException.class, () -> {
+            await().atMost(5, SECONDS).until(() -> !getSpans().isEmpty());
+        });
+
+        when().post("/reactive/potentially-traceless")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("Not-@Traceless"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+    }
+
+    @Test
+    public void tracelessWithClient() {
+        given().when().get("/reactive/traceless-with-client")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("Hello jack"));
+        await().atMost(500, SECONDS).until(() -> getSpans().size() == 3);
+
+        List<Map<String, Object>> spans = getSpans();
+        //GET traceless-with-client missing
+        assertEquals("helloGet", spans.get(0).get("name"));
+        assertEquals("INTERNAL", spans.get(0).get("kind"));
+        assertEquals("GET /reactive", spans.get(1).get("name"));
+        assertEquals("SERVER", spans.get(1).get("kind"));
+        assertEquals("GET /reactive", spans.get(2).get("name"));
+        assertEquals("CLIENT", spans.get(2).get("kind"));// FIXME this Span refers a sampled out span.
+
     }
 
     @Test

@@ -122,6 +122,16 @@ public class BuildToolDelegatingCommand implements Callable<Integer> {
     }
 
     public void prepareMaven(BuildToolContext context) {
+        if (context.getBuildOptions().clean) {
+            // Need to invoke build which will handle both clean and build op
+            final Build buildCommand = new Build(context.getRunModeOption(), context.getBuildOptions(), context.getParams(),
+                    spec, output, registryClient, helpOption, context.getPropertiesOptions());
+            int compileExitCode = buildCommand.call();
+            if (compileExitCode != ExitCode.OK) {
+                throw new RuntimeException("Failed to compile. Compilation exited with exit code:" + compileExitCode);
+            }
+            context.getBuildOptions().clean = false;
+        }
         BuildSystemRunner runner = getRunner(context);
         BuildSystemRunner.BuildCommandArgs compileArgs = runner.prepareAction("resources:resources",
                 context.getBuildOptions(),
@@ -152,6 +162,16 @@ public class BuildToolDelegatingCommand implements Callable<Integer> {
         }
         if (!context.getForcedExtensions().isEmpty()) {
             GradleInitScript.populateForExtensions(context.getForcedExtensions(), context.getParams());
+        }
+        if (context.getBuildOptions().clean) {
+            //Need to invoke build which will handle both clean and build op
+            final Build buildCommand = new Build(context.getRunModeOption(), context.getBuildOptions(), context.getParams(),
+                    spec, output, registryClient, helpOption, context.getPropertiesOptions());
+            int compileExitCode = buildCommand.call();
+            if (compileExitCode != ExitCode.OK) {
+                throw new RuntimeException("Failed to compile. Compilation exited with exit code:" + compileExitCode);
+            }
+            context.getBuildOptions().clean = false;
         }
     }
 

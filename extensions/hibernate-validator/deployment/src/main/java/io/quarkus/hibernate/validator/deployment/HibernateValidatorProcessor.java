@@ -66,7 +66,6 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
@@ -98,7 +97,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -174,6 +172,11 @@ class HibernateValidatorProcessor {
     private static final DotName GRAALVM_FEATURE = DotName.createSimple("org.graalvm.nativeimage.hosted.Feature");
 
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
+
+    @BuildStep
+    void feature(BuildProducer<FeatureBuildItem> features) {
+        features.produce(new FeatureBuildItem(Feature.HIBERNATE_VALIDATOR));
+    }
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
@@ -456,24 +459,16 @@ class HibernateValidatorProcessor {
             BeanValidationAnnotationsBuildItem beanValidationAnnotations,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<AdditionalConstrainedClassesIndexBuildItem> additionalConstrainedClassesIndexBuildItem,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            ShutdownContextBuildItem shutdownContext,
-            List<ConfigClassBuildItem> configClasses,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             Optional<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver,
             LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) throws Exception {
-
-        feature.produce(new FeatureBuildItem(Feature.HIBERNATE_VALIDATOR));
 
         IndexView indexView;
 

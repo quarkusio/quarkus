@@ -409,14 +409,14 @@ public class ConfigBuildStep {
         }
 
         if (arcConfig.shouldEnableBeanRemoval()) {
-            Set<String> unremovableClassNames = unremovableBeans.stream()
+            Set<DotName> unremovableClassNames = unremovableBeans.stream()
                     .map(UnremovableBeanBuildItem::getClassNames)
                     .flatMap(Collection::stream)
                     .collect(toSet());
 
             for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
                 if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)
-                        || unremovableClassNames.contains(configClass.getName().toString())) {
+                        || unremovableClassNames.contains(configClass.getName())) {
                     toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
                 }
             }

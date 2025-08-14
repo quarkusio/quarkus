@@ -57,7 +57,7 @@ public class ShutdownBuildSteps {
             @Override
             public boolean test(BeanInfo bean) {
                 if (bean.isClassBean()) {
-                    return bean.getTarget().get().asClass().annotationsMap().containsKey(SHUTDOWN_NAME);
+                    return bean.getTarget().get().asClass().hasAnnotation(SHUTDOWN_NAME);
                 }
                 return false;
             }

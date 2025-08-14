@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.panache.common.deployment.EntityField.Visibility;
+
 public class MetamodelInfo {
     final Map<String, EntityModel> entities = new HashMap<>();
 
@@ -21,8 +23,13 @@ public class MetamodelInfo {
                 .filter(e -> {
                     EntityModel value = e.getValue();
                     for (;;) {
-                        if (!value.fields.isEmpty()) {
+                        // to be extra safe, we just avoid to consider private fields
+                        // so we also support package-private fields
+                        if (value.fields.values().stream().anyMatch(f -> f.visibility != Visibility.PRIVATE)) {
                             return true;
+                        }
+                        if (value.superClassName == null) {
+                            return false;
                         }
                         value = entities.get(value.superClassName);
                         if (value == null) {

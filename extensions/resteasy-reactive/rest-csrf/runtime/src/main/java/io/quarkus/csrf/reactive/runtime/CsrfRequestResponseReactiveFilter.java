@@ -143,7 +143,7 @@ public class CsrfRequestResponseReactiveFilter {
 
             ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) requestContext
                     .getServerRequestContext();
-            String csrfTokenFormParam = (String) rrContext.getFormParameter(config.formFieldName(), true, false);
+            String csrfTokenFormParam = (String) rrContext.getFormParameter(config.formFieldName(), true, false, false);
             LOG.debugf("CSRF token found in the form parameter");
             verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenFormParam);
 

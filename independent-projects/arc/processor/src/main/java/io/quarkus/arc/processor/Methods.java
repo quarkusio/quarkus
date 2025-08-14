@@ -475,8 +475,13 @@ final class Methods {
         void startProcessing(ClassInfo clazz, ClassInfo originalClazz) {
             this.clazz = clazz;
             this.originalClazz = originalClazz;
-            this.regularMethods = new ArrayList<>();
-            for (MethodInfo method : clazz.methods()) {
+
+            List<MethodInfo> methodsInfos = clazz.methods();
+            // the list will sometimes be a bit larger than strictly necessary but it should be better sized than the default
+            // and the excluded methods are usually exceptions
+            // this way, we will avoid resizing the list
+            this.regularMethods = new ArrayList<>(methodsInfos.size());
+            for (MethodInfo method : methodsInfos) {
                 if (!Modifier.isAbstract(method.flags()) && !method.isSynthetic() && !isBridge(method)) {
                     regularMethods.add(method);
                 }

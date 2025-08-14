@@ -9,14 +9,16 @@ import jakarta.inject.Inject;
 import jakarta.interceptor.Interceptor;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.SecurityIdentityAssociation;
+import io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation;
 import io.smallrye.mutiny.Uni;
 
 @Alternative
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
 @ApplicationScoped
-public class TestIdentityAssociation extends SecurityIdentityAssociation {
+public class TestIdentityAssociation implements CurrentIdentityAssociation {
 
     @PostConstruct
     public void check() {
@@ -89,6 +91,13 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
 }
 
 @RequestScoped
-class DelegateSecurityIdentityAssociation extends SecurityIdentityAssociation {
+class DelegateSecurityIdentityAssociation extends AbstractSecurityIdentityAssociation {
 
+    @Inject
+    IdentityProviderManager identityProviderManager;
+
+    @Override
+    protected IdentityProviderManager getIdentityProviderManager() {
+        return identityProviderManager;
+    }
 }

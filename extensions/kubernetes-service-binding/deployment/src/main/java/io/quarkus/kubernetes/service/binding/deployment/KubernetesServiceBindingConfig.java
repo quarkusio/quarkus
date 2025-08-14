@@ -10,6 +10,7 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.kubernetes-service-binding")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@Deprecated(forRemoval = true, since = "3.19")
 public interface KubernetesServiceBindingConfig {
 
     /**

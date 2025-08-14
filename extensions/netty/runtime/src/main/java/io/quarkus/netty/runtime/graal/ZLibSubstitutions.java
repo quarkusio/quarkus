@@ -61,6 +61,11 @@ final class Target_io_netty_handler_codec_compression_ZlibCodecFactory {
     }
 
     @Substitute
+    public static ZlibDecoder newZlibDecoder(ZlibWrapper wrapper, int maxAllocation) {
+        return new JdkZlibDecoder(wrapper, maxAllocation);
+    }
+
+    @Substitute
     public static ZlibDecoder newZlibDecoder(byte[] dictionary) {
         return new JdkZlibDecoder(dictionary);
     }

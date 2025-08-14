@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -101,12 +102,6 @@ public class ClassTransformingBuildStep {
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i);
-            if (i.getRequireConstPoolEntry() == null || i.getRequireConstPoolEntry().isEmpty()) {
-                noConstScanning.add(i.getClassToTransform());
-            } else {
-                constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
-                        .addAll(i.getRequireConstPoolEntry());
-            }
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
             }
@@ -114,6 +109,9 @@ public class ClassTransformingBuildStep {
                     // class reader options are bit flags (see org.objectweb.asm.ClassReader)
                     (oldValue, newValue) -> oldValue | newValue);
         }
+
+        initializeConstPoolScanningConfiguration(bytecodeTransformers, noConstScanning, constScanning);
+
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
         // now copy all the contents to the runner jar
@@ -286,6 +284,46 @@ public class ClassTransformingBuildStep {
         }
 
         return new TransformedClassesBuildItem(transformedClassesByJar);
+    }
+
+    private static void initializeConstPoolScanningConfiguration(
+            Map<String, List<BytecodeTransformerBuildItem>> bytecodeTransformers, Set<String> noConstScanning,
+            Map<String, Set<String>> constScanning) {
+        // this option is not widely used and it is mostly used by the Panache transformer AFAIK
+        // in this case, we have all the Panache entities in the list, which might be quite a lot when you have a lot of entities
+        // and it's worth avoiding copying the entries over and over as we used to create a new copy of the set for each entity
+
+        outer: for (Entry<String, List<BytecodeTransformerBuildItem>> bytecodeTransformersPerClassEntry : bytecodeTransformers
+                .entrySet()) {
+            List<BytecodeTransformerBuildItem> transformersRequiringConstPoolEntries = new ArrayList<>(
+                    bytecodeTransformersPerClassEntry.getValue().size());
+            int requiredConstPoolEntriesNumber = 0;
+            for (BytecodeTransformerBuildItem transformer : bytecodeTransformersPerClassEntry.getValue()) {
+                if (transformer.getRequireConstPoolEntry() != null && !transformer.getRequireConstPoolEntry().isEmpty()) {
+                    transformersRequiringConstPoolEntries.add(transformer);
+                    requiredConstPoolEntriesNumber += transformer.getRequireConstPoolEntry().size();
+                } else {
+                    // as soon as we get one transformer that do not require const scanning, we return
+                    // this is a problem with this current approach and we will address it in a second commit
+                    noConstScanning.add(bytecodeTransformersPerClassEntry.getKey());
+                    continue outer;
+                }
+            }
+            if (transformersRequiringConstPoolEntries.isEmpty()) {
+                // just to be safe, we should never end there
+                noConstScanning.add(bytecodeTransformersPerClassEntry.getKey());
+            } else if (transformersRequiringConstPoolEntries.size() == 1) {
+                constScanning.put(bytecodeTransformersPerClassEntry.getKey(),
+                        transformersRequiringConstPoolEntries.get(0).getRequireConstPoolEntry());
+            } else {
+                // we don't do that often, but let's avoid having to resize the underlying HashMap as it can be quite big
+                Set<String> requiredConstPoolEntries = new HashSet<>((int) Math.ceil(requiredConstPoolEntriesNumber / 0.75f));
+                for (BytecodeTransformerBuildItem transformer : transformersRequiringConstPoolEntries) {
+                    requiredConstPoolEntries.addAll(transformer.getRequireConstPoolEntry());
+                }
+                constScanning.put(bytecodeTransformersPerClassEntry.getKey(), requiredConstPoolEntries);
+            }
+        }
     }
 
     private void copyTransformedClasses(Path originalClassesPath,

@@ -3,7 +3,6 @@ package io.quarkus.deployment.configuration;
 import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -222,7 +221,7 @@ public class ConfigMappingUtils {
         DotName configIfaceName = DotName.createSimple(configClass.getName());
         ClassInfo configIfaceInfo = index.getClassByName(configIfaceName);
         if ((configIfaceInfo == null) || configIfaceInfo.interfaceNames().isEmpty()) {
-            return Collections.singleton(Type.create(configIfaceName, Type.Kind.CLASS));
+            return Set.of(Type.create(configIfaceName, Type.Kind.CLASS));
         }
 
         Set<DotName> allIfaces = new HashSet<>();

@@ -235,7 +235,10 @@ export class RouterController {
     }
 
     getPagesForCurrentNamespace(){
-        let ns = this.getCurrentNamespace();
+        return this.getPagesForNamespace(this.getCurrentNamespace());
+    }
+
+    getPagesForNamespace(ns){
         if(ns){
             return RouterController.namespaceMap.get(ns);
         }

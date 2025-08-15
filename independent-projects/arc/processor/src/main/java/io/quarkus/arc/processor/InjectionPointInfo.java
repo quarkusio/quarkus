@@ -5,7 +5,6 @@ import static io.quarkus.arc.processor.Annotations.contains;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -134,7 +133,7 @@ public class InjectionPointInfo {
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
             AnnotationTarget target, AnnotationTarget methodParameterTarget, boolean isTransientReference, boolean isDelegate) {
         this(new TypeAndQualifiers(requiredType, requiredQualifiers.isEmpty()
-                ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
+                ? Set.of(AnnotationInstance.create(DotNames.DEFAULT, null, List.of()))
                 : requiredQualifiers),
                 kind, target, methodParameterTarget, isTransientReference, isDelegate);
     }

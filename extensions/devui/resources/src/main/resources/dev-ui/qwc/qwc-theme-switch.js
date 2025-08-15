@@ -16,11 +16,31 @@ export class QwcThemeSwitch extends LitElement {
     ];
     
     static styles = css`
-        .themeButton {
-            padding-left: 10px;
+        .themeButtons {
+            display: flex;
+            gap: 20px;
+            padding-bottom: 15px;
         }
-        .button {
-            --vaadin-button-background: var(--lumo-base-color);
+    
+        .themeBlock {
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 60px;
+        }
+        .selected {
+            border: 3px solid var(--lumo-contrast-10pct);
+        }
+    
+        .selectable {
+            border: 3px solid var(--lumo-base-color);
+            cursor: pointer;
+        }
+        .selectable:hover {
+            border: 3px solid var(--lumo-contrast-10pct);
         }
     `;
 
@@ -31,6 +51,9 @@ export class QwcThemeSwitch extends LitElement {
     constructor() {
         super();
         this._restoreThemePreference();
+        window.addEventListener('storage-changed', (event) => {
+            this._storageChange(event);
+        });
     }
 
     connectedCallback() {
@@ -58,17 +81,50 @@ export class QwcThemeSwitch extends LitElement {
     }
 
     render() {
-        let theme = this.themes[this._selectedThemeIndex];
         
-        return html`<div class="themeButton">
-                        <vaadin-button theme="icon" aria-label="${theme.name}" title="${theme.name} theme" class="button" @click="${this._nextTheme}">
-                            <vaadin-icon icon="${theme.icon}"></vaadin-icon>
-                        </vaadin-button>
+        return html`<div class="themeButtons" @wheel=${this._onWheel}>
+                        ${this.themes.map((theme) =>
+                            html`${this._renderButton(theme)}`
+                        )}                        
                     </div>`;
     }
 
-    _nextTheme(e){
-        this._selectedThemeIndex = (this._selectedThemeIndex + 1) % this.themes.length;
+    _renderButton(theme){
+        let selectedTheme = this.themes[this._selectedThemeIndex];
+        
+        if(selectedTheme.id === theme.id){
+            return html`<div class="themeBlock selected">
+                            <vaadin-icon icon="${theme.icon}"></vaadin-icon>
+                            <span>${theme.name}</span>
+                        </div>`;
+        }else{
+            return html`<div class="themeBlock selectable" @click="${() => this._selectTheme(theme)}">
+                            <vaadin-icon icon="${theme.icon}"></vaadin-icon>
+                            <span>${theme.name}</span>
+                        </div>`;
+        }
+    }
+
+    _storageChange(event){
+        if(event.detail.method === "remove" && event.detail.key.startsWith("qwc-theme-switch-")){
+            this._restoreThemePreference();
+            this._changeToSelectedThemeIndex();
+        }
+    }
+
+    _onWheel(event) {
+        event.preventDefault();
+        if (event.deltaY < 0) {
+            this._selectedThemeIndex = (this._selectedThemeIndex + 1) % this.themes.length;
+            this._changeToSelectedThemeIndex();
+        } else {
+            this._selectedThemeIndex = (this._selectedThemeIndex - 1 + this.themes.length) % this.themes.length;    
+            this._changeToSelectedThemeIndex();
+        }
+    }
+
+    _selectTheme(theme){
+        this._selectedThemeIndex = theme.id;
         this._changeToSelectedThemeIndex();
     }
 

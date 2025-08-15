@@ -17,8 +17,8 @@
         <angus-activation.version>2.0.2</angus-activation.version>
         <angus-mail.version>2.0.4</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
         <bouncycastle.version>1.81</bouncycastle.version>
-        <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
-        <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
+        <bouncycastle.fips.version>2.1.1</bouncycastle.fips.version>
+        <bouncycastle.tls.fips.version>2.1.20</bouncycastle.tls.fips.version>
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
@@ -99,9 +99,9 @@
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.2.2.Final</narayana.version>
         <narayana-lra.version>1.0.1.Final</narayana-lra.version>
-        <agroal.version>2.7.1</agroal.version>
+        <agroal.version>2.8</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.1.0</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.1.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -160,7 +160,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <flyway.version>11.11.0</flyway.version>
+        <flyway.version>11.11.1</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
@@ -207,7 +207,7 @@
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>10.4.1</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>10.4.2</strimzi-oauth.nimbus.version>
         <jose4j.version>0.9.6</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>

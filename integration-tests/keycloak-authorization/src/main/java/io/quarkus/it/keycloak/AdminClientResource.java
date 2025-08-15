@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -29,6 +30,29 @@ public class AdminClientResource {
     @Path("realm")
     public String getRealm() {
         return keycloak.realm("quarkus").toRepresentation().getRealm();
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("realms")
+    public String getRealms() {
+        return keycloak.realms().findAll().stream().map(r -> r.getRealm()).sorted().collect(Collectors.joining("-"));
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("roles")
+    public String getRoles() {
+        return keycloak.realm("quarkus").roles().list().stream().map(r -> r.getName()).sorted()
+                .collect(Collectors.joining("-"));
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("users")
+    public String getUsers() {
+        return keycloak.realm("quarkus").users().list().stream().map(r -> r.getUsername()).sorted()
+                .collect(Collectors.joining("-"));
     }
 
     @GET

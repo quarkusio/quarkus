@@ -350,19 +350,19 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (bean.isClassBean()) {
             Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
-            addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
+            addDelegatesAndTransformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, classInfo);
         } else if (bean.isProducerMethod()) {
             Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             ClassInfo returnTypeClass = getClassByName(index, producerMethod.returnType());
-            addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
+            addDelegatesAndTransformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, returnTypeClass);
         } else if (bean.isProducerField()) {
             Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             FieldInfo producerField = bean.getTarget().get().asField();
             ClassInfo fieldClass = getClassByName(index, producerField.type());
-            addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
+            addDelegatesAndTransformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, fieldClass);
         } else if (bean.isSynthetic()) {
             Methods.addDelegatingMethods(index, bean.getImplClazz(), methods, null,
@@ -372,7 +372,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         return methods.values();
     }
 
-    private void addDelegatesAndTrasformIfNecessary(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+    private void addDelegatesAndTransformIfNecessary(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses,
             Map<Methods.MethodKey, MethodInfo> methods, IndexView index,
             Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal,

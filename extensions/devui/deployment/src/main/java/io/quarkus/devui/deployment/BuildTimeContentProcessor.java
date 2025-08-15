@@ -78,6 +78,8 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
+import io.quarkus.devui.spi.page.SettingPageBuildItem;
+import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.vertx.core.json.jackson.DatabindCodec;
@@ -194,6 +196,8 @@ public class BuildTimeContentProcessor {
     void mapPageBuildTimeData(List<CardPageBuildItem> cards,
             List<MenuPageBuildItem> menus,
             List<FooterPageBuildItem> footers,
+            List<SettingPageBuildItem> settings,
+            List<UnlistedPageBuildItem> unlisteds,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer) {
 
@@ -216,6 +220,23 @@ public class BuildTimeContentProcessor {
         for (FooterPageBuildItem footer : footers) {
             String extensionPathName = footer.getExtensionPathName(curateOutcomeBuildItem);
             Map<String, BuildTimeData> buildTimeData = getBuildTimeDataForPage(footer);
+            if (!buildTimeData.isEmpty()) {
+                buildTimeConstProducer.produce(
+                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+            }
+        }
+        for (SettingPageBuildItem setting : settings) {
+            String extensionPathName = setting.getExtensionPathName(curateOutcomeBuildItem);
+            Map<String, BuildTimeData> buildTimeData = getBuildTimeDataForPage(setting);
+            if (!buildTimeData.isEmpty()) {
+                buildTimeConstProducer.produce(
+                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+            }
+        }
+
+        for (UnlistedPageBuildItem unlisted : unlisteds) {
+            String extensionPathName = unlisted.getExtensionPathName(curateOutcomeBuildItem);
+            Map<String, BuildTimeData> buildTimeData = getBuildTimeDataForPage(unlisted);
             if (!buildTimeData.isEmpty()) {
                 buildTimeConstProducer.produce(
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
@@ -513,6 +534,8 @@ public class BuildTimeContentProcessor {
         addThemeBuildTimeData(internalBuildTimeData, devUIConfig, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem, devUIConfig);
+        addSettingTabBuildTimeData(internalBuildTimeData, extensionsBuildItem);
+        addUnlistedPageBuildTimeData(internalBuildTimeData, extensionsBuildItem);
         addApplicationInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
@@ -557,8 +580,7 @@ public class BuildTimeContentProcessor {
             List<InternalPageBuildItem> internalPages,
             ExtensionsBuildItem extensionsBuildItem) {
         // Menu section
-        @SuppressWarnings("unchecked")
-        List<Page> sectionMenu = new ArrayList();
+        List<Page> sectionMenu = new ArrayList<>();
         Collections.sort(internalPages, (t, t1) -> {
             return ((Integer) t.getPosition()).compareTo(t1.getPosition());
         });
@@ -583,11 +605,34 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("menuItems", sectionMenu);
     }
 
+    private void addSettingTabBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+            ExtensionsBuildItem extensionsBuildItem) {
+
+        List<Page> settingTabs = new ArrayList<>();
+        // Settings from extensions
+        for (Extension e : extensionsBuildItem.getSettingTabsExtensions()) {
+            List<Page> pagesFromExtension = e.getSettingPages();
+            settingTabs.addAll(pagesFromExtension);
+        }
+        internalBuildTimeData.addBuildTimeData("settingTabs", settingTabs);
+    }
+
+    private void addUnlistedPageBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+            ExtensionsBuildItem extensionsBuildItem) {
+
+        List<Page> unlistedPages = new ArrayList<>();
+        // Unlisted pages from extensions
+        for (Extension e : extensionsBuildItem.getUnlistedExtensions()) {
+            List<Page> pagesFromExtension = e.getUnlistedPages();
+            unlistedPages.addAll(pagesFromExtension);
+        }
+        internalBuildTimeData.addBuildTimeData("unlistedPages", unlistedPages);
+    }
+
     private void addFooterTabBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
             ExtensionsBuildItem extensionsBuildItem, DevUIConfig devUIConfig) {
         // Add the Footer tabs
-        @SuppressWarnings("unchecked")
-        List<Page> footerTabs = new ArrayList();
+        List<Page> footerTabs = new ArrayList<>();
         Page serverLog = Page.webComponentPageBuilder().internal()
                 .namespace("devui-logstream")
                 .title("Server")

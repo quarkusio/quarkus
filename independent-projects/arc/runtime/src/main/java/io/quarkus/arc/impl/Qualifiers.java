@@ -6,7 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,7 +19,7 @@ public final class Qualifiers {
 
     public static final Set<Annotation> DEFAULT_QUALIFIERS = Set.of(Default.Literal.INSTANCE, Any.Literal.INSTANCE);
 
-    public static final Set<Annotation> IP_DEFAULT_QUALIFIERS = Collections.singleton(Default.Literal.INSTANCE);
+    public static final Set<Annotation> IP_DEFAULT_QUALIFIERS = Set.of(Default.Literal.INSTANCE);
 
     final Set<String> allQualifiers;
     // custom qualifier -> non-binding members (can be empty but never null)

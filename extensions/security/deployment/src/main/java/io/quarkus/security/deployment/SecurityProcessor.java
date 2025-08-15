@@ -288,6 +288,15 @@ public class SecurityProcessor {
             runtimeReInitialized
                     .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.teletrust.TeleTrusTNamedCurves"));
             runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.spec.ECUtil"));
+            // start of BCFIPS 2.0
+            // started thread during initialization
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.util.dispose.DisposalDaemon"));
+            // secure randoms
+            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.fips.FipsDRBG"));
+            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.fips.Utils"));
+            // re-detect JNI library availability
+            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.fips.NativeLoader"));
         }
 
         // Reinitialize class because it embeds a java.lang.ref.Cleaner instance in the image heap

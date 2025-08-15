@@ -723,17 +723,17 @@ public class BeanDeployment {
     private static Collection<AnnotationInstance> extractAnnotations(AnnotationInstance annotation,
             Map<DotName, ClassInfo> singulars, Map<DotName, ClassInfo> repeatables) {
         if (!annotation.runtimeVisible()) {
-            return Collections.emptyList();
+            return List.of();
         }
         DotName annotationName = annotation.name();
         if (singulars.get(annotationName) != null) {
-            return Collections.singleton(annotation);
+            return Set.of(annotation);
         } else if (repeatables.get(annotationName) != null) {
             // repeatable, we need to extract actual annotations
             return Annotations.onlyRuntimeVisible(Arrays.asList(annotation.value().asNestedArray()));
         } else {
             // neither singular nor repeatable, return empty collection
-            return Collections.emptyList();
+            return List.of();
         }
     }
 

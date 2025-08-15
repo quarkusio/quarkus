@@ -1,11 +1,15 @@
 package io.quarkus.devui.devmcp;
 
-import java.util.function.Supplier;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Comparator;
 
 import org.hamcrest.CoreMatchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,16 +20,52 @@ import io.restassured.http.ContentType;
 
 public class DevMcpTest {
 
+    private static Path TEMP_HOME;
+    private static String OLD_USER_HOME;
+
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class)
-                            .add(new StringAsset("quarkus.dev-mcp.enabled=true"),
-                                    "application.properties");
-                }
-            });
+    static final QuarkusDevModeTest test = createDevModeTest();
+
+    private static QuarkusDevModeTest createDevModeTest() {
+        try {
+            TEMP_HOME = Files.createTempDirectory("devmcp-home-");
+            Path quarkusDir = TEMP_HOME.resolve(".quarkus");
+            Files.createDirectories(quarkusDir);
+            Path props = quarkusDir.resolve("dev-mcp.properties");
+            Files.writeString(props, "enabled=true\n",
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+            OLD_USER_HOME = System.getProperty("user.home");
+            System.setProperty("user.home", TEMP_HOME.toString());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to set up Dev MCP test HOME", e);
+        }
+
+        return new QuarkusDevModeTest()
+                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                        .addClasses(HelloResource.class));
+    }
+
+    @AfterAll
+    static void cleanupHome() {
+        // Restore original user.home
+        if (OLD_USER_HOME != null) {
+            System.setProperty("user.home", OLD_USER_HOME);
+        }
+        if (TEMP_HOME != null) {
+            try {
+                Files.walk(TEMP_HOME)
+                        .sorted(Comparator.reverseOrder())
+                        .forEach(p -> {
+                            try {
+                                Files.deleteIfExists(p);
+                            } catch (IOException ignored) {
+                            }
+                        });
+            } catch (IOException ignored) {
+            }
+        }
+    }
 
     @Test
     public void testInitialize() {

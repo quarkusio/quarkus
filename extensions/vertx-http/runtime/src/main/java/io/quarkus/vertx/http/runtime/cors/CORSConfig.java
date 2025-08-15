@@ -6,8 +6,16 @@ import java.util.Optional;
 
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
 
 public interface CORSConfig {
+
+    /**
+     * Enable the CORS filter.
+     */
+    @WithDefault("${quarkus.http.cors:false}")
+    boolean enabled();
+
     /**
      * The origins allowed for CORS.
      * <p>

@@ -84,6 +84,22 @@ import io.vertx.ext.web.RoutingContext;
 public interface HttpSecurity {
 
     /**
+     * Enables the CORS filter. This method is programmatic analogy to the 'quarkus.http.cors.enabled=true' configuration
+     * in the 'application.properties' file.
+     *
+     * @return HttpSecurity
+     */
+    HttpSecurity cors();
+
+    /**
+     * Enables the CORS filter with given configuration.
+     *
+     * @param cors {@link CORS} filter configuration
+     * @return HttpSecurity
+     */
+    HttpSecurity cors(CORS cors);
+
+    /**
      * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.
      *
      * @param mechanism {@link HttpAuthenticationMechanism}

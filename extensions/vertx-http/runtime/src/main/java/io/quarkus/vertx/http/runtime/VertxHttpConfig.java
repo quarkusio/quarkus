@@ -25,15 +25,8 @@ public interface VertxHttpConfig {
 
     /**
      * Enable the CORS filter.
-     */
-    @WithName("cors.enabled")
-    @WithDefault("${quarkus.http.cors:false}")
-    boolean corsEnabled();
-
-    /**
-     * Enable the CORS filter.
      *
-     * @deprecated Use {@link VertxHttpConfig#corsEnabled()}. Deprecated because it requires additional syntax to
+     * @deprecated Use {@link CORSConfig#enabled()}. Deprecated because it requires additional syntax to
      *             configure with the group {@link VertxHttpConfig#cors()} in YAML config.
      */
     @WithName("cors")

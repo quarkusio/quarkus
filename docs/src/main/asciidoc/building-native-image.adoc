@@ -19,34 +19,91 @@ This guide takes as input the application developed in the xref:getting-started.
 
 == Prerequisites
 
-:prerequisites-docker:
-:prerequisites-graalvm-mandatory:
-include::{includes}/prerequisites.adoc[]
-* A xref:configuring-c-development[working C development environment]
-* The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
+To get started with native executable compilation, you only need:
 
-.Supporting native compilation in C
-[[configuring-c-development]]
-[NOTE]
+* A working container runtime (Docker or Podman)
+* The code of the application developed in the xref:getting-started.adoc[Getting Started Guide]
+
+[TIP]
 ====
-What does having a working C developer environment mean?
+If you prefer to install GraalVM locally or need to target specific platforms, see the <<local-graalvm-setup,Local GraalVM Setup>> section later in this guide.
+====
 
-* On Linux, you will need GCC, and the glibc and zlib headers. Examples for common distributions:
-+
-[source,bash]
+[[container-runtime]]
+== Quick Start: Building with Containers
+
+The easiest way to build a native executable is using a container runtime such as Docker or Podman.
+This approach requires no local GraalVM installation and works on all platforms.
+
+include::{includes}/devtools/build-native-container.adoc[]
+
+[TIP]
+====
+By default, Quarkus automatically detects the container runtime.
+If you want to explicitly select the container runtime, you can do it with:
+
+For Docker:
+
+:build-additional-parameters: -Dquarkus.native.container-runtime=docker
+include::{includes}/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
+
+For podman:
+
+:build-additional-parameters: -Dquarkus.native.container-runtime=podman
+include::{includes}/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
+
+These are regular Quarkus config properties, so if you always want to build in a container
+it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
+====
+
+The executable built this way will be a 64-bit Linux executable, so depending on your operating system it may not be runnable locally.
+However, it's perfect for containerized deployments.
+
+[IMPORTANT]
+====
+Starting with Quarkus 3.19+, the _builder_ image used to build the native executable is based on UBI 9.
+If you plan to build a container image, make sure that the base image in your `Dockerfile` is compatible with UBI 9.
+The native executable will not run on UBI 8 base images.
+
+You can configure the builder image used for the container build by setting the `quarkus.native.builder-image` property.
+For example to switch back to an UBI8 _builder image_ you can use:
+
+`quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
+
+You can see the available tags for UBI8 https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here]
+and for UBI9 https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)].
+====
+
+[[tip-quarkus-native-remote-container-build]]
+[TIP]
+====
+If you see the following invalid path error for your application JAR when trying to create a native executable using a container build, even though your JAR was built successfully, you're most likely using a remote daemon for your container runtime.
 ----
-# dnf (rpm-based)
-sudo dnf install gcc glibc-devel zlib-devel libstdc++-static
-# Debian-based distributions:
-sudo apt-get install build-essential libz-dev zlib1g-dev
+Error: Invalid Path entry getting-started-1.0.0-SNAPSHOT-runner.jar
+Caused by: java.nio.file.NoSuchFileException: /project/getting-started-1.0.0-SNAPSHOT-runner.jar
 ----
-* XCode provides the required dependencies on macOS:
-+
-[source,bash]
-----
-xcode-select --install
-----
-* On Windows, you will need to install the https://aka.ms/vs/15/release/vs_buildtools.exe[Visual Studio 2017 Visual C++ Build Tools]
+In this case, use the parameter `-Dquarkus.native.remote-container-build=true` instead of `-Dquarkus.native.container-build=true`.
+
+The reason for this is that the local build driver invoked through `-Dquarkus.native.container-build=true` uses volume mounts to make the JAR available in the build container, but volume mounts do not work with remote daemons. The remote container build driver copies the necessary files instead of mounting them. Note that even though the remote driver also works with local daemons, the local driver should be preferred in the local case because mounting is usually more performant than copying.
+====
+
+[TIP]
+====
+Building with GraalVM instead of Mandrel requires a custom builder image parameter to be passed additionally:
+
+:build-additional-parameters: -Dquarkus.native.builder-image=graalvm
+include::{includes}/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
+
+Please note that the above command points to a floating tag.
+It is highly recommended to use the floating tag,
+so that your builder image remains up-to-date and secure.
+If you absolutely must, you may hard-code to a specific tag
+(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here (UBI 8)]
+and  https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)] for available tags),
+but be aware that you won't get security updates that way and it's unsupported.
 ====
 
 === Background
@@ -82,79 +139,6 @@ Building native executables directly on bare metal Linux, macOS (on M processors
 with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
-
-[[configuring-graalvm]]
-=== Configuring GraalVM
-
-[TIP]
-====
-This step is only required for generating native executables targeting non-Linux operating systems.
-For generating native executables targeting Linux, you can optionally skip this section and <<#container-runtime,use a builder image>> instead.
-====
-
-[TIP]
-====
-If you cannot install GraalVM, you can use a multi-stage Docker build to run Maven inside a Docker container that embeds GraalVM.
-There is an explanation of how to do this at <<#multistage-docker,the end of this guide>>.
-====
-
-GraalVM {graalvm-version} is required.
-
-1. Install GraalVM if you haven't already. You have a few options for this:
-** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
-** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
-We recommend the _community edition_ of GraalVM. For example, install it with `sdk install java 21-graalce`.
-2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
-+
-[source,bash]
-----
-export GRAALVM_HOME=$HOME/Development/mandrel/
-----
-+
-On macOS (amd64/x86 based Macs not supported), point the variable to the `Home` sub-directory:
-+
-[source,bash]
-----
-export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/
-----
-+
-On Windows, you will have to go through the Control Panel to set your environment variables.
-+
-[TIP]
-====
-Installing via scoop will do this for you.
-====
-3. (Optional) Set the `JAVA_HOME` environment variable to the GraalVM installation directory.
-+
-[source,bash]
-----
-export JAVA_HOME=${GRAALVM_HOME}
-----
-4. (Optional) Add the GraalVM `bin` directory to the path
-+
-[source,bash]
-----
-export PATH=${GRAALVM_HOME}/bin:$PATH
-----
-
-[[graal-and-macos]]
-.Issues using GraalVM with macOS
-[NOTE]
-====
-GraalVM binaries are not (yet) notarized for macOS as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue]. This means that you may see the following error when using `native-image`:
-
-[source,bash]
-----
-“native-image” cannot be opened because the developer cannot be verified
-----
-
-Use the following command to recursively delete the `com.apple.quarantine` extended attribute on the GraalVM install directory as a workaround:
-
-[source,bash]
------
-xattr -r -d com.apple.quarantine ${GRAALVM_HOME}/../..
------
-====
 
 == Solution
 
@@ -234,6 +218,117 @@ You can run it using: `./target/getting-started-1.0.0-SNAPSHOT-runner`.
 Java code that relies on preview features requires special attention.
 To produce a native executable, this means that the `--enable-preview` flag needs to be passed to the underlying native image invocation.
 You can do so by prepending the flag with `-J` and passing it as additional native build argument: `-Dquarkus.native.additional-build-args=-J--enable-preview`.
+====
+
+[[local-graalvm-setup]]
+== Local GraalVM Setup
+
+If you prefer to install GraalVM locally or need to target specific platforms other than Linux, you can set up GraalVM on your development machine.
+
+=== Prerequisites for Local Setup
+
+In addition to the basic prerequisites, you'll need:
+
+:prerequisites-docker:
+:prerequisites-graalvm-mandatory:
+include::{includes}/prerequisites.adoc[]
+* A xref:configuring-c-development[working C development environment]
+
+.Supporting native compilation in C
+[[configuring-c-development]]
+[NOTE]
+====
+What does having a working C developer environment mean?
+
+* On Linux, you will need GCC, and the glibc and zlib headers. Examples for common distributions:
++
+[source,bash]
+----
+# dnf (rpm-based)
+sudo dnf install gcc glibc-devel zlib-devel libstdc++-static
+# Debian-based distributions:
+sudo apt-get install build-essential libz-dev zlib1g-dev
+----
+* XCode provides the required dependencies on macOS:
++
+[source,bash]
+----
+xcode-select --install
+----
+* On Windows, you will need to install the https://aka.ms/vs/15/release/vs_buildtools.exe[Visual Studio 2017 Visual C++ Build Tools]
+====
+
+[[configuring-graalvm]]
+=== Configuring GraalVM
+
+[TIP]
+====
+This step is only required for generating native executables targeting non-Linux operating systems.
+For generating native executables targeting Linux, you can optionally skip this section and <<#container-runtime,use a builder image>> instead.
+====
+
+[TIP]
+====
+If you cannot install GraalVM, you can use a multi-stage Docker build to run Maven inside a Docker container that embeds GraalVM.
+There is an explanation of how to do this at <<#multistage-docker,the end of this guide>>.
+====
+
+GraalVM {graalvm-version} is required.
+
+1. Install GraalVM if you haven't already. You have a few options for this:
+** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
+** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+We recommend the _community edition_ of GraalVM. For example, install it with `sdk install java 21-graalce`.
+2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
++
+[source,bash]
+----
+export GRAALVM_HOME=$HOME/Development/mandrel/
+----
++
+On macOS (amd64/x86 based Macs not supported), point the variable to the `Home` sub-directory:
++
+[source,bash]
+----
+export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/
+----
++
+On Windows, you will have to go through the Control Panel to set your environment variables.
++
+[TIP]
+====
+Installing via scoop will do this for you.
+====
+3. (Optional) Set the `JAVA_HOME` environment variable to the GraalVM installation directory.
++
+[source,bash]
+----
+export JAVA_HOME=${GRAALVM_HOME}
+----
+4. (Optional) Add the GraalVM `bin` directory to the path
++
+[source,bash]
+----
+export PATH=${GRAALVM_HOME}/bin:$PATH
+----
+
+[[graal-and-macos]]
+.Issues using GraalVM with macOS
+[NOTE]
+====
+GraalVM binaries are not (yet) notarized for macOS as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue]. This means that you may see the following error when using `native-image`:
+
+[source,bash]
+----
+"native-image" cannot be opened because the developer cannot be verified
+----
+
+Use the following command to recursively delete the `com.apple.quarantine` extended attribute on the GraalVM install directory as a workaround:
+
+[source,bash]
+-----
+xattr -r -d com.apple.quarantine ${GRAALVM_HOME}/../..
+-----
 ====
 
 === Build fully static native executables
@@ -384,92 +479,6 @@ It is also possible to re-run the tests against a native executable that has alr
 
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the
 target directory you can specify the executable with the `-Dnative.image.path=` system property.
-
-[[container-runtime]]
-== Creating a Linux executable without GraalVM installed
-
-IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker
-on Windows you should share your project's drive at Docker Desktop file share settings and restart Docker Desktop.
-
-Quite often one only needs to create a native Linux executable for their Quarkus application (for example in order to run in a containerized environment) and would like to avoid
-the trouble of installing the proper GraalVM version in order to accomplish this task (for example, in CI environments it's common practice
-to install as little software as possible).
-
-To this end, Quarkus provides a very convenient way of creating a native Linux executable by leveraging a container runtime such as Docker or podman.
-The easiest way of accomplishing this task is to execute:
-
-include::{includes}/devtools/build-native-container.adoc[]
-
-[TIP]
-====
-By default, Quarkus automatically detects the container runtime.
-If you want to explicitly select the container runtime, you can do it with:
-
-For Docker:
-
-:build-additional-parameters: -Dquarkus.native.container-runtime=docker
-include::{includes}/devtools/build-native-container-parameters.adoc[]
-:!build-additional-parameters:
-
-For podman:
-
-:build-additional-parameters: -Dquarkus.native.container-runtime=podman
-include::{includes}/devtools/build-native-container-parameters.adoc[]
-:!build-additional-parameters:
-
-These are regular Quarkus config properties, so if you always want to build in a container
-it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
-====
-
-Executable built that way with the container runtime will be a 64-bit Linux executable, so depending on your operating system it may no longer be runnable.
-
-[IMPORTANT]
-====
-Starting with Quarkus 3.19+, the _builder_ image used to build the native executable is based on UBI 9.
-It means that the native executable produced by the container build will be based on UBI 9 as well.
-So, if you plan to build a container, make sure that the base image in your `Dockerfile` is compatible with UBI 9.
-The native executable will not run on UBI 8 base images.
-
-You can configure the builder image used for the container build by setting the `quarkus.native.builder-image` property.
-For example to switch back to an UBI8 _builder image_ you can use:
-
-`quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
-
-You can see the available tags for UBI8 https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here]
-and for UBI9 https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)])
-
-====
-
-[[tip-quarkus-native-remote-container-build]]
-[TIP]
-====
-If you see the following invalid path error for your application JAR when trying to create a native executable using a container build, even though your JAR was built successfully, you're most likely using a remote daemon for your container runtime.
-----
-Error: Invalid Path entry getting-started-1.0.0-SNAPSHOT-runner.jar
-Caused by: java.nio.file.NoSuchFileException: /project/getting-started-1.0.0-SNAPSHOT-runner.jar
-----
-In this case, use the parameter `-Dquarkus.native.remote-container-build=true` instead of `-Dquarkus.native.container-build=true`.
-
-The reason for this is that the local build driver invoked through `-Dquarkus.native.container-build=true` uses volume mounts to make the JAR available in the build container, but volume mounts do not work with remote daemons. The remote container build driver copies the necessary files instead of mounting them. Note that even though the remote driver also works with local daemons, the local driver should be preferred in the local case because mounting is usually more performant than copying.
-====
-
-
-[TIP]
-====
-Building with GraalVM instead of Mandrel requires a custom builder image parameter to be passed additionally:
-
-:build-additional-parameters: -Dquarkus.native.builder-image=graalvm
-include::{includes}/devtools/build-native-container-parameters.adoc[]
-:!build-additional-parameters:
-
-Please note that the above command points to a floating tag.
-It is highly recommended to use the floating tag,
-so that your builder image remains up-to-date and secure.
-If you absolutely must, you may hard-code to a specific tag
-(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here (UBI 8)]
-and  https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)] for available tags),
-but be aware that you won't get security updates that way and it's unsupported.
-====
 
 == Creating a container
 

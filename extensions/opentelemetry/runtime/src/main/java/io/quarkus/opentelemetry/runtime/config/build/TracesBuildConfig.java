@@ -24,7 +24,6 @@ public interface TracesBuildConfig {
      * The OpenTelemetry SDK ( {@link io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig#enabled()} )
      * is enabled by default and if disabled, OpenTelemetry Tracing will also be disabled.
      */
-    @Deprecated
     @WithDefault("true")
     Optional<Boolean> enabled();
 

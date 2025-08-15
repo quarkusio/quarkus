@@ -35,31 +35,18 @@ public abstract class PageBuilder<T> {
     protected String extensionId = null;
     protected Class preprocessor = null;
 
-    protected PageBuilder() {
-        this("font-awesome-solid:arrow-right", "var(--lumo-contrast-80pct)", null, false);
-    }
-
-    protected PageBuilder(String icon, String color, String tooltip, boolean assistantPage) {
-        this.icon = icon;
-        this.color = color;
-        this.tooltip = tooltip;
-        if (assistantPage) {
-            metadata("isAssistantPage", "true");
-        }
-    }
-
     @SuppressWarnings("unchecked")
     public T icon(String icon) {
-        if (this.icon != null) {
+        if (this.icon == null) {
             this.icon = icon;
         } else {
-            log.warn("Icon already set, ignoring " + icon);
+            log.warn("Icon already set to [" + this.icon + "] , ignoring [" + icon + "]");
         }
         return (T) this;
     }
 
     public T color(String color) {
-        if (this.color != null) {
+        if (this.color == null) {
             this.color = color;
         } else {
             log.warn("Color already set, ignoring " + color);
@@ -68,7 +55,7 @@ public abstract class PageBuilder<T> {
     }
 
     public T tooltip(String tooltip) {
-        if (this.tooltip != null) {
+        if (this.tooltip == null) {
             this.tooltip = tooltip;
         } else {
             log.warn("Tooltip already set, ignoring " + tooltip);

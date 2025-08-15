@@ -27,12 +27,18 @@ public class McpToolsService {
     @Inject
     JsonRpcRouter jsonRpcRouter;
 
+    @Inject
+    McpServerConfiguration mcpServerConfiguration;
+
     @JsonRpcDescription("This list all tools available for MCP")
     public Map<String, List<Tool>> list() {
-        List<Tool> tools = toToolList(jsonRpcRouter.getRuntimeMethodsMap().values(),
-                jsonRpcRouter.getDeploymentMethodsMap().values());
-        // TODO: Add support for subscriptions
-        return Map.of("tools", tools);
+        if (mcpServerConfiguration.isEnabled()) {
+            List<Tool> tools = toToolList(jsonRpcRouter.getRuntimeMethodsMap().values(),
+                    jsonRpcRouter.getDeploymentMethodsMap().values());
+            // TODO: Add support for subscriptions
+            return Map.of("tools", tools);
+        }
+        return null;
     }
 
     private List<Tool> toToolList(Collection<JsonRpcMethod> runtimeMethods,

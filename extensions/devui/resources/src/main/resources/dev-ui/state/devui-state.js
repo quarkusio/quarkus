@@ -1,6 +1,8 @@
 import { extensions } from 'devui-data';
 import { menuItems } from 'devui-data';
 import { footerTabs } from 'devui-data';
+import { settingTabs } from 'devui-data';
+import { unlistedPages } from 'devui-data';
 import { applicationInfo } from 'devui-data';
 import { welcomeData } from 'devui-data';
 import { ideInfo } from 'devui-data';
@@ -26,10 +28,12 @@ class DevUIState extends LitState {
             cards: extensions,
             menu: menuItems,
             footer: footerTabs,
+            setting: settingTabs,
+            unlisted: unlistedPages,
             applicationInfo: applicationInfo,
             welcomeData: welcomeData,
             allConfiguration: allConfiguration,
-            ideInfo: ideInfo,
+            ideInfo: ideInfo
         };
     }
     
@@ -52,6 +56,16 @@ class DevUIState extends LitState {
                 // Check Footer changes
                 if(newDevUIData.footerTabs !== devuiState.footerTabs){ // TODO: Do a finer check if something changed
                     devuiState.footer = newDevUIData.footerTabs;
+                } 
+                
+                // Check Settings changes
+                if(newDevUIData.settingTabs !== devuiState.settingTabs){ // TODO: Do a finer check if something changed
+                    devuiState.setting = newDevUIData.settingTabs;
+                } 
+                
+                // Check Unlisted changes
+                if(newDevUIData.unlistedPages !== devuiState.unlistedPages){ // TODO: Do a finer check if something changed
+                    devuiState.unlisted = newDevUIData.unlistedPages;
                 } 
                 
                 // Check application info for updates

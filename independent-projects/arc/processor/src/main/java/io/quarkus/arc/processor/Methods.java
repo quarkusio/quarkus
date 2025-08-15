@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.KotlinUtils.isNoninterceptableKotlinMetho
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -322,8 +323,10 @@ final class Methods {
 
     static class MethodKey {
 
+        private static final DotName[] NO_PARAMS = new DotName[0];
+
         final String name;
-        final List<DotName> params;
+        final DotName[] params;
         final DotName returnType;
         final MethodInfo method; // this is intentionally ignored for equals/hashCode
         private final int hashCode;
@@ -332,18 +335,14 @@ final class Methods {
             this.method = Objects.requireNonNull(method, "Method must not be null");
             this.name = method.name();
             this.returnType = method.returnType().name();
-            this.params = switch (method.parametersCount()) {
-                case 0 -> List.of();
-                case 1 -> List.of(method.parameterTypes().get(0).name());
-                case 2 -> List.of(method.parameterTypes().get(0).name(), method.parameterTypes().get(1).name());
-                default -> {
-                    List<DotName> ret = new ArrayList<>(method.parametersCount());
-                    for (Type parameterType : method.parameterTypes()) {
-                        ret.add(parameterType.name());
-                    }
-                    yield ret;
+            if (method.parametersCount() == 0) {
+                this.params = NO_PARAMS;
+            } else {
+                this.params = new DotName[method.parametersCount()];
+                for (int i = 0; i < method.parametersCount(); i++) {
+                    this.params[i] = method.parameterType(i).name();
                 }
-            };
+            }
 
             // the Map can be resized several times so it's worth caching the hashCode
             this.hashCode = buildHashCode(this.name, this.params, this.returnType);
@@ -353,11 +352,10 @@ final class Methods {
         public boolean equals(Object o) {
             if (this == o)
                 return true;
-            if (!(o instanceof MethodKey))
+            if (!(o instanceof MethodKey methodKey))
                 return false;
-            MethodKey methodKey = (MethodKey) o;
             return Objects.equals(name, methodKey.name)
-                    && Objects.equals(params, methodKey.params)
+                    && Arrays.equals(params, methodKey.params)
                     && Objects.equals(returnType, methodKey.returnType);
         }
 
@@ -366,9 +364,9 @@ final class Methods {
             return hashCode;
         }
 
-        private static int buildHashCode(String name, List<DotName> params, DotName returnType) {
+        private static int buildHashCode(String name, DotName[] params, DotName returnType) {
             int result = Objects.hashCode(name);
-            result = 31 * result + Objects.hashCode(params);
+            result = 31 * result + Arrays.hashCode(params);
             result = 31 * result + Objects.hashCode(returnType);
             return result;
         }
@@ -466,8 +464,13 @@ final class Methods {
         void startProcessing(ClassInfo clazz, ClassInfo originalClazz) {
             this.clazz = clazz;
             this.originalClazz = originalClazz;
-            this.regularMethods = new ArrayList<>();
-            for (MethodInfo method : clazz.methods()) {
+
+            List<MethodInfo> methodsInfos = clazz.methods();
+            // the list will sometimes be a bit larger than strictly necessary but it should be better sized than the default
+            // and the excluded methods are usually exceptions
+            // this way, we will avoid resizing the list
+            this.regularMethods = new ArrayList<>(methodsInfos.size());
+            for (MethodInfo method : methodsInfos) {
                 if (!Modifier.isAbstract(method.flags()) && !method.isSynthetic() && !isBridge(method)) {
                     regularMethods.add(method);
                 }

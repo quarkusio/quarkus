@@ -174,17 +174,17 @@ final class Methods {
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
         for (MethodInfo method : classInfo.methods()) {
-            MethodKey key = new MethodKey(method);
-            if (candidates.containsKey(key)) {
+            MethodKey methodKey = new MethodKey(method);
+            if (candidates.containsKey(methodKey)) {
                 continue;
             }
 
             // Note that we must merge the bindings first
             Set<AnnotationInstance> bindings = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
-                    ignoreMethodLevelBindings, method, noClassInterceptorsMethods, bindingsDiscovery);
+                    ignoreMethodLevelBindings, method, methodKey, noClassInterceptorsMethods, bindingsDiscovery);
             boolean possiblyIntercepted = !bindings.isEmpty() || targetHasAroundInvokes;
             if (!possiblyIntercepted) {
-                candidates.put(key, bindings);
+                candidates.put(methodKey, bindings);
                 continue;
             }
             if (skipPredicate.test(method)) {
@@ -200,7 +200,7 @@ final class Methods {
                 }
             }
             if (addToCandidates) {
-                candidates.put(key, bindings);
+                candidates.put(methodKey, bindings);
             }
         }
         skipPredicate.methodsProcessed();
@@ -235,11 +235,10 @@ final class Methods {
 
     private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
             Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method,
-            Set<MethodKey> noClassInterceptorsMethods, BindingsDiscovery bindingsDiscovery) {
+            MethodKey methodKey, Set<MethodKey> noClassInterceptorsMethods, BindingsDiscovery bindingsDiscovery) {
 
-        MethodKey key = new MethodKey(method);
         if (bindingsDiscovery.hasAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS)
-                || noClassInterceptorsMethods.contains(key)) {
+                || noClassInterceptorsMethods.contains(methodKey)) {
             // The set of methods with `@NoClassInterceptors` is shared in the traversal of class hierarchy, so once
             // a method with the annotation is found, all subsequent occurences of the "same" method are treated
             // as if they also had it. Given that we traverse classes bottom-up, this works as expected: presence
@@ -253,7 +252,7 @@ final class Methods {
             // inheritance chain of each interface is also processed bottom-up. However, if a `default` method from
             // an interface is inherited multiple times, `@NoClassInterceptors` declared on that method may behave
             // weirdly. This is enough of a corner case that we'll leave it and solve it when it becomes problematic.
-            noClassInterceptorsMethods.add(key);
+            noClassInterceptorsMethods.add(methodKey);
             classLevelBindings = Set.of();
         }
 

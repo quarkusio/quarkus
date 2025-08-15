@@ -25,7 +25,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -68,18 +67,7 @@ final class Methods {
                 if (skipForClientProxy(method, transformUnproxyableClasses, methodsFromWhichToRemoveFinal)) {
                     continue;
                 }
-                methods.computeIfAbsent(new Methods.MethodKey(method), key -> {
-                    // If parameterized try to resolve the type variables
-                    Type returnType = key.method.returnType();
-                    Type[] params = new Type[key.method.parametersCount()];
-                    for (int i = 0; i < params.length; i++) {
-                        params[i] = key.method.parameterType(i);
-                    }
-                    List<TypeVariable> typeVariables = key.method.typeParameters();
-                    return MethodInfo.create(classInfo, key.method.name(), params, returnType, key.method.flags(),
-                            typeVariables.toArray(new TypeVariable[] {}),
-                            key.method.exceptions().toArray(Type.EMPTY_ARRAY));
-                });
+                methods.putIfAbsent(new Methods.MethodKey(method), method);
             }
             // Methods declared on superclasses
             if (classInfo.superClassType() != null) {
@@ -106,11 +94,12 @@ final class Methods {
         if (Modifier.isStatic(method.flags()) || Modifier.isPrivate(method.flags())) {
             return true;
         }
-        if (IGNORED_METHODS.contains(method.name())) {
+        String methodName = method.name();
+        if (IGNORED_METHODS.contains(methodName)) {
             return true;
         }
         // skip all Object methods except for toString()
-        if (method.declaringClass().name().equals(DotNames.OBJECT) && !method.name().equals(TO_STRING)) {
+        if (method.declaringClass().name().equals(DotNames.OBJECT) && !methodName.equals(TO_STRING)) {
             return true;
         }
         if (Modifier.isFinal(method.flags())) {
@@ -124,13 +113,13 @@ final class Methods {
                 // in case we want to transform classes but are unable to, we log a WARN
                 LOGGER.warn(String.format(
                         "Final method %s.%s() is ignored during proxy generation and should never be invoked upon the proxy instance!",
-                        className, method.name()));
+                        className, methodName));
             } else {
                 // JDK classes with final method are not proxyable and not transformable, we skip those methods and log a WARN
                 LOGGER.warn(String.format(
                         "JDK class %s with final method %s() cannot be proxied and is not transformable. " +
                                 "This method will be ignored during proxy generation and should never be invoked upon the proxy instance!",
-                        className, method.name()));
+                        className, methodName));
             }
             return true;
         }

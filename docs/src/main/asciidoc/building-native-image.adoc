@@ -19,6 +19,8 @@ This guide takes as input the application developed in the xref:getting-started.
 
 == Prerequisites
 
+To build a native executable, Quarkus uses the `native-image` tool that compiles your Java application into a standalone binary. This tool is provided by GraalVM distributions (Oracle GraalVM CE/EE) or Mandrel (a downstream GraalVM distribution optimized for Quarkus). You can get this tool either by installing GraalVM/Mandrel locally on your machine, or by using a container image that includes the tool.
+
 To get started with native executable compilation, you only need:
 
 * A working container runtime (Docker or Podman)
@@ -32,8 +34,8 @@ If you prefer to install GraalVM locally or need to target specific platforms, s
 [[container-runtime]]
 == Quick Start: Building with Containers
 
-The easiest way to build a native executable is using a container runtime such as Docker or Podman.
-This approach requires no local GraalVM installation and works on all platforms.
+You can build a native executable using a container runtime such as Docker or Podman.
+This approach requires no local GraalVM installation and works on all platforms - the `native-image` tool runs inside a pre-built container.
 
 include::{includes}/devtools/build-native-container.adoc[]
 

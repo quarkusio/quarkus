@@ -111,6 +111,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
@@ -144,6 +145,8 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.pool.TypePool;
+import net.bytebuddy.pool.TypePool.CacheProvider;
+import net.bytebuddy.pool.TypePool.Default.ReaderMode;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -1435,9 +1438,15 @@ public final class HibernateOrmProcessor {
                 }
             }
         }
-        return TypePool.Default.of(new ClassFileLocator.Compound(
+
+        ClassFileLocator classFileLocator = new ClassFileLocator.Compound(
                 new ClassFileLocator.Simple(transformedClasses),
-                ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader())));
+                QuarkusClassFileLocator.INSTANCE);
+
+        // we can reuse the core TypePool but we may not reuse the full enhancer TypePool
+        // or PublicFieldWithProxyAndLazyLoadingAndInheritanceTest will fail
+        return new TypePool.Default(new CacheProvider.Simple(), classFileLocator, ReaderMode.FAST,
+                HibernateEntityEnhancer.CORE_TYPE_POOL);
     }
 
     private boolean isModified(String entity, Set<String> changedClasses, IndexView index) {

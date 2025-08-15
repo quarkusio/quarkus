@@ -35,6 +35,9 @@ public class OidcMtlsDisabledInclusiveAuthTest {
 
     private static final String BASE_URL = "https://localhost:8443/mtls-bearer/";
     private static final String CONFIGURATION = """
+            # Disable Dev Services, we use a test resource manager
+            quarkus.keycloak.devservices.enabled=false
+
             quarkus.tls.key-store.pem.0.cert=server.crt
             quarkus.tls.key-store.pem.0.key=server.key
             quarkus.tls.trust-store.pem.certs=ca.crt

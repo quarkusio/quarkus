@@ -39,6 +39,8 @@ What does having a working C developer environment mean?
 sudo dnf install gcc glibc-devel zlib-devel libstdc++-static
 # Debian-based distributions:
 sudo apt-get install build-essential libz-dev zlib1g-dev
+# Arch Linux
+sudo pacman -S freetype2 gcc glibc lib32-gcc-libs zlib
 ----
 * XCode provides the required dependencies on macOS:
 +
@@ -46,7 +48,7 @@ sudo apt-get install build-essential libz-dev zlib1g-dev
 ----
 xcode-select --install
 ----
-* On Windows, you will need to install the https://aka.ms/vs/15/release/vs_buildtools.exe[Visual Studio 2017 Visual C++ Build Tools]
+* On Windows, you will need to install the https://aka.ms/vs/17/release/vs_buildtools.exe[Visual Studio 2022 Visual C++ Build Tools]
 ====
 
 === Background
@@ -220,7 +222,7 @@ Another solution is to write a script to do this for you:
 
 [source,bash]
 ----
-cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && mvn package -Dnative'
+cmd /c 'call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && mvn package -Dnative'
 ----
 ====
 

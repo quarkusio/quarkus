@@ -144,6 +144,8 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.pool.TypePool;
+import net.bytebuddy.pool.TypePool.CacheProvider;
+import net.bytebuddy.pool.TypePool.Default.ReaderMode;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -1435,9 +1437,13 @@ public final class HibernateOrmProcessor {
                 }
             }
         }
-        return TypePool.Default.of(new ClassFileLocator.Compound(
+
+        ClassFileLocator classFileLocator = new ClassFileLocator.Compound(
                 new ClassFileLocator.Simple(transformedClasses),
-                ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader())));
+                ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader()));
+
+        return new TypePool.Default(new CacheProvider.Simple(), classFileLocator, ReaderMode.FAST,
+                HibernateEntityEnhancer.CORE_TYPE_POOL);
     }
 
     private boolean isModified(String entity, Set<String> changedClasses, IndexView index) {

@@ -45,6 +45,9 @@ public class McpResourcesService {
     @Inject
     DevUIBuildTimeStaticService buildTimeStaticService;
 
+    @Inject
+    McpServerConfiguration mcpServerConfiguration;
+
     private final List<Resource> resources = new LinkedList<>();
 
     @PostConstruct
@@ -57,20 +60,26 @@ public class McpResourcesService {
 
     @JsonRpcDescription("This list all resources available for MCP")
     public Map<String, List<Resource>> list() {
-        return Map.of("resources", this.resources);
+        if (mcpServerConfiguration.isEnabled()) {
+            return Map.of("resources", this.resources);
+        }
+        return null;
     }
 
     @JsonRpcDescription("This reads a certain resource given the uri as provided by resources/list")
     public Map<String, List<Content>> read(
             @JsonRpcDescription("The uri of the resources as defined in resources/list") String uri) {
-        String subUri = uri.substring(URI_SCHEME.length());
-        if (subUri.startsWith(SUB_SCHEME_BUILD_TIME)) {
-            return readBuildTimeData(uri);
-        } else if (subUri.startsWith(SUB_SCHEME_RECORDED)) {
-            return readRecordedData(uri);
-        } else {
-            throw new UncheckedIOException(uri + " not found", new IOException());
+        if (mcpServerConfiguration.isEnabled()) {
+            String subUri = uri.substring(URI_SCHEME.length());
+            if (subUri.startsWith(SUB_SCHEME_BUILD_TIME)) {
+                return readBuildTimeData(uri);
+            } else if (subUri.startsWith(SUB_SCHEME_RECORDED)) {
+                return readRecordedData(uri);
+            } else {
+                throw new UncheckedIOException(uri + " not found", new IOException());
+            }
         }
+        return null;
     }
 
     private Map<String, List<Content>> readBuildTimeData(String uri) {

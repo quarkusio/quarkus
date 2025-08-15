@@ -25,7 +25,9 @@ export class QwcExtensionsMenuAction extends LitElement {
     constructor() {
         super();
         this._filteritems = ["Favorites","Active","Inactive"];
-        
+        window.addEventListener('storage-changed', (event) => {
+            this._storageChange(event);
+        });
     }
 
     connectedCallback() {
@@ -87,5 +89,10 @@ export class QwcExtensionsMenuAction extends LitElement {
         }));
     }
     
+    _storageChange = (e) => {
+        if(e.detail.method === "remove" && e.detail.key.startsWith("qwc-extensions-")){
+            this._selectedFilters = this._getStoredFilters();
+        }
+    }
 }
 customElements.define('qwc-extensions-menu-action', QwcExtensionsMenuAction);

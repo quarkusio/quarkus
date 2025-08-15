@@ -123,6 +123,7 @@ export class QwcExtensions extends observeState(LitElement) {
         super.connectedCallback();
         window.addEventListener('extensions-filters-changed', this._onFiltersChanged);
         window.addEventListener('keydown', this._handleGlobalKeyDown);
+        window.addEventListener('storage-changed', this._storageChange);
         if (allowExtensionManagement) {
             this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
                 if (jsonRpcResponse.result) {
@@ -138,6 +139,7 @@ export class QwcExtensions extends observeState(LitElement) {
     disconnectedCallback() {
         window.removeEventListener('extensions-filters-changed', this._onFiltersChanged);
         window.removeEventListener('keydown', this._handleGlobalKeyDown);
+        window.removeEventListener('storage-changed', this._storageChange);
         super.disconnectedCallback();
     }
 
@@ -508,6 +510,13 @@ export class QwcExtensions extends observeState(LitElement) {
         this._addDialogOpened = true;
     }
 
+    _storageChange = (e) => {
+        if(e.detail.method === "remove" && e.detail.key.startsWith("qwc-extensions-")){
+            this._selectedFilters = ["Favorites","Active","Inactive"];
+            this._favourites = this._getStoredFavourites();
+        }
+    }
+    
     _handleGlobalKeyDown = (e) => {
         if (!this._showFilterBar && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
             this._showFilterBar = true;

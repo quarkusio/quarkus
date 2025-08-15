@@ -27,7 +27,7 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
     public AbstractPageBuildItem(PageBuilder... pageBuilder) {
         super();
         this.buildTimeData = new HashMap<>();
-        this.pageBuilders = Arrays.asList(pageBuilder);
+        this.pageBuilders = new ArrayList<>(Arrays.asList(pageBuilder));
     }
 
     public AbstractPageBuildItem(String customIdentifier) {
@@ -39,7 +39,7 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
     public AbstractPageBuildItem(String customIdentifier, PageBuilder... pageBuilder) {
         super(customIdentifier);
         this.buildTimeData = new HashMap<>();
-        this.pageBuilders = Arrays.asList(pageBuilder);
+        this.pageBuilders = new ArrayList<>(Arrays.asList(pageBuilder));
     }
 
     public void addPage(PageBuilder page) {

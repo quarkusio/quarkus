@@ -20,6 +20,7 @@ import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
 import { assistantState } from 'assistant-state';
 import { StorageController } from 'storage-controller';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 /**
  * This component represent the Dev UI Header
@@ -138,15 +139,18 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             this._connectionDialogOpened = true;
             this.requestUpdate();
         });
+        window.addEventListener('close-settings-dialog', () => this._closeSettingsDialog());
     }
 
     connectedCallback() {
         super.connectedCallback();
         this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadUnlistedPages(devuiState.unlisted);
     }
 
     hotReload(){
         this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadUnlistedPages(devuiState.unlisted);
     }
 
     render() {
@@ -181,6 +185,15 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                   } catch (err) {
                     console.error(`Failed to load ${extension.headlessComponentRef}`, err);
                   }
+            }
+        }
+    }
+    
+    _loadUnlistedPages(pages){
+        for (const page of pages) {
+            if(page.componentRef){
+                import(page.componentRef);
+                this.routerController.addRouteForExtension(page);
             }
         }
     }
@@ -350,7 +363,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                         Settings
                         </h2>
                         <vaadin-button theme="tertiary" @click="${this._closeSettingsDialog}">
-                            <vaadin-icon icon="lumo:cross"></vaadin-icon>
+                            <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
                         </vaadin-button>`, []
                 )}
                 ${dialogRenderer(
@@ -364,6 +377,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                                             <vaadin-icon icon="font-awesome-solid:database"></vaadin-icon>
                                             <span>Storage</span>
                                         </vaadin-tab>
+                                        ${this._renderDynamicSettingsTabs()}
                                     </vaadin-tabs>
 
                                     <div tab="general-tab">
@@ -398,12 +412,40 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                                               ></vaadin-grid-column>
                                         </vaadin-grid>
                                     </div>
+                                    ${this._renderDynamicSettingsContents()}
                                 </vaadin-tabsheet>
                         `, [this._settingsDialogOpened, this._relevantLocalStorageItems]
                 )}
             ></vaadin-dialog>`;
     }
 
+    _renderDynamicSettingsTabs(){
+        return html`${devuiState.setting.map((settingItem, index) =>
+                    html`${this._renderDynamicSettingsTab(settingItem, index)}`
+                )}`;
+    }
+    
+    _renderDynamicSettingsTab(settingItem, index){
+        import(settingItem.componentRef);
+        return html`<vaadin-tab id="${settingItem.id}-tab">
+                        <vaadin-icon icon="${settingItem.icon}"></vaadin-icon>
+                        <span>${settingItem.title}</span>
+                    </vaadin-tab>`;
+    }
+    
+    _renderDynamicSettingsContents(){
+        return html`${devuiState.setting.map((settingItem, index) =>
+                    html`${this._renderDynamicSettingsContent(settingItem, index)}`
+                )}`;
+    }
+
+    _renderDynamicSettingsContent(settingItem, index){
+        let dynamicTab = `<${settingItem.componentName} title="${settingItem.title}" namespace="${settingItem.namespace}"></${settingItem.componentName}>`;
+        return html`<div tab="${settingItem.id}-tab">
+                        ${unsafeHTML(dynamicTab)}
+                    </div>`;
+    }
+    
     _storageDeleteIconRenderer(storageItem){
         return html`<vaadin-icon style="font-size: small;color: var(--lumo-error-color-50pct);cursor: pointer;" title="Delete this from storage" icon="font-awesome-solid:trash" @click=${() => this._deleteStorageItem(storageItem)}></vaadin-icon>`;
     }

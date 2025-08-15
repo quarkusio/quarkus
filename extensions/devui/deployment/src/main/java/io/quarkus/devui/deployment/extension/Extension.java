@@ -28,6 +28,8 @@ public class Extension {
     private final List<Page> cardPages = new ArrayList<>();
     private final List<Page> menuPages = new ArrayList<>();
     private final List<Page> footerPages = new ArrayList<>();
+    private final List<Page> settingPages = new ArrayList<>();
+    private final List<Page> unlistedPages = new ArrayList<>();
     private Card card = null; // Custom card
     private List<LibraryLink> libraryLinks = null;
     private String darkLogo = null;
@@ -219,6 +221,30 @@ public class Extension {
 
     public List<Page> getFooterPages() {
         return footerPages;
+    }
+
+    public void addSettingPage(Page page) {
+        this.settingPages.add(page);
+    }
+
+    public void addSettingPages(List<Page> pages) {
+        this.settingPages.addAll(pages);
+    }
+
+    public List<Page> getSettingPages() {
+        return settingPages;
+    }
+
+    public void addUnlistedPage(Page page) {
+        this.unlistedPages.add(page);
+    }
+
+    public void addUnlistedPages(List<Page> pages) {
+        this.unlistedPages.addAll(pages);
+    }
+
+    public List<Page> getUnlistedPages() {
+        return unlistedPages;
     }
 
     public void setCard(Card card) {

@@ -84,6 +84,8 @@ import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.devui.spi.page.QuteDataPageBuilder;
+import io.quarkus.devui.spi.page.SettingPageBuildItem;
+import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -116,6 +118,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DevUIProcessor {
     private static final String FOOTER_LOG_NAMESPACE = "devui-footer-log";
+
     private static final String DEVUI = "dev-ui";
     private static final String UNDERSCORE = "_";
     private static final String SLASH = "/";
@@ -600,6 +603,8 @@ public class DevUIProcessor {
     void getAllExtensions(List<CardPageBuildItem> cardPageBuildItems,
             List<MenuPageBuildItem> menuPageBuildItems,
             List<FooterPageBuildItem> footerPageBuildItems,
+            List<SettingPageBuildItem> settingPageBuildItems,
+            List<UnlistedPageBuildItem> unlistedPageBuildItems,
             LaunchModeBuildItem launchModeBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ExtensionsBuildItem> extensionsProducer,
@@ -609,7 +614,8 @@ public class DevUIProcessor {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             // produce extension build item as cascade of build steps rely on it
-            var emptyExtensionBuildItem = new ExtensionsBuildItem(List.of(), List.of(), List.of(), List.of());
+            var emptyExtensionBuildItem = new ExtensionsBuildItem(List.of(), List.of(), List.of(), List.of(), List.of(),
+                    List.of());
             extensionsProducer.produce(emptyExtensionBuildItem);
             return;
         }
@@ -627,12 +633,18 @@ public class DevUIProcessor {
         Map<String, CardPageBuildItem> cardPagesMap = getCardPagesMap(curateOutcomeBuildItem, cardPageBuildItems);
         Map<String, MenuPageBuildItem> menuPagesMap = getMenuPagesMap(curateOutcomeBuildItem, menuPageBuildItems);
         Map<String, List<FooterPageBuildItem>> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem, footerPageBuildItems);
+        Map<String, List<SettingPageBuildItem>> settingPagesMap = getSettingPagesMap(curateOutcomeBuildItem,
+                settingPageBuildItems);
+        Map<String, List<UnlistedPageBuildItem>> unlistedPagesMap = getUnlistedPagesMap(curateOutcomeBuildItem,
+                unlistedPageBuildItems);
 
         final Yaml yaml = new Yaml();
         List<Extension> activeExtensions = new ArrayList<>();
         List<Extension> inactiveExtensions = new ArrayList<>();
         List<Extension> sectionMenuExtensions = new ArrayList<>();
         List<Extension> footerTabExtensions = new ArrayList<>();
+        List<Extension> settingTabExtensions = new ArrayList<>();
+        List<Extension> unlistedExtensions = new ArrayList<>();
 
         for (ResolvedDependency runtimeExt : curateOutcomeBuildItem.getApplicationModel()
                 .getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
@@ -787,6 +799,46 @@ public class DevUIProcessor {
                                         footerTabExtensions.add(extension);
                                     }
                                 }
+
+                                // Tabs in the settings page
+                                if (settingPagesMap.containsKey(namespace)) {
+
+                                    List<SettingPageBuildItem> sbis = settingPagesMap.remove(namespace);
+                                    for (SettingPageBuildItem settingPageBuildItem : sbis) {
+                                        List<PageBuilder> settingPageBuilders = settingPageBuildItem.getPages();
+
+                                        Map<String, BuildTimeData> buildTimeData = settingPageBuildItem.getBuildTimeData();
+                                        for (PageBuilder pageBuilder : settingPageBuilders) {
+                                            Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                            if (!page.isAssistantPage() || assistantIsAvailable) {
+                                                extension.addSettingPage(page);
+                                            }
+                                        }
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                        settingTabExtensions.add(extension);
+                                    }
+                                }
+
+                                // Unlisted pages
+                                if (unlistedPagesMap.containsKey(namespace)) {
+
+                                    List<UnlistedPageBuildItem> ubis = unlistedPagesMap.remove(namespace);
+                                    for (UnlistedPageBuildItem unlistedPageBuildItem : ubis) {
+                                        List<PageBuilder> unlistedPageBuilders = unlistedPageBuildItem.getPages();
+
+                                        Map<String, BuildTimeData> buildTimeData = unlistedPageBuildItem.getBuildTimeData();
+                                        for (PageBuilder pageBuilder : unlistedPageBuilders) {
+                                            Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                            if (!page.isAssistantPage() || assistantIsAvailable) {
+                                                extension.addUnlistedPage(page);
+                                            }
+                                        }
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                        unlistedExtensions.add(extension);
+                                    }
+                                }
                             }
                         }
 
@@ -825,8 +877,57 @@ public class DevUIProcessor {
             }
         }
 
+        // Also add setting for extensions that might not have a runtime
+        if (!settingPagesMap.isEmpty()) {
+            for (Map.Entry<String, List<SettingPageBuildItem>> setting : settingPagesMap.entrySet()) {
+                List<SettingPageBuildItem> sbis = setting.getValue();
+                for (SettingPageBuildItem settingPageBuildItem : sbis) {
+
+                    Extension deploymentOnlyExtension = new Extension();
+                    deploymentOnlyExtension.setName(setting.getKey());
+
+                    List<PageBuilder> settingPageBuilders = settingPageBuildItem.getPages();
+
+                    for (PageBuilder pageBuilder : settingPageBuilders) {
+                        pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                        pageBuilder.extension(deploymentOnlyExtension.getName());
+                        pageBuilder.internal();
+                        Page page = pageBuilder.build();
+                        deploymentOnlyExtension.addSettingPage(page);
+                    }
+
+                    settingTabExtensions.add(deploymentOnlyExtension);
+                }
+            }
+        }
+
+        // Also add unlisting pages for extensions that might not have a runtime
+        if (!unlistedPagesMap.isEmpty()) {
+            for (Map.Entry<String, List<UnlistedPageBuildItem>> setting : unlistedPagesMap.entrySet()) {
+                List<UnlistedPageBuildItem> ubis = setting.getValue();
+                for (UnlistedPageBuildItem unlistedPageBuildItem : ubis) {
+
+                    Extension deploymentOnlyExtension = new Extension();
+                    deploymentOnlyExtension.setName(setting.getKey());
+
+                    List<PageBuilder> unlistedPageBuilders = unlistedPageBuildItem.getPages();
+
+                    for (PageBuilder pageBuilder : unlistedPageBuilders) {
+                        pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                        pageBuilder.extension(deploymentOnlyExtension.getName());
+                        pageBuilder.internal();
+                        Page page = pageBuilder.build();
+                        deploymentOnlyExtension.addUnlistedPage(page);
+                    }
+
+                    unlistedExtensions.add(deploymentOnlyExtension);
+                }
+            }
+        }
+
         extensionsProducer.produce(
-                new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions));
+                new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions,
+                        settingTabExtensions, unlistedExtensions));
     }
 
     private void addLibraryLinks(Extension extension, CardPageBuildItem cardPageBuildItem,
@@ -1089,6 +1190,38 @@ public class DevUIProcessor {
                 List<FooterPageBuildItem> fbi = new ArrayList<>();
                 fbi.add(pageBuildItem);
                 m.put(key, fbi);
+            }
+        }
+        return m;
+    }
+
+    private Map<String, List<SettingPageBuildItem>> getSettingPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<SettingPageBuildItem> pages) {
+        Map<String, List<SettingPageBuildItem>> m = new HashMap<>();
+        for (SettingPageBuildItem pageBuildItem : pages) {
+            String key = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            if (m.containsKey(key)) {
+                m.get(key).add(pageBuildItem);
+            } else {
+                List<SettingPageBuildItem> sbi = new ArrayList<>();
+                sbi.add(pageBuildItem);
+                m.put(key, sbi);
+            }
+        }
+        return m;
+    }
+
+    private Map<String, List<UnlistedPageBuildItem>> getUnlistedPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<UnlistedPageBuildItem> pages) {
+        Map<String, List<UnlistedPageBuildItem>> m = new HashMap<>();
+        for (UnlistedPageBuildItem pageBuildItem : pages) {
+            String key = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            if (m.containsKey(key)) {
+                m.get(key).add(pageBuildItem);
+            } else {
+                List<UnlistedPageBuildItem> ubi = new ArrayList<>();
+                ubi.add(pageBuildItem);
+                m.put(key, ubi);
             }
         }
         return m;

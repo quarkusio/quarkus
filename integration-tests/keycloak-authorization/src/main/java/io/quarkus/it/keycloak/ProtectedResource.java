@@ -17,11 +17,14 @@ import jakarta.ws.rs.core.Context;
 import org.keycloak.authorization.client.AuthzClient;
 import org.keycloak.representations.idm.authorization.Permission;
 
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
+// This needs policy enforcement to be true, or the Authzclient can't be injected
+@UnlessBuildProfile("no-test-resource")
 @Path("/api/permission")
 public class ProtectedResource {
 

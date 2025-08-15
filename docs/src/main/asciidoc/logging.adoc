@@ -244,6 +244,17 @@ quarkus.log.level=INFO
 quarkus.log.category."org.hibernate".level=DEBUG
 ----
 
+The equivalent in YAML (assuming the https://quarkus.io/guides/config-yaml[Quarkus YAML extension] is included) would be:
+[source, yaml]
+----
+quarkus:
+  log:
+    level: INFO
+    category:
+      org.hibernate: # The org.hibernate as a single key here is important
+        level: DEBUG
+----
+
 When you set the log level to below `DEBUG`, you must also adjust the minimum log level.
 This setting might be applied either globally with the `quarkus.log.min-level` configuration property, or per category:
 

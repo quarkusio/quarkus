@@ -20,6 +20,7 @@ import org.jboss.threads.JBossThreadFactory;
 
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
+import io.smallrye.common.cpu.ProcessorInfo;
 
 final class Execution {
 
@@ -55,7 +56,9 @@ final class Execution {
         final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
         executorBuilder.setRegisterMBean(false);
         executorBuilder.setQueueLimited(false);
-        executorBuilder.setCorePoolSize(8).setMaximumPoolSize(1024);
+        final int availableProcessors = ProcessorInfo.availableProcessors();
+        executorBuilder.setMaximumPoolSize(defineMaxPoolSize(availableProcessors));
+        executorBuilder.setCorePoolSize(defineCorePoolSize(availableProcessors));
         executorBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
         executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t",
                 JBossExecutors.loggingExceptionHandler(), null));
@@ -66,6 +69,19 @@ final class Execution {
             done = true;
 
         metrics = new BuildMetrics(buildTargetName);
+    }
+
+    private static Integer defineMaxPoolSize(final int availableProcessors) {
+        //We used to have a hard limit of 1024, but that was too high for some builds.
+        //Now we allow it to be configured, defaulting to twice the number of available processors.
+        Integer integer = Integer.getInteger("io.quarkus.builder.execution.maxPoolSize");
+        return integer != null ? integer : Integer.valueOf(availableProcessors * 2);
+    }
+
+    private static Integer defineCorePoolSize(final int availableProcessors) {
+        //We used to have this hardcoded to 8.
+        //It was too high for some builds, so reducing the default and allowing people to tune this.
+        return Integer.getInteger("io.quarkus.builder.execution.corePoolSize", 4);
     }
 
     List<Diagnostic> getDiagnostics() {

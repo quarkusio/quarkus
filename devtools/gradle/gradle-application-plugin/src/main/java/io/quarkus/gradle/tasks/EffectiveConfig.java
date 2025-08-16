@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -26,6 +25,8 @@ import io.quarkus.deployment.configuration.ConfigCompatibility;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -99,8 +100,22 @@ public final class EffectiveConfig {
     }
 
     public Map<String, String> getOnlyQuarkusValues() {
-        return values.entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return Expressions.withoutExpansion(new Supplier<Map<String, String>>() {
+            @Override
+            public Map<String, String> get() {
+                Map<String, String> properties = new HashMap<>();
+                for (String propertyName : config.getPropertyNames()) {
+                    if (propertyName.startsWith("quarkus.") || propertyName.startsWith("platform.quarkus.")) {
+                        ConfigValue configValue = config.getConfigValue(propertyName);
+                        if (configValue.getValue() != null
+                                && !DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+                            properties.put(propertyName, configValue.getValue());
+                        }
+                    }
+                }
+                return unmodifiableMap(properties);
+            }
+        });
     }
 
     private Map<String, String> asStringMap(Map<String, ?> map) {
@@ -120,9 +135,9 @@ public final class EffectiveConfig {
             public Map<String, String> get() {
                 Map<String, String> properties = new HashMap<>();
                 for (String propertyName : config.getPropertyNames()) {
-                    String value = config.getRawValue(propertyName);
-                    if (value != null) {
-                        properties.put(propertyName, value);
+                    ConfigValue configValue = config.getConfigValue(propertyName);
+                    if (configValue.getValue() != null) {
+                        properties.put(propertyName, configValue.getValue());
                     }
                 }
                 return unmodifiableMap(properties);

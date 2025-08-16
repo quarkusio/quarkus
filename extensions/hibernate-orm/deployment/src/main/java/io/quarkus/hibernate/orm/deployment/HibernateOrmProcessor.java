@@ -29,6 +29,11 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -464,7 +469,8 @@ public final class HibernateOrmProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            LiveReloadBuildItem liveReloadBuildItem) {
+            LiveReloadBuildItem liveReloadBuildItem,
+            ExecutorService buildExecutor) throws ExecutionException, InterruptedException {
         Set<String> managedClassAndPackageNames = new HashSet<>(jpaModel.getEntityClassNames());
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
             // Note: getManagedClassNames() can also return *package* names
@@ -478,9 +484,9 @@ public final class HibernateOrmProcessor {
             managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
         }
 
-        PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
+        PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames,
                 indexBuildItem.getIndex(), transformedClassesBuildItem,
-                generatedClassBuildItemBuildProducer, liveReloadBuildItem);
+                generatedClassBuildItemBuildProducer, liveReloadBuildItem, buildExecutor);
 
         // Make proxies available through a constant;
         // this is a hack to avoid introducing circular dependencies between build steps.
@@ -1371,16 +1377,17 @@ public final class HibernateOrmProcessor {
         return multiTenancyStrategy;
     }
 
-    private PreGeneratedProxies generatedProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
+    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
             TransformedClassesBuildItem transformedClassesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            LiveReloadBuildItem liveReloadBuildItem) {
+            LiveReloadBuildItem liveReloadBuildItem,
+            ExecutorService buildExecutor) throws ExecutionException, InterruptedException {
         ProxyCache proxyCache = liveReloadBuildItem.getContextObject(ProxyCache.class);
         if (proxyCache == null) {
             proxyCache = new ProxyCache();
             liveReloadBuildItem.setContextObject(ProxyCache.class, proxyCache);
         }
-        Set<String> changedClasses = Collections.emptySet();
+        Set<String> changedClasses = Set.of();
         if (liveReloadBuildItem.getChangeInformation() != null) {
             changedClasses = liveReloadBuildItem.getChangeInformation().getChangedClasses();
         } else {
@@ -1388,36 +1395,44 @@ public final class HibernateOrmProcessor {
             proxyCache.cache.clear();
         }
         //create a map of entity to proxy type
-        PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
         TypePool transformedClassesTypePool = createTransformedClassesTypePool(transformedClassesBuildItem,
                 managedClassAndPackageNames);
+
+        PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
+
         try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(transformedClassesTypePool)) {
+            final ConcurrentLinkedDeque<Future<CachedProxy>> generatedProxyQueue = new ConcurrentLinkedDeque<>();
+            Set<String> proxyInterfaceNames = Set.of(ClassNames.HIBERNATE_PROXY.toString());
+
             for (String managedClassOrPackageName : managedClassAndPackageNames) {
-                CachedProxy result;
                 if (proxyCache.cache.containsKey(managedClassOrPackageName)
                         && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
-                    result = proxyCache.cache.get(managedClassOrPackageName);
+                    CachedProxy proxy = proxyCache.cache.get(managedClassOrPackageName);
+                    generatedProxyQueue.add(CompletableFuture.completedFuture(proxy));
                 } else {
-                    Set<String> proxyInterfaceNames = new TreeSet<>();
-                    proxyInterfaceNames.add(ClassNames.HIBERNATE_PROXY.toString()); //always added
                     if (!proxyHelper.isProxiable(combinedIndex.getClassByName(managedClassOrPackageName))) {
                         // we need to make sure the actual class is proxiable
                         continue;
                     }
-                    final String mappedClass = managedClassOrPackageName;
-                    DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass, proxyInterfaceNames);
-                    result = new CachedProxy(unloaded, proxyInterfaceNames);
-                    proxyCache.cache.put(managedClassOrPackageName, result);
+                    generatedProxyQueue.add(buildExecutor.submit(() -> {
+                        DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(managedClassOrPackageName,
+                                proxyInterfaceNames);
+                        return new CachedProxy(managedClassOrPackageName, unloaded, proxyInterfaceNames);
+                    }));
                 }
-                for (Entry<TypeDescription, byte[]> i : result.proxyDef.getAllTypes().entrySet()) {
+            }
+
+            for (Future<CachedProxy> proxyFuture : generatedProxyQueue) {
+                CachedProxy proxy = proxyFuture.get();
+                for (Entry<TypeDescription, byte[]> i : proxy.proxyDef.getAllTypes().entrySet()) {
                     generatedClassBuildItemBuildProducer
                             .produce(new GeneratedClassBuildItem(true, i.getKey().getName(), i.getValue()));
                 }
-                preGeneratedProxies.getProxies().put(managedClassOrPackageName,
-                        new PreGeneratedProxies.ProxyClassDetailsHolder(result.proxyDef.getTypeDescription().getName(),
-                                result.interfaces));
+                preGeneratedProxies.getProxies().put(proxy.managedClassName, new PreGeneratedProxies.ProxyClassDetailsHolder(
+                        proxy.proxyDef.getTypeDescription().getName(), proxy.interfaces));
             }
         }
+
         return preGeneratedProxies;
     }
 
@@ -1473,10 +1488,12 @@ public final class HibernateOrmProcessor {
     }
 
     static final class CachedProxy {
+        final String managedClassName;
         final DynamicType.Unloaded<?> proxyDef;
         final Set<String> interfaces;
 
-        CachedProxy(DynamicType.Unloaded<?> proxyDef, Set<String> interfaces) {
+        CachedProxy(String managedClassName, DynamicType.Unloaded<?> proxyDef, Set<String> interfaces) {
+            this.managedClassName = managedClassName;
             this.proxyDef = proxyDef;
             this.interfaces = interfaces;
         }

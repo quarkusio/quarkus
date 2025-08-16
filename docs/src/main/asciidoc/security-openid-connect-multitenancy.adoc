@@ -974,6 +974,33 @@ quarkus.oidc.tenant-b.credentials.secret=${tenant-b-client-secret}
 <2> Tenant `tenant-a` discovers the `issuer` from the OIDC provider's well-known configuration endpoint.
 <3> Tenant `tenant-b` configures the `issuer` because its OIDC provider does not support the discovery.
 
+[[restrict-oidc-filter-to-tenants]]
+==== Restricting OIDC request and response filters to specific tenants
+
+Both the `io.quarkus.oidc.common.OidcRequestFilter` and the `io.quarkus.oidc.common.OidcResponseFilter` filters can be restricted to specific tenants like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@TenantFeature({ "tenant-one", "tenant-two" }) <1>
+public class CustomOidcRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext requestContext) {
+        requestContext.request().putHeader("custom-header-name", "custom-header-value");
+    }
+}
+----
+<1> Restrict the `CustomOidcRequestFilter` filter to OIDC tenants `tenant-one` and `tenant-two`.
+
+An OIDC response filter can be restricted to the specific OIDC endpoint or endpoints with the `quarkus.oidc.common.OidcEndpoint` annotation.
+
 [[tenant-resolution-for-web-app]]
 === Tenant resolution for OIDC web-app applications
 

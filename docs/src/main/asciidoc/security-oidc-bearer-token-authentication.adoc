@@ -1552,6 +1552,34 @@ public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
 <3> Use `OidcRequestContextProperties` request properties to get the tenant id.
 <4> Get the response data as String.
 
+[[restrict-oidc-filter-to-bearer-auth-flow]]
+=== Restricting OIDC request and response filters to bearer token flow
+
+When you have both the bearer access token and xref:security-oidc-code-flow-authentication.adoc[authorization code] flows supported by xref:security-openid-connect-multitenancy.adoc[multiple OIDC tenants] and the filters have to deal with a flow specific logic, you can instead have them restricted to the bearer token flow with the `io.quarkus.oidc.BearerTokenAuthentication` annotation and xref:security-oidc-code-flow-authentication.adoc#restrict-oidc-filter-to-code-flow[the authorization code flow with the 'io.quarkus.oidc.AuthorizationCodeFlow' annotation].
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.BearerTokenAuthentication;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@BearerTokenAuthentication
+@ApplicationScoped
+@Unremovable
+public class CustomOidcRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext requestContext) {
+        requestContext.request().putHeader("custom-header-name", "custom-header-value");
+    }
+}
+----
+
 == Programmatic OIDC start-up
 
 OIDC tenants can be created programmatically like in the example below:

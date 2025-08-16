@@ -1401,7 +1401,7 @@ public final class HibernateOrmProcessor {
                 } else {
                     Set<String> proxyInterfaceNames = new TreeSet<>();
                     proxyInterfaceNames.add(ClassNames.HIBERNATE_PROXY.toString()); //always added
-                    if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
+                    if (!proxyHelper.isProxiable(combinedIndex.getClassByName(managedClassOrPackageName))) {
                         // we need to make sure the actual class is proxiable
                         continue;
                     }
@@ -1464,7 +1464,7 @@ public final class HibernateOrmProcessor {
             }
         }
         DotName superName = clazz.superName();
-        if (superName != null) {
+        if (superName != null && !DotName.OBJECT_NAME.equals(superName)) {
             return isModified(superName.toString(), changedClasses, index);
         }
         return false;

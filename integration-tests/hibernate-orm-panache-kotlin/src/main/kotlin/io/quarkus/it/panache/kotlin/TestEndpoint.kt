@@ -1,5 +1,7 @@
 package io.quarkus.it.panache.kotlin
 
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
@@ -19,16 +21,15 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElements
 import jakarta.xml.bind.annotation.XmlTransient
-import java.lang.UnsupportedOperationException
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.UUID
+import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.hibernate.jpa.QueryHints
+import org.hibernate.query.SemanticException
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.fail
 
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and in
@@ -1210,6 +1211,169 @@ class TestEndpoint {
             Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()
         Assertions.assertNotNull(withSpace)
         Assertions.assertEquals(mark.name, withSpace?.projectedName)
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-constructor-annotation")
+    @Transactional
+    fun testProjectedConstructor(): String {
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructorWithConstructorAnnotation {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            @ProjectedConstructor constructor(name: String) : this(name, null)
+        }
+
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructor {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(name: String) : this(name, null)
+        }
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val annotatedConstructor =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructorWithConstructorAnnotation::class.java)
+                .firstResult()
+        Assertions.assertNotNull(annotatedConstructor)
+        Assertions.assertEquals(mark.name, annotatedConstructor?.name)
+
+        val semanticException =
+            Assertions.assertThrowsExactly(SemanticException::class.java) {
+                Person.find("name = ?1", "Mark")
+                    .project(MyProjectionDoubleConstructor::class.java)
+                    .firstResult()
+            }
+        Assertions.assertEquals(
+            "Could not interpret path expression 'fakeParameter'",
+            semanticException.message,
+        )
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-projected-field-name")
+    @Transactional
+    fun testConstructorWithProjectedFieldNameProjection(): String {
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructorWithConstructorAnnotation {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(@ProjectedFieldName("name") name: String) : this(name, null)
+        }
+
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructor {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(name: String) : this(name, null)
+        }
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val annotatedConstructor =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructorWithConstructorAnnotation::class.java)
+                .firstResult()
+        Assertions.assertNotNull(annotatedConstructor)
+        Assertions.assertEquals(mark.name, annotatedConstructor?.name)
+
+        val semanticException =
+            Assertions.assertThrowsExactly(SemanticException::class.java) {
+                Person.find("name = ?1", "Mark")
+                    .project(MyProjectionDoubleConstructor::class.java)
+                    .firstResult()
+            }
+        Assertions.assertEquals(
+            "Could not interpret path expression 'fakeParameter'",
+            semanticException.message,
+        )
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-no-arguments-constructor")
+    @Transactional
+    fun testConstructorWithNoArgsProjection(): String {
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructorWithConstructorAnnotation {
+            val name: String = "Mark"
+
+            constructor()
+
+            constructor(name: String) : this()
+        }
+
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructor {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(name: String) : this(name, null)
+        }
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val annotatedConstructor =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructorWithConstructorAnnotation::class.java)
+                .firstResult()
+        Assertions.assertNotNull(annotatedConstructor)
+        Assertions.assertEquals(mark.name, annotatedConstructor?.name)
+
+        val semanticException =
+            Assertions.assertThrowsExactly(SemanticException::class.java) {
+                Person.find("name = ?1", "Mark")
+                    .project(MyProjectionDoubleConstructor::class.java)
+                    .firstResult()
+            }
+        Assertions.assertEquals(
+            "Could not interpret path expression 'fakeParameter'",
+            semanticException.message,
+        )
 
         Person.deleteAll()
 

@@ -508,6 +508,34 @@ public class TokenResponseFilter implements OidcResponseFilter {
 }
 ----
 
+[[restrict-oidc-filter-to-code-flow]]
+=== Restricting OIDC request and response filters to authorization code flow
+
+When you have both the authorization code and xref:security-oidc-bearer-token-authentication.adoc[bearer access token] flows supported by xref:security-openid-connect-multitenancy.adoc[multiple OIDC tenants] and the filters have to deal with a flow specific logic, you can instead have them restricted to the authorization code flow with the `io.quarkus.oidc.AuthorizationCodeFlow` annotation and xref:security-oidc-bearer-token-authentication.adoc#restrict-oidc-filter-to-bearer-auth-flow[the bearer access token flow with the 'io.quarkus.oidc.BearerTokenAuthentication' annotation].
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@AuthorizationCodeFlow
+@ApplicationScoped
+@Unremovable
+public class CustomOidcRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext requestContext) {
+        requestContext.request().putHeader("custom-header-name", "custom-header-value");
+    }
+}
+----
+
 === Redirecting to and from the OIDC provider
 
 When a user is redirected to the OIDC provider to authenticate, the redirect URL includes a `redirect_uri` query parameter, which indicates to the provider where the user has to be redirected to when the authentication is complete.

@@ -4,6 +4,7 @@ import static io.quarkus.it.keycloak.BearerTokenStepUpAuthenticationTest.getAcce
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1042,6 +1043,47 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice:service"));
+    }
+
+    @Test
+    void testBearerTokenAuthenticationRequestFilter() {
+        // reset current state
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/oidc/opaque-token-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+        RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200);
+        RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200);
+
+        String opaqueToken2 = getOpaqueAccessToken2FromSimpleOidc();
+        RestAssured.given().auth().oauth2(opaqueToken2)
+                .when().get("/tenant-introspection/tenant-introspection-required-claims")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice, required_claim:1"));
+
+        // assert and reset current state
+        RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200)
+                .body(is("tenant-introspection-required-claims"));
+        RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200)
+                .body(is(""));
+
+        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc();
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                // introspection called fails
+                .statusCode(401);
+
+        // assert and reset current state
+        RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200)
+                .body(is("tenant-introspection-multiple-required-claims"));
+        RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200)
+                .body(is("tenant-introspection-multiple-required-claims"));
+
+        // reset state
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/oidc/opaque-token-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
     }
 
     private String getAccessToken(String userName, String clientId) {

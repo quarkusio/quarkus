@@ -1,7 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.QUARKUS_RUN_JAR;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.mergeList;
 

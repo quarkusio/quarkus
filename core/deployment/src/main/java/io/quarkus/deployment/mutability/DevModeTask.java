@@ -1,9 +1,10 @@
 package io.quarkus.deployment.mutability;
 
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.BUILD_SYSTEM_PROPERTIES;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEPLOYMENT_LIB;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.LIB;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.APPMODEL_DAT;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.BUILD_SYSTEM_PROPERTIES;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEPLOYMENT_LIB;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.LIB;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.QUARKUS;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -28,7 +29,6 @@ import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedDevModeMain;
-import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
@@ -40,7 +40,7 @@ public class DevModeTask {
     public static Closeable main(Path appRoot) throws Exception {
 
         try (ObjectInputStream in = new ObjectInputStream(
-                Files.newInputStream(appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB).resolve(JarResultBuildStep.APPMODEL_DAT)))) {
+                Files.newInputStream(appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB).resolve(APPMODEL_DAT)))) {
             Properties buildSystemProperties = new Properties();
             try (InputStream buildIn = Files
                     .newInputStream(appRoot.resolve(QUARKUS).resolve(BUILD_SYSTEM_PROPERTIES))) {

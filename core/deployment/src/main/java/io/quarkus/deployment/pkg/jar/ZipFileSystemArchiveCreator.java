@@ -1,5 +1,6 @@
 package io.quarkus.deployment.pkg.jar;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -118,15 +119,7 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
         if (MANIFESTS.contains(target)) {
             return;
         }
-        Path targetInFsPath = zipFileSystem.getPath(target);
-        handleParentDirectories(targetInFsPath, source);
-        try (final OutputStream os = Files.newOutputStream(targetInFsPath)) {
-            for (byte[] i : bytes) {
-                os.write(i);
-                os.write('\n');
-            }
-            addedFiles.put(target, source);
-        }
+        addFile(joinWithNewlines(bytes), target, source);
     }
 
     /**
@@ -155,6 +148,18 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
     private void handleParentDirectories(Path targetInFsPath, String source) throws IOException {
         if (targetInFsPath.getParent() != null) {
             Files.createDirectories(targetInFsPath.getParent());
+        }
+    }
+
+    private static byte[] joinWithNewlines(List<byte[]> lines) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            for (byte[] line : lines) {
+                out.write(line);
+                out.write('\n');
+            }
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error joining byte arrays", e);
         }
     }
 

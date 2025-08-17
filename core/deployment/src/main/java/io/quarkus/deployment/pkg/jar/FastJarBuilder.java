@@ -174,8 +174,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
             Path transformedZip = quarkus.resolve(FastJarFormat.TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformedJar(transformedZip);
-            try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(transformedZip,
-                    packageConfig.jar().compress())) {
+            try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(transformedZip,
+                    packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
                 for (Set<TransformedClass> transformedSet : transformedClasses
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClass transformed : transformedSet) {
@@ -192,7 +192,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         //now generated classes and resources
         Path generatedZip = quarkus.resolve(FastJarFormat.GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGeneratedJar(generatedZip);
-        try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(generatedZip, packageConfig.jar().compress())) {
+        try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(generatedZip,
+                packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
             for (GeneratedClassBuildItem i : generatedClasses) {
                 String fileName = fromClassNameToResourceName(i.getName());
                 archiveCreator.addFile(i.getClassData(), fileName);
@@ -219,7 +220,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setResolvedDependency(applicationArchives.getRootArchive().getResolvedDependency())
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
-            try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar, packageConfig.jar().compress())) {
+            try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
+                    packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
                 copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
             }
         }
@@ -307,7 +309,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
         }
         if (!rebuild) {
-            try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(initJar, packageConfig.jar().compress())) {
+            try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(initJar,
+                    packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
                 ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
                 generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
@@ -424,7 +427,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 // This case can happen when we are building a jar from inside the Quarkus repository
                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
-                packageClasses(resolvedDep, targetPath, packageConfig);
+                packageClasses(resolvedDep, targetPath, packageConfig, outputTargetBuildItem);
             } else {
                 Set<TransformedClassesBuildItem.TransformedClass> transformedFromThisArchive = transformedClasses
                         .getTransformedClassesByJar().get(resolvedDep);
@@ -460,9 +463,11 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
     }
 
-    private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig)
+    private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig,
+            OutputTargetBuildItem outputTargetBuildItem)
             throws IOException {
-        try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(targetPath, packageConfig.jar().compress())) {
+        try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
+                packageConfig.jar().compress(), outputTargetBuildItem.getOutputDirectory())) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override

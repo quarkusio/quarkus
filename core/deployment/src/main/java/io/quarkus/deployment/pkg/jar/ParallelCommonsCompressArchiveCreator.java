@@ -1,0 +1,222 @@
+package io.quarkus.deployment.pkg.jar;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.jar.Manifest;
+import java.util.zip.Deflater;
+
+import org.apache.commons.compress.archivers.zip.DefaultBackingStoreSupplier;
+import org.apache.commons.compress.archivers.zip.ParallelScatterZipCreator;
+import org.apache.commons.compress.archivers.zip.ScatterZipOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntryRequest;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.commons.compress.parallel.InputStreamSupplier;
+import org.jboss.threads.EnhancedQueueExecutor;
+import org.jboss.threads.JBossExecutors;
+import org.jboss.threads.JBossThreadFactory;
+
+import io.smallrye.common.cpu.ProcessorInfo;
+
+/**
+ * This ArchiveCreator may not be used to build Uberjars.
+ * <p>
+ * We need the entries to be immutable here, and in the case of Uberjars, we mutate the MANIFEST.MF at the end.
+ * <p>
+ * It would probably not be that hard to support it though, by storing the Manifest instance,
+ * and allow getting it/setting it again, and adding it first in close().
+ */
+public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
+
+    private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
+
+    private static final InputStreamSupplier EMPTY_SUPPLIER = () -> new ByteArrayInputStream(new byte[0]);
+
+    private final Path archivePath;
+    private final ZipArchiveOutputStream archive;
+    private final ParallelScatterZipCreator scatterZipCreator;
+    private final ScatterZipOutputStream directories;
+    private final int compressionMethod;
+
+    private final Map<String, String> addedFiles = new HashMap<>();
+
+    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Path outputTarget) throws IOException {
+        int compressionLevel;
+        if (compressed) {
+            compressionLevel = Deflater.DEFAULT_COMPRESSION;
+            compressionMethod = ZipArchiveOutputStream.DEFLATED;
+        } else {
+            compressionLevel = Deflater.NO_COMPRESSION;
+            compressionMethod = ZipArchiveOutputStream.STORED;
+        }
+
+        this.archivePath = archivePath;
+        this.archive = new ZipArchiveOutputStream(archivePath);
+        this.archive.setMethod(compressionMethod);
+
+        scatterZipCreator = new ParallelScatterZipCreator(
+                // we need our own executor that we can throw away as it will be shut down by Commons Compress...
+                initExecutorService(),
+                new DefaultBackingStoreSupplier(Files.createTempDirectory(outputTarget, "zip-builder-files")),
+                compressionLevel);
+        directories = ScatterZipOutputStream.pathBased(Files.createTempFile(outputTarget, "zip-builder-dirs", ""),
+                compressionLevel);
+    }
+
+    @Override
+    public void addManifest(Manifest manifest) throws IOException {
+        // we add the manifest directly to the final archive to make sure it is the first element added
+        archive.putArchiveEntry(new ZipArchiveEntry("META-INF/"));
+        archive.closeArchiveEntry();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        manifest.write(baos);
+        byte[] manifestBytes = baos.toByteArray();
+
+        ZipArchiveEntry manifestEntry = new ZipArchiveEntry("META-INF/MANIFEST.MF");
+        manifestEntry.setSize(manifestBytes.length);
+        archive.putArchiveEntry(manifestEntry);
+        archive.write(manifestBytes);
+        archive.closeArchiveEntry();
+    }
+
+    @Override
+    public void addDirectory(String directory, String source) throws IOException {
+        if (addedFiles.putIfAbsent(directory, source) != null) {
+            return;
+        }
+        if (!directory.endsWith("/")) {
+            directory += "/";
+        }
+        addDirectoryEntry(new ZipArchiveEntry(directory));
+    }
+
+    @Override
+    public void addFile(Path origin, String target, String source) throws IOException {
+        if (MANIFESTS.contains(target)) {
+            return;
+        }
+        if (addedFiles.putIfAbsent(target, source) != null) {
+            return;
+        }
+        addEntry(new ZipArchiveEntry(target), toInputStreamSupplier(origin));
+    }
+
+    @Override
+    public void addFile(byte[] bytes, String target, String source) throws IOException {
+        if (MANIFESTS.contains(target)) {
+            return;
+        }
+        addEntry(new ZipArchiveEntry(target), toInputStreamSupplier(bytes));
+        addedFiles.put(target, source);
+    }
+
+    @Override
+    public void addFileIfNotExists(Path origin, String target, String source) throws IOException {
+        if (MANIFESTS.contains(target)) {
+            return;
+        }
+        if (addedFiles.containsKey(target)) {
+            return;
+        }
+
+        addFile(origin, target, source);
+    }
+
+    @Override
+    public void addFileIfNotExists(byte[] bytes, String target, String source) throws IOException {
+        if (MANIFESTS.contains(target)) {
+            return;
+        }
+        if (addedFiles.containsKey(target)) {
+            return;
+        }
+
+        addFile(bytes, target, source);
+    }
+
+    @Override
+    public void addFile(List<byte[]> bytes, String target, String source) throws IOException {
+        if (MANIFESTS.contains(target)) {
+            return;
+        }
+        addFile(joinWithNewlines(bytes), target, source);
+    }
+
+    private void addDirectoryEntry(final ZipArchiveEntry zipArchiveEntry) throws IOException {
+        if (!zipArchiveEntry.isDirectory() || zipArchiveEntry.isUnixSymlink()) {
+            return;
+        }
+        zipArchiveEntry.setMethod(compressionMethod);
+        directories.addArchiveEntry(ZipArchiveEntryRequest.createZipArchiveEntryRequest(zipArchiveEntry, EMPTY_SUPPLIER));
+    }
+
+    private void addEntry(final ZipArchiveEntry zipArchiveEntry, final InputStreamSupplier streamSupplier) throws IOException {
+        zipArchiveEntry.setMethod(compressionMethod);
+        if (zipArchiveEntry.isDirectory() && !zipArchiveEntry.isUnixSymlink()) {
+            directories.addArchiveEntry(ZipArchiveEntryRequest.createZipArchiveEntryRequest(zipArchiveEntry, streamSupplier));
+        } else {
+            scatterZipCreator.addArchiveEntry(zipArchiveEntry, streamSupplier);
+        }
+    }
+
+    private static byte[] joinWithNewlines(List<byte[]> lines) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            for (byte[] line : lines) {
+                out.write(line);
+                out.write('\n');
+            }
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error joining byte arrays", e);
+        }
+    }
+
+    private static InputStreamSupplier toInputStreamSupplier(byte[] data) {
+        return () -> new ByteArrayInputStream(data);
+    }
+
+    private static InputStreamSupplier toInputStreamSupplier(Path path) {
+        return () -> {
+            try {
+                return Files.newInputStream(path);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        };
+    }
+
+    private static ExecutorService initExecutorService() {
+        final EnhancedQueueExecutor.Builder executorServiceBuilder = new EnhancedQueueExecutor.Builder();
+        executorServiceBuilder.setRegisterMBean(false);
+        executorServiceBuilder.setQueueLimited(false);
+        executorServiceBuilder.setCorePoolSize(8).setMaximumPoolSize(ProcessorInfo.availableProcessors() * 2);
+        executorServiceBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
+        executorServiceBuilder
+                .setThreadFactory(
+                        new JBossThreadFactory(new ThreadGroup("jar-compress group"), Boolean.FALSE, null, "jar-compress-%t",
+                                JBossExecutors.loggingExceptionHandler(), null));
+        return executorServiceBuilder.build();
+    }
+
+    @Override
+    public void close() {
+        try (archive) {
+            directories.writeTo(archive);
+            directories.close();
+            scatterZipCreator.writeTo(archive);
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            throw new IllegalStateException("Unable to create archive: " + archivePath, e);
+        }
+    }
+}

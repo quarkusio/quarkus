@@ -48,7 +48,6 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -80,6 +79,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
@@ -294,17 +294,18 @@ public class HttpSecurityProcessor {
     @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Produce(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
+    HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
+            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
             HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
             ShutdownContextBuildItem shutdown) {
         if (authenticationHandler.isPresent()) {
-            recorder.prepareHttpSecurityConfiguration(shutdown);
-            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler,
-                    beanContainerBuildItem.getValue());
+            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown);
+            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
+            return new HttpSecurityConfigSetupCompleteBuildItem(programmaticCorsConfig);
         }
+        return new HttpSecurityConfigSetupCompleteBuildItem(null);
     }
 
     @BuildStep
@@ -897,7 +898,12 @@ public class HttpSecurityProcessor {
         }
     }
 
-    static final class HttpSecurityConfigSetupCompleteBuildItem extends EmptyBuildItem {
+    static final class HttpSecurityConfigSetupCompleteBuildItem extends SimpleBuildItem {
 
+        final RuntimeValue<CORSConfig> programmaticCorsConfig;
+
+        private HttpSecurityConfigSetupCompleteBuildItem(RuntimeValue<CORSConfig> programmaticCorsConfig) {
+            this.programmaticCorsConfig = programmaticCorsConfig;
+        }
     }
 }

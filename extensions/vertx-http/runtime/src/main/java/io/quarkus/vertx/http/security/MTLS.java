@@ -16,9 +16,9 @@ import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.CertificateRoleAttribute;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.smallrye.common.annotation.Experimental;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.vertx.core.http.ClientAuth;
 
 /**
@@ -312,13 +312,7 @@ public interface MTLS {
          * @return default value as hardcoded in the {@link AuthRuntimeConfig} mapping.
          */
         private static String getDefaultCertificateAttributeValue() {
-            return new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withDefaultValue("quarkus.http.host", "8081")
-                    .withMapping(VertxHttpConfig.class)
-                    .build()
-                    .getConfigMapping(VertxHttpConfig.class)
-                    .auth().certificateRoleAttribute();
+            return HttpSecurityUtils.getDefaultVertxHttpConfig().auth().certificateRoleAttribute();
         }
     }
 

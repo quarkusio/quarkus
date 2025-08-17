@@ -10,6 +10,8 @@ import javax.security.auth.x500.X500Principal;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.vertx.ext.web.RoutingContext;
 
 public final class HttpSecurityUtils {
@@ -106,5 +108,14 @@ public final class HttpSecurityUtils {
             return routingContext.get(AUTHENTICATION_FAILURE_KEY);
         }
         return null;
+    }
+
+    public static VertxHttpConfig getDefaultVertxHttpConfig() {
+        return new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withDefaultValue("quarkus.http.host", "8081")
+                .withMapping(VertxHttpConfig.class)
+                .build()
+                .getConfigMapping(VertxHttpConfig.class);
     }
 }

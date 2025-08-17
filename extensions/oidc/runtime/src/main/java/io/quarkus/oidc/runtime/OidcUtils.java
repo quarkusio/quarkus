@@ -25,6 +25,7 @@ import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
@@ -42,14 +43,20 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
 
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
@@ -948,5 +955,46 @@ public final class OidcUtils {
         }
         // if it is only '/' then return an empty value
         return "/".equals(rootPath) ? "" : rootPath;
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters(OidcTenantConfig oidcTenantConfig) {
+        return OidcCommonUtils.getOidcRequestFilters(getAppliesTo(oidcTenantConfig));
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters(OidcTenantConfig oidcTenantConfig) {
+        return OidcCommonUtils.getOidcResponseFilters(getAppliesTo(oidcTenantConfig));
+    }
+
+    private static Predicate<Class<?>> getAppliesTo(OidcTenantConfig oidcTenantConfig) {
+        return new Predicate<>() {
+
+            private final String tenantId = oidcTenantConfig.tenantId().get();
+            private final boolean isBearerTokenAuthentication = OidcUtils.isServiceApp(oidcTenantConfig);
+            private final boolean isAuthorizationCodeFlow = OidcUtils.isWebApp(oidcTenantConfig);
+
+            @Override
+            public boolean test(Class<?> clazz) {
+                var tenantFeature = clazz.getAnnotation(TenantFeature.class);
+                if (tenantFeature != null && tenantFeature.value() != null) {
+                    boolean found = false;
+                    for (String id : tenantFeature.value()) {
+                        if (tenantId.equals(id)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        return false;
+                    }
+                }
+                if (clazz.getAnnotation(BearerTokenAuthentication.class) != null && !isBearerTokenAuthentication) {
+                    return false;
+                }
+                if (clazz.getAnnotation(AuthorizationCodeFlow.class) != null && !isAuthorizationCodeFlow) {
+                    return false;
+                }
+                return true;
+            }
+        };
     }
 }

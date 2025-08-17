@@ -59,16 +59,6 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
     };
 
-    private final CurateOutcomeBuildItem curateOutcome;
-    private final OutputTargetBuildItem outputTarget;
-    private final ApplicationInfoBuildItem applicationInfo;
-    private final PackageConfig packageConfig;
-    private final MainClassBuildItem mainClass;
-    private final ApplicationArchivesBuildItem applicationArchives;
-    private final TransformedClassesBuildItem transformedClasses;
-    private final List<GeneratedClassBuildItem> generatedClasses;
-    private final List<GeneratedResourceBuildItem> generatedResources;
-    private final Set<ArtifactKey> removedArtifactKeys;
     private final List<UberJarMergedResourceBuildItem> mergedResources;
     private final List<UberJarIgnoredResourceBuildItem> ignoredResources;
 
@@ -84,16 +74,9 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Set<ArtifactKey> removedArtifactKeys,
             List<UberJarMergedResourceBuildItem> mergedResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources) {
-        this.curateOutcome = curateOutcome;
-        this.outputTarget = outputTarget;
-        this.applicationInfo = applicationInfo;
-        this.packageConfig = packageConfig;
-        this.mainClass = mainClass;
-        this.applicationArchives = applicationArchives;
-        this.transformedClasses = transformedClasses;
-        this.generatedClasses = generatedClasses;
-        this.generatedResources = generatedResources;
-        this.removedArtifactKeys = removedArtifactKeys;
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
+                generatedClasses, generatedResources, removedArtifactKeys);
+
         this.mergedResources = mergedResources;
         this.ignoredResources = ignoredResources;
     }
@@ -117,19 +100,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             tmpRunnerJar = runnerJar;
         }
 
-        buildUberJar0(curateOutcome,
-                outputTarget,
-                transformedClasses,
-                applicationArchives,
-                packageConfig,
-                applicationInfo,
-                generatedClasses,
-                generatedResources,
-                mergedResources,
-                ignoredResources,
-                mainClass,
-                removedArtifactKeys,
-                tmpRunnerJar);
+        buildUberJar0(tmpRunnerJar);
 
         if (tmpRunnerJar != runnerJar) {
             Files.copy(tmpRunnerJar, runnerJar, StandardCopyOption.REPLACE_EXISTING);
@@ -169,19 +140,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
     }
 
-    private void buildUberJar0(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            TransformedClassesBuildItem transformedClasses,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            PackageConfig packageConfig,
-            ApplicationInfoBuildItem applicationInfo,
-            List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources,
-            List<UberJarMergedResourceBuildItem> mergedResources,
-            List<UberJarIgnoredResourceBuildItem> ignoredResources,
-            MainClassBuildItem mainClassBuildItem,
-            Set<ArtifactKey> removedArtifactKeys,
-            Path runnerJar) throws IOException {
+    private void buildUberJar0(Path runnerJar) throws IOException {
         try (ZipFileSystemArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar,
                 packageConfig.jar().compress())) {
             LOG.info("Building uber jar: " + runnerJar);
@@ -206,18 +165,18 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
             };
 
-            ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+            ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
 
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(archiveCreator, "", packageConfig, appArtifact, mainClassBuildItem.getClassName(),
+            generateManifest(archiveCreator, "", packageConfig, appArtifact, mainClass.getClassName(),
                     applicationInfo);
 
-            for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+            for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
                 // and are not part of the optional dependencies to include
-                if (!includeAppDependency(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(),
+                if (!includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(),
                         removedArtifactKeys)) {
                     continue;
                 }
@@ -235,13 +194,13 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     if (!Files.isDirectory(resolvedDep)) {
                         try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
                             for (final Path root : artifactFs.getRootDirectories()) {
-                                walkFileDependencyForDependency(root, archiveCreator, seen, duplicateCatcher,
-                                        concatenatedEntries,
-                                        allIgnoredEntriesPredicate, appDep, existingEntries, mergeResourcePaths);
+                                walkFileDependencyForDependency(root, archiveCreator, duplicateCatcher,
+                                        concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
+                                        mergeResourcePaths);
                             }
                         }
                     } else {
-                        walkFileDependencyForDependency(resolvedDep, archiveCreator, seen, duplicateCatcher,
+                        walkFileDependencyForDependency(resolvedDep, archiveCreator, duplicateCatcher,
                                 concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
                                 mergeResourcePaths);
                     }
@@ -256,9 +215,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     }
                 }
             }
-            copyCommonContent(archiveCreator, concatenatedEntries, applicationArchivesBuildItem, transformedClasses,
-                    generatedClasses,
-                    generatedResources, seen, allIgnoredEntriesPredicate);
+            copyCommonContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
@@ -272,7 +229,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         runnerJar.toFile().setReadable(true, false);
     }
 
-    private void walkFileDependencyForDependency(Path root, ArchiveCreator archiveCreator, Map<String, String> seen,
+    private void walkFileDependencyForDependency(Path root, ArchiveCreator archiveCreator,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
             Predicate<String> ignoredEntriesPredicate, Dependency appDep, Set<String> existingEntries,
             Set<String> mergeResourcePaths) throws IOException {

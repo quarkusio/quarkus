@@ -64,18 +64,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
 
-    private final CurateOutcomeBuildItem curateOutcome;
-    private final OutputTargetBuildItem outputTarget;
-    private final ApplicationInfoBuildItem applicationInfo;
-    private final PackageConfig packageConfig;
-    private final MainClassBuildItem mainClass;
-    private final ApplicationArchivesBuildItem applicationArchives;
     private final List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives;
-    private final TransformedClassesBuildItem transformedClasses;
-    private final List<GeneratedClassBuildItem> generatedClasses;
-    private final List<GeneratedResourceBuildItem> generatedResources;
     private final Set<ArtifactKey> parentFirstArtifactKeys;
-    private final Set<ArtifactKey> removedArtifactKeys;
 
     public FastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -89,18 +79,10 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> parentFirstArtifactKeys,
             Set<ArtifactKey> removedArtifactKeys) {
-        this.curateOutcome = curateOutcome;
-        this.outputTarget = outputTarget;
-        this.applicationInfo = applicationInfo;
-        this.packageConfig = packageConfig;
-        this.mainClass = mainClass;
-        this.applicationArchives = applicationArchives;
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
+                generatedClasses, generatedResources, removedArtifactKeys);
         this.additionalApplicationArchives = additionalApplicationArchives;
-        this.transformedClasses = transformedClasses;
-        this.generatedClasses = generatedClasses;
-        this.generatedResources = generatedResources;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
-        this.removedArtifactKeys = removedArtifactKeys;
     }
 
     public JarBuildItem build() throws IOException {

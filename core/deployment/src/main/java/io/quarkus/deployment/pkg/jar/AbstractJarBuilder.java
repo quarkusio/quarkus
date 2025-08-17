@@ -4,7 +4,6 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,8 +23,11 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathVisit;
@@ -34,6 +36,39 @@ import io.quarkus.paths.PathVisitor;
 public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuilder<T> {
 
     private static final Logger LOG = Logger.getLogger(AbstractJarBuilder.class);
+
+    protected final CurateOutcomeBuildItem curateOutcome;
+    protected final OutputTargetBuildItem outputTarget;
+    protected final ApplicationInfoBuildItem applicationInfo;
+    protected final PackageConfig packageConfig;
+    protected final MainClassBuildItem mainClass;
+    protected final ApplicationArchivesBuildItem applicationArchives;
+    protected final TransformedClassesBuildItem transformedClasses;
+    protected final List<GeneratedClassBuildItem> generatedClasses;
+    protected final List<GeneratedResourceBuildItem> generatedResources;
+    protected final Set<ArtifactKey> removedArtifactKeys;
+
+    public AbstractJarBuilder(CurateOutcomeBuildItem curateOutcome,
+            OutputTargetBuildItem outputTarget,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            MainClassBuildItem mainClass,
+            ApplicationArchivesBuildItem applicationArchives,
+            TransformedClassesBuildItem transformedClasses,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            Set<ArtifactKey> removedArtifactKeys) {
+        this.curateOutcome = curateOutcome;
+        this.outputTarget = outputTarget;
+        this.applicationInfo = applicationInfo;
+        this.packageConfig = packageConfig;
+        this.mainClass = mainClass;
+        this.applicationArchives = applicationArchives;
+        this.transformedClasses = transformedClasses;
+        this.generatedClasses = generatedClasses;
+        this.generatedResources = generatedResources;
+        this.removedArtifactKeys = removedArtifactKeys;
+    }
 
     protected static ArchiveCreator newArchiveCreator(Path archivePath, PackageConfig config) throws IOException {
         return new ZipFileSystemArchiveCreator(archivePath, config.jar().compress());
@@ -95,11 +130,8 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
-    protected static void copyCommonContent(ArchiveCreator archiveCreator,
+    protected void copyCommonContent(ArchiveCreator archiveCreator,
             Map<String, List<byte[]>> concatenatedEntries,
-            ApplicationArchivesBuildItem appArchives, TransformedClassesBuildItem transformedClassesBuildItem,
-            List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources, Map<String, String> seen,
             Predicate<String> ignoredEntriesPredicate)
             throws IOException {
 
@@ -107,7 +139,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         //        if (Files.exists(augmentOutcome.getConfigDir())) {
         //            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
         //        }
-        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClassesBuildItem
+        for (Set<TransformedClassesBuildItem.TransformedClass> transformed : transformedClasses
                 .getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
                 if (i.getData() != null) {
@@ -131,7 +163,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             archiveCreator.addFileIfNotExists(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
         }
 
-        copyFiles(appArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
+        copyFiles(applicationArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             archiveCreator.addFile(entry.getValue(), entry.getKey());
@@ -240,18 +272,6 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             return "";
         }
         return toUri(new StringBuilder(), path, 0).toString();
-    }
-
-    private static void handleParent(FileSystem runnerZipFs, String fileName, Map<String, String> seen) throws IOException {
-        for (int i = 0; i < fileName.length(); ++i) {
-            if (fileName.charAt(i) == '/') {
-                String dir = fileName.substring(0, i);
-                if (!seen.containsKey(dir)) {
-                    seen.put(dir, "Current Application");
-                    Files.createDirectories(runnerZipFs.getPath(dir));
-                }
-            }
-        }
     }
 
     private static StringBuilder toUri(StringBuilder b, Path path, int seg) {

@@ -36,17 +36,6 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
 
     private static final Logger LOG = Logger.getLogger(AbstractLegacyThinJarBuilder.class);
 
-    protected final CurateOutcomeBuildItem curateOutcome;
-    protected final OutputTargetBuildItem outputTarget;
-    protected final ApplicationInfoBuildItem applicationInfo;
-    protected final PackageConfig packageConfig;
-    protected final MainClassBuildItem mainClass;
-    protected final ApplicationArchivesBuildItem applicationArchives;
-    protected final TransformedClassesBuildItem transformedClasses;
-    protected final List<GeneratedClassBuildItem> generatedClasses;
-    protected final List<GeneratedResourceBuildItem> generatedResources;
-    protected final Set<ArtifactKey> removedArtifactKeys;
-
     public AbstractLegacyThinJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
@@ -57,16 +46,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys) {
-        this.curateOutcome = curateOutcome;
-        this.outputTarget = outputTarget;
-        this.applicationInfo = applicationInfo;
-        this.packageConfig = packageConfig;
-        this.mainClass = mainClass;
-        this.applicationArchives = applicationArchives;
-        this.transformedClasses = transformedClasses;
-        this.generatedClasses = generatedClasses;
-        this.generatedResources = generatedResources;
-        this.removedArtifactKeys = removedArtifactKeys;
+        super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
+                generatedClasses, generatedResources, removedArtifactKeys);
     }
 
     public abstract T build() throws IOException;
@@ -92,8 +73,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, mainClass.getClassName(),
                     applicationInfo);
 
-            copyCommonContent(archiveCreator, services, applicationArchives, transformedClasses, generatedClasses,
-                    generatedResources, seen, ignoredEntriesPredicate);
+            copyCommonContent(archiveCreator, services, ignoredEntriesPredicate);
         }
         runnerJar.toFile().setReadable(true, false);
     }

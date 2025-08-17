@@ -3,14 +3,10 @@ package io.quarkus.deployment.pkg.jar;
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +26,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathVisit;
@@ -40,23 +35,20 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
 
     private static final Logger LOG = Logger.getLogger(AbstractJarBuilder.class);
 
-    protected static FileSystem createNewZip(Path runnerJar, PackageConfig config) throws IOException {
-        boolean useUncompressedJar = !config.jar().compress();
-        if (useUncompressedJar) {
-            return ZipUtils.newZip(runnerJar, Map.of("compressionMethod", "STORED"));
-        }
-        return ZipUtils.newZip(runnerJar);
+    protected static ArchiveCreator newArchiveCreator(Path archivePath, PackageConfig config) throws IOException {
+        return new ZipFileSystemArchiveCreator(archivePath, config.jar().compress());
     }
 
     /**
      * Copy files from {@code archive} to {@code fs}, filtering out service providers into the given map.
      *
      * @param archive the root application archive
-     * @param fs the destination filesystem
+     * @param archiveCreator the archive creator
      * @param services the services map
      * @throws IOException if an error occurs
      */
-    protected static void copyFiles(ApplicationArchive archive, FileSystem fs, Map<String, List<byte[]>> services,
+    protected static void copyFiles(ApplicationArchive archive, ArchiveCreator archiveCreator,
+            Map<String, List<byte[]>> services,
             Predicate<String> ignoredEntriesPredicate) throws IOException {
         try {
             archive.accept(tree -> {
@@ -70,7 +62,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                         }
                         try {
                             if (Files.isDirectory(visit.getPath())) {
-                                addDirectory(fs, relativePath);
+                                archiveCreator.addDirectory(relativePath);
                             } else {
                                 if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18
                                         && services != null) {
@@ -85,10 +77,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                                     //TODO: auto generate INDEX.LIST
                                     //this may have implications for Camel though, as they change the layout
                                     //also this is only really relevant for the thin jar layout
-                                    Path target = fs.getPath(relativePath);
-                                    if (!Files.exists(target)) {
-                                        Files.copy(visit.getPath(), target, StandardCopyOption.REPLACE_EXISTING);
-                                    }
+                                    archiveCreator.addFileIfNotExists(visit.getPath(), relativePath);
                                 }
                             }
                         } catch (IOException e) {
@@ -106,7 +95,8 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         }
     }
 
-    protected static void copyCommonContent(FileSystem runnerZipFs, Map<String, List<byte[]>> concatenatedEntries,
+    protected static void copyCommonContent(ArchiveCreator archiveCreator,
+            Map<String, List<byte[]>> concatenatedEntries,
             ApplicationArchivesBuildItem appArchives, TransformedClassesBuildItem transformedClassesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources, Map<String, String> seen,
@@ -121,56 +111,30 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 .getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
                 if (i.getData() != null) {
-                    Path target = runnerZipFs.getPath(i.getFileName());
-                    handleParent(runnerZipFs, i.getFileName(), seen);
-                    try (final OutputStream out = Files.newOutputStream(target)) {
-                        out.write(i.getData());
-                    }
-                    seen.put(i.getFileName(), "Current Application");
+                    archiveCreator.addFile(i.getData(), i.getFileName());
                 }
             }
         }
         for (GeneratedClassBuildItem i : generatedClasses) {
-            String fileName = fromClassNameToResourceName(i.getName());
-            seen.put(fileName, "Current Application");
-            Path target = runnerZipFs.getPath(fileName);
-            handleParent(runnerZipFs, fileName, seen);
-            if (Files.exists(target)) {
-                continue;
-            }
-            try (final OutputStream os = Files.newOutputStream(target)) {
-                os.write(i.getClassData());
-            }
+            String fileName = fromClassNameToResourceName(i.internalName());
+            archiveCreator.addFileIfNotExists(i.getClassData(), fileName, ArchiveCreator.CURRENT_APPLICATION);
         }
 
         for (GeneratedResourceBuildItem i : generatedResources) {
             if (ignoredEntriesPredicate.test(i.getName())) {
                 continue;
             }
-            Path target = runnerZipFs.getPath(i.getName());
-            handleParent(runnerZipFs, i.getName(), seen);
-            if (Files.exists(target)) {
-                continue;
-            }
             if (i.getName().startsWith("META-INF/services/")) {
                 concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
-            } else {
-                try (final OutputStream os = Files.newOutputStream(target)) {
-                    os.write(i.getData());
-                }
+                continue;
             }
+            archiveCreator.addFileIfNotExists(i.getData(), i.getName(), ArchiveCreator.CURRENT_APPLICATION);
         }
 
-        copyFiles(appArchives.getRootArchive(), runnerZipFs, concatenatedEntries, ignoredEntriesPredicate);
+        copyFiles(appArchives.getRootArchive(), archiveCreator, concatenatedEntries, ignoredEntriesPredicate);
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
-            try (final OutputStream os = Files.newOutputStream(runnerZipFs.getPath(entry.getKey()))) {
-                // TODO: Handle merging of XMLs
-                for (byte[] i : entry.getValue()) {
-                    os.write(i);
-                    os.write('\n');
-                }
-            }
+            archiveCreator.addFile(entry.getValue(), entry.getKey());
         }
     }
 
@@ -182,22 +146,13 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
      * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
      * Otherwise, this manifest manipulation will be useless.
      */
-    protected static void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config,
+    protected static void generateManifest(ArchiveCreator archiveCreator, final String classPath, PackageConfig config,
             ResolvedDependency appArtifact,
             String mainClassName,
             ApplicationInfoBuildItem applicationInfo)
             throws IOException {
-        final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
         final Manifest manifest = new Manifest();
-        if (Files.exists(manifestPath)) {
-            try (InputStream is = Files.newInputStream(manifestPath)) {
-                manifest.read(is);
-            }
-            Files.delete(manifestPath);
-        } else {
-            Files.createDirectories(runnerZipFs.getPath("META-INF"));
-        }
-        Files.createDirectories(manifestPath.getParent());
+
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
         // JDK 24+ needs --add-opens=java.base/java.lang=ALL-UNNAMED for org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals()
@@ -239,9 +194,8 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
                 attribs.putValue(entry.getKey(), entry.getValue());
             }
         }
-        try (final OutputStream os = Files.newOutputStream(manifestPath)) {
-            manifest.write(os);
-        }
+
+        archiveCreator.addManifest(manifest);
     }
 
     /**
@@ -276,18 +230,6 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
 
     protected static String suffixToClassifier(String suffix) {
         return suffix.startsWith("-") ? suffix.substring(1) : suffix;
-    }
-
-    protected static void addDirectory(FileSystem fs, final String relativePath)
-            throws IOException {
-        final Path targetDir = fs.getPath(relativePath);
-        try {
-            Files.createDirectory(targetDir);
-        } catch (FileAlreadyExistsException e) {
-            if (!Files.isDirectory(targetDir)) {
-                throw e;
-            }
-        }
     }
 
     protected static String toUri(Path path) {

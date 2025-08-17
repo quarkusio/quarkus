@@ -3,8 +3,6 @@ package io.quarkus.deployment.pkg.jar;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -21,8 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
@@ -186,7 +182,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             MainClassBuildItem mainClassBuildItem,
             Set<ArtifactKey> removedArtifactKeys,
             Path runnerJar) throws IOException {
-        try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
+        try (ZipFileSystemArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar,
+                packageConfig.jar().compress())) {
             LOG.info("Building uber jar: " + runnerJar);
 
             final Map<String, String> seen = new HashMap<>();
@@ -213,7 +210,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(runnerZipFs, "", packageConfig, appArtifact, mainClassBuildItem.getClassName(),
+            generateManifest(archiveCreator, "", packageConfig, appArtifact, mainClassBuildItem.getClassName(),
                     applicationInfo);
 
             for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
@@ -238,12 +235,13 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     if (!Files.isDirectory(resolvedDep)) {
                         try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
                             for (final Path root : artifactFs.getRootDirectories()) {
-                                walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, concatenatedEntries,
+                                walkFileDependencyForDependency(root, archiveCreator, seen, duplicateCatcher,
+                                        concatenatedEntries,
                                         allIgnoredEntriesPredicate, appDep, existingEntries, mergeResourcePaths);
                             }
                         }
                     } else {
-                        walkFileDependencyForDependency(resolvedDep, runnerZipFs, seen, duplicateCatcher,
+                        walkFileDependencyForDependency(resolvedDep, archiveCreator, seen, duplicateCatcher,
                                 concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
                                 mergeResourcePaths);
                     }
@@ -258,32 +256,23 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     }
                 }
             }
-            copyCommonContent(runnerZipFs, concatenatedEntries, applicationArchivesBuildItem, transformedClasses,
+            copyCommonContent(archiveCreator, concatenatedEntries, applicationArchivesBuildItem, transformedClasses,
                     generatedClasses,
                     generatedResources, seen, allIgnoredEntriesPredicate);
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
             // should be OK.
-            if (Files.isDirectory(runnerZipFs.getPath("META-INF", "versions"))) {
+            if (archiveCreator.isMultiVersion()) {
                 LOG.debug("uber jar will be marked as multi-release jar");
-                final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
-                final Manifest manifest = new Manifest();
-                // read the existing one
-                try (final InputStream is = Files.newInputStream(manifestPath)) {
-                    manifest.read(is);
-                }
-                manifest.getMainAttributes().put(Attributes.Name.MULTI_RELEASE, "true");
-                try (final OutputStream os = Files.newOutputStream(manifestPath)) {
-                    manifest.write(os);
-                }
+                archiveCreator.makeMultiVersion();
             }
         }
 
         runnerJar.toFile().setReadable(true, false);
     }
 
-    private void walkFileDependencyForDependency(Path root, FileSystem runnerZipFs, Map<String, String> seen,
+    private void walkFileDependencyForDependency(Path root, ArchiveCreator archiveCreator, Map<String, String> seen,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
             Predicate<String> ignoredEntriesPredicate, Dependency appDep, Set<String> existingEntries,
             Set<String> mergeResourcePaths) throws IOException {
@@ -295,7 +284,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                             throws IOException {
                         final String relativePath = toUri(root.relativize(dir));
                         if (!relativePath.isEmpty()) {
-                            addDirectory(runnerZipFs, relativePath);
+                            archiveCreator.addDirectory(relativePath);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -324,11 +313,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                             } else if (!ignoredEntriesPredicate.test(relativePath)) {
                                 duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
                                         .add(appDep);
-                                if (!seen.containsKey(relativePath)) {
-                                    seen.put(relativePath, appDep.toString());
-                                    Files.copy(file, runnerZipFs.getPath(relativePath),
-                                            StandardCopyOption.REPLACE_EXISTING);
-                                }
+                                archiveCreator.addFileIfNotExists(file, relativePath, appDep.toString());
                             }
                         }
                         return FileVisitResult.CONTINUE;

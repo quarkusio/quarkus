@@ -1,13 +1,11 @@
 package io.quarkus.deployment.pkg.jar;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -74,7 +72,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
     public abstract T build() throws IOException;
 
     protected void doBuild(Path runnerJar, Path libDir) throws IOException {
-        try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
+        try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar, packageConfig.jar().compress())) {
             final Map<String, String> seen = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();
             final Map<String, List<byte[]>> services = new HashMap<>();
@@ -84,22 +82,22 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
 
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
-            copyLibraryJars(runnerZipFs, outputTarget, transformedClasses, libDir, classPath, appDeps, services,
+            copyLibraryJars(archiveCreator, outputTarget, transformedClasses, libDir, classPath, appDeps, services,
                     ignoredEntriesPredicate, removedArtifactKeys);
 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClass.getClassName(),
+            generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, mainClass.getClassName(),
                     applicationInfo);
 
-            copyCommonContent(runnerZipFs, services, applicationArchives, transformedClasses, generatedClasses,
+            copyCommonContent(archiveCreator, services, applicationArchives, transformedClasses, generatedClasses,
                     generatedResources, seen, ignoredEntriesPredicate);
         }
         runnerJar.toFile().setReadable(true, false);
     }
 
-    private static void copyLibraryJars(FileSystem runnerZipFs, OutputTargetBuildItem outputTargetBuildItem,
+    private static void copyLibraryJars(ArchiveCreator archiveCreator, OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses, Path libDir,
             StringBuilder classPath, Collection<ResolvedDependency> appDeps, Map<String, List<byte[]>> services,
             Predicate<String> ignoredEntriesPredicate, Set<ArtifactKey> removedDependencies) throws IOException {
@@ -146,11 +144,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
                                         services.computeIfAbsent(relativeUri, (u) -> new ArrayList<>())
                                                 .add(Files.readAllBytes(file));
                                     } else if (file.getFileName().toString().endsWith(".class")) {
-                                        final Path targetPath = runnerZipFs.getPath(relativePath.toString());
-                                        if (targetPath.getParent() != null) {
-                                            Files.createDirectories(targetPath.getParent());
-                                        }
-                                        Files.copy(file, targetPath, StandardCopyOption.REPLACE_EXISTING); //replace only needed for testing
+                                        archiveCreator.addFile(file, relativePath.toString()); //replace only needed for testing
                                     }
                                     return FileVisitResult.CONTINUE;
                                 }

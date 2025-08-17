@@ -9,7 +9,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -175,16 +174,13 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
             Path transformedZip = quarkus.resolve(FastJarFormat.TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformedJar(transformedZip);
-            try (FileSystem out = createNewZip(transformedZip, packageConfig)) {
+            try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(transformedZip,
+                    packageConfig.jar().compress())) {
                 for (Set<TransformedClass> transformedSet : transformedClasses
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClass transformed : transformedSet) {
-                        Path target = out.getPath(transformed.getFileName());
                         if (transformed.getData() != null) {
-                            if (target.getParent() != null) {
-                                Files.createDirectories(target.getParent());
-                            }
-                            Files.write(target, transformed.getData());
+                            archiveCreator.addFile(transformed.getData(), transformed.getFileName());
                         }
                     }
                 }
@@ -196,22 +192,14 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         //now generated classes and resources
         Path generatedZip = quarkus.resolve(FastJarFormat.GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGeneratedJar(generatedZip);
-        try (FileSystem out = createNewZip(generatedZip, packageConfig)) {
+        try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(generatedZip, packageConfig.jar().compress())) {
             for (GeneratedClassBuildItem i : generatedClasses) {
                 String fileName = fromClassNameToResourceName(i.getName());
-                Path target = out.getPath(fileName);
-                if (target.getParent() != null) {
-                    Files.createDirectories(target.getParent());
-                }
-                Files.write(target, i.getClassData());
+                archiveCreator.addFile(i.getClassData(), fileName);
             }
 
             for (GeneratedResourceBuildItem i : generatedResources) {
-                Path target = out.getPath(i.getName());
-                if (target.getParent() != null) {
-                    Files.createDirectories(target.getParent());
-                }
-                Files.write(target, i.getData());
+                archiveCreator.addFile(i.getData(), i.getName());
             }
         }
         if (decompiler != null) {
@@ -231,8 +219,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setResolvedDependency(applicationArchives.getRootArchive().getResolvedDependency())
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
-            try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
-                copyFiles(applicationArchives.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
+            try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar, packageConfig.jar().compress())) {
+                copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
             }
         }
         final StringBuilder classPath = new StringBuilder();
@@ -319,9 +307,9 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
         }
         if (!rebuild) {
-            try (FileSystem runnerZipFs = createNewZip(initJar, packageConfig)) {
+            try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(initJar, packageConfig.jar().compress())) {
                 ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
-                generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
+                generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
                         applicationInfo);
             }
@@ -474,18 +462,14 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig)
             throws IOException {
-        try (FileSystem runnerZipFs = createNewZip(targetPath, packageConfig)) {
+        try (ArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(targetPath, packageConfig.jar().compress())) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override
                         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                 throws IOException {
                             final Path relativePath = resolvedDep.relativize(file);
-                            final Path targetPath = runnerZipFs.getPath(relativePath.toString());
-                            if (targetPath.getParent() != null) {
-                                Files.createDirectories(targetPath.getParent());
-                            }
-                            Files.copy(file, targetPath, StandardCopyOption.REPLACE_EXISTING); //replace only needed for testing
+                            archiveCreator.addFile(file, relativePath.toString()); //replace only needed for testing
                             return FileVisitResult.CONTINUE;
                         }
                     });

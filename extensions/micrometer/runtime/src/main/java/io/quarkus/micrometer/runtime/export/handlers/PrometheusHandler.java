@@ -4,6 +4,7 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -49,7 +50,14 @@ public class PrometheusHandler implements Handler<RoutingContext> {
     }
 
     private String chooseContentType(String acceptHeader) {
-        if (acceptHeader == null) {
+        if (acceptHeader == null || "*/*".equals(acceptHeader)) {
+            String configuredFormat = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.micrometer.export.prometheus.format", String.class)
+                    .orElse("openmetrics");
+            
+            if ("plain".equals(configuredFormat)) {
+                return TextFormat.CONTENT_TYPE_004;
+            }
             return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
         }
         if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {

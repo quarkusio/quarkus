@@ -248,7 +248,7 @@ public class OidcResource {
     public String token(@FormParam("grant_type") String grantType, @FormParam("client_id") String clientId) {
         if ("authorization_code".equals(grantType)) {
             return "{\"id_token\": \"" + jwt(clientId, null, "1") + "\"," +
-                    "\"access_token\": \"" + jwt(clientId, null, "1") + "\"," +
+                    "\"access_token\": \"" + largeJwt(clientId, "1") + "\"," +
                     "   \"token_type\": \"Bearer\"," +
                     "   \"refresh_token\": \"123456789\"," +
                     "   \"expires_in\": 300 }";
@@ -258,7 +258,7 @@ public class OidcResource {
 
             if (refreshEndpointCallCount++ == 0) {
                 // first refresh token request, check the original ID token is used
-                return "{\"access_token\": \"" + jwt(clientId, null, "1") + "\"," +
+                return "{\"access_token\": \"" + largeJwt(clientId, "1") + "\"," +
                         "   \"token_type\": \"Bearer\"," +
                         "   \"expires_in\": 300 }";
             } else {
@@ -431,6 +431,22 @@ public class OidcResource {
         if (authTime != null && !authTime.isEmpty()) {
             builder.claim("auth_time", Long.parseLong(authTime));
         }
+
+        return builder.jws().keyId(kid)
+                .sign(key.getPrivateKey());
+    }
+
+    private String largeJwt(String audience, String kid) {
+        byte[] array = new byte[5000];
+        Arrays.fill(array, (byte) 1);
+        JwtClaimsBuilder builder = Jwt.claim("typ", "Bearer")
+                .upn("alice")
+                .preferredUserName("alice")
+                .groups("user")
+                .claim("longstring",
+                        Base64.getEncoder().encodeToString(array))
+                .expiresIn(Duration.ofSeconds(4))
+                .audience(audience);
 
         return builder.jws().keyId(kid)
                 .sign(key.getPrivateKey());

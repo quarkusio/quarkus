@@ -81,6 +81,7 @@ import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -163,16 +164,21 @@ public final class OidcUtils {
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
             OidcTenantConfig oidcTenantConfig) {
+        return getSessionCookie(context, cookies, oidcTenantConfig, SESSION_COOKIE_NAME,
+                getSessionCookieName(oidcTenantConfig));
+    }
+
+    public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
+            OidcTenantConfig oidcTenantConfig, String defaultSessionCookieName, String sessionCookieName) {
         if (cookies.isEmpty()) {
             return null;
         }
-        final String sessionCookieName = getSessionCookieName(oidcTenantConfig);
 
         if (cookies.containsKey(sessionCookieName)) {
-            context.put(OidcUtils.SESSION_COOKIE_NAME, List.of(sessionCookieName));
+            context.put(defaultSessionCookieName, List.of(sessionCookieName));
             return cookies.get(sessionCookieName).getValue();
         } else {
-            final String sessionChunkPrefix = sessionCookieName + OidcUtils.SESSION_COOKIE_CHUNK;
+            final String sessionChunkPrefix = sessionCookieName + SESSION_COOKIE_CHUNK;
 
             SortedMap<String, String> sessionCookies = new TreeMap<>(new Comparator<String>() {
 
@@ -193,7 +199,7 @@ public final class OidcUtils {
                 }
             }
             if (!sessionCookies.isEmpty()) {
-                context.put(OidcUtils.SESSION_COOKIE_NAME, new ArrayList<String>(sessionCookies.keySet()));
+                context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
 
                 StringBuilder sessionCookieValue = new StringBuilder();
                 for (String value : sessionCookies.values()) {
@@ -996,5 +1002,27 @@ public final class OidcUtils {
                 return true;
             }
         };
+    }
+
+    static ServerCookie createSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig,
+            String name, String value, long maxAge) {
+        ServerCookie cookie = createCookie(context, oidcConfig, name, value, maxAge);
+        cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name()));
+        return cookie;
+    }
+
+    static void createChunkedCookie(RoutingContext context, OidcTenantConfig oidcConfig, String baseCookieName,
+            String cookieValue, long maxAge) {
+        for (int chunkIndex = 1, currentPos = 0; currentPos < cookieValue.length(); chunkIndex++) {
+            int nextPos = currentPos + MAX_COOKIE_VALUE_LENGTH;
+            int nextValueUpperPos = nextPos < cookieValue.length() ? nextPos
+                    : cookieValue.length();
+            String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
+            // q_session_session_chunk_1, etc
+            String nextName = baseCookieName + SESSION_COOKIE_CHUNK + chunkIndex;
+            LOG.debugf("Creating the %s cookie chunk, size: %d", nextName, nextValue.length());
+            createSessionCookie(context, oidcConfig, nextName, nextValue, maxAge);
+            currentPos = nextPos;
+        }
     }
 }

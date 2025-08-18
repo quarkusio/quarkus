@@ -56,9 +56,7 @@ import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
-import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -1104,23 +1102,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
                                                     configContext.oidcConfig().tenantId().get(),
                                                     OidcUtils.MAX_COOKIE_VALUE_LENGTH);
-                                            for (int sessionIndex = 1,
-                                                    currentPos = 0; currentPos < cookieValue.length(); sessionIndex++) {
-                                                int nextPos = currentPos + OidcUtils.MAX_COOKIE_VALUE_LENGTH;
-                                                int nextValueUpperPos = nextPos < cookieValue.length() ? nextPos
-                                                        : cookieValue.length();
-                                                String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
-                                                // q_session_session_chunk_1, etc
-                                                String nextName = sessionName + OidcUtils.SESSION_COOKIE_CHUNK + sessionIndex;
-                                                LOG.debugf("Creating the %s session cookie chunk, size: %d", nextName,
-                                                        nextValue.length());
-                                                createCookie(context, configContext.oidcConfig(), nextName, nextValue,
-                                                        sessionMaxAge, true);
-                                                currentPos = nextPos;
-                                            }
+                                            OidcUtils.createChunkedCookie(context, configContext.oidcConfig(), sessionName,
+                                                    cookieValue, sessionMaxAge);
                                         } else {
-                                            createCookie(context, configContext.oidcConfig(), sessionName, cookieValue,
-                                                    sessionMaxAge, true);
+                                            OidcUtils.createSessionCookie(context, configContext.oidcConfig(), sessionName,
+                                                    cookieValue, sessionMaxAge);
                                         }
                                         fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
                                         return null;
@@ -1210,7 +1196,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
         String stateCookieNameSuffix = configContext.oidcConfig().authentication().allowMultipleCodeFlows() ? "_" + uuid : "";
-        createCookie(context, configContext.oidcConfig(),
+        OidcUtils.createCookie(context, configContext.oidcConfig(),
                 getStateCookieName(configContext.oidcConfig()) + stateCookieNameSuffix, cookieValue,
                 configContext.oidcConfig().authentication().stateCookieAge().toSeconds());
         return uuid;
@@ -1250,23 +1236,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
         OidcUtils.removeCookie(context, configContext.oidcConfig(), getPostLogoutCookieName(configContext.oidcConfig()));
-        return createCookie(context, configContext.oidcConfig(), getPostLogoutCookieName(configContext.oidcConfig()),
+        return OidcUtils.createCookie(context, configContext.oidcConfig(), getPostLogoutCookieName(configContext.oidcConfig()),
                 UUID.randomUUID().toString(),
                 60 * 30).getValue();
-    }
-
-    static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            String name, String value, long maxAge) {
-        return createCookie(context, oidcConfig, name, value, maxAge, false);
-    }
-
-    static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            String name, String value, long maxAge, boolean sessionCookie) {
-        ServerCookie cookie = OidcUtils.createCookie(context, oidcConfig, name, value, maxAge);
-        if (sessionCookie) {
-            cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name()));
-        }
-        return cookie;
     }
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {

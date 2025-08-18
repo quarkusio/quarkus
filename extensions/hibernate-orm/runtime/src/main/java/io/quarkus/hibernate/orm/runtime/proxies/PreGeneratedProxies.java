@@ -1,9 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.proxies;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A holder class for proxies that were generated at build time,

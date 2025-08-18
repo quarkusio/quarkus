@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.proxies;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -12,7 +11,6 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.internal.util.ReflectHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.mapping.PersistentClass;
-import org.jboss.logging.Logger;
 
 /**
  * Runtime proxies are used by Hibernate ORM to handle a number of corner cases;
@@ -39,7 +37,6 @@ import org.jboss.logging.Logger;
 public final class ProxyDefinitions {
 
     private final Map<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap;
-    private static final Logger LOGGER = Logger.getLogger(ProxyDefinitions.class.getName());
 
     private ProxyDefinitions(Map<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap) {
         this.proxyDefinitionMap = proxyDefinitionMap;
@@ -88,24 +85,6 @@ public final class ProxyDefinitions {
     private static Class<?> getProxyClass(PersistentClass persistentClass,
             PreGeneratedProxies preGeneratedProxies) {
         final String entityName = persistentClass.getEntityName();
-        final Class<?> mappedClass = persistentClass.getMappedClass();
-        // Some Envers entity classes are final, e.g. org.hibernate.envers.DefaultRevisionEntity
-        // There's nothing users can do about it, so let's not warn in those cases.
-        if (!mappedClass.getName().startsWith("org.hibernate.")) {
-            // See also ProxyBuildingHelper#isProxiable
-            if (Modifier.isFinal(mappedClass.getModifiers())) {
-                LOGGER.warn("Could not generate an enhanced proxy for entity '" + entityName + "' (class='"
-                        + mappedClass.getCanonicalName()
-                        + "') as it's final. Your application might perform better if this class was non-final.");
-                return null;
-            }
-            if (Modifier.isAbstract(mappedClass.getModifiers())) {
-                LOGGER.warn("Could not generate an enhanced proxy for entity '" + entityName + "' (class='"
-                        + mappedClass.getCanonicalName()
-                        + "') as it's abstract. Your application might perform better if this class was non-abstract.");
-                return null;
-            }
-        }
         final java.util.Set<Class<?>> proxyInterfaces = org.hibernate.proxy.pojo.ProxyFactoryHelper
                 .extractProxyInterfaces(persistentClass, entityName);
         PreGeneratedProxies.ProxyClassDetailsHolder preProxy = preGeneratedProxies.getProxies()
@@ -135,13 +114,10 @@ public final class ProxyDefinitions {
 
         if (preGeneratedProxy == null) {
             if (match) {
-                throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Unable to use a build time generated proxy for entity %s. This should not happen, please open an " +
-                                "issue at https://github.com/quarkusio/quarkus/issues",
-                        persistentClass.getClassName(), preProxy.getProxyInterfaces(), proxyInterfaces));
+                // Behavior determined at runtime: will either log a warning and not use a proxy, or fail bootstrap.
+                // See QuarkusProxyFactory for details.
+                return null;
             } else {
-                //TODO: this should be changed to an exception after 1.4
-                //really it should be an exception now
                 throw new IllegalStateException(String.format(Locale.ROOT,
                         "Unable to use a build time generated proxy for entity %s, as the build time proxy " +
                                 "interfaces %s are different to the runtime ones %s. This should not happen, please open an " +

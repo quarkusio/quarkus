@@ -52,6 +52,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private final ParallelScatterZipCreator scatterZipCreator;
     private final ScatterZipOutputStream directories;
     private final int compressionMethod;
+    private final Path tempDirectory;
 
     private final Map<String, String> addedFiles = new HashMap<>();
 
@@ -69,11 +70,12 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         this.archivePath = archivePath;
         this.archive = new ZipArchiveOutputStream(archivePath);
         this.archive.setMethod(compressionMethod);
+        this.tempDirectory = Files.createTempDirectory(outputTarget, "zip-builder-files");
 
         scatterZipCreator = new ParallelScatterZipCreator(
                 // we need to make sure our own executor won't be shut down by Commons Compress...
                 new DoNotShutdownDelegatingExecutorService(executorService),
-                new DefaultBackingStoreSupplier(Files.createTempDirectory(outputTarget, "zip-builder-files")),
+                new DefaultBackingStoreSupplier(this.tempDirectory),
                 compressionLevel);
         directories = ScatterZipOutputStream.pathBased(Files.createTempFile(outputTarget, "zip-builder-dirs", ""),
                 compressionLevel);
@@ -223,6 +225,11 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
             scatterZipCreator.writeTo(archive);
         } catch (IOException | InterruptedException | ExecutionException e) {
             throw new IllegalStateException("Unable to create archive: " + archivePath, e);
+        }
+        try {
+            Files.deleteIfExists(tempDirectory);
+        } catch (Exception e) {
+            // noop, it's not a big deal to keep this directory around
         }
     }
 

@@ -1418,9 +1418,8 @@ public final class HibernateOrmProcessor {
                     // we now are sure we have a proper class and not a package, let's avoid the confusion
                     String managedClass = managedClassOrPackageName;
                     generatedProxyQueue.add(buildExecutor.submit(() -> {
-                        DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(managedClass,
-                                proxyInterfaceNames);
-                        return new CachedProxy(managedClass, unloaded, proxyInterfaceNames);
+                        DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(managedClass);
+                        return new CachedProxy(managedClass, unloaded);
                     }));
                 }
             }
@@ -1433,7 +1432,7 @@ public final class HibernateOrmProcessor {
                             .produce(new GeneratedClassBuildItem(true, i.getKey().getName(), i.getValue()));
                 }
                 preGeneratedProxies.getProxies().put(proxy.managedClassName, new PreGeneratedProxies.ProxyClassDetailsHolder(
-                        proxy.proxyDef.getTypeDescription().getName(), proxy.interfaces));
+                        proxy.proxyDef.getTypeDescription().getName()));
             }
         }
 
@@ -1496,12 +1495,10 @@ public final class HibernateOrmProcessor {
     static final class CachedProxy {
         final String managedClassName;
         final DynamicType.Unloaded<?> proxyDef;
-        final Set<String> interfaces;
 
-        CachedProxy(String managedClassName, DynamicType.Unloaded<?> proxyDef, Set<String> interfaces) {
+        CachedProxy(String managedClassName, DynamicType.Unloaded<?> proxyDef) {
             this.managedClassName = managedClassName;
             this.proxyDef = proxyDef;
-            this.interfaces = interfaces;
         }
     }
 }

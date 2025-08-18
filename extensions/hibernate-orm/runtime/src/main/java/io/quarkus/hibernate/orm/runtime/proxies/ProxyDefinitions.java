@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.runtime.proxies;
 import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import org.hibernate.HibernateException;
@@ -84,48 +83,20 @@ public final class ProxyDefinitions {
 
     private static Class<?> getProxyClass(PersistentClass persistentClass,
             PreGeneratedProxies preGeneratedProxies) {
-        final String entityName = persistentClass.getEntityName();
-        final java.util.Set<Class<?>> proxyInterfaces = org.hibernate.proxy.pojo.ProxyFactoryHelper
-                .extractProxyInterfaces(persistentClass, entityName);
         PreGeneratedProxies.ProxyClassDetailsHolder preProxy = preGeneratedProxies.getProxies()
                 .get(persistentClass.getClassName());
-        Class<?> preGeneratedProxy = null;
-        boolean match = true;
-        if (preProxy != null) {
-            match = proxyInterfaces.size() == preProxy.getProxyInterfaces().size();
-            if (match) {
-                for (Class i : proxyInterfaces) {
-                    if (!preProxy.getProxyInterfaces().contains(i.getName())) {
-                        match = false;
-                        break;
-                    }
-                }
-            }
-            if (match) {
-                try {
-                    preGeneratedProxy = Class.forName(preProxy.getClassName(), false,
-                            Thread.currentThread().getContextClassLoader());
-                } catch (ClassNotFoundException e) {
-                    //should never happen
-                    throw new RuntimeException("Unable to load proxy class", e);
-                }
-            }
+        if (preProxy == null) {
+            // Behavior determined at runtime: will either log a warning and not use a proxy, or fail bootstrap.
+            // See QuarkusProxyFactory for details.
+            return null;
         }
 
-        if (preGeneratedProxy == null) {
-            if (match) {
-                // Behavior determined at runtime: will either log a warning and not use a proxy, or fail bootstrap.
-                // See QuarkusProxyFactory for details.
-                return null;
-            } else {
-                throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Unable to use a build time generated proxy for entity %s, as the build time proxy " +
-                                "interfaces %s are different to the runtime ones %s. This should not happen, please open an " +
-                                "issue at https://github.com/quarkusio/quarkus/issues",
-                        persistentClass.getClassName(), preProxy.getProxyInterfaces(), proxyInterfaces));
-            }
-        } else {
-            return preGeneratedProxy;
+        try {
+            return Class.forName(preProxy.getClassName(), false,
+                    Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            //should never happen
+            throw new RuntimeException("Unable to load proxy class", e);
         }
     }
 

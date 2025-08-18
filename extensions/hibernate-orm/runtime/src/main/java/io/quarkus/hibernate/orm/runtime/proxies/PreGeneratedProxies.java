@@ -29,15 +29,13 @@ public class PreGeneratedProxies {
     public static class ProxyClassDetailsHolder {
 
         private String className;
-        private Set<String> proxyInterfaces = new HashSet<>();
 
         public ProxyClassDetailsHolder() {
 
         }
 
-        public ProxyClassDetailsHolder(String className, Set<String> proxyInterfaces) {
+        public ProxyClassDetailsHolder(String className) {
             this.className = className;
-            this.proxyInterfaces = proxyInterfaces;
         }
 
         public String getClassName() {
@@ -46,14 +44,6 @@ public class PreGeneratedProxies {
 
         public void setClassName(String className) {
             this.className = className;
-        }
-
-        public Set<String> getProxyInterfaces() {
-            return proxyInterfaces;
-        }
-
-        public void setProxyInterfaces(Set<String> proxyInterfaces) {
-            this.proxyInterfaces = proxyInterfaces;
         }
 
     }

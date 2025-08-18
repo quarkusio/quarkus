@@ -19,6 +19,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
@@ -29,6 +30,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.runtime.trace.ObservabilityRequestResponseFilter;
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
@@ -60,6 +62,13 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         }
     }
 
+    private static final String REVOKE_TOKEN_OP = "revoke-token";
+    private static final String REFRESH_TOKEN_OP = "refresh-token";
+    private static final String AUTHORIZATION_CODE_OP = "authorization-code";
+    private static final String INTROSPECT_TOKEN_OP = "introspect-token";
+    private static final String GET_JWKS_OP = "json-web-keys";
+    private static final String USER_INFO_OP = "user-info";
+
     private static final Logger LOG = Logger.getLogger(OidcProviderClientImpl.class);
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
@@ -88,7 +97,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
-            Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
+            ObservabilityRequestResponseFilter tracerFilter) {
         this.client = client;
         this.vertx = vertx;
         this.metadata = metadata;
@@ -99,9 +109,46 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientAssertionProvider = this.jwtBearerAuthentication ? createClientAssertionProvider(vertx, oidcConfig) : null;
         this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcConfig, true);
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
-        this.requestFilters = requestFilters;
-        this.responseFilters = responseFilters;
+
+        this.requestFilters = prepateRequestFilters(requestFilters, tracerFilter);
+        this.responseFilters = prepateResponseFilters(responseFilters, tracerFilter);
+
         this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
+    }
+
+    private static Map<Type, List<OidcRequestFilter>> prepateRequestFilters(Map<Type, List<OidcRequestFilter>> requestFilters,
+            ObservabilityRequestResponseFilter tracerFilter) {
+        if (tracerFilter == null) {
+            return requestFilters;
+        }
+        if (requestFilters == null || requestFilters.isEmpty()) {
+            return Map.of(OidcEndpoint.Type.ALL, List.of(tracerFilter));
+        }
+        List<OidcRequestFilter> allFilters = requestFilters.get(OidcEndpoint.Type.ALL);
+        if (allFilters == null) {
+            requestFilters.put(OidcEndpoint.Type.ALL, List.of(tracerFilter));
+        } else {
+            allFilters.add(0, tracerFilter);
+        }
+        return requestFilters;
+    }
+
+    private static Map<Type, List<OidcResponseFilter>> prepateResponseFilters(
+            Map<Type, List<OidcResponseFilter>> responseFilters,
+            ObservabilityRequestResponseFilter tracerFilter) {
+        if (tracerFilter == null) {
+            return responseFilters;
+        }
+        if (responseFilters == null || responseFilters.isEmpty()) {
+            return Map.of(OidcEndpoint.Type.ALL, List.of(tracerFilter));
+        }
+        List<OidcResponseFilter> allFilters = responseFilters.get(OidcEndpoint.Type.ALL);
+        if (allFilters == null) {
+            responseFilters.put(OidcEndpoint.Type.ALL, List.of(tracerFilter));
+        } else {
+            allFilters.add(0, tracerFilter);
+        }
+        return responseFilters;
     }
 
     private static ClientAssertionProvider createClientAssertionProvider(Vertx vertx, OidcTenantConfig oidcConfig) {
@@ -133,7 +180,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
-        final OidcRequestContextProperties requestProps = getRequestProps(contextProperties);
+        final OidcRequestContextProperties requestProps = getRequestProps(contextProperties, GET_JWKS_OP);
         return doGetJsonWebKeySet(requestProps, List.of())
                 .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getJsonWebKeySetUri()))
                 .recoverWithUni(
@@ -162,7 +209,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     public Uni<UserInfo> getUserInfo(final String accessToken) {
 
-        final OidcRequestContextProperties requestProps = getRequestProps(null, null);
+        final OidcRequestContextProperties requestProps = getRequestProps(null, null, USER_INFO_OP);
 
         Uni<UserInfoResponse> response = doGetUserInfo(requestProps, accessToken, List.of())
                 .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getUserInfoUri()))
@@ -231,7 +278,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         final MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
-        final OidcRequestContextProperties requestProps = getRequestProps(null, null);
+        final OidcRequestContextProperties requestProps = getRequestProps(null, null, INTROSPECT_TOKEN_OP);
         return getHttpResponse(requestProps, metadata.getIntrospectionUri(), introspectionParams, TokenOperation.INTROSPECT,
                 OidcEndpoint.Type.INTROSPECTION)
                 .transform(resp -> getTokenIntrospection(requestProps, resp));
@@ -252,7 +299,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         if (oidcConfig.codeGrant().extraParams() != null) {
             codeGrantParams.addAll(oidcConfig.codeGrant().extraParams());
         }
-        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.AUTHORIZATION_CODE);
+        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.AUTHORIZATION_CODE,
+                AUTHORIZATION_CODE_OP);
         return getHttpResponse(requestProps, metadata.getTokenUri(), codeGrantParams, TokenOperation.GET,
                 OidcEndpoint.Type.TOKEN)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
@@ -262,7 +310,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
+        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT, REFRESH_TOKEN_OP);
         return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
                 OidcEndpoint.Type.TOKEN)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
@@ -279,7 +327,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private Uni<Boolean> revokeToken(String token, String tokenTypeHint) {
 
         if (metadata.getRevocationUri() != null) {
-            OidcRequestContextProperties requestProps = getRequestProps(null, null);
+            OidcRequestContextProperties requestProps = getRequestProps(null, null, REVOKE_TOKEN_OP);
             MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, token);
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN_TYPE_HINT, tokenTypeHint);
@@ -462,15 +510,16 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return request;
     }
 
-    private OidcRequestContextProperties getRequestProps(String grantType) {
-        return getRequestProps(null, grantType);
+    private OidcRequestContextProperties getRequestProps(String grantType, String operation) {
+        return getRequestProps(null, grantType, operation);
     }
 
-    private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties) {
-        return getRequestProps(contextProperties, null);
+    private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties, String operation) {
+        return getRequestProps(contextProperties, null, operation);
     }
 
-    private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties, String grantType) {
+    private OidcRequestContextProperties getRequestProps(OidcRequestContextProperties contextProperties, String grantType,
+            String operation) {
         if (requestFilters.isEmpty() && responseFilters.isEmpty()) {
             return null;
         }
@@ -481,6 +530,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         if (grantType != null) {
             newProperties.put(OidcConstants.GRANT_TYPE, grantType);
         }
+        newProperties.put(OidcUtils.OIDC_OPERATION, operation);
         return new OidcRequestContextProperties(newProperties);
     }
 

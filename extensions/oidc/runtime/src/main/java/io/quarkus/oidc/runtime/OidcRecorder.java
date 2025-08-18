@@ -9,10 +9,12 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.CreationException;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
+import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -35,6 +37,9 @@ public class OidcRecorder {
     public static final String ACR_VALUES_TO_MAX_AGE_SEPARATOR = "@#$%@";
 
     static final Logger LOG = Logger.getLogger(OidcRecorder.class);
+
+    private static final TypeLiteral<Instance<Tracer>> TRACER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
 
     private final RuntimeValue<OidcConfig> oidcConfig;
     private final RuntimeValue<SecurityConfig> securityConfig;
@@ -67,7 +72,11 @@ public class OidcRecorder {
                 final OidcImpl oidc = new OidcImpl(oidcConfig.getValue());
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
-                return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled());
+                return new TenantConfigBean(vertx.get(),
+                        registry.get(),
+                        oidc,
+                        ctx.getInjectedReference(TRACER_TYPE_LITERAL),
+                        securityConfig.getValue().events().enabled());
             }
         };
     }

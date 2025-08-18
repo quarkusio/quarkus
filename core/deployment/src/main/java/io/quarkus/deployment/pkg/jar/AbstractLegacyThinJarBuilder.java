@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
@@ -36,6 +37,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
 
     private static final Logger LOG = Logger.getLogger(AbstractLegacyThinJarBuilder.class);
 
+    private final ExecutorService executorService;
+
     public AbstractLegacyThinJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
@@ -45,16 +48,19 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            Set<ArtifactKey> removedArtifactKeys) {
+            Set<ArtifactKey> removedArtifactKeys,
+            ExecutorService executorService) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 generatedClasses, generatedResources, removedArtifactKeys);
+
+        this.executorService = executorService;
     }
 
     public abstract T build() throws IOException;
 
     protected void doBuild(Path runnerJar, Path libDir) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
+                packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
             final Map<String, String> seen = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();
             final Map<String, List<byte[]>> services = new HashMap<>();

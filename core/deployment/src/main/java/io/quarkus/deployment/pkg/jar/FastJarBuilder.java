@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -66,6 +67,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private final List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives;
     private final Set<ArtifactKey> parentFirstArtifactKeys;
+    private final ExecutorService executorService;
 
     public FastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -78,11 +80,13 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> parentFirstArtifactKeys,
-            Set<ArtifactKey> removedArtifactKeys) {
+            Set<ArtifactKey> removedArtifactKeys,
+            ExecutorService executorService) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 generatedClasses, generatedResources, removedArtifactKeys);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
+        this.executorService = executorService;
     }
 
     public JarBuildItem build() throws IOException {
@@ -157,7 +161,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Path transformedZip = quarkus.resolve(FastJarFormat.TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformedJar(transformedZip);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(transformedZip,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
+                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
                 for (Set<TransformedClass> transformedSet : transformedClasses
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClass transformed : transformedSet) {
@@ -175,7 +179,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         Path generatedZip = quarkus.resolve(FastJarFormat.GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGeneratedJar(generatedZip);
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(generatedZip,
-                packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
+                packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
                 String fileName = fromClassNameToResourceName(i.getName());
                 archiveCreator.addFile(i.getClassData(), fileName);
@@ -203,7 +207,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
+                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
                 copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
             }
         }
@@ -213,7 +217,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             if (!rebuild) {
                 copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, mainLib, baseLib,
                         fastJarJarsBuilder::addDependency, true,
-                        classPath, appDep, transformedClasses, removedArtifactKeys, packageConfig, manifestConfig);
+                        classPath, appDep, transformedClasses, removedArtifactKeys, packageConfig, manifestConfig,
+                        executorService);
             } else if (includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDependency);
             }
@@ -292,7 +297,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
         if (!rebuild) {
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(initJar,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory())) {
+                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
                 ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
                 generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
@@ -306,7 +311,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getDependencies()) {
                     copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, deploymentLib, baseLib, p -> {
                     }, false, classPath, appDep, new TransformedClassesBuildItem(Map.of()), removedArtifactKeys, packageConfig,
-                            manifestConfig); //we don't care about transformation here, so just pass in an empty item
+                            manifestConfig, executorService); //we don't care about transformation here, so just pass in an empty item
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
@@ -380,7 +385,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> targetPathConsumer,
             boolean allowParentFirst, StringBuilder classPath, ResolvedDependency appDep,
             TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps,
-            PackageConfig packageConfig, ApplicationManifestConfig.Builder manifestConfig)
+            PackageConfig packageConfig, ApplicationManifestConfig.Builder manifestConfig, ExecutorService executorService)
             throws IOException {
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -409,7 +414,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 // This case can happen when we are building a jar from inside the Quarkus repository
                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
-                packageClasses(resolvedDep, targetPath, packageConfig, outputTargetBuildItem);
+                packageClasses(resolvedDep, targetPath, packageConfig, outputTargetBuildItem, executorService);
             } else {
                 Set<TransformedClassesBuildItem.TransformedClass> transformedFromThisArchive = transformedClasses
                         .getTransformedClassesByJar().get(resolvedDep);
@@ -446,10 +451,9 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     }
 
     private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig,
-            OutputTargetBuildItem outputTargetBuildItem)
-            throws IOException {
+            OutputTargetBuildItem outputTargetBuildItem, ExecutorService executorService) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
-                packageConfig.jar().compress(), outputTargetBuildItem.getOutputDirectory())) {
+                packageConfig.jar().compress(), outputTargetBuildItem.getOutputDirectory(), executorService)) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override

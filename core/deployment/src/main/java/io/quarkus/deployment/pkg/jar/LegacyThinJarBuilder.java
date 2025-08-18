@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import org.jboss.logging.Logger;
 
@@ -34,9 +35,10 @@ public class LegacyThinJarBuilder extends AbstractLegacyThinJarBuilder<JarBuildI
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            Set<ArtifactKey> removedArtifactKeys) {
+            Set<ArtifactKey> removedArtifactKeys,
+            ExecutorService executorService) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys);
+                generatedClasses, generatedResources, removedArtifactKeys, executorService);
     }
 
     public JarBuildItem build() throws IOException {

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -44,10 +45,11 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
-            Set<ArtifactKey> removedArtifactKeys) {
+            Set<ArtifactKey> removedArtifactKeys,
+            ExecutorService executorService) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 augmentGeneratedClasses(generatedClasses, nativeImageResources), generatedResources,
-                augmentRemovedArtifactKeys(removedArtifactKeys));
+                augmentRemovedArtifactKeys(removedArtifactKeys), executorService);
     }
 
     public NativeImageSourceJarBuildItem build() throws IOException {

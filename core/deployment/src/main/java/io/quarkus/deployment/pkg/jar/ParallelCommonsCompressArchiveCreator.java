@@ -6,12 +6,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.jar.Manifest;
 import java.util.zip.Deflater;
 
@@ -50,7 +55,8 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     private final Map<String, String> addedFiles = new HashMap<>();
 
-    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Path outputTarget) throws IOException {
+    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Path outputTarget,
+            ExecutorService executorService) throws IOException {
         int compressionLevel;
         if (compressed) {
             compressionLevel = Deflater.DEFAULT_COMPRESSION;
@@ -65,8 +71,8 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         this.archive.setMethod(compressionMethod);
 
         scatterZipCreator = new ParallelScatterZipCreator(
-                // we need our own executor that we can throw away as it will be shut down by Commons Compress...
-                initExecutorService(),
+                // we need to make sure our own executor won't be shut down by Commons Compress...
+                new DoNotShutdownDelegatingExecutorService(executorService),
                 new DefaultBackingStoreSupplier(Files.createTempDirectory(outputTarget, "zip-builder-files")),
                 compressionLevel);
         directories = ScatterZipOutputStream.pathBased(Files.createTempFile(outputTarget, "zip-builder-dirs", ""),
@@ -217,6 +223,84 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
             scatterZipCreator.writeTo(archive);
         } catch (IOException | InterruptedException | ExecutionException e) {
             throw new IllegalStateException("Unable to create archive: " + archivePath, e);
+        }
+    }
+
+    private static class DoNotShutdownDelegatingExecutorService implements ExecutorService {
+
+        private final ExecutorService delegate;
+
+        private DoNotShutdownDelegatingExecutorService(ExecutorService delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void shutdown() {
+            // do nothing, that's the purpose of this wrapper
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            // do nothing, that's the purpose of this wrapper
+            return List.of();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return delegate.isShutdown();
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return false;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            // do nothing, that's the purpose of this wrapper
+            return false;
+        }
+
+        @Override
+        public <T> Future<T> submit(Callable<T> task) {
+            return delegate.submit(task);
+        }
+
+        @Override
+        public <T> Future<T> submit(Runnable task, T result) {
+            return delegate.submit(task, result);
+        }
+
+        @Override
+        public Future<?> submit(Runnable task) {
+            return delegate.submit(task);
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+            return delegate.invokeAll(tasks);
+        }
+
+        @Override
+        public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                throws InterruptedException {
+            return delegate.invokeAll(tasks, timeout, unit);
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+            return delegate.invokeAny(tasks);
+        }
+
+        @Override
+        public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return delegate.invokeAny(tasks, timeout, unit);
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            delegate.execute(command);
         }
     }
 }

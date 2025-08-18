@@ -138,7 +138,8 @@ public class JarResultBuildStep {
                     transformedClasses,
                     generatedClasses,
                     generatedResources,
-                    removedArtifactKeys).build();
+                    removedArtifactKeys,
+                    buildExecutor).build();
             case FAST_JAR, MUTABLE_JAR -> new FastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -150,7 +151,8 @@ public class JarResultBuildStep {
                     generatedClasses,
                     generatedResources,
                     parentFirstArtifactKeys,
-                    removedArtifactKeys).build();
+                    removedArtifactKeys,
+                    buildExecutor).build();
         };
     }
 
@@ -168,7 +170,8 @@ public class JarResultBuildStep {
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
-            ClassLoadingConfig classLoadingConfig) throws Exception {
+            ClassLoadingConfig classLoadingConfig,
+            ExecutorService buildExecutor) throws Exception {
 
         return new NativeImageSourceJarBuilder(curateOutcomeBuildItem,
                 outputTargetBuildItem,
@@ -180,7 +183,8 @@ public class JarResultBuildStep {
                 generatedClasses,
                 generatedResources,
                 nativeImageResources,
-                getRemovedArtifactKeys(classLoadingConfig)).build();
+                getRemovedArtifactKeys(classLoadingConfig),
+                buildExecutor).build();
     }
 
     // the idea here is to just dump the class names of the generated and transformed classes into a file

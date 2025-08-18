@@ -368,7 +368,8 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "rest,commons-io:commons-io:2.5");
+        // use an obscure jar that is lightweight and comes with no dependencies
+        properties.put("extensions", "rest,io.smallrye:jandex-test-data:3.4.0");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -379,7 +380,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("commons-io");
+                .contains("jandex-test-data");
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
@@ -394,8 +395,8 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                         && d.getVersion() == null))
                 .isTrue();
 
-        assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("commons-io")
-                && d.getVersion().equalsIgnoreCase("2.5"))).isTrue();
+        assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("jandex-test-data")
+                && d.getVersion().equalsIgnoreCase("3.4.0"))).isTrue();
     }
 
     @Test
@@ -406,7 +407,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("projectArtifactId", "acme,fail");
-        properties.put("extensions", "rest,commons-io:commons-io:2.5");
+        properties.put("extensions", "rest");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isNotZero();
@@ -420,7 +421,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("projectGroupId", "acme,fail");
-        properties.put("extensions", "rest,commons-io:commons-io:2.5");
+        properties.put("extensions", "rest");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isNotZero();

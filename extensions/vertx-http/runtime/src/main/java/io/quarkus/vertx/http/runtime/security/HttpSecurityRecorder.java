@@ -45,6 +45,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.security.MTLS;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.CompositeException;
@@ -185,10 +186,11 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public void prepareHttpSecurityConfiguration(ShutdownContext shutdownContext) {
+    public RuntimeValue<CORSConfig> prepareHttpSecurityConfiguration(ShutdownContext shutdownContext) {
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
-        HttpSecurityConfiguration.get(httpConfig.getValue(), httpBuildTimeConfig);
+        var config = HttpSecurityConfiguration.get(httpConfig.getValue(), httpBuildTimeConfig);
         shutdownContext.addShutdownTask(HttpSecurityConfiguration::clear);
+        return new RuntimeValue<>(config.getCorsConfig());
     }
 
     public Supplier<FormAuthenticationMechanism> createFormAuthMechanism() {

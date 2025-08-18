@@ -12,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -22,15 +23,16 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.HttpPermissionCarrier;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.Policy;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.Basic;
+import io.quarkus.vertx.http.security.CORS;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.quarkus.vertx.http.security.MTLS;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
@@ -45,6 +47,7 @@ final class HttpSecurityImpl implements HttpSecurity {
     private RolesMapping rolesMapping;
     private ClientAuth clientAuth;
     private Optional<String> httpServerTlsConfigName;
+    private CORSConfig corsConfig;
 
     HttpSecurityImpl(ClientAuth clientAuth, VertxHttpConfig vertxHttpConfig, Optional<String> httpServerTlsConfigName) {
         this.rolesMapping = null;
@@ -53,19 +56,56 @@ final class HttpSecurityImpl implements HttpSecurity {
         this.clientAuth = clientAuth;
         this.vertxHttpConfig = vertxHttpConfig;
         this.httpServerTlsConfigName = httpServerTlsConfigName;
+        this.corsConfig = vertxHttpConfig == null ? null : vertxHttpConfig.cors();
+    }
+
+    @Override
+    public HttpSecurity cors(String origin) {
+        Objects.requireNonNull(origin);
+        return cors(Set.of(origin));
+    }
+
+    @Override
+    public HttpSecurity cors(Set<String> origins) {
+        return cors(CORS.origins(origins).build());
+    }
+
+    @Override
+    public HttpSecurity cors(CORS cors) {
+        if (cors == null) {
+            throw new IllegalArgumentException("CORS must not be null");
+        }
+        final boolean alreadyConfiguredInAppProps = corsConfig.accessControlAllowCredentials().isPresent()
+                || corsConfig.accessControlMaxAge().isPresent()
+                || corsConfig.headers().isPresent()
+                || corsConfig.methods().isPresent()
+                || corsConfig.exposedHeaders().isPresent();
+        if (alreadyConfiguredInAppProps) {
+            throw new IllegalStateException(
+                    "CORS cannot be configured both programmatically and in the 'application.properties' file");
+        }
+        final CORSConfig newCorsConfig = (CORSConfig) cors;
+        if (!corsConfig.origins().orElse(List.of()).isEmpty()) {
+            // for example SmallRye OpenAPI extension adds a management URL to 'origins'
+            // and we want users know that they are loosing some configuration
+            final List<String> newOrigins = newCorsConfig.origins().orElse(List.of());
+            final String missingOrigins = corsConfig.origins().get().stream()
+                    .filter(origin -> !newOrigins.contains(origin)).collect(Collectors.joining(","));
+            if (!missingOrigins.isEmpty()) {
+                LOG.warnf(
+                        "CORS are configured programmatically, but previously configured '%s' origins are missing in the new configuration",
+                        missingOrigins);
+            }
+        }
+        corsConfig = newCorsConfig;
+        return this;
     }
 
     @Override
     public HttpSecurity mechanism(HttpAuthenticationMechanism mechanism) {
         Objects.requireNonNull(mechanism);
         if (mechanism.getClass() == FormAuthenticationMechanism.class) {
-            final FormAuthConfig defaults = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withDefaultValue("quarkus.http.host", "8081")
-                    .withMapping(VertxHttpConfig.class)
-                    .build()
-                    .getConfigMapping(VertxHttpConfig.class)
-                    .auth().form();
+            final FormAuthConfig defaults = HttpSecurityUtils.getDefaultVertxHttpConfig().auth().form();
             final FormAuthConfig actualConfig = vertxHttpConfig.auth().form();
             if (!actualConfig.equals(defaults)) {
                 throw new IllegalArgumentException("Cannot configure form-based authentication programmatically "
@@ -583,5 +623,9 @@ final class HttpSecurityImpl implements HttpSecurity {
 
     Optional<String> getHttpServerTlsConfigName() {
         return httpServerTlsConfigName;
+    }
+
+    CORSConfig getCorsConfig() {
+        return corsConfig;
     }
 }

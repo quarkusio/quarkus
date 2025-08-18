@@ -3,12 +3,14 @@ package io.quarkus.vertx.http.security;
 import java.security.Permission;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
@@ -82,6 +84,32 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Experimental("This API is currently experimental and might get changed")
 public interface HttpSecurity {
+
+    /**
+     * Creates a new CORS configuration with given origin.
+     * This method is a shortcut for {@code cors(Set.of(origin))}.
+     *
+     * @param origin see {@link CORSConfig#origins()}
+     * @return HttpSecurity
+     */
+    HttpSecurity cors(String origin);
+
+    /**
+     * Creates a new CORS configuration with given origins.
+     * This method is a shortcut for {@code cors(CORS.origins(origins).build())}.
+     *
+     * @param origins see {@link CORSConfig#origins()}
+     * @return HttpSecurity
+     */
+    HttpSecurity cors(Set<String> origins);
+
+    /**
+     * Enables the CORS filter with given configuration.
+     *
+     * @param cors {@link CORS} filter configuration
+     * @return HttpSecurity
+     */
+    HttpSecurity cors(CORS cors);
 
     /**
      * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.

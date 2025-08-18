@@ -596,6 +596,7 @@ The same authorization can be required with the `@PermissionsAllowed(value = { "
 * xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
 * xref:security-authentication-mechanisms.adoc#form-based-auth-programmatic-set-up[Set up Form-based authentication programmatically]
 * xref:security-authentication-mechanisms.adoc#mtls-programmatic-set-up[Set up the mutual TLS client authentication programmatically]
+* xref:security-cors.adoc#cors-filter-programmatic-set-up[Configuring the CORS filter programmatically]
 
 [[standard-security-annotations]]
 == Authorization using annotations

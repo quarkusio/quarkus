@@ -22,9 +22,7 @@ public class CORSFilter implements Handler<RoutingContext> {
 
     private static final Logger LOG = Logger.getLogger(CORSFilter.class);
 
-    // This is set in the recorder at runtime.
-    // Must be static because the filter is created(deployed) at build time and runtime config is still not available
-    final CORSConfig corsConfig;
+    private final CORSConfig corsConfig;
 
     private final boolean wildcardOrigin;
     private final boolean wildcardMethod;

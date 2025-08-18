@@ -29,6 +29,7 @@ import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.security.HttpSecurity;
@@ -51,11 +52,12 @@ public final class HttpSecurityConfiguration {
     private final List<HttpAuthenticationMechanism> additionalMechanisms;
     private final VertxHttpConfig httpConfig;
     private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
+    private final CORSConfig corsConfig;
 
     private HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions,
             Optional<Boolean> basicAuthEnabled, boolean formAuthEnabled, String formPostLocation,
             List<HttpAuthenticationMechanism> additionalMechanisms, VertxHttpConfig httpConfig,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, CORSConfig corsConfig) {
         this.rolesMapping = rolesMapping;
         this.httpPermissions = httpPermissions;
         this.basicAuthEnabled = basicAuthEnabled;
@@ -64,6 +66,7 @@ public final class HttpSecurityConfiguration {
         this.additionalMechanisms = additionalMechanisms;
         this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
+        this.corsConfig = corsConfig;
     }
 
     record Policy(String name, HttpSecurityPolicy instance) {
@@ -229,7 +232,7 @@ public final class HttpSecurityConfiguration {
 
             instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
                     basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, vertxHttpConfig,
-                    vertxHttpBuildTimeConfig);
+                    vertxHttpBuildTimeConfig, httpSecurity.getCorsConfig());
             HttpServerTlsConfig.setConfiguration(
                     new ProgrammaticTlsConfig(httpSecurity.getClientAuth(), httpSecurity.getHttpServerTlsConfigName()));
         }
@@ -414,6 +417,10 @@ public final class HttpSecurityConfiguration {
 
     String formPostLocation() {
         return formPostLocation;
+    }
+
+    CORSConfig getCorsConfig() {
+        return corsConfig;
     }
 
     /**

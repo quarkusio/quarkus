@@ -16,6 +16,7 @@ class PrometheusFormatConfigPlainTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.format", "plain")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();
 
     @Test

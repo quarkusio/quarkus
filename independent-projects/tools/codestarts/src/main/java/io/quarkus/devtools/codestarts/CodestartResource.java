@@ -10,8 +10,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.FilenameUtils;
-
 public interface CodestartResource {
 
     String pathName();
@@ -49,11 +47,12 @@ public interface CodestartResource {
         }
 
         public String getFileName() {
-            return FilenameUtils.getName(path);
+            return Path.of(path).getFileName().toString();
         }
 
         public String getFileDir() {
-            return FilenameUtils.getPath(this.path);
+            Path parent = Path.of(this.path).getParent();
+            return parent != null ? parent.toString() : "";
         }
 
         public String path() {

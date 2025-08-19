@@ -27,6 +27,7 @@ import org.junit.jupiter.api.TestInfo;
 import io.quarkus.paths.MultiRootPathTree;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * Test file content and directory tree to make sure they are valid by comparing them to their snapshots.
@@ -165,7 +166,8 @@ public class SnapshotTesting {
                     deleteExistingSnapshots(snapshotIdentifier, srcSnapshotFile);
                 }
                 try {
-                    FileUtils.copyFile(fileToCheck.toFile(), srcSnapshotFile.toFile());
+                    Files.createDirectories(srcSnapshotFile.getParent());
+                    Files.copy(fileToCheck, srcSnapshotFile);
                     System.out.println("COPIED " + fileToCheck + " -> " + srcSnapshotFile);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
@@ -278,6 +280,7 @@ public class SnapshotTesting {
         }
     }
 
+    @SuppressForbidden(reason = "we allow FileUtils.deleteDirectory (for now)")
     public static void deleteTestDirectory(final File file) throws IOException {
         FileUtils.deleteDirectory(file);
 
@@ -327,6 +330,7 @@ public class SnapshotTesting {
         }
     }
 
+    @SuppressForbidden(reason = "we allow FileUtils.deleteQuietly (for now)")
     private static void deleteExistingSnapshots(String name, Path snapshots) {
         System.out.println("\n>>>>>> DELETING EXISTING TEST SNAPSHOTS FOR:\n>>>>>> " + name + "\n");
         FileUtils.deleteQuietly(snapshots.toFile());

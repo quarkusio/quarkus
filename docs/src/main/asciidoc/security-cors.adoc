@@ -54,7 +54,7 @@ quarkus.http.cors.access-control-allow-credentials=true <7>
 ----
 
 <1> Enables the CORS filter.
-<2> Specifies allowed origins, including a regular expression.
+<2> Specifies allowed origins, including a regular expression. When not specified, CORS is not permitted, and only same-origin requests are allowed.
 <3> Lists allowed HTTP methods for cross-origin requests.
 <4> Declares custom headers that clients can include in requests.
 <5> Identifies response headers that clients can access.

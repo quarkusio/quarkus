@@ -525,8 +525,6 @@ public class ProtectedResource {
 }
 ----
 
-NOTE: If you want to use the `AuthzClient` directly, set `quarkus.keycloak.policy-enforcer.enable=true`; otherwise, no bean is available for injection.
-
 [NOTE]
 ====
 To use the `AuthzClient` directly, set `quarkus.keycloak.policy-enforcer.enable=true`.
@@ -535,9 +533,9 @@ Otherwise, no bean is available for injection.
 
 == Mapping protected resources
 
-By default, the extension fetches resources from Keycloak on demand, using their URI to identify and map the application resources that require protection.
+By default, the extension uses lazy loading to fetch resources from Keycloak on demand. It uses the request URI to identify and map application resources that require protection.
 
-To disable on-demand fetching and instead pre-load resources at startup, configure the following property:
+To disable lazy loading and instead pre-load all resources at startup, configure the following property:
 
 [source,properties]
 ----

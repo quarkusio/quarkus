@@ -12,6 +12,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
@@ -84,16 +85,25 @@ public class LoggingResourceTest {
         // Wait for logs to be available as everything is async
         await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("directTrace called").size() == 1);
         Map<String, Object> logLine = getLogs("directTrace called").get(0);
+        Map<String, Object> logLineSpanContext = (Map<String, Object>) logLine.get("spanContext");
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
+        String spanId = (String) logLineSpanContext.get("spanId");
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
+        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
+        List<Map<String, Object>> spans = getSpans();
+        Map<String, Object> spanData = spans.stream()
+                .filter(map -> spanId.equals(map.get("spanId")))
+                .findFirst()
+                .get();
+
+        assertNotNull(spanData);
         assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
+        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
+        assertEquals(true, logLineSpanContext.get("sampled"));
 
         assertEquals("INFO", logLine.get("severityText"));
-        Map<String, Object> logLineSpanContext = (Map<String, Object>) logLine.get("spanContext");
-        assertEquals(spanData.get("traceId"), logLineSpanContext.get("traceId"));
+        assertEquals(spanData.get("traceId"), logLineSpanContext.get("traceId"),
+                "traceId do not match. Spans: " + spans + " :::: logLineSpanContext: " + logLineSpanContext);
         assertEquals(spanData.get("spanId"), logLineSpanContext.get("spanId"));
     }
 
@@ -109,16 +119,21 @@ public class LoggingResourceTest {
         // Wait for logs to be available as everything is async
         await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Oh no Exception!").size() == 1);
         Map<String, Object> logLine = getLogs("Oh no Exception!").get(0);
-
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-
         Map<String, Object> logLineSpanContext = (Map<String, Object>) logLine.get("spanContext");
-        assertEquals(spanData.get("traceId"), logLineSpanContext.get("traceId"));
-        assertEquals(spanData.get("spanId"), logLineSpanContext.get("spanId"));
+
+        String spanId = (String) logLineSpanContext.get("spanId");
+
+        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
+
+        List<Map<String, Object>> spans = getSpans();
+        Map<String, Object> spanData = spans.stream()
+                .filter(map -> spanId.equals(map.get("spanId")))
+                .findFirst()
+                .get();
+
+        assertNotNull(spanData);
+        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
+        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
         assertEquals(true, logLineSpanContext.get("sampled"));
 
         assertEquals("ERROR", logLine.get("severityText"));

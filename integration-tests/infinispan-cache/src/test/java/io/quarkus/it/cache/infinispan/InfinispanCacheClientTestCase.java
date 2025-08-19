@@ -13,7 +13,7 @@ import io.restassured.http.Headers;
 
 @QuarkusTest
 @DisplayName("Tests the integration between the infinispan cache and the rest-client extensions")
-public class InfinspanCacheClientTestCase {
+public class InfinispanCacheClientTestCase {
 
     private static final String CITY = "Toulouse";
     private static final String TODAY = "2020-12-20";

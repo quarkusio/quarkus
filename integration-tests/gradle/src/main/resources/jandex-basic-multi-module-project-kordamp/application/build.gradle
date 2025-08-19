@@ -1,5 +1,6 @@
 plugins {
     id 'io.quarkus'
+    id 'org.kordamp.gradle.jandex' // this plugin is applied to make the dependencies on the Jandex tasks are properly setup and the build doesn't fail
 }
 
 dependencies {

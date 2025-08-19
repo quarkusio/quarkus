@@ -150,7 +150,7 @@ For example, building multi-platform images is implemented differently for Docke
 === OpenShift
 
 The extension `quarkus-container-image-openshift` is using OpenShift binary builds in order to perform container builds inside the OpenShift cluster.
-The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `fabric8/s2i-java`).
+The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `ubi9/openjdk-17` or `ubi9/openjdk-21`).
 
 The benefit of this approach, is that it can be combined with OpenShift's `DeploymentConfig` that makes it easy to roll out changes to the cluster.
 

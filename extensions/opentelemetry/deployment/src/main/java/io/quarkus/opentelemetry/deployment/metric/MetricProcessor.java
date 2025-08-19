@@ -3,8 +3,6 @@ package io.quarkus.opentelemetry.deployment.metric;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -25,11 +23,10 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.metrics.cdi.MetricsProducer;
 import io.quarkus.opentelemetry.runtime.metrics.instrumentation.JvmMetricsService;
 
-@BuildSteps(onlyIf = MetricProcessor.MetricEnabled.class)
+@BuildSteps(onlyIf = MetricsEnabled.class)
 public class MetricProcessor {
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
     private static final DotName METRIC_READER = DotName.createSimple(MetricReader.class.getName());
@@ -103,20 +100,5 @@ public class MetricProcessor {
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem(
                         "io.opentelemetry.instrumentation.runtimemetrics.java8.internal.CpuMethods"));
-    }
-
-    public static class MetricEnabled implements BooleanSupplier {
-        OTelBuildConfig otelBuildConfig;
-
-        public boolean getAsBoolean() {
-            return otelBuildConfig.metrics().enabled()
-                    .map(new Function<Boolean, Boolean>() {
-                        @Override
-                        public Boolean apply(Boolean enabled) {
-                            return otelBuildConfig.enabled() && enabled;
-                        }
-                    })
-                    .orElseGet(() -> otelBuildConfig.enabled());
-        }
     }
 }

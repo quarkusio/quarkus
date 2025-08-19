@@ -1,8 +1,6 @@
 package io.quarkus.maven;
 
 import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
-import static io.quarkus.maven.QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP_PARAM;
-import static io.quarkus.maven.QuarkusBootstrapMojo.MODE_PARAM;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import static java.util.Collections.emptyMap;
@@ -328,6 +326,14 @@ public class DevMojo extends AbstractMojo {
     private boolean noDeps = false;
 
     /**
+     * Optional list of files to watch for changes that trigger a hot reload in dev mode.
+     * This is useful for extensions developers that can set this property to their extension's
+     * artifacts in their local repository.
+     */
+    @Parameter(property = "watchedFiles", required = false)
+    private List<String> watchedFiles = List.of();
+
+    /**
      * Additional parameters to pass to javac when recompiling changed
      * source files.
      */
@@ -542,6 +548,7 @@ public class DevMojo extends AbstractMojo {
         try {
             DevModeRunner runner = new DevModeRunner(bootstrapId);
             Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
+            Map<Path, Long> additionalWatchedFiles = readAdditionaWatchedFilesTimestampts(watchedFiles);
             runner.run();
             long nextCheck = System.currentTimeMillis() + 100;
             for (;;) {
@@ -558,20 +565,12 @@ public class DevMojo extends AbstractMojo {
                         }
                         return;
                     }
-                    List<String> changedPoms = List.of();
-                    for (Map.Entry<Path, Long> e : pomFiles.entrySet()) {
-                        long t = Files.getLastModifiedTime(e.getKey()).toMillis();
-                        if (t > e.getValue()) {
-                            if (changedPoms.isEmpty()) {
-                                // unless it's a git or some other command, there won't be many POMs modified in 100 milliseconds
-                                changedPoms = new ArrayList<>(1);
-                            }
-                            changedPoms.add(e.getKey().toString());
-                            pomFiles.put(e.getKey(), t);
-                        }
-                    }
-                    if (!changedPoms.isEmpty()) {
-                        logPomChanges(changedPoms);
+                    // we need to keep POM files changes separated for reactor distinctions
+                    List<String> changedPoms = collectChangeFilesFrom(pomFiles);
+                    List<String> changedFiles = collectChangeFilesFrom(additionalWatchedFiles);
+                    changedFiles.addAll(changedPoms);
+                    if (!changedFiles.isEmpty()) {
+                        logChanges(changedFiles);
 
                         // stop the runner before we build the new one as the debug port being free
                         // is tested when building the runner
@@ -595,11 +594,24 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private void logPomChanges(List<String> changedPoms) {
+    private List<String> collectChangeFilesFrom(Map<Path, Long> paths) throws IOException {
+        // unless it's a git or some other command, there won't be many files modified in 100 milliseconds
+        List<String> changedFiles = new ArrayList<>(1);
+        for (Map.Entry<Path, Long> e : paths.entrySet()) {
+            long t = Files.getLastModifiedTime(e.getKey()).toMillis();
+            if (t > e.getValue()) {
+                changedFiles.add(e.getKey().toString());
+                paths.put(e.getKey(), t);
+            }
+        }
+        return changedFiles;
+    }
+
+    private void logChanges(List<String> changedFiles) {
         final StringBuilder sb = new StringBuilder().append("Restarting dev mode following changes in ");
-        sb.append(changedPoms.get(0));
-        for (int i = 1; i < changedPoms.size(); ++i) {
-            sb.append(", ").append(changedPoms.get(i));
+        sb.append(changedFiles.get(0));
+        for (int i = 1; i < changedFiles.size(); ++i) {
+            sb.append(", ").append(changedFiles.get(i));
         }
         getLog().info(sb.toString());
     }
@@ -1134,6 +1146,15 @@ public class DevMojo extends AbstractMojo {
         Map<Path, Long> ret = new HashMap<>();
         for (Path i : runner.pomFiles()) {
             ret.put(i, Files.getLastModifiedTime(i).toMillis());
+        }
+        return ret;
+    }
+
+    private Map<Path, Long> readAdditionaWatchedFilesTimestampts(List<String> watchedFiles) throws IOException {
+        Map<Path, Long> ret = new HashMap<>();
+        for (String file : watchedFiles) {
+            Path p = Path.of(file);
+            ret.put(p, Files.getLastModifiedTime(p).toMillis());
         }
         return ret;
     }

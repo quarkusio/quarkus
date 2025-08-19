@@ -431,6 +431,7 @@ The format of the result can be controlled with one of four options:
 - `--concise` Display the name (artifactId) and description
 - `--full`    Display concise format and version/status-related columns.
 - `--origins` Display concise information along with the Quarkus platform release origin of the extension.
+- `--support-scope` Display support scope associated with each extension (if any) for an offering configured in the registry client configuration.
 
 The behavior of `quarkus ext ls` will vary depending on context.
 
@@ -463,6 +464,21 @@ JDBC Driver - Oracle                               quarkus-jdbc-oracle
 JDBC Driver - Derby                                quarkus-jdbc-derby
 Elytron Security JDBC                              quarkus-elytron-security-jdbc
 Agroal - Database connection pool                  quarkus-agroal
+----
+
+==== Listing extensions for a specific offering
+
+NOTE: This option was introduced in 3.26.0 and will be evolving in the upcoming releases.
+
+As described in link:{quarkus-home-url}/guides/extension-registry-user#limiting-extension-catalog-to-an-offering[the registry client documentation], an extension catalog could be limited to a specific extension offering delivered and supported by a dedicated team or an organization.
+
+When an offering is configured for a registry in `.quarkus/config.yaml`, `ext list --support-scope` can be used to display support scope associated with extensions from the selected offering. For example,
+
+[source,shell]
+----
+quarkus ext list --support-scope
+✬ ArtifactId                                         Extension Name                                     Version                   Support scope
+✬ acme-quarkus-magic                                 Acme Quarkus Magic                                 1.6.16                    tech-preview
 ----
 
 ==== Adding extensions

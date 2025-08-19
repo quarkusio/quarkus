@@ -15,12 +15,7 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
 /**
- * Testing
- * <p>
- * This is used currently only to suppress warnings about unknown properties
- * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
- * <p>
- * TODO refactor code to actually use these values
+ * Testing configuration.
  */
 @ConfigMapping(prefix = "quarkus.test")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)

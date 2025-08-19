@@ -749,7 +749,7 @@ quarkus.oidc.token.verify-access-token-with-user-info=true
 
 org.acme.ApiEchoServiceClient/mp-rest/url=http://localhost:${port} <2>
 
-quarkus.test.native-image-profile=test
+quarkus.test.integration-test-profile=test
 %prod.port=8080
 %dev.port=8080
 %test.port=8081

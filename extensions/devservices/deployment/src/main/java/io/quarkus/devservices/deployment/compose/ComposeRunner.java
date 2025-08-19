@@ -32,7 +32,7 @@ public class ComposeRunner {
     private final String identifier;
     private final String composeExecutable;
     private String cmd;
-    private Map<String, String> env;
+    private Map<String, String> additionalEnvVars;
     private List<String> profiles;
 
     public ComposeRunner(String composeExecutable, List<File> composeFiles, String projectName) {
@@ -40,8 +40,8 @@ public class ComposeRunner {
         this.composeFiles = composeFiles;
         this.identifier = projectName;
         this.cmd = "";
-        this.env = Collections.emptyMap();
-        this.profiles = Collections.emptyList();
+        this.additionalEnvVars = Map.of();
+        this.profiles = List.of();
     }
 
     /**
@@ -62,7 +62,7 @@ public class ComposeRunner {
      * @return this
      */
     public ComposeRunner withEnv(Map<String, String> env) {
-        this.env = Collections.unmodifiableMap(env);
+        this.additionalEnvVars = Collections.unmodifiableMap(env);
         return this;
     }
 
@@ -97,8 +97,9 @@ public class ComposeRunner {
         ProcessBuilder.newBuilder(composeExecutable)
                 .directory(pwd.toPath())
                 .arguments(cmd.split("\\s+"))
-                .environment(env)
                 .modifyEnvironment(env -> {
+                    env.putAll(additionalEnvVars);
+
                     env.put(PROJECT_NAME_ENV, identifier);
 
                     TransportConfig transportConfig = DockerClientFactory.instance().getTransportConfig();

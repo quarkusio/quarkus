@@ -1198,7 +1198,7 @@ quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=exchange
 quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 
-quarkus.resteasy-client-oidc-token-propagation.exchange-token=true <1>
+quarkus.rest-client-oidc-token-propagation.exchange-token=true <1>
 ----
 <1> Please note that the `exchange-token` configuration property is ignored when the OidcClient name is set with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
 

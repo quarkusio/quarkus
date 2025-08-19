@@ -159,6 +159,9 @@ public final class AmazonLambdaProcessor {
                         .reason(getClass().getName()
                                 + ": reflectively accessed in io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder.discoverHandlerMethod")
                         .build());
+            } else {
+                // Fall back to the root implementor if a matching `handleRequest` is not found in the class hierarchy
+                ret.add(new AmazonLambdaBuildItem(lambda, cdiName, streamHandler));
             }
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());

@@ -55,7 +55,7 @@ public class PrometheusHandler implements Handler<RoutingContext> {
             PrometheusFormat configuredFormat = ConfigProvider.getConfig()
                     .getOptionalValue("quarkus.micrometer.export.prometheus.format", PrometheusFormat.class)
                     .orElse(PrometheusFormat.OPENMETRICS);
-            
+
             return configuredFormat.getContentType();
         }
         if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {

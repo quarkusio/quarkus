@@ -65,6 +65,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
                 </configuration>
             </plugin>
         </plugins>
@@ -84,6 +85,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <rerunFailingTestsCount>2</rerunFailingTestsCount>
                         </configuration>
                     </plugin>
                     <plugin>

@@ -53,7 +53,7 @@
         <!-- test versions -->
         <version.assertj>3.27.4</version.assertj>
         <version.junit5>5.13.4</version.junit5>
-        <version.kotlin>2.2.0</version.kotlin>
+        <version.kotlin>2.2.10</version.kotlin>
         <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>
         <version.mockito>5.18.0</version.mockito>
         <!-- TCK versions -->

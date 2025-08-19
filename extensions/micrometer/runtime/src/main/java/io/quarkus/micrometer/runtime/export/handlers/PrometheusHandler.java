@@ -11,6 +11,7 @@ import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.micrometer.runtime.config.PrometheusFormat;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
@@ -51,14 +52,11 @@ public class PrometheusHandler implements Handler<RoutingContext> {
 
     private String chooseContentType(String acceptHeader) {
         if (acceptHeader == null || "*/*".equals(acceptHeader)) {
-            String configuredFormat = ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.micrometer.export.prometheus.format", String.class)
-                    .orElse("openmetrics");
+            PrometheusFormat configuredFormat = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.micrometer.export.prometheus.format", PrometheusFormat.class)
+                    .orElse(PrometheusFormat.OPENMETRICS);
             
-            if ("plain".equals(configuredFormat)) {
-                return TextFormat.CONTENT_TYPE_004;
-            }
-            return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+            return configuredFormat.getContentType();
         }
         if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {
             return TextFormat.CONTENT_TYPE_004;

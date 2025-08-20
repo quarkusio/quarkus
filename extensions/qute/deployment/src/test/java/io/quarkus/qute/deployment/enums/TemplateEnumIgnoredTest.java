@@ -31,7 +31,7 @@ public class TemplateEnumIgnoredTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{TransactionType:FOO}", null, "bar").render())
                 .withMessage(
-                        "Rendering error in template [bar] line 1: No namespace resolver found for [TransactionType] in expression {TransactionType:FOO}");
+                        "Rendering error in template [bar:1]: No namespace resolver found for [TransactionType] in expression {TransactionType:FOO}");
 
     }
 

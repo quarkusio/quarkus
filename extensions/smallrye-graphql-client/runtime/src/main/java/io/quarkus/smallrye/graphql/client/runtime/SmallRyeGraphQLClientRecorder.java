@@ -18,6 +18,7 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
@@ -127,23 +128,35 @@ public class SmallRyeGraphQLClientRecorder {
                 .map(m -> new HashMap<String, Object>(m)).orElse(null));
         quarkusConfig.url().ifPresent(transformed::setUrl);
         transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols().orElse(new ArrayList<>()));
-        resolveTlsConfigurationForRegistry(quarkusConfig)
-                .ifPresentOrElse(tlsConfiguration -> {
-                    transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
-                    transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
-                    transformed.setSslOptions(tlsConfiguration.getSSLOptions());
-                    tlsConfiguration.getHostnameVerificationAlgorithm()
-                            .ifPresent(transformed::setHostnameVerificationAlgorithm);
-                    transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
-                }, () -> {
-                    // DEPRECATED
-                    quarkusConfig.keyStore().ifPresent(transformed::setKeyStore);
-                    quarkusConfig.keyStoreType().ifPresent(transformed::setKeyStoreType);
-                    quarkusConfig.keyStorePassword().ifPresent(transformed::setKeyStorePassword);
-                    quarkusConfig.trustStore().ifPresent(transformed::setTrustStore);
-                    quarkusConfig.trustStoreType().ifPresent(transformed::setTrustStoreType);
-                    quarkusConfig.trustStorePassword().ifPresent(transformed::setTrustStorePassword);
-                });
+
+        // these properties are deprecated, but if they're present, they should override the TLS registry config
+        // (smallrye-graphql gives them precedence)
+        quarkusConfig.keyStore().ifPresent(transformed::setKeyStore);
+        quarkusConfig.keyStoreType().ifPresent(transformed::setKeyStoreType);
+        quarkusConfig.keyStorePassword().ifPresent(transformed::setKeyStorePassword);
+        quarkusConfig.trustStore().ifPresent(transformed::setTrustStore);
+        quarkusConfig.trustStoreType().ifPresent(transformed::setTrustStoreType);
+        quarkusConfig.trustStorePassword().ifPresent(transformed::setTrustStorePassword);
+
+        // only apply TLS registry settings if quarkus.smallrye-graphql-client.CLIENT.key-store|trust-store were not specified
+        if (quarkusConfig.keyStore().isEmpty() && quarkusConfig.trustStore().isEmpty()) {
+            resolveTlsConfigurationForRegistry(quarkusConfig)
+                    .ifPresent(tlsConfiguration -> {
+                        transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
+                        transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
+                        transformed.setSslOptions(tlsConfiguration.getSSLOptions());
+                        tlsConfiguration.getHostnameVerificationAlgorithm()
+                                .ifPresent(transformed::setHostnameVerificationAlgorithm);
+                        transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
+                    });
+        } else {
+            quarkusConfig.tlsConfigurationName().ifPresent(name -> {
+                logger.warn("TLS configuration " + name
+                        + " was requested but specific keystore/truststore settings were applied too, " +
+                        " ignoring the TLS configuration");
+            });
+        }
+
         quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
         quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
         quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
@@ -172,12 +185,24 @@ public class SmallRyeGraphQLClientRecorder {
         if (Arc.container() != null) {
             TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
             if (tlsConfigurationRegistry != null) {
-                if (tlsConfigurationRegistry.getDefault().isPresent()
-                        && (tlsConfigurationRegistry.getDefault().get().getTrustStoreOptions() != null
-                                || tlsConfigurationRegistry.getDefault().get().isTrustAll())) {
+                if (quarkusConfig.tlsConfigurationName().isPresent()) {
+                    // explicit TLS config
+                    Optional<TlsConfiguration> namedConfig = TlsConfiguration.from(tlsConfigurationRegistry,
+                            quarkusConfig.tlsConfigurationName());
+                    if (namedConfig.isEmpty()) {
+                        throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
+                                + "' was specified, but it does not exist.");
+                    }
+                    return namedConfig;
+                } else {
+                    // no explicit TLS config
                     return tlsConfigurationRegistry.getDefault();
                 }
-                return TlsConfiguration.from(tlsConfigurationRegistry, quarkusConfig.tlsConfigurationName());
+            } else {
+                if (quarkusConfig.tlsConfigurationName().isPresent()) {
+                    throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
+                            + "' was specified, but no TLS configuration registry could be found.");
+                }
             }
         }
         return Optional.empty();

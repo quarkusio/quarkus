@@ -201,7 +201,7 @@ public class ParserTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.getTemplate("foo.html"))
                 .withMessage(
-                        "Parser error in template [foo.html] line 1: mandatory section parameters not declared for {#if}: [condition]")
+                        "Parser error in template [foo.html:1]: mandatory section parameters not declared for {#if}: [condition]")
                 .hasFieldOrProperty("origin");
     }
 
@@ -500,7 +500,7 @@ public class ParserTest {
         TemplateException e = assertThrows(TemplateException.class,
                 () -> Engine.builder().addDefaults().build().parse("{foo[bar]}", null, "baz"));
         assertNotNull(e.getOrigin());
-        assertEquals("Non-literal value [bar] used in bracket notation in expression {foo[bar]} in template [baz] line 1",
+        assertEquals("Non-literal value [bar] used in bracket notation in expression {foo[bar]} in template [baz:1]",
                 e.getMessage());
     }
 

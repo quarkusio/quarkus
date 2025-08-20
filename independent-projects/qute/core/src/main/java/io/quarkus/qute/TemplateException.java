@@ -78,7 +78,11 @@ public class TemplateException extends RuntimeException {
     }
 
     private static String toMessage(String messageTemplate, Map<String, Object> arguments, Origin origin) {
-        if ((arguments == null || arguments.isEmpty()) && origin == null) {
+        if (messageTemplate == null || messageTemplate.isBlank()) {
+            return null;
+        }
+        if ((arguments == null || arguments.isEmpty())
+                && origin == null) {
             return messageTemplate;
         }
         try {
@@ -119,7 +123,7 @@ public class TemplateException extends RuntimeException {
 
         /**
          * If set then the origin key can be used in the message template. For example <code>Some error {origin}</code> will be
-         * rendered as <code>Somer error template [foo.html] line 1</code>.
+         * rendered as <code>Somer error template [foo.html:1]</code>.
          *
          * @param origin
          * @return self

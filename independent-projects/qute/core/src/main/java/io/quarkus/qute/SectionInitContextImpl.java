@@ -70,7 +70,7 @@ final class SectionInitContextImpl implements SectionInitContext {
 
     @Override
     public TemplateException.Builder error(String message) {
-        return errorInitializer.error(message);
+        return errorInitializer.error(message).origin(getOrigin());
     }
 
 }

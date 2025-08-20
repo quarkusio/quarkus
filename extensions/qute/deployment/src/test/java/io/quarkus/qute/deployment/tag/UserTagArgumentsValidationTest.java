@@ -27,7 +27,8 @@ public class UserTagArgumentsValidationTest {
                 }
                 assertThat(root)
                         .isInstanceOf(TemplateException.class)
-                        .hasMessageContaining("Found incorrect expressions (1)").hasMessageContaining("{_args.sizes}");
+                        .hasMessageContaining("Found incorrect expressions (1)")
+                        .hasMessageContaining("{_args.sizes}");
             });
 
     @Test

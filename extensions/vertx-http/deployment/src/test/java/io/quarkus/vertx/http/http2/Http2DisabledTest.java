@@ -18,8 +18,6 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
@@ -30,7 +28,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }))
-class Http2Test {
+class Http2DisabledTest {
 
     protected static final String PING_DATA = "12345678";
 
@@ -46,7 +44,8 @@ class Http2Test {
                     .addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
-            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret")
+            .overrideConfigKey("quarkus.http.http2", "false");
 
     @Test
     void testHttp2EnabledSsl() throws ExecutionException, InterruptedException {
@@ -77,7 +76,6 @@ class Http2Test {
                 .get(port, "localhost", "/ping")
                 .send(ar -> {
                     if (ar.succeeded()) {
-                        // Obtain response
                         result.complete(ar.result());
                     } else {
                         result.completeExceptionally(ar.cause());
@@ -85,24 +83,16 @@ class Http2Test {
                 });
 
         HttpResponse<Buffer> response = result.get();
-        Assertions.assertEquals(HttpVersion.HTTP_2, response.version());
+        Assertions.assertNotEquals(HttpVersion.HTTP_2, response.version());
         Assertions.assertEquals(PING_DATA, response.bodyAsString());
     }
 
     @ApplicationScoped
     static class MyBean {
-
         public void register(@Observes Router router) {
-            //ping only works on HTTP/2
             router.get("/ping").handler(rc -> {
-                rc.request().connection().ping(Buffer.buffer(PING_DATA), new Handler<AsyncResult<Buffer>>() {
-                    @Override
-                    public void handle(AsyncResult<Buffer> event) {
-                        rc.response().end(event.result());
-                    }
-                });
+                rc.response().end(PING_DATA);
             });
         }
-
     }
 }

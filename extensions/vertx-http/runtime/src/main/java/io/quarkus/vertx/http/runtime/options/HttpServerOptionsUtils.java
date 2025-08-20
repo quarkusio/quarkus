@@ -365,7 +365,8 @@ public class HttpServerOptionsUtils {
                         (int) httpConfig.limits().rstFloodWindowDuration().get().toSeconds());
                 httpServerOptions.setHttp2RstFloodWindowDurationTimeUnit(TimeUnit.SECONDS);
             }
-
+        } else {
+            httpServerOptions.setHttp2ClearTextEnabled(false);
         }
 
         httpServerOptions.setUseProxyProtocol(httpConfig.proxy().useProxyProtocol());

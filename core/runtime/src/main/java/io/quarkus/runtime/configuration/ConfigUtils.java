@@ -4,11 +4,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -35,7 +35,7 @@ public final class ConfigUtils {
     }
 
     public static List<String> getProfiles() {
-        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles();
+        return getConfig().getProfiles();
     }
 
     public static boolean isProfileActive(final String profile) {
@@ -49,14 +49,12 @@ public final class ConfigUtils {
      * reliably determine if the property is present in the properties list. The property needs to be retrieved to make
      * sure it exists. Also, if the value is an expression, we want to ignore expansion, because this is not relevant
      * for the check and the expansion value may not be available at this point.
-     * <p>
-     * It may be interesting to expose such API in SmallRyeConfig directly.
      *
      * @param propertyName the property name.
-     * @return true if the property is present or false otherwise.
+     * @return true if the property is present or false otherwise
      */
-    public static boolean isPropertyPresent(String propertyName) {
-        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).isPropertyPresent(propertyName);
+    public static boolean isPropertyPresent(final String propertyName) {
+        return getConfig().isPropertyPresent(propertyName);
     }
 
     /**
@@ -64,11 +62,11 @@ public final class ConfigUtils {
      * <p>
      * This method is similar to {@link #isPropertyPresent(String)}, but does not ignore expression expansion.
      *
-     * @param propertyName the property name.
-     * @return true if the property is present or false otherwise.
+     * @param propertyName the property name
+     * @return true if the property is present or false otherwise
      */
-    public static boolean isPropertyNonEmpty(String propertyName) {
-        ConfigValue configValue = ConfigProvider.getConfig().getConfigValue(propertyName);
+    public static boolean isPropertyNonEmpty(final String propertyName) {
+        ConfigValue configValue = getConfig().getConfigValue(propertyName);
         return configValue.getValue() != null && !configValue.getValue().isEmpty();
     }
 
@@ -83,9 +81,9 @@ public final class ConfigUtils {
      * It may be interesting to expose such API in SmallRyeConfig directly.
      *
      * @param propertyNames The configuration property names
-     * @return true if the property is present or false otherwise.
+     * @return true if the property is present or false otherwise
      */
-    public static boolean isAnyPropertyPresent(Collection<String> propertyNames) {
+    public static boolean isAnyPropertyPresent(final Collection<String> propertyNames) {
         for (String propertyName : propertyNames) {
             if (isPropertyPresent(propertyName)) {
                 return true;
@@ -101,10 +99,10 @@ public final class ConfigUtils {
      * @param <T> The property type
      * @param propertyNames The configuration property names
      * @param propertyType The type that the resolved property value should be converted to
-     * @return true if the property is present or false otherwise.
+     * @return the first resolved property value as a {@code Optional} instance of the property type or {@link Optional#empty()}
      */
-    public static <T> Optional<T> getFirstOptionalValue(List<String> propertyNames, Class<T> propertyType) {
-        Config config = ConfigProvider.getConfig();
+    public static <T> Optional<T> getFirstOptionalValue(final Collection<String> propertyNames, final Class<T> propertyType) {
+        SmallRyeConfig config = getConfig();
         for (String propertyName : propertyNames) {
             Optional<T> value = config.getOptionalValue(propertyName, propertyType);
             if (value.isPresent()) {
@@ -112,5 +110,31 @@ public final class ConfigUtils {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Checks if a property has a default value in the current Configuration.
+     *
+     * @param propertyName the property name
+     * @return true if the property has a default or false otherwise
+     */
+    public static boolean isPropertyDefaultValue(final String propertyName) {
+        ConfigValue configValue = getConfig().getConfigValue(propertyName);
+        return configValue.getValue() != null && DefaultValuesConfigSource.NAME.equals(configValue.getSourceName());
+    }
+
+    /**
+     * Get the {@linkplain io.smallrye.config.SmallRyeConfig configuration} corresponding to the current Quarkus
+     * config phase, as defined by the calling thread's {@linkplain Thread#getContextClassLoader() context class loader}.
+     * <p>
+     * The {@link io.smallrye.config.SmallRyeConfig} instance will be created and registered to the context class
+     * loader if no such configuration is already created and registered.
+     * <p>
+     * Each class loader corresponds to exactly one configuration.
+     *
+     * @return the configuration instance for the thread context class loader
+     */
+    public static SmallRyeConfig getConfig() {
+        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
     }
 }

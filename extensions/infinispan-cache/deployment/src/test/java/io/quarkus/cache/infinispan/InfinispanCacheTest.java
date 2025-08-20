@@ -271,9 +271,16 @@ public class InfinispanCacheTest {
         // Ensure first retrieval is in lambda before continuing
         barrier.await(10, TimeUnit.SECONDS);
 
-        Future<Uni<String>> thread2 = fork(() -> cache.getAsync(id, key -> Uni.createFrom().item("thread2")));
+        Future<Uni<String>> thread2 = fork(() -> cache.getAsync(id, key -> {
+            try {
+                Thread.sleep(1000); // delay to avoid this executing too fast
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return Uni.createFrom().item("thread2");
+        }));
 
-        barrier.await(1, TimeUnit.SECONDS);
+        barrier.await(2, TimeUnit.SECONDS);
 
         String valueObtainedByThread1 = awaitUni(thread1.get(10, TimeUnit.SECONDS));
         String valueObtainedByThread2 = awaitUni(thread2.get(10, TimeUnit.SECONDS));

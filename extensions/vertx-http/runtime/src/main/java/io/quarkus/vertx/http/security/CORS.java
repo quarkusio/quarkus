@@ -49,7 +49,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
         private Optional<List<String>> origins;
 
         public Builder() {
-            this(HttpSecurityUtils.getDefaultVertxHttpConfig().cors());
+            this(HttpSecurityUtils.getDefaultAuthConfig().cors());
         }
 
         public Builder(CORSConfig corsConfig) {

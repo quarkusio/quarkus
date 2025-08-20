@@ -326,6 +326,16 @@ With this configuration the logs will look like
 [DEBUG] Launching JVM with command line: /home/<username>/jdk/bin/java -Dquarkus-internal.serialized-app-model.path=/home/<username>/app/target/quarkus/bootstrap/dev-app-model.dat -javaagent:/home/<username>/.m2/repository/io/quarkus/quarkus-class-change-agent/{quarkus-version}/quarkus-class-change-agent-{quarkus-version}.jar -XX:TieredStopAtLevel=1 -agentlib:jdwp=transport=dt_socket,address=localhost:5005,server=y,suspend=n --enable-native-access=ALL-UNNAMED --add-modules=jdk.incubator.vector --enable-preview -Djava.util.logging.manager=org.jboss.logmanager.LogManager -jar /home/<username>/app/target/acme-app-dev.jar
 ----
 
+=== Hot Reload of the Maven process
+
+Sometimes you may want to reload the whole Maven process in order to pick up changes in the `pom.xml` file or to add/remove extensions. Quarkus automatically detects changes in the `pom.xml` file and restarts the Maven process if needed.
+
+You can also additionally set the `watchedFiles` parameter to the set of files that are also monitored for changes. This is particularly useful if you are developing a Quarkus extension or any other library that is being used as a dependency in your testing Quarkus application. You can set the `watchedFiles` to the installed Maven artifact in your local repository that will trigger automatic testing application reload when the extension or the library is installed:
+
+:dev-additional-parameters: -DwatchedFiles=~/.m2/repository/io/quarkus/quarkus-smallrye-health/999-SNAPSHOT/quarkus-smallrye-health-999-SNAPSHOT.jar
+include::{includes}/devtools/dev-parameters.adoc[]
+:!dev-additional-parameters:
+
 == Debugging
 
 In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.

@@ -9,11 +9,10 @@ import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 public interface CORSConfig {
-
     /**
      * Enable the CORS filter.
      */
-    @WithDefault("${quarkus.http.cors:false}")
+    @WithDefault("false")
     boolean enabled();
 
     /**

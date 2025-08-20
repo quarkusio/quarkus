@@ -110,12 +110,14 @@ public final class HttpSecurityUtils {
         return null;
     }
 
+    private static final VertxHttpConfig VERTX_HTTP_CONFIG = new SmallRyeConfigBuilder()
+            .addDiscoveredConverters()
+            .withDefaultValue("quarkus.http.host", "8081")
+            .withMapping(VertxHttpConfig.class)
+            .build()
+            .getConfigMapping(VertxHttpConfig.class);
+
     public static VertxHttpConfig getDefaultVertxHttpConfig() {
-        return new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withDefaultValue("quarkus.http.host", "8081")
-                .withMapping(VertxHttpConfig.class)
-                .build()
-                .getConfigMapping(VertxHttpConfig.class);
+        return VERTX_HTTP_CONFIG;
     }
 }

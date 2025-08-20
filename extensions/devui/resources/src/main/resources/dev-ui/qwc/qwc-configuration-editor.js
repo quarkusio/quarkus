@@ -104,11 +104,15 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
     _save(){
         this._inProgress = true;
         let newValue = this.shadowRoot.getElementById('code').getAttribute('value');
-        this.jsonRpc.updateProperties({content: newValue, type: this._type}).then(jsonRpcResponse => {
+        this.jsonRpc.updateProperties({
+            type: this._type,
+            content: newValue,
+            target: 'application.properties'
+        }).then(jsonRpcResponse => {
             this._inProgress = false;
-            if(jsonRpcResponse.result === false){
+            if (jsonRpcResponse.result === false) {
                 notifier.showErrorMessage("Configuration failed to update. See log file for details");
-            }else{
+            } else {
                 fetch(devuiState.applicationInfo.contextRoot);
                 notifier.showSuccessMessage("Configuration successfully updated");
             }

@@ -141,7 +141,8 @@ class AddExtensionMojoTest {
     void testAddMultipleDependency() throws MojoExecutionException, IOException, XmlPullParserException {
         Set<String> deps = new HashSet<>();
         deps.add(DEP_GAV);
-        deps.add("commons-io:commons-io:2.6");
+        // use an obscure jar that is lightweight and comes with no dependencies
+        deps.add("io.smallrye:jandex-test-data:3.4.0");
         mojo.extensions = deps;
         mojo.execute();
 
@@ -154,7 +155,8 @@ class AddExtensionMojoTest {
     void testThatBothParameterCannotBeSet() {
         mojo.extension = DEP_GAV;
         Set<String> deps = new HashSet<>();
-        deps.add("commons-io:commons-io:2.6");
+        // use an obscure jar that is lightweight and comes with no dependencies
+        deps.add("io.smallrye:jandex-test-data:3.4.0");
         mojo.extensions = deps;
 
         assertThrows(MojoExecutionException.class, () -> mojo.execute());

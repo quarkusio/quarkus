@@ -354,6 +354,9 @@ public class ApplicationDeploymentClasspathBuilder {
                         project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
                 config.shouldResolveConsistentlyWith(getDeploymentConfiguration());
                 config.setCanBeConsumed(false);
+                if (!isDisableComponentVariants(project)) {
+                    QuarkusComponentVariants.setCommonAttributes(config.getAttributes(), project.getObjects());
+                }
             });
         }
     }

@@ -46,9 +46,9 @@
                                 <path>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>${quarkus.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
                         </configuration>
                     </execution>
                 </executions>

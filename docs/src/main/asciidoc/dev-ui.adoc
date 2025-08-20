@@ -35,6 +35,7 @@ The basic layout has the following parts:
 - Page
 - Footer
 - Card
+- Settings
 
 Below is a visual overview of the layout:
 
@@ -144,6 +145,18 @@ TIP: Clicking a page link inside a card navigates to a dedicated UI page for tha
 
 Extensions are free to customize their cards and add interactive behaviors based on what they provide at runtime.
 
+==== Settings
+
+image::devui_layout_settings.png[Dev UI Settings]
+
+The settings page is a dialog that contains settings for Dev UI:
+
+- Theme (Change between Desktop/Light/Dark
+- Bugs / Feature requests
+- Storage (Manage local browser storage used in Dev UI)
+- Dev MCP (Enable your Dev Mode to expose a MCP Server)
+- ... and more... (Other extensions might add to this)
+
 == Guide for Extension Developers
 
 Quarkus extensions can enhance the developer experience by contributing to the Dev UI. The rest of this guide outlines how to integrate your extension into the Dev UI, covering metadata configuration, adding pages to the card, menu, and footer, and best practices for dynamic content.
@@ -193,6 +206,8 @@ Extensions can contribute interactive pages to the Dev UI in the following areas
 - **Card**: Add links to pages directly on the extension card.
 - **Footer**: Add tabs to the footer for logs or other runtime information.
 - **Menu**: Add pages to the Dev UI's left-hand menu.
+- **Settings**: Add a tab to the settings dialog
+- **Unlisted**: Pages that are not listed anywhere above, but are added to the router and can be linked to.
 
 ==== Card
 
@@ -372,6 +387,99 @@ You can add multiple of these key-value pairs for all the data you know at build
 The key will be scoped automatically, so you do not have to prefix any namespace. Later we will discuss how to access this data in the webcomponent (page).
 
 image::devui_jokes_light.png[Dev UI Jokes, width=100%]
+
+==== Settings
+
+To add a tab to the Dev UI settings dialog, produce a `SettingPageBuildItem`:
+
+[source,java]
+----
+    @BuildStep(onlyIf = IsLocalDevelopment.class) // <1>
+    void createMCPSettingsTab(BuildProducer<SettingPageBuildItem> settingPageProducer) {
+
+        SettingPageBuildItem mcpSettingTab = new SettingPageBuildItem("Dev MCP");// <2>
+
+        mcpSettingTab.addPage(Page.webComponentPageBuilder() // <3>
+                .title("Dev MCP")// <4>
+                .icon("font-awesome-solid:robot") // <5>
+                .componentLink("qwc-dev-mcp-setting.js")); // <6>
+        settingPageProducer.produce(mcpSettingTab);
+    }
+}
+----
+<1> Always make sure that this build step is only run when in local dev mode.
+<2> To add anything on the settings tab, you must return/produce a `SettingPageBuildItem`.
+<3> To add a tab in the setting dialog, you can use the `addPage` method.
+<4> You can (optionally) add the title, else it will be derived from the component link.
+<5> You can add an icon. All free font-awesome icons are available.
+<6> Add the link to the web component source (`js`) file in `deployment/src/main/resources/dev-ui/`. This has to take the format of qwc-extensionname-pagename.js
+
+This page will will be loaded as the content for that tab in the settings dialog
+
+===== Optional: Build Time Data
+
+You can pass data gathered during build to the Page (js):
+
+[source,java]
+----
+mcpSettingTab.addBuildTimeData("key", values);
+----
+
+You can add multiple of these key-value pairs for all the data you know at build time that you need on the page.
+
+==== Unlisted Page
+
+Lastly, you can add pages that is not listed anywhere, but added to the Router, and can be navigated to. This is usefull if you are building very complex pages that navigates to more pages.
+
+To do this, produce a `UnlistedPageBuildItem`:
+
+[source,java]
+----
+    @BuildStep(onlyIf = IsLocalDevelopment.class) // <1>
+    void createMCPUnlistedPages(BuildProducer<UnlistedPageBuildItem> unlistedPageProducer) {
+
+        UnlistedPageBuildItem mcpOtherPages = new UnlistedPageBuildItem("Dev MCP"); // <2>
+
+        mcpOtherPages.addPage(Page.webComponentPageBuilder() // <3>
+                .title("Tools") // <4>
+                .icon("font-awesome-solid:screwdriver-wrench") // <5>
+                .componentLink("qwc-dev-mcp-tools.js"));  // <6>
+        unlistedPageProducer.produce(mcpOtherPages);
+    }
+}
+----
+<1> Always make sure that this build step is only run when in local dev mode.
+<2> To add an unlisted page, you must return/produce a `UnlistedPageBuildItem`.
+<3> Use the `addPage` method.
+<4> You can (optionally) add the title, else it will be derived from the component link.
+<5> You can add an icon. All free font-awesome icons are available.
+<6> Add the link to the web component source (`js`) file in `deployment/src/main/resources/dev-ui/`. This has to take the format of qwc-extensionname-pagename.js
+
+This page will will be registered to the Router and can be nagigated to by a normal link or using the Router:
+
+[source,javascript]
+----
+import { RouterController } from 'router-controller'; // <1>
+
+// ...
+
+routerController = new RouterController(this); // <2>
+
+// ...
+
+let unlistedPages = this.routerController.getPagesForCurrentNamespace(); // <3>
+// or if you not in your own space
+// let unlistedPages = this.routerController.getPagesForNamespace("your namespace"); // <4>
+
+// ... loop over page
+this.routerController.go(page); // <5>
+----
+<1> Import the RouterController
+<2> Create a new instance passing in this to scope it to your namespace
+<3> Get all pages of your namespace
+<4> Or if you are on another page (not one of yours) you can get the pages for your namespace
+<5> Then you can loop over the pages and build the links/buttons. To actions the navigation your use the go method
+
 
 ==== Building Web Components
 
@@ -662,6 +770,42 @@ this.storageControl.set('height', 123); // Set some val
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
 
+======= Per Application
+
+You can narrow the score of the storage further by the current application:
+
+[source,javascript]
+----
+storageControl = new StorageController(this, true); // Passing in true will scope per application
+----
+
+======= Storage Setting
+
+Users can have a raw view on the storage in the settings page:
+
+image::dev-ui-storage-settings.png[alt=Dev UI Storage Settings,role="center"]
+
+Because users can clean/revert to default in this screen by deleting the storage item, an extension might want to react on this:
+
+[source,javascript]
+----
+connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener('storage-changed', this._storageChange); // Listen for storage changes
+}
+
+disconnectedCallback() {
+        window.removeEventListener('storage-changed', this._storageChange); // Clean up
+        super.disconnectedCallback();
+}
+
+_storageChange = (e) => {
+    if(e.detail.method === "remove" && e.detail.key.startsWith("qwc-myextensionname-")){ // Only care about remove and your extension
+        // React on storage removal
+    }
+}
+
+----
 
 ====== Log
 

@@ -12,7 +12,7 @@ include::_attributes.adoc[]
 [IMPORTANT]
 .Experimental
 ====
-This feature is currently experimental. To enable it, set `quarkus.dev-mcp.enabled=true` in your application properties.
+This feature is currently experimental.
 ====
 
 == Overview
@@ -22,11 +22,13 @@ It presents the methods used by the DevUI *MCP tools* (methods you can call) and
 
 === Connecting an MCP client
 
-Open the **Dev MCP** menu in the Dev UI to see the MCP server’s URL. (Default `http://localhost:8080/q/dev-mcp`). 
-Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL. 
-After a client connects, it appears on the *MCP Info* page of the Dev UI.
+Open the **Dev UI** settings dialog and select the Dev MCP tab.
+There you can enable Dev MCP, get the connection details (Default `http://localhost:8080/q/dev-mcp`) and see what clients are connected.
 
-image::dev_mcp_info_screen.png[Dev MCP Info, width=100%]
+Any MCP client that supports the https://modelcontextprotocol.io/specification/2025-03-26[Streamable Protocol, version 2025‑03‑26] can connect using that URL. 
+After a client connects, it will appears on the tab:
+
+image::dev_mcp_settings.png[Dev MCP Settings]
 
 == Guide for extension developers
 

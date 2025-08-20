@@ -53,8 +53,16 @@ public class Page {
             String namespaceLabel,
             String extensionId) {
 
-        this.icon = icon;
-        this.color = color;
+        if (icon != null) {
+            this.icon = icon;
+        } else {
+            this.icon = "font-awesome-solid:arrow-right"; // default
+        }
+        if (color != null) {
+            this.color = color;
+        } else {
+            this.color = "var(--lumo-contrast-80pct)"; // default
+        }
         this.tooltip = tooltip;
         this.title = title;
         this.staticLabel = staticLabel;
@@ -224,8 +232,7 @@ public class Page {
      * You can use build time data if you made it available
      */
     public static WebComponentPageBuilder assistantPageBuilder() {
-        return new WebComponentPageBuilder("font-awesome-solid:robot", "var(--quarkus-assistant)",
-                "This uses the Quarkus Assistant feature");
+        return new AssistantPageBuilder();
     }
 
     /**

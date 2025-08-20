@@ -7,19 +7,26 @@ import { devuiState } from 'devui-state';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/tabs';
 import '@vaadin/confirm-dialog';
-import '@vaadin/popover';
+import '@vaadin/dialog';
+import '@vaadin/tabs';
+import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
+import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import '@vaadin/tabsheet';
 import '@vaadin/vertical-layout';
 import 'qui-assistant-warning';
-import { popoverRenderer } from '@vaadin/popover/lit.js';
+import { dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
 import { assistantState } from 'assistant-state';
+import { StorageController } from 'storage-controller';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 /**
  * This component represent the Dev UI Header
  */
 export class QwcHeader extends observeState(QwcHotReloadElement) {
-    
+    storageControl = new StorageController(this);
     routerController = new RouterController(this);
     jsonRpc = new JsonRpc("report-issues", true);
     
@@ -106,43 +113,54 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         _subTitle: {state: true},
         _showWarning: {state: true},
         _rightSideNav: {state: true},
-        _dialogOpened: {state: true},
+        _connectionDialogOpened: {state: true},
+        _settingsDialogOpened: {state: true},
+        _relevantLocalStorageItems: {state: true}
     };
 
     constructor() {
         super();
-        this._dialogOpened = false;
+        this._connectionDialogOpened = false;
+        this._settingsDialogOpened = false;
         this._title = "Extensions";
         this._subTitle = null;
         this._showWarning = false;
         this._rightSideNav = "";
+        this._relevantLocalStorageItems = null;
         
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateHeader(event);
         });
+        window.addEventListener('storage-changed', (event) => {
+            this._relevantLocalStorageItems = this._getAllLocalStorage();
+        });
+        
         document.addEventListener('max-retries-reached', (event) => {
-            this._dialogOpened = true;
+            this._connectionDialogOpened = true;
             this.requestUpdate();
         });
+        window.addEventListener('close-settings-dialog', () => this._closeSettingsDialog());
     }
 
     connectedCallback() {
         super.connectedCallback();
         this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadUnlistedPages(devuiState.unlisted);
     }
 
     hotReload(){
         this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadUnlistedPages(devuiState.unlisted);
     }
 
     render() {
         return html`
+        ${this._renderSettingsDialog()}
         <div class="top-bar">
             ${this._renderLogoAndTitle()}
             <div class="right-bar">
                 ${this._renderRightSideNav()}
-                ${this._renderThemeOptions()}
-                ${this._renderBugReportButton()}
+                ${this._renderRightSideSettings()}
             </div>
             ${this._renderReconnectPopup()}
         </div>`;
@@ -170,6 +188,15 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             }
         }
     }
+    
+    _loadUnlistedPages(pages){
+        for (const page of pages) {
+            if(page.componentRef){
+                import(page.componentRef);
+                this.routerController.addRouteForExtension(page);
+            }
+        }
+    }
 
     _renderReconnectPopup(){
         if(!connectionState.current.isConnected){
@@ -177,8 +204,8 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             <vaadin-confirm-dialog
                 header="Server unreachable"
                 confirm-text="Retry"
-                .opened="${this._dialogOpened}"
-                @opened-changed="${this._openedChanged}"
+                .opened="${this._connectionDialogOpened}"
+                @opened-changed="${this._connectionDialogChanged}"
                 @confirm="${() => {
                     JsonRpc.connect();
                     this.requestUpdate();
@@ -228,23 +255,10 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         return html`<qwc-theme-switch></qwc-theme-switch>`;
     }
 
-    _renderBugReportButton(){
-        return html`<vaadin-button id="bugButton" theme="icon" aria-label="Issue" title="Report an issue" class="button">
-                        <vaadin-icon icon="font-awesome-solid:bug"></vaadin-icon>
-                    </vaadin-button>
-                    <vaadin-popover
-                        for="bugButton"
-                        .position="bottom-end"
-                        ${popoverRenderer(this._popoverRenderer)}
-                    ></vaadin-popover>`;
-    }
-
-    _popoverRenderer() {
-        return html`<vaadin-vertical-layout>
-                        <vaadin-button theme="small tertiary" @click="${this._reportBug}" style="color: var(--lumo-body-text-color);">Report a bug</vaadin-button>
-                        <vaadin-button theme="small tertiary" @click="${this._reportFeature}" style="color: var(--lumo-body-text-color);">Request a new feature/enhancement</vaadin-button>
-                    </vaadin-vertical-layout>`;
-        
+    _renderRightSideSettings(){
+        return html`<vaadin-button theme="icon" aria-label="Settings" title="Settings" class="button" @click=${this._openSettingsDialog}>
+                        <vaadin-icon icon="font-awesome-solid:gear"></vaadin-icon>
+                    </vaadin-button>`;
     }
 
     _reportBug(event){
@@ -330,18 +344,150 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         </qwc-extension-link>`;
     }
 
+    _renderSettingsDialog(){
+        
+        return html`
+            <vaadin-dialog
+                aria-label="Settings"
+                draggable
+                modeless
+                .opened="${this._settingsDialogOpened}"
+                @closed="${() => {
+                    this._settingsDialogOpened = false;
+                }}"
+                ${dialogHeaderRenderer(
+                    () => html`
+                        <h2
+                            class="draggable"
+                            style="flex: 1; cursor: move; margin: 0; font-size: 1.5em; font-weight: bold; padding: var(--lumo-space-m) 0;">
+                        Settings
+                        </h2>
+                        <vaadin-button theme="tertiary" @click="${this._closeSettingsDialog}">
+                            <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                        </vaadin-button>`, []
+                )}
+                ${dialogRenderer(
+                    () => html`<vaadin-tabsheet style="width: 70vw; height: 70vh;">
+                                    <vaadin-tabs slot="tabs">
+                                        <vaadin-tab id="general-tab">
+                                            <vaadin-icon icon="font-awesome-solid:wrench"></vaadin-icon>
+                                            <span>General</span>
+                                        </vaadin-tab>
+                                        <vaadin-tab id="storage-tab">
+                                            <vaadin-icon icon="font-awesome-solid:database"></vaadin-icon>
+                                            <span>Storage</span>
+                                        </vaadin-tab>
+                                        ${this._renderDynamicSettingsTabs()}
+                                    </vaadin-tabs>
+
+                                    <div tab="general-tab">
+                                        <h4> Theme </h4>
+                                        <qwc-theme-switch></qwc-theme-switch>
+                                        <hr style="color:var(--lumo-contrast-5pct);"/>
+                                        <h4> Bugs / Features </h4>
+                                        <div style="display: flex; flex-direction: column;align-items: baseline;">
+                                            <vaadin-button theme="tertiary" @click="${this._reportBug}" style="color: var(--lumo-body-text-color);">
+                                                <vaadin-icon icon="font-awesome-solid:bug" slot="prefix"></vaadin-icon>
+                                                Report a bug
+                                            </vaadin-button>
+                                            <vaadin-button theme="tertiary" @click="${this._reportFeature}" style="color: var(--lumo-body-text-color);">
+                                                <vaadin-icon icon="font-awesome-solid:plug-circle-plus" slot="prefix"></vaadin-icon>
+                                                Request a new feature/enhancement
+                                            </vaadin-button>
+                                        </div>
+                                    </div>
+                                    <div tab="storage-tab">
+                                        <vaadin-grid .items="${this._relevantLocalStorageItems}" theme="no-border">
+                                            <vaadin-grid-sort-column path="key"></vaadin-grid-sort-column>
+                                            <vaadin-grid-sort-column path="value"
+                                                ${columnBodyRenderer(
+                                                      (item) => html`<div style="white-space: normal; word-break: break-word;">${item.value}</div>`
+                                                )}>
+                                            </vaadin-grid-sort-column>
+                                            <vaadin-grid-column
+                                                frozen-to-end
+                                                auto-width
+                                                flex-grow="0"
+                                                ${columnBodyRenderer(this._storageDeleteIconRenderer, [])}
+                                              ></vaadin-grid-column>
+                                        </vaadin-grid>
+                                    </div>
+                                    ${this._renderDynamicSettingsContents()}
+                                </vaadin-tabsheet>
+                        `, [this._settingsDialogOpened, this._relevantLocalStorageItems]
+                )}
+            ></vaadin-dialog>`;
+    }
+
+    _renderDynamicSettingsTabs(){
+        return html`${devuiState.setting.map((settingItem, index) =>
+                    html`${this._renderDynamicSettingsTab(settingItem, index)}`
+                )}`;
+    }
+    
+    _renderDynamicSettingsTab(settingItem, index){
+        import(settingItem.componentRef);
+        return html`<vaadin-tab id="${settingItem.id}-tab">
+                        <vaadin-icon icon="${settingItem.icon}"></vaadin-icon>
+                        <span>${settingItem.title}</span>
+                    </vaadin-tab>`;
+    }
+    
+    _renderDynamicSettingsContents(){
+        return html`${devuiState.setting.map((settingItem, index) =>
+                    html`${this._renderDynamicSettingsContent(settingItem, index)}`
+                )}`;
+    }
+
+    _renderDynamicSettingsContent(settingItem, index){
+        let dynamicTab = `<${settingItem.componentName} title="${settingItem.title}" namespace="${settingItem.namespace}"></${settingItem.componentName}>`;
+        return html`<div tab="${settingItem.id}-tab">
+                        ${unsafeHTML(dynamicTab)}
+                    </div>`;
+    }
+    
+    _storageDeleteIconRenderer(storageItem){
+        return html`<vaadin-icon style="font-size: small;color: var(--lumo-error-color-50pct);cursor: pointer;" title="Delete this from storage" icon="font-awesome-solid:trash" @click=${() => this._deleteStorageItem(storageItem)}></vaadin-icon>`;
+    }
+
+    _deleteStorageItem(storageItem){
+        localStorage.removeItem(storageItem.key);
+        window.dispatchEvent(new CustomEvent('storage-changed', {
+            detail: { method: 'remove', key: storageItem.key}
+        }));
+    }
+
+    _getAllLocalStorage(){
+        return Object.entries(localStorage)
+            .filter(([key]) => {
+                const lowerKey = key.toLowerCase();
+                return !lowerKey.startsWith("graphiql:") && !lowerKey.startsWith("vaadin");
+            })
+            .map(([key, value]) => ({ key, value }));
+    }
+
+    _closeSettingsDialog(){
+        this._settingsDialogOpened = false;
+        this._relevantLocalStorageItems = null;
+    }
+
+    _openSettingsDialog(){
+        this._relevantLocalStorageItems = this._getAllLocalStorage();
+        this._settingsDialogOpened = true;
+    }
+
     _reload(e) {
         fetch(devuiState.applicationInfo.contextRoot).then(response => {
             this.routerController.goHome();
         })
         .catch(error => {
             this.routerController.goHome();
-            this._dialogOpened = true;
+            this._connectionDialogOpened = true;
         });
     }
     
-    _openedChanged(e) {
-        this._dialogOpened = e.detail.value;
+    _connectionDialogChanged(e) {
+        this._connectionDialogOpened = e.detail.value;
     }
 }
 customElements.define('qwc-header', QwcHeader);

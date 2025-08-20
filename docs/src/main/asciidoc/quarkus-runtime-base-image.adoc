@@ -38,7 +38,7 @@ In this case, you need to use a multi-stage `dockerfile` to copy the required li
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6 as BUILD
 RUN microdnf install freetype -y
 
 # Second stage - copy the dependencies
@@ -60,7 +60,7 @@ If you need to have access to the full AWT support, you need more than just `lib
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6 as BUILD
 RUN microdnf install freetype fontconfig -y
 
 # Second stage - copy the dependencies
@@ -109,7 +109,7 @@ To use this base image, use the following `Dockerfile`:
 
 [source, dockerfile]
 ----
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

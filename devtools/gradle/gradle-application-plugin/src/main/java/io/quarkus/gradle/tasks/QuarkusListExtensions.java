@@ -58,7 +58,7 @@ public abstract class QuarkusListExtensions extends QuarkusPlatformTask {
         return format;
     }
 
-    @Option(description = "Select the output format among 'id' (display the artifactId only), 'concise' (display name and artifactId) and 'full' (concise format and version related columns).", option = "format")
+    @Option(description = "Select the output format among 'id' (display the artifactId only), 'concise' (display name and artifactId), 'origins' (display extension catalog IDs providing extension information), 'support-scope' (support scope associated with each extension, if any) and 'full' (concise format and version related columns).", option = "format")
     public void setFormat(String format) {
         this.format = format;
     }

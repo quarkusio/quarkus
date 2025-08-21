@@ -112,6 +112,14 @@ public interface HttpSecurity {
     HttpSecurity cors(CORS cors);
 
     /**
+     * Configures the Cross-Site Request Forgery (CSRF) prevention.
+     *
+     * @param csrf {@link CSRF} prevention configuration
+     * @return HttpSecurity
+     */
+    HttpSecurity csrf(CSRF csrf);
+
+    /**
      * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.
      *
      * @param mechanism {@link HttpAuthenticationMechanism}

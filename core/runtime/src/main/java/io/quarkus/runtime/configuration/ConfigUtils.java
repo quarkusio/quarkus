@@ -34,10 +34,26 @@ public final class ConfigUtils {
                 .addDefaultSources();
     }
 
+    /**
+     * Returns a {@code List} of the active profiles in Quarkus.
+     * <p>
+     * Profiles are sorted in reverse order according to how they were set in
+     * {@code quarkus.profile}, as the last profile overrides the previous one until there are
+     * no profiles left in the list.
+     *
+     * @return a {@code List} of the active profiles
+     * @see io.smallrye.config.SmallRyeConfig#getProfiles()
+     */
     public static List<String> getProfiles() {
         return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles();
     }
 
+    /**
+     * Check if a configuration profile is active in Quarkus.
+     *
+     * @param profile the configuration profile to check
+     * @return true if the profile is active or false otherwise.
+     */
     public static boolean isProfileActive(final String profile) {
         return getProfiles().contains(profile);
     }

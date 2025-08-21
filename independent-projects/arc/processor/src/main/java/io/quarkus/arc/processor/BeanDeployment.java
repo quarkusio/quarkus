@@ -1041,7 +1041,7 @@ public class BeanDeployment {
         NO_BEAN_CONSTRUCTOR
     }
 
-    private BeanDiscoveryResult findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
+    private BeanDiscoveryResult findBeans(Set<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
             List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();

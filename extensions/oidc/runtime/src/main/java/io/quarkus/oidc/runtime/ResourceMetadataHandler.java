@@ -184,7 +184,8 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
 
     static String resourceMetadataAuthenticateParameter(RoutingContext context, DefaultTenantConfigResolver resolver,
             OidcTenantConfig oidcConfig) {
-        return " " + RESOURCE_METADATA_AUTHENTICATE_PARAM + "=\"" + buildResourceIdentifierUrl(context, resolver, oidcConfig)
+        return " " + RESOURCE_METADATA_AUTHENTICATE_PARAM + "=\""
+                + buildAbsoluteResourceIdentifierUrl(context, resolver, oidcConfig)
                 + "\"";
     }
 
@@ -202,6 +203,19 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
             } else if (!OidcUtils.DEFAULT_TENANT_ID.equals(oidcConfig.tenantId().get())) {
                 configuredResource += OidcCommonUtils.prependSlash(oidcConfig.tenantId().get().toLowerCase());
             }
+            String authority = URI.create(context.request().absoluteURI()).getAuthority();
+            return buildUri(context, resolver.isEnableHttpForwardedPrefix(),
+                    oidcConfig.resourceMetadata().forceHttpsScheme(), authority, configuredResource);
+        }
+    }
+
+    static String buildAbsoluteResourceIdentifierUrl(RoutingContext context, DefaultTenantConfigResolver resolver,
+            OidcTenantConfig oidcConfig) {
+        String configuredResource = getResourceMetadataPath(oidcConfig, resolver.getRootPath());
+
+        if (configuredResource.startsWith(HTTP_SCHEME)) {
+            return configuredResource;
+        } else {
             String authority = URI.create(context.request().absoluteURI()).getAuthority();
             return buildUri(context, resolver.isEnableHttpForwardedPrefix(),
                     oidcConfig.resourceMetadata().forceHttpsScheme(), authority, configuredResource);

@@ -314,18 +314,6 @@ public interface LogRuntimeConfig {
         Level level();
 
         /**
-         * If the console logging should be in color. If undefined, Quarkus takes
-         * best guess based on the operating system and environment.
-         * Note that this value is ignored if an extension is present that takes
-         * control of console formatting (e.g., an XML or JSON-format extension).
-         * <p>
-         * This has been deprecated and replaced with <code>quarkus.console.color</code>,
-         * as Quarkus now provides more console-based functionality than just logging.
-         */
-        @Deprecated
-        Optional<Boolean> color();
-
-        /**
          * Specify how much the colors should be darkened.
          * Note that this value is ignored if an extension is present that takes
          * control of console formatting (e.g., an XML or JSON-format extension).

@@ -397,7 +397,7 @@ To add a tab to the Dev UI settings dialog, produce a `SettingPageBuildItem`:
     @BuildStep(onlyIf = IsLocalDevelopment.class) // <1>
     void createMCPSettingsTab(BuildProducer<SettingPageBuildItem> settingPageProducer) {
 
-        SettingPageBuildItem mcpSettingTab = new SettingPageBuildItem("Dev MCP");// <2>
+        SettingPageBuildItem mcpSettingTab = new SettingPageBuildItem();// <2>
 
         mcpSettingTab.addPage(Page.webComponentPageBuilder() // <3>
                 .title("Dev MCP")// <4>
@@ -438,7 +438,7 @@ To do this, produce a `UnlistedPageBuildItem`:
     @BuildStep(onlyIf = IsLocalDevelopment.class) // <1>
     void createMCPUnlistedPages(BuildProducer<UnlistedPageBuildItem> unlistedPageProducer) {
 
-        UnlistedPageBuildItem mcpOtherPages = new UnlistedPageBuildItem("Dev MCP"); // <2>
+        UnlistedPageBuildItem mcpOtherPages = new UnlistedPageBuildItem(); // <2>
 
         mcpOtherPages.addPage(Page.webComponentPageBuilder() // <3>
                 .title("Tools") // <4>

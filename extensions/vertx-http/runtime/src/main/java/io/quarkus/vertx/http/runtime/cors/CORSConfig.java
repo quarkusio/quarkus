@@ -13,7 +13,7 @@ public interface CORSConfig {
     /**
      * Enable the CORS filter.
      */
-    @WithDefault("${quarkus.http.cors:false}")
+    @WithDefault("false")
     boolean enabled();
 
     /**

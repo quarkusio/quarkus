@@ -1,7 +1,6 @@
 package io.quarkus.oidc.token.propagation.common.deployment;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -12,8 +11,6 @@ import io.quarkus.oidc.token.propagation.common.AccessToken;
 
 public class OidcTokenPropagationCommonProcessor {
 
-    private static final DotName DEPRECATED_ACCESS_TOKEN = DotName
-            .createSimple(io.quarkus.oidc.token.propagation.AccessToken.class.getName());
     private static final DotName ACCESS_TOKEN = DotName.createSimple(AccessToken.class.getName());
 
     @BuildStep
@@ -34,9 +31,7 @@ public class OidcTokenPropagationCommonProcessor {
             }
         }
         var accessTokenAnnotations = index.getIndex().getAnnotations(ACCESS_TOKEN);
-        var accessTokenDeprecatedAnnotations = index.getIndex().getAnnotations(DEPRECATED_ACCESS_TOKEN);
-        return Stream.concat(accessTokenAnnotations.stream(), accessTokenDeprecatedAnnotations.stream())
-                .map(ItemBuilder::new).map(ItemBuilder::build).toList();
+        return accessTokenAnnotations.stream().map(ItemBuilder::new).map(ItemBuilder::build).toList();
     }
 
 }

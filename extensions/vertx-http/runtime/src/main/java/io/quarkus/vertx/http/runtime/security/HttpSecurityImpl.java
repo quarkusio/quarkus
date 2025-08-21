@@ -31,6 +31,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.Basic;
 import io.quarkus.vertx.http.security.CORS;
+import io.quarkus.vertx.http.security.CSRF;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.quarkus.vertx.http.security.MTLS;
 import io.smallrye.mutiny.Uni;
@@ -48,6 +49,7 @@ final class HttpSecurityImpl implements HttpSecurity {
     private ClientAuth clientAuth;
     private Optional<String> httpServerTlsConfigName;
     private CORSConfig corsConfig;
+    private CSRF csrf;
 
     HttpSecurityImpl(ClientAuth clientAuth, VertxHttpConfig vertxHttpConfig, Optional<String> httpServerTlsConfigName) {
         this.rolesMapping = null;
@@ -57,6 +59,7 @@ final class HttpSecurityImpl implements HttpSecurity {
         this.vertxHttpConfig = vertxHttpConfig;
         this.httpServerTlsConfigName = httpServerTlsConfigName;
         this.corsConfig = vertxHttpConfig == null ? null : vertxHttpConfig.cors();
+        this.csrf = null;
     }
 
     @Override
@@ -98,6 +101,15 @@ final class HttpSecurityImpl implements HttpSecurity {
             }
         }
         corsConfig = newCorsConfig;
+        return this;
+    }
+
+    @Override
+    public HttpSecurity csrf(CSRF csrf) {
+        if (csrf == null) {
+            throw new IllegalArgumentException("CSRF must not be null");
+        }
+        this.csrf = csrf;
         return this;
     }
 
@@ -627,5 +639,9 @@ final class HttpSecurityImpl implements HttpSecurity {
 
     CORSConfig getCorsConfig() {
         return corsConfig;
+    }
+
+    CSRF getCsrf() {
+        return csrf;
     }
 }

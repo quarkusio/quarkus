@@ -8,6 +8,9 @@ import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_P
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
 import static java.util.stream.Collectors.toMap;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -58,12 +61,14 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -99,6 +104,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
+import io.quarkus.vertx.http.security.CSRF;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
@@ -288,6 +294,27 @@ public class HttpSecurityProcessor {
                     new HttpAuthenticationHandlerBuildItem(
                             recorder.authenticationMechanismHandler(authConfig.proactive(),
                                     authConfig.propagateSecurityIdentity())));
+        }
+    }
+
+    @BuildStep
+    void prepareCsrfConfigBuilder(Capabilities capabilities, Optional<CsrfBuilderClassBuildItem> csrfBuilderClassBuildItem,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer) {
+        if (capabilities.isPresent(Capability.SECURITY) && csrfBuilderClassBuildItem.isPresent()) {
+            final Class<? extends CSRF.Builder> csrfBuilderClass = csrfBuilderClassBuildItem.get().csrfBuilderClass;
+            // static Builder builder() {
+            //     return new io.quarkus.something.CsfrBuilder();
+            // }
+            bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(CSRF.class.getName(), (cls, classVisitor) -> {
+                var classTransformer = new ClassTransformer(cls);
+                classTransformer.removeMethod("builder", CSRF.Builder.class);
+                try (var mc = classTransformer.addMethod("builder", CSRF.Builder.class)) {
+                    mc.setModifiers(ACC_PUBLIC | ACC_STATIC);
+                    var builderInstance = mc.newInstance(MethodDescriptor.ofConstructor(csrfBuilderClass));
+                    mc.returnValue(mc.checkCast(builderInstance, CSRF.Builder.class));
+                }
+                return classTransformer.applyTo(classVisitor);
+            }));
         }
     }
 

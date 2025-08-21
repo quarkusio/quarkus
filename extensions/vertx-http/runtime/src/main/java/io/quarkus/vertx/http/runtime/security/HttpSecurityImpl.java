@@ -105,7 +105,7 @@ final class HttpSecurityImpl implements HttpSecurity {
     public HttpSecurity mechanism(HttpAuthenticationMechanism mechanism) {
         Objects.requireNonNull(mechanism);
         if (mechanism.getClass() == FormAuthenticationMechanism.class) {
-            final FormAuthConfig defaults = HttpSecurityUtils.getDefaultVertxHttpConfig().auth().form();
+            final FormAuthConfig defaults = HttpSecurityUtils.getDefaultAuthConfig().auth().form();
             final FormAuthConfig actualConfig = vertxHttpConfig.auth().form();
             if (!actualConfig.equals(defaults)) {
                 throw new IllegalArgumentException("Cannot configure form-based authentication programmatically "

@@ -312,7 +312,7 @@ public interface MTLS {
          * @return default value as hardcoded in the {@link AuthRuntimeConfig} mapping.
          */
         private static String getDefaultCertificateAttributeValue() {
-            return HttpSecurityUtils.getDefaultVertxHttpConfig().auth().certificateRoleAttribute();
+            return HttpSecurityUtils.getDefaultAuthConfig().auth().certificateRoleAttribute();
         }
     }
 

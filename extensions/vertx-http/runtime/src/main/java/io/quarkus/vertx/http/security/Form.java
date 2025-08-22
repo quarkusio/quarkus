@@ -58,6 +58,7 @@ public interface Form {
         private FormAuthConfig.CookieSameSite cookieSameSite;
         private Optional<Duration> cookieMaxAge;
         private Optional<String> encryptionKey;
+        private FormAuthConfig.AuthenticationToken authenticationToken;
 
         public Builder() {
             this(ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(VertxHttpConfig.class));
@@ -82,6 +83,7 @@ public interface Form {
             this.cookieSameSite = formAuthConfig.cookieSameSite();
             this.cookieMaxAge = formAuthConfig.cookieMaxAge();
             this.encryptionKey = vertxHttpConfig.encryptionKey();
+            this.authenticationToken = formAuthConfig.authenticationToken();
         }
 
         /**
@@ -303,13 +305,14 @@ public interface Form {
                     Optional<String> errorPage, Optional<String> landingPage, boolean redirectAfterLogin,
                     String locationCookie, Duration timeout, Duration newCookieInterval, String cookieName,
                     Optional<String> cookiePath, Optional<String> cookieDomain, boolean httpOnlyCookie,
-                    CookieSameSite cookieSameSite, Optional<Duration> cookieMaxAge, String postLocation)
+                    CookieSameSite cookieSameSite, Optional<Duration> cookieMaxAge, String postLocation,
+                    AuthenticationToken authenticationToken)
                     implements
                         FormAuthConfig {
             }
             return new FormConfigImpl(loginPage, usernameParameter, passwordParameter, errorPage,
                     landingPage, redirectAfterLogin, locationCookie, timeout, newCookieInterval, cookieName, cookiePath,
-                    cookieDomain, httpOnlyCookie, cookieSameSite, cookieMaxAge, postLocation);
+                    cookieDomain, httpOnlyCookie, cookieSameSite, cookieMaxAge, postLocation, authenticationToken);
         }
     }
 }

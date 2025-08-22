@@ -82,8 +82,10 @@ public class AnnotationLiteralProcessor {
         if (!annotationInstance.runtimeVisible()) {
             throw new IllegalArgumentException("Annotation does not have @Retention(RUNTIME): " + annotationInstance);
         }
+        if (annotationClass == null) {
+            throw new IllegalArgumentException("Annotation class not available: " + annotationInstance);
+        }
 
-        Objects.requireNonNull(annotationClass, "Annotation class not available: " + annotationInstance);
         AnnotationLiteralClassInfo literal = cache.getValue(new CacheKey(annotationClass));
 
         if (literal.annotationMembers().isEmpty()) {

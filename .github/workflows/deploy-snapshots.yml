@@ -57,6 +57,7 @@ jobs:
             -Dnjord.autoPublish \
             -DskipTests -DskipITs -Dno-format -Dinvoker.skip=true \
             -Dno-test-modules \
+            -Ddeploy-gradle-plugins \
             -Ddevelocity.cache.local.enabled=false \
             -Ddevelocity.cache.remote.enabled=false \
             -Ddokka \

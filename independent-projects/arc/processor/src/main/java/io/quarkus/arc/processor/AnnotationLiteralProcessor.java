@@ -383,7 +383,7 @@ public class AnnotationLiteralProcessor {
 
         @Override
         public int hashCode() {
-            return Objects.hash(annotationClass.name());
+            return Objects.hashCode(annotationClass.name());
         }
     }
 

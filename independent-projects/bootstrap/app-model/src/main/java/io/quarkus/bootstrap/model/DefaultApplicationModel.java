@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -25,6 +27,20 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     private final Set<ArtifactKey> localProjectArtifacts;
     private final Map<ArtifactKey, Set<String>> excludedResources;
     private final List<ExtensionDevModeConfig> extensionDevConfig;
+
+    @JsonCreator
+    private DefaultApplicationModel(ResolvedDependency appArtifact, List<ResolvedDependency> dependencies,
+            PlatformImports platformImports, List<ExtensionCapabilities> capabilityContracts,
+            Set<ArtifactKey> localProjectArtifacts, Map<ArtifactKey, Set<String>> excludedResources,
+            List<ExtensionDevModeConfig> extensionDevConfig) {
+        this.appArtifact = appArtifact;
+        this.dependencies = dependencies;
+        this.platformImports = platformImports;
+        this.capabilityContracts = capabilityContracts;
+        this.localProjectArtifacts = localProjectArtifacts;
+        this.excludedResources = excludedResources;
+        this.extensionDevConfig = extensionDevConfig;
+    }
 
     public DefaultApplicationModel(ApplicationModelBuilder builder) {
         this.appArtifact = builder.appArtifact.build();

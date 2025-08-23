@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.spi;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalLong;
 
 public interface RuntimeConfiguration {
 
@@ -29,7 +29,7 @@ public interface RuntimeConfiguration {
     }
 
     interface Limits {
-        Optional<Long> maxBodySize();
+        OptionalLong maxBodySize();
 
         long maxFormAttributeSize();
 

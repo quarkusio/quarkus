@@ -2,7 +2,7 @@ package io.quarkus.resteasy.reactive.server.runtime;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -31,11 +31,11 @@ public class ResteasyReactiveRuntimeRecorder {
         ResteasyReactiveServerRuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
         VertxHttpConfig httpRuntimeConfig = this.httpRuntimeConfig.getValue();
 
-        Optional<Long> maxBodySize;
+        OptionalLong maxBodySize;
         if (httpRuntimeConfig.limits().maxBodySize().isPresent()) {
-            maxBodySize = Optional.of(httpRuntimeConfig.limits().maxBodySize().get().asLongValue());
+            maxBodySize = OptionalLong.of(httpRuntimeConfig.limits().maxBodySize().get().asLongValue());
         } else {
-            maxBodySize = Optional.empty();
+            maxBodySize = OptionalLong.empty();
         }
 
         RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpRuntimeConfig.readTimeout(),

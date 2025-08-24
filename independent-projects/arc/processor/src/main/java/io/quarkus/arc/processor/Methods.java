@@ -440,7 +440,7 @@ final class Methods {
      */
     static class SubclassSkipPredicate implements Predicate<MethodInfo> {
 
-        private static final List<DotName> INTERCEPTOR_ANNOTATIONS = List.of(DotNames.AROUND_INVOKE, DotNames.POST_CONSTRUCT,
+        private static final Set<DotName> INTERCEPTOR_ANNOTATIONS = Set.of(DotNames.AROUND_INVOKE, DotNames.POST_CONSTRUCT,
                 DotNames.PRE_DESTROY);
 
         private final BiFunction<Type, Type, Boolean> assignableFromFun;

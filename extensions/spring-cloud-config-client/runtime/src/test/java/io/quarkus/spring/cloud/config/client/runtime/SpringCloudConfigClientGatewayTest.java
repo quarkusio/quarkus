@@ -5,12 +5,11 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Optional;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -103,8 +102,9 @@ class SpringCloudConfigClientGatewayTest {
     }
 
     private String getJsonStringForApplicationAndProfile(String applicationName, String profile) throws IOException {
-        return IOUtils.toString(this.getClass().getResourceAsStream(String.format("/%s-%s.json", applicationName, profile)),
-                Charset.defaultCharset());
+        return new String(
+                this.getClass().getResourceAsStream(String.format("/%s-%s.json", applicationName, profile)).readAllBytes(),
+                StandardCharsets.UTF_8);
     }
 
     private static SpringCloudConfigClientConfig configForTesting(DiscoveryConfigSetup discoveryPresent) {

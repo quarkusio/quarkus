@@ -12,8 +12,6 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.apache.commons.io.FilenameUtils;
-
 import io.quarkus.fs.util.ZipUtils;
 
 public final class ResourceLoaders {
@@ -42,7 +40,8 @@ public final class ResourceLoaders {
         if (f.isDirectory()) {
             return new DirectoryResourceLoader(f.toPath());
         }
-        if (f.isFile() && FilenameUtils.isExtension(f.getName(), "jar", "zip")) {
+        Path path = f.toPath();
+        if (f.isFile() && (path.toString().endsWith(".jar") || path.toString().endsWith(".zip"))) {
             return new ZipResourceLoader(f.toPath());
         }
         throw new IllegalStateException("No compatible ResourceLoader have been found for file type: " + f.getName());

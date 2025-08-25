@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -58,6 +58,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class AzureFunctionsProcessor {
     private static final Logger log = Logger.getLogger(AzureFunctionsProcessor.class);
@@ -158,15 +159,16 @@ public class AzureFunctionsProcessor {
     private static void copyFilesWithDefaultContent(File source, File dest, String defaultContent)
             throws IOException {
         if (source != null && source.exists()) {
-            FileUtils.copyFile(source, dest);
+            Files.copy(source.toPath(), dest.toPath());
         } else {
-            FileUtils.write(dest, defaultContent, Charset.defaultCharset());
+            Files.writeString(dest.toPath(), defaultContent);
         }
     }
 
     private static final String AZURE_FUNCTIONS_JAVA_CORE_LIBRARY = "com.microsoft.azure.functions.azure-functions-java-core-library";
     protected static final String AZURE_FUNCTIONS_JAVA_LIBRARY = "com.microsoft.azure.functions.azure-functions-java-library";
 
+    @SuppressForbidden(reason = "we allow FileUtils.cleanDirectory and FileUtils.copyFileToDirectory")
     protected void copyJarsToStageDirectory(JarBuildItem jar, Path functionStagingDir)
             throws IOException, AzureExecutionException {
         final String stagingDirectory = functionStagingDir.toString();

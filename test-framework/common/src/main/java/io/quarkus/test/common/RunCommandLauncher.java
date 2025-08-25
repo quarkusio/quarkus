@@ -31,6 +31,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandHandler;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.InitContext> {
 
@@ -104,6 +105,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     }
 
     @Override
+    @SuppressForbidden(reason = "we allow TeeInputStream")
     public void start() throws IOException {
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 

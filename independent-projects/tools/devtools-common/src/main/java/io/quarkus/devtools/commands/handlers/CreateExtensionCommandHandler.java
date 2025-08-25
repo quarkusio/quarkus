@@ -21,6 +21,7 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.PomTransformer;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * Instances of this class are thread-safe. They create a new project extracting all the necessary properties from an instance
@@ -110,6 +111,7 @@ public class CreateExtensionCommandHandler {
         new PomTransformer(bomPom, StandardCharsets.UTF_8).transform(transformations);
     }
 
+    @SuppressForbidden(reason = "we allow FileUtils.moveDirectory")
     private void updateITParentPomAndMoveDir(String extensionDirName, Path newExtensionDir, Path itTestDir)
             throws QuarkusCommandException, IOException {
         final Path itTestPom = checkPomExists(itTestDir);

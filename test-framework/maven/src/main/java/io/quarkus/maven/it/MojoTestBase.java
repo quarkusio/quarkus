@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.test.devmode.util.DevModeClient;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class MojoTestBase {
 
@@ -62,6 +63,7 @@ public class MojoTestBase {
         }
     }
 
+    @SuppressForbidden(reason = "we allow FileUtils.deleteDirectory")
     public static File initEmptyProject(String name) {
         File tc = new File("target/test-classes/" + name);
         if (tc.isDirectory()) {
@@ -100,6 +102,7 @@ public class MojoTestBase {
         return new File("target/test-classes/" + name);
     }
 
+    @SuppressForbidden(reason = "we allow FileUtils.deleteQuietly and FileUtils.copyDirectoryStructure")
     public static File initProject(String name, String output) {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {

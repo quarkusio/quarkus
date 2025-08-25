@@ -17,6 +17,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.scurrilous.circe.checksum.IntHash;
 import com.scurrilous.circe.checksum.Java8IntHash;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 @TargetClass(className = "com.scurrilous.circe.checksum.Crc32cIntChecksum")
 final class Target_com_scurrilous_circe_checksum_Crc32cIntChecksum {
 
@@ -30,6 +32,7 @@ final class Target_com_scurrilous_circe_checksum_Crc32cIntChecksum {
 final class Target_org_apache_pulsaR_client_impl_auth_oauth2_ClientCredentialsFlow {
 
     @Substitute
+    @SuppressForbidden(reason = "we allow IOUtils.close as we are in a substitution")
     private static KeyFile loadPrivateKey(String privateKeyURL) throws IOException {
         try {
             URLConnection urlConnection = new org.apache.pulsar.client.api.url.URL(privateKeyURL).openConnection();

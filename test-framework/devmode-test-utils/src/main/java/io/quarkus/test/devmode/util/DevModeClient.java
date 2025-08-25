@@ -9,6 +9,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -18,10 +19,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jboss.logging.Logger;
 
+import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.common.os.OS;
 
 public class DevModeClient {
@@ -65,12 +66,12 @@ public class DevModeClient {
 
     public static void filter(File input, Map<String, String> variables) throws IOException {
         assertThat(input).isFile();
-        String data = FileUtils.readFileToString(input, "UTF-8");
+        String data = Files.readString(input.toPath());
         for (Map.Entry<String, String> token : variables.entrySet()) {
             String value = String.valueOf(token.getValue());
             data = data.replace(token.getKey(), value);
         }
-        FileUtils.write(input, data, "UTF-8");
+        Files.writeString(input.toPath(), data);
     }
 
     public void awaitUntilServerDown() {
@@ -172,7 +173,7 @@ public class DevModeClient {
 
                         String content;
                         if (!allowError) {
-                            content = IOUtils.toString(url, StandardCharsets.UTF_8);
+                            content = get(url);
                         } else {
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             conn.setDefaultUseCaches(false);
@@ -180,9 +181,9 @@ public class DevModeClient {
                             // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.8
                             conn.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
                             if (conn.getResponseCode() >= 400) {
-                                content = IOUtils.toString(conn.getErrorStream(), StandardCharsets.UTF_8);
+                                content = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
                             } else {
-                                content = IOUtils.toString(conn.getInputStream(), StandardCharsets.UTF_8);
+                                content = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
                             }
                             conn.disconnect();
                         }
@@ -269,8 +270,13 @@ public class DevModeClient {
         return get("http://localhost:" + port);
     }
 
+    @SuppressForbidden(reason = "we allow IOUtils.toString")
+    public String get(URL url) throws IOException {
+        return IOUtils.toString(url, StandardCharsets.UTF_8);
+    }
+
     public String get(String urlStr) throws IOException {
-        return IOUtils.toString(new URL(urlStr), StandardCharsets.UTF_8);
+        return get(new URL(urlStr));
     }
 
     public boolean isCode(String path, int code) {

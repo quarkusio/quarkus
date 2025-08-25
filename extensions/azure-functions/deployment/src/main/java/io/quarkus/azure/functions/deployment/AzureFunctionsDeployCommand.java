@@ -15,7 +15,6 @@ import java.util.concurrent.Callable;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
@@ -282,7 +281,7 @@ public class AzureFunctionsDeployCommand {
         }
         if (account.isLoggedIn()) {
             final List<Subscription> selectedSubscriptions = account.getSelectedSubscriptions();
-            if (CollectionUtils.isNotEmpty(selectedSubscriptions) && selectedSubscriptions.size() == 1) {
+            if (selectedSubscriptions != null && selectedSubscriptions.size() == 1) {
                 log.info(AzureString.format("Default subscription: %s(%s)", selectedSubscriptions.get(0).getName(),
                         selectedSubscriptions.get(0).getId()));
             }

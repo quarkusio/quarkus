@@ -23,7 +23,7 @@ public class McpHttpHandler implements Handler<RoutingContext> {
     private static final Logger LOG = Logger.getLogger(McpHttpHandler.class.getName());
     private final String quarkusVersion;
     private final JsonMapper jsonMapper;
-    private JsonRpcCodec codec;
+    private final JsonRpcCodec codec;
 
     public McpHttpHandler(String quarkusVersion, JsonMapper jsonMapper) {
         this.quarkusVersion = quarkusVersion;
@@ -89,9 +89,12 @@ public class McpHttpHandler implements Handler<RoutingContext> {
     }
 
     private void handleMCPJsonRPCRequest(RoutingContext ctx) {
-        ctx.request().handler(buffer -> {
+        StringBuilder sb = new StringBuilder();
+        ctx.request().handler(buf -> sb.append(buf.toString()));
+
+        ctx.request().endHandler(v -> {
             JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
-            String input = buffer.toString();
+            String input = sb.toString();
 
             JsonRpcRequest jsonRpcRequest = codec.readMCPRequest(input);
 

@@ -2481,9 +2481,13 @@ public class BeanGenerator extends AbstractGenerator {
     static final class ProviderType {
 
         private final Type type;
+        private final String className;
+        private final String descriptorName;
 
         public ProviderType(Type type) {
             this.type = type;
+            this.className = type.name().toString();
+            this.descriptorName = DescriptorUtils.typeToString(type);
         }
 
         DotName name() {
@@ -2495,7 +2499,7 @@ public class BeanGenerator extends AbstractGenerator {
          * @return the class name, e.g. {@code org.acme.Foo}
          */
         String className() {
-            return type.name().toString();
+            return className;
         }
 
         /**
@@ -2503,7 +2507,7 @@ public class BeanGenerator extends AbstractGenerator {
          * @return the name used in JVM descriptors, e.g. {@code Lorg/acme/Foo;}
          */
         String descriptorName() {
-            return DescriptorUtils.typeToString(type);
+            return descriptorName;
         }
 
     }

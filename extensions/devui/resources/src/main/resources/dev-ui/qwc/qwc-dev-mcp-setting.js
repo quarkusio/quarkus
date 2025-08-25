@@ -44,6 +44,7 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     `;
 
     static properties = {
+        namespace: {type: String},
         _mcpPath: {state: false},
         _configuration: {state: true},
         _connectedClients: {state: true}
@@ -141,7 +142,7 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
     }
     
     _renderUnlistedPagesLinks(){
-        let unlistedPages = this.routerController.getPagesForNamespace("devmcp");
+        let unlistedPages = this.routerController.getPagesForNamespace(this.namespace);
         return html`<div class="unlistedLinks">
                         ${unlistedPages.map((page) =>
                             html`${this._renderUnlistedPageLink(page)}`

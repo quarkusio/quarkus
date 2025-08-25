@@ -3,7 +3,6 @@ package io.quarkus.csrf.reactive.runtime;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -40,7 +39,7 @@ public class CsrfRequestResponseReactiveFilter {
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Inject
-    Instance<RestCsrfConfig> configInstance;
+    RestCsrfConfigHolder configHolder;
 
     public CsrfRequestResponseReactiveFilter() {
     }
@@ -63,7 +62,7 @@ public class CsrfRequestResponseReactiveFilter {
     @ServerRequestFilter
     @WithFormRead
     public void filter(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing) {
-        final RestCsrfConfig config = this.configInstance.get();
+        final RestCsrfConfig config = this.configHolder.getConfig();
 
         String cookieToken = getCookieToken(routing, config);
         if (cookieToken != null) {
@@ -224,7 +223,7 @@ public class CsrfRequestResponseReactiveFilter {
             ContainerResponseContext responseContext, RoutingContext routing) {
         if (routing.get(NEW_COOKIE_REQUIRED) != null) {
 
-            final RestCsrfConfig config = configInstance.get();
+            final RestCsrfConfig config = configHolder.getConfig();
 
             String cookieValue = null;
             if (config.tokenSignatureKey().isPresent()) {

@@ -1,7 +1,10 @@
 package io.quarkus.panache.hibernate.common.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -120,33 +123,31 @@ public final class PanacheHibernateCommonResourceProcessor {
         }
 
         // Replace field access in application code with calls to accessors
-        Set<String> entityClassNamesInternal = new HashSet<>();
-        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
-            entityClassNamesInternal.add(entityClassName.replace(".", "/"));
-        }
-
         PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-        Set<String> produced = new HashSet<>();
+
+        Map<String, Set<String>> classesUsingEntities = new HashMap<>();
         // transform all users of those classes
         for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             for (ClassInfo userClass : index.getIndex().getKnownUsers(entityClassName)) {
-                String cn = userClass.name().toString('.');
-                if (produced.contains(cn)) {
-                    continue;
-                }
-                produced.add(cn);
-                //The following build item is not marked as CacheAble intentionally: see also https://github.com/quarkusio/quarkus/pull/40192#discussion_r1590605375.
-                //It shouldn't be too hard to improve on this by checking the related entities haven't been changed
-                //via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in making this
-                //change without having solid integration tests.
-                final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
-                        .setClassToTransform(cn)
-                        .setCacheable(false)//TODO this would be nice to improve on: see note above.
-                        .setVisitorFunction(panacheFieldAccessEnhancer)
-                        .setRequireConstPoolEntry(entityClassNamesInternal)
-                        .build();
-                transformers.produce(transformation);
+                String userClassName = userClass.name().toString('.');
+
+                classesUsingEntities.computeIfAbsent(userClassName, k -> new HashSet<>())
+                        .add(entityClassName.replace(".", "/"));
             }
+        }
+
+        for (Entry<String, Set<String>> classUsingEntities : classesUsingEntities.entrySet()) {
+            //The following build item is not marked as CacheAble intentionally: see also https://github.com/quarkusio/quarkus/pull/40192#discussion_r1590605375.
+            //It shouldn't be too hard to improve on this by checking the related entities haven't been changed
+            //via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in making this
+            //change without having solid integration tests.
+            final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(classUsingEntities.getKey())
+                    .setCacheable(false) // TODO this would be nice to improve on: see note above.
+                    .setVisitorFunction(panacheFieldAccessEnhancer)
+                    .setRequireConstPoolEntry(classUsingEntities.getValue())
+                    .build();
+            transformers.produce(transformation);
         }
     }
 

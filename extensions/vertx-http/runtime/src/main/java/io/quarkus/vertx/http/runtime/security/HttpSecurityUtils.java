@@ -7,9 +7,13 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.vertx.http.runtime.DefaultAuthConfig;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.ext.web.RoutingContext;
 
 public final class HttpSecurityUtils {
@@ -106,5 +110,9 @@ public final class HttpSecurityUtils {
             return routingContext.get(AUTHENTICATION_FAILURE_KEY);
         }
         return null;
+    }
+
+    public static DefaultAuthConfig getDefaultAuthConfig() {
+        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(DefaultAuthConfig.class);
     }
 }

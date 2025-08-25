@@ -20,7 +20,7 @@ import io.vertx.core.http.HttpServer;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "graphql", password = "password", formats = { Format.PKCS12 }, client = true),
-        @Certificate(name = "wrong-graphql", password = "wrong-password", formats = { Format.PKCS12 })
+        @Certificate(name = "wrong-graphql", password = "wrong-password", formats = { Format.PKCS12 }, client = true)
 })
 public class TypesafeGraphQLClientServerAuthenticationBadKeystoreOnServerTest {
 
@@ -32,6 +32,8 @@ public class TypesafeGraphQLClientServerAuthenticationBadKeystoreOnServerTest {
                 quarkus.smallrye-graphql-client.my-client.tls-configuration-name=my-tls-client
                 quarkus.tls.my-tls-client.trust-store.p12.path=target/certs/graphql-client-truststore.p12
                 quarkus.tls.my-tls-client.trust-store.p12.password=password
+                quarkus.tls.trust-store.p12.path=target/certs/wrong-graphql-client-truststore.p12
+                quarkus.tls.trust-store.p12.password=wrong-password
                 quarkus.smallrye-graphql-client.my-client.url=https://127.0.0.1:%d/
             """.formatted(PORT);
 

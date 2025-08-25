@@ -2,8 +2,10 @@ package io.quarkus.devui.runtime;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +14,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSFilter;
+import io.quarkus.vertx.http.security.CORS;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -35,56 +38,22 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
 
     private final List<String> hosts;
     private final List<Pattern> hostsPatterns;
+    private volatile CORSConfig baseCorsConfig;
 
     public DevUICORSFilter(List<String> hosts) {
         this.hosts = hosts;
         this.hostsPatterns = DevUIFilterHelper.detectPatterns(this.hosts);
+        this.baseCorsConfig = null;
     }
 
-    private static CORSFilter corsFilter(String allowedHost) {
-        int httpPort = ConfigProvider.getConfig().getValue(HTTP_PORT_CONFIG_PROP, int.class);
-        int httpsPort = ConfigProvider.getConfig().getValue(HTTPS_PORT_CONFIG_PROP, int.class);
-        CORSConfig config = new CORSConfig() {
-            @Override
-            public Optional<List<String>> origins() {
-                List<String> validOrigins = new ArrayList<>();
-                validOrigins.add(HTTP_LOCAL_HOST + ":" + httpPort);
-                validOrigins.add(HTTPS_LOCAL_HOST + ":" + httpsPort);
-                validOrigins.add(HTTP_LOCAL_HOST_IP + ":" + httpPort);
-                validOrigins.add(HTTPS_LOCAL_HOST_IP + ":" + httpsPort);
-
-                if (allowedHost != null) {
-                    validOrigins.add(allowedHost);
-                }
-                return Optional.of(validOrigins);
-            }
-
-            @Override
-            public Optional<List<String>> methods() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<List<String>> headers() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<List<String>> exposedHeaders() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> accessControlMaxAge() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Boolean> accessControlAllowCredentials() {
-                return Optional.empty();
-            }
-        };
-        return new CORSFilter(config);
+    private CORSFilter corsFilter(String allowedHost) {
+        final CORSConfig corsConfig;
+        if (allowedHost == null) {
+            corsConfig = getBaseCorsConfig();
+        } else {
+            corsConfig = createCorsConfig(allowedHost);
+        }
+        return new CORSFilter(corsConfig);
     }
 
     @Override
@@ -134,5 +103,62 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
             }
         }
         return false;
+    }
+
+    private CORSConfig getBaseCorsConfig() {
+        if (baseCorsConfig == null) {
+            int httpPort = ConfigProvider.getConfig().getValue(HTTP_PORT_CONFIG_PROP, int.class);
+            int httpsPort = ConfigProvider.getConfig().getValue(HTTPS_PORT_CONFIG_PROP, int.class);
+            baseCorsConfig = (CORSConfig) CORS.origins(Set.of(
+                    HTTP_LOCAL_HOST + ":" + httpPort,
+                    HTTPS_LOCAL_HOST + ":" + httpsPort,
+                    HTTP_LOCAL_HOST_IP + ":" + httpPort,
+                    HTTPS_LOCAL_HOST_IP + ":" + httpsPort)).build();
+        }
+        return baseCorsConfig;
+    }
+
+    private CORSConfig createCorsConfig(String allowedHost) {
+        CORSConfig baseCorsconfig = getBaseCorsConfig();
+        List<String> listOfOrigins = new ArrayList<>(baseCorsconfig.origins().get());
+        listOfOrigins.add(allowedHost);
+        Optional<List<String>> origins = Optional.of(Collections.unmodifiableList(listOfOrigins));
+        return new CORSConfig() {
+
+            @Override
+            public boolean enabled() {
+                return true;
+            }
+
+            @Override
+            public Optional<List<String>> origins() {
+                return origins;
+            }
+
+            @Override
+            public Optional<List<String>> methods() {
+                return baseCorsconfig.methods();
+            }
+
+            @Override
+            public Optional<List<String>> headers() {
+                return baseCorsConfig.headers();
+            }
+
+            @Override
+            public Optional<List<String>> exposedHeaders() {
+                return baseCorsConfig.exposedHeaders();
+            }
+
+            @Override
+            public Optional<Duration> accessControlMaxAge() {
+                return baseCorsConfig.accessControlMaxAge();
+            }
+
+            @Override
+            public Optional<Boolean> accessControlAllowCredentials() {
+                return baseCorsConfig.accessControlAllowCredentials();
+            }
+        };
     }
 }

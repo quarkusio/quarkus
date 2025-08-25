@@ -6,6 +6,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
 
+import javax.annotation.Nullable;
+
 import jakarta.inject.Singleton;
 
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
@@ -86,14 +88,14 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
 
         @Override
         public InetSocketAddress getNetworkLocalInetSocketAddress(
-                GrpcRequest grpcRequest, Status status) {
+                GrpcRequest grpcRequest, @Nullable Status status) {
             // TODO: later version introduces TRANSPORT_ATTR_LOCAL_ADDR, might be a good idea to use it
             return null;
         }
 
         @Override
         public InetSocketAddress getNetworkPeerInetSocketAddress(
-                GrpcRequest request, Status status) {
+                GrpcRequest request, @Nullable Status status) {
             SocketAddress address = request.getPeerSocketAddress();
             if (address instanceof InetSocketAddress) {
                 return (InetSocketAddress) address;

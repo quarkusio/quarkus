@@ -35,6 +35,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -1681,6 +1682,84 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("BONJOUR!"));
+    }
+
+    /**
+     * Same test as @{link testExternalReloadableArtifacts} but the external JAR is outside the project directory.
+     */
+    @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Installing the library again is failing on Windows, probably because the jar is accessed by the dev mode process")
+    public void testReloadableArtifactsOutsideProjectDirectory() throws Exception {
+        final String rootProjectPath = "projects/external-reloadable-artifacts-with-external-lib";
+        final String externalJarPath = "projects/external-lib";
+
+        // Set up the external project
+        final File externalJarDir = initProject(externalJarPath);
+
+        // Clean and install the external JAR in local repository (.m2)
+        install(externalJarDir, true);
+
+        // Set up the main project that uses the external dependency
+        this.testDir = initProject(rootProjectPath);
+
+        String localRepository = ConfigProvider.getConfig().getOptionalValue("maven.repo.local", String.class)
+                .orElseThrow(() -> new AssertionError("maven.repo.local is not set"));
+
+        // Run quarkus:dev process
+        run(true, "-DwatchedFiles=" + localRepository
+                + "/org/acme/lib/external/acme-lib-external/1.0-SNAPSHOT/acme-lib-external-1.0-SNAPSHOT.jar");
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Hello"));
+
+        final File greetingJava = externalJarDir.toPath().resolve("src").resolve("main")
+                .resolve("java").resolve("org").resolve("acme").resolve("lib")
+                .resolve("Greeting.java").toFile();
+        assertThat(greetingJava).exists();
+
+        // Uncomment the method ahoj() in Greeting.java
+        filter(greetingJava, Map.of("/*", "", "*/", ""));
+        install(externalJarDir, false);
+
+        // Wait for the app to restart because of the external file change
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Hello"));
+
+        final File greetingResourceJava = this.testDir.toPath().resolve("src").resolve("main")
+                .resolve("java").resolve("org").resolve("acme")
+                .resolve("GreetingResource.java").toFile();
+        assertThat(greetingResourceJava).exists();
+
+        // Update the GreetingResource.java to call the Greeting.ahoj() method
+        final String greetingAhojCall = "Greeting.ahoj()";
+        filter(greetingResourceJava, Map.of("Greeting.hello()", greetingAhojCall));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Ahoj"));
+
+        // Change ahoj() method content in Greeting.java
+        filter(greetingJava, Map.of("Ahoj", "Ahoj!"));
+        install(externalJarDir, false);
+
+        // Wait for the app to restart because of the external file change
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Ahoj!"));
+
+        // Change GreetingResource.java endpoint response to upper case letters
+        filter(greetingResourceJava, Map.of(greetingAhojCall, greetingAhojCall.concat(".toUpperCase()")));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("AHOJ!"));
     }
 
     @Test

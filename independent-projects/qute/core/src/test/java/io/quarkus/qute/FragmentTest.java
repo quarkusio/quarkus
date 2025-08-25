@@ -53,7 +53,7 @@ public class FragmentTest {
         TemplateException expected = assertThrows(TemplateException.class,
                 () -> engine.parse("{#fragment id=another}{foo}{/}{#fragment another}{foo}{/}", null, "bum.html"));
         assertEquals(FragmentSectionHelper.Code.NON_UNIQUE_FRAGMENT_ID, expected.getCode());
-        assertEquals("Parser error in template [bum.html] line 1: found a non-unique fragment identifier: [another]",
+        assertEquals("Parser error in template [bum.html:1]: found a non-unique fragment identifier: [another]",
                 expected.getMessage());
     }
 
@@ -120,7 +120,7 @@ public class FragmentTest {
                 () -> engine.parse("{#fragment id='another and foo'}{/}", null, "bum.html"));
         assertEquals(FragmentSectionHelper.Code.INVALID_FRAGMENT_ID, expected.getCode());
         assertEquals(
-                "Parser error in template [bum.html] line 1: found an invalid fragment identifier [another and foo] - an identifier can only consist of alphanumeric characters and underscores",
+                "Parser error in template [bum.html:1]: found an invalid fragment identifier [another and foo] - an identifier can only consist of alphanumeric characters and underscores",
                 expected.getMessage());
     }
 

@@ -16,5 +16,11 @@ open class ProjectionTest {
     @Test
     fun testProject() {
         RestAssured.`when`()["/test/project"].then().body(Matchers.`is`("OK"))
+        RestAssured.`when`()["/test/projection-constructor-annotation"].then()
+            .body(Matchers.`is`("OK"))
+        RestAssured.`when`()["/test/projection-projected-field-name"].then()
+            .body(Matchers.`is`("OK"))
+        RestAssured.`when`()["/test/projection-no-arguments-constructor"].then()
+            .body(Matchers.`is`("OK"))
     }
 }

@@ -38,7 +38,7 @@ import io.quarkus.deployment.dev.remote.DefaultRemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
-import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.deployment.pkg.jar.FastJarFormat;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
 import io.quarkus.dev.spi.DevModeType;
@@ -330,7 +330,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     }
 
     static Map<String, String> createHashes(Path appRoot) throws IOException {
-        Path quarkus = appRoot.resolve(JarResultBuildStep.QUARKUS); //we filter this jar, it has no relevance for remote dev
+        Path quarkus = appRoot.resolve(FastJarFormat.QUARKUS); //we filter this jar, it has no relevance for remote dev
         Map<String, String> hashes = new HashMap<>();
         Files.walkFileTree(appRoot, new FileVisitor<Path>() {
             @Override

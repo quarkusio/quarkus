@@ -270,7 +270,7 @@ quarkus.oidc.credentials.secret=secret <3>
 quarkus.oidc.tls.verification=none <4>
 
 # Enable Policy Enforcement
-quarkus.keycloak.policy-enforcer.enable=true <5>
+quarkus.keycloak.policy-enforcer.enabled=true <5>
 
 # Import the realm file with Dev Services for Keycloak
 # Note: This property is effective only in dev mode, not in JVM or native modes
@@ -527,7 +527,7 @@ public class ProtectedResource {
 
 [NOTE]
 ====
-To use the `AuthzClient` directly, set `quarkus.keycloak.policy-enforcer.enable=true`.
+To use the `AuthzClient` directly, set `quarkus.keycloak.policy-enforcer.enabled=true`.
 Otherwise, no bean is available for injection.
 ====
 
@@ -668,7 +668,7 @@ For example:
 
 [source,properties]
 ----
-quarkus.keycloak.policy-enforcer.enable=true
+quarkus.keycloak.policy-enforcer.enabled=true
 
 # Default Tenant
 quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus

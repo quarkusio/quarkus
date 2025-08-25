@@ -91,6 +91,45 @@ Allowing unrestricted origins in production environments poses severe security r
 For production, define explicit origins in the `quarkus.http.cors.origins` property.
 ====
 
+[[cors-filter-programmatic-set-up]]
+== Configuring the CORS filter programmatically
+
+To enforce CORS policies in your application, enable the Quarkus CORS filter with the `io.quarkus.vertx.http.security.HttpSecurity` CDI event:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class CorsProgrammaticConfig {
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.cors("https://example.com");
+    }
+}
+----
+
+The `io.quarkus.vertx.http.security.CORS` builder allows you to create a complete CORS configuration:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.CORS;
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class CorsProgrammaticConfig {
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.cors(CORS.builder()
+                .origin("https://example.com")
+                .method("POST")
+                .build());
+    }
+}
+----
+
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]

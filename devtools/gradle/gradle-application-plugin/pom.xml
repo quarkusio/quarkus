@@ -81,4 +81,18 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>deploy-gradle-plugins</id>
+            <activation>
+                <property>
+                    <name>deploy-gradle-plugins</name>
+                </property>
+            </activation>
+            <properties>
+                <maven.deploy.skip>false</maven.deploy.skip>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>

@@ -26,8 +26,10 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
     protected boolean all;
 
     /**
-     * Select the output format among 'id' (display the artifactId only), 'concise' (display name and artifactId) and 'full'
-     * (concise format and version related columns).
+     * Select the output format among 'id' (display the artifactId only), 'concise' (display name and artifactId),
+     * 'origins' (display extension catalog IDs providing extension information),
+     * 'support-scope' (support scope associated with each extension, if any)
+     * and 'full' (concise format and version related columns).
      */
     @Parameter(property = "format", defaultValue = DEFAULT_FORMAT)
     protected String format;

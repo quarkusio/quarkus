@@ -154,7 +154,8 @@ public class IncludeSectionHelper implements SectionHelper {
             }
             String templateParam = context.getParameter(TEMPLATE);
             if (templateParam == null) {
-                throw context.error("Neither the template id nor the template name was specified").build();
+                throw context.error("Neither the template id nor the template name parameter was specified")
+                        .build();
             }
             if (LiteralSupport.isStringLiteralSeparator(templateParam.charAt(0))) {
                 templateParam = templateParam.substring(1, templateParam.length() - 1);
@@ -207,7 +208,10 @@ public class IncludeSectionHelper implements SectionHelper {
         }
 
         protected boolean skipBuiltInParam(String value) {
-            return value != null && !value.startsWith("_");
+            return value != null
+                    && !ISOLATED.equals(value)
+                    && !UNISOLATED.equals(value)
+                    && !IGNORE_FRAGMENTS.equals(value);
         }
 
         @Override

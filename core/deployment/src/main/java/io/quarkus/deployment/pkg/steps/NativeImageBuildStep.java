@@ -50,6 +50,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
+import io.quarkus.deployment.pkg.jar.LegacyThinJarFormat;
 import io.quarkus.deployment.steps.LocaleProcessor;
 import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -406,7 +407,7 @@ public class NativeImageBuildStep {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
-        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+        Path libDir = targetDirectory.resolve(LegacyThinJarFormat.LIB);
         File libDirFile = libDir.toFile();
         if (!libDirFile.exists()) {
             libDirFile.mkdirs();
@@ -445,7 +446,7 @@ public class NativeImageBuildStep {
     private void removeJarSourcesFromLib(OutputTargetBuildItem outputTargetBuildItem) {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
-        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+        Path libDir = targetDirectory.resolve(LegacyThinJarFormat.LIB);
 
         final File[] jarSources = libDir.toFile()
                 .listFiles((file, name) -> name.endsWith("-sources.jar"));

@@ -115,7 +115,8 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         _rightSideNav: {state: true},
         _connectionDialogOpened: {state: true},
         _settingsDialogOpened: {state: true},
-        _relevantLocalStorageItems: {state: true}
+        _relevantLocalStorageItems: {state: true},
+        _selectedSettingTab: {state: true}
     };
 
     constructor() {
@@ -127,7 +128,10 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         this._showWarning = false;
         this._rightSideNav = "";
         this._relevantLocalStorageItems = null;
-        
+        this._selectedSettingTab = 0;
+        this._tabIndexById = new Map();
+        this._tabIndexById.set("general-tab", 0);
+        this._tabIndexById.set("storage-tab", 1);
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateHeader(event);
         });
@@ -140,17 +144,26 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             this.requestUpdate();
         });
         window.addEventListener('close-settings-dialog', () => this._closeSettingsDialog());
+        window.addEventListener('open-settings-dialog', (event) => this._openSettingsDialog(event.detail.selectedTab));
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadHeadless();
         this._loadUnlistedPages(devuiState.unlisted);
     }
 
     hotReload(){
-        this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadHeadless();
         this._loadUnlistedPages(devuiState.unlisted);
+    }
+
+    _loadHeadless(){
+        this._loadHeadlessComponents(devuiState.cards.active);
+        this._loadHeadlessComponents(devuiState.menu);
+        this._loadHeadlessComponents(devuiState.footer);
+        this._loadHeadlessComponents(devuiState.setting);
+        this._loadHeadlessComponents(devuiState.unlisted);
     }
 
     render() {
@@ -169,7 +182,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     async _loadHeadlessComponents(extensions){
         
         for (const extension of extensions) {
-            if (extension.headlessComponentRef) {
+            if (extension.headlessComponentRef) {                
                 try {
                     await import(extension.headlessComponentRef);
 
@@ -345,7 +358,6 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     _renderSettingsDialog(){
-        
         return html`
             <vaadin-dialog
                 aria-label="Settings"
@@ -368,7 +380,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                 )}
                 ${dialogRenderer(
                     () => html`<vaadin-tabsheet style="width: 70vw; height: 70vh;">
-                                    <vaadin-tabs slot="tabs">
+                                    <vaadin-tabs slot="tabs" selected=${this._selectedSettingTab}>
                                         <vaadin-tab id="general-tab">
                                             <vaadin-icon icon="font-awesome-solid:wrench"></vaadin-icon>
                                             <span>General</span>
@@ -427,7 +439,10 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     
     _renderDynamicSettingsTab(settingItem, index){
         import(settingItem.componentRef);
-        return html`<vaadin-tab id="${settingItem.id}-tab">
+        let tabid = settingItem.id + "-tab";
+        let i = (+index) + 2;
+        this._tabIndexById.set(tabid, i);
+        return html`<vaadin-tab id="${tabid}">
                         <vaadin-icon icon="${settingItem.icon}"></vaadin-icon>
                         <span>${settingItem.title}</span>
                     </vaadin-tab>`;
@@ -471,7 +486,11 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         this._relevantLocalStorageItems = null;
     }
 
-    _openSettingsDialog(){
+    _openSettingsDialog(selectedTab = "general-tab"){
+        
+        if (this._tabIndexById.has(selectedTab)) {
+            this._selectedSettingTab = this._tabIndexById.get(selectedTab);
+        }
         this._relevantLocalStorageItems = this._getAllLocalStorage();
         this._settingsDialogOpened = true;
     }

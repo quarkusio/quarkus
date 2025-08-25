@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.spi;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalLong;
 
 public class DefaultRuntimeConfiguration implements RuntimeConfiguration {
     final Duration readTimeout;
@@ -11,11 +11,11 @@ public class DefaultRuntimeConfiguration implements RuntimeConfiguration {
     private final Limits limits;
 
     public DefaultRuntimeConfiguration(Duration readTimeout, boolean deleteUploadedFilesOnEnd, String uploadsDirectory,
-            List<String> fileContentTypes, Charset defaultCharset, Optional<Long> maxBodySize, long maxFormAttributeSize,
+            List<String> fileContentTypes, Charset defaultCharset, OptionalLong maxBodySize, long maxFormAttributeSize,
             int maxParameters) {
         this.readTimeout = readTimeout;
         body = new Body() {
-            Body.MultiPart multiPart = new Body.MultiPart() {
+            final Body.MultiPart multiPart = new Body.MultiPart() {
                 @Override
                 public List<String> fileContentTypes() {
                     return fileContentTypes;
@@ -44,7 +44,7 @@ public class DefaultRuntimeConfiguration implements RuntimeConfiguration {
         };
         limits = new Limits() {
             @Override
-            public Optional<Long> maxBodySize() {
+            public OptionalLong maxBodySize() {
                 return maxBodySize;
             }
 

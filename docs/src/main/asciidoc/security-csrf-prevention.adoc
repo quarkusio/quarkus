@@ -324,6 +324,31 @@ quarkus.rest-csrf.verify-token=false
 
 include::{generated-dir}/config/quarkus-rest-csrf.adoc[leveloffset=+1, opts=optional]
 
+[[csrf-prevention-programmatic-set-up]]
+== Configuring the CSRF prevention programmatically
+
+When the `quarkus-rest-csrf` extension is used, the `io.quarkus.vertx.http.security.HttpSecurity` CDI event allows you to customize the CSRF prevention programmatically:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.CSRF;
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class CsrfProgrammaticConfig {
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.csrf(CSRF.builder()    <1>
+                .formFieldName("my-csrf-token")
+                .tokenSize(32)
+                .build());
+    }
+}
+----
+<1> Creates the CSRF prevention configuration builder provided by the `quarkus-rest-csrf` extension.
+If this extension is missing, call to the `CSRF.builder()` will fail.
+
 == References
 
 * https://owasp.org/www-community/attacks/csrf[OWASP Cross-Site Request Forgery]

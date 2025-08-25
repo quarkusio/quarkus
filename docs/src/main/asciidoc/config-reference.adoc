@@ -367,7 +367,7 @@ Setting `quarkus.profile`  to `staging` will activate the `staging` profile.
 
 [NOTE]
 ====
-The `io.smallrye.config.SmallRyeConfig#getProfiles` API provides a way to retrieve the active profiles programmatically.
+The `io.quarkus.runtime.configuration.ConfigUtils.getProfiles` API provides a way to retrieve the active profiles programmatically.
 ====
 
 === Profile-aware files

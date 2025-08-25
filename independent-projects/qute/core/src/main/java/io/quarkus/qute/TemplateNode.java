@@ -171,7 +171,7 @@ public interface TemplateNode {
         default void appendTo(StringBuilder builder) {
             // It only makes sense to append the info for a template with an explicit id
             if (hasNonGeneratedTemplateId()) {
-                builder.append(" template [").append(getTemplateId()).append("] ").append("line ").append(getLine());
+                builder.append(" template [").append(getTemplateId()).append(":").append(getLine()).append("]");
             }
         }
 

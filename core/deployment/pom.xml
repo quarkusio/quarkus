@@ -31,6 +31,10 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wildfly.common</groupId>
             <artifactId>wildfly-common</artifactId>
         </dependency>
@@ -215,8 +219,6 @@
                                         <exclude>com.google.code.findbugs:jsr305</exclude>
                                         <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
                                         <exclude>com.google.guava:listenablefuture</exclude>
-                                        <!-- let's avoid having commons-io crawling into quarkus-core -->
-                                        <exclude>commons-io:commons-io</exclude>
                                     </excludes>
                                 </bannedDependencies>
                             </rules>

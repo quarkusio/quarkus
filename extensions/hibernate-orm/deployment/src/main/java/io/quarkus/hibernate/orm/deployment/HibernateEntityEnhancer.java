@@ -36,7 +36,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             ClassFileVersion.JAVA_V17);
 
     //Choose this set to include Jakarta annotations, basic Java types such as String and Map, Hibernate annotations, and Panache supertypes:
-    private static final CoreTypePool CORE_POOL = new CoreTypePool(
+    static final CoreTypePool CORE_TYPE_POOL = new CoreTypePool(
             "java.",
             "jakarta.",
             "org.hibernate.bytecode.enhance.spi.",
@@ -64,6 +64,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             //Careful: the ASM API version needs to match the ASM version of Gizmo, not the one from Byte Buddy.
             //Most often these match - but occasionally they will diverge which is acceptable as Byte Buddy is shading ASM.
             super(Gizmo.ASM_API_VERSION, new QuarkusClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
+
             this.className = className;
             this.outputClassVisitor = outputClassVisitor;
             this.enhancerHolder = enhancerHolder;
@@ -103,7 +104,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
                 synchronized (this) {
                     if (actualEnhancer == null) {
                         EnhancerClassLocator enhancerClassLocator = ModelTypePool
-                                .buildModelTypePool(QuarkusClassFileLocator.INSTANCE, CORE_POOL);
+                                .buildModelTypePool(QuarkusClassFileLocator.INSTANCE, CORE_TYPE_POOL);
                         actualEnhancer = PROVIDER.getEnhancer(QuarkusEnhancementContext.INSTANCE, enhancerClassLocator);
                     }
                 }

@@ -13,15 +13,15 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFac
 
 final class RuntimeBytecodeProvider implements BytecodeProvider {
 
-    private final QuarkusRuntimeProxyFactoryFactory statefulProxyFactory;
+    private final QuarkusRuntimeProxyFactoryFactory preGeneratedProxyFactory;
 
-    public RuntimeBytecodeProvider(QuarkusRuntimeProxyFactoryFactory statefulProxyFactory) {
-        this.statefulProxyFactory = statefulProxyFactory;
+    public RuntimeBytecodeProvider(QuarkusRuntimeProxyFactoryFactory preGeneratedProxyFactory) {
+        this.preGeneratedProxyFactory = preGeneratedProxyFactory;
     }
 
     @Override
     public ProxyFactoryFactory getProxyFactoryFactory() {
-        return statefulProxyFactory;
+        return preGeneratedProxyFactory;
     }
 
     @Override

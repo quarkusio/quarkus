@@ -32,7 +32,7 @@ public class MCPProcessor {
     void createMCPPage(BuildProducer<SettingPageBuildItem> settingPageProducer,
             BuildProducer<UnlistedPageBuildItem> unlistedPageProducer) {
 
-        SettingPageBuildItem mcpSettingTab = new SettingPageBuildItem("Dev MCP");
+        SettingPageBuildItem mcpSettingTab = new SettingPageBuildItem(NS_MCP);
 
         mcpSettingTab.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)
@@ -41,7 +41,7 @@ public class MCPProcessor {
                 .componentLink("qwc-dev-mcp-setting.js"));
         settingPageProducer.produce(mcpSettingTab);
 
-        UnlistedPageBuildItem mcpOtherPages = new UnlistedPageBuildItem("Dev MCP");
+        UnlistedPageBuildItem mcpOtherPages = new UnlistedPageBuildItem(NS_MCP);
 
         mcpOtherPages.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)

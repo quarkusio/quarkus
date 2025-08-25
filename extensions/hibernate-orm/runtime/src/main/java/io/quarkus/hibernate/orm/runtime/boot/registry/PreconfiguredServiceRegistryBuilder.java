@@ -11,6 +11,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
+import org.hibernate.bytecode.internal.ProxyFactoryFactoryInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
@@ -37,7 +38,6 @@ import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
@@ -160,18 +160,17 @@ public class PreconfiguredServiceRegistryBuilder {
 
         //References to this object need to be injected in both the initiator for BytecodeProvider and for
         //the registered ProxyFactoryFactoryInitiator
-        QuarkusRuntimeProxyFactoryFactory statefulProxyFactory = new QuarkusRuntimeProxyFactoryFactory(
+        QuarkusRuntimeProxyFactoryFactory preGeneratedProxyFactory = new QuarkusRuntimeProxyFactoryFactory(
                 rs.getProxyClassDefinitions());
 
         //Enforces no bytecode enhancement will happen at runtime,
         //but allows use of proxies generated at build time
-        serviceInitiators.add(new QuarkusRuntimeBytecodeProviderInitiator(statefulProxyFactory));
+        serviceInitiators.add(new QuarkusRuntimeBytecodeProviderInitiator(preGeneratedProxyFactory));
 
         //Routes to the standard implementation, but w/o allowing configuration options to override it
         serviceInitiators.add(QuarkusMutationExecutorServiceInitiator.INSTANCE);
 
-        //Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
-        serviceInitiators.add(new QuarkusRuntimeProxyFactoryFactoryInitiator(statefulProxyFactory));
+        serviceInitiators.add(ProxyFactoryFactoryInitiator.INSTANCE);
 
         // Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator :
         // not used

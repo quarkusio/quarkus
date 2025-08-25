@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -399,7 +399,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                fileContentTypes, defaultCharset, Optional.empty(), maxFormAttributeSize, maxParameters);
+                fileContentTypes, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());

@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -185,8 +186,8 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String name = headerNames.nextElement();
-            for (String v : new EnumerationIterable<>(request.getHeaders(name))) {
-                ret.add(new MapEntry<>(name, v));
+            for (Iterator<String> headers = request.getHeaders(name).asIterator(); headers.hasNext();) {
+                ret.add(new MapEntry<>(name, headers.next()));
             }
         }
         return ret;
@@ -272,7 +273,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
      * {@link Map<String, List<String>>}, where the keys are parameter names
      * and the values are lists of parameter values. This allows parameters
      * to be extracted from the URL without knowing their names in advance.
-     *
+     * <p>
      * The method is used by {@link ParameterExtractor}, which works with characteristics
      * such as parameter name, single/multiple values, and encoding. Since it's
      * not always possible to distinguish between {@link Map} and {@link MultivaluedMap},

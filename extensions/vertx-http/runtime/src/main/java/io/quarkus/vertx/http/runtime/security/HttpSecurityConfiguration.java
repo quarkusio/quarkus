@@ -29,8 +29,10 @@ import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import io.quarkus.vertx.http.security.CSRF;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.http.ClientAuth;
@@ -51,11 +53,13 @@ public final class HttpSecurityConfiguration {
     private final List<HttpAuthenticationMechanism> additionalMechanisms;
     private final VertxHttpConfig httpConfig;
     private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
+    private final CORSConfig corsConfig;
+    private final CSRF csrf;
 
     private HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions,
             Optional<Boolean> basicAuthEnabled, boolean formAuthEnabled, String formPostLocation,
             List<HttpAuthenticationMechanism> additionalMechanisms, VertxHttpConfig httpConfig,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, CORSConfig corsConfig, CSRF csrf) {
         this.rolesMapping = rolesMapping;
         this.httpPermissions = httpPermissions;
         this.basicAuthEnabled = basicAuthEnabled;
@@ -64,6 +68,8 @@ public final class HttpSecurityConfiguration {
         this.additionalMechanisms = additionalMechanisms;
         this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
+        this.corsConfig = corsConfig;
+        this.csrf = csrf;
     }
 
     record Policy(String name, HttpSecurityPolicy instance) {
@@ -229,7 +235,7 @@ public final class HttpSecurityConfiguration {
 
             instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
                     basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, vertxHttpConfig,
-                    vertxHttpBuildTimeConfig);
+                    vertxHttpBuildTimeConfig, httpSecurity.getCorsConfig(), httpSecurity.getCsrf());
             HttpServerTlsConfig.setConfiguration(
                     new ProgrammaticTlsConfig(httpSecurity.getClientAuth(), httpSecurity.getHttpServerTlsConfigName()));
         }
@@ -416,6 +422,10 @@ public final class HttpSecurityConfiguration {
         return formPostLocation;
     }
 
+    CORSConfig getCorsConfig() {
+        return corsConfig;
+    }
+
     /**
      * This method allows to assure from outside of this HTTP Security package that HTTP Security config is ready.
      * It should be only used in very special cases, like to assure that programmatic TLS configuration and TLS client
@@ -446,6 +456,15 @@ public final class HttpSecurityConfiguration {
 
         get(httpConfig, httpBuildTimeConfig);
         return false;
+    }
+
+    public static CSRF getProgrammaticCsrfConfig(VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        var container = Arc.container();
+        if (container == null || isHttpSecurityEventNotObserved(container)) {
+            // return null for example if the security extension is not present, or if user doesn't use the HttpSecurity
+            return null;
+        }
+        return get(httpConfig, httpBuildTimeConfig).csrf;
     }
 
     private static boolean isHttpSecurityEventNotObserved(ArcContainer container) {

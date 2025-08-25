@@ -486,6 +486,13 @@ EntityManager entityManager;
 ----
 <1> Here again, we use the same `@io.quarkus.hibernate.orm.PersistenceUnit` annotation.
 
+[NOTE]
+====
+The injected `EntityManager` or `Session` instance is a proxy that requires an active transaction for interaction.
+
+By default it is also possible to use it for read-only operations without a transaction when in a request scope, but this can be disabled by setting `quarkus.hibernate-orm.request-scoped.enabled` to `false`.
+====
+
 You can inject the `EntityManagerFactory` of a named persistence unit using the exact same mechanism:
 
 [source,java]

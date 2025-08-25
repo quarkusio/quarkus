@@ -3,10 +3,14 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem.isExcludedAnnotationTarget;
 import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_POLICY;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
 import static java.util.stream.Collectors.toMap;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -16,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -46,7 +51,6 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -57,12 +61,14 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -78,6 +84,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
@@ -97,6 +104,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
+import io.quarkus.vertx.http.security.CSRF;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
@@ -289,20 +297,42 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @BuildStep
+    void prepareCsrfConfigBuilder(Capabilities capabilities, Optional<CsrfBuilderClassBuildItem> csrfBuilderClassBuildItem,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer) {
+        if (capabilities.isPresent(Capability.SECURITY) && csrfBuilderClassBuildItem.isPresent()) {
+            final Class<? extends CSRF.Builder> csrfBuilderClass = csrfBuilderClassBuildItem.get().csrfBuilderClass;
+            // static Builder builder() {
+            //     return new io.quarkus.something.CsfrBuilder();
+            // }
+            bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(CSRF.class.getName(), (cls, classVisitor) -> {
+                var classTransformer = new ClassTransformer(cls);
+                classTransformer.removeMethod("builder", CSRF.Builder.class);
+                try (var mc = classTransformer.addMethod("builder", CSRF.Builder.class)) {
+                    mc.setModifiers(ACC_PUBLIC | ACC_STATIC);
+                    var builderInstance = mc.newInstance(MethodDescriptor.ofConstructor(csrfBuilderClass));
+                    mc.returnValue(mc.checkCast(builderInstance, CSRF.Builder.class));
+                }
+                return classTransformer.applyTo(classVisitor);
+            }));
+        }
+    }
+
     @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Produce(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
+    HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
+            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
             HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
             ShutdownContextBuildItem shutdown) {
         if (authenticationHandler.isPresent()) {
-            recorder.prepareHttpSecurityConfiguration(shutdown);
-            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler,
-                    beanContainerBuildItem.getValue());
+            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown);
+            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
+            return new HttpSecurityConfigSetupCompleteBuildItem(programmaticCorsConfig);
         }
+        return new HttpSecurityConfigSetupCompleteBuildItem(null);
     }
 
     @BuildStep
@@ -332,14 +362,17 @@ public class HttpSecurityProcessor {
         // methods annotated with @HttpAuthenticationMechanism that we should additionally secure;
         // when there is no other RBAC annotation applied
         // then by default @HttpAuthenticationMechanism("any-value") == @Authenticated
+        Set<AnnotationTarget> allAnnotatedTargets = new HashSet<>();
         Set<MethodInfo> methodsWithoutRbacAnnotations = new HashSet<>();
-
+        Predicate<AnnotationTarget> isExcludedAnnotationTarget = isExcludedAnnotationTarget(additionalHttpAuthMechAnnotations);
         Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
         DotName[] mechNames = Stream
                 .concat(Stream.of(AUTH_MECHANISM_NAME), additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName))
                 .flatMap(mechName -> {
                     var instances = combinedIndexBuildItem.getIndex().getAnnotations(mechName);
                     if (!instances.isEmpty()) {
+                        allAnnotatedTargets.addAll(instances.stream().map(AnnotationInstance::target)
+                                .filter(Objects::nonNull).filter(Predicate.not(isExcludedAnnotationTarget)).toList());
                         // e.g. collect @Basic without @RolesAllowed, @PermissionsAllowed, ..
                         methodsWithoutRbacAnnotations
                                 .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances)));
@@ -359,7 +392,9 @@ public class HttpSecurityProcessor {
                 }).toArray(DotName[]::new);
 
         if (mechNames.length > 0) {
-            validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
+            if (!allAnnotatedTargets.isEmpty()) {
+                validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
+            }
 
             // register method interceptor that will be run before security checks
             Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream()
@@ -370,9 +405,12 @@ public class HttpSecurityProcessor {
 
             // make all @HttpAuthenticationMechanism annotation targets authenticated by default
             if (!methodsWithoutRbacAnnotations.isEmpty()) {
-                // @RolesAllowed("**") == @Authenticated
-                additionalSecuredMethodsProducer.produce(
-                        new AdditionalSecuredMethodsBuildItem(methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
+                methodsWithoutRbacAnnotations.removeIf(isExcludedAnnotationTarget);
+                if (!methodsWithoutRbacAnnotations.isEmpty()) {
+                    // @RolesAllowed("**") == @Authenticated
+                    additionalSecuredMethodsProducer.produce(
+                            new AdditionalSecuredMethodsBuildItem(methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
+                }
             }
         }
     }
@@ -887,7 +925,12 @@ public class HttpSecurityProcessor {
         }
     }
 
-    static final class HttpSecurityConfigSetupCompleteBuildItem extends EmptyBuildItem {
+    static final class HttpSecurityConfigSetupCompleteBuildItem extends SimpleBuildItem {
 
+        final RuntimeValue<CORSConfig> programmaticCorsConfig;
+
+        private HttpSecurityConfigSetupCompleteBuildItem(RuntimeValue<CORSConfig> programmaticCorsConfig) {
+            this.programmaticCorsConfig = programmaticCorsConfig;
+        }
     }
 }

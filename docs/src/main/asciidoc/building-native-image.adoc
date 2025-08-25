@@ -293,9 +293,9 @@ capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationT
 === Profiles
 By default, integration tests both *build* and *run* the native executable using the `prod` profile.
 
-You can override the profile the executable *runs* with during the test using the `quarkus.test.native-image-profile` property.
+You can override the profile the executable *runs* with during the test using the `quarkus.test.integration-test-profile` property.
 Either by adding it to `application.properties` or by appending it to the command line:
-`./mvnw verify -Dnative -Dquarkus.test.native-image-profile=test`.
+`./mvnw verify -Dnative -Dquarkus.test.integration-test-profile=test`.
 Your `%test.` prefixed properties will be used at the test runtime.
 
 
@@ -564,7 +564,7 @@ The project generation has also provided a `Dockerfile.native` in the `src/main/
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

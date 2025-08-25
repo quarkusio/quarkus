@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.deployment.pkg.jar.FastJarFormat;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -218,7 +218,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         Path jar = testDir.toPath().toAbsolutePath()
                 .resolve(Paths.get("target",
-                        JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME,
+                        FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME,
                         "quarkus-run.jar"));
         Assertions.assertFalse(Files.exists(jar));
 
@@ -828,7 +828,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         jar = testDir.toPath().toAbsolutePath()
                 .resolve(Paths.get("target",
-                        outputDir == null ? JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME : outputDir,
+                        outputDir == null ? FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME : outputDir,
                         "quarkus-run.jar"));
         Assertions.assertTrue(Files.exists(jar));
         File output = new File(testDir, "target/output.log");

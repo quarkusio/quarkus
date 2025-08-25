@@ -42,8 +42,6 @@ import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.expression.Expression;
-import io.smallrye.config.Expressions;
-import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
@@ -261,19 +259,9 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         });
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        SmallRyeConfig config = effectiveProvider()
+        Map<String, String> quarkusProperties = effectiveProvider()
                 .buildEffectiveConfiguration(appModel, getAdditionalForcedProperties().get().getProperties())
-                .getConfig();
-        Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
-            Map<String, String> values = new HashMap<>();
-            for (String key : config.getMapKeys("quarkus").values()) {
-                values.put(key, config.getConfigValue(key).getValue());
-            }
-            for (String key : config.getMapKeys("platform.quarkus").values()) {
-                values.put(key, config.getConfigValue(key).getValue());
-            }
-            return values;
-        });
+                .getOnlyQuarkusValues();
 
         if (nativeEnabled()) {
             if (nativeSourcesOnly()) {

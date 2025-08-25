@@ -3,14 +3,14 @@ package io.quarkus.qute.generator;
 import static io.quarkus.qute.generator.ValueResolverGenerator.generatedNameFromTarget;
 import static io.quarkus.qute.generator.ValueResolverGenerator.packageName;
 import static io.quarkus.qute.generator.ValueResolverGenerator.simpleName;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationTarget;
@@ -21,15 +21,11 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.Switch.StringSwitch;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateGlobalProvider;
@@ -68,80 +64,93 @@ public class TemplateGlobalGenerator extends AbstractGenerator {
         String generatedClassName = generatedName.replace('/', '.');
         generatedTypes.add(generatedClassName);
 
-        ClassCreator provider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(TemplateGlobalProvider.class).build();
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(TemplateGlobalProvider.class);
+            cc.defaultConstructor();
 
-        // TemplateInstance.Initializer#accept()
-        MethodCreator accept = provider.getMethodCreator("accept", void.class, Object.class)
-                .setModifiers(ACC_PUBLIC);
+            cc.method("accept", mc -> {
+                mc.returning(void.class);
+                ParamVar templateInstance = mc.parameter("input", Object.class);
 
-        for (Entry<String, AnnotationTarget> entry : targets.entrySet()) {
-            ResultHandle name = accept.load(entry.getKey());
-            FunctionCreator fun = accept.createFunction(Function.class);
-            BytecodeCreator funBytecode = fun.getBytecode();
-            ResultHandle global;
-            switch (entry.getValue().kind()) {
-                case FIELD:
-                    FieldInfo field = entry.getValue().asField();
-                    validate(field);
-                    global = funBytecode.readStaticField(FieldDescriptor.of(field));
-                    break;
-                case METHOD:
-                    MethodInfo method = entry.getValue().asMethod();
-                    validate(method);
-                    global = funBytecode.invokeStaticMethod(MethodDescriptor.of(method));
-                    break;
-                default:
-                    throw new IllegalStateException("Unsupported target: " + entry.getValue());
-            }
-            funBytecode.returnValue(global);
-            // Global variables are computed lazily
-            accept.invokeInterfaceMethod(Descriptors.TEMPLATE_INSTANCE_COMPUTED_DATA, accept.getMethodParam(0), name,
-                    fun.getInstance());
-        }
-        accept.returnValue(null);
-
-        // NamespaceResolver#getNamespace()
-        MethodCreator getNamespace = provider.getMethodCreator("getNamespace", String.class);
-        getNamespace.returnValue(getNamespace.load(namespace));
-
-        // WithPriority#getPriority()
-        MethodCreator getPriority = provider.getMethodCreator("getPriority", int.class);
-        // Namespace resolvers for the same namespace may not share the same priority
-        // So we increase the initial priority for each provider
-        getPriority.returnValue(getPriority.load(priority++));
-
-        // Resolver#resolve()
-        MethodCreator resolve = provider.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
-                .setModifiers(ACC_PUBLIC);
-        ResultHandle evalContext = resolve.getMethodParam(0);
-        ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-        StringSwitch nameSwitch = resolve.stringSwitch(name);
-        for (Entry<String, AnnotationTarget> e : targets.entrySet()) {
-            Consumer<BytecodeCreator> readGlobal = new Consumer<BytecodeCreator>() {
-                @Override
-                public void accept(BytecodeCreator bc) {
-                    switch (e.getValue().kind()) {
-                        case FIELD:
-                            FieldInfo field = e.getValue().asField();
-                            processReturnVal(bc, field.type(), bc.readStaticField(FieldDescriptor.of(field)), provider);
-                            break;
-                        case METHOD:
-                            MethodInfo method = e.getValue().asMethod();
-                            processReturnVal(bc, method.returnType(), bc.invokeStaticMethod(MethodDescriptor.of(method)),
-                                    provider);
-                            break;
-                        default:
-                            throw new IllegalStateException("Unsupported target: " + e.getValue());
+                mc.body(bc -> {
+                    for (Entry<String, AnnotationTarget> entry : targets.entrySet()) {
+                        var name = Const.of(entry.getKey());
+                        Expr fun = bc.lambda(Function.class, lc -> {
+                            @SuppressWarnings("unused")
+                            ParamVar key = lc.parameter("k", 0);
+                            lc.body(lbc -> {
+                                Expr global;
+                                switch (entry.getValue().kind()) {
+                                    case FIELD:
+                                        FieldInfo field = entry.getValue().asField();
+                                        validate(field);
+                                        global = Expr.staticField(fieldDescOf(field));
+                                        break;
+                                    case METHOD:
+                                        MethodInfo method = entry.getValue().asMethod();
+                                        validate(method);
+                                        global = lbc.invokeStatic(methodDescOf(method));
+                                        break;
+                                    default:
+                                        throw new IllegalStateException("Unsupported target: " + entry.getValue());
+                                }
+                                lbc.return_(global);
+                            });
+                        });
+                        // Global variables are computed lazily
+                        bc.invokeInterface(Descriptors.TEMPLATE_INSTANCE_COMPUTED_DATA, templateInstance, name, fun);
                     }
+                    bc.return_();
+                });
+            });
 
-                }
-            };
-            nameSwitch.caseOf(e.getKey(), readGlobal);
-        }
-        resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+            // NamespaceResolver#getNamespace()
+            cc.method("getNamespace", mc -> {
+                mc.returning(String.class);
+                mc.body(bc -> bc.return_(Const.of(namespace)));
+            });
 
-        provider.close();
+            // WithPriority#getPriority()
+            cc.method("getPriority", mc -> {
+                mc.returning(int.class);
+                // Namespace resolvers for the same namespace may not share the same priority
+                // So we increase the initial priority for each provider
+                mc.body(bc -> bc.return_(Const.of(priority++)));
+            });
+
+            // Resolver#resolve()
+            cc.method("resolve", mc -> {
+                mc.returning(CompletionStage.class);
+                ParamVar evalContext = mc.parameter("evalContext", EvalContext.class);
+
+                mc.body(bc -> {
+                    Expr name = bc.invokeInterface(Descriptors.GET_NAME, evalContext);
+                    bc.switch_(name, sc -> {
+                        for (Entry<String, AnnotationTarget> e : targets.entrySet()) {
+                            sc.caseOf(Const.of(e.getKey()), cbc -> {
+                                switch (e.getValue().kind()) {
+                                    case FIELD:
+                                        FieldInfo field = e.getValue().asField();
+                                        LocalVar val = cbc.localVar("val", cbc.getStaticField(fieldDescOf(field)));
+                                        processReturnVal(cbc, field.type(), val, cc);
+                                        break;
+                                    case METHOD:
+                                        MethodInfo method = e.getValue().asMethod();
+                                        LocalVar val2 = cbc.localVar("val", cbc.invokeStatic(methodDescOf(method)));
+                                        processReturnVal(cbc, method.returnType(), val2, cc);
+                                        break;
+                                    default:
+                                        throw new IllegalStateException("Unsupported target: " + e.getValue());
+                                }
+                            });
+                        }
+                        sc.default_(dbc -> {
+                        });
+                    });
+                    bc.return_(bc.invokeStatic(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+                });
+            });
+        });
         return generatedClassName;
     }
 

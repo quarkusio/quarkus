@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import java.util.Collections;
+import java.util.Set;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
@@ -17,6 +18,8 @@ enum BuiltinQualifier {
             Default.Literal.class.getName()),
     ANY(AnnotationInstance.create(DotNames.ANY, null, Collections.emptyList()),
             Any.Literal.class.getName()),;
+
+    static final Set<AnnotationInstance> DEFAULT_QUALIFIERS = Set.of(DEFAULT.getInstance(), ANY.getInstance());
 
     private final AnnotationInstance instance;
 

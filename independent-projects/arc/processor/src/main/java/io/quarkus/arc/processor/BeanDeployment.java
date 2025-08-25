@@ -1458,12 +1458,18 @@ public class BeanDeployment {
             List<DisposerInfo> disposers) {
         // we don't have a `BeanInfo` for the producer yet (the outcome of this method is used to build it),
         // so we need to construct its set of qualifiers manually
-        Set<AnnotationInstance> qualifiers = new HashSet<>();
-        // ignore annotations on producer method parameters -- they may be injection point qualifiers
-        for (AnnotationInstance annotation : Annotations.getAnnotations(producer.kind(), getAnnotations(producer))) {
-            qualifiers.addAll(extractQualifiers(annotation));
+        Set<AnnotationInstance> annotations = Annotations.getAnnotations(producer.kind(), getAnnotations(producer));
+        Set<AnnotationInstance> qualifiers;
+        if (!annotations.isEmpty()) {
+            qualifiers = new HashSet<>();
+            // ignore annotations on producer method parameters -- they may be injection point qualifiers
+            for (AnnotationInstance annotation : annotations) {
+                qualifiers.addAll(extractQualifiers(annotation));
+            }
+        } else {
+            qualifiers = Set.of();
         }
-        Beans.addImplicitQualifiers(qualifiers); // need to consider `@Any` (and possibly `@Default`) too
+        qualifiers = Beans.addImplicitQualifiers(qualifiers); // need to consider `@Any` (and possibly `@Default`) too
 
         List<DisposerInfo> found = new ArrayList<>();
         for (DisposerInfo disposer : disposers) {

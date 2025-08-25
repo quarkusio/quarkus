@@ -2,6 +2,7 @@ package io.quarkus.hibernate.search.orm.outboxpolling.deployment;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 import org.hibernate.search.mapper.orm.outboxpolling.mapping.spi.HibernateOrmMapperOutboxPollingClasses;
@@ -37,7 +38,9 @@ class HibernateSearchOutboxPollingProcessor {
                 .reason(getClass().getName())
                 .methods().fields().build());
         for (String className : hibernateOrmTypes) {
-            additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className));
+            additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className,
+                    // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
+                    Set.of()));
         }
     }
 

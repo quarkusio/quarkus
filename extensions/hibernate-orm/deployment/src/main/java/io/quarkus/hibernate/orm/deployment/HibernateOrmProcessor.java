@@ -327,6 +327,7 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
@@ -383,7 +384,8 @@ public final class HibernateOrmProcessor {
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaModel, capabilities,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), additionalJpaModelBuildItems,
+                    jpaModel, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
@@ -843,6 +845,7 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             JpaModelBuildItem jpaModel,
             Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
@@ -891,7 +894,7 @@ public final class HibernateOrmProcessor {
                 || hibernateOrmConfig.defaultPersistenceUnit().isAnyPropertySet();
 
         Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = getModelClassesAndPackagesPerPersistenceUnits(
-                hibernateOrmConfig, jpaModel, index.getIndex(), enableDefaultPersistenceUnit);
+                hibernateOrmConfig, additionalJpaModelBuildItems, jpaModel, index.getIndex(), enableDefaultPersistenceUnit);
         Set<String> modelClassesAndPackagesForDefaultPersistenceUnit = modelClassesAndPackagesPerPersistencesUnits
                 .getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
 
@@ -1135,7 +1138,8 @@ public final class HibernateOrmProcessor {
     }
 
     public static Map<String, Set<String>> getModelClassesAndPackagesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
-            JpaModelBuildItem jpaModel, IndexView index, boolean enableDefaultPersistenceUnit) {
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, JpaModelBuildItem jpaModel,
+            IndexView index, boolean enableDefaultPersistenceUnit) {
         Map<String, Set<String>> modelClassesAndPackagesPerPersistenceUnits = new HashMap<>();
 
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
@@ -1228,11 +1232,24 @@ public final class HibernateOrmProcessor {
                         // also add the hierarchy to the persistence unit
                         // we would need to add all the underlying model to it but adding the hierarchy
                         // is necessary for Panache as we need to add PanacheEntity to the PU
-                        for (String relatedModelClassName : relatedModelClassNames) {
-                            modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(relatedModelClassName);
-                        }
+                        modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).addAll(relatedModelClassNames);
                     }
                 }
+            }
+        }
+
+        Set<String> affectedModelClasses = new HashSet<>();
+        for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
+            var className = additionalJpaModel.getClassName();
+            var persistenceUnits = additionalJpaModel.getPersistenceUnits();
+            if (persistenceUnits == null) {
+                // Legacy behavior -- remove when the deprecated one-argument constructor of AdditionalJpaModelBuildItem gets removed.
+                continue;
+            }
+            affectedModelClasses.add(className); // Even if persistenceUnits is empty, the class is still affected (to nothing)
+            for (String persistenceUnitName : persistenceUnits) {
+                modelClassesAndPackagesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
+                modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(className);
             }
         }
 
@@ -1242,8 +1259,7 @@ public final class HibernateOrmProcessor {
                     String.join("\n\t- ", modelClassesWithPersistenceUnitAnnotations)));
         }
 
-        Set<String> affectedModelClasses = modelClassesAndPackagesPerPersistenceUnits.values().stream().flatMap(Set::stream)
-                .collect(Collectors.toSet());
+        affectedModelClasses.addAll(modelClassesAndPackagesPerPersistenceUnits.values().stream().flatMap(Set::stream).toList());
         Set<String> unaffectedModelClasses = jpaModel.getAllModelClassNames().stream()
                 .filter(c -> !affectedModelClasses.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
@@ -1281,17 +1297,29 @@ public final class HibernateOrmProcessor {
             return Collections.emptySet();
         }
 
-        modelClassInfo = index.getClassByName(modelClassInfo.superName());
-
-        while (modelClassInfo != null && !modelClassInfo.name().equals(DotNames.OBJECT)) {
-            String modelSuperClassName = modelClassInfo.name().toString();
-            if (knownModelClassNames.contains(modelSuperClassName)) {
-                relatedModelClassNames.add(modelSuperClassName);
-            }
-            modelClassInfo = index.getClassByName(modelClassInfo.superName());
-        }
+        addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames, modelClassInfo);
 
         return relatedModelClassNames;
+    }
+
+    private static void addRelatedModelClassNamesRecursively(IndexView index, Set<String> knownModelClassNames,
+            Set<String> relatedModelClassNames, ClassInfo modelClassInfo) {
+        if (modelClassInfo == null || modelClassInfo.name().equals(DotNames.OBJECT)) {
+            return;
+        }
+
+        String modelClassName = modelClassInfo.name().toString();
+        if (knownModelClassNames.contains(modelClassName)) {
+            relatedModelClassNames.add(modelClassName);
+        }
+
+        addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames,
+                index.getClassByName(modelClassInfo.superName()));
+
+        for (DotName interfaceName : modelClassInfo.interfaceNames()) {
+            addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames,
+                    index.getClassByName(interfaceName));
+        }
     }
 
     private static String normalizePackage(String pakkage) {

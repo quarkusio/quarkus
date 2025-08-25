@@ -1,8 +1,8 @@
-import { LitElement, html, css } from 'lit';
-import { JsonRpc } from 'jsonrpc';
-import { RouterController } from 'router-controller';
+import {css, html, LitElement} from 'lit';
+import {JsonRpc} from 'jsonrpc';
+import {RouterController} from 'router-controller';
 import '@vaadin/grid';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import {columnBodyRenderer, gridRowDetailsRenderer} from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/icon';
 import '@vaadin/tooltip';
@@ -14,12 +14,11 @@ import '@vaadin/select';
 import '@vaadin/details';
 import '@vaadin/combo-box';
 import '@qomponent/qui-badge';
-import { notifier } from 'notifier';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
-import { observeState } from 'lit-element-state';
-import { connectionState } from 'connection-state';
-import { devuiState } from 'devui-state';
+import {notifier} from 'notifier';
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
+import {observeState} from 'lit-element-state';
+import {connectionState} from 'connection-state';
+import {devuiState} from 'devui-state';
 
 /**
  * This component allows users to change the configuration
@@ -138,7 +137,7 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     _getConfigSourceName(configValue){
-        if(configValue.sourceName){
+        if(configValue.configSourceName){
             return configValue.configSourceName;
         }
         return null;
@@ -328,36 +327,47 @@ export class QwcConfiguration extends observeState(LitElement) {
             let isChecked = (actualValue === 'true');
             return html`
                 <vaadin-checkbox theme="small"
-                                @change="${(event) => {
-                                    this._checkedChanged(prop, event, event.target.checked);
-                                }}"
-                                .checked=${isChecked}>
+                                 @change="${(event) => {
+                                     this._checkedChanged(event, prop);
+                                 }}"
+                                 .checked=${isChecked}>
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                 </vaadin-checkbox>`;
         } else if (prop.typeName === "java.lang.Integer" || prop.typeName === "java.lang.Long") {
             return html`
                 <vaadin-integer-field class="input-column"
-                                    placeholder="${prop.defaultValue}"
-                                    value="${actualValue}"
-                                    theme="small"
-                                    id="input-${prop.name}"
-                                    @keydown="${this._keydown}">
+                                      placeholder="${prop.defaultValue}"
+                                      value="${actualValue}"
+                                      theme="small"
+                                      id="input-${prop.name}"
+                                      @keydown="${(event) => {
+                                          this._keydown(event, prop);
+                                      }}">
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                     <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
-                                id="save-button-${prop.name}"
-                                @click="${this._saveClicked}"></vaadin-icon>
+                                 id="save-button-${prop.name}"
+                                 @click="${(event) => {
+                                     this._saveClicked(event, prop);
+                                 }}">
+                    </vaadin-icon>
                 </vaadin-integer-field>`;
         } else if (prop.typeName === "java.lang.Float" || prop.typeName === "java.lang.Double") {
             return html`
                 <vaadin-number-field class="input-column"
-                                    theme="small"
-                                    id="input-${prop.name}"
-                                    placeholder="${prop.defaultValue}"
-                                    value="${actualValue}"
-                                    @keydown="${this._keydown}">
+                                     theme="small"
+                                     id="input-${prop.name}"
+                                     placeholder="${prop.defaultValue}"
+                                     value="${actualValue}"
+                                     @keydown="${(event) => {
+                                         this._keydown(event, prop);
+                                     }}">
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                     <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
-                                id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
+                                 id="save-button-${prop.name}"
+                                 @click="${(event) => {
+                                     this._saveClicked(event, prop);
+                                 }}">
+                    </vaadin-icon>
                 </vaadin-number-field>`;
         } else if (prop.typeName === "java.lang.Enum" || prop.typeName === "java.util.logging.Level") {
             let items = [];
@@ -376,11 +386,13 @@ export class QwcConfiguration extends observeState(LitElement) {
             }
             return html`
                 <vaadin-select class="input-column"
-                                id="select-${prop.name}"
-                                theme="small"
-                                .items="${items}"
-                                .value="${defaultValue}"
-                                @change="${this._selectChanged}">
+                               id="select-${prop.name}"
+                               theme="small"
+                               .items="${items}"
+                               .value="${defaultValue}"
+                               @change="${(event) => {
+                                   this._selectChanged(event, prop);
+                               }}">
                             <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
 
                 </vaadin-select>
@@ -388,14 +400,20 @@ export class QwcConfiguration extends observeState(LitElement) {
         } else {
             return html`
                 <vaadin-text-field class="input-column"
-                                    theme="small"
-                                    value="${actualValue}"
-                                    placeholder="${prop.defaultValue}"
-                                    id="input-${prop.name}"
-                                    @keydown="${this._keydown}">
+                                   theme="small"
+                                   value="${actualValue}"
+                                   placeholder="${prop.defaultValue}"
+                                   id="input-${prop.name}"
+                                   @keydown="${(event) => {
+                                       this._keydown(event, prop);
+                                   }}">
                         <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                         <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
-                                    id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
+                                     id="save-button-${prop.name}"
+                                     @click="${(event) => {
+                                         this._saveClicked(event, prop);
+                                     }}">
+                        </vaadin-icon>
                     </vaadin-button>
                 </vaadin-text-field>
             `;
@@ -437,39 +455,44 @@ export class QwcConfiguration extends observeState(LitElement) {
                     </div>`;
     }
 
-    _keydown(event){
+    _keydown(event, property){
         if (event.key === 'Enter' || event.keyCode === 13) {
-            let name = event.target.parentElement.id.replace("input-", "");
-            this._updateProperty(name, event.target.value);
+            this._updateProperty(property, event.target.value);
         }
     }
 
-    _selectChanged(event){
-        let name = event.target.id.replace("select-", "");
-        this._updateProperty(name, event.target.value);
+    _selectChanged(event, property){
+        this._updateProperty(property, event.target.value);
     }
 
-    _saveClicked(event){
+    _saveClicked(event, property){
         event.preventDefault();
-        let parent = event.target.parentElement;
-        let name = parent.id.replace("input-", "");
-        this._updateProperty(name, parent.value);
+        this._updateProperty(property, event.target.parentElement.value);
     }
 
-    _checkedChanged(property, event, value) {
+    _checkedChanged(event, property) {
         event.preventDefault();
-        this._updateProperty(property.name, value.toString());
+        this._updateProperty(property, event.target.checked.toString());
     }
 
-    _updateProperty(name, value){
+    _updateProperty(property, value){
         this._busy = true;
+        let target = 'application.properties'
+        let configSourceName = this._getConfigSourceName(property.configValue);
+        if  (configSourceName != null && configSourceName.startsWith("PropertiesConfigSource[source=")) {
+            target = configSourceName.substring(30, configSourceName.length - 1)
+        }
+        console.log(target)
         this.jsonRpc.updateProperty({
-            'name': name,
-            'value': value
+            'name': property.name,
+            'value': value,
+            'profile': property.profile,
+            'target' : target
         }).then(e => {
-            this._values[name] = value;
+            console.log(e)
+            this._values[property.name] = value;
             fetch(devuiState.applicationInfo.contextRoot);
-            notifier.showInfoMessage("Property <code>" + name + "</code> updated");
+            notifier.showInfoMessage("Property <code>" + property.name + "</code> updated");
             this._busy = null;
         });
     }

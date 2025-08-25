@@ -40,9 +40,9 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.reflection.ReflectiveContextInjectedBeanFactory;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
 import org.jboss.resteasy.reactive.server.processor.ScannedApplication;

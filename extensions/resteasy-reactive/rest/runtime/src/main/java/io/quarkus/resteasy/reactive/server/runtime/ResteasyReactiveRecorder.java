@@ -123,6 +123,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
 
+        // TODO: remove this when we finally remove BlockingOperationSupport
+        //noinspection removal
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override
             public boolean isBlockingAllowed() {

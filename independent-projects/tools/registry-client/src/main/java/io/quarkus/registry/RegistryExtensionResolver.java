@@ -52,7 +52,6 @@ class RegistryExtensionResolver {
 
     private final RegistryConfig config;
     private final RegistryClient extensionResolver;
-    private final int index;
 
     private final Pattern recognizedQuarkusVersions;
     private final Collection<String> recognizedGroupIds;
@@ -61,11 +60,9 @@ class RegistryExtensionResolver {
      */
     private final String offeringSupportKey;
 
-    RegistryExtensionResolver(RegistryClient extensionResolver,
-            MessageWriter log, int index) throws RegistryResolutionException {
+    RegistryExtensionResolver(RegistryClient extensionResolver, MessageWriter log) throws RegistryResolutionException {
         this.extensionResolver = Objects.requireNonNull(extensionResolver, "Registry extension resolver is null");
         this.config = extensionResolver.resolveRegistryConfig();
-        this.index = index;
 
         final String versionExpr = config.getQuarkusVersions() == null ? null
                 : config.getQuarkusVersions().getRecognizedVersionsExpression();
@@ -84,10 +81,6 @@ class RegistryExtensionResolver {
 
     String getId() {
         return config.getId();
-    }
-
-    int getIndex() {
-        return index;
     }
 
     int checkQuarkusVersion(String quarkusVersion) {

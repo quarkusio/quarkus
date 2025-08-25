@@ -13,7 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestQuery;
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;

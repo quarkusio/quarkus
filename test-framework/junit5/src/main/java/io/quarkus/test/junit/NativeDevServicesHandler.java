@@ -34,6 +34,12 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
             for (Map.Entry<String, String> entry : devServicesRegistry.getConfigForAllRunningServices().entrySet()) {
                 propertyConsumer.accept(entry.getKey(), entry.getValue());
             }
+            for (DevServicesResultBuildItem devService : devServices) {
+                if (devService.getContainerId() != null) {
+                    propertyConsumer.accept("quarkus.devservices." + devService.getName() + ".containerId",
+                            devService.getContainerId());
+                }
+            }
         }
     }
 }

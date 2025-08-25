@@ -117,7 +117,7 @@ public class AccessTokenAnnotationTest {
     }
 
     @RegisterRestClient(baseUri = "http://localhost:8081/protected")
-    @io.quarkus.oidc.token.propagation.AccessToken(exchangeTokenClient = "named")
+    @AccessToken(exchangeTokenClient = "named")
     @Path("/")
     public interface NamedClientDefaultExchange {
         @GET

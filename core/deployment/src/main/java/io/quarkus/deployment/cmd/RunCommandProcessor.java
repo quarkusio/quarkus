@@ -1,7 +1,7 @@
 package io.quarkus.deployment.cmd;
 
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.QUARKUS_RUN_JAR;
 
 import java.io.File;
 import java.nio.file.Path;

@@ -192,4 +192,18 @@ public interface SmallRyeGraphQLConfig {
      * These are taken from the `graphql-java-extended-scalars` library.
      */
     Optional<List<ExtraScalar>> extraScalars();
+
+    /**
+     * The name of the key inside the client init payload which contains Authorization information.
+     * The associated value of this is treated in the same way as sent over as a Authorization header.
+     * Using headers is the preferred way, however in some languages, such as JavaScript, it is not possible to send
+     * headers over websockets.
+     * <br>
+     * If sending headers are not an option, another viable option is
+     * <a href=https://quarkus.io/guides/websockets-next-reference#bearer-token-authentication>Bearer Token Authentication</a>
+     * which might be preferable over this in some cases as it's able to inject headers before the WebSocket is opened.
+     * <br>
+     * Default is undefined, which means the client init payload will not be checked for Authorization information.
+     */
+    Optional<String> authorizationClientInitPayloadName();
 }

@@ -35,7 +35,8 @@ public class UnremovedConfigMappingTest {
         mapping = CDI.current().select(UnremovedConfigMapping.class).get();
         assertEquals("1234", mapping.prop());
 
-        UnremovedConfigProperties properties = CDI.current().select(UnremovedConfigProperties.class).get();
+        UnremovedConfigProperties properties = CDI.current()
+                .select(UnremovedConfigProperties.class, ConfigProperties.Literal.of("mapping")).get();
         assertEquals("1234", properties.prop);
     }
 

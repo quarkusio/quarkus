@@ -1,5 +1,8 @@
 package io.quarkus.qute;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Value resolvers are used when evaluating expressions.
  * <p>
@@ -45,6 +48,14 @@ public interface ValueResolver extends Resolver, WithPriority {
      */
     default ValueResolver getCachedResolver(EvalContext context) {
         return this;
+    }
+
+    default Set<String> getSupportedProperties() {
+        return Collections.emptySet();
+    }
+
+    default Set<String> getSupportedMethods() {
+        return Collections.emptySet();
     }
 
     /**

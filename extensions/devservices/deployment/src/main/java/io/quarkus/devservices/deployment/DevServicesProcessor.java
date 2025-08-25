@@ -62,7 +62,6 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;

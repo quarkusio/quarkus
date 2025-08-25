@@ -10,7 +10,6 @@ import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistr
 import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.runtime.LaunchMode;
 
-// This should live in the devservices/runtime module, but that module doesn't exist, and adding it is a breaking change
 public class DevServicesConfigSource implements ConfigSource {
 
     private final LaunchMode launchMode;

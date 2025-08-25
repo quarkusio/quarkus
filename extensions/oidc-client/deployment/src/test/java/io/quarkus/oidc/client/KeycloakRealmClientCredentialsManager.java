@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.keycloak.representations.AccessTokenResponse;
@@ -64,6 +65,7 @@ public class KeycloakRealmClientCredentialsManager implements QuarkusTestResourc
 
         realm.setDefaultGroups(Arrays.asList("user"));
         realm.setDefaultRoles(Arrays.asList("user"));
+        realm.setRequiredActions(List.of());
 
         return realm;
     }

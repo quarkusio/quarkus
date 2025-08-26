@@ -389,7 +389,7 @@ If you need to customize the compiler flags used by `kotlinc` in development mod
 ----
 quarkusDev {
     compilerOptions {
-        compiler("kotlin").args(['-Werror'])
+        compiler("kotlinc").args(['-Werror'])
     }
 }
 ----
@@ -399,7 +399,7 @@ quarkusDev {
 ----
 tasks.quarkusDev {
      compilerOptions {
-        compiler("kotlin").args(["-Werror"])
+        compiler("kotlinc").args(listOf("-Werror"))
     }
 }
 ----

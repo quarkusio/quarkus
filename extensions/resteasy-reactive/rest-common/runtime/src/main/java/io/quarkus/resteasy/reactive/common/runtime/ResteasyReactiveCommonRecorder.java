@@ -2,12 +2,14 @@ package io.quarkus.resteasy.reactive.common.runtime;
 
 import java.util.Map;
 
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -46,6 +48,15 @@ public class ResteasyReactiveCommonRecorder {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void setupBlockingOperationSupport() {
+        BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
+            @Override
+            public boolean isBlockingAllowed() {
+                return BlockingOperationControl.isBlockingAllowed();
+            }
+        });
     }
 
 }

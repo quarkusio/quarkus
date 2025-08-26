@@ -4,7 +4,7 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 
 import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;

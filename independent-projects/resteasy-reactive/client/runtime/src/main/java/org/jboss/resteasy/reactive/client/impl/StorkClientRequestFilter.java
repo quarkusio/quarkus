@@ -90,8 +90,8 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
                                 //To avoid the path double encoding we create uri with path=null and set the path after
                                 URI newUri = new URI(scheme,
                                         uri.getUserInfo(), host, port,
-                                        null, uri.getQuery(), uri.getFragment());
-                                URI build = UriBuilder.fromUri(newUri).path(actualPath).build();
+                                        null, null, uri.getFragment());
+                                URI build = UriBuilder.fromUri(newUri).path(actualPath).replaceQuery(uri.getRawQuery()).build();
                                 requestContext.setUri(build);
                                 if (measureTime && instance.gatherStatistics()) {
                                     requestContext.setCallStatsCollector(instance);

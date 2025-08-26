@@ -1,5 +1,6 @@
 package io.quarkus.observability.testcontainers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -106,9 +107,19 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         Optional<Set<LgtmComponent>> logging = config.logging();
         logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
 
+        String dashboards = GrafanaUtils.consumeGrafanaResources(
+                DASHBOARDS_CONFIG,
+                s -> {
+                    withCopyFileToContainer(
+                            MountableFile.forClasspathResource(GrafanaUtils.META_INF_GRAFANA + "/" + s),
+                            "/otel-lgtm/" + s);
+                    log.infof("Adding custom Grafana dashboard config: %s", s);
+                });
+
         // Replacing bundled dashboards with our own
-        addFileToContainer(DASHBOARDS_CONFIG.getBytes(),
+        addFileToContainer(dashboards.getBytes(StandardCharsets.UTF_8),
                 "/otel-lgtm/grafana/conf/provisioning/dashboards/grafana-dashboards.yaml");
+
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-prometheus.json"),
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-prometheus.json");

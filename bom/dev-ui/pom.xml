@@ -13,7 +13,7 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>24.8.5</vaadin.version>
+        <vaadin.version>24.8.6</vaadin.version>
         <lit.version>3.3.1</lit.version>
         <lit-element.version>4.2.1</lit-element.version>
         <lit-html.version>3.3.1</lit-html.version>
@@ -25,38 +25,38 @@
         <polymer.version>3.5.2</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
-        <style-observer.version>0.0.8</style-observer.version>
-        <marked.version>15.0.12</marked.version>
+        <style-observer.version>0.1.1</style-observer.version>
+        <marked.version>16.2.0</marked.version>
         <dompurify.version>3.2.6</dompurify.version>
         <vaadin-router.version>2.0.0</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>6.0.0</echarts.version>
         <es-module-shims.version>2.0.10</es-module-shims.version>
-        <path-to-regexp.version>6.3.0</path-to-regexp.version>
+        <path-to-regexp.version>8.2.0</path-to-regexp.version>
         <type-fest.version>4.41.0</type-fest.version>
         <codeblock.version>1.1.1</codeblock.version>
         <qomponent.version>1.0.4</qomponent.version>
         <ldrs.version>1.1.7</ldrs.version>
         <directory-tree.version>1.0.3</directory-tree.version>
-        <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>
-        <yargs.version>17.7.2</yargs.version>
-        <cliui.version>8.0.1</cliui.version>
-        <escalade.version>3.1.2</escalade.version>
+        <hpcc-js-wasm.version>2.22.4</hpcc-js-wasm.version>
+        <yargs.version>18.0.0</yargs.version>
+        <cliui.version>9.0.1</cliui.version>
+        <escalade.version>3.2.0</escalade.version>
         <get-caller-file.version>2.0.5</get-caller-file.version>
         <require-directory.version>2.1.1</require-directory.version>
-        <string-width.version>4.2.3</string-width.version>
+        <string-width.version>8.0.0</string-width.version>
         <y18n.version>5.0.8</y18n.version>
-        <yargs-parser.version>21.1.1</yargs-parser.version>
-        <strip-ansi.version>6.0.1</strip-ansi.version>
-        <wrap-ansi.version>7.0.0</wrap-ansi.version>
-        <emoji-regex>8.0.0</emoji-regex>
-        <is-fullwidth-code-point.version>3.0.0</is-fullwidth-code-point.version>
-        <ansi-regex.version>5.0.1</ansi-regex.version>
-        <ansi-styles.version>4.3.0</ansi-styles.version>
-        <color-convert.version>2.0.1</color-convert.version>
-        <color-name.version>1.1.4</color-name.version>
+        <yargs-parser.version>22.0.0</yargs-parser.version>
+        <strip-ansi.version>7.1.0</strip-ansi.version>
+        <wrap-ansi.version>9.0.0</wrap-ansi.version>
+        <emoji-regex>10.4.0</emoji-regex>
+        <is-fullwidth-code-point.version>4.0.0</is-fullwidth-code-point.version>
+        <ansi-regex.version>6.2.0</ansi-regex.version>
+        <ansi-styles.version>6.2.1</ansi-styles.version>
+        <color-convert.version>3.1.0</color-convert.version>
+        <color-name.version>2.0.0</color-name.version>
         <dot.version>0.0.1</dot.version>
-        <viz-js.version>3.12.0</viz-js.version>
+        <viz-js.version>3.14.0</viz-js.version>
     </properties>
 
     <dependencyManagement>
@@ -325,7 +325,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>entities</artifactId>
-                <version>4.5.0</version>
+                <version>6.0.1</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

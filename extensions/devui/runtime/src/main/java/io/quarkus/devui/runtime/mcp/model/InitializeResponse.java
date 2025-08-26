@@ -24,7 +24,6 @@ public class InitializeResponse {
     }
 
     public class Tools {
-        public boolean subscribe = false;
         public boolean listChanged = false;
     }
 

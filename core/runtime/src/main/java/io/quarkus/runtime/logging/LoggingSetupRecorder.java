@@ -875,9 +875,6 @@ public class LoggingSetupRecorder {
         if (consoleConfig.color().isPresent()) {
             return consoleConfig.color().get();
         }
-        if (logConfig.color().isPresent()) {
-            return logConfig.color().get();
-        }
         return QuarkusConsole.hasColorSupport();
     }
 

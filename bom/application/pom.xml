@@ -3484,7 +3484,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-observability-devservices-lgtm</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

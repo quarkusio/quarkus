@@ -9,6 +9,7 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
 import static io.quarkus.devservices.common.ConfigureUtil.configureLabels;
 import static io.quarkus.devservices.common.ConfigureUtil.shouldConfigureSharedServiceLabel;
+import static io.quarkus.devservices.deployment.IsRuntimeModuleAvailable.IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -62,7 +63,6 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
@@ -152,11 +152,21 @@ public class DevServicesProcessor {
         return registryBuildItem;
     }
 
-    @BuildStep
+    // Because the devservices runtime module is new and the ecosystem needs time to catch up, don't die if the runtime module isn't available
+    @BuildStep(onlyIf = { IsRuntimeModuleAvailable.class })
     public RunTimeConfigBuilderBuildItem registerDevResourcesConfigSource(
             List<DevServicesResultBuildItem> devServicesRequestBuildItems) {
         // Once all the dev services are registered, we can share config
-        return new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class);
+        try {
+            // Use reflection, since we don't have an explicit dependency on the runtime module (because dependent extensions may not have that dependency)
+            Class<?> builderClass = Class
+                    .forName(IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS);
+            return new RunTimeConfigBuilderBuildItem(builderClass);
+        } catch (ClassNotFoundException e) {
+            // Should never happen, because of the guard, as long as the runtime module is not a direct dependency of this module
+            throw new RuntimeException(e);
+        }
+
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })

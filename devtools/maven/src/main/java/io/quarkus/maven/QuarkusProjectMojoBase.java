@@ -26,7 +26,6 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.CodestartResourceLoadersBuilder;
-import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
@@ -59,13 +58,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     protected List<RemoteRepository> repos;
 
     @Parameter(property = "bomGroupId", required = false)
-    private String bomGroupId;
+    String bomGroupId;
 
     @Parameter(property = "bomArtifactId", required = false)
-    private String bomArtifactId;
+    String bomArtifactId;
 
     @Parameter(property = "bomVersion", required = false)
-    private String bomVersion;
+    String bomVersion;
 
     @Component
     QuarkusWorkspaceProvider workspaceProvider;
@@ -91,7 +90,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         }
 
         final QuarkusProject quarkusProject;
-        if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
+        if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null && bomVersion == null) {
             try {
                 quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
                         project.getModel().getProperties(), artifactResolver(), getExtensionCatalogResolver(),
@@ -108,7 +107,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                     .catalog(extensionCatalog)
                     .build();
             quarkusProject = QuarkusProject.of(baseDir(), extensionCatalog,
-                    codestartsResourceLoader, log, buildTool, JavaVersion.NA);
+                    codestartsResourceLoader, log, buildTool,
+                    MavenProjectBuildFile.resolveJavaVersion(project.getModel().getProperties()));
         }
 
         doExecute(quarkusProject, getMessageWriter());

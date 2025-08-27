@@ -269,6 +269,7 @@ updates:
           - "org.hibernate.orm*"
           - "org.hibernate.reactive*"
           - "org.hibernate.search*"
+          - "org.hibernate.validator*"
     ignore:
       # Major/minor upgrades require more work and synchronization, we do them manually.
       # Only use dependabot for micros (patch versions).

@@ -398,7 +398,7 @@ public class AnnotationLiteralProcessorTest {
         try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className(generatedClass).build()) {
             MethodCreator method = creator.getMethodCreator("hello", void.class);
 
-            assertThrows(NullPointerException.class, () -> {
+            assertThrows(IllegalArgumentException.class, () -> {
                 literals.create(method, null, simpleAnnotationJandex("foobar"));
             });
         }

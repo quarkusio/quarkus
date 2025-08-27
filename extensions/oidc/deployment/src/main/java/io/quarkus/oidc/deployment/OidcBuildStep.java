@@ -252,7 +252,7 @@ public class OidcBuildStep {
         return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
             @Override
             public Map<DotName, Set<String>> getAdditionalQualifiers() {
-                return Map.of(TENANT_FEATURE_NAME, Set.of());
+                return Map.of(TENANT_FEATURE_NAME, Set.of("value"));
             }
         });
     }

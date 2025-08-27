@@ -10,6 +10,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.util.Nonbinding;
 import jakarta.inject.Qualifier;
 
 /**
@@ -23,6 +24,7 @@ public @interface TenantFeature {
     /**
      * Identifies OIDC tenants to which a given feature applies.
      */
+    @Nonbinding
     String[] value();
 
 }

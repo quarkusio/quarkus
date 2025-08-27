@@ -30,7 +30,7 @@ when all that is needed is the ability to push to a container image registry.
 
 To use this feature, add the following extension to your project:
 
-:add-extension-extensions: container-image-jib
+:add-extension-extensions: quarkus-container-image-jib
 include::{includes}/devtools/extension-add.adoc[]
 
 WARNING: In situations where all that is needed to build a container image and no push to a registry is necessary (essentially by having set `quarkus.container-image.build=true` and left `quarkus.container-image.push` unset - it defaults to `false`), then this extension creates a container image and registers
@@ -114,7 +114,7 @@ The extension `quarkus-container-image-docker` is using the Docker binary and th
 
 To use this feature, add the following extension to your project.
 
-:add-extension-extensions: container-image-docker
+:add-extension-extensions: quarkus-container-image-docker
 include::{includes}/devtools/extension-add.adoc[]
 
 The `quarkus-container-image-docker` extension is capable of https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images/[creating multi-platform (or multi-arch)] images using https://docs.docker.com/engine/reference/commandline/buildx_build/[`docker buildx build`]. See the `quarkus.docker.buildx.*` configuration items in the <<#DockerOptions,Docker Options>> section below.
@@ -133,7 +133,7 @@ The extension `quarkus-container-image-podman` uses https://podman.io/[Podman] a
 
 To use this feature, add the following extension to your project.
 
-:add-extension-extensions: container-image-podman
+:add-extension-extensions: quarkus-container-image-podman
 include::{includes}/devtools/extension-add.adoc[]
 
 [TIP]
@@ -156,7 +156,7 @@ The benefit of this approach, is that it can be combined with OpenShift's `Deplo
 
 To use this feature, add the following extension to your project.
 
-:add-extension-extensions: container-image-openshift
+:add-extension-extensions: quarkus-container-image-openshift
 include::{includes}/devtools/extension-add.adoc[]
 
 OpenShift builds require creating a `BuildConfig` and two `ImageStream` resources, one for the builder image and one for the output image.
@@ -186,7 +186,7 @@ quarkus.buildpack.native-builder-image=<native builder image>
 
 To use this feature, add the following extension to your project.
 
-:add-extension-extensions: container-image-buildpack
+:add-extension-extensions: quarkus-container-image-buildpack
 include::{includes}/devtools/extension-add.adoc[]
 
 NOTE: When using the buildpack container image extension it is strongly advised to avoid adding `quarkus.container-image.build=true` in your properties configuration as it might trigger nesting builds within builds. It's preferable to pass it as an option to the build command instead.

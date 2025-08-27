@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -163,9 +164,13 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(transformedZip,
                     packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
                     outputTarget.getOutputDirectory(), executorService)) {
-                for (Set<TransformedClass> transformedSet : transformedClasses
-                        .getTransformedClassesByJar().values()) {
-                    for (TransformedClass transformed : transformedSet) {
+                // we make sure the entries are added in a reproducible order
+                // we use Path#toString() to get a reproducible order on both Unix-based OSes and Windows
+                for (Entry<Path, Set<TransformedClass>> transformedClassEntry : transformedClasses
+                        .getTransformedClassesByJar().entrySet().stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
+                    for (TransformedClass transformed : transformedClassEntry.getValue().stream()
+                            .sorted(Comparator.comparing(TransformedClass::getFileName)).toList()) {
                         if (transformed.getData() != null) {
                             archiveCreator.addFile(transformed.getData(), transformed.getFileName());
                         }

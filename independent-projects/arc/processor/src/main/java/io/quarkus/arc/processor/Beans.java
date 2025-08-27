@@ -735,13 +735,16 @@ public final class Beans {
         return false;
     }
 
-    static void addImplicitQualifiers(Set<AnnotationInstance> qualifiers) {
-        if (qualifiers.isEmpty()
-                || (qualifiers.size() <= 2 && qualifiers.stream()
-                        .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
+    static Set<AnnotationInstance> addImplicitQualifiers(Set<AnnotationInstance> qualifiers) {
+        if (qualifiers.isEmpty()) {
+            return BuiltinQualifier.DEFAULT_QUALIFIERS;
+        }
+        if ((qualifiers.size() <= 2 && qualifiers.stream()
+                .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
             qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
         }
         qualifiers.add(BuiltinQualifier.ANY.getInstance());
+        return qualifiers;
     }
 
     static List<MethodInfo> getCallbacks(ClassInfo beanClass, DotName annotation, IndexView index) {

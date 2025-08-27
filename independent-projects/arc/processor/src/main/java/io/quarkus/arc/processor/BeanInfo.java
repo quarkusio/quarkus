@@ -63,6 +63,7 @@ public class BeanInfo implements InjectionTargetInfo {
     protected final Set<Type> unrestrictedTypes;
 
     protected final Set<AnnotationInstance> qualifiers;
+    private final boolean hasDefaultQualifiers;
 
     private final List<Injection> injections;
 
@@ -142,8 +143,11 @@ public class BeanInfo implements InjectionTargetInfo {
             Beans.analyzeType(type, beanDeployment);
         }
         this.unrestrictedTypes = unrestrictedTypes != null ? unrestrictedTypes : types;
-        Beans.addImplicitQualifiers(qualifiers);
-        this.qualifiers = qualifiers;
+        this.qualifiers = Beans.addImplicitQualifiers(qualifiers);
+        // we have a fast path for all beans which didn't have a qualifier and for which we added them, which is the most common case
+        this.hasDefaultQualifiers = (this.qualifiers == BuiltinQualifier.DEFAULT_QUALIFIERS) ||
+                (this.qualifiers.size() == 2 && this.qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance())
+                        && this.qualifiers.contains(BuiltinQualifier.ANY.getInstance()));
         this.injections = injections;
         this.declaringBean = declaringBean;
         this.disposer = disposer;
@@ -300,8 +304,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     public boolean hasDefaultQualifiers() {
-        return qualifiers.size() == 2 && qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance())
-                && qualifiers.contains(BuiltinQualifier.ANY.getInstance());
+        return hasDefaultQualifiers;
     }
 
     List<Injection> getInjections() {
@@ -712,7 +715,7 @@ public class BeanInfo implements InjectionTargetInfo {
                     .beanDeployment(beanDeployment)
                     .target(targetClass)
                     .types(new HashSet<>(Set.of(ClassType.create(interceptionProxy.getTargetClass()))))
-                    .qualifiers(new HashSet<>())
+                    .qualifiers(Set.of())
                     .build();
             pseudoBean.interceptedMethods = Map.copyOf(pseudoBean.initInterceptedMethods(errors,
                     bytecodeTransformerConsumer, transformUnproxyableClasses, bindingsSourceClass));

@@ -840,6 +840,13 @@ repositories {
 }
 ```
 
+**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds:
+```gradle
+    maven {
+        url 'https://central.sonatype.com/repository/maven-snapshots/'
+    }
+```
+
 ### MicroProfile TCK's
 
 Quarkus has a TCK module in `tcks` where all the MicroProfile TCK's are set up for you to run if you wish. These include

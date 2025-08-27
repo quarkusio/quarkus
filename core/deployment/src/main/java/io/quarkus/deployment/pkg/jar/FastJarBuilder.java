@@ -182,12 +182,16 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(generatedZip,
                 packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
                 executorService)) {
-            for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = fromClassNameToResourceName(i.getName());
+            // make sure we write the elements in order
+            for (GeneratedClassBuildItem i : generatedClasses.stream()
+                    .sorted(Comparator.comparing(GeneratedClassBuildItem::binaryName)).toList()) {
+                String fileName = fromClassNameToResourceName(i.internalName());
                 archiveCreator.addFile(i.getClassData(), fileName);
             }
 
-            for (GeneratedResourceBuildItem i : generatedResources) {
+            // make sure we write the elements in order
+            for (GeneratedResourceBuildItem i : generatedResources.stream()
+                    .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 archiveCreator.addFile(i.getData(), i.getName());
             }
         }

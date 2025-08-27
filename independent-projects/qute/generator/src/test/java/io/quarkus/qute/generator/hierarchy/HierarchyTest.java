@@ -2,6 +2,7 @@ package io.quarkus.qute.generator.hierarchy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -12,11 +13,11 @@ import org.jboss.jandex.Index;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.generator.SimpleGeneratorTest;
-import io.quarkus.qute.generator.TestClassOutput;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 
 public class HierarchyTest {
@@ -25,7 +26,7 @@ public class HierarchyTest {
 
     @BeforeAll
     public static void init() throws IOException {
-        TestClassOutput classOutput = new TestClassOutput();
+        ClassOutput classOutput = ClassOutput.fileWriter(new File("target/test-classes/").toPath());
         Index index = SimpleGeneratorTest.index(Level1.class, Level2.class, Level3.class, Level4.class, FirstLevel.class,
                 SecondLevel.class);
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)

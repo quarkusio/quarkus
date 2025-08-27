@@ -56,7 +56,6 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.PrimitiveType.Primitive;
-import org.jboss.jandex.RecordComponentInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
@@ -80,7 +79,7 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -89,6 +88,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -96,8 +96,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -139,8 +138,7 @@ import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.deployment.TypeInfos.TypeInfo;
 import io.quarkus.qute.deployment.Types.AssignabilityCheck;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
-import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
-import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.ExtensionMethodInfo;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.Param;
 import io.quarkus.qute.generator.TemplateGlobalGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
@@ -428,9 +426,7 @@ public class QuteProcessor {
                 if (!recordClass.isRecord()) {
                     continue;
                 }
-                MethodInfo canonicalConstructor = recordClass.method(MethodDescriptor.INIT,
-                        recordClass.recordComponentsInDeclarationOrder().stream().map(RecordComponentInfo::type)
-                                .toArray(Type[]::new));
+                MethodInfo canonicalConstructor = recordClass.canonicalRecordConstructor();
 
                 AnnotationInstance checkedTemplateAnnotation = recordClass.declaredAnnotation(Names.CHECKED_TEMPLATE);
                 String fragmentId = getCheckedFragmentId(recordClass, checkedTemplateAnnotation);
@@ -916,12 +912,8 @@ public class QuteProcessor {
                     String paramName = e.getKey();
                     MethodInfo methodOrConstructor = null;
                     if (validation.checkedTemplate.isRecord()) {
-                        Type[] componentTypes = validation.checkedTemplate.recordClass.recordComponentsInDeclarationOrder()
-                                .stream()
-                                .map(RecordComponentInfo::type)
-                                .toArray(Type[]::new);
                         methodOrConstructor = validation.checkedTemplate.recordClass
-                                .method(MethodDescriptor.INIT, componentTypes);
+                                .canonicalRecordConstructor();
                     } else {
                         methodOrConstructor = validation.checkedTemplate.method;
                     }
@@ -1938,7 +1930,9 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void generateValueResolvers(QuteConfig config, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+    void generateValueResolvers(QuteConfig config,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
@@ -1960,29 +1954,30 @@ public class QuteProcessor {
         }
 
         IndexView index = beanArchiveIndex.getIndex();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
-            @Override
-            public String apply(String name) {
-                int idx = name.lastIndexOf(ExtensionMethodGenerator.NAMESPACE_SUFFIX);
-                if (idx == -1) {
-                    idx = name.lastIndexOf(ExtensionMethodGenerator.SUFFIX);
-                }
-                if (idx == -1) {
-                    idx = name.lastIndexOf(ValueResolverGenerator.NAMESPACE_SUFFIX);
-                }
-                if (idx == -1) {
-                    idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
-                }
-                if (idx == -1) {
-                    idx = name.lastIndexOf(TemplateGlobalGenerator.SUFFIX);
-                }
-                String className = name.substring(0, idx);
-                if (className.contains(ValueResolverGenerator.NESTED_SEPARATOR)) {
-                    className = className.replace(ValueResolverGenerator.NESTED_SEPARATOR, "$");
-                }
-                return className;
-            }
-        });
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
+                new Function<String, String>() {
+                    @Override
+                    public String apply(String name) {
+                        int idx = name.lastIndexOf(ExtensionMethodGenerator.NAMESPACE_SUFFIX);
+                        if (idx == -1) {
+                            idx = name.lastIndexOf(ExtensionMethodGenerator.SUFFIX);
+                        }
+                        if (idx == -1) {
+                            idx = name.lastIndexOf(ValueResolverGenerator.NAMESPACE_SUFFIX);
+                        }
+                        if (idx == -1) {
+                            idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
+                        }
+                        if (idx == -1) {
+                            idx = name.lastIndexOf(TemplateGlobalGenerator.SUFFIX);
+                        }
+                        String className = name.substring(0, idx);
+                        if (className.contains(ValueResolverGenerator.NESTED_SEPARATOR)) {
+                            className = className.replace(ValueResolverGenerator.NESTED_SEPARATOR, "$");
+                        }
+                        return className;
+                    }
+                });
 
         // NOTE: We can't use this optimization for classes generated by ValueResolverGenerator because we cannot easily
         // map a target class to a specific set of generated classes
@@ -2094,19 +2089,18 @@ public class QuteProcessor {
                         .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getPriority));
 
                 for (Entry<Integer, List<TemplateExtensionMethodBuildItem>> priorityEntry : priorityToMethods.entrySet()) {
-                    try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
-                            .createNamespaceResolver(priorityEntry.getValue().get(0).getMethod().declaringClass(),
-                                    nsEntry.getKey(), priorityEntry.getKey())) {
-                        for (TemplateExtensionMethodBuildItem extensionMethod : priorityEntry.getValue()) {
-                            existingValueResolvers.add(extensionMethod.getMethod(), namespaceResolverCreator.getClassName(),
-                                    applicationClassPredicate);
-                        }
-                        try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
-                            for (TemplateExtensionMethodBuildItem method : priorityEntry.getValue()) {
-                                resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchNames(),
-                                        method.getMatchRegex());
-                            }
-                        }
+                    List<ExtensionMethodGenerator.ExtensionMethodInfo> extensionMethods = new ArrayList<>(
+                            priorityEntry.getValue().size());
+                    for (TemplateExtensionMethodBuildItem method : priorityEntry.getValue()) {
+                        extensionMethods
+                                .add(new ExtensionMethodInfo(method.getMethod(), method.getMatchName(), method.getMatchNames(),
+                                        method.getMatchRegex()));
+                    }
+                    String generatedType = extensionMethodGenerator.generateNamespaceResolver(
+                            priorityEntry.getValue().get(0).getMethod().declaringClass(), nsEntry.getKey(),
+                            priorityEntry.getKey(), extensionMethods);
+                    for (TemplateExtensionMethodBuildItem extensionMethod : priorityEntry.getValue()) {
+                        existingValueResolvers.add(extensionMethod.getMethod(), generatedType, applicationClassPredicate);
                     }
                 }
             }

@@ -398,7 +398,7 @@ You can also use the xref:logging-exporter-for-debugging[logging exporter] to ou
 
 Quarkus supports the OpenTelemetry Autoconfiguration for Traces.
 The configurations match what you can see at
-https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md[OpenTelemetry SDK Autoconfigure]
+https://opentelemetry.io/docs/languages/java/configuration/[OpenTelemetry SDK Autoconfigure]
 adding the usual `quarkus.*` prefix.
 
 Quarkus OpenTelemetry configuration properties now have the `quarkus.otel.*` prefix.

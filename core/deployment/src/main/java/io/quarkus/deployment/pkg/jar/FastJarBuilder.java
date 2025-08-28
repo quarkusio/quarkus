@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -161,10 +162,15 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Path transformedZip = quarkus.resolve(FastJarFormat.TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformedJar(transformedZip);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(transformedZip,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
-                for (Set<TransformedClass> transformedSet : transformedClasses
-                        .getTransformedClassesByJar().values()) {
-                    for (TransformedClass transformed : transformedSet) {
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    outputTarget.getOutputDirectory(), executorService)) {
+                // we make sure the entries are added in a reproducible order
+                // we use Path#toString() to get a reproducible order on both Unix-based OSes and Windows
+                for (Entry<Path, Set<TransformedClass>> transformedClassEntry : transformedClasses
+                        .getTransformedClassesByJar().entrySet().stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().toString())).toList()) {
+                    for (TransformedClass transformed : transformedClassEntry.getValue().stream()
+                            .sorted(Comparator.comparing(TransformedClass::getFileName)).toList()) {
                         if (transformed.getData() != null) {
                             archiveCreator.addFile(transformed.getData(), transformed.getFileName());
                         }
@@ -179,13 +185,18 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         Path generatedZip = quarkus.resolve(FastJarFormat.GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGeneratedJar(generatedZip);
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(generatedZip,
-                packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
-            for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = fromClassNameToResourceName(i.getName());
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
+                executorService)) {
+            // make sure we write the elements in order
+            for (GeneratedClassBuildItem i : generatedClasses.stream()
+                    .sorted(Comparator.comparing(GeneratedClassBuildItem::binaryName)).toList()) {
+                String fileName = fromClassNameToResourceName(i.internalName());
                 archiveCreator.addFile(i.getClassData(), fileName);
             }
 
-            for (GeneratedResourceBuildItem i : generatedResources) {
+            // make sure we write the elements in order
+            for (GeneratedResourceBuildItem i : generatedResources.stream()
+                    .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 archiveCreator.addFile(i.getData(), i.getName());
             }
         }
@@ -207,7 +218,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    outputTarget.getOutputDirectory(), executorService)) {
                 copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
             }
         }
@@ -297,7 +309,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
         if (!rebuild) {
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(initJar,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    outputTarget.getOutputDirectory(), executorService)) {
                 ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
                 generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
@@ -453,7 +466,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig,
             OutputTargetBuildItem outputTargetBuildItem, ExecutorService executorService) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
-                packageConfig.jar().compress(), outputTargetBuildItem.getOutputDirectory(), executorService)) {
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                outputTargetBuildItem.getOutputDirectory(), executorService)) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override

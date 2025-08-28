@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -27,11 +29,6 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntryRequest;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.parallel.InputStreamSupplier;
-import org.jboss.threads.EnhancedQueueExecutor;
-import org.jboss.threads.JBossExecutors;
-import org.jboss.threads.JBossThreadFactory;
-
-import io.smallrye.common.cpu.ProcessorInfo;
 
 /**
  * This ArchiveCreator may not be used to build Uberjars.
@@ -48,6 +45,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private static final InputStreamSupplier EMPTY_SUPPLIER = () -> new ByteArrayInputStream(new byte[0]);
 
     private final Path archivePath;
+    private final FileTime entryTimestamp;
     private final ZipArchiveOutputStream archive;
     private final ParallelScatterZipCreator scatterZipCreator;
     private final ScatterZipOutputStream directories;
@@ -56,7 +54,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     private final Map<String, String> addedFiles = new HashMap<>();
 
-    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Path outputTarget,
+    ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Instant entryTimestamp, Path outputTarget,
             ExecutorService executorService) throws IOException {
         int compressionLevel;
         if (compressed) {
@@ -68,6 +66,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         }
 
         this.archivePath = archivePath;
+        this.entryTimestamp = entryTimestamp != null ? FileTime.from(entryTimestamp) : null;
         this.archive = new ZipArchiveOutputStream(archivePath);
         this.archive.setMethod(compressionMethod);
         this.tempDirectory = Files.createTempDirectory(outputTarget, "zip-builder-files");
@@ -84,7 +83,9 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     @Override
     public void addManifest(Manifest manifest) throws IOException {
         // we add the manifest directly to the final archive to make sure it is the first element added
-        archive.putArchiveEntry(new ZipArchiveEntry("META-INF/"));
+        ZipArchiveEntry metaInfArchiveEntry = new ZipArchiveEntry("META-INF/");
+        normalizeTimestamps(metaInfArchiveEntry);
+        archive.putArchiveEntry(metaInfArchiveEntry);
         archive.closeArchiveEntry();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -92,6 +93,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         byte[] manifestBytes = baos.toByteArray();
 
         ZipArchiveEntry manifestEntry = new ZipArchiveEntry("META-INF/MANIFEST.MF");
+        normalizeTimestamps(manifestEntry);
         manifestEntry.setSize(manifestBytes.length);
         archive.putArchiveEntry(manifestEntry);
         archive.write(manifestBytes);
@@ -165,11 +167,13 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         if (!zipArchiveEntry.isDirectory() || zipArchiveEntry.isUnixSymlink()) {
             return;
         }
+        normalizeTimestamps(zipArchiveEntry);
         zipArchiveEntry.setMethod(compressionMethod);
         directories.addArchiveEntry(ZipArchiveEntryRequest.createZipArchiveEntryRequest(zipArchiveEntry, EMPTY_SUPPLIER));
     }
 
     private void addEntry(final ZipArchiveEntry zipArchiveEntry, final InputStreamSupplier streamSupplier) throws IOException {
+        normalizeTimestamps(zipArchiveEntry);
         zipArchiveEntry.setMethod(compressionMethod);
         if (zipArchiveEntry.isDirectory() && !zipArchiveEntry.isUnixSymlink()) {
             directories.addArchiveEntry(ZipArchiveEntryRequest.createZipArchiveEntryRequest(zipArchiveEntry, streamSupplier));
@@ -204,17 +208,15 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         };
     }
 
-    private static ExecutorService initExecutorService() {
-        final EnhancedQueueExecutor.Builder executorServiceBuilder = new EnhancedQueueExecutor.Builder();
-        executorServiceBuilder.setRegisterMBean(false);
-        executorServiceBuilder.setQueueLimited(false);
-        executorServiceBuilder.setCorePoolSize(8).setMaximumPoolSize(ProcessorInfo.availableProcessors() * 2);
-        executorServiceBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
-        executorServiceBuilder
-                .setThreadFactory(
-                        new JBossThreadFactory(new ThreadGroup("jar-compress group"), Boolean.FALSE, null, "jar-compress-%t",
-                                JBossExecutors.loggingExceptionHandler(), null));
-        return executorServiceBuilder.build();
+    private void normalizeTimestamps(ZipArchiveEntry archiveEntry) {
+        if (entryTimestamp == null) {
+            return;
+        }
+
+        archiveEntry.setTime(entryTimestamp.toMillis());
+        archiveEntry.setCreationTime(entryTimestamp);
+        archiveEntry.setLastModifiedTime(entryTimestamp);
+        archiveEntry.setLastAccessTime(entryTimestamp);
     }
 
     @Override

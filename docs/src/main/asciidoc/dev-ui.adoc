@@ -872,7 +872,7 @@ To use this state in your page:
 import { observeState } from 'lit-element-state'; // <1>
 import { connectionState } from 'connection-state'; // <2>
 
-export class QwcExtentionPage extends observeState(LitElement) {  // <3>
+export class QwcExtensionPage extends observeState(LitElement) {  // <3>
 ----
 <1> import observeState from the LitState library.
 <2> import the state you are interested in, in this case connection state.
@@ -900,7 +900,7 @@ To use this state in your page:
 import { observeState } from 'lit-element-state'; // <1>
 import { themeState } from 'theme-state'; // <2>
 
-export class QwcExtentionPage extends observeState(LitElement) {  // <3>
+export class QwcExtensionPage extends observeState(LitElement) {  // <3>
 ----
 <1> import observeState from the LitState library.
 <2> import the state you are interested in, in this case theme state.
@@ -934,7 +934,7 @@ To use this state in your page:
 import { observeState } from 'lit-element-state'; // <1>
 import { assistantState } from 'assistant-state'; // <2>
 
-export class QwcExtentionPage extends observeState(LitElement) {  // <3>
+export class QwcExtensionPage extends observeState(LitElement) {  // <3>
 ----
 <1> import observeState from the LitState library.
 <2> import the state you are interested in, in this case assistant state.

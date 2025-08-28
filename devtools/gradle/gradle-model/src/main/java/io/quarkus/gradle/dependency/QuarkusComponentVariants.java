@@ -416,13 +416,62 @@ public class QuarkusComponentVariants {
                 key -> newConditionalDep(dep));
     }
 
+    private ResolvedArtifact tryResolvingRelocationArtifact(Dependency dep) {
+        final Configuration configForRelocated = project.getConfigurations().detachedConfiguration(dep).setTransitive(true);
+        setConditionalAttributes(configForRelocated, project, mode);
+
+        var firstLevelDeps = configForRelocated.getResolvedConfiguration().getFirstLevelModuleDependencies();
+        if (firstLevelDeps.size() != 1) {
+            return null;
+        }
+        ResolvedDependency resolvedDep = firstLevelDeps.iterator().next();
+
+        // If resolved dep is indeed relocated, it should have exactly one child and we assume
+        // that child is the actual artifact we want.
+        var childrenDeps = resolvedDep.getChildren();
+        if (childrenDeps.size() != 1) {
+            return null;
+        }
+        ResolvedDependency relocatedDep = childrenDeps.iterator().next();
+
+        var resolvedArtifacts = relocatedDep.getModuleArtifacts();
+        if (resolvedArtifacts.size() != 1) {
+            return null;
+        }
+
+        ResolvedArtifact artifact = resolvedArtifacts.iterator().next();
+        if (ArtifactCoords.TYPE_POM.equals(artifact.getExtension())) {
+            return null;
+        }
+
+        return artifact;
+    }
+
     private ConditionalDependency newConditionalDep(Dependency dep) {
         final Configuration config = project.getConfigurations().detachedConfiguration(dep).setTransitive(false);
         setConditionalAttributes(config, project, mode);
+        ResolvedArtifact resolvedArtifact = null;
+
         for (var a : config.getResolvedConfiguration().getResolvedArtifacts()) {
-            return new ConditionalDependency(getKey(a), a, DependencyUtils.getExtensionInfoOrNull(project, a));
+            resolvedArtifact = a;
+            break;
         }
-        throw new RuntimeException(dep + " did not resolve to any artifacts");
+
+        if (resolvedArtifact == null) {
+            // likely a relocation artifact, in which case we want to resolve it with transitive deps and
+            // take the first artifact.
+            resolvedArtifact = tryResolvingRelocationArtifact(dep);
+        }
+
+        if (resolvedArtifact == null) {
+            throw new RuntimeException(dep + " did not resolve to any artifacts");
+        }
+
+        return new ConditionalDependency(
+                getKey(resolvedArtifact),
+                resolvedArtifact,
+                DependencyUtils.getExtensionInfoOrNull(project, resolvedArtifact));
+
     }
 
     private class ProcessedDependency {

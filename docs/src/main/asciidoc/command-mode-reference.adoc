@@ -248,7 +248,15 @@ public class HelloIT extends HelloTest {
 }
 ----
 
-=== Mocking
+=== Limitations
+
+`@QuarkusMainTest` does **not** support the following features:
+
+- Injection of CDI beans
+- Using Panache entities
+- Using mocks with `@InjectMock`
+
+==== Mocking
 
 CDI injection is not supported in the `@QuarkusMainTest` tests.
 Consequently, mocking CDI beans with `QuarkusMock` or `@InjectMock` is not supported either.
@@ -309,3 +317,5 @@ public class MyCommandModeTest {
 <3> The scope of the mocked bean should be consistent with the original one.
 
 Using this pattern, you can enable specific alternatives for any given test.
+
+

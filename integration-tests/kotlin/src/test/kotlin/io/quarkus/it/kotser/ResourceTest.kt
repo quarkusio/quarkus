@@ -97,13 +97,28 @@ open class ResourceTest {
     }
 
     @Test
-    fun testPost() {
+    fun testPostPerson() {
         Given {
             body("""{ "$nameField": "Pam Beasley" }""")
             contentType(JSON)
         } When
             {
                 post("/")
+            } Then
+            {
+                statusCode(200)
+                body(`is`("""{"$nameField":"Pam Halpert","$defaulted":"hi there!"}"""))
+            }
+    }
+
+    @Test
+    fun testPostPeople() {
+        Given {
+            body("""[{ "$nameField": "Pam Beasley" }, { "$nameField": "Foo Bar" }]""")
+            contentType(JSON)
+        } When
+            {
+                post("/many")
             } Then
             {
                 statusCode(200)

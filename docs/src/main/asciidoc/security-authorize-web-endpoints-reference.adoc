@@ -13,9 +13,6 @@ include::_attributes.adoc[]
 Quarkus incorporates a pluggable web security layer.
 When security is active, the system performs a permission check on all HTTP requests to determine if they should proceed.
 
-Using `@PermitAll` will not open a path if the path is restricted by the `quarkus.http.auth.` configuration.
-To ensure specific paths are accessible, appropriate configurations must be made within the Quarkus security settings.
-
 [NOTE]
 ====
 If you use Jakarta RESTful Web Services, consider using `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security requirements instead of HTTP path-level matching because annotations can override these properties on an individual endpoint.
@@ -29,6 +26,11 @@ xref:security-customization.adoc#security-identity-customization[Security Identi
 == Authorization using configuration
 
 Permissions are defined in the Quarkus configuration by permission sets, each specifying a policy for access control.
+
+[NOTE]
+====
+When a security policy's `paths` property contains the most specific path that matches the current request path, it takes precedence over other security policies with matching paths and is said to win.
+====
 
 .{project-name} policies summary
 [options="header"]
@@ -263,7 +265,7 @@ quarkus.http.auth.permission.public.policy=permit
 Previous examples demonstrated matching all sub-paths when a path concludes with the `$$*$$`
 wildcard.
 
-This wildcard also applies in the middle of a path, representing a single path segment.
+This wildcard can also be applied in the middle of a path, representing a single path segment.
 It cannot be mixed with other path segment characters; thus, path separators always enclose the `$$*$$` wildcard, as seen in the `/public/$$*$$/about-us` path.
 
 When several path patterns correspond to the same request path, the system selects the longest sub-path leading to the `$$*$$` wildcard.
@@ -425,7 +427,7 @@ For more information, see link:https://quarkus.io/blog/path-resolution-in-quarku
 [[map-security-identity-roles]]
 === Map `SecurityIdentity` roles
 
-Winning role-based policy can map the `SecurityIdentity` roles to the deployment-specific roles.
+The winning role-based policy that was chosen to authorize the current request can map `SecurityIdentity` roles to deployment-specific roles.
 These roles are then applicable for endpoint authorization by using the `@RolesAllowed` annotation.
 
 [source,properties]
@@ -466,7 +468,7 @@ public class HttpSecurityConfiguration {
 === Shared permission checks
 
 One important rule for unshared permission checks is that only one path match is applied, the most specific one.
-Naturally you can specify as many permissions with the same winning path as you want and they will all be applied.
+When a path matches as the most specific, you can specify multiple permissions for that path and they are all applied.
 However, there can be permission checks you want to apply to many paths without repeating them over and over again.
 That's where shared permission checks come in, they are always applied when the permission path is matched.
 
@@ -603,6 +605,13 @@ The same authorization can be required with the `@PermissionsAllowed(value = { "
 {project-name} includes built-in security to allow for link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control (RBAC)]
 based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
 
+[NOTE]
+====
+Authorization checks for `quarkus.http.auth.` configurations are performed before security checks for standard security annotations.
+Therefore, `@PermitAll` only permits access to paths that are not already restricted by HTTP permissions.
+`@PermitAll` cannot override HTTP-level security configurations, only relax restrictions imposed by other standard security annotations such as `@RolesAllowed`.
+====
+
 .{project-name} annotation types summary
 [options="header"]
 |===
@@ -683,7 +692,10 @@ This returns `non-null` for a secured endpoint.
 <6> The `/subject/denied` endpoint declares the `@DenyAll` annotation, disallowing all direct access to it as a REST method, regardless of the user calling it.
 The method is still invokable internally by other methods in this class.
 
-CAUTION: If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
+[CAUTION]
+====
+If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
+====
 
 The `@RolesAllowed` annotation value supports xref:config-reference.adoc#property-expressions[property expressions] including default values and nested property expressions.
 Configuration properties used with the annotation are resolved at runtime.

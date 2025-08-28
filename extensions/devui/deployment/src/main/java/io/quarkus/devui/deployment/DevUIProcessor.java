@@ -775,6 +775,12 @@ public class DevUIProcessor {
                                             extension.addMenuPage(page);
                                         }
                                     }
+                                    // See if there is a headless component
+                                    String headlessJs = menuPageBuildItem.getHeadlessComponentLink();
+                                    if (headlessJs != null) {
+                                        extension.setHeadlessComponent(headlessJs);
+                                    }
+
                                     // Also make sure the static resources for that static resource is available
                                     produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
                                     sectionMenuExtensions.add(extension);
@@ -793,6 +799,12 @@ public class DevUIProcessor {
                                             if (!page.isAssistantPage() || assistantIsAvailable) {
                                                 extension.addFooterPage(page);
                                             }
+                                        }
+
+                                        // See if there is a headless component
+                                        String headlessJs = footerPageBuildItem.getHeadlessComponentLink();
+                                        if (headlessJs != null) {
+                                            extension.setHeadlessComponent(headlessJs);
                                         }
                                         // Also make sure the static resources for that static resource is available
                                         produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
@@ -814,6 +826,11 @@ public class DevUIProcessor {
                                                 extension.addSettingPage(page);
                                             }
                                         }
+                                        // See if there is a headless component
+                                        String headlessJs = settingPageBuildItem.getHeadlessComponentLink();
+                                        if (headlessJs != null) {
+                                            extension.setHeadlessComponent(headlessJs);
+                                        }
                                         // Also make sure the static resources for that static resource is available
                                         produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
                                         settingTabExtensions.add(extension);
@@ -833,6 +850,11 @@ public class DevUIProcessor {
                                             if (!page.isAssistantPage() || assistantIsAvailable) {
                                                 extension.addUnlistedPage(page);
                                             }
+                                        }
+                                        // See if there is a headless component
+                                        String headlessJs = unlistedPageBuildItem.getHeadlessComponentLink();
+                                        if (headlessJs != null) {
+                                            extension.setHeadlessComponent(headlessJs);
                                         }
                                         // Also make sure the static resources for that static resource is available
                                         produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);

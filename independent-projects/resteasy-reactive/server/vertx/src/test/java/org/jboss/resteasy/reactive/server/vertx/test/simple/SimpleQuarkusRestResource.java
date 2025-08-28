@@ -34,8 +34,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;

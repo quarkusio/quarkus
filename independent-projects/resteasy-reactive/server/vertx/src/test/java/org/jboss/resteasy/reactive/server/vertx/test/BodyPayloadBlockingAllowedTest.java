@@ -18,7 +18,7 @@ import jakarta.ws.rs.ext.Provider;
 import jakarta.ws.rs.ext.ReaderInterceptor;
 import jakarta.ws.rs.ext.ReaderInterceptorContext;
 
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

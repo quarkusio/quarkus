@@ -678,9 +678,15 @@ You can override this by setting the `transactions` configuration property:
 * `quarkus.datasource.jdbc.transactions` for default unnamed datasource
 * `quarkus.datasource._<datasource-name>_.jdbc.transactions` for named datasource
 
-When a datasource is enabled for XA (by setting `quarkus.datasource[.optional name].jdbc.transactions` to `xa`) and the transaction recovery system is enabled (by setting the property `quarkus.transaction-manager.enable-recovery` to `true`), then the datasource is automatically registered for recovery.
-This is a safe default, but you can override this behaviour on a per-datasource basis by setting `quarkus.datasource.jdbc.enable-recovery` or `quarkus.datasource."datasource-name".jdbc.enable-recovery` to `false`.
-Use only for advanced use cases and if you know recovery will not be necessary; otherwise it can result in data loss, data unavailability, or both, because resources can become locked indefinitely.
+When a datasource is configured for XA transactions by setting `quarkus.datasource[.optional name].jdbc.transactions=xa` and the transaction recovery system is enabled by using `quarkus.transaction-manager.enable-recovery=true`, the datasource is automatically registered for recovery.
+This is the preferred and safe default.
+You can override this behavior for individual datasources by setting `quarkus.datasource.jdbc.enable-recovery=false` or `quarkus.datasource."datasource-name".jdbc.enable-recovery=false`.
+
+[IMPORTANT]
+====
+Change this setting only in advanced use cases and only if you are certain recovery is not required.
+Incorrect configuration can lead to data loss, data unavailability, or both, due to resources remaining locked indefinitely.
+====
 
 For more information, see the <<configuration-reference,Configuration reference>> section below.
 To facilitate the storage of transaction logs in a database by using JDBC, see the xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.

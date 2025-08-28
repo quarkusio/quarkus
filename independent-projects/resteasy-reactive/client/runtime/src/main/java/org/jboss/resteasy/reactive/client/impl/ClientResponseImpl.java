@@ -9,6 +9,7 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.client.handlers.VertxClientInputStream;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
@@ -27,7 +28,7 @@ public class ClientResponseImpl extends ResponseImpl {
         if (entityStream == null) {
             return false;
         }
-        if (VertxClientInputStream.class.equals(entityStream.getClass())) {
+        if (VertxClientInputStream.class.equals(entityStream.getClass()) && !BlockingOperationSupport.isBlockingAllowed()) {
             return true;
         }
         return super.bufferEntity();

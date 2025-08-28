@@ -7,8 +7,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
-import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 
 import io.smallrye.common.annotation.NonBlocking;
 

@@ -128,7 +128,7 @@ public class MavenProjectBuildFile extends BuildFile {
                 codestartResourceLoaders, log, extensionManager, javaVersion);
     }
 
-    private static JavaVersion resolveJavaVersion(Properties projectProps) {
+    public static JavaVersion resolveJavaVersion(Properties projectProps) {
         if (projectProps.containsKey("maven.compiler.release")) {
             return new JavaVersion(projectProps.getProperty("maven.compiler.release"));
         }

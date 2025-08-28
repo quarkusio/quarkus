@@ -917,6 +917,15 @@ See <<execution-model,Execution Model documentation>> for more information.
 The link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`] return
 type is also supported.
 
+==== Request cancellation
+
+Async endpoints that return `Uni` support request cancellation, which means that if the underlying HTTP connection is closed for whatever reason,
+the request pipeline defined by the returned `Uni` is also cancelled. This can be very useful in avoiding unnecessary work on the server
+when the client isn't going to use the response anyway.
+
+If instead of cancelling the pipeline, it should be completed regardless of the state of the HTTP connection, Quarkus REST provides the `org.jboss.resteasy.reactive.server.Cancellable` annotation
+which can be applied to REST classes or methods to control the cancellation behavior.
+
 === Streaming support
 
 If you want to stream your response element by element, you can make your endpoint method return a

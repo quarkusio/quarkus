@@ -256,6 +256,8 @@ public class HelloIT extends HelloTest {
 - Using Panache entities
 - Using mocks with `@InjectMock`
 
+Usually, it's best to use a combination of `@QuarkusMainTest` tests for testing application externals, and `@QuarkusTest` tests for fine-grained testing which requires access to application internals.
+
 ==== Mocking
 
 CDI injection is not supported in the `@QuarkusMainTest` tests.
@@ -317,5 +319,3 @@ public class MyCommandModeTest {
 <3> The scope of the mocked bean should be consistent with the original one.
 
 Using this pattern, you can enable specific alternatives for any given test.
-
-

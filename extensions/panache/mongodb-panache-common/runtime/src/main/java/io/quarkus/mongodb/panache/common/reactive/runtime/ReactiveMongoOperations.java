@@ -25,10 +25,7 @@ import org.bson.conversions.Bson;
 import org.jboss.logging.Logger;
 
 import com.mongodb.ReadPreference;
-import com.mongodb.client.model.InsertOneModel;
-import com.mongodb.client.model.ReplaceOneModel;
-import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -384,6 +381,14 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         }
         return collection.find(new Document(ID, id)).collect().first()
                 .onItem().transform(Optional::ofNullable);
+    }
+
+    public Multi<Object> findByIds(Class<?> entityClass, List ids) {
+        ReactiveMongoCollection collection = mongoCollection(entityClass);
+        if (Panache.getCurrentSession() != null) {
+            return collection.find(Panache.getCurrentSession(), Filters.in("_id", ids));
+        }
+        return collection.find(Filters.in("_id", ids));
     }
 
     public QueryType find(Class<?> entityClass, String query, Object... params) {

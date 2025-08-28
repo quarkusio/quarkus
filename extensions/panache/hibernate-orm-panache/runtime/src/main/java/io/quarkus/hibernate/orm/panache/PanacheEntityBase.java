@@ -163,6 +163,17 @@ public abstract class PanacheEntityBase {
     }
 
     /**
+     * Find entities of this type by their IDs.
+     *
+     * @param ids the IDs of the entities to find.
+     * @return a list containing the entities found.
+     */
+    @GenerateBridge
+    public static <T extends PanacheEntityBase> List<T> findByIds(List<Object> ids) {
+        throw implementationInjectionMissing();
+    }
+
+    /**
      * Find entities using a query, with optional indexed parameters.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}

@@ -1,6 +1,7 @@
 package io.quarkus.it.mongodb.panache;
 
 import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.post;
 import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
@@ -182,6 +183,12 @@ class MongodbPanacheResourceTest {
         //test findByIdOptional
         book = get(endpoint + "/optional/" + book.getId().toString()).as(BookDTO.class);
         Assertions.assertNotNull(book);
+
+        //test findByIds
+        list = post(endpoint + "/multiple", List.of(book.getId().toString())).as(LIST_OF_BOOK_TYPE_REF);
+        Assertions.assertEquals(1, list.size());
+        Assertions.assertNotNull(list.get(0).getTitle());
+        Assertions.assertNull(list.get(0).getDetails());
 
         // update categories list using HQL
         response = RestAssured

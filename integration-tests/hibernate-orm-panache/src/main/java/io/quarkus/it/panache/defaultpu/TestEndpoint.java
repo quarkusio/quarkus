@@ -273,6 +273,11 @@ public class TestEndpoint {
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
 
+        List<Person> multiple = Person.<Person> findByIds(List.of(person.id));
+        Assertions.assertEquals(1, multiple.size());
+        Assertions.assertEquals(person, multiple.get(0));
+        Assertions.assertEquals("Person<" + person.id + ">", multiple.get(0).toString());
+
         person.delete();
         Assertions.assertEquals(0, Person.count());
 
@@ -819,6 +824,10 @@ public class TestEndpoint {
 
         byId = personDao.findByIdOptional(person.id, LockModeType.PESSIMISTIC_READ).get();
         Assertions.assertEquals(person, byId);
+
+        List<Person> multiple = personDao.findByIds(List.of(person.id));
+        Assertions.assertEquals(1, multiple.size());
+        Assertions.assertEquals(person, multiple.get(0));
 
         personDao.delete(person);
         Assertions.assertEquals(0, personDao.count());

@@ -195,6 +195,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return Optional.ofNullable(findById(entityClass, id, lockModeType));
     }
 
+    public List<?> findByIds(Class<?> entityClass, List<Object> ids) {
+        return getSession(entityClass).findMultiple(entityClass, ids);
+    }
+
     public PanacheQueryType find(Class<?> entityClass, String query, Object... params) {
         return find(entityClass, query, null, params);
     }

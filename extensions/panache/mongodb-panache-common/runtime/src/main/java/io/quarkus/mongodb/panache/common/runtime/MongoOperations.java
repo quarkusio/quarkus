@@ -425,6 +425,13 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return Optional.ofNullable(findById(entityClass, id));
     }
 
+    public List<?> findByIds(Class<?> entityClass, List ids) {
+        MongoCollection collection = mongoCollection(entityClass);
+        ClientSession session = getSession(entityClass);
+        return session == null ? (List<?>) collection.find(Filters.in("_id", ids)).into(new ArrayList<>())
+                : (List<?>) collection.find(session, Filters.in("_id", ids)).into(new ArrayList<>());
+    }
+
     public QueryType find(Class<?> entityClass, String query, Object... params) {
         return find(entityClass, query, null, params);
     }

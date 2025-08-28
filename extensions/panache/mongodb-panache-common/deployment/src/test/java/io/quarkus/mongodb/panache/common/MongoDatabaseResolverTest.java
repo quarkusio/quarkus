@@ -64,6 +64,16 @@ public class MongoDatabaseResolverTest {
         resolveUsingTwoTenantsTest(true);
     }
 
+    @Test
+    public void resolveUsingFindByIdsImperative() {
+        resolveUsingFindByIds(false);
+    }
+
+    @Test
+    public void resolveUsingFindByIdsReactive() {
+        resolveUsingFindByIds(true);
+    }
+
     private void resolveUsingTwoTenantsTest(final boolean isReactive) {
         // arrange
         Person personTenant1 = new Person();
@@ -94,6 +104,25 @@ public class MongoDatabaseResolverTest {
         assertPerson(personTenant2, (Person) result2);
     }
 
+    private void resolveUsingFindByIds(final boolean isReactive) {
+        // arrange
+        Person personTenant = new Person();
+        personTenant.id = 3L;
+        personTenant.firstname = "Pedro";
+        personTenant.lastname = "Pereira";
+
+        String TENANT = isReactive ? "reactive-sanjoka" : "sanjoka";
+
+        persistPerson(isReactive, personTenant, TENANT);
+
+        // act
+        CustomMongoDatabaseResolver.DATABASE = TENANT;
+        final List<Person> result = (List<Person>) findPersonByIdsUsingMongoOperations(isReactive, List.of(personTenant.id));
+
+        // assert
+        assertPerson(personTenant, result.get(0));
+    }
+
     private void persistPerson(final boolean isReactive, final Person person, final String databaseName) {
         final Document document = new Document()
                 .append("_id", person.id)
@@ -118,6 +147,12 @@ public class MongoDatabaseResolverTest {
         return isReactive
                 ? (Person) REACTIVE_OPERATIONS.findById(Person.class, id).await().indefinitely()
                 : (Person) OPERATIONS.findById(Person.class, id);
+    }
+
+    private List<?> findPersonByIdsUsingMongoOperations(final boolean isReactive, final List<Long> ids) {
+        return isReactive
+                ? REACTIVE_OPERATIONS.findByIds(Person.class, ids).collect().asList().await().indefinitely()
+                : OPERATIONS.findByIds(Person.class, ids);
     }
 
     private void assertPerson(final Person expected, final Person value) {

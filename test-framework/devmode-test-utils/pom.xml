@@ -47,6 +47,10 @@
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-os</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

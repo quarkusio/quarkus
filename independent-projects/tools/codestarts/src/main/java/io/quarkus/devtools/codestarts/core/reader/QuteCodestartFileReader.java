@@ -3,12 +3,12 @@ package io.quarkus.devtools.codestarts.core.reader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 
 import io.quarkus.devtools.codestarts.CodestartException;
@@ -52,7 +52,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
     public Optional<String> read(CodestartResource projectResource, Source source, String languageName,
             Map<String, Object> data)
             throws IOException {
-        if (FilenameUtils.getName(source.path()).contains(INCLUDE_QUTE_FLAG)) {
+        if (Path.of(source.path()).getFileName().toString().contains(INCLUDE_QUTE_FLAG)) {
             return Optional.empty();
         }
         final String value = readQuteFile(projectResource, source, languageName, data);

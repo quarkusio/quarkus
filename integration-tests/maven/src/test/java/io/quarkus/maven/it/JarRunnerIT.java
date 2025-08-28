@@ -29,7 +29,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.awaitility.core.ConditionTimeoutException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -116,7 +115,7 @@ public class JarRunnerIT extends MojoTestBase {
                     .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                     .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThatOutputWorksCorrectly(logs);
 
@@ -252,7 +251,7 @@ public class JarRunnerIT extends MojoTestBase {
                 return null;
             }, output, ConditionTimeoutException.class);
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThat(logs).isNotEmpty().contains("rest");
 
@@ -514,7 +513,7 @@ public class JarRunnerIT extends MojoTestBase {
             }, output, ConditionTimeoutException.class);
             performRequest("/app/added", 404);
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThatOutputWorksCorrectly(logs);
 
@@ -549,7 +548,7 @@ public class JarRunnerIT extends MojoTestBase {
                     .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                     .until(() -> devModeClient.getHttpResponse("/moved/app/hello/package", 200));
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThatOutputWorksCorrectly(logs);
 
@@ -588,7 +587,7 @@ public class JarRunnerIT extends MojoTestBase {
                     .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                     .until(() -> devModeClient.getHttpResponse("/anothermove/app/hello/package", 200));
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThatOutputWorksCorrectly(logs);
 
@@ -640,7 +639,7 @@ public class JarRunnerIT extends MojoTestBase {
                 return null;
             }, output, ConditionTimeoutException.class);
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThatOutputWorksCorrectly(logs);
         } finally {
@@ -795,7 +794,7 @@ public class JarRunnerIT extends MojoTestBase {
             operation.call();
         } catch (Throwable t) {
             if (failureType != null && failureType.isInstance(t)) {
-                final String logs = FileUtils.readFileToString(logFile, "UTF-8");
+                final String logs = Files.readString(logFile.toPath());
                 System.out.println("####### LOG DUMP ON FAILURE (start) ######");
                 System.out.println("Dumping logs that were generated in " + logFile + " for an operation that resulted in "
                         + t.getClass().getName() + ":");
@@ -852,7 +851,7 @@ public class JarRunnerIT extends MojoTestBase {
                 return null;
             }, output, ConditionTimeoutException.class);
 
-            String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = Files.readString(output.toPath());
 
             assertThat(logs).isNotEmpty().contains("rest");
 

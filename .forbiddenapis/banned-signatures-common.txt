@@ -64,3 +64,9 @@ io.quarkus.logging.Log#fatalv(**)
 io.quarkus.logging.Log#log(**)
 io.quarkus.logging.Log#logf(**)
 io.quarkus.logging.Log#logv(**)
+
+@defaultMessage commons-io may not be used in Quarkus, use java.nio and our own utils instead
+org.apache.commons.io.**
+
+@defaultMessage avoid commons-collection usage. If you need a specific method, let @gsmet know.
+org.apache.commons.collections4.**

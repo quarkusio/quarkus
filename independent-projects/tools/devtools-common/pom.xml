@@ -44,6 +44,10 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-version</artifactId>
         </dependency>
         <dependency>

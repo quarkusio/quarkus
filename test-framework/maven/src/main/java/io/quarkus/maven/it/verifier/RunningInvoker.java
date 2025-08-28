@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.InvocationRequest;
@@ -22,6 +21,7 @@ import org.apache.maven.shared.invoker.PrintStreamLogger;
 
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.test.devmode.util.DevModeClient;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * Implementation of verifier using a forked process that is still running while verifying. The process is stop when
@@ -79,6 +79,7 @@ public class RunningInvoker extends MavenProcessInvoker {
      * @param two
      * @return
      */
+    @SuppressForbidden(reason = "we allow TeeOutputStream")
     private static PrintStream createTeePrintStream(final OutputStream one, final OutputStream two) {
         final OutputStream tee = new TeeOutputStream(one, two);
         PrintStream stream;
@@ -150,7 +151,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         if (log == null) {
             return null;
         }
-        return FileUtils.readFileToString(log, "UTF-8");
+        return Files.readString(log.toPath());
     }
 
     public MavenProcessInvocationResult getResult() {

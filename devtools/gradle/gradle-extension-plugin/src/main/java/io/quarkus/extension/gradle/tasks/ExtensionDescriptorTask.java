@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.devtools.project.extensions.ScmInfoProvider;
@@ -322,11 +321,9 @@ public class ExtensionDescriptorTask extends DefaultTask {
             }
         }
         if (artifactNode == null || groupId == null || artifactId == null || version == null) {
-            final AppArtifactCoords coords = new AppArtifactCoords(
+            final ArtifactCoords coords = ArtifactCoords.jar(
                     groupId == null ? projectInfo.get("group") : groupId,
                     artifactId == null ? projectInfo.get("name") : artifactId,
-                    null,
-                    "jar",
                     version == null ? projectInfo.get("version") : version);
             extObject.put("artifact", coords.toString());
         }

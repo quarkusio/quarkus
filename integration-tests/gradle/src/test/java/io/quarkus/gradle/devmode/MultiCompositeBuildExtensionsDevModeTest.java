@@ -41,23 +41,29 @@ public class MultiCompositeBuildExtensionsDevModeTest extends QuarkusDevGradleTe
         assertThat(getHttpResponse("/hello")).contains("hello from LibB and LibA extension enabled: true");
     }
 
+    private File testProjectDir;
+
     @Override
     protected File getProjectDir() {
-        File projectDir = super.getProjectDir();
-        final File appProperties = new File(projectDir, "application/gradle.properties");
-        final File libsProperties = new File(projectDir, "libraries/gradle.properties");
-        final File extensionProperties = new File(projectDir, "extensions/example-extension/gradle.properties");
-        final File anotherExtensionProperties = new File(projectDir, "extensions/another-example-extension/gradle.properties");
-        final Path projectProperties = projectDir.toPath().resolve("gradle.properties");
+        if (testProjectDir == null) {
+            File projectDir = super.getProjectDir();
+            final File appProperties = new File(projectDir, "application/gradle.properties");
+            final File libsProperties = new File(projectDir, "libraries/gradle.properties");
+            final File extensionProperties = new File(projectDir, "extensions/example-extension/gradle.properties");
+            final File anotherExtensionProperties = new File(projectDir,
+                    "extensions/another-example-extension/gradle.properties");
+            final Path projectProperties = projectDir.toPath().resolve("gradle.properties");
 
-        try {
-            Files.copy(projectProperties, appProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(projectProperties, libsProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(projectProperties, extensionProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(projectProperties, anotherExtensionProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to copy gradle.properties file", e);
+            try {
+                Files.copy(projectProperties, appProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(projectProperties, libsProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(projectProperties, extensionProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(projectProperties, anotherExtensionProperties.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to copy gradle.properties file", e);
+            }
+            this.testProjectDir = projectDir;
         }
-        return projectDir;
+        return testProjectDir;
     }
 }

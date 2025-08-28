@@ -1,5 +1,6 @@
 package io.quarkus.io.smallrye.graphql.keycloak;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,6 +12,7 @@ import jakarta.ws.rs.PathParam;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
+import io.smallrye.graphql.client.websocket.WebsocketSubprotocol;
 
 /**
  * We can't perform these tests in the `@Test` methods directly, because the GraphQL client
@@ -24,14 +26,20 @@ import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 public class GraphQLAuthExpiryTester {
 
     @GET
-    @Path("/dynamic-subscription-auth-expiry/{token}/{url}")
+    @Path("/dynamic-subscription-auth-expiry/{clientinit}/{subprotocol}/{token}/{url}")
     @Blocking
-    public void dynamicSubscription(@PathParam("token") String token, @PathParam("url") String url)
-            throws Exception {
+    public void dynamicSubscription(@PathParam("clientinit") boolean clientInit, @PathParam("subprotocol") String subprotocol,
+            @PathParam("token") String token, @PathParam("url") String url) throws Exception {
         DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
                 .url(url + "/graphql")
-                .header("Authorization", "Bearer " + token)
-                .executeSingleOperationsOverWebsocket(true);
+                .executeSingleOperationsOverWebsocket(true)
+                .subprotocols(WebsocketSubprotocol.valueOf(subprotocol));
+
+        if (clientInit) {
+            clientBuilder.initPayload(Map.of("Authorization", "Bearer " + token));
+        } else {
+            clientBuilder.header("Authorization", "Bearer " + token);
+        }
 
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             CompletableFuture<Void> authenticationExpired = new CompletableFuture<>();

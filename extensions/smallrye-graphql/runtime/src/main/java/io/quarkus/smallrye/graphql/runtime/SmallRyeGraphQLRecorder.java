@@ -89,7 +89,8 @@ public class SmallRyeGraphQLRecorder {
     public Handler<RoutingContext> graphqlOverWebsocketHandler(BeanContainer beanContainer, RuntimeValue<Boolean> initialized,
             boolean runBlocking) {
         return new SmallRyeGraphQLOverWebSocketHandler(getCurrentIdentityAssociation(),
-                Arc.container().instance(CurrentVertxRequest.class).get(), runBlocking);
+                Arc.container().instance(CurrentVertxRequest.class).get(), runBlocking,
+                graphQLConfig.authorizationClientInitPayloadName());
     }
 
     public Handler<RoutingContext> schemaHandler(RuntimeValue<Boolean> initialized, boolean schemaAvailable) {

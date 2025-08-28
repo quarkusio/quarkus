@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -125,6 +126,19 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
             }, throwable -> Assertions.fail(throwable));
 
             await().untilTrue(returned);
+        }
+    }
+
+    @Test
+    public void testAuthenticatedUserButDefinedWithClientInitForQueryWebSocket() throws Exception {
+        DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
+                .url(url)
+                // Because quarkus.smallrye-graphql.authorization-client-init-payload-name is undefined, this will be ignored.
+                .initPayload(Map.of("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
+                .executeSingleOperationsOverWebsocket(true);
+        try (DynamicGraphQLClient client = clientBuilder.build()) {
+            Response response = client.executeSync("{ foo { message} }");
+            assertEquals(JsonValue.ValueType.NULL, response.getData().get("foo").getValueType());
         }
     }
 

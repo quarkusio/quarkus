@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +52,7 @@ import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageBuildStep;
 import io.quarkus.deployment.sbom.SbomBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
@@ -245,14 +247,14 @@ public class AugmentActionImpl implements AugmentAction {
 
     private void writeArtifactResultMetadataFile(BuildSystemTargetBuildItem outputTargetBuildItem,
             List<ArtifactResultBuildItem> artifactResultBuildItems) {
-        ArtifactResultBuildItem lastArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
+        ArtifactResultBuildItem selectedArtifact = selectArtifactResult(artifactResultBuildItems);
         Path quarkusArtifactMetadataPath = outputTargetBuildItem.getOutputDirectory().resolve("quarkus-artifact.properties");
         Properties properties = new Properties();
-        properties.put("type", lastArtifact.getType());
-        if (lastArtifact.getPath() != null) {
-            properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, lastArtifact));
+        properties.put("type", selectedArtifact.getType());
+        if (selectedArtifact.getPath() != null) {
+            properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, selectedArtifact));
         } else {
-            if (lastArtifact.getType().endsWith("-container")) {
+            if (selectedArtifact.getType().endsWith("-container")) {
                 // in this case we write "path" as to contain the path to the artifact from which the container was built
                 try {
                     ArtifactResultBuildItem baseArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 2);
@@ -265,7 +267,7 @@ public class AugmentActionImpl implements AugmentAction {
                 }
             }
         }
-        Map<String, String> metadata = lastArtifact.getMetadata();
+        Map<String, String> metadata = selectedArtifact.getMetadata();
         if (metadata != null) {
             for (Map.Entry<String, String> entry : metadata.entrySet()) {
                 properties.put("metadata." + entry.getKey(), entry.getValue());
@@ -276,6 +278,18 @@ public class AugmentActionImpl implements AugmentAction {
         } catch (IOException e) {
             log.debug("Unable to write artifact result metadata file", e);
         }
+    }
+
+    private static ArtifactResultBuildItem selectArtifactResult(List<ArtifactResultBuildItem> artifactResultBuildItems) {
+        // the native artifact should be considered first in case we build both a jar and a native image
+        Optional<ArtifactResultBuildItem> nativeArtifact = artifactResultBuildItems.stream()
+                .filter(a -> NativeImageBuildStep.ARTIFACT_RESULT_TYPE.equals(a.getType()))
+                .findFirst();
+        if (nativeArtifact.isPresent()) {
+            return nativeArtifact.get();
+        }
+
+        return artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
     }
 
     private static String artifactPathForResultMetadata(BuildSystemTargetBuildItem outputTargetBuildItem,

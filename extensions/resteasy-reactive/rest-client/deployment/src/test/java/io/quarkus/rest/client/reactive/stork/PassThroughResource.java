@@ -5,6 +5,7 @@ import java.net.URI;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -27,6 +28,12 @@ public class PassThroughResource {
     @GET
     public String invokeClientWithPathParamContainingSlash(@PathParam("name") String name) {
         return client.helloWithPathParam(name + "/" + name);
+    }
+
+    @Path("/v2/query")
+    @GET
+    public String invokeClientWithQueryParam(@QueryParam("foo") String foo) {
+        return client.helloWithQueryParam(foo);
     }
 
     @Path("/{name}")

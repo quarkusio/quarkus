@@ -80,6 +80,16 @@ public class StorkDevModeTest {
     }
 
     @Test
+    void shouldEncodeQueryCorrectly() {
+        when()
+                .get("/helper/v2/query?foo=cigüeña")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Hello, this is your query parameter: cigüeña"));
+
+    }
+
+    @Test
     void shouldSayHelloNameWithBlank() {
         when()
                 .get("/helper/smallrye stork")

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +53,7 @@ import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageBuildStep;
 import io.quarkus.deployment.sbom.SbomBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
@@ -280,9 +282,17 @@ public class AugmentActionImpl implements AugmentAction {
     }
 
     private ArtifactResultBuildItem effectiveArtifact(List<ArtifactResultBuildItem> artifactResultBuildItems) {
-        ListIterator li = artifactResultBuildItems.listIterator(artifactResultBuildItems.size());
+        // the native artifact should be considered first in case we build both a jar and a native image
+        Optional<ArtifactResultBuildItem> nativeArtifact = artifactResultBuildItems.stream()
+                .filter(a -> NativeImageBuildStep.ARTIFACT_RESULT_TYPE.equals(a.getType()))
+                .findFirst();
+        if (nativeArtifact.isPresent()) {
+            return nativeArtifact.get();
+        }
+
+        ListIterator<ArtifactResultBuildItem> li = artifactResultBuildItems.listIterator(artifactResultBuildItems.size());
         while (li.hasPrevious()) {
-            ArtifactResultBuildItem result = (ArtifactResultBuildItem) li.previous();
+            ArtifactResultBuildItem result = li.previous();
             if ("appCDS".equals(result.getType())) {
                 continue;
             }

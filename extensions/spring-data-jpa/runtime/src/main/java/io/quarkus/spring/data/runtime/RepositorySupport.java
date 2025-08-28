@@ -24,13 +24,21 @@ public final class RepositorySupport {
                 result.add(byId);
             }
         }
-        return result;
+        return operations.findByIds(entityClass, result);
     }
 
+    @Deprecated
     public static List<?> findByIds(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass,
             String idField, Iterable<Long> ids) {
         Objects.requireNonNull(ids);
-        return operations.find(entityClass, String.format("%s in ?1", idField), ids).list();
+        List<Object> result = new ArrayList<>();
+        for (Object id : ids) {
+            Object byId = operations.findById(entityClass, id);
+            if (byId != null) {
+                result.add(byId);
+            }
+        }
+        return operations.findByIds(entityClass, result);
     }
 
     public static void deleteAll(AbstractJpaOperations<PanacheQuery<?>> operations, Iterable<?> entities) {

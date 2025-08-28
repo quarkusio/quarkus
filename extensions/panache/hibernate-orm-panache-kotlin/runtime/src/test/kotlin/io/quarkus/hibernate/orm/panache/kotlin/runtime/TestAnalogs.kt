@@ -36,7 +36,7 @@ class TestAnalogs {
         compare(
             map(JavaPanacheRepository::class),
             map(PanacheRepository::class),
-            listOf("findByIdOptional"),
+            listOf("findByIdOptional", "findByIds"),
         )
     }
 
@@ -61,7 +61,9 @@ class TestAnalogs {
                 }
             }
         }
-        javaMethods.removeIf { it.name.endsWith("Optional") || it in implemented }
+        javaMethods.removeIf {
+            it.name.endsWith("Optional") || it.name == "findByIds" || it in implemented
+        }
 
         //        methods("javaMethods", javaMethods)
         //        methods("kotlinMethods", kotlinMethods)
@@ -101,7 +103,10 @@ class TestAnalogs {
         }
 
         javaMethods.removeIf {
-            it.name.endsWith("Optional") || it.name in allowList || it in implemented
+            it.name.endsWith("Optional") ||
+                it.name == "findByIds" ||
+                it.name in allowList ||
+                it in implemented
         }
 
         //        methods("javaMethods", javaMethods)

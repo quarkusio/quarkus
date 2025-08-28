@@ -83,6 +83,12 @@ public class BookEntityResource {
     }
 
     @GET
+    @Path("/multiple")
+    public List<BookEntity> findByIdsBooks(List<String> ids) {
+        return BookEntity.findByIds(ids.stream().map(ObjectId::new).toList());
+    }
+
+    @GET
     @Path("/search/{author}")
     public List<BookShortView> getBooksByAuthor(@PathParam("author") String author) {
         return BookEntity.find("author", author).project(BookShortView.class).list();

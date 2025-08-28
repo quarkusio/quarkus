@@ -134,72 +134,74 @@ quarkus.micrometer.binder.http-server.enabled=true
 
 The JVM and HTTP server metrics are collected by Micrometer.
 
-Next, are examples of the metrics collected by Micrometer and a comparison of what would be the `quarkus-micrometer-registry-prometheus` output vs the one on this bridge. A link to the equivalent OpenTelemetry Semantic Convention is also provided for reference and is not currently used in the bridge.
+Next, are examples of the metrics collected by Micrometer compared with what would be the `quarkus-micrometer-registry-prometheus` endpoint output (`/q/metrics`) vs the OTLP protocol output on this bridge.
 
+A link to the equivalent OpenTelemetry Semantic Convention is also provided for reference and is not currently used by the bridge.
+
+.Micrometer metrics output comparison. Prometheus registry vs. OpenTelemetry bridge
 |===
-|Micrometer Meter |Quarkus Micrometer Prometheus output | This bridge OpenTelemetry output name | Related OpenTelemetry Semantic Convention (not applied)
+|Micrometer Meter Java definition |Quarkus Micrometer Prometheus output (as seen at `/q/metrics/`) | This bridge OpenTelemetry output name (as seen in the OTLP output) | Related OpenTelemetry Semantic Convention (not applied)
 
-|Using the @Timed interceptor.
+|Using the xref:telemetry-micrometer#create-a-timer[@Timed] interceptor.
 |
-|method.timed (Histogram), method.timed.max (DoubleGauge)
+|method.timed (xref:opentelemetry-metrics#histograms[Histogram]), method.timed.max (xref:opentelemetry-metrics#gauges[DoubleGauge])
 |NA
 
-|Using the @Counted interceptor.
+|Using the xref:telemetry-micrometer#counters[@Counted] interceptor.
 |
-|method.counted (DoubleSum)
+|method.counted (https://opentelemetry.io/docs/specs/otel/metrics/sdk/#sum-aggregation[DoubleSum])
 |NA
 
-|`http.server.active.requests` (Gauge)
-|`http_server_active_requests` (Gauge)
-|`http.server.active.requests` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserveractive_requests[`http.server.active_requests`] (UpDownCounter)
+|`http.server.active.requests` (xref:telemetry-micrometer#gauges[Gauge])
+|`http_server_active_requests` (xref:telemetry-micrometer#gauges[Gauge])
+|`http.server.active.requests` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserveractive_requests[`http.server.active_requests`] (xref:opentelemetry-metrics#counters[UpDownCounter])
 
 |`http.server.requests` (Timer)
-|`http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, `http_server_requests_seconds_max` (Gauge)
-|`http.server.requests` (Histogram), `http.server.requests.max` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestduration[`http.server.request.duration`] (Histogram)
+|`http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, `http_server_requests_seconds_max` (xref:telemetry-micrometer#gauges[Gauge])
+|`http.server.requests` (xref:opentelemetry-metrics#histograms[Histogram]), `http.server.requests.max` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestduration[`http.server.request.duration`] (xref:opentelemetry-metrics#histograms[Histogram])
 
-|`http.server.bytes.read` (DistributionSummary)
-|`http_server_bytes_read_count`, `http_server_bytes_read_sum` , `http_server_bytes_read_max` (Gauge)
-|`http.server.bytes.read` (Histogram), `http.server.bytes.read.max` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestbodysize[`http.server.request.body.size`] (Histogram)
+|`http.server.bytes.read` (xref:telemetry-micrometer#create-a-distribution-summary[DistributionSummary])
+|`http_server_bytes_read_count`, `http_server_bytes_read_sum` , `http_server_bytes_read_max` (xref:telemetry-micrometer#gauges[Gauge])
+|`http.server.bytes.read` (xref:opentelemetry-metrics#histograms[Histogram]), `http.server.bytes.read.max` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestbodysize[`http.server.request.body.size`] (xref:opentelemetry-metrics#histograms[Histogram])
 
-|`http.server.bytes.write` (DistributionSummary)
-|`http_server_bytes_write_count`, `http_server_bytes_write_sum` , `http_server_bytes_write_max` (Gauge)
-|`http.server.bytes.write` (Histogram), `http.server.bytes.write.max` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverresponsebodysize[`http.server.response.body.size`] (Histogram)
+|`http.server.bytes.write` (xref:telemetry-micrometer#create-a-distribution-summary[DistributionSummary])
+|`http_server_bytes_write_count`, `http_server_bytes_write_sum` , `http_server_bytes_write_max` (xref:telemetry-micrometer#gauges[Gauge])
+|`http.server.bytes.write` (xref:opentelemetry-metrics#histograms[Histogram]), `http.server.bytes.write.max` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverresponsebodysize[`http.server.response.body.size`] (xref:opentelemetry-metrics#histograms[Histogram])
 
-|`http.server.connections` (LongTaskTimer)
-|`http_server_connections_seconds_active_count`, `http_server_connections_seconds_duration_sum` `http_server_connections_seconds_max` (Gauge)
-|`http.server.connections.active` (LongSum), `http.server.connections.duration` (DoubleGauge)
+|`http.server.connections` (https://docs.micrometer.io/micrometer/reference/concepts/long-task-timers.html[LongTaskTimer])
+|`http_server_connections_seconds_active_count`, `http_server_connections_seconds_duration_sum` `http_server_connections_seconds_max` (xref:telemetry-micrometer#gauges[Gauge])
+|`http.server.connections.active` (https://opentelemetry.io/docs/specs/otel/metrics/sdk/#sum-aggregation[LongSum]), `http.server.connections.duration` (xref:opentelemetry-metrics#gauges[DoubleGauge])
 | N/A
 
-|`jvm.threads.live` (Gauge)
-|`jvm_threads_live_threads` (Gauge)
-|`jvm.threads.live` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+|`jvm.threads.live` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm_threads_live_threads` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm.threads.live` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (xref:opentelemetry-metrics#counters[UpDownCounter])
 
-|`jvm.threads.started` (FunctionCounter)
-|`jvm_threads_started_threads_total` (Counter)
-|`jvm.threads.started` (DoubleSum)
-|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+|`jvm.threads.started` (https://docs.micrometer.io/micrometer/reference/concepts/counters.html#_function_tracking_counters[FunctionCounter])
+|`jvm_threads_started_threads_total` (xref:telemetry-micrometer#counters[Counter])
+|`jvm.threads.started` (https://opentelemetry.io/docs/specs/otel/metrics/sdk/#sum-aggregation[DoubleSum])
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (xref:opentelemetry-metrics#counters[UpDownCounter])
 
-|`jvm.threads.daemon` (Gauge)
-|`jvm_threads_daemon_threads` (Gauge)
-|`jvm.threads.daemon` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+|`jvm.threads.daemon` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm_threads_daemon_threads` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm.threads.daemon` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (xref:opentelemetry-metrics#counters[UpDownCounter])
 
-|`jvm.threads.peak` (Gauge)
-|`jvm_threads_peak_threads` (Gauge)
-|`jvm.threads.peak` (DoubleGauge)
+|`jvm.threads.peak` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm_threads_peak_threads` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm.threads.peak` (xref:opentelemetry-metrics#gauges[DoubleGauge])
 |N/A
 
-|`jvm.threads.states` (Gauge per state)
-|`jvm_threads_states_threads` (Gauge)
-|`jvm.threads.states` (DoubleGauge)
-|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (UpDownCounter)
+|`jvm.threads.states` (xref:telemetry-micrometer#gauges[Gauge] per state)
+|`jvm_threads_states_threads` (xref:telemetry-micrometer#gauges[Gauge])
+|`jvm.threads.states` (xref:opentelemetry-metrics#gauges[DoubleGauge])
+|https://opentelemetry.io/docs/specs/semconv/runtime/jvm-metrics/#metric-jvmthreadcount[`jvm.threads.live`] (xref:opentelemetry-metrics#counters[UpDownCounter])
 |===
-
 
 [NOTE]
 ====

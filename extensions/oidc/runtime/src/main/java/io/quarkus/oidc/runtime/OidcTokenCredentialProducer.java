@@ -111,12 +111,16 @@ public class OidcTokenCredentialProducer {
         if (codeFlowAccessTokenResult == null) {
             return tokenIntrospectionFromIdentityAttribute();
         } else {
-            return codeFlowAccessTokenResult.introspectionResult;
+            return tokenIntrospectionInstance(codeFlowAccessTokenResult.introspectionResult);
         }
     }
 
     TokenIntrospection tokenIntrospectionFromIdentityAttribute() {
         TokenIntrospection introspection = OidcUtils.getAttribute(identity, OidcUtils.INTROSPECTION_ATTRIBUTE);
+        return tokenIntrospectionInstance(introspection);
+    }
+
+    private static TokenIntrospection tokenIntrospectionInstance(TokenIntrospection introspection) {
         if (introspection == null) {
             LOG.trace("TokenIntrospection is null");
             introspection = new TokenIntrospection();

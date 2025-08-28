@@ -2,10 +2,10 @@
 package io.quarkus.redis.runtime.datasource;
 
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
+import static io.quarkus.redis.runtime.datasource.Validation.validateTimeout;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
-import static io.smallrye.mutiny.helpers.ParameterValidation.validate;
 import static java.lang.Double.NEGATIVE_INFINITY;
 import static java.lang.Double.POSITIVE_INFINITY;
 
@@ -329,7 +329,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     Uni<Response> _bzmpopMin(Duration timeout, K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
 
         RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MIN");
@@ -339,7 +339,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     Uni<Response> _bzmpopMin(Duration timeout, int count, K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
 
         RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MIN").put("COUNT").put(count);
@@ -349,7 +349,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     Uni<Response> _bzmpopMax(Duration timeout, K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
 
         RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MAX");
@@ -359,7 +359,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     Uni<Response> _bzmpopMax(Duration timeout, int count, K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
 
         RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MAX").put("COUNT").put(count);
@@ -426,7 +426,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         nonNull(keys, "keys");
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
         RedisCommand cmd = RedisCommand.of(Command.BZPOPMIN);
         cmd.putAll(marshaller.encode(keys)).put(timeout.toSeconds());
         return execute(cmd);
@@ -437,7 +437,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         nonNull(keys, "keys");
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
         RedisCommand cmd = RedisCommand.of(Command.BZPOPMAX);
         for (K key : keys) {
             cmd.put(marshaller.encode(key));

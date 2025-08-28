@@ -71,6 +71,12 @@ public class GeneratedStaticResourcesProcessor {
                 additionalStaticResourcesProducer.produce(
                         new AdditionalStaticResourceBuildItem(generatedStaticResource.getEndpoint(), false));
                 nativeImageResourcesProducer.produce(new NativeImageResourceBuildItem(generatedStaticResourceLocation));
+                int lastSep = generatedStaticResourceLocation.lastIndexOf('/');
+                if (lastSep > 0) {
+                    String parent = generatedStaticResourceLocation.substring(0, lastSep);
+                    // if the resource is somehow an index page, we need the parent directory to also be added as a native resource so that we can resolve both `/path/index.html` and `/path/` (needed by Vert.x static handler).
+                    nativeImageResourcesProducer.produce(new NativeImageResourceBuildItem(parent));
+                }
             }
         }
     }

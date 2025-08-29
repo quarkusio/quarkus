@@ -97,9 +97,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <keycloak.server.version>26.3.0</keycloak.server.version>
-        <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
-        <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
         <unboundid-ldap.version>7.0.3</unboundid-ldap.version>
 

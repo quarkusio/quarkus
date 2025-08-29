@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { devuiState } from 'devui-state';
 import 'qwc/qwc-endpoints.js';
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 
 /**
  * This component shows the welcome screen
@@ -65,11 +66,12 @@ export class QwcWelcome extends LitElement {
         }
     
         .content {
-            height:100%;
+            min-height:100%;
             width:100%;
             background: var(--lumo-base-color);
             display: flex;
             justify-content: space-around;
+            padding-bottom: 20px;
         }
     
         .left-column {
@@ -174,12 +176,7 @@ export class QwcWelcome extends LitElement {
                                 <h1>You just made a Quarkus application.</h1>
                                 <p>This page is served by the Quarkus Dev UI (only in dev mode ) until you provide your own Web UI</p>
                                 <a href="extensions" class="cta-button">Visit the Dev UI</a>
-                                <div class="locations">
-                                    <span>Learn how you can <a href="https://quarkus.io/guides/http-reference" target="_blank">add your own static web content</a></span>
-                                    <span>App configuration: <code>${devuiState.welcomeData.configFile}</code></span>
-                                    <span>Static assets: <code>${devuiState.welcomeData.resourcesDir}/META-INF/resources/</code></span>
-                                    <span>Code: <code>${devuiState.welcomeData.sourceDir}</code></span>
-                                </div>
+                                ${this._renderDynamicWelcomeData()}
                                 <qwc-endpoints filter="Resource Endpoints"></qwc-endpoints>
                             </div>
                             <div class="right-column">
@@ -198,6 +195,29 @@ export class QwcWelcome extends LitElement {
     
     _reload(){
         window.location.href = '/';
+    }
+    
+    _renderDynamicWelcomeData(){
+        if(devuiState.welcomeData.dynamicContent){
+                return html`
+                <div class="locations">
+                    ${unsafeHTML(devuiState.welcomeData.dynamicContent)}
+                    ${this._renderFileLocations()}
+                </div>`;
+        }else {
+            return html`
+                <div class="locations">
+                    <span>Learn how you can <a href="https://quarkus.io/guides/web" target="_blank">add your own static web content</a></span>
+                    <span>Static assets: <code>${devuiState.welcomeData.resourcesDir}/META-INF/resources/</code></span>
+                    ${this._renderFileLocations()}
+                </div>
+            `;
+        }
+    }
+    
+    _renderFileLocations(){
+        return html`<span>App configuration: <code>${devuiState.welcomeData.configFile}</code></span>
+                    <span>Code: <code>${devuiState.welcomeData.sourceDir}</code></span>`;
     }
     
     _renderSelectedExtensions(){

@@ -10,6 +10,7 @@ public class WelcomeData {
     public String resourcesDir;
     public String sourceDir;
     public List<SelectedExtension> selectedExtensions = new ArrayList<>();
+    public String dynamicContent;
 
     public void addSelectedExtension(String name, String description, URL guide) {
         selectedExtensions.add(new SelectedExtension(name, description, guide));

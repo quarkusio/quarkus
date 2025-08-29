@@ -1,6 +1,5 @@
 package io.quarkus.spring.data.runtime;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,20 +16,14 @@ public final class RepositorySupport {
     public static List<?> findByIds(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass,
             Iterable<?> ids) {
         Objects.requireNonNull(ids);
-        List<Object> result = new ArrayList<>();
-        for (Object id : ids) {
-            Object byId = operations.findById(entityClass, id);
-            if (byId != null) {
-                result.add(byId);
-            }
-        }
-        return result;
+        return operations.findByIds(entityClass, ids);
     }
 
+    @Deprecated
     public static List<?> findByIds(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass,
             String idField, Iterable<Long> ids) {
         Objects.requireNonNull(ids);
-        return operations.find(entityClass, String.format("%s in ?1", idField), ids).list();
+        return operations.findByIds(entityClass, ids);
     }
 
     public static void deleteAll(AbstractJpaOperations<PanacheQuery<?>> operations, Iterable<?> entities) {

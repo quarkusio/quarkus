@@ -73,12 +73,16 @@ fixes, documentation, examples... But first, read this page (including the small
 
 ## Legal
 
+
+
 All original contributions to Quarkus are licensed under the
 [ASL - Apache License](https://www.apache.org/licenses/LICENSE-2.0), version 2.0 or later, or, if another license is
 specified as governing the file or directory being modified, such other license.
 
-All contributions are subject to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/). The DCO
-text is also included verbatim in the [dco.txt](dco.txt) file in the root directory of the repository.
+All contributions require agreement with the
+[Developer Certificate of Origin (DCO)](dco.txt) and must comply with
+applicable export control laws, including the U.S. Export Administration
+Regulations (EAR). The [DCO text](dco.txt) is also included verbatim in the dco.txt file in the root directory of the repository.
 
 ## Reporting an issue
 

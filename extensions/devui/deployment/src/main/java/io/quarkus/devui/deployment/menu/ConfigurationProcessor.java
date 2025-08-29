@@ -1,16 +1,21 @@
 package io.quarkus.devui.deployment.menu;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -38,6 +43,8 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.PropertiesConfigSource;
 
 /**
  * This creates Extensions Page
@@ -106,36 +113,37 @@ public class ConfigurationProcessor {
 
         configActions.actionBuilder()
                 .methodName("updateProperty")
-                .description("Update a configuration/property in the Quarkus application")
-                .parameter("name", "The name of the configuration/property to update")
-                .parameter("value", "The new value for the configuration/property")
+                .description("Update a configuration in the Quarkus application")
+                .parameter("name", "The name of the configuration to update")
+                .parameter("value", "The new value for the configuration to update")
+                .parameter("profile", "the profile of the configuration to update")
+                .parameter("target", "The target configuration file to update")
                 .function(map -> {
-                    Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
-                    updateConfig(values);
+                    String name = map.get("name");
+                    String value = map.get("value");
+                    String profile = map.getOrDefault("profile", "");
+                    String target = map.getOrDefault("target", "application.properties");
+                    updateConfig(name, value, profile, target);
                     return true;
                 })
                 .build();
 
         configActions.actionBuilder()
                 .methodName("updateProperties")
-                .description("Update multiple configurations/properties in the Quarkus application")
+                .description("Update multiple configurations in the Quarkus application")
                 .parameter("type",
                         "The type should always be 'properties' as the content should be the contents of serialized properties object")
                 .parameter("content",
-                        "The string value of serialized properties, with the keys being the name of the configuration/property and the value the new value for that configuration/property")
+                        "The string value of serialized properties, with the keys being the name of the configuration and the value the new value for that configuration")
+                .parameter("target", "The target configuration file to update")
                 .function(map -> {
                     String type = map.get("type");
-
                     if (type.equalsIgnoreCase("properties")) {
-                        String content = map.get("content");
-
-                        Properties p = new Properties();
-                        try (StringReader sr = new StringReader(content)) {
-                            p.load(sr); // Validate
-                            setConfig(content);
+                        try {
+                            writeConfig(map.get("content"), map.getOrDefault("target", "application.properties"));
                             return true;
-                        } catch (IOException ex) {
-                            return false;
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
                     }
                     return false;
@@ -205,55 +213,30 @@ public class ConfigurationProcessor {
         return false;
     }
 
-    public static void updateConfig(Map<String, String> values) {
-        if (values != null && !values.isEmpty()) {
-            try {
-                Path configPath = getConfigPath();
-                List<String> lines = Files.readAllLines(configPath);
-                for (Map.Entry<String, String> entry : values.entrySet()) {
-                    String name = entry.getKey();
-                    String value = entry.getValue();
-                    int nameLine = -1;
-                    for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
-                        String line = lines.get(i);
-                        if (line.startsWith(name + "=")) {
-                            nameLine = i;
-                            break;
-                        }
-                    }
-                    if (nameLine != -1) {
-                        if (value.isEmpty()) {
-                            lines.remove(nameLine);
-                        } else {
-                            lines.set(nameLine, name + "=" + value);
-                        }
-                    } else {
-                        if (!value.isEmpty()) {
-                            lines.add(name + "=" + value);
-                        }
-                    }
-                }
-
-                try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
-                    for (String i : lines) {
-                        writer.write(i);
-                        writer.newLine();
-                    }
-                }
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
+    public static void updateConfig(final Map<String, String> values) {
+        for (Entry<String, String> entry : values.entrySet()) {
+            updateConfig(entry.getKey(), entry.getValue(), "", "application.properties");
         }
     }
 
-    private static void setConfig(String value) {
+    static void updateConfig(final String name, final String value, final String profile, final String target) {
         try {
-            Path configPath = getConfigPath();
-            try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
-                if (value == null || value.isEmpty()) {
+            final Path configPath = getConfigPath(target);
+            final String profileName = profile != null && !profile.isEmpty() ? "%" + profile + "." + name : name;
+            final int lineNumber = findLineNumber(configPath, profileName);
+            List<String> lines = Files.readAllLines(configPath, UTF_8);
+            if (lineNumber > 0 && lineNumber < lines.size()) {
+                lines.set(lineNumber - 1, profileName + "=" + value);
+            } else {
+                if (!lines.isEmpty() && !lines.get(lines.size() - 1).isEmpty()) {
+                    lines.add("");
+                }
+                lines.add(name + "=" + value);
+            }
+            try (BufferedWriter writer = Files.newBufferedWriter(configPath, UTF_8)) {
+                for (String i : lines) {
+                    writer.write(i);
                     writer.newLine();
-                } else {
-                    writer.write(value);
                 }
             }
         } catch (Throwable t) {
@@ -261,20 +244,40 @@ public class ConfigurationProcessor {
         }
     }
 
-    private static Path getConfigPath() throws IOException {
+    static void writeConfig(final String content, final String target) throws IOException {
+        Path configPath = getConfigPath(target);
+        // to validate the content
+        new Properties().load(new StringReader(content));
+        try (BufferedWriter writer = Files.newBufferedWriter(configPath, UTF_8)) {
+            writer.write(content);
+            writer.newLine();
+        }
+    }
+
+    private static Path getConfigPath(final String target) throws IOException {
+        assert target != null;
         List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
         if (resourcesDir.isEmpty()) {
             throw new IllegalStateException("Unable to manage configurations - no resource directory found");
         }
 
-        // In the current project only
         Path path = resourcesDir.get(0);
-        Path configPath = path.resolve("application.properties");
+        Path configPath = path.resolve(Paths.get(target).getFileName());
         if (!Files.exists(configPath)) {
             Files.createDirectories(configPath.getParent());
-            configPath = Files.createFile(path.resolve("application.properties"));
+            Files.createFile(configPath);
         }
         return configPath;
+    }
+
+    private static int findLineNumber(final Path configPath, final String name) throws IOException {
+        PropertiesConfigSource properties = new PropertiesConfigSource(configPath.toUri().toURL());
+        ConfigValue fileConfigValue = properties.getConfigValue(name);
+        int lineNumber = -1;
+        if (fileConfigValue != null) {
+            lineNumber = fileConfigValue.getLineNumber();
+        }
+        return lineNumber;
     }
 
     private static final String NAMESPACE = "devui-configuration";

@@ -106,21 +106,29 @@ public class MongoDatabaseResolverTest {
 
     private void resolveUsingFindByIds(final boolean isReactive) {
         // arrange
-        Person personTenant = new Person();
-        personTenant.id = 3L;
-        personTenant.firstname = "Pedro";
-        personTenant.lastname = "Pereira";
+        Person person = new Person();
+        person.id = 3L;
+        person.firstname = "Pedro";
+        person.lastname = "Pereira";
+
+        Person person2 = new Person();
+        person2.id = 4L;
+        person2.firstname = "Tibé";
+        person2.lastname = "Venâncio";
 
         String TENANT = isReactive ? "reactive-sanjoka" : "sanjoka";
 
-        persistPerson(isReactive, personTenant, TENANT);
+        persistPerson(isReactive, person, TENANT);
+        persistPerson(isReactive, person2, TENANT);
 
         // act
         CustomMongoDatabaseResolver.DATABASE = TENANT;
-        final List<Person> result = (List<Person>) findPersonByIdsUsingMongoOperations(isReactive, List.of(personTenant.id));
+        final List<Person> result = (List<Person>) findPersonByIdsUsingMongoOperations(isReactive,
+                List.of(person.id, person2.id));
 
         // assert
-        assertPerson(personTenant, result.get(0));
+        assertPerson(person, result.get(0));
+        assertPerson(person2, result.get(1));
     }
 
     private void persistPerson(final boolean isReactive, final Person person, final String databaseName) {

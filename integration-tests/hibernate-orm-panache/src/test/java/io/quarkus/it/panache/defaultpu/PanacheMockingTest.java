@@ -191,14 +191,24 @@ public class PanacheMockingTest {
                                 ((PanacheRepositoryBase) realPersonRepository).findByIdOptional(0l, LockModeType.NONE));
 
         // normal method call
-        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIds(List.of(0l)));
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(List.of(0l)));
         // bridge call
-        Assertions.assertEquals(Optional.empty(), ((PanacheRepositoryBase) realPersonRepository).findByIds(List.of(0l)));
+        Assertions.assertEquals(Collections.emptyList(), ((PanacheRepositoryBase) realPersonRepository).findByIds(List.of(0l)));
         // normal method call
-        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIds(List.of(0l)));
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(List.of(0l)));
         // bridge call
-        Assertions.assertEquals(Optional.empty(),
+        Assertions.assertEquals(Collections.emptyList(),
                                 ((PanacheRepositoryBase) realPersonRepository).findByIds(List.of(0l)));
+
+        // normal method call
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(0l));
+        // bridge call
+        Assertions.assertEquals(Collections.emptyList(), ((PanacheRepositoryBase) realPersonRepository).findByIds(0l));
+        // normal method call
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(0l));
+        // bridge call
+        Assertions.assertEquals(Collections.emptyList(),
+                                ((PanacheRepositoryBase) realPersonRepository).findByIds(0l));
 
         // normal method call
         Assertions.assertEquals(false, realPersonRepository.deleteById(0l));

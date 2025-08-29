@@ -185,8 +185,8 @@ class MongodbPanacheResourceTest {
         Assertions.assertNotNull(book);
 
         //test findByIds
-        list = post(endpoint + "/multiple", List.of(book.getId().toString())).as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(1, list.size());
+        list = post(endpoint + "/multiple", List.of(book.getId().toString(), Long.MAX_VALUE.toString(), book2.getId().toString())).as(LIST_OF_BOOK_TYPE_REF);
+        Assertions.assertEquals(2, list.size());
         Assertions.assertNotNull(list.get(0).getTitle());
         Assertions.assertNull(list.get(0).getDetails());
 

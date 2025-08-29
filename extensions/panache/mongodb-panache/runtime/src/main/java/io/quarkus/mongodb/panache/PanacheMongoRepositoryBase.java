@@ -109,6 +109,17 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * @return a list containing the entities found.
      */
     @GenerateBridge
+    default List<Entity> findByIds(Id... ids) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Find entities of this type by their IDs.
+     *
+     * @param ids the IDs of the entities to find.
+     * @return a list containing the entities found.
+     */
+    @GenerateBridge
     default List<Entity> findByIds(List<Id> ids) {
         throw INSTANCE.implementationInjectionMissing();
     }

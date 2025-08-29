@@ -1,15 +1,12 @@
 package io.quarkus.mongodb.panache.common.reactive.runtime;
 
+import static com.mongodb.client.model.Filters.in;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseNameFromResolver;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -383,12 +380,22 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 .onItem().transform(Optional::ofNullable);
     }
 
-    public Multi<Object> findByIds(Class<?> entityClass, List ids) {
+    public <Entity, ID> Multi<Entity> findByIds(Class<?> entityClass, ID... ids) {
+        return findByIds(entityClass, Arrays.asList(ids));
+    }
+
+    public <Entity, ID> Multi<Entity> findByIds(Class<?> entityClass, List<ID> ids) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
+
+        var nonNullIds = ids.stream()
+                .filter(Objects::nonNull)
+                .toList();
+
         if (Panache.getCurrentSession() != null) {
-            return collection.find(Panache.getCurrentSession(), Filters.in("_id", ids));
+            return collection.find(Panache.getCurrentSession(), in(ID, nonNullIds));
         }
-        return collection.find(Filters.in("_id", ids));
+
+        return collection.find(in(ID, nonNullIds));
     }
 
     public QueryType find(Class<?> entityClass, String query, Object... params) {

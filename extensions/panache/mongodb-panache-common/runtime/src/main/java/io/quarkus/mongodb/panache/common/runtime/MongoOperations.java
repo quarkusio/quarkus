@@ -1,10 +1,8 @@
 package io.quarkus.mongodb.panache.common.runtime;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import static com.mongodb.client.model.Filters.in;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -425,11 +423,21 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return Optional.ofNullable(findById(entityClass, id));
     }
 
-    public List<?> findByIds(Class<?> entityClass, List ids) {
+    public <Entity, ID> List<Entity> findByIds(Class<?> entityClass, ID... ids) {
+        return findByIds(entityClass, Arrays.asList(ids));
+    }
+
+    public <Entity, ID> List<Entity> findByIds(Class<?> entityClass, List<ID> ids) {
         MongoCollection collection = mongoCollection(entityClass);
+
+        var nonNullIds = ids.stream()
+                .filter(Objects::nonNull)
+                .toList();
+
         ClientSession session = getSession(entityClass);
-        return session == null ? (List<?>) collection.find(Filters.in("_id", ids)).into(new ArrayList<>())
-                : (List<?>) collection.find(session, Filters.in("_id", ids)).into(new ArrayList<>());
+
+        return session == null ? (List<Entity>) collection.find(in(ID, nonNullIds)).into(new ArrayList<>())
+                : (List<Entity>) collection.find(session, in(ID, nonNullIds)).into(new ArrayList<>());
     }
 
     public QueryType find(Class<?> entityClass, String query, Object... params) {

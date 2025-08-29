@@ -166,7 +166,20 @@ public abstract class PanacheEntityBase {
      * Find entities of this type by their IDs.
      *
      * @param ids the IDs of the entities to find.
-     * @return a list containing the entities found.
+     * @return a list containing the entities found, with null elements representing missing entities, whose positions in the
+     *         list match the positions of their ids in the given list of identifiers.
+     */
+    @GenerateBridge
+    public static <T extends PanacheEntityBase> List<T> findByIds(Object... ids) {
+        throw implementationInjectionMissing();
+    }
+
+    /**
+     * Find entities of this type by their IDs.
+     *
+     * @param ids the IDs of the entities to find.
+     * @return a list containing the entities found, with null elements representing missing entities, whose positions in the
+     *         list match the positions of their ids in the given list of identifiers.
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> List<T> findByIds(List<Object> ids) {

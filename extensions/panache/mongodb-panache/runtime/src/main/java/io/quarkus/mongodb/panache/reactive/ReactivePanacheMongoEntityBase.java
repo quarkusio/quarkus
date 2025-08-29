@@ -104,6 +104,17 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @return a list containing the entities found.
      */
     @GenerateBridge
+    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> findByIds(List... ids) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Find entities of this type by their IDs.
+     *
+     * @param ids the IDs of the entities to find.
+     * @return a list containing the entities found.
+     */
+    @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> findByIds(List<Object> ids) {
         throw INSTANCE.implementationInjectionMissing();
     }

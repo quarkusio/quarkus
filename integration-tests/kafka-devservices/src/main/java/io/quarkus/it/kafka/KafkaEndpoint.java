@@ -21,7 +21,7 @@ public class KafkaEndpoint {
 
     @GET
     @Path("/port")
-    public Integer partitions() throws ExecutionException, InterruptedException {
+    public Integer port() throws ExecutionException, InterruptedException {
         return admin.port();
     }
 

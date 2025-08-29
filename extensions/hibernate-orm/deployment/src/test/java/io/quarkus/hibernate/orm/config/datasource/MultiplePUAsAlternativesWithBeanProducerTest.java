@@ -11,8 +11,6 @@ import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.agroal.api.AgroalDataSource;
-import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -31,23 +29,23 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     public static class Pu1ActiveTest extends MultiplePUAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("pu-1", "ds-1");
+        static QuarkusUnitTest runner = runner("ds-1");
 
         public Pu1ActiveTest() {
-            super("pu-1", "pu-2");
+            super("pu-1", "pu-2", "ds-2");
         }
     }
 
     public static class Pu2ActiveTest extends MultiplePUAsAlternativesWithBeanProducerTest {
         @RegisterExtension
-        static QuarkusUnitTest runner = runner("pu-2", "ds-2");
+        static QuarkusUnitTest runner = runner("ds-2");
 
         public Pu2ActiveTest() {
-            super("pu-2", "pu-1");
+            super("pu-2", "pu-1", "ds-1");
         }
     }
 
-    static QuarkusUnitTest runner(String activePuName, String activeDsName) {
+    static QuarkusUnitTest runner(String activeDsName) {
         return new QuarkusUnitTest()
                 .withApplicationRoot((jar) -> jar
                         .addPackage(MyEntity.class.getPackage().getName())
@@ -55,27 +53,26 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
-                .overrideConfigKey("quarkus.hibernate-orm.pu-1.active", "false")
                 .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-1.active", "false")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.packages", MyEntity.class.getPackageName())
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.datasource", "ds-2")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-2.schema-management.strategy", "drop-and-create")
-                .overrideConfigKey("quarkus.hibernate-orm.pu-2.active", "false")
                 .overrideConfigKey("quarkus.datasource.ds-2.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-2.active", "false")
-                // This is where we select the active PU / datasource
-                .overrideRuntimeConfigKey("quarkus.hibernate-orm." + activePuName + ".active", "true")
+                // This is where we select the active datasource (and hence PU)
                 .overrideRuntimeConfigKey("quarkus.datasource." + activeDsName + ".active", "true")
                 .overrideRuntimeConfigKey("quarkus.datasource." + activeDsName + ".jdbc.url", "jdbc:h2:mem:testds1");
     }
 
     private final String activePuName;
     private final String inactivePuName;
+    private final String inactiveDsName;
 
-    protected MultiplePUAsAlternativesWithBeanProducerTest(String activePuName, String inactivePuName) {
+    protected MultiplePUAsAlternativesWithBeanProducerTest(String activePuName, String inactivePuName, String inactiveDsName) {
         this.activePuName = activePuName;
         this.inactivePuName = inactivePuName;
+        this.inactiveDsName = inactiveDsName;
     }
 
     @Inject
@@ -100,8 +97,13 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
                     .select(Session.class, new PersistenceUnit.PersistenceUnitLiteral(inactivePuName)).get()
                     .find(MyEntity.class, 3L))
                     .hasMessageContainingAll(
-                            "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit " + inactivePuName,
-                            "Hibernate ORM was deactivated through configuration properties");
+                            "Persistence unit '" + inactivePuName + "' was deactivated automatically because its datasource '"
+                                    + inactiveDsName + "' was deactivated",
+                            "Datasource '" + inactiveDsName + "' was deactivated through configuration properties",
+                            "To activate the datasource, set configuration property 'quarkus.datasource.\"" + inactiveDsName
+                                    + "\".active'"
+                                    + " to 'true' and configure datasource '" + inactiveDsName + "'",
+                            "Refer to https://quarkus.io/guides/datasource for guidance.");
         });
     }
 
@@ -120,30 +122,22 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     private static class MyProducer {
         @Inject
-        @DataSource("ds-1")
-        InjectableInstance<AgroalDataSource> dataSource1Bean;
-
-        @Inject
-        @DataSource("ds-2")
-        InjectableInstance<AgroalDataSource> dataSource2Bean;
-
-        @Inject
         @PersistenceUnit("pu-1")
-        Session pu1SessionBean;
+        InjectableInstance<Session> pu1SessionBean;
 
         @Inject
         @PersistenceUnit("pu-2")
-        Session pu2SessionBean;
+        InjectableInstance<Session> pu2SessionBean;
 
         @Produces
         @ApplicationScoped
         public Session session() {
-            if (dataSource1Bean.getHandle().getBean().isActive()) {
-                return pu1SessionBean;
-            } else if (dataSource2Bean.getHandle().getBean().isActive()) {
-                return pu2SessionBean;
+            if (pu1SessionBean.getHandle().getBean().isActive()) {
+                return pu1SessionBean.get();
+            } else if (pu2SessionBean.getHandle().getBean().isActive()) {
+                return pu2SessionBean.get();
             } else {
-                throw new RuntimeException("No active datasource!");
+                throw new RuntimeException("No active persistence unit!");
             }
         }
     }

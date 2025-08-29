@@ -1,25 +1,26 @@
-package io.quarkus.hibernate.orm.config.datasource;
+package io.quarkus.hibernate.orm.panache.deployment.test.config.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Assertions;
+import jakarta.inject.Inject;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.config.MyEntity;
-import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.hibernate.orm.panache.deployment.test.MyEntity;
+import io.quarkus.hibernate.orm.panache.deployment.test.MyEntityRepository;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EntitiesInDefaultPUWithImplicitDatasourceConfigUrlMissingTest {
+public class ConfigDefaultPUDatasourceUrlMissingRepositoryTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClasses(MyEntity.class, MyEntityRepository.class))
+            .overrideConfigKey("quarkus.datasource.jdbc.url", "")
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(e -> assertThat(e)
                     .hasMessageContainingAll(
                             "Unable to find datasource '<default>' for persistence unit '<default>'",
                             "Datasource '<default>' was deactivated automatically because its URL is not set.",
@@ -27,10 +28,11 @@ public class EntitiesInDefaultPUWithImplicitDatasourceConfigUrlMissingTest {
                             "To activate the datasource, set configuration property 'quarkus.datasource.jdbc.url'",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
-    @Test
-    public void testInvalidConfiguration() {
-        // deployment exception should happen first
-        Assertions.fail();
-    }
+    @Inject
+    MyEntityRepository repo;
 
+    @Test
+    public void test() {
+        Assertions.fail("Startup should have failed");
+    }
 }

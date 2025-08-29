@@ -120,6 +120,7 @@ import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -319,7 +320,9 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    @Record(RUNTIME_INIT)
     public void configurationDescriptorBuilding(
+            HibernateOrmRecorder recorder,
             HibernateOrmConfig hibernateOrmConfig,
             CombinedIndexBuildItem index,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedPU,
@@ -369,6 +372,7 @@ public final class HibernateOrmProcessor {
                                     Optional.empty(),
                                     jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                     Optional.ofNullable(xmlDescriptor.getProperties().getProperty(AvailableSettings.DIALECT)),
+                                    Set.of(), // Not relevant for persistence.xml, because such a PU never gets deactivated.
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
@@ -712,6 +716,7 @@ public final class HibernateOrmProcessor {
     @Consume(JdbcDataSourceSchemaReadyBuildItem.class)
     @Consume(PersistenceProviderSetUpBuildItem.class)
     @Record(RUNTIME_INIT)
+    // Producing ServiceStartBuildItem ensures this will get called before any CDI bean gets initialized
     public ServiceStartBuildItem startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
             JpaModelBuildItem jpaModel,
             ShutdownContextBuildItem shutdownContextBuildItem) {
@@ -899,7 +904,7 @@ public final class HibernateOrmProcessor {
 
         if (enableDefaultPersistenceUnit) {
             producePersistenceUnitDescriptorFromConfig(
-                    hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                    hibernateOrmConfig, jpaModel, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit(),
                     modelClassesAndPackagesForDefaultPersistenceUnit,
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
@@ -919,7 +924,7 @@ public final class HibernateOrmProcessor {
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.namedPersistenceUnits()
                 .entrySet()) {
             producePersistenceUnitDescriptorFromConfig(
-                    hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
+                    hibernateOrmConfig, jpaModel, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
                     modelClassesAndPackagesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(),
                             Collections.emptySet()),
                     jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
@@ -935,7 +940,7 @@ public final class HibernateOrmProcessor {
     }
 
     private static void producePersistenceUnitDescriptorFromConfig(
-            HibernateOrmConfig hibernateOrmConfig,
+            HibernateOrmConfig hibernateOrmConfig, JpaModelBuildItem jpaModel,
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             Set<String> modelClassesAndPackages,
@@ -954,6 +959,7 @@ public final class HibernateOrmProcessor {
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
+        Optional<String> dataSourceName = jdbcDataSource.map(JdbcDataSourceBuildItem::getName);
 
         if (modelClassesAndPackages.isEmpty()) {
             LOG.warnf("Could not find any entities affected to the persistence unit '%s'.", persistenceUnitName);
@@ -961,6 +967,7 @@ public final class HibernateOrmProcessor {
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
+                new HibernateOrmPersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.JTA,
                 // That's right, we're pushing both class names and package names
                 // to a method called "addClasses".
@@ -975,6 +982,8 @@ public final class HibernateOrmProcessor {
                 new ArrayList<>(modelClassesAndPackages),
                 new Properties(),
                 false);
+        Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
+        entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
@@ -999,11 +1008,12 @@ public final class HibernateOrmProcessor {
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
                         new RecordedConfig(
-                                jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
+                                dataSourceName,
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
                                 supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 persistenceUnitConfig.dialect().dialect(),
+                                entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
                                 hibernateOrmConfig.mapping().format().global(),

@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
 
+import io.quarkus.arc.impl.Sets;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
@@ -65,6 +66,7 @@ import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
+import io.quarkus.hibernate.reactive.runtime.HibernateReactivePersistenceUnitProviderHelper;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
@@ -250,6 +252,8 @@ public final class HibernateReactiveProcessor {
                 jsonMapper);
 
         QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
+        Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassNames());
+        entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         //Some constant arguments to the following method:
         // - this is Reactive
@@ -262,6 +266,7 @@ public final class HibernateReactiveProcessor {
                         reactivePUWithDBKind.supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                         dbVersion,
                         persistenceUnitConfig.dialect().dialect(),
+                        entityClassNames,
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
                         hibernateOrmConfig.mapping().format().global(),
@@ -369,6 +374,7 @@ public final class HibernateReactiveProcessor {
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
+                new HibernateReactivePersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
                 new ArrayList<>(modelClassesAndPackages),
                 new Properties(),

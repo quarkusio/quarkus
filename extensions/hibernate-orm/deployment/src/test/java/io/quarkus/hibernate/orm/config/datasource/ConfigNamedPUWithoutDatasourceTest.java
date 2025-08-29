@@ -10,7 +10,7 @@ import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EntitiesInNamedPUWithoutDatasourceTest {
+public class ConfigNamedPUWithoutDatasourceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()

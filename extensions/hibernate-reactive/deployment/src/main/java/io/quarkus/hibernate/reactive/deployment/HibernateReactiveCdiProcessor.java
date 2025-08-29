@@ -52,7 +52,16 @@ public class HibernateReactiveCdiProcessor {
                         // See https://github.com/quarkusio/quarkus/issues/16437
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .setRuntimeInit();
+                        .setRuntimeInit()
+                        // FIXME we should fail on startup even if Panache is the only consumer and the datasource does not set the URL -- currently we don't
+                        // Note persistence units _actually_ get started a bit earlier, each in its own thread. See JPAConfig#startAll.
+                        // This startup() call is only necessary in order to trigger Arc's usage checks (fail startup if bean injected when a PU is inactive).
+                        .startup()
+                        .checkActive(recorder.checkActiveSupplier(persistenceUnitName,
+                                persistenceUnitDescriptor.getConfig().getDataSource(),
+                                persistenceUnitDescriptor.getConfig().getEntityClassNames()))
+                        .createWith(recorder.mutinySessionFactory(persistenceUnitName))
+                        .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)));
 
                 for (DotName exposedType : MUTINY_SESSION_FACTORY_EXPOSED_TYPES) {
                     configurator.addType(exposedType);
@@ -67,11 +76,7 @@ public class HibernateReactiveCdiProcessor {
                             .addValue("value", persistenceUnitName).done();
                 }
 
-                syntheticBeanBuildItemBuildProducer
-                        .produce(configurator
-                                .createWith(recorder.mutinySessionFactory(persistenceUnitName))
-                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                                .done());
+                syntheticBeanBuildItemBuildProducer.produce(configurator.done());
             }
 
         }

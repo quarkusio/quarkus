@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.panache.deployment;
 
 import static io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,7 +11,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import jakarta.persistence.Id;
 
 import org.hibernate.Session;
@@ -138,12 +136,6 @@ public final class PanacheHibernateResourceProcessor {
             map.put(item.getEntityClass(), item.getPersistenceUnitName());
         }
         recorder.setEntityToPersistenceUnit(map);
-    }
-
-    @BuildStep
-    SyntheticBeanBuildItem failOnStartupIfDatasourceInactive(List<EntityToPersistenceUnitBuildItem> items,
-                                                             PanacheHibernateOrmRecorder recorder) {
-        // TODO do this in Hibernate ORM/reactive instead? Send build item, and if present ORM/Reactive will create an OnStartup event listener for each SessionFactory bean, to make sure we fail on startup if inactive + .active != false?
     }
 
     @BuildStep

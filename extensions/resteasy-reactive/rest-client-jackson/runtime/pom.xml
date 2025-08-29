@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-rest-client-jackson-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.20.2.1</version>
+        <version>3.20.2.2</version>
     </parent>
     <artifactId>quarkus-rest-client-jackson</artifactId>
     <name>Quarkus - REST Client Jackson</name>

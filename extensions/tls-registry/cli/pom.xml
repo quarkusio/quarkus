@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-tls-registry-parent</artifactId>
-        <version>3.20.2.1</version>
+        <version>3.20.2.2</version>
     </parent>
 
     <artifactId>quarkus-tls-registry-cli</artifactId>

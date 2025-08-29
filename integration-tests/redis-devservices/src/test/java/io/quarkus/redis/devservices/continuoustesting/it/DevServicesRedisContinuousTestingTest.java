@@ -73,7 +73,6 @@ public class DevServicesRedisContinuousTestingTest {
 
         ping500();
 
-        // We could check the container goes away, but we'd have to check slowly, because ryuk can be slow
         List<Container> containers = getAllContainers();
         assertTrue(containers.isEmpty(), "Expected no containers, but got: " + prettyPrintContainerList(containers));
     }

@@ -132,7 +132,8 @@ public class MongodbPanacheMockingTest {
         // normal method call
         Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(List.of(0L)));
         // bridge call
-        Assertions.assertEquals(Collections.emptyList(), ((PanacheMongoRepositoryBase) realPersonRepository).findByIds(List.of(0L)));
+        Assertions.assertEquals(Collections.emptyList(),
+                ((PanacheMongoRepositoryBase) realPersonRepository).findByIds(List.of(0L)));
 
         // normal method call
         Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(0L));

@@ -188,6 +188,7 @@ public class HibernateOrmCdiProcessor {
                     true, recorder.checkActiveSupplier(
                             persistenceUnitDescriptor.getPersistenceUnitName(),
                             persistenceUnitDescriptor.getConfig().getDataSource(),
+                            persistenceUnitDescriptor.getConfig().getEntityClassNames(),
                             true));
 
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, puRef);
@@ -214,6 +215,7 @@ public class HibernateOrmCdiProcessor {
                     recorder.checkActiveSupplier(
                             persistenceUnitDescriptor.getPersistenceUnitName(),
                             persistenceUnitDescriptor.getConfig().getDataSource(),
+                            persistenceUnitDescriptor.getConfig().getEntityClassNames(),
                             persistenceUnitDescriptor.isFromPersistenceXml()));
 
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, puRef);

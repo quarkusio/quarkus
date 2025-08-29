@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
 
+import io.quarkus.arc.impl.Sets;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
@@ -236,7 +237,7 @@ public final class HibernateReactiveProcessor {
 
         QuarkusPersistenceUnitDescriptorWithSupportedDBKind reactivePUWithDBKind = generateReactivePersistenceUnit(
                 hibernateOrmConfig, persistenceUnitName, index, persistenceUnitConfig, jpaModel,
-                datasourceName, dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
+                dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
                 systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems,
                 enableDefaultPersistenceUnit);
@@ -251,6 +252,8 @@ public final class HibernateReactiveProcessor {
                 jsonMapper);
 
         QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
+        Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassNames());
+        entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         //Some constant arguments to the following method:
         // - this is Reactive
@@ -263,6 +266,7 @@ public final class HibernateReactiveProcessor {
                         reactivePUWithDBKind.supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                         dbVersion,
                         persistenceUnitConfig.dialect().dialect(),
+                        entityClassNames,
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
                         hibernateOrmConfig.mapping().format().global(),
@@ -347,7 +351,6 @@ public final class HibernateReactiveProcessor {
             CombinedIndexBuildItem index,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             JpaModelBuildItem jpaModel,
-            Optional<String> dataSourceName,
             Optional<String> dbKindOptional,
             Optional<String> explicitDialect,
             Optional<String> explicitDbMinVersion,

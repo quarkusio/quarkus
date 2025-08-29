@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -119,8 +120,8 @@ public class HibernateOrmRecorder {
         jpaConfig.startAll();
     }
 
-    public Supplier<ActiveResult> checkActiveSupplier(String persistenceUnitName,
-            Optional<String> dataSourceName, boolean isFromPersistenceXml) {
+    public Supplier<ActiveResult> checkActiveSupplier(String persistenceUnitName, Optional<String> dataSourceName,
+            Set<String> entityClassNames, boolean isFromPersistenceXml) {
         return new Supplier<>() {
             @Override
             public ActiveResult get() {
@@ -135,16 +136,15 @@ public class HibernateOrmRecorder {
                             PersistenceUnitUtil.persistenceUnitInactiveReasonDeactivated(persistenceUnitName, dataSourceName));
                 }
 
-                if (dataSourceName.isPresent()) {
-                    // Persistence units are inactive when the corresponding datasource is inactive.
+                if (entityClassNames.isEmpty() && dataSourceName.isPresent()) {
+                    // Persistence units are inactive when they have no entity and the corresponding datasource is inactive.
                     var dataSourceBean = AgroalDataSourceUtil.dataSourceInstance(dataSourceName.get()).getHandle().getBean();
                     var dataSourceActive = dataSourceBean.checkActive();
                     if (!dataSourceActive.value()) {
                         return ActiveResult.inactive(
                                 String.format(Locale.ROOT,
-                                        "Persistence unit '%s' was deactivated automatically because its datasource '%s' was deactivated.",
-                                        persistenceUnitName,
-                                        dataSourceName.get()),
+                                        "Persistence unit '%s' was deactivated automatically because it doesn't include any entity type and its datasource '%s' was deactivated.",
+                                        persistenceUnitName, dataSourceName.get()),
                                 dataSourceActive);
                     }
                 }

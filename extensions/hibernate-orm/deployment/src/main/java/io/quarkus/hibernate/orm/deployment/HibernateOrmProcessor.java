@@ -372,6 +372,7 @@ public final class HibernateOrmProcessor {
                                     Optional.empty(),
                                     jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                     Optional.ofNullable(xmlDescriptor.getProperties().getProperty(AvailableSettings.DIALECT)),
+                                    Set.of(), // Not relevant for persistence.xml, because such a PU never gets deactivated.
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
@@ -903,7 +904,7 @@ public final class HibernateOrmProcessor {
 
         if (enableDefaultPersistenceUnit) {
             producePersistenceUnitDescriptorFromConfig(
-                    hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
+                    hibernateOrmConfig, jpaModel, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit(),
                     modelClassesAndPackagesForDefaultPersistenceUnit,
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
@@ -923,7 +924,7 @@ public final class HibernateOrmProcessor {
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.namedPersistenceUnits()
                 .entrySet()) {
             producePersistenceUnitDescriptorFromConfig(
-                    hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
+                    hibernateOrmConfig, jpaModel, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
                     modelClassesAndPackagesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(),
                             Collections.emptySet()),
                     jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
@@ -939,7 +940,7 @@ public final class HibernateOrmProcessor {
     }
 
     private static void producePersistenceUnitDescriptorFromConfig(
-            HibernateOrmConfig hibernateOrmConfig,
+            HibernateOrmConfig hibernateOrmConfig, JpaModelBuildItem jpaModel,
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             Set<String> modelClassesAndPackages,
@@ -981,6 +982,8 @@ public final class HibernateOrmProcessor {
                 new ArrayList<>(modelClassesAndPackages),
                 new Properties(),
                 false);
+        Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
+        entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
@@ -1010,6 +1013,7 @@ public final class HibernateOrmProcessor {
                                 supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                                 jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion),
                                 persistenceUnitConfig.dialect().dialect(),
+                                entityClassNames,
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
                                 hibernateOrmConfig.mapping().format().global(),

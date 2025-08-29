@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -43,7 +44,8 @@ public class HibernateReactiveRecorder {
                 integrationRuntimeDescriptors);
     }
 
-    public Supplier<ActiveResult> checkActiveSupplier(String puName, Optional<String> dataSourceName) {
+    public Supplier<ActiveResult> checkActiveSupplier(String puName, Optional<String> dataSourceName,
+            Set<String> entityClassNames) {
         return new Supplier<>() {
             @Override
             public ActiveResult get() {
@@ -53,14 +55,14 @@ public class HibernateReactiveRecorder {
                             PersistenceUnitUtil.persistenceUnitInactiveReasonDeactivated(puName, dataSourceName));
                 }
 
-                if (dataSourceName.isPresent()) {
+                if (entityClassNames.isEmpty() && dataSourceName.isPresent()) {
                     // Persistence units are inactive when the corresponding datasource is inactive.
                     var dataSourceBean = ReactiveDataSourceUtil.dataSourceInstance(dataSourceName.get()).getHandle().getBean();
                     var dataSourceActive = dataSourceBean.checkActive();
                     if (!dataSourceActive.value()) {
                         return ActiveResult.inactive(
                                 String.format(Locale.ROOT,
-                                        "Persistence unit '%s' was deactivated automatically because its datasource '%s' was deactivated.",
+                                        "Persistence unit '%s' was deactivated automatically because it doesn't include any entity type and its datasource '%s' was deactivated.",
                                         puName,
                                         dataSourceName.get()),
                                 dataSourceActive);

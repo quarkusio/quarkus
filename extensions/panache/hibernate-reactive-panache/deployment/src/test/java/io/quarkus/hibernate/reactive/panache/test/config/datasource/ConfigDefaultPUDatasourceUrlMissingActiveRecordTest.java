@@ -23,6 +23,7 @@ public class ConfigDefaultPUDatasourceUrlMissingActiveRecordTest {
                     // Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
                     .hasMessageContainingAll(
+                            "Unable to start Panache",
                             "Persistence unit '<default>' was deactivated automatically because its datasource '<default>' was deactivated",
                             "Datasource '<default>' was deactivated automatically because its URL is not set.",
                             "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints

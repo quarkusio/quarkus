@@ -712,22 +712,6 @@ To enable Micrometer metrics in your application, you need to add the following 
 
 This guide uses Micrometer, so the above dependencies are already included in this guide's pom.xml.
 
-=== Enabling Metrics with MicroProfile Metrics
-
-Remove any dependency to Micrometer from your pom.xml, then add the following ones instead:
-
-[source,xml]
-----
-<dependency>
-  <groupId>com.datastax.oss</groupId>
-  <artifactId>java-driver-metrics-microprofile</artifactId>
-</dependency>
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-metrics</artifactId>
-</dependency>
-----
-
 === Enabling Cassandra Metrics
 
 Even when metrics are enabled in your application, the Cassandra client will not report any metrics,

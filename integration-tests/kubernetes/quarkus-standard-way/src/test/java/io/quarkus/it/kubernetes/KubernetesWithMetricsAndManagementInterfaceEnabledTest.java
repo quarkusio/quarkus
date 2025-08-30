@@ -33,7 +33,7 @@ public class KubernetesWithMetricsAndManagementInterfaceEnabledTest {
             .overrideConfigKey("quarkus.management.enabled", "true")
             .overrideConfigKey("quarkus.management.port", "9090")
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
 
     @ProdBuildResults

@@ -9,6 +9,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.devui.spi.welcome.DynamicWelcomeBuildItem;
 import io.quarkus.webdependency.locator.deployment.ImportMapBuildItem;
 
 public class WebDependencyLocatorDevUIProcessor {
@@ -52,5 +53,16 @@ public class WebDependencyLocatorDevUIProcessor {
 
         cardPageProducer.produce(cardPageBuildItem);
     }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public DynamicWelcomeBuildItem createDynamicWelcomeData() {
+        return new DynamicWelcomeBuildItem(DYNAMIC_WELCOME);
+    }
+
+    private static final String DYNAMIC_WELCOME = """
+                <span>Learn how you can <a href="https://quarkus.io/guides/web-dependency-locator" target="_blank">add your own web content</a></span>
+                <span>Static assets: <code>${devuiState.welcomeData.resourcesDir}/META-INF/resources/</code> OR </span>
+                <span>Dynamic assets: <code>${devuiState.welcomeData.resourcesDir}/web</code></span>
+            """;
 
 }

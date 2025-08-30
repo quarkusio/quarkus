@@ -18,6 +18,7 @@ import io.quarkus.devui.deployment.ExtensionsBuildItem;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.devui.spi.welcome.DynamicWelcomeBuildItem;
 
 /**
  * This creates Welcome page
@@ -26,11 +27,13 @@ public class WelcomeProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createWelcomePages(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<DynamicWelcomeBuildItem> dynamicWelcomeBuildItems,
             ExtensionsBuildItem extensionsBuildItem) {
 
         InternalPageBuildItem welcomePageBuildItem = new InternalPageBuildItem("Welcome", 99999);
 
-        welcomePageBuildItem.addBuildTimeData("welcomeData", createWelcomeData(curateOutcomeBuildItem, extensionsBuildItem),
+        welcomePageBuildItem.addBuildTimeData("welcomeData",
+                createWelcomeData(curateOutcomeBuildItem, dynamicWelcomeBuildItems, extensionsBuildItem),
                 "Contains high level information about the Quarkus application, including the configFile, resourcesDir, sourceDir and selectedExtensions");
 
         welcomePageBuildItem.addPage(Page.webComponentPageBuilder()
@@ -44,6 +47,7 @@ public class WelcomeProcessor {
     }
 
     private WelcomeData createWelcomeData(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<DynamicWelcomeBuildItem> dynamicWelcomeBuildItems,
             ExtensionsBuildItem extensionsBuildItem) {
 
         WorkspaceModule workspaceModule = curateOutcomeBuildItem.getApplicationModel().getApplicationModule();
@@ -52,6 +56,7 @@ public class WelcomeProcessor {
         welcomeData.configFile = getConfigFile(workspaceModule);
         welcomeData.sourceDir = getSourceDir(workspaceModule);
         welcomeData.resourcesDir = getResourcesDir(workspaceModule);
+        welcomeData.dynamicContent = getDynamicContent(dynamicWelcomeBuildItems, welcomeData.resourcesDir);
 
         List<Extension> selectedExtensions = getSelectedExtensions(workspaceModule, extensionsBuildItem);
         for (Extension extension : selectedExtensions) {
@@ -151,4 +156,19 @@ public class WelcomeProcessor {
         return all;
     }
 
+    private String getDynamicContent(List<DynamicWelcomeBuildItem> dynamicWelcomeBuildItems, String resourceDir) {
+        if (dynamicWelcomeBuildItems == null || dynamicWelcomeBuildItems.isEmpty())
+            return null;
+
+        StringBuilder sb = new StringBuilder();
+        for (DynamicWelcomeBuildItem dynamicWelcomeBuildItem : dynamicWelcomeBuildItems) {
+
+            String extensionProvidedHTML = dynamicWelcomeBuildItem.getHTML();
+            extensionProvidedHTML = extensionProvidedHTML.replace("${devuiState.welcomeData.resourcesDir}", resourceDir);
+
+            sb.append(extensionProvidedHTML);
+            // TODO: Add order ? Add extension name ? Add paragraph
+        }
+        return sb.toString();
+    }
 }

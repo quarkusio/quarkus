@@ -11,12 +11,10 @@ import com.mongodb.client.MongoClient;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.liquibase.common.runtime.NativeImageResourceAccessor;
-import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
-import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
-import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeDataSourceConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbDataSourceConfig;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClients;
-import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
@@ -35,15 +33,18 @@ public class LiquibaseMongodbFactory {
     //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
     private static final Pattern HAS_DB = Pattern
             .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
-    private final LiquibaseMongodbConfig liquibaseMongodbConfig;
-    private final LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig;
-    private final MongodbConfig mongodbConfig;
+    private final LiquibaseMongodbDataSourceConfig liquibaseMongodbConfig;
+    private final LiquibaseMongodbBuildTimeDataSourceConfig liquibaseMongodbBuildTimeConfig;
+    private final MongoClientConfig mongoDataSourceConfig;
+    private final String dataSourceName;
 
-    public LiquibaseMongodbFactory(LiquibaseMongodbConfig config,
-            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, MongodbConfig mongodbConfig) {
+    public LiquibaseMongodbFactory(LiquibaseMongodbDataSourceConfig config,
+            LiquibaseMongodbBuildTimeDataSourceConfig liquibaseMongodbBuildTimeConfig,
+            MongoClientConfig mongodbConfig, String dataSourceName) {
         this.liquibaseMongodbConfig = config;
         this.liquibaseMongodbBuildTimeConfig = liquibaseMongodbBuildTimeConfig;
-        this.mongodbConfig = mongodbConfig;
+        this.mongoDataSourceConfig = mongodbConfig;
+        this.dataSourceName = dataSourceName;
     }
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
@@ -102,22 +103,10 @@ public class LiquibaseMongodbFactory {
     public Liquibase createLiquibase() {
         try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
             MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
-            String mongoClientName;
-            MongoClientConfig mongoClientConfig;
-            if (liquibaseMongodbConfig.mongoClientName().isPresent()) {
-                mongoClientName = liquibaseMongodbConfig.mongoClientName().get();
-                mongoClientConfig = mongodbConfig.mongoClientConfigs().get(mongoClientName);
-                if (mongoClientConfig == null) {
-                    throw new IllegalArgumentException("Mongo client named '%s' not found".formatted(mongoClientName));
-                }
-            } else {
-                mongoClientConfig = mongodbConfig.defaultMongoClientConfig();
-                mongoClientName = MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME;
-            }
             String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog());
-            String connectionString = mongoClientConfig.connectionString().orElse("mongodb://localhost:27017");
+            String connectionString = mongoDataSourceConfig.connectionString().orElse("mongodb://localhost:27017");
             Matcher matcher = HAS_DB.matcher(connectionString);
-            Optional<String> maybeDatabase = mongoClientConfig.database();
+            Optional<String> maybeDatabase = mongoDataSourceConfig.database();
             if (maybeDatabase.isEmpty()) {
                 if (matcher.matches() && !StringUtil.isNullOrEmpty(matcher.group("db"))) {
                     maybeDatabase = Optional.of(matcher.group("db"));
@@ -126,7 +115,7 @@ public class LiquibaseMongodbFactory {
                             "be defined when no database exist in the connection string");
                 }
             }
-            Database database = createDatabase(mongoClients, mongoClientName, maybeDatabase.get());
+            Database database = createDatabase(mongoClients, dataSourceName, maybeDatabase.get());
             if (liquibaseMongodbConfig.liquibaseCatalogName().isPresent()) {
                 database.setLiquibaseCatalogName(liquibaseMongodbConfig.liquibaseCatalogName().get());
             }
@@ -165,7 +154,7 @@ public class LiquibaseMongodbFactory {
         return database;
     }
 
-    public LiquibaseMongodbConfig getConfiguration() {
+    public LiquibaseMongodbDataSourceConfig getConfiguration() {
         return liquibaseMongodbConfig;
     }
 

@@ -36,7 +36,6 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
-import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.smallrye.common.process.ProcessBuilder;
 
 public abstract class QuarkusRun extends QuarkusBuildTask {
@@ -56,7 +55,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
 
         jvmArgs = objectFactory.listProperty(String.class);
     }

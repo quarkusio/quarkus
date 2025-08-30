@@ -23,41 +23,48 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.shutdown.ShutdownBuildTimeConfig;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Shutdown;
+import io.quarkus.runtime.ShutdownDelayInitiated;
+import io.quarkus.runtime.ShutdownDelayInitiatedEvent;
 import io.quarkus.runtime.ShutdownEvent;
 
 public class ShutdownBuildSteps {
 
     static final DotName SHUTDOWN_NAME = DotName.createSimple(Shutdown.class.getName());
+    static final DotName SHUTDOWN_DELAY_NAME = DotName.createSimple(ShutdownDelayInitiated.class.getName());
 
     private static final Logger LOG = Logger.getLogger(ShutdownBuildSteps.class);
 
     @BuildStep
-    AutoAddScopeBuildItem addScope(CustomScopeAnnotationsBuildItem customScopes) {
-        // Class with no built-in scope annotation but with @Shutdown annotation
+    AutoAddScopeBuildItem shutdownAddScope(CustomScopeAnnotationsBuildItem customScopes, ShutdownBuildTimeConfig config) {
+        // Class with no built-in scope annotation but with @Shutdown/@ShutdownDelayInitiated annotation
         return AutoAddScopeBuildItem.builder()
                 .defaultScope(BuiltinScope.APPLICATION)
                 .anyMethodMatches(new Predicate<MethodInfo>() {
                     @Override
                     public boolean test(MethodInfo m) {
-                        return m.hasAnnotation(SHUTDOWN_NAME);
+                        return m.hasAnnotation(SHUTDOWN_NAME)
+                                || (config.delayEnabled() && m.hasAnnotation(SHUTDOWN_DELAY_NAME));
                     }
                 })
-                .reason("Found classes containing @Shutdown annotation.")
+                .reason("Found classes containing @Shutdown/@ShutdownDelayInitiated annotation..")
                 .build();
     }
 
     @BuildStep
-    UnremovableBeanBuildItem unremovableBeans() {
+    UnremovableBeanBuildItem unremovableBeans(ShutdownBuildTimeConfig config) {
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
             @Override
             public boolean test(BeanInfo bean) {
                 if (bean.isClassBean()) {
-                    return bean.getTarget().get().asClass().hasAnnotation(SHUTDOWN_NAME);
+                    ClassInfo clasInfo = bean.getTarget().get().asClass();
+                    return clasInfo.hasAnnotation(SHUTDOWN_NAME)
+                            || (config.delayEnabled() && clasInfo.hasAnnotation(SHUTDOWN_DELAY_NAME));
                 }
                 return false;
             }
@@ -66,6 +73,7 @@ public class ShutdownBuildSteps {
 
     @BuildStep
     void registerShutdownObservers(ObserverRegistrationPhaseBuildItem observerRegistration,
+            ShutdownBuildTimeConfig shutdownConfig,
             BuildProducer<ObserverConfiguratorBuildItem> configurators) {
 
         AnnotationStore annotationStore = observerRegistration.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
@@ -73,36 +81,53 @@ public class ShutdownBuildSteps {
         for (BeanInfo bean : observerRegistration.getContext().beans().classBeans()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
             List<MethodInfo> shutdownMethods = new ArrayList<>();
-            // Collect all non-static no-args methods annotated with @Shutdown
+            List<MethodInfo> shutdownDelayedMethods = new ArrayList<>();
+            // Collect all non-static no-args methods annotated with @Shutdown or @ShutdownDelayInitiated
             for (MethodInfo method : beanClass.methods()) {
                 if (annotationStore.hasAnnotation(method, SHUTDOWN_NAME)) {
-                    if (!method.isSynthetic()
-                            && !Modifier.isPrivate(method.flags())
-                            && !Modifier.isStatic(method.flags())
-                            && method.parametersCount() == 0) {
-                        shutdownMethods.add(method);
-                    } else {
-                        LOG.warnf("Ignored an invalid @Shutdown method declared on %s: %s", method.declaringClass().name(),
-                                method);
-                    }
+                    validateMethod(method, shutdownMethods, SHUTDOWN_NAME.withoutPackagePrefix());
+                }
+                if (annotationStore.hasAnnotation(method, SHUTDOWN_DELAY_NAME)) {
+                    validateMethod(method, shutdownDelayedMethods, SHUTDOWN_DELAY_NAME.withoutPackagePrefix());
                 }
             }
             if (!shutdownMethods.isEmpty()) {
-                for (MethodInfo method : shutdownMethods) {
-                    AnnotationValue priority = annotationStore.getAnnotation(method, SHUTDOWN_NAME).value();
-                    registerShutdownObserver(observerRegistration, bean,
-                            method.declaringClass().name() + "#" + method.toString(),
-                            priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, method);
-                }
+                processMethods(shutdownMethods, annotationStore, SHUTDOWN_NAME, observerRegistration, bean);
+            }
+            // only process these methods if the shutdown delay config is enabled
+            if (!shutdownDelayedMethods.isEmpty() && shutdownConfig.delayEnabled()) {
+                processMethods(shutdownDelayedMethods, annotationStore, SHUTDOWN_DELAY_NAME, observerRegistration, bean);
             }
         }
     }
 
+    private void validateMethod(MethodInfo method, List<MethodInfo> validMethods, String annotationName) {
+        if (!method.isSynthetic()
+                && !Modifier.isPrivate(method.flags())
+                && !Modifier.isStatic(method.flags())
+                && method.parametersCount() == 0) {
+            validMethods.add(method);
+        } else {
+            LOG.warnf("Ignored an invalid @" + annotationName + " method declared on %s: %s", method.declaringClass().name(),
+                    method);
+        }
+    }
+
+    private void processMethods(List<MethodInfo> shutdownMethods, AnnotationStore annotationStore, DotName annotationName,
+            ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean) {
+        for (MethodInfo method : shutdownMethods) {
+            AnnotationValue priority = annotationStore.getAnnotation(method, annotationName).value();
+            registerShutdownObserver(observerRegistration, bean,
+                    method.declaringClass().name() + "#" + method.toString(),
+                    priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, method, annotationName);
+        }
+    }
+
     private void registerShutdownObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean, String id,
-            int priority, MethodInfo shutdownMethod) {
+            int priority, MethodInfo shutdownMethod, DotName observedType) {
         ObserverConfigurator configurator = observerRegistration.getContext().configure()
                 .beanClass(bean.getBeanClass())
-                .observedType(ShutdownEvent.class);
+                .observedType(observedType.equals(SHUTDOWN_NAME) ? ShutdownEvent.class : ShutdownDelayInitiatedEvent.class);
         configurator.id(id);
         configurator.priority(priority);
         configurator.notify(mc -> {

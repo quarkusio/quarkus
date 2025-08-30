@@ -23,8 +23,10 @@ import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -32,6 +34,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.StopExecutionException;
+import org.gradle.jvm.tasks.Jar;
 import org.gradle.util.GradleVersion;
 import org.gradle.workers.WorkQueue;
 
@@ -57,8 +60,16 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
     @Internal
     public abstract Property<ForcedPropertieBuildService> getAdditionalForcedProperties();
 
+    private final Provider<Boolean> preservesJarTimestamps;
+
     QuarkusBuildTask(String description, boolean compatible) {
         super(description, compatible);
+
+        this.preservesJarTimestamps = getProject().getTasks()
+                .named(JavaPlugin.JAR_TASK_NAME, Jar.class)
+                .map(Jar::isPreserveFileTimestamps)
+                .orElse(getProject().getProviders().provider(() -> false));
+
     }
 
     @Inject
@@ -373,6 +384,11 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         Map<String, String> buildSystemProperties = new HashMap<>();
         buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
+
+        // pass the value of TarCopyAction.CONSTANT_TIME_FOR_TAR_ENTRIES to Quarkus packaging subsystem
+        if (!preservesJarTimestamps.get()) {
+            buildSystemProperties.putIfAbsent("quarkus.package.output-timestamp", "1970-01-02T00:00:00Z");
+        }
 
         for (Map.Entry<String, String> entry : getExtensionView().getForcedProperties().get().entrySet()) {
             if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {

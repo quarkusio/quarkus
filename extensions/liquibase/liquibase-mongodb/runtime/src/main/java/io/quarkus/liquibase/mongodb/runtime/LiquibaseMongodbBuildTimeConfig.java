@@ -1,12 +1,16 @@
 package io.quarkus.liquibase.mongodb.runtime;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 /**
  * The liquibase configuration
@@ -16,13 +20,12 @@ import io.smallrye.config.WithDefault;
 public interface LiquibaseMongodbBuildTimeConfig {
 
     /**
-     * The change log file
+     * Config by datasource.
      */
-    @WithDefault("db/changeLog.xml")
-    String changeLog();
-
-    /**
-     * The search path for DirectoryResourceAccessor
-     */
-    Optional<List<String>> searchPath();
+    @ConfigDocMapKey("datasource-name")
+    @ConfigDocSection
+    @WithParentName
+    @WithUnnamedKey(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)
+    @WithDefaults
+    Map<String, LiquibaseMongodbBuildTimeDataSourceConfig> dataSourceConfigs();
 }

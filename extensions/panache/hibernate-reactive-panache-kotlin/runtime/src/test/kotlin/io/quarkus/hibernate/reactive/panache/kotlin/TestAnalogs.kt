@@ -66,7 +66,9 @@ class TestAnalogs {
                 }
             }
         }
-        javaMethods.removeIf { it.name == "findByIdOptional" || it in implemented }
+        javaMethods.removeIf {
+            it.name == "findByIdOptional" || it.name == "findByIds" || it in implemented
+        }
 
         methods("javaMethods", javaMethods)
         methods("kotlinMethods", kotlinMethods)

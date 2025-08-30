@@ -13,12 +13,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
@@ -43,10 +45,13 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeClientConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbClient;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbRecorder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.paths.PathFilter;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
@@ -64,7 +69,7 @@ import liquibase.plugin.AbstractPluginFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
 
 class LiquibaseMongodbProcessor {
-
+    private static final String LIQUIBASE_MONGODB_BEAN_NAME_PREFIX = "liquibase_mongodb_";
     private static final Logger LOGGER = Logger.getLogger(LiquibaseMongodbProcessor.class);
 
     private static final ArtifactCoords LIQUIBASE_ARTIFACT = Dependency.of(
@@ -219,25 +224,43 @@ class LiquibaseMongodbProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(LiquibaseMongodbRecorder recorder,
+            LiquibaseMongodbBuildTimeConfig config,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(LiquibaseMongodbFactory.class)
-                .scope(ApplicationScoped.class) // this is what the existing code does, but it doesn't seem reasonable
-                .setRuntimeInit()
-                .unremovable()
-                .supplier(recorder.liquibaseSupplier());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(LiquibaseMongodbClient.class).build());
 
-        syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+        for (String clientName : config.clientConfigs().keySet()) {
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                    .configure(LiquibaseMongodbFactory.class)
+                    .scope(ApplicationScoped.class) // this is what the existing code does, but it doesn't seem reasonable
+                    .setRuntimeInit()
+                    .unremovable()
+                    .supplier(recorder.liquibaseSupplier(clientName));
+
+            if (MongoClientBeanUtil.isDefault(clientName)) {
+                configurator.addQualifier(Default.class);
+            } else {
+                configurator.name(LIQUIBASE_MONGODB_BEAN_NAME_PREFIX + clientName);
+                configurator.addQualifier().annotation(LiquibaseMongodbClient.class)
+                        .addValue("value", clientName).done();
+            }
+
+            syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+        }
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(BeanContainerBuildItem.class)
     ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder,
+            LiquibaseMongodbBuildTimeConfig config,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem) {
         // will actually run the actions at runtime
-        recorder.doStartActions();
+        for (String clientName : config.clientConfigs().keySet()) {
+            recorder.doStartActions(clientName);
+        }
         initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase-mongodb"));
         return new ServiceStartBuildItem("liquibase-mongodb");
     }
@@ -254,7 +277,7 @@ class LiquibaseMongodbProcessor {
     }
 
     /**
-     * Collect the configured changeLog file for the default and all named datasources.
+     * Collect the configured changeLog file for the default and all named clients.
      * <p>
      * A {@link LinkedHashSet} is used to avoid duplications.
      */
@@ -266,10 +289,14 @@ class LiquibaseMongodbProcessor {
         try (var classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
                 Thread.currentThread().getContextClassLoader())) {
 
-            Set<String> resources = new LinkedHashSet<>(
-                    findAllChangeLogFiles(liquibaseBuildConfig.changeLog(), changeLogParserFactory,
-                            classLoaderResourceAccessor, changeLogParameters));
-
+            Set<String> resources = new LinkedHashSet<>();
+            for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
+                resources.addAll(findAllChangeLogFiles(
+                        buildConfig.changeLog(),
+                        changeLogParserFactory,
+                        classLoaderResourceAccessor,
+                        changeLogParameters));
+            }
             LOGGER.debugf("Liquibase changeLogs: %s", resources);
 
             return new ArrayList<>(resources);

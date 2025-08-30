@@ -11,12 +11,10 @@ import com.mongodb.client.MongoClient;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.liquibase.common.runtime.NativeImageResourceAccessor;
-import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
-import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
-import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeClientConfig;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClients;
-import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
@@ -35,15 +33,18 @@ public class LiquibaseMongodbFactory {
     //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
     private static final Pattern HAS_DB = Pattern
             .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
-    private final LiquibaseMongodbConfig liquibaseMongodbConfig;
-    private final LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig;
-    private final MongodbConfig mongodbConfig;
+    private final LiquibaseMongodbClientConfig liquibaseMongodbConfig;
+    private final LiquibaseMongodbBuildTimeClientConfig liquibaseMongodbBuildTimeConfig;
+    private final MongoClientConfig mongoClientConfig;
+    private final String clientName;
 
-    public LiquibaseMongodbFactory(LiquibaseMongodbConfig config,
-            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, MongodbConfig mongodbConfig) {
+    public LiquibaseMongodbFactory(LiquibaseMongodbClientConfig config,
+            LiquibaseMongodbBuildTimeClientConfig liquibaseMongodbBuildTimeConfig,
+            MongoClientConfig mongodbConfig, String clientName) {
         this.liquibaseMongodbConfig = config;
         this.liquibaseMongodbBuildTimeConfig = liquibaseMongodbBuildTimeConfig;
-        this.mongodbConfig = mongodbConfig;
+        this.mongoClientConfig = mongodbConfig;
+        this.clientName = clientName;
     }
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
@@ -102,18 +103,6 @@ public class LiquibaseMongodbFactory {
     public Liquibase createLiquibase() {
         try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
             MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
-            String mongoClientName;
-            MongoClientConfig mongoClientConfig;
-            if (liquibaseMongodbConfig.mongoClientName().isPresent()) {
-                mongoClientName = liquibaseMongodbConfig.mongoClientName().get();
-                mongoClientConfig = mongodbConfig.mongoClientConfigs().get(mongoClientName);
-                if (mongoClientConfig == null) {
-                    throw new IllegalArgumentException("Mongo client named '%s' not found".formatted(mongoClientName));
-                }
-            } else {
-                mongoClientConfig = mongodbConfig.defaultMongoClientConfig();
-                mongoClientName = MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME;
-            }
             String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog());
             String connectionString = mongoClientConfig.connectionString().orElse("mongodb://localhost:27017");
             Matcher matcher = HAS_DB.matcher(connectionString);
@@ -126,7 +115,7 @@ public class LiquibaseMongodbFactory {
                             "be defined when no database exist in the connection string");
                 }
             }
-            Database database = createDatabase(mongoClients, mongoClientName, maybeDatabase.get());
+            Database database = createDatabase(mongoClients, clientName, maybeDatabase.get());
             if (liquibaseMongodbConfig.liquibaseCatalogName().isPresent()) {
                 database.setLiquibaseCatalogName(liquibaseMongodbConfig.liquibaseCatalogName().get());
             }
@@ -165,7 +154,7 @@ public class LiquibaseMongodbFactory {
         return database;
     }
 
-    public LiquibaseMongodbConfig getConfiguration() {
+    public LiquibaseMongodbClientConfig getConfiguration() {
         return liquibaseMongodbConfig;
     }
 

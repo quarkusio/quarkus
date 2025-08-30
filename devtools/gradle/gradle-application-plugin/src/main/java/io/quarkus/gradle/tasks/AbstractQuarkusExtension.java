@@ -21,10 +21,12 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.jvm.tasks.Jar;
 import org.gradle.process.JavaForkOptions;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -184,6 +186,12 @@ public abstract class AbstractQuarkusExtension {
         Map<String, String> buildSystemProperties = new HashMap<>();
         buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
+
+        // pass the value of TarCopyAction.CONSTANT_TIME_FOR_TAR_ENTRIES to Quarkus packaging subsystem
+        var jarTask = project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).getOrNull();
+        if (jarTask == null || !jarTask.isPreserveFileTimestamps()) {
+            buildSystemProperties.putIfAbsent("quarkus.package.output-timestamp", "1970-01-02T00:00:00Z");
+        }
 
         for (Map.Entry<String, String> entry : forcedPropertiesProperty.get().entrySet()) {
             if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {

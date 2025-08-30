@@ -242,7 +242,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     .setDirect(true)
                     .setRuntimeCp()
                     .setDeploymentCp();
-            Utils.processQuarkusDependency(artifactBuilder, modelBuilder);
+            processQuarkusDependency(artifactBuilder, modelBuilder);
             modelBuilder.addDependency(artifactBuilder);
         }
     }
@@ -308,22 +308,21 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 parentModule.addDependency(new ArtifactDependency(depCoords));
             }
 
-            if (Utils.processQuarkusDependency(depBuilder, modelBuilder)) {
+            if (processQuarkusDependency(depBuilder, modelBuilder)) {
                 if (isFlagOn(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
                     depBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     newFlags = clearFlag(newFlags, COLLECT_TOP_EXTENSION_RUNTIME_NODES);
                 }
-                newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
             }
             if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
-                // Checking whether current dependency is a project module is a temporary workaround,
-                // that is required while projectModule for project dependencies is null (current
-                // deficiency of this task).
-                // That's why we set the workspace module flag explicitly via setWorkspaceModule().
-                // Once we have projectModule set for project dependencies, we can remove this workaround.
-                final boolean isProjectDependency = resolvedDependency.getSelected()
-                        .getId() instanceof ProjectComponentIdentifier;
-                if (projectModule != null || isProjectDependency) {
+                if (!depBuilder.isRuntimeExtensionArtifact()
+                        && (projectModule != null
+                                // Checking whether current dependency is a project module is a temporary workaround,
+                                // that is required while projectModule for project dependencies is null (current
+                                // deficiency of this task).
+                                // That's why we set the workspace module flag explicitly via setWorkspaceModule().
+                                // Once we have projectModule set for project dependencies, we can remove this workaround.
+                                || resolvedDependency.getSelected().getId() instanceof ProjectComponentIdentifier)) {
                     depBuilder.setReloadable().setWorkspaceModule();
                     modelBuilder.addReloadableWorkspaceModule(artifactKey);
                 } else {
@@ -552,66 +551,63 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
     }
 
-    public static class Utils {
-
-        public static boolean processQuarkusDependency(ResolvedDependencyBuilder artifactBuilder,
-                ApplicationModelBuilder modelBuilder) {
-            for (Path artifactPath : artifactBuilder.getResolvedPaths()) {
-                if (!Files.exists(artifactPath) || !artifactBuilder.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                    break;
-                }
-                if (Files.isDirectory(artifactPath)) {
-                    return processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
-                } else {
-                    try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactPath)) {
-                        return processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF),
-                                modelBuilder);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to process " + artifactPath, e);
-                    }
+    private static boolean processQuarkusDependency(ResolvedDependencyBuilder artifactBuilder,
+            ApplicationModelBuilder modelBuilder) {
+        for (Path artifactPath : artifactBuilder.getResolvedPaths()) {
+            if (!Files.exists(artifactPath) || !artifactBuilder.getType().equals(ArtifactCoords.TYPE_JAR)) {
+                break;
+            }
+            if (Files.isDirectory(artifactPath)) {
+                return processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
+            } else {
+                try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactPath)) {
+                    return processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF),
+                            modelBuilder);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to process " + artifactPath, e);
                 }
             }
+        }
+        return false;
+    }
+
+    private static boolean processQuarkusDir(ResolvedDependencyBuilder artifactBuilder, Path quarkusDir,
+            ApplicationModelBuilder modelBuilder) {
+        if (!Files.exists(quarkusDir)) {
             return false;
         }
-
-        private static boolean processQuarkusDir(ResolvedDependencyBuilder artifactBuilder, Path quarkusDir,
-                ApplicationModelBuilder modelBuilder) {
-            if (!Files.exists(quarkusDir)) {
-                return false;
-            }
-            final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
-            if (!Files.exists(quarkusDescr)) {
-                return false;
-            }
-            final Properties extProps = readDescriptor(quarkusDescr);
-            if (extProps == null) {
-                return false;
-            }
-            artifactBuilder.setRuntimeExtensionArtifact();
-            modelBuilder.handleExtensionProperties(extProps, artifactBuilder.getKey());
-
-            final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-            if (providesCapabilities != null) {
-                modelBuilder
-                        .addExtensionCapabilities(
-                                CapabilityContract.of(artifactBuilder.toGACTVString(), providesCapabilities, null));
-            }
-            return true;
+        final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
+        if (!Files.exists(quarkusDescr)) {
+            return false;
         }
-
-        private static Properties readDescriptor(final Path path) {
-            final Properties rtProps;
-            if (!Files.exists(path)) {
-                // not a platform artifact
-                return null;
-            }
-            rtProps = new Properties();
-            try (BufferedReader reader = Files.newBufferedReader(path)) {
-                rtProps.load(reader);
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to load extension description " + path, e);
-            }
-            return rtProps;
+        final Properties extProps = readDescriptor(quarkusDescr);
+        if (extProps == null) {
+            return false;
         }
+        artifactBuilder.setRuntimeExtensionArtifact();
+        modelBuilder.handleExtensionProperties(extProps, artifactBuilder.getKey());
+
+        final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
+        if (providesCapabilities != null) {
+            modelBuilder
+                    .addExtensionCapabilities(
+                            CapabilityContract.of(artifactBuilder.toGACTVString(), providesCapabilities, null));
+        }
+        return true;
+    }
+
+    private static Properties readDescriptor(final Path path) {
+        final Properties rtProps;
+        if (!Files.exists(path)) {
+            // not a platform artifact
+            return null;
+        }
+        rtProps = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            rtProps.load(reader);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to load extension description " + path, e);
+        }
+        return rtProps;
     }
 }

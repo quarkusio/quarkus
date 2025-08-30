@@ -175,4 +175,38 @@ public class BootstrapUtils {
         }
         return null;
     }
+
+    /**
+     * Generates a comma-separated list of flag names for an integer representation of the flags.
+     *
+     * @param flags flags as an integer value
+     * @return comma-separated list of the flag names
+     */
+    public static String toTextFlags(int flags) {
+        var sb = new StringBuilder();
+        appendFlagIfSet(sb, flags, DependencyFlags.OPTIONAL, "optional");
+        appendFlagIfSet(sb, flags, DependencyFlags.DIRECT, "direct");
+        appendFlagIfSet(sb, flags, DependencyFlags.RUNTIME_CP, "runtime-cp");
+        appendFlagIfSet(sb, flags, DependencyFlags.DEPLOYMENT_CP, "deployment-cp");
+        appendFlagIfSet(sb, flags, DependencyFlags.RUNTIME_EXTENSION_ARTIFACT, "runtime-extension-artifact");
+        appendFlagIfSet(sb, flags, DependencyFlags.WORKSPACE_MODULE, "workspace-module");
+        appendFlagIfSet(sb, flags, DependencyFlags.RELOADABLE, "reloadable");
+        appendFlagIfSet(sb, flags, DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT,
+                "top-level-runtime-extension-artifact");
+        appendFlagIfSet(sb, flags, DependencyFlags.CLASSLOADER_PARENT_FIRST, "classloader-parent-first");
+        appendFlagIfSet(sb, flags, DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST, "classloader-runner-parent-first");
+        appendFlagIfSet(sb, flags, DependencyFlags.CLASSLOADER_LESSER_PRIORITY, "classloader-lesser-priority");
+        appendFlagIfSet(sb, flags, DependencyFlags.COMPILE_ONLY, "compile-only");
+        appendFlagIfSet(sb, flags, DependencyFlags.VISITED, "visited");
+        return sb.toString();
+    }
+
+    private static void appendFlagIfSet(StringBuilder sb, int flags, int flagValue, String flagName) {
+        if ((flags & flagValue) == flagValue) {
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
+            sb.append(flagName);
+        }
+    }
 }

@@ -2,11 +2,18 @@ package io.quarkus.devui.runtime.jsonrpc;
 
 import java.util.Map;
 
+import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
+
 public final class JsonRpcRequest {
     private int id;
     private String jsonrpc = JsonRpcKeys.VERSION;
     private String method;
-    private Map params;
+    private Map<String, Object> params;
+    private final JsonMapper jsonMapper;
+
+    public JsonRpcRequest(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
 
     public int getId() {
         return id;
@@ -36,7 +43,7 @@ public final class JsonRpcRequest {
         return params;
     }
 
-    public void setParams(Map params) {
+    public void setParams(Map<String, Object> params) {
         this.params = params;
     }
 
@@ -50,7 +57,7 @@ public final class JsonRpcRequest {
 
     public <T> T getParam(String key, Class<T> paramType) {
         if (hasParam(key)) {
-            return (T) this.params.get(key);
+            return jsonMapper.fromValue(params.get(key), paramType);
         }
         return null;
     }

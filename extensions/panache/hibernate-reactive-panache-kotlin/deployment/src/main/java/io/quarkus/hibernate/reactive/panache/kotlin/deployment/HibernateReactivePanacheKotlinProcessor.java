@@ -53,7 +53,9 @@ public class HibernateReactivePanacheKotlinProcessor {
     public AdditionalJpaModelBuildItem produceModel() {
         // only useful for the index resolution: hibernate will register it to be transformed, but BuildMojo
         // only transforms classes from the application jar, so we do our own transforming
-        return new AdditionalJpaModelBuildItem("io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntity");
+        return new AdditionalJpaModelBuildItem("io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntity",
+                // Only added to persistence units actually using this class, using Jandex-based discovery
+                Set.of());
     }
 
     @BuildStep

@@ -58,7 +58,7 @@ public class CodeFlowManagementInterfaceDevModeTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", textPage.getContent());
 

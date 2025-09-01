@@ -1,3 +1,10 @@
+ifdef::env-github[]
+:MERMAID: source, mermaid
+endif::[]
+ifndef::env-github[]
+:MERMAID: mermaid
+endif::[]
+
 = When to initialize classes in native mode
 
 * Status: _proposed_
@@ -30,7 +37,7 @@ The goal of this ADR is to define:
 
 == Considered options for default class initialization policy
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 title: Legend
@@ -51,7 +58,7 @@ class B,C,BT buildtime
 In this scenario, all classes in the Quarkus application are build time initialized, unless explicitly configured otherwise.
 This option has been the default behavior in Quarkus for a long time.
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 config:
@@ -91,7 +98,7 @@ class QA,arc,core,Camel,R1,R2,R3,R4,R5,UserExtension,UserExtensionBT,RestAssured
 In this scenario, all classes in the Quarkus application are run time initialized (except for JDK classes footnote:[That's expected to change at some point after GraalVM for JDK 25]), unless explicitly configured otherwise.
 This option has been the default behavior in GraalVM for a long time.
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 config:
@@ -147,7 +154,7 @@ In this scenario Quarkus core and all Quarkus extensions, including Quarkiverse 
 This scenario reduces the entry barrier for most Quarkus users, as creating custom Quarkus extensions is considered an advanced use case.
 Advanced users creating custom extensions are expected to be able to configure their extensions to initialize classes at build time or run time as needed.
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 config:
@@ -185,7 +192,7 @@ class QA,arc,core,BT,Camel,R1,R2,R3,R4,UserExtension,UserExtensionBT,jboss build
 
 In this scenario, Quarkus core and core extensions, as well as a vetted list of extensions along with the transitive closure of their dependencies, are initialized at build time, while user provided extensions and third-party libraries are initialized at runtime.
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 config:
@@ -223,7 +230,7 @@ class QA,arc,core,BT,Camel,R1,R2,R4,UserExtensionBT,jboss buildtime
 
 In this scenario, a vetted list of packages, are initialized at build time, while anything else is initialized at runtime unless explicitly configured otherwise.
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 config:
@@ -260,7 +267,7 @@ class QA,arc,core,BT,Camel,UserExtensionBT,R1 buildtime
 
 In this scenario, only Quarkus core and its transitive dependencies get initialized at build time.
 
-[source, mermaid]
+[{MERMAID}]
 ....
 ---
 config:

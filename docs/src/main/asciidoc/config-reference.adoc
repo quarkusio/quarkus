@@ -12,8 +12,6 @@ include::_attributes.adoc[]
 :sectnumlevels: 4
 :topics: configuration
 
-IMPORTANT: The content of this guide has been revised and split into additional topics. Please check the <<additional-information,Additional Information>> section.
-
 In this reference guide we're going to describe various aspects of Quarkus configuration. A Quarkus application and
 Quarkus itself (core and extensions) are both configured via the same mechanism that leverages
 the https://github.com/smallrye/smallrye-config[SmallRye Config] API an implementation of the
@@ -195,9 +193,80 @@ Quarkus provides additional extensions which cover other configuration formats a
 
 TIP: It is also possible to create a xref:config-extending-support.adoc#custom-config-source[Custom Config Source].
 
-== Inject
+== ConfigMapping
 
-Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the
+The recommended way to expose configuration to a Quarkus application is by mapping it with an interface. With
+https://smallrye.io/smallrye-config/Main/config/mappings/[SmallRye Config Mappings], it is possible to
+group multiple configuration properties in a single interface that share the same prefix (or namespace). It supports
+the following set of features:
+
+* Automatic conversion of the configuration type, including List, Set, Map, Optional, and primitive types.
+* Nested Config Mapping groups.
+* Configuration Properties Naming Strategies
+* Integration with Bean Validation
+
+A Config Mapping requires an interface with minimal metadata configuration annotated with
+`@io.smallrye.config.ConfigMapping`:
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface Server {
+    String host();
+
+    int port();
+
+    int sslPort();
+}
+----
+
+A complex object type uses the following rules to map configuration values to their member values:
+
+* A configuration path is built by taking the object type prefix (or namespace) and the mapping member name
+* The member name is converted to its kebab-case format
+* If the member name is represented as a getter, the member name is taken from its property name equivalent, and then
+converted to its kebab-case format.
+* The configuration value is automatically converted to the member type
+* The configuration path is required to exist with a valid configuration value or the mapping will fail.
+
+NOTE: Kebab-case - the method name is derived by replacing case changes with a dash to map the configuration property.
+
+The `Server` interface can map configuration properties with the name `server.host` into the `Server.host()`
+method, `server.port` into `Server.port()` method, and `server.ssl-port` into `Server.sslPort()` method. The
+configuration property name to look up is constructed from the prefix and the method name (in kebab-case), separated
+by adot (`.`) character.
+
+A `@ConfigMapping` can be injected into any CDI aware bean:
+
+[source,java]
+----
+@ApplicationScoped
+class BusinessBean {
+    @Inject
+    Server server;
+
+    void businessMethod() {
+        String host = server.host();
+    }
+}
+----
+
+For non-CDI components, use the `io.smallrye.config.SmallRyeConfig#getConfigMapping` API to retrieve the config mapping
+instance:
+
+[source,java]
+----
+SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+Server server = config.getConfigMapping(Server.class);
+----
+
+TIP: Check the xref:config-mappings.adoc[Mapping configuration to objects] guide for advanced usages with
+`@ConfigMapping`.
+
+== ConfigProperty
+
+While `@ConfigMapping` is the recommended approach, Quarkus also supports
+https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the
 configuration properties in the application.
 
 [source,java]
@@ -221,19 +290,20 @@ String suffix;
 @ConfigProperty(name = "greeting.name")
 Optional<String> name; <3>
 ----
-<1> If you do not provide a value for this property, the application startup fails with `jakarta.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<1> If you do not provide a value for this property, the application startup fails with
+`io.quarkus.runtime.configuration.ConfigurationException: Failed to load config value of type class java.lang.String for: greeting.messagee`.
 <2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
 <3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
 
 TIP: Use xref:config-mappings.adoc#config-mappings[Config Mappings] to group similar configuration properties.
 
-=== Default Values
+== Default Values
 
-If a property is associated with a default value (by way of the `defaultValue` attribute), and no configuration value
-is supplied for the property, then rather than throwing a `jakarta.enterprise.inject.spi.DeploymentException`, the
-default value will be used. The `defaultValue` value is expressed as a `String`, and uses the same conversion mechanism
-used to process configuration values. Several Built-in Converters already exist for primitives, boxed primitives, and
-other classes; for example:
+If a configuration is associated with a default value (by way of the `io.smallrye.config.WithDefault` or
+`org.eclipse.microprofile.config.inject.ConfigProperty.defaultValue`), and no configuration value is supplied for the
+property, then rather than throwing an exception, the default value will be used. A default value is expressed as a
+`String`, and uses the same conversion mechanism used to process configuration values. Several Built-in Converters
+already exist for primitives, boxed primitives, and other classes; for example:
 
 * Primitives: `boolean`, `byte`, `short`, etc.
 * Boxed primitives: `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Short`, etc.
@@ -248,10 +318,10 @@ these converters comply with the Microprofile or custom implementation providers
 * Boolean values will be `true` in cases "true", "1", "YES", "Y" "ON". Otherwise, value will be interpreted as false
 * For float and double values the fractional digits must be separated by a dot `.`
 
-Note that when a combination of `Optional*` types and the `defaultValue` attribute are used, the defined `defaultValue`
-will still be used and if no value is given for the property, the `Optional*` will be present and populated with the
-converted default value. However, when the property is explicitly empty, the default value is not used and the
-`Optional` will be empty. Consider this example:
+Note that when a combination of `Optional*` types and defaults are used, the defined default value will still be used
+and if no value is given for the property, the `Optional*` will be present and populated with the converted default
+value. However, when the property is explicitly empty, the default value is not used and the `Optional` will be empty.
+Consider this example:
 
 [source,properties]
 ----
@@ -274,23 +344,16 @@ greeting.suffix=
 will result in a `java.util.NoSuchElementException: SRCFG02004: Required property greeting.message not found` on
 startup and the default value will not be assigned.
 
-Below is an example of a Quarkus-supplied converter:
-
-[source,java]
-----
-@ConfigProperty(name = "server.address", defaultValue = "192.168.1.1")
-InetAddress serverAddress;
-----
-
 == Programmatically access
 
-The `org.eclipse.microprofile.config.ConfigProvider.getConfig()` API allows to access the Config API programmatically.
+The `io.smallrye.config.SmallRyeConfig` API allows to access the Config API programmatically.
 This API is mostly useful in situations where CDI injection is not available.
 
 [source,java]
 ----
-String databaseName = ConfigProvider.getConfig().getValue("database.name", String.class);
-Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue("database.name", String.class);
+SmallRyeConfig config = org.eclipse.microprofile.config.ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+String databaseName = config.getValue("database.name", String.class);
+Optional<String> maybeDatabaseName = config.getOptionalValue("database.name", String.class);
 ----
 
 IMPORTANT: Do not use `System.getProperty(String)` or `System.getEnv(String)` to retrieve configuration values. These
@@ -496,17 +559,6 @@ Multiple profiles priority work in reverse order. With `quarkus.profile=common,d
 profile and then the `common` profile.
 ====
 
-=== Default Runtime Profile
-
-The default Quarkus runtime profile is set to the profile used to build the application:
-
-[source,bash]
-----
-./mvnw package -Dnative -Dquarkus.profile=prod-aws
-./target/my-app-1.0-runner // <1>
-----
-<1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` configuration.
-
 [[property-expressions]]
 == Property Expressions
 
@@ -674,9 +726,11 @@ extensions. Therefore, the `quarkus.` prefix should **never** be used for applic
 
 === Build Time configuration
 
-Some Quarkus configurations only take effect during build time, meaning it is not possible to change them at runtime. These
-configurations are still available at runtime but as read-only and have no effect in Quarkus behaviour. A change to any
-of these configurations requires a rebuild of the application itself to reflect changes of such properties.
+Some Quarkus configurations only take effect during build time (compile), meaning it is not possible to change it at
+runtime. These configurations are still available at runtime but as read-only and have no effect in Quarkus
+behaviour. A change to any of these configurations requires a rebuild of the application itself to reflect changes of
+such properties. This allows Quarkus to provide optimizations and reduce complexity based on the current build
+configuration. By default, Quarkus uses the `prod` configuration profile to build the application.
 
 TIP: The properties fixed at build time are marked with a lock icon (icon:lock[]) in the xref:all-config.adoc[list of all configuration options].
 
@@ -684,9 +738,39 @@ However, some extensions do define properties _overridable at runtime_. A simple
 and password which is only known specifically in your target environment, so they can be set and influence the
 application behaviour at runtime.
 
-== Change build time properties after your application has been published
+=== Config Recording
 
-If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how xref:reaugmentation.adoc[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.
+During the build process, Quarkus proceeds to record the available configuration in the final binary, to ensure it can
+start successfully in runtime, without missing required configuration. The following sources are excluded from
+recording:
+
+* System Properties
+* Environment Variables
+* `.env`
+* Build System Sources (provided by Maven or Gradle)
+
+=== Default Runtime Profile
+
+The default Quarkus runtime profile is set to the profile used to build the application:
+
+[source,bash]
+----
+./mvnw package -Dnative -Dquarkus.profile=prod-aws
+./target/my-app-1.0-runner // <1>
+----
+<1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` configuration.
+
+[IMPORTANT]
+====
+Using a different configuration profile at runtime from the one used to build the application can lead to unexpected
+results.
+====
+
+== Change configuration after build (Reaugmentation)
+
+If you are in the rare situation that you need to change the build time configuration after your application is built,
+then check out how xref:reaugmentation.adoc[re-augmentation] can be used to rebuild the augmentation output for a
+different build time configuration.
 
 == Tracking effective build time configuration used at build time
 

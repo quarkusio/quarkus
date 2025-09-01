@@ -174,13 +174,15 @@ To transform an extension name into a package name, use the following pattern:
 * If the extension name contains a hyphen, replace it with an underscore (e.g., `quarkus-foo-bar` becomes `io.quarkus.foo_bar`). // TODO Definitely not sure.
 
 ==== runtime module
-* `io.<quarkus|quarkiverse>.<extension-name>.runtime.internals`: Internal implementation. Not part of the public API.
+* `io.<quarkus|quarkiverse>.<extension-name>.runtime.internal|impl`: Internal implementation. Not part of the public API.
 * `io.<quarkus|quarkiverse>.<extension-name>.runtime.graal`: GraalVM substitutions. Not part of the public API.
 * `io.<quarkus|quarkiverse>.<extension-name>`: Public API when requiring tight-coupling. May include subpackages (excluding `api` and `dev`). Example: `io.quarkus.cache`. Note that this is discouraged in favor of the `runtime-api` module.
 
+Non-API packages should be under `.impl` or `internal` like `io.quarkus.<extension-name>.runtime.internal` or `io.quarkus.<extension-name>.runtime.impl`.
+Thus, automated tooling can easily use this information to help generate a `module-info` with the correct exports, as well as excluding those packages from JavaDoc generation.
 
 ==== deployment module
-* `io.<quarkus|quarkiverse>.<extension-name>.deployment`: Internal build logic (processors, build steps, internal build items). Public APIs must reside in the `deployment-spi` module. May include subpackages (excluding `spi`).
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment`: Internal build logic (processors, build steps, internal build items). Public SPIs must reside in the `deployment-spi` module. May include subpackages (excluding `spi`).
 
 ==== deployment-spi module
 * `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`: Public build items and types. Considered public API and subject to compatibility guarantees.

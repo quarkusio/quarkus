@@ -7,6 +7,9 @@ fixes, documentation, examples... But first, read this page (including the small
 <!-- toc -->
 
 - [Legal](#legal)
+  * [License](#license)
+  * [Developer Certificate of Origin (DCO)](#developer-certificate-of-origin-dco)
+  * [Compliance with Laws and Regulations](#compliance-with-laws-and-regulations)
 - [Reporting an issue](#reporting-an-issue)
 - [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
   * [Using snapshots](#using-snapshots)
@@ -36,7 +39,8 @@ fixes, documentation, examples... But first, read this page (including the small
     + [Building a single module of an extension](#building-a-single-module-of-an-extension)
     + [Building with relocations](#building-with-relocations)
     + [Running a single test](#running-a-single-test)
-      - [Maven Invoker tests](#maven-invoker-tests)
+    + [Running integration tests](#running-integration-tests)
+    + [Maven Invoker tests](#maven-invoker-tests)
   * [Build with multiple threads](#build-with-multiple-threads)
   * [Don't build any test modules](#dont-build-any-test-modules)
     + [Automatic incremental build](#automatic-incremental-build)
@@ -73,12 +77,22 @@ fixes, documentation, examples... But first, read this page (including the small
 
 ## Legal
 
+### License
+
 All original contributions to Quarkus are licensed under the
 [ASL - Apache License](https://www.apache.org/licenses/LICENSE-2.0), version 2.0 or later, or, if another license is
 specified as governing the file or directory being modified, such other license.
 
+### Developer Certificate of Origin (DCO)
+
 All contributions are subject to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/). The DCO
 text is also included verbatim in the [dco.txt](dco.txt) file in the root directory of the repository.
+
+### Compliance with Laws and Regulations
+
+All contributions must comply with applicable laws and regulations, including U.S. export control and sanctions restrictions.
+For background, see the Linux Foundation’s guidance:
+[Navigating Global Regulations and Open Source: US OFAC Sanctions](https://www.linuxfoundation.org/blog/navigating-global-regulations-and-open-source-us-ofac-sanctions).
 
 ## Reporting an issue
 
@@ -558,18 +572,18 @@ this is by executing the following command:
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
 
-#### Running integration tests 
+#### Running integration tests
 
-By default, in the Quarkus codebase, all tests ending in *IT are skipped, even with the verify goal. 
-This means most `@QuarkusIntegrationTest` tests in the Quarkus codebase only run when `-Dnative` is added to the command line. 
-Even using the `verify` goal and adding `-DskipITs=false` is not enough to run these tests. 
+By default, in the Quarkus codebase, all tests ending in *IT are skipped, even with the verify goal.
+This means most `@QuarkusIntegrationTest` tests in the Quarkus codebase only run when `-Dnative` is added to the command line.
+Even using the `verify` goal and adding `-DskipITs=false` is not enough to run these tests.
 Only `-Dnative` will trigger them.
 Note that this is a behaviour difference to what's [documented externally](https://quarkus.io/guides/getting-started-testing#quarkus-integration-test).
 
 Why the different behaviour? Quarkus builds are _long_, and running every integration test twice would make them even longer.
-In most cases, coverage in the native build is sufficient. 
+In most cases, coverage in the native build is sufficient.
 
-##### Maven Invoker tests
+#### Maven Invoker tests
 
 For testing some scenarios, Quarkus uses the [Maven Invoker](https://maven.apache.org/shared/maven-invoker/) to run
 tests. For these cases, to run a single test, one needs to use the `invoker.test` property along with the name of the

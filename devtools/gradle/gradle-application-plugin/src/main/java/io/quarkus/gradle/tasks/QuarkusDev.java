@@ -129,7 +129,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         objectFactory = getProject().getObjects();
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
 
         environmentVariables = objectFactory.mapProperty(String.class, String.class);
 

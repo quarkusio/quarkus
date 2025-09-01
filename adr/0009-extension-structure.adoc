@@ -40,7 +40,7 @@ Extensions contributing to or using build items from other extensions should dep
 * `codestart`: Contains the _Codestart_ templates for the extension. See https://quarkus.io/guides/extension-codestart[Codestart Guide] for more details.
 * `codegen`: Contains code generation utilities such as code pre-processors invoked at build time.
 
-Only the `runtime` module is mandatory; the others are optional based on the extension's needs.
+Only the `runtime` and `deployment` modules are mandatory; the others are optional based on the extension's needs.
 
 
 .New structure for Quarkus extensions
@@ -61,7 +61,6 @@ my-extension/
 Module dependencies must follow strict rules:
 * `deployment` depends on `runtime`, and `deployment-spi` (if defined).
 * `runtime` depends on `runtime-api` (if defined).
-* `dev`, if defined.
 * External consumers should rely only on `runtime-api` or `deployment-spi` to be loose-coupled (See <<coupling-api-and-spi>>.).
 * External consumers should rely only on `runtime` or `deployment` to be tightly-coupled (forcing the target extension to be present at execution). See <<coupling-api-and-spi>>.
 * Public APIs must be explicitly documented, including build items meant for inter-extension use.
@@ -120,8 +119,8 @@ Historically, extensions have often placed their public APIs in the `runtime` mo
 To clarify this, we propose the following rules:
 
 * Public APIs should be placed in a dedicated `runtime-api` module, which can be used independently of the full extension.
-* The `runtime` module should focus on the internal implementation and runtime logic, delegating public APIs to the `api` module.
-* The `runtime-api` module contains both the public API  allowing other extensions to depend on it without pulling in the full extension.
+* The `runtime` module should focus on the internal implementation and runtime logic, delegating public APIs to the `runtime-api` module.
+* The `runtime-api` module contains the public API  allowing other extensions to depend on it without pulling in the full extension.
 
 For extensions requiring tight-coupling, the `runtime` module can still be used to expose public APIs, but this should be avoided when possible.
 

@@ -110,7 +110,6 @@ public class QuarkusDevModeTest
     private Supplier<JavaArchive> archiveProducer;
     private Supplier<JavaArchive> testArchiveProducer;
     private List<String> codeGenSources = Collections.emptyList();
-    private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
 
     private Path deploymentSourceParentPath;
@@ -201,8 +200,9 @@ public class QuarkusDevModeTest
         return this;
     }
 
+    @Deprecated(forRemoval = true)
     public QuarkusDevModeTest setLogFileName(String logFileName) {
-        this.logFileName = logFileName;
+        PropertyTestUtil.setLogFileProperty(logFileName);
         return this;
     }
 
@@ -250,12 +250,6 @@ public class QuarkusDevModeTest
             throw new RuntimeException("QuarkusDevModeTest does not have archive producer set");
         }
         ExclusivityChecker.checkTestType(extensionContext, QuarkusDevModeTest.class);
-
-        if (logFileName != null) {
-            PropertyTestUtil.setLogFileProperty(logFileName);
-        } else {
-            PropertyTestUtil.setLogFileProperty();
-        }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());

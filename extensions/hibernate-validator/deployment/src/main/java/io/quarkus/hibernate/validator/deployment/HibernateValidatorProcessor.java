@@ -249,6 +249,7 @@ class HibernateValidatorProcessor {
             CombinedIndexBuildItem combinedIndex,
             List<ConfigClassBuildItem> configClasses,
             BeanValidationAnnotationsBuildItem beanValidationAnnotations,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -327,11 +328,13 @@ class HibernateValidatorProcessor {
                 continue;
             }
 
-            embeddingMap.get(constrainedConfigMapping).values().stream()
-                    .map(c -> c.getConfigComponentInterfaces())
-                    .flatMap(Collection::stream)
-                    .map(DotName::createSimple)
-                    .forEach(configComponentsInterfacesToRegisterForReflection::add);
+            for (ConfigClassBuildItem configClass : embeddingMap.get(constrainedConfigMapping).values()) {
+                unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(configClass.getConfigClass()));
+                configClass.getConfigComponentInterfaces()
+                        .stream()
+                        .map(DotName::createSimple)
+                        .forEach(configComponentsInterfacesToRegisterForReflection::add);
+            }
         }
         reflectiveClass.produce(ReflectiveClassBuildItem
                 .builder(configComponentsInterfacesToRegisterForReflection.stream().map(DotName::toString)

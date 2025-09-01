@@ -12,7 +12,6 @@ import java.util.Set;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.DefinitionException;
-import jakarta.inject.Qualifier;
 
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,6 @@ public class SyntheticQualifierWithBindingAnnotationTest {
     }
 
     // not marked as @Qualifier, instead it is added via registrar
-    @Qualifier
     @Retention(RetentionPolicy.RUNTIME)
     @interface ToBeQualifier {
         SomeAnnotation value();

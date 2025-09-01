@@ -179,9 +179,8 @@ public class DevServicesProcessor {
             List<DevServicesResultBuildItem> devServicesResults,
             DevServicesRegistryBuildItem devServicesRegistry) {
         containerLogForwarders.clear();
-        boolean isContainerRuntimeAvailable = dockerStatusBuildItem.isContainerRuntimeAvailable();
         List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(
-                isContainerRuntimeAvailable, devServicesResults, devServicesRegistry,
+                dockerStatusBuildItem, devServicesResults, devServicesRegistry,
                 devServicesLauncherConfig);
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
@@ -213,7 +212,7 @@ public class DevServicesProcessor {
         context.reset(
                 new ConsoleCommand('c', "Show Dev Services containers", null, () -> {
                     List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(
-                            isContainerRuntimeAvailable, devServicesResults, devServicesRegistry,
+                            dockerStatusBuildItem, devServicesResults, devServicesRegistry,
                             devServicesLauncherConfig);
                     StringBuilder builder = new StringBuilder();
                     builder.append("\n\n")
@@ -260,7 +259,7 @@ public class DevServicesProcessor {
     }
 
     private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(
-            boolean isContainerRuntimeAvailable,
+            DockerStatusBuildItem dockerStatusBuildItem,
             List<DevServicesResultBuildItem> devServicesResults,
             DevServicesRegistryBuildItem devServicesRegistry,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
@@ -270,7 +269,8 @@ public class DevServicesProcessor {
         List<DevServiceDescriptionBuildItem> descriptions = new ArrayList<>();
         for (DevServicesResultBuildItem buildItem : devServicesResults) {
             configKeysFromDevServices.addAll(buildItem.getConfig().keySet());
-            descriptions.add(toDevServiceDescription(buildItem, buildItem::getContainerId, isContainerRuntimeAvailable,
+            descriptions.add(toDevServiceDescription(buildItem, buildItem::getContainerId,
+                    dockerStatusBuildItem.isContainerRuntimeAvailable(),
                     devServicesRegistry));
         }
         // Sort descriptions by name

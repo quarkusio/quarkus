@@ -45,7 +45,7 @@ public class ConfigDevUIRecorder {
 
         List<ConfigDescription> ordered = new ArrayList<>();
         List<String> properties = new ArrayList<>();
-        SmallRyeConfig current = (SmallRyeConfig) ConfigProvider.getConfig();
+        SmallRyeConfig current = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
 
         Map<List<String>, Set<String>> allPropertySegments = new HashMap<>();
         Set<String> propertyNames = new HashSet<>();

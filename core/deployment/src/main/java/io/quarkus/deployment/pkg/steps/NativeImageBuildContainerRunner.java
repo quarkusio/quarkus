@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -22,6 +23,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     protected final ContainerRuntimeUtil.ContainerRuntime containerRuntime;
     String[] baseContainerRuntimeArgs;
     private final String containerName;
+    private final AtomicBoolean setupInvoked = new AtomicBoolean();
 
     protected NativeImageBuildContainerRunner(NativeConfig nativeConfig) {
         this.nativeConfig = nativeConfig;
@@ -39,7 +41,10 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     @Override
     public void setup(boolean processInheritIODisabled) {
-        if (containerRuntime != ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE) {
+        if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE) {
+            return;
+        }
+        if (setupInvoked.compareAndSet(false, true)) {
             log.infof("Using %s to run the native image builder", containerRuntime.getExecutableName());
             // we pull the docker image in order to give users an indication of which step the process is at
             // it's not strictly necessary we do this, however if we don't the subsequent version command
@@ -91,6 +96,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                 pull(effectiveBuilderImage, processInheritIODisabled);
             }
         }
+
     }
 
     private void pull(String effectiveBuilderImage, boolean processInheritIODisabled) {

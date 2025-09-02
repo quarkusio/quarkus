@@ -142,7 +142,7 @@ public class QuarkusComponentVariants {
         config.attributes(attrs -> {
             setCommonAttributes(attrs, project.getObjects());
             for (var satisfiedDep : satisfiedExtDeps) {
-                satisfiedDep.setItrativeAttribute(attrs);
+                satisfiedDep.setIterativeAttribute(attrs);
             }
         });
     }
@@ -169,12 +169,13 @@ public class QuarkusComponentVariants {
      * @param project project
      * @param mode launch mode
      */
-    public static void addVariants(Project project, LaunchMode mode) {
-        new QuarkusComponentVariants(project, mode).configureAndAddVariants();
+    public static void addVariants(Project project, LaunchMode mode, Configuration enforcedPlatforms) {
+        new QuarkusComponentVariants(project, mode, enforcedPlatforms).configureAndAddVariants();
     }
 
     private final Attribute<String> quarkusDepAttr;
     private final Project project;
+    private final Configuration enforcedPlatforms;
     private final Map<ArtifactKey, ProcessedDependency> processedDeps = new HashMap<>();
     private final Map<ArtifactKey, ConditionalDependency> allConditionalDeps = new HashMap<>();
     private final List<ConditionalDependencyVariant> dependencyVariantQueue = new ArrayList<>();
@@ -182,9 +183,10 @@ public class QuarkusComponentVariants {
     private final LaunchMode mode;
     private final AtomicInteger configCopyCounter = new AtomicInteger();
 
-    private QuarkusComponentVariants(Project project, LaunchMode mode) {
+    private QuarkusComponentVariants(Project project, LaunchMode mode, Configuration enforcedPlatforms) {
         this.project = project;
         this.mode = mode;
+        this.enforcedPlatforms = enforcedPlatforms;
         this.quarkusDepAttr = getConditionalDependencyAttribute(project.getName(), mode);
         project.getDependencies().getAttributesSchema().attribute(quarkusDepAttr);
         project.getDependencies().getAttributesSchema().attribute(getDeploymentDependencyAttribute(project.getName(), mode));
@@ -200,6 +202,22 @@ public class QuarkusComponentVariants {
     }
 
     /**
+     * Applies constraints from the enforced platform configuration to an already created detached configuration.
+     * This method may stop being public and static when ConditionalDependenciesEnabler is completely removed.
+     */
+    public static void applyEnforcedPlatformConstraints(Configuration detached, Configuration enforcedPlatforms) {
+        enforcedPlatforms.getExcludeRules().forEach(rule -> {
+            Map<String, String> excludeProperties = new HashMap<>();
+            excludeProperties.put("group", rule.getGroup());
+            excludeProperties.put("module", rule.getModule());
+            detached.exclude(excludeProperties);
+        });
+        enforcedPlatforms.getAllDependencies().forEach(dependency -> {
+            detached.getDependencies().add(dependency);
+        });
+    }
+
+    /**
      * Registers a runtime configuration with enabled conditional dependencies.
      * It also adds deployment variants to the corresponding components but does not select them in this configuration.
      */
@@ -209,6 +227,7 @@ public class QuarkusComponentVariants {
                 config -> {
                     config.setCanBeConsumed(false);
                     config.extendsFrom(getBaseConfiguration());
+                    config.extendsFrom(enforcedPlatforms);
                     setConditionalAttributes(config, project, mode);
                     final ListProperty<Dependency> dependencyProperty = project.getObjects().listProperty(Dependency.class);
                     final AtomicInteger invocations = new AtomicInteger();
@@ -361,6 +380,7 @@ public class QuarkusComponentVariants {
                 .resolvable(baseConfig.getName() + "Copy" + configCopyCounter.incrementAndGet(), c -> {
                     c.setCanBeConsumed(false);
                     c.extendsFrom(baseConfig);
+                    c.extendsFrom(enforcedPlatforms);
                     setIterativeConditionalAttributes(c, project, satisfiedExtensionDeps.values());
                 }).get();
     }
@@ -418,6 +438,7 @@ public class QuarkusComponentVariants {
 
     private ResolvedArtifact tryResolvingRelocationArtifact(Dependency dep) {
         final Configuration configForRelocated = project.getConfigurations().detachedConfiguration(dep).setTransitive(true);
+        applyEnforcedPlatformConstraints(configForRelocated, enforcedPlatforms);
         setConditionalAttributes(configForRelocated, project, mode);
 
         var firstLevelDeps = configForRelocated.getResolvedConfiguration().getFirstLevelModuleDependencies();
@@ -449,6 +470,7 @@ public class QuarkusComponentVariants {
 
     private ConditionalDependency newConditionalDep(Dependency dep) {
         final Configuration config = project.getConfigurations().detachedConfiguration(dep).setTransitive(false);
+        applyEnforcedPlatformConstraints(config, enforcedPlatforms);
         setConditionalAttributes(config, project, mode);
         ResolvedArtifact resolvedArtifact = null;
 
@@ -568,7 +590,7 @@ public class QuarkusComponentVariants {
             return deps.size() > depsInLastAddedVariant;
         }
 
-        private void setItrativeAttribute(AttributeContainer attrs) {
+        private void setIterativeAttribute(AttributeContainer attrs) {
             /* @formatter:off
             It appears we can't re-use a previously added variant and with attribute.
             Somehow, it's not selected.

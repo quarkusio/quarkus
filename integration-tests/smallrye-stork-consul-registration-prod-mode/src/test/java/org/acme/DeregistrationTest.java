@@ -24,7 +24,7 @@ public class DeregistrationTest {
     public static class DeregistrationConfigProfile implements QuarkusTestProfile {
         @Override
         public String getConfigProfile() {
-            return "minimal";
+            return "deregistration";
         }
     }
 

@@ -8,15 +8,12 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
-@DisabledOnOs(OS.WINDOWS)
 public class NoHealthExtensionTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()

@@ -3,6 +3,7 @@ package io.quarkus.cache.test.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -108,10 +109,17 @@ public class CachedResultsTest {
         // injected class has a no-args constructor
         assertEquals(anotherModel1.foo(111), anotherModel1.foo(111));
         assertEquals(anotherModel1.bar(), anotherModel1.bar());
+        Class<?> clazz = anotherModel1.getClass();
+        try {
+            clazz.getDeclaredMethod("baz");
+            fail();
+        } catch (NoSuchMethodException expected) {
+        }
     }
 
     interface EmbeddingModel {
 
+        // excluded
         void update();
 
         int foo(int val);
@@ -133,6 +141,13 @@ public class CachedResultsTest {
             return UUID.randomUUID().toString();
         }
 
+        // excluded
+        @SuppressWarnings("unused")
+        private int baz() {
+            return new Random().nextInt();
+        }
+
+        // excluded
         void update() {
             lastUpdate.set(System.currentTimeMillis());
         }

@@ -161,6 +161,7 @@ public class CachedResultsProcessor {
                             || method.isStaticInitializer()
                             || method.isSynthetic()
                             || method.isBridge()
+                            || Modifier.isPrivate(method.flags())
                             || Modifier.isStatic(method.flags())) {
                         continue;
                     }
@@ -168,6 +169,11 @@ public class CachedResultsProcessor {
                     MethodDesc methodDesc = methodDescOf(method);
                     cc.method(methodDesc, mc -> {
                         mc.returning(methodDesc.returnType());
+                        if (Modifier.isProtected(method.flags())) {
+                            mc.protected_();
+                        } else if (isPackagePrivate(method.flags())) {
+                            mc.packagePrivate();
+                        }
 
                         ParamVar[] params = new ParamVar[methodDesc.parameterCount()];
                         for (int i = 0; i < methodDesc.parameterCount(); i++) {
@@ -214,6 +220,10 @@ public class CachedResultsProcessor {
                 }
             });
         }
+    }
+
+    private static boolean isPackagePrivate(int mod) {
+        return !(Modifier.isPrivate(mod) || Modifier.isProtected(mod) || Modifier.isPublic(mod));
     }
 
     static final class CachedResultsInjectConfigBuildItem extends MultiBuildItem {

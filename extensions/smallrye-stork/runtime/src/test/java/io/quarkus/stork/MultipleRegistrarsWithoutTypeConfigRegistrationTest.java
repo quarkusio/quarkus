@@ -21,7 +21,7 @@ public class MultipleRegistrarsWithoutTypeConfigRegistrationTest {
             .setForcedDependencies(
                     Arrays.asList(
                             Dependency.of("io.quarkus", "quarkus-smallrye-stork", Version.getVersion()),
-                            Dependency.of("io.smallrye.stork", "stork-service-registration-consul", "2.7.3")))
+                            Dependency.of("io.smallrye.stork", "stork-service-registration-consul", "2.7.6")))
             .overrideConfigKey("quarkus.stork.red-service.service-registrar.ip-address", "145.123.145.122")
             .overrideConfigKey("quarkus.stork.blue-service.service-registrar.type", "consul")
             .overrideConfigKey("quarkus.stork.blue-service.service-registrar.ip-address", "145.123.145.157")

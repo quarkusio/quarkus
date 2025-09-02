@@ -30,7 +30,7 @@ When the application starts and the `stork-service-registration-consul` dependen
 
 - Quarkus performs a build-time check for registration configuration.
 - If valid configuration is detected (or can be inferred), registration metadata is generated.
-- The application registers itself automatically using the detected or configured IP address and port.
+- **During startup**, the application registers itself automatically using the detected or configured IP address and port.
 - During shutdown, the service is automatically deregistered.
 
 The solution is located in the `stork-automatic-consul-registration-quickstart` link:{quickstarts-tree-url}/stork-automatic-consul-registration-quickstart[directory].
@@ -73,7 +73,7 @@ No `quarkus.stork.my-service.service-registrar.type` is needed because there's o
 
 === Case 3: multiple services registrars
 
-When multiple services are configured, you must specify the `quarkus.stork.<service-name>.service-registrar.typetype`:
+When multiple services are configured, you must specify the `quarkus.stork.<service-name>.service-registrar.type`:
 
 [source,properties]
 ----

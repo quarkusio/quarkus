@@ -27,7 +27,7 @@ public class HealthExtensionCheckTest {
                     Arrays.asList(
                             Dependency.of("io.quarkus", "quarkus-smallrye-stork", Version.getVersion()),
                             Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion()),
-                            Dependency.of("io.smallrye.stork", "stork-service-registration-consul", "2.7.4")))
+                            Dependency.of("io.smallrye.stork", "stork-service-registration-consul", "2.7.6")))
             .assertLogRecords(logRecords -> {
                 List<LogRecord> logs = logRecords.stream()
                         .filter(l -> l.getMessage().contains("Using Smallrye Health Check defaults: %s"))

@@ -8,7 +8,6 @@ package io.quarkus.devui.runtime.comms;
 public class JsonRpcMessage<T> {
     private T response;
     private MessageType messageType;
-    private boolean alreadySerialized = false;
 
     public JsonRpcMessage() {
     }
@@ -32,13 +31,5 @@ public class JsonRpcMessage<T> {
 
     public void setMessageType(MessageType messageType) {
         this.messageType = messageType;
-    }
-
-    public boolean isAlreadySerialized() {
-        return alreadySerialized;
-    }
-
-    public void setAlreadySerialized(boolean alreadySerialized) {
-        this.alreadySerialized = alreadySerialized;
     }
 }

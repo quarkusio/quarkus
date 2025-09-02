@@ -1,5 +1,9 @@
 package org.acme;
 
+import static org.awaitility.Awaitility.await;
+
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -24,7 +28,7 @@ public class DeregistrationTest {
     public static class DeregistrationConfigProfile implements QuarkusTestProfile {
         @Override
         public String getConfigProfile() {
-            return "minimal";
+            return "deregistration";
         }
     }
 
@@ -39,13 +43,14 @@ public class DeregistrationTest {
         // Stop the app
         app.stop();
 
-        // Wait a moment for deregistration to occur
-        Thread.sleep(500);
+        // Wait until service is deregistered (404)
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> RestAssured.get("http://localhost:8500/v1/agent/service/consul-deregistration-test")
+                        .then()
+                        .statusCode(404));
 
-        // Check service is gone
-        RestAssured.get("http://localhost:8500/v1/agent/service/consul-deregistration-test")
-                .then()
-                .statusCode(404);
     }
 
 }

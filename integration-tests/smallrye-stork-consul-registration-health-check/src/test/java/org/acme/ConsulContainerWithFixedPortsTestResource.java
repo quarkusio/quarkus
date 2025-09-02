@@ -1,4 +1,4 @@
-package io.quarkus.stork;
+package org.acme;
 
 import java.util.Collections;
 import java.util.Map;

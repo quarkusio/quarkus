@@ -31,6 +31,7 @@ import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Intercepted;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Specializes;
 import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.inject.TransientReference;
 import jakarta.enterprise.inject.Typed;
@@ -142,6 +143,7 @@ public final class DotNames {
     public static final DotName VETOED_PRODUCER = create(VetoedProducer.class);
     public static final DotName LIST = create(List.class);
     public static final DotName ALL = create(All.class);
+    public static final DotName SPECIALIZES = create(Specializes.class);
     /**
      * @see Identified
      */

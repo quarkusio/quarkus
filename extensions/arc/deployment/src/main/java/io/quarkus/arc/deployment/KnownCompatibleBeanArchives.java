@@ -1,7 +1,9 @@
 package io.quarkus.arc.deployment;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -9,7 +11,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 final class KnownCompatibleBeanArchives {
-    private static class Key {
+    static class Key {
         final String groupId;
         final String artifactId;
         final String classifier;
@@ -40,22 +42,28 @@ final class KnownCompatibleBeanArchives {
         }
     }
 
-    private final Set<Key> keys;
+    private final Map<KnownCompatibleBeanArchiveBuildItem.Reason, Set<Key>> compatArchivesByReason;
 
     KnownCompatibleBeanArchives(List<KnownCompatibleBeanArchiveBuildItem> list) {
-        Set<Key> keys = new HashSet<>();
+        Map<KnownCompatibleBeanArchiveBuildItem.Reason, Set<Key>> allCompatArchivesMap = new HashMap<>();
         for (KnownCompatibleBeanArchiveBuildItem item : list) {
-            keys.add(new Key(item.groupId, item.artifactId, item.classifier));
+            for (KnownCompatibleBeanArchiveBuildItem.Reason reason : item.reasons) {
+                allCompatArchivesMap.computeIfAbsent(reason, unused -> new HashSet<>())
+                        .add(new Key(item.groupId, item.artifactId, item.classifier));
+            }
         }
-        this.keys = keys;
+        this.compatArchivesByReason = allCompatArchivesMap;
     }
 
-    boolean isKnownCompatible(ApplicationArchive archive) {
+    boolean isKnownCompatible(ApplicationArchive archive, KnownCompatibleBeanArchiveBuildItem.Reason reason) {
         ArtifactKey artifact = archive.getKey();
         if (artifact == null) {
             return false;
         }
 
-        return keys.contains(new Key(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier()));
+        Set<Key> archives = compatArchivesByReason.get(reason);
+        return archives == null ? false
+                : archives
+                        .contains(new Key(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier()));
     }
 }

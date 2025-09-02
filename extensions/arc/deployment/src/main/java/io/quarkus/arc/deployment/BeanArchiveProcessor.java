@@ -13,7 +13,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -178,13 +181,39 @@ public class BeanArchiveProcessor {
             if (isExplicitBeanArchive(archive)
                     || isImplicitBeanArchive(index, beanDefiningAnnotations)
                     || isAdditionalBeanArchive(archive, beanArchivePredicates)) {
+                // check for occurrences of incompatible annotations - currently only @Specializes
+                validateArchiveCompatibility(archive, index, knownCompatibleBeanArchives);
                 indexes.add(index);
             }
         }
         if (rootIsAlwaysBeanArchive) {
-            indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
+            ApplicationArchive rootArchive = applicationArchivesBuildItem.getRootArchive();
+            validateArchiveCompatibility(rootArchive, rootArchive.getIndex(), knownCompatibleBeanArchives);
+            indexes.add(rootArchive.getIndex());
         }
         return CompositeIndex.create(indexes);
+    }
+
+    private void validateArchiveCompatibility(ApplicationArchive archive, IndexView index,
+            KnownCompatibleBeanArchives knownCompatibleBeanArchives) {
+        // check for occurrences of incompatible annotations - currently only @Specializes
+        Collection<AnnotationInstance> annotations = index.getAnnotations(DotNames.SPECIALIZES);
+        if (!annotations.isEmpty() && !knownCompatibleBeanArchives.isKnownCompatible(archive,
+                KnownCompatibleBeanArchiveBuildItem.Reason.SPECIALIZES_ANNOTATION)) {
+            Set<String> definitionErrors = new HashSet<>();
+            for (AnnotationInstance annInstance : annotations) {
+                DotName targetClassName = annInstance.target().kind().equals(AnnotationTarget.Kind.CLASS)
+                        ? annInstance.target().asClass().name()
+                        : annInstance.target().asMethod().declaringClass().name();
+                definitionErrors.add(targetClassName.toString());
+                throw new DefinitionException(
+                        "Quarkus does not support CDI Full @Specializes annotation; try using an @Alternative instead. "
+                                +
+                                "If you want to mark one or more archives as Quarkus compatible, take a " +
+                                "look at io.quarkus.arc.deployment.KnownCompatibleBeanArchiveBuildItem.\n" +
+                                "Annotation was found in the following classes: " + definitionErrors);
+            }
+        }
     }
 
     private boolean isExplicitBeanArchive(ApplicationArchive archive) {
@@ -229,7 +258,8 @@ public class BeanArchiveProcessor {
                         if (text.contains("bean-discovery-mode='all'")
                                 || text.contains("bean-discovery-mode=\"all\"")) {
 
-                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive)) {
+                            if (!knownCompatibleBeanArchives.isKnownCompatible(archive,
+                                    KnownCompatibleBeanArchiveBuildItem.Reason.BEANS_XML_ALL)) {
                                 LOGGER.warnf("Detected bean archive with bean discovery mode of 'all', "
                                         + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
                                         + "Path to beans.xml: %s",

@@ -70,7 +70,7 @@ public class OpenApiDocumentService {
         }
     }
 
-    byte[] getDocument(Format format) {
+    public byte[] getDocument(Format format) {
         if (format.equals(Format.JSON)) {
             return documentHolder.getJsonDocument();
         }

@@ -24,24 +24,6 @@ public interface VertxHttpConfig {
     AuthRuntimeConfig auth();
 
     /**
-     * Enable the CORS filter.
-     */
-    @WithName("cors.enabled")
-    @WithDefault("${quarkus.http.cors:false}")
-    boolean corsEnabled();
-
-    /**
-     * Enable the CORS filter.
-     *
-     * @deprecated Use {@link VertxHttpConfig#corsEnabled()}. Deprecated because it requires additional syntax to
-     *             configure with the group {@link VertxHttpConfig#cors()} in YAML config.
-     */
-    @WithName("cors")
-    @WithDefault("false")
-    @Deprecated
-    boolean oldCorsEnabled();
-
-    /**
      * The HTTP port
      */
     @WithDefault("8080")

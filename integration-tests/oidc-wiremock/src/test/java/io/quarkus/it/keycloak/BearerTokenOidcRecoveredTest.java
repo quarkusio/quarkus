@@ -1,6 +1,7 @@
 package io.quarkus.it.keycloak;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -14,7 +15,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import io.smallrye.jwt.build.Jwt;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
@@ -31,6 +35,8 @@ public class BearerTokenOidcRecoveredTest {
                 .then()
                 .statusCode(500);
 
+        checkHealth("DOWN", "Not Ready");
+
         // Server is starting now
         WiremockTestResource server = new WiremockTestResource();
         server.start();
@@ -40,9 +46,35 @@ public class BearerTokenOidcRecoveredTest {
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo("alice"));
+
+            checkHealth("UP", "OK");
         } finally {
             server.stop();
         }
+    }
+
+    private static void checkHealth(String expectedCheckStatus, String expectedDefaultTenantStatus) {
+        Response healthReadyResponse = RestAssured.when().get("http://localhost:8081/q/health/ready");
+
+        JsonObject jsonHealth = new JsonObject(healthReadyResponse.asString());
+        JsonObject oidcCheck = getOidcCheck(jsonHealth.getJsonArray("checks"));
+
+        assertEquals(expectedCheckStatus, oidcCheck.getString("status"));
+
+        JsonObject data = oidcCheck.getJsonObject("data");
+        assertEquals(expectedDefaultTenantStatus, data.getString("Default"));
+
+        assertEquals("Unknown", data.getString("bearer-user-info-github-service"));
+    }
+
+    private static JsonObject getOidcCheck(JsonArray checks) {
+        // GRPC and OIDC checks are available
+        for (int i = 0; i < checks.size(); i++) {
+            if ("OIDC Provider Health Check".equals(checks.getJsonObject(i).getString("name"))) {
+                return checks.getJsonObject(i);
+            }
+        }
+        return null;
     }
 
     @Order(2)

@@ -119,6 +119,13 @@ public interface SmallRyeOpenApiConfig {
     boolean autoAddSecurity();
 
     /**
+     * This will automatically add the OpenAPI specification document endpoint to the schema.
+     * It also adds "openapi" to the list of tags and specify an "operationId"
+     */
+    @WithDefault("false")
+    boolean autoAddOpenApiEndpoint();
+
+    /**
      * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or "cookie".
      */
     Optional<String> apiKeyParameterIn();
@@ -234,12 +241,12 @@ public interface SmallRyeOpenApiConfig {
     Optional<OperationIdStrategy> operationIdStrategy();
 
     /**
-     * Set this boolean value to enable the merging of the deprecated `@Schema`
+     * Set this boolean value to enable or disable the merging of the deprecated `@Schema`
      * `example` property into the `examples` array introduced in OAS 3.1.0. If
-     * not set, it will default to `false` and the deprecated `example` will be
-     * kept as a separate annotation on the schema in the OpenAPI model.
+     * set to `false`, the deprecated `example` will be kept as a separate
+     * annotation on the schema in the OpenAPI model.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     boolean mergeSchemaExamples();
 
     public enum SecurityScheme {

@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the Redis Client
-:extension-status: preview
+:extension-status: stable
 include::_attributes.adoc[]
 :categories: data
 :topics: data,redis,nosql

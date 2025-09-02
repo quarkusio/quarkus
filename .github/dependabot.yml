@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: maven
     directory: "/"
+    target-branch: "main"
     schedule:
       interval: daily
       time: "23:00"
@@ -75,18 +76,20 @@ updates:
       - dependency-name: org.hamcrest:hamcrest
       - dependency-name: org.junit:junit-bom
       - dependency-name: org.junit.jupiter:*
+      - dependency-name: org.junit.platform:*
       - dependency-name: org.assertj:assertj-core
       - dependency-name: org.testcontainers:*
       - dependency-name: org.mockito:*
       - dependency-name: org.awaitility:awaitility
       - dependency-name: com.thoughtworks.xstream:xstream
       - dependency-name: org.jacoco:*
-      # Maven plugins
+      # Maven plugins and extensions
+      - dependency-name: org.apache.maven.plugins:*
+      - dependency-name: org.codehaus.mojo:*
       - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
-      - dependency-name: org.apache.maven.plugins:maven-invoker-plugin
-      - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
+      - dependency-name: eu.maveniverse.maven.njord:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*
@@ -176,7 +179,7 @@ updates:
       - dependency-name: org.jboss.jdeparser:jdeparser
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
-      - dependency-name: io.github.crac:org-crac
+      - dependency-name: org.crac:crac
       - dependency-name: com.dajudge.kindcontainer:kindcontainer
       - dependency-name: jakarta.*:*
       - dependency-name: org.eclipse.*:*
@@ -187,6 +190,18 @@ updates:
       - dependency-name: org.bitbucket.b_c:jose4j
       - dependency-name: io.fabric8:maven-model-helper
       - dependency-name: org.codejive:java-properties
+    groups:
+      # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
+      Hibernate:
+        patterns:
+          - "org.hibernate.orm*"
+          - "org.hibernate.reactive*"
+          - "org.hibernate.search*"
+          - "org.hibernate.tool*"
+      Mvnpm:
+        patterns:
+          - "org.mvnpm:*"
+          - "org.mvnpm.*:*"
     ignore:
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
@@ -216,6 +231,50 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.apache.kafka:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Should be aligned on the version of the dependency from Hibernate artifacts.
+      - dependency-name: org.hibernate.common:*
+      - dependency-name: org.hibernate.models:*
+      # Elasticsearch - major updates usually require more work and synchronization, we do them manually.
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
+        update-types: ["version-update:semver-major"]
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
+        update-types: ["version-update:semver-major"]
+      - dependency-name: co.elastic.clients:elasticsearch-java
+        update-types: ["version-update:semver-major"]
+      # Expressly, as an EL implementation is tightly coupled with the Jakarta Validation and Hibernate Validator versions in use
+      # Hence we update major/minor Expressly versions manually.
+      - dependency-name: org.glassfish.expressly:expressly
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    rebase-strategy: disabled
+  - package-ecosystem: maven
+    directory: "/"
+    target-branch: "3.20"
+    schedule:
+      interval: daily
+      time: "23:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10
+    labels:
+      - area/dependencies
+    allow:
+      # Hibernate
+      - dependency-name: org.hibernate.orm:*
+      - dependency-name: org.hibernate.reactive:*
+      - dependency-name: org.hibernate.validator:*
+      - dependency-name: org.hibernate.search:*
+    groups:
+      # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
+      Hibernate:
+        patterns:
+          - "org.hibernate.orm*"
+          - "org.hibernate.reactive*"
+          - "org.hibernate.search*"
+          - "org.hibernate.validator*"
+    ignore:
+      # Major/minor upgrades require more work and synchronization, we do them manually.
+      # Only use dependabot for micros (patch versions).
+      - dependency-name: org.hibernate.*:*
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

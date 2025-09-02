@@ -24,6 +24,9 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
     static final String TEST_MANAGEMENT_URL_SSL_VALUE = "https://${quarkus.management.host:localhost}:${quarkus.management.test-port:9001}${quarkus.management.root-path:/q}";
     static final String TEST_MANAGEMENT_URL_SSL_KEY = "test.management.url.ssl";
 
+    static final String HTTP_ROOT_PATH_KEY = "quarkus.http.root-path";
+    static final String MANAGEMENT_ROOT_PATH_KEY = "quarkus.http.management-path";
+
     static final Map<String, String> entries = Map.of(
             TEST_URL_KEY, TEST_URL_VALUE,
             TEST_URL_SSL_KEY, TEST_URL_SSL_VALUE,

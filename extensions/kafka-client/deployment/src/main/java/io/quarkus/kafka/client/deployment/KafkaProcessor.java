@@ -20,7 +20,7 @@ import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
-import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.metrics.MetricsReporter;
 import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
@@ -61,7 +61,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -93,8 +93,8 @@ import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.SnappyRecorder;
-import io.quarkus.kafka.client.runtime.devui.KafkaTopicClient;
-import io.quarkus.kafka.client.runtime.devui.KafkaUiUtils;
+import io.quarkus.kafka.client.runtime.dev.ui.KafkaTopicClient;
+import io.quarkus.kafka.client.runtime.dev.ui.KafkaUiUtils;
 import io.quarkus.kafka.client.runtime.graal.SnappyFeature;
 import io.quarkus.kafka.client.serialization.BufferDeserializer;
 import io.quarkus.kafka.client.serialization.BufferSerializer;
@@ -249,6 +249,7 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
+        collectImplementors(toRegister, indexBuildItem, MetricsReporter.class);
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OAuthBearerSaslClient.class,
                 OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
@@ -295,7 +296,6 @@ public class KafkaProcessor {
 
         // built in partitioner and partition assignors
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                DefaultPartitioner.class,
                 RangeAssignor.class,
                 RoundRobinAssignor.class,
                 StickyAssignor.class)
@@ -332,7 +332,7 @@ public class KafkaProcessor {
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {

@@ -1,8 +1,11 @@
 package io.quarkus.qute.generator;
 
 import static java.util.function.Predicate.not;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,23 +39,17 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.Switch;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
 import io.quarkus.qute.EvalContext;
-import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.ValueResolver;
@@ -196,10 +193,9 @@ public class ValueResolverGenerator extends AbstractGenerator {
             }
         }
 
-        Predicate<AnnotationTarget> filters = initFilters(templateData);
-
         LOGGER.debugf("Analyzing %s", clazzName);
 
+        Predicate<AnnotationTarget> filters = initFilters(templateData);
         String baseName;
         if (clazz.enclosingClass() != null) {
             baseName = simpleName(clazz.enclosingClass()) + NESTED_SEPARATOR + simpleName(clazz);
@@ -207,64 +203,43 @@ public class ValueResolverGenerator extends AbstractGenerator {
             baseName = simpleName(clazz);
         }
         String targetPackage = packageName(clazz.name());
-        String generatedName = generatedNameFromTarget(targetPackage, baseName, SUFFIX);
 
-        ClassCreator valueResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(ValueResolver.class).build();
-
-        implementGetPriority(valueResolver, priority);
-        implementAppliesTo(valueResolver, clazz);
-        boolean hasMembers = implementResolve(valueResolver, clazzName, clazz,
-                filters.and(not(ValueResolverGenerator::staticsFilter)),
-                ignoreSuperclasses);
-
-        if (hasMembers) {
-            // Do not generate the resolver if no relevant members are found
-            valueResolver.close();
-            generatedTypes.add(generatedName.replace('/', '.'));
+        ScanResult result = scan(clazz, filters.and(not(ValueResolverGenerator::staticsFilter)), ignoreSuperclasses);
+        if (!result.isEmpty()) {
+            String generatedName = generatedNameFromTarget(targetPackage, baseName, SUFFIX);
+            String generatedClassName = generatedName.replace('/', '.');
+            generatedTypes.add(generatedClassName);
+            gizmo.class_(generatedClassName, cc -> {
+                cc.implements_(ValueResolver.class);
+                cc.defaultConstructor();
+                implementGetPriority(cc, priority);
+                implementAppliesTo(cc, clazz);
+                implementResolve(cc, clazzName, clazz, result);
+            });
         }
 
         if (namespace != null) {
-            // Generate a namespace resolver to access static members
-            generatedName = generatedNameFromTarget(targetPackage, baseName, NAMESPACE_SUFFIX);
+            String effectiveNamespace = namespace;
+            ScanResult staticsResult = scan(clazz, filters.and(ValueResolverGenerator::staticsFilter), true);
 
-            ClassCreator namespaceResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                    .interfaces(NamespaceResolver.class).build();
-            implementGetNamespace(namespaceResolver, namespace);
-            boolean hasStatics = implementNamespaceResolve(namespaceResolver, clazzName, clazz,
-                    filters.and(ValueResolverGenerator::staticsFilter));
+            if (!staticsResult.isEmpty()) {
+                // Generate a namespace resolver to access static members
+                String generatedName = generatedNameFromTarget(targetPackage, baseName, NAMESPACE_SUFFIX);
+                String generatedClassName = generatedName.replace('/', '.');
+                generatedTypes.add(generatedClassName);
 
-            if (hasStatics) {
-                // Do not generate the resolver if no statics are found
-                namespaceResolver.close();
-                generatedTypes.add(generatedName.replace('/', '.'));
+                gizmo.class_(generatedClassName, ncc -> {
+                    ncc.implements_(NamespaceResolver.class);
+                    ncc.defaultConstructor();
+                    implementGetNamespace(ncc, effectiveNamespace);
+                    implementNamespaceResolve(ncc, clazzName, clazz, staticsResult);
+                });
             }
         }
     }
 
-    private void implementGetPriority(ClassCreator valueResolver, int priority) {
-        MethodCreator getPriority = valueResolver.getMethodCreator("getPriority", int.class)
-                .setModifiers(ACC_PUBLIC);
-        getPriority.returnValue(getPriority.load(priority));
-    }
-
-    private void implementGetNamespace(ClassCreator namespaceResolver, String namespace) {
-        MethodCreator getNamespace = namespaceResolver.getMethodCreator("getNamespace", String.class)
-                .setModifiers(ACC_PUBLIC);
-        getNamespace.returnValue(getNamespace.load(namespace));
-    }
-
-    private boolean implementResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
+    ScanResult scan(ClassInfo clazz,
             Predicate<AnnotationTarget> filter, boolean ignoreSuperclasses) {
-        MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
-                .setModifiers(ACC_PUBLIC);
-
-        ResultHandle evalContext = resolve.getMethodParam(0);
-        ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-        ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
-        ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
-        Function<FieldInfo, String> fieldToGetterFun = forceGettersFunction != null ? forceGettersFunction.apply(clazz) : null;
 
         // First collect methods and fields from the class hierarchy
         Set<MethodKey> methods = new HashSet<>();
@@ -318,659 +293,594 @@ public class ValueResolverGenerator extends AbstractGenerator {
         // Sort methods, getters must come before is/has properties, etc.
         List<MethodKey> sortedMethods = methods.stream().sorted().toList();
 
-        if (sortedMethods.isEmpty() && fields.isEmpty()) {
-            // No members
-            return false;
+        return new ScanResult(fields, sortedMethods);
+    }
+
+    record ScanResult(List<FieldInfo> fields, List<MethodKey> methods) {
+
+        boolean isEmpty() {
+            return fields.isEmpty() && methods.isEmpty();
         }
 
-        // Collect methods
-        List<MethodKey> noParamMethods = new ArrayList<>();
-        // name, number of params -> list of methods
-        Map<Match, List<MethodInfo>> matches = new HashMap<>();
-        Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
+        List<MethodKey> noParamMethods() {
+            return methods().stream().filter(m -> m.method.parametersCount() == 0).toList();
+        }
 
-        for (MethodKey methodKey : sortedMethods) {
-            MethodInfo method = methodKey.method;
-            if (method.parametersCount() == 0) {
-                noParamMethods.add(methodKey);
-            } else {
-                Match match = new Match(method.name(), method.parametersCount());
-                List<MethodInfo> methodMatches = matches.get(match);
-                if (methodMatches == null) {
-                    methodMatches = new ArrayList<>();
-                    matches.put(match, methodMatches);
+        // name, number of params -> list of methods; excluding no-args methods
+        Map<Match, List<MethodInfo>> argsMatches() {
+            Map<Match, List<MethodInfo>> ret = new HashMap<>();
+            for (MethodKey methodKey : methods) {
+                MethodInfo method = methodKey.method;
+                if (method.parametersCount() != 0) {
+                    Match match = new Match(method.name(), method.parametersCount());
+                    List<MethodInfo> methodMatches = ret.get(match);
+                    if (methodMatches == null) {
+                        methodMatches = new ArrayList<>();
+                        ret.put(match, methodMatches);
+                    }
+                    methodMatches.add(method);
                 }
-                methodMatches.add(method);
+            }
+            return ret;
+        }
 
-                if (isVarArgs(method)) {
+        Map<Match, List<MethodInfo>> varargsMatches() {
+            Map<Match, List<MethodInfo>> ret = new HashMap<>();
+            for (MethodKey methodKey : methods) {
+                MethodInfo method = methodKey.method;
+                if (method.parametersCount() != 0 && isVarArgs(method)) {
                     // The last argument is a sequence of arguments -> match name and min number of params
                     // getList(int age, String... names) -> "getList", 1
-                    match = new Match(method.name(), method.parametersCount() - 1);
-                    methodMatches = varargsMatches.get(match);
+                    Match match = new Match(method.name(), method.parametersCount() - 1);
+                    List<MethodInfo> methodMatches = ret.get(match);
                     if (methodMatches == null) {
                         methodMatches = new ArrayList<>();
-                        varargsMatches.put(match, methodMatches);
+                        ret.put(match, methodMatches);
                     }
                     methodMatches.add(method);
                 }
             }
+            return ret;
         }
 
-        if (!noParamMethods.isEmpty() || !fields.isEmpty()) {
+    }
 
-            BytecodeCreator zeroParamsBranch = resolve.ifZero(paramsCount).trueBranch();
+    private void implementGetPriority(ClassCreator valueResolver, int priority) {
+        valueResolver.method("getPriority", mc -> {
+            mc.returning(int.class);
+            mc.body(bc -> bc.return_(priority));
+        });
+    }
 
-            Switch.StringSwitch nameSwitch = zeroParamsBranch.stringSwitch(name);
-            Set<String> matchedNames = new HashSet<>();
+    private void implementGetNamespace(ClassCreator namespaceResolver, String namespace) {
+        namespaceResolver.method("getNamespace", mc -> {
+            mc.returning(String.class);
+            mc.body(bc -> bc.return_(namespace));
+        });
+    }
 
-            for (MethodKey methodKey : noParamMethods) {
-                // No params - just invoke the method if the name matches
-                MethodInfo method = methodKey.method;
-                List<String> matchingNames = new ArrayList<>();
-                if (matchedNames.add(method.name())) {
-                    matchingNames.add(method.name());
+    private void implementResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz, ScanResult result) {
+
+        valueResolver.method("resolve", mc -> {
+            mc.returning(CompletionStage.class);
+            ParamVar evalContext = mc.parameter("ec", EvalContext.class);
+
+            mc.body(bc -> {
+                LocalVar base = bc.localVar("base", bc.invokeInterface(Descriptors.GET_BASE, evalContext));
+                LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
+
+                List<MethodKey> noParamMethods = result.noParamMethods();
+                Map<Match, List<MethodInfo>> argsMatches = result.argsMatches();
+                Map<Match, List<MethodInfo>> varargsMatches = result.varargsMatches();
+
+                LocalVar params = null, paramsCount = null;
+                if (!argsMatches.isEmpty() || !varargsMatches.isEmpty()) {
+                    // Only create the local variables if needed
+                    params = bc.localVar("params", bc.invokeInterface(Descriptors.GET_PARAMS, evalContext));
+                    paramsCount = bc.localVar("paramsCount", bc.invokeInterface(Descriptors.COLLECTION_SIZE, params));
                 }
-                String propertyName = isGetterName(method.name(), method.returnType()) ? getPropertyName(method.name()) : null;
-                if (propertyName != null && matchedNames.add(propertyName)) {
-                    matchingNames.add(propertyName);
-                }
-                if (matchingNames.isEmpty()) {
-                    continue;
-                }
-                LOGGER.debugf("No-args method added %s", method);
-                Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
-                    @Override
-                    public void accept(BytecodeCreator bc) {
-                        Type returnType = method.returnType();
-                        ResultHandle invokeRet;
-                        if (Modifier.isInterface(method.declaringClass().flags())) {
-                            invokeRet = bc.invokeInterfaceMethod(MethodDescriptor.of(method), base);
-                        } else {
-                            invokeRet = bc.invokeVirtualMethod(MethodDescriptor.of(method), base);
-                        }
-                        processReturnVal(bc, returnType, invokeRet, valueResolver);
-                    }
-                };
-                nameSwitch.caseOf(matchingNames, invokeMethod);
-            }
+                Function<FieldInfo, String> fieldToGetterFun = forceGettersFunction != null ? forceGettersFunction.apply(clazz)
+                        : null;
 
-            for (FieldInfo field : fields) {
-                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
-                if (getterName != null && noneMethodMatches(sortedMethods, getterName) && matchedNames.add(getterName)) {
-                    LOGGER.debugf("Forced getter added: %s", field);
-                    List<String> matching;
-                    if (matchedNames.add(field.name())) {
-                        matching = List.of(getterName, field.name());
+                if (!noParamMethods.isEmpty() || !result.fields().isEmpty()) {
+                    Expr hasNoParams;
+                    if (paramsCount != null) {
+                        hasNoParams = bc.eq(paramsCount, 0);
                     } else {
-                        matching = List.of(getterName);
+                        hasNoParams = bc.invokeStatic(Descriptors.VALUE_RESOLVERS_HAS_NO_PARAMS, evalContext);
                     }
-                    Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
-                        @Override
-                        public void accept(BytecodeCreator bc) {
-                            ResultHandle value = bc.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
-                                            DescriptorUtils.typeToString(field.type())),
-                                    base);
-                            bc.returnValue(bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, value));
-                        }
-                    };
-                    nameSwitch.caseOf(matching, invokeMethod);
-                } else if (matchedNames.add(field.name())) {
-                    LOGGER.debugf("Field added: %s", field);
-                    Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
-                        @Override
-                        public void accept(BytecodeCreator bc) {
-                            ResultHandle value = bc.readInstanceField(
-                                    FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                    base);
-                            ResultHandle ret = bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, value);
-                            bc.returnValue(ret);
-                        }
-                    };
-                    nameSwitch.caseOf(field.name(), invokeMethod);
+                    bc.if_(hasNoParams, zeroParams -> {
+                        zeroParams.switch_(name, sc -> {
+                            Set<String> matchedNames = new HashSet<>();
+
+                            for (MethodKey methodKey : noParamMethods) {
+                                // No params - just invoke the method if the name matches
+                                MethodInfo method = methodKey.method;
+                                List<String> matchingNames = new ArrayList<>();
+                                if (matchedNames.add(method.name())) {
+                                    matchingNames.add(method.name());
+                                }
+                                String propertyName = isGetterName(method.name(), method.returnType())
+                                        ? getPropertyName(method.name())
+                                        : null;
+                                if (propertyName != null
+                                        // No method with exact name match exists
+                                        && noParamMethods.stream().noneMatch(mk -> mk.name.equals(propertyName))
+                                        && matchedNames.add(propertyName)) {
+                                    matchingNames.add(propertyName);
+                                }
+                                if (matchingNames.isEmpty()) {
+                                    continue;
+                                }
+                                LOGGER.debugf("No-args method added %s", method);
+                                sc.case_(cac -> {
+                                    for (String matchingName : matchingNames) {
+                                        cac.of(matchingName);
+                                    }
+                                    cac.body(cbc -> {
+                                        Type returnType = method.returnType();
+                                        Expr invokeRet = method.declaringClass().isInterface()
+                                                ? cbc.invokeInterface(methodDescOf(method), base)
+                                                : cbc.invokeVirtual(methodDescOf(method), base);
+                                        processReturnVal(cbc, returnType, invokeRet, valueResolver);
+                                    });
+                                });
+                            }
+
+                            for (FieldInfo field : result.fields()) {
+                                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
+                                if (getterName != null && noneMethodMatches(noParamMethods, getterName)
+                                        && matchedNames.add(getterName)) {
+                                    LOGGER.debugf("Forced getter added: %s", field);
+                                    List<String> matching;
+                                    if (matchedNames.add(field.name())) {
+                                        matching = List.of(getterName, field.name());
+                                    } else {
+                                        matching = List.of(getterName);
+                                    }
+                                    sc.case_(cac -> {
+                                        for (String matchingName : matching) {
+                                            cac.of(matchingName);
+                                        }
+                                        cac.body(cbc -> {
+                                            Expr val = clazz.isInterface()
+                                                    ? cbc.invokeInterface(InterfaceMethodDesc.of(classDescOf(clazz), getterName,
+                                                            MethodTypeDesc.of(classDescOf(field.type()))), base)
+                                                    : cbc.invokeVirtual(ClassMethodDesc.of(classDescOf(clazz), getterName,
+                                                            MethodTypeDesc.of(classDescOf(field.type()))), base);
+                                            processReturnVal(cbc, field.type(), val, valueResolver);
+                                        });
+                                    });
+
+                                } else if (matchedNames.add(field.name())) {
+                                    LOGGER.debugf("Field added: %s", field);
+                                    sc.caseOf(Const.of(field.name()), cac -> {
+                                        Expr castBase = cac.cast(base, classDescOf(field.declaringClass()));
+                                        Expr val = castBase.field(fieldDescOf(field));
+                                        processReturnVal(cac, field.type(), val, valueResolver);
+                                    });
+                                }
+                            }
+                        });
+                    });
                 }
-            }
-        }
 
-        // Match methods by name and number of params
-        for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
-            Match match = entry.getKey();
+                // Match methods by name and number of params
+                for (Entry<Match, List<MethodInfo>> entry : argsMatches.entrySet()) {
+                    Match match = entry.getKey();
 
-            // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-            // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
-            Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
-            varargsMatches.entrySet().stream()
-                    .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
-                    .forEach(e -> methodMatches.addAll(e.getValue()));
+                    // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
+                    // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
+                    Set<MethodInfo> methodMatches = new HashSet<>(entry
+                            .getValue());
+                    varargsMatches.entrySet().stream()
+                            .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
+                            .forEach(e -> methodMatches.addAll(e.getValue()));
 
-            if (methodMatches.size() == 1) {
-                // Single method matches the name and number of params
-                matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
-            } else {
-                // Multiple methods match the name and number of params
-                matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
-                        params, paramsCount, evalContext);
-            }
-        }
+                    if (methodMatches.size() == 1) {
+                        // Single method matches the name and number of params
+                        matchMethod(methodMatches.iterator().next(), clazz, bc, base, name, params, paramsCount, evalContext);
+                    } else {
+                        // Multiple methods match the name and number of params
+                        matchMethods(match.name, match.paramsCount, methodMatches, clazz, bc, base, name,
+                                params, paramsCount, evalContext);
+                    }
+                }
 
-        // For varargs methods we also need to match name and any number of params
-        Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
-        for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
-            List<MethodInfo> list = varargsMap.get(entry.getKey().name);
-            if (list == null) {
-                list = new ArrayList<>();
-                varargsMap.put(entry.getKey().name, list);
-            }
-            list.addAll(entry.getValue());
-        }
-        for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
-            matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
-                    paramsCount, evalContext);
-        }
+                // For varargs methods we also need to match name and any number of params
+                Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+                for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
+                    List<MethodInfo> list = varargsMap.get(entry.getKey().name);
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        varargsMap.put(entry.getKey().name, list);
+                    }
+                    list.addAll(entry.getValue());
+                }
+                for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
+                    matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, bc, base, name, params,
+                            paramsCount, evalContext);
+                }
 
-        resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
-        return true;
+                // No result found
+                bc.return_(bc.invokeStatic(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+            });
+        });
     }
 
-    private boolean implementNamespaceResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
-            Predicate<AnnotationTarget> filter) {
-        MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
-                .setModifiers(ACC_PUBLIC);
+    private void implementNamespaceResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz, ScanResult result) {
+        valueResolver.method("resolve", mc -> {
+            mc.returning(CompletionStage.class);
+            ParamVar evalContext = mc.parameter("ec", EvalContext.class);
 
-        ResultHandle evalContext = resolve.getMethodParam(0);
-        ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-        ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
-        ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
+            mc.body(bc -> {
+                LocalVar base = bc.localVar("base", bc.invokeInterface(Descriptors.GET_BASE, evalContext));
+                LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
 
-        // First collect static members
-        List<MethodKey> staticMethods = new ArrayList<>();
-        for (MethodInfo method : clazz.methods()) {
-            if (filter.test(method)) {
-                staticMethods.add(new MethodKey(method));
-            }
-        }
-        staticMethods.sort(null);
+                List<MethodKey> noParamMethods = result.noParamMethods();
+                Map<Match, List<MethodInfo>> argsMatches = result.argsMatches();
+                Map<Match, List<MethodInfo>> varargsMatches = result.varargsMatches();
 
-        List<FieldInfo> staticFields = new ArrayList<>();
-        for (FieldInfo field : clazz.fields()) {
-            if (filter.test(field)) {
-                staticFields.add(field);
-            }
-        }
+                LocalVar params = null, paramsCount = null;
+                if (!argsMatches.isEmpty() || !varargsMatches.isEmpty()) {
+                    // Only create the local variables if needed
+                    params = bc.localVar("params", bc.invokeInterface(Descriptors.GET_PARAMS, evalContext));
+                    paramsCount = bc.localVar("paramsCount", bc.invokeInterface(Descriptors.COLLECTION_SIZE, params));
+                }
 
-        if (staticMethods.isEmpty() && staticFields.isEmpty()) {
-            return false;
-        }
-
-        if (!staticFields.isEmpty()) {
-            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
-            for (FieldInfo field : staticFields) {
-                LOGGER.debugf("Static field added: %s", field);
-                // Match field name
-                BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
-                        .trueBranch();
-                ResultHandle value = fieldMatch
-                        .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
-                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, value));
-            }
-        }
-
-        if (!staticMethods.isEmpty()) {
-            // name, number of params -> list of methods
-            Map<Match, List<MethodInfo>> matches = new HashMap<>();
-            Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
-
-            for (MethodKey methodKey : staticMethods) {
-                MethodInfo method = methodKey.method;
-                List<Type> methodParams = method.parameterTypes();
-                if (methodParams.isEmpty()) {
-                    // No params - just invoke the method
-                    LOGGER.debugf("Static method added %s", method);
-                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
-                            params, paramsCount)) {
-                        ResultHandle ret;
-                        ResultHandle invokeRet;
-                        if (Modifier.isInterface(clazz.flags())) {
-                            invokeRet = matchScope.invokeStaticInterfaceMethod(MethodDescriptor.of(method));
-                        } else {
-                            invokeRet = matchScope.invokeStaticMethod(MethodDescriptor.of(method));
-                        }
-                        if (hasCompletionStage(method.returnType())) {
-                            ret = invokeRet;
-                        } else {
-                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, invokeRet);
-                        }
-                        matchScope.returnValue(ret);
+                if (!noParamMethods.isEmpty() || !result.fields().isEmpty()) {
+                    Expr hasNoParams;
+                    if (paramsCount != null) {
+                        hasNoParams = bc.eq(paramsCount, 0);
+                    } else {
+                        hasNoParams = bc.invokeStatic(Descriptors.VALUE_RESOLVERS_HAS_NO_PARAMS, evalContext);
                     }
-                } else {
-                    // Collect methods with params
-                    Match match = new Match(method.name(), method.parametersCount());
-                    List<MethodInfo> methodMatches = matches.get(match);
-                    if (methodMatches == null) {
-                        methodMatches = new ArrayList<>();
-                        matches.put(match, methodMatches);
-                    }
-                    methodMatches.add(method);
+                    bc.if_(hasNoParams, zeroParams -> {
+                        zeroParams.switch_(name, sc -> {
+                            Set<String> matchedNames = new HashSet<>();
 
-                    if (isVarArgs(method)) {
-                        // The last argument is a sequence of arguments -> match name and min number of params
-                        // getList(int age, String... names) -> "getList", 1
-                        match = new Match(method.name(), method.parametersCount() - 1);
-                        methodMatches = varargsMatches.get(match);
-                        if (methodMatches == null) {
-                            methodMatches = new ArrayList<>();
-                            varargsMatches.put(match, methodMatches);
-                        }
-                        methodMatches.add(method);
+                            // no-args methods
+                            for (MethodKey methodKey : noParamMethods) {
+                                MethodInfo method = methodKey.method;
+                                List<String> matchingNames = new ArrayList<>();
+                                if (matchedNames.add(method.name())) {
+                                    matchingNames.add(method.name());
+                                }
+                                String propertyName = isGetterName(method.name(), method.returnType())
+                                        ? getPropertyName(method.name())
+                                        : null;
+                                if (propertyName != null
+                                        // No method with exact name match exists
+                                        && noParamMethods.stream().noneMatch(mk -> mk.name.equals(propertyName))
+                                        && matchedNames.add(propertyName)) {
+                                    matchingNames.add(propertyName);
+                                }
+                                if (matchingNames.isEmpty()) {
+                                    continue;
+                                }
+                                // No params - just invoke the method if the name matches
+                                LOGGER.debugf("No-args static method added %s", method);
+                                sc.case_(cac -> {
+                                    for (String matchingName : matchingNames) {
+                                        cac.of(matchingName);
+                                    }
+                                    cac.body(cbc -> {
+                                        Type returnType = method.returnType();
+                                        Expr invokeRet = cbc.invokeStatic(methodDescOf(method));
+                                        processReturnVal(cbc, returnType, invokeRet, valueResolver);
+                                    });
+                                });
+                            }
+
+                            // fields
+                            for (FieldInfo field : result.fields()) {
+                                if (matchedNames.add(field.name())) {
+                                    LOGGER.debugf("Static field added: %s", field);
+                                    sc.caseOf(Const.of(field.name()), cbc -> {
+                                        Expr val = cbc.getStaticField(fieldDescOf(field));
+                                        processReturnVal(cbc, field.type(), val, valueResolver);
+                                    });
+                                }
+                            }
+                        });
+                    });
+                }
+
+                // Match methods by name and number of params
+                for (Entry<Match, List<MethodInfo>> entry : argsMatches.entrySet()) {
+                    Match match = entry.getKey();
+
+                    // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
+                    // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
+                    Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
+                    varargsMatches.entrySet().stream()
+                            .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
+                            .forEach(e -> methodMatches.addAll(e.getValue()));
+
+                    if (methodMatches.size() == 1) {
+                        // Single method matches the name and number of params
+                        matchMethod(methodMatches.iterator().next(), clazz, bc, base, name, params, paramsCount,
+                                evalContext);
+                    } else {
+                        // Multiple methods match the name and number of params
+                        matchMethods(match.name, match.paramsCount, methodMatches, clazz, bc, base, name,
+                                params, paramsCount, evalContext);
                     }
                 }
-            }
 
-            // Match methods by name and number of params
-            for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
-                Match match = entry.getKey();
-
-                // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
-                Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
-                varargsMatches.entrySet().stream()
-                        .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
-                        .forEach(e -> methodMatches.addAll(e.getValue()));
-
-                if (methodMatches.size() == 1) {
-                    // Single method matches the name and number of params
-                    matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
-                } else {
-                    // Multiple methods match the name and number of params
-                    matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
-                            params, paramsCount, evalContext);
+                // For varargs methods we also need to match name and any number of params
+                Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+                for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
+                    List<MethodInfo> list = varargsMap.get(entry.getKey().name);
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        varargsMap.put(entry.getKey().name, list);
+                    }
+                    list.addAll(entry.getValue());
                 }
-            }
-
-            // For varargs methods we also need to match name and any number of params
-            Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
-            for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
-                List<MethodInfo> list = varargsMap.get(entry.getKey().name);
-                if (list == null) {
-                    list = new ArrayList<>();
-                    varargsMap.put(entry.getKey().name, list);
+                for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
+                    matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, bc, base, name, params,
+                            paramsCount, evalContext);
                 }
-                list.addAll(entry.getValue());
-            }
-            for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
-                matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
-                        paramsCount, evalContext);
-            }
-        }
-        resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
 
-        return true;
+                // No result found
+                bc.return_(bc.invokeStatic(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+
+            });
+        });
     }
 
-    private void matchMethod(MethodInfo method, ClassInfo clazz, MethodCreator resolve, ResultHandle base, ResultHandle name,
-            ResultHandle params, ResultHandle paramsCount, ResultHandle evalContext) {
+    private void matchMethod(MethodInfo method, ClassInfo clazz, BlockCreator resolve, LocalVar base, LocalVar name,
+            LocalVar params, LocalVar paramsCount, ParamVar evalContext) {
         List<Type> methodParams = method.parameterTypes();
 
         LOGGER.debugf("Method added %s", method);
 
-        BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), method.returnType(), name,
-                params,
-                paramsCount);
+        ifMethodMatch(resolve, method.name(), methodParams.size(), method.returnType(), name, params, paramsCount,
+                bc -> {
+                    // Invoke the method
+                    // Evaluate the params first
+                    LocalVar ret = bc.localVar("ret", bc.new_(CompletableFuture.class));
+                    LocalVar evaluatedParams = bc.localVar("evaluatedParams",
+                            bc.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE, evalContext));
 
-        // Invoke the method
-        // Evaluate the params first
-        ResultHandle ret = matchScope
-                .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
+                    // The CompletionStage upon which we invoke whenComplete()
+                    Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
 
-        // The CompletionStage upon which we invoke whenComplete()
-        ResultHandle evaluatedParams = matchScope.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE,
-                evalContext);
-        ResultHandle paramsReady = matchScope.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
-                evaluatedParams);
+                    Expr whenCompleteFun = bc.lambda(BiConsumer.class, lc -> {
+                        Var capturedBase = lc.capture(base);
+                        Var capturedRet = lc.capture(ret);
+                        Var capturedEvaluatedParams = lc.capture(evaluatedParams);
+                        Var capturedEvalContext = lc.capture(evalContext);
+                        ParamVar result = lc.parameter("r", 0);
+                        ParamVar throwable = lc.parameter("t", 1);
 
-        FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
-        matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
+                        lc.body(whenComplete -> {
+                            whenComplete.ifElse(whenComplete.isNull(throwable),
+                                    success -> {
+                                        // Check type parameters and return NO_RESULT if failed
+                                        LocalVar paramTypesArray = success.localVar("pt",
+                                                success.newArray(Class.class, method.parameterTypes()
+                                                        .stream()
+                                                        .map(parameterType -> Const.of(classDescOf(parameterType)))
+                                                        .toList()));
+                                        success.ifNot(
+                                                success.invokeVirtual(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
+                                                        capturedEvaluatedParams, Const.of(isVarArgs(method)), paramTypesArray),
+                                                typeMatchFailed -> {
+                                                    typeMatchFailed.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE,
+                                                            capturedRet,
+                                                            typeMatchFailed.invokeStatic(Descriptors.NOT_FOUND_FROM_EC,
+                                                                    capturedEvalContext));
+                                                    typeMatchFailed.return_();
+                                                });
 
-        BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
-
-        // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-        AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
-        whenComplete.assign(whenBase, base);
-        AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-        whenComplete.assign(whenRet, ret);
-        AssignableResultHandle whenEvaluatedParams = whenComplete.createVariable(EvaluatedParams.class);
-        whenComplete.assign(whenEvaluatedParams, evaluatedParams);
-        AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
-        whenComplete.assign(whenEvalContext, evalContext);
-
-        BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-
-        // complete
-        BytecodeCreator success = throwableIsNull.trueBranch();
-
-        // Check type parameters and return NO_RESULT if failed
-        List<Type> parameterTypes = method.parameterTypes();
-        ResultHandle paramTypesHandle = success.newArray(Class.class, parameterTypes.size());
-        int idx = 0;
-        for (Type parameterType : parameterTypes) {
-            success.writeArrayValue(paramTypesHandle, idx++,
-                    loadParamType(success, parameterType));
-        }
-        BytecodeCreator typeMatchFailed = success
-                .ifNonZero(success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
-                        whenEvaluatedParams, success.load(isVarArgs(method)), paramTypesHandle))
-                .falseBranch();
-        typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
-        typeMatchFailed.returnValue(null);
-
-        ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
-        if (methodParams.size() == 1) {
-            paramsHandle[0] = whenComplete.getMethodParam(0);
-        } else {
-            for (int i = 0; i < methodParams.size(); i++) {
-                paramsHandle[i] = success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                        evaluatedParams,
-                        success.load(i));
-            }
-        }
-
-        AssignableResultHandle invokeRet = success.createVariable(Object.class);
-        // try
-        TryBlock tryCatch = success.tryBlock();
-        // catch (Throwable e)
-        CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
-        // CompletableFuture.completeExceptionally(Throwable)
-        exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                exception.getCaughtException());
-
-        ResultHandle[] realParamsHandle = paramsHandle;
-        if (isVarArgs(method)) {
-            // For varargs the number of results may be higher than the number of method params
-            // First get the regular params
-            realParamsHandle = new ResultHandle[parameterTypes.size()];
-            for (int i = 0; i < parameterTypes.size() - 1; i++) {
-                ResultHandle resultHandle = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                        whenEvaluatedParams, tryCatch.load(i));
-                realParamsHandle[i] = resultHandle;
-            }
-            // Then we need to create an array for the last argument
-            Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
-            ResultHandle componentType = tryCatch
-                    .loadClass(varargsParam.asArrayType().constituent().name().toString());
-            ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
-                    evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
-            // E.g. String, String, String -> String, String[]
-            realParamsHandle[parameterTypes.size() - 1] = varargsResults;
-        }
-
-        if (Modifier.isStatic(method.flags())) {
-            if (Modifier.isInterface(method.declaringClass().flags())) {
-                tryCatch.assign(invokeRet,
-                        tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
-            } else {
-                tryCatch.assign(invokeRet,
-                        tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
-            }
-        } else {
-            if (Modifier.isInterface(method.declaringClass().flags())) {
-                tryCatch.assign(invokeRet,
-                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
-            } else {
-                tryCatch.assign(invokeRet,
-                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
-            }
-        }
-
-        if (hasCompletionStage(method.returnType())) {
-            FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
-            tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
-                    invokeWhenCompleteFun.getInstance());
-            BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
-
-            // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-            AssignableResultHandle invokeWhenRet = invokeWhenComplete.createVariable(CompletableFuture.class);
-            invokeWhenComplete.assign(invokeWhenRet, whenRet);
-
-            BranchResult invokeThrowableIsNull = invokeWhenComplete.ifNull(invokeWhenComplete.getMethodParam(1));
-            BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
-            invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
-                    invokeWhenComplete.getMethodParam(0));
-
-            BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
-            invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, invokeWhenRet,
-                    invokeWhenComplete.getMethodParam(1));
-            invokeWhenComplete.returnValue(null);
-        } else {
-            tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
-        }
-        // CompletableFuture.completeExceptionally(Throwable)
-        BytecodeCreator failure = throwableIsNull.falseBranch();
-        failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                whenComplete.getMethodParam(1));
-        whenComplete.returnValue(null);
-
-        matchScope.returnValue(ret);
+                                        doInvoke(success, capturedRet, capturedEvaluatedParams, capturedBase, result, method);
+                                    }, failure -> {
+                                        // CompletableFuture.completeExceptionally(Throwable)
+                                        failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                                capturedRet, throwable);
+                                    });
+                            whenComplete.return_();
+                        });
+                    });
+                    bc.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun);
+                    bc.return_(ret);
+                });
     }
 
-    private void matchMethods(String matchName, int matchParamsCount, Collection<MethodInfo> methods,
-            ClassInfo clazz,
-            MethodCreator resolve, ResultHandle base, ResultHandle name, ResultHandle params, ResultHandle paramsCount,
-            ResultHandle evalContext) {
-
-        LOGGER.debugf("Methods added %s", methods);
-        BytecodeCreator matchScope = createMatchScope(resolve, matchName, matchParamsCount, null,
-                name, params,
-                paramsCount);
-        ResultHandle ret = matchScope
-                .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
-
-        // Evaluate the params first
-        // The CompletionStage upon which we invoke whenComplete()
-        ResultHandle evaluatedParams = matchScope.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE,
-                evalContext);
-        ResultHandle paramsReady = matchScope.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
-                evaluatedParams);
-
-        FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
-        matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
-        BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
-
-        // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-        AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
-        whenComplete.assign(whenBase, base);
-        AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-        whenComplete.assign(whenRet, ret);
-        AssignableResultHandle whenEvaluatedParams = whenComplete.createVariable(EvaluatedParams.class);
-        whenComplete.assign(whenEvaluatedParams, evaluatedParams);
-        AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
-        whenComplete.assign(whenEvalContext, evalContext);
-
-        BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-        // complete
-        BytecodeCreator success = throwableIsNull.trueBranch();
-
-        ResultHandle[] paramsHandle;
-        if (matchParamsCount == 1) {
-            paramsHandle = new ResultHandle[] { success.getMethodParam(0) };
-        } else if (matchParamsCount < 0) {
-            // For pure varargs methods we don't know the exact number of params
-            paramsHandle = null;
-        } else {
-            paramsHandle = new ResultHandle[matchParamsCount];
-            for (int i = 0; i < matchParamsCount; i++) {
-                paramsHandle[i] = success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                        evaluatedParams,
-                        success.load(i));
-            }
-        }
-
-        for (MethodInfo method : methods) {
-            boolean isVarArgs = isVarArgs(method);
-            // Try to match parameter types
-            try (BytecodeCreator paramMatchScope = success.createScope()) {
-                List<Type> parameterTypes = method.parameterTypes();
-                ResultHandle paramTypesHandle = paramMatchScope.newArray(Class.class, parameterTypes.size());
-                int idx = 0;
-                for (Type parameterType : parameterTypes) {
-                    paramMatchScope.writeArrayValue(paramTypesHandle, idx++,
-                            loadParamType(paramMatchScope, parameterType));
-                }
-                paramMatchScope
-                        .ifNonZero(paramMatchScope.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
-                                whenEvaluatedParams, paramMatchScope.load(isVarArgs), paramTypesHandle))
-                        .falseBranch().breakScope(paramMatchScope);
-
-                AssignableResultHandle invokeRet = paramMatchScope.createVariable(Object.class);
-                // try
-                TryBlock tryCatch = paramMatchScope.tryBlock();
-                // catch (Throwable e)
-                CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
-                // CompletableFuture.completeExceptionally(Throwable)
-                exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                        exception.getCaughtException());
-
-                ResultHandle[] realParamsHandle = paramsHandle;
-                if (isVarArgs) {
+    private void doInvoke(BlockCreator bc, Var capturedRet, Var capturedEvaluatedParams, Var capturedBase, ParamVar result,
+            MethodInfo method) {
+        LocalVar invokeRet = bc.localVar("ret", Const.ofNull(Object.class));
+        List<Type> parameterTypes = method.parameterTypes();
+        bc.try_(tc -> {
+            tc.body(tryBlock -> {
+                Var[] args = new Var[parameterTypes.size()];
+                if (isVarArgs(method)) {
                     // For varargs the number of results may be higher than the number of method params
                     // First get the regular params
-                    realParamsHandle = new ResultHandle[parameterTypes.size()];
                     for (int i = 0; i < parameterTypes.size() - 1; i++) {
-                        ResultHandle resultHandle = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                                whenEvaluatedParams, tryCatch.load(i));
-                        realParamsHandle[i] = resultHandle;
+                        LocalVar arg = tryBlock.localVar("arg" + i, tryBlock.invokeVirtual(
+                                Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                capturedEvaluatedParams, Const.of(i)));
+                        args[i] = arg;
                     }
                     // Then we need to create an array for the last argument
                     Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
-                    ResultHandle componentType = tryCatch
-                            .loadClass(varargsParam.asArrayType().constituent().name().toString());
-                    ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
-                            evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
+                    Expr constituentType = Const
+                            .of(classDescOf(varargsParam.asArrayType().constituent()));
+                    LocalVar varargsResults = tryBlock.localVar("vararg", tryBlock.invokeVirtual(
+                            Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
+                            capturedEvaluatedParams, Const.of(parameterTypes.size()),
+                            constituentType));
                     // E.g. String, String, String -> String, String[]
-                    realParamsHandle[parameterTypes.size() - 1] = varargsResults;
+                    args[parameterTypes.size() - 1] = varargsResults;
+                } else {
+                    if (parameterTypes.size() == 1) {
+                        args[0] = result;
+                    } else {
+                        for (int i = 0; i < parameterTypes.size(); i++) {
+                            LocalVar arg = tryBlock.localVar("arg" + i, tryBlock.invokeVirtual(
+                                    Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                    capturedEvaluatedParams,
+                                    Const.of(i)));
+                            args[i] = arg;
+                        }
+                    }
                 }
 
+                // Now call the method
                 if (Modifier.isStatic(method.flags())) {
-                    if (Modifier.isInterface(method.declaringClass().flags())) {
-                        tryCatch.assign(invokeRet,
-                                tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
-                    } else {
-                        tryCatch.assign(invokeRet,
-                                tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
-                    }
+                    tryBlock.set(invokeRet, tryBlock.invokeStatic(methodDescOf(method), args));
                 } else {
-                    if (Modifier.isInterface(method.declaringClass().flags())) {
-                        tryCatch.assign(invokeRet,
-                                tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
+                    if (method.declaringClass().isInterface()) {
+                        tryBlock.set(invokeRet, tryBlock.invokeInterface(methodDescOf(method), capturedBase, args));
                     } else {
-                        tryCatch.assign(invokeRet,
-                                tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
+                        tryBlock.set(invokeRet, tryBlock.invokeVirtual(methodDescOf(method), capturedBase,
+                                args));
                     }
                 }
 
                 if (hasCompletionStage(method.returnType())) {
-                    FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
-                    tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
-                            invokeWhenCompleteFun.getInstance());
-                    BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
-
-                    // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-                    AssignableResultHandle invokeWhenRet = invokeWhenComplete
-                            .createVariable(CompletableFuture.class);
-                    invokeWhenComplete.assign(invokeWhenRet, whenRet);
-
-                    BranchResult invokeThrowableIsNull = invokeWhenComplete
-                            .ifNull(invokeWhenComplete.getMethodParam(1));
-                    BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
-                    invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
-                            invokeWhenComplete.getMethodParam(0));
-                    BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
-                    invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
-                            invokeWhenRet,
-                            invokeWhenComplete.getMethodParam(1));
-                    invokeWhenComplete.returnValue(null);
+                    Expr fun2 = tryBlock.lambda(BiConsumer.class, lc2 -> {
+                        Var capturedRet2 = lc2.capture(capturedRet);
+                        ParamVar result2 = lc2.parameter("r", 0);
+                        ParamVar throwable2 = lc2.parameter("t", 1);
+                        lc2.body(whenComplete2 -> {
+                            whenComplete2.ifNull(throwable2, success2 -> {
+                                success2.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE,
+                                        capturedRet2,
+                                        result2);
+                                success2.return_();
+                            });
+                            whenComplete2.invokeVirtual(
+                                    Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                    capturedRet2,
+                                    throwable2);
+                            whenComplete2.return_();
+                        });
+                    });
+                    tryBlock.invokeInterface(Descriptors.CF_WHEN_COMPLETE, invokeRet, fun2);
                 } else {
-                    tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+                    tryBlock.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                            invokeRet);
                 }
-                // Always return from the matching block so that other matching methods are not used
-                paramMatchScope.returnVoid();
-            }
-        }
-
-        // CompletableFuture.completeExceptionally(Throwable)
-        BytecodeCreator failure = throwableIsNull.falseBranch();
-        failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                whenComplete.getMethodParam(1));
-
-        // No method matches - result not found
-        whenComplete.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                whenComplete.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
-        whenComplete.returnValue(null);
-
-        matchScope.returnValue(ret);
+            });
+            tc.catch_(Throwable.class, "t", (cb, e) -> {
+                cb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                        capturedRet, e);
+            });
+        });
     }
 
-    static ResultHandle loadParamType(BytecodeCreator creator, Type paramType) {
-        if (org.jboss.jandex.Type.Kind.PRIMITIVE.equals(paramType.kind())) {
-            switch (paramType.asPrimitiveType().primitive()) {
-                case INT:
-                    return creator.loadClass(Integer.class);
-                case LONG:
-                    return creator.loadClass(Long.class);
-                case BOOLEAN:
-                    return creator.loadClass(Boolean.class);
-                case BYTE:
-                    return creator.loadClass(Byte.class);
-                case CHAR:
-                    return creator.loadClass(Character.class);
-                case DOUBLE:
-                    return creator.loadClass(Double.class);
-                case FLOAT:
-                    return creator.loadClass(Float.class);
-                case SHORT:
-                    return creator.loadClass(Short.class);
-                default:
-                    throw new IllegalArgumentException("Unsupported primitive type: " + paramType);
-            }
-        }
-        // TODO: we should probably use the TCCL to load the param type
-        return creator.loadClass(paramType.name().toString());
+    private void matchMethods(String matchName, int matchParamsCount, Collection<MethodInfo> methods,
+            ClassInfo clazz,
+            BlockCreator resolve, LocalVar base, LocalVar name, LocalVar params, LocalVar paramsCount,
+            ParamVar evalContext) {
+
+        LOGGER.debugf("Methods added %s", methods);
+
+        ifMethodMatch(resolve, matchName, matchParamsCount, null, name, params, paramsCount,
+                bc -> {
+                    // Invoke the method, if available
+                    // Evaluate the params first
+                    LocalVar ret = bc.localVar("ret", bc.new_(CompletableFuture.class));
+
+                    // The CompletionStage upon which we invoke whenComplete()
+                    LocalVar evaluatedParams = bc.localVar("evaluatedParams",
+                            bc.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE, evalContext));
+                    Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
+
+                    Expr whenCompleteFun = bc.lambda(BiConsumer.class, lc -> {
+                        Var capturedBase = lc.capture(base);
+                        Var capturedRet = lc.capture(ret);
+                        Var capturedEvaluatedParams = lc.capture(evaluatedParams);
+                        Var capturedEvalContext = lc.capture(evalContext);
+                        ParamVar result = lc.parameter("r", 0);
+                        ParamVar throwable = lc.parameter("t", 1);
+
+                        lc.body(whenComplete -> {
+                            whenComplete.ifElse(whenComplete.isNull(throwable),
+                                    success -> {
+                                        for (MethodInfo method : methods) {
+                                            boolean isVarArgs = isVarArgs(method);
+
+                                            success.block(nested -> {
+                                                // Try to match parameter types
+                                                LocalVar paramTypesArray = nested.localVar("pt",
+                                                        nested.newArray(Class.class, method.parameterTypes()
+                                                                .stream()
+                                                                .map(parameterType -> Const.of(classDescOf(parameterType)))
+                                                                .toList()));
+                                                nested.ifNot(
+                                                        nested.invokeVirtual(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
+                                                                capturedEvaluatedParams, Const.of(isVarArgs), paramTypesArray),
+                                                        notMatched -> notMatched.break_(nested));
+
+                                                // Parameters matched
+                                                doInvoke(nested, capturedRet, capturedEvaluatedParams, capturedBase, result,
+                                                        method);
+                                                nested.return_();
+                                            });
+                                        }
+
+                                        // No method matches - result not found
+                                        success.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                                                success.invokeStatic(Descriptors.NOT_FOUND_FROM_EC, capturedEvalContext));
+                                        success.return_();
+
+                                    }, failure -> {
+                                        // CompletableFuture.completeExceptionally(Throwable)
+                                        failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                                capturedRet, throwable);
+                                        failure.return_();
+                                    });
+                        });
+                    });
+                    bc.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun);
+                    bc.return_(ret);
+                });
     }
 
-    private BytecodeCreator createMatchScope(BytecodeCreator bytecodeCreator, String methodName, int methodParams,
-            Type returnType, ResultHandle name, ResultHandle params, ResultHandle paramsCount) {
+    private void ifMethodMatch(BlockCreator bc, String methodName, int methodParams,
+            Type returnType, LocalVar name, LocalVar params, LocalVar paramsCount, Consumer<BlockCreator> whenMatch) {
 
-        BytecodeCreator matchScope = bytecodeCreator.createScope();
+        bc.block(nested -> {
+            // Match name
+            if (methodParams <= 0 && isGetterName(methodName, returnType)) {
+                // Getter found - match the property name first
+                nested.ifNot(nested.objEquals(name, Const.of(getPropertyName(methodName))), propertyNotMatched -> {
+                    // If the property does not match then try to use the exact method name
+                    propertyNotMatched.ifNot(propertyNotMatched.objEquals(name, Const.of(methodName)),
+                            nameNotMatched -> {
+                                nameNotMatched.break_(nested);
+                            });
+                });
+            } else {
+                // No getter - only match the exact method name
+                nested.ifNot(nested.objEquals(name, Const.of(methodName)), notMatched -> {
+                    notMatched.break_(nested);
+                });
+            }
+            // Match number of params
+            if (methodParams >= 0) {
+                nested.ifNot(nested.eq(paramsCount, methodParams), notMatched -> {
+                    notMatched.break_(nested);
+                });
+            }
 
-        // Match name
-        if (methodParams <= 0 && isGetterName(methodName, returnType)) {
-            // Getter found - match the property name first
-            BytecodeCreator notMatched = matchScope
-                    .ifTrue(Gizmo.equals(matchScope, matchScope.load(getPropertyName(methodName)), name))
-                    .falseBranch();
-            // If the property does not match then use the exact method name
-            notMatched.ifTrue(Gizmo.equals(notMatched, matchScope.load(methodName), name)).falseBranch().breakScope(matchScope);
-        } else {
-            // No getter - only match the exact method name
-            matchScope.ifTrue(Gizmo.equals(matchScope, matchScope.load(methodName), name))
-                    .falseBranch().breakScope(matchScope);
-        }
-
-        // Match number of params
-        if (methodParams >= 0) {
-            matchScope.ifIntegerEqual(matchScope.load(methodParams), paramsCount).falseBranch().breakScope(matchScope);
-        }
-        return matchScope;
+            whenMatch.accept(nested);
+        });
     }
 
     private void implementAppliesTo(ClassCreator valueResolver, ClassInfo clazz) {
-        MethodCreator appliesTo = valueResolver.getMethodCreator("appliesTo", boolean.class, EvalContext.class)
-                .setModifiers(ACC_PUBLIC);
-        appliesTo.returnValue(
-                appliesTo.invokeStaticMethod(Descriptors.VALUE_RESOLVERS_MATCH_CLASS, appliesTo.getMethodParam(0),
-                        appliesTo.loadClass(clazz.name().toString())));
+        valueResolver.method("appliesTo", mc -> {
+            mc.returning(boolean.class);
+            ParamVar evalContext = mc.parameter("ec", EvalContext.class);
+            mc.body(bc -> {
+                bc.return_(bc.invokeStatic(Descriptors.VALUE_RESOLVERS_MATCH_CLASS, evalContext, Const.of(classDescOf(clazz))));
+            });
+        });
     }
 
     public static class Builder {
@@ -1092,8 +1002,8 @@ public class ValueResolverGenerator extends AbstractGenerator {
                 return Modifier.isPublic(method.flags())
                         && !isSynthetic(method.flags())
                         && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
-                        && !method.name().equals(MethodDescriptor.INIT)
-                        && !method.name().equals(MethodDescriptor.CLINIT);
+                        && !method.isConstructor()
+                        && !method.isStaticInitializer();
             case FIELD:
                 FieldInfo field = target.asField();
                 return Modifier.isPublic(field.flags())
@@ -1107,7 +1017,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         return (mod & 0x00001000) != 0;
     }
 
-    static boolean isGetterName(String name, Type returnType) {
+    public static boolean isGetterName(String name, Type returnType) {
         if (name.startsWith(GET_PREFIX)) {
             return true;
         }

@@ -15,6 +15,7 @@ workflows:
           - "**/*.adoc"
 workflowRunAnalysis:
   workflows: ["Quarkus CI", "Quarkus Documentation CI"]
+  ignoredFlakyTests: ["org.acme.FlakyHelloResourceTest", "org.acme.FlakyHelloResourceWithSomeProfileTest", "org.acme.FlakyHelloResourceWithAnotherProfileTest"]
 projectsClassic:
   rules:
     - labels: [area/documentation]
@@ -48,7 +49,7 @@ triage:
     - id: amazon-lambda
       labels: [area/amazon-lambda]
       title: "lambda"
-      notify: [patriot1burke, matejvasek]
+      notify: [patriot1burke]
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda
@@ -98,7 +99,7 @@ triage:
     - id: jbang
       labels: [area/jbang]
       titleBody: "jbang"
-      notify: [quarkusio/devtools, maxandersen]
+      notify: [quarkusio/devtools, iocanel]
       directories:
         - "**/*JBang*"
         - "**/*jbang*"
@@ -458,7 +459,7 @@ triage:
       title: "\\b(cli)\\b"
       directories:
         - devtools/cli/
-      notify: [maxandersen,ebullient]
+      notify: [iocanel,ebullient]
     - id: picocli
       labels: [area/picocli]
       title: "picocli"
@@ -707,7 +708,7 @@ triage:
     - id: extension-proposal
       labels: [kind/extension-proposal,area/quarkiverse]
       title: "Extension Proposal"
-      notify: [gastaldi, gsmet, aloubyansky, maxandersen]
+      notify: [gastaldi, gsmet, aloubyansky]
     - id: mailer
       labels: [area/mailer]
       expression: |
@@ -730,7 +731,7 @@ triage:
     - id: devservices
       labels: [area/devservices]
       title: "dev.?services?"
-      notify: [geoand]
+      notify: [holly-cummins, ozangunalp, geoand]
     - id: jdbc
       labels: [area/jdbc]
       title: "jdbc"
@@ -781,6 +782,5 @@ triage:
     - id: podman
       labels: [env/podman]
       title: "podman"
-      notify: [maxandersen]
   qe:
     notify: [rsvoboda, mjurc]

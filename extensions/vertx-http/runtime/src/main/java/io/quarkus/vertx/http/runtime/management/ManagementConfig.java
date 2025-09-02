@@ -18,7 +18,8 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
- * Configures the management interface.
+ * Management interface.
+ * <p>
  * Note that the management interface must be enabled using the
  * {@link ManagementInterfaceBuildTimeConfig#enabled} build-time property.
  */

@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
@@ -15,19 +15,17 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchStandaloneEnabled;
 import io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchStandaloneEnabledBuildItem;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.dev.HibernateSearchStandaloneDevJsonRpcService;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.dev.HibernateSearchStandaloneDevRecorder;
 
-@BuildSteps(onlyIf = { HibernateSearchStandaloneEnabled.class, IsDevelopment.class })
+@BuildSteps(onlyIf = { HibernateSearchStandaloneEnabled.class, IsLocalDevelopment.class })
 public class HibernateSearchStandaloneDevUIProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
     public CardPageBuildItem create(HibernateSearchStandaloneDevRecorder recorder,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig,
             Optional<HibernateSearchStandaloneEnabledBuildItem> enabled) {
-        recorder.initController(enabled.isPresent(), runtimeConfig);
+        recorder.initController(enabled.isPresent());
 
         CardPageBuildItem card = new CardPageBuildItem();
         card.addPage(Page.webComponentPageBuilder()

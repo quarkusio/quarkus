@@ -230,13 +230,30 @@ public abstract class JacksonCodeGenerator {
         return findMethod(classInfo, methodName);
     }
 
-    protected FieldSpecs fieldSpecsFromField(ClassInfo classInfo, FieldInfo fieldInfo) {
+    protected Optional<MethodInfo> findConstructor(ClassInfo classInfo) {
+        Optional<MethodInfo> ctorOpt = classInfo.constructors().stream()
+                .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctor.hasAnnotation(JsonCreator.class))
+                .findFirst();
+
+        if (ctorOpt.isEmpty()) {
+            if (classInfo.hasNoArgsConstructor() && !classInfo.isRecord()) {
+                return classInfo.constructors().stream()
+                        .filter(ctor -> ctor.parametersCount() == 0)
+                        .findFirst();
+            }
+            ctorOpt = classInfo.isRecord() ? Optional.of(classInfo.canonicalRecordConstructor())
+                    : classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
+        }
+        return ctorOpt;
+    }
+
+    protected FieldSpecs fieldSpecsFromField(ClassInfo classInfo, MethodInfo constructor, FieldInfo fieldInfo) {
         if (Modifier.isStatic(fieldInfo.flags())) {
             return null;
         }
         MethodInfo getterMethodInfo = getterMethodInfo(classInfo, fieldInfo);
         if (getterMethodInfo != null) {
-            return new FieldSpecs(fieldInfo, getterMethodInfo);
+            return new FieldSpecs(constructor, fieldInfo, getterMethodInfo);
         }
         if (Modifier.isPublic(fieldInfo.flags())) {
             return new FieldSpecs(fieldInfo);
@@ -260,14 +277,14 @@ public abstract class JacksonCodeGenerator {
         FieldInfo fieldInfo;
 
         FieldSpecs(FieldInfo fieldInfo) {
-            this(fieldInfo, null);
+            this(null, fieldInfo, null);
         }
 
         FieldSpecs(MethodInfo methodInfo) {
-            this(null, methodInfo);
+            this(null, null, methodInfo);
         }
 
-        FieldSpecs(FieldInfo fieldInfo, MethodInfo methodInfo) {
+        FieldSpecs(MethodInfo constructor, FieldInfo fieldInfo, MethodInfo methodInfo) {
             if (fieldInfo != null) {
                 this.fieldInfo = fieldInfo;
                 readAnnotations(fieldInfo);
@@ -278,14 +295,14 @@ public abstract class JacksonCodeGenerator {
             }
             this.fieldType = fieldType();
             this.fieldName = fieldName();
-            this.jsonName = jsonName();
+            this.jsonName = jsonName(constructor);
         }
 
         FieldSpecs(MethodParameterInfo paramInfo) {
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
             this.fieldName = paramInfo.name();
-            this.jsonName = jsonName();
+            this.jsonName = jsonName(null);
         }
 
         private void readAnnotations(AnnotationTarget target) {
@@ -306,8 +323,15 @@ public abstract class JacksonCodeGenerator {
             return methodInfo.returnType();
         }
 
-        private String jsonName() {
+        private String jsonName(MethodInfo constructor) {
             AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
+            if (jsonProperty == null && constructor != null) {
+                jsonProperty = constructor.parameters().stream()
+                        .filter(parameter -> parameter.name().equals(fieldName)).findFirst()
+                        .map(parameter -> parameter.annotation(JsonProperty.class.getName()))
+                        .orElse(null);
+            }
+
             if (jsonProperty != null) {
                 AnnotationValue value = jsonProperty.value();
                 if (value != null && !value.asString().isEmpty()) {

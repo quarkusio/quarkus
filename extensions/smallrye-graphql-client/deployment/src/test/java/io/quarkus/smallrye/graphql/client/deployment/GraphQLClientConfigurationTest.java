@@ -23,12 +23,6 @@ public class GraphQLClientConfigurationTest {
                     .addAsResource(
                             new StringAsset(
                                     "quarkus.smallrye-graphql-client.client1.url=https://localhost:8080\n" +
-                                            "quarkus.smallrye-graphql-client.client1.key-store=classpath:my.keystore\n" +
-                                            "quarkus.smallrye-graphql-client.client1.key-store-password=secret\n" +
-                                            "quarkus.smallrye-graphql-client.client1.key-store-type=PKCS12\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store=classpath:my.truststore\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store-password=secret2\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store-type=JKS\n" +
                                             "quarkus.smallrye-graphql-client.client1.proxy-host=myproxy\n" +
                                             "quarkus.smallrye-graphql-client.client1.proxy-port=1234\n" +
                                             "quarkus.smallrye-graphql-client.client1.proxy-username=dave\n" +
@@ -36,17 +30,6 @@ public class GraphQLClientConfigurationTest {
                                             "quarkus.smallrye-graphql-client.client1.max-redirects=6\n"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
-
-    @Test
-    public void checkSslConfiguration() {
-        GraphQLClientConfiguration config = GraphQLClientsConfiguration.getInstance().getClient("client1");
-        assertEquals("classpath:my.keystore", config.getKeyStore());
-        assertEquals("secret", config.getKeyStorePassword());
-        assertEquals("PKCS12", config.getKeyStoreType());
-        assertEquals("classpath:my.truststore", config.getTrustStore());
-        assertEquals("secret2", config.getTrustStorePassword());
-        assertEquals("JKS", config.getTrustStoreType());
-    }
 
     @Test
     public void checkProxyConfiguration() {

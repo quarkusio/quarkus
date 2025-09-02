@@ -102,7 +102,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
 
         var telemetrySupport = telemetryProvider == null ? null
                 : telemetryProvider.createClientTelemetrySupport(clientEndpoint.path);
-        Uni<WebSocket> websocket = Uni.createFrom().<WebSocket> emitter(e -> {
+        Uni<WebSocketOpen> websocketOpen = Uni.createFrom().<WebSocketOpen> emitter(e -> {
             // Create a new event loop context for each client, otherwise the current context is used
             // We want to avoid a situation where if multiple clients/connections are created in a row,
             // the same event loop is used and so writing/receiving messages is de-facto serialized
@@ -111,34 +111,45 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
             context.dispatch(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
-                    client.setPlain(c);
-                    if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
-                        telemetrySupport.connectionOpened();
-                    }
-                    c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
-                        @Override
-                        public void handle(AsyncResult<WebSocket> r) {
-                            if (r.succeeded()) {
-                                e.complete(r.result());
-                            } else {
-                                if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
-                                    telemetrySupport.connectionOpeningFailed(r.cause());
-                                }
-                                e.fail(r.cause());
-                            }
+                    try {
+                        WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                        client.setPlain(c);
+                        if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
+                            telemetrySupport.connectionOpened();
                         }
-                    });
+                        c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
+                            @Override
+                            public void handle(AsyncResult<WebSocket> r) {
+                                if (r.succeeded()) {
+                                    e.complete(new WebSocketOpen(newCleanupConsumer(c, context), r.result()));
+                                } else {
+                                    if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
+                                        telemetrySupport.connectionOpeningFailed(r.cause());
+                                    }
+                                    e.fail(r.cause());
+                                }
+                            }
+                        });
+                    } catch (RuntimeException re) {
+                        e.fail(re);
+                    }
                 }
             });
         });
-        return websocket.map(ws -> {
+        return websocketOpen.map(wsOpen -> {
+            WebSocket ws = wsOpen.websocket();
             TrafficLogger trafficLogger = TrafficLogger.forClient(config);
             SendingInterceptor sendingInterceptor = telemetrySupport == null ? null : telemetrySupport.getSendingInterceptor();
-            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId,
+                    ws,
                     codecs,
                     pathParams,
-                    serverEndpointUri, headers, trafficLogger, sendingInterceptor);
+                    serverEndpointUri,
+                    headers,
+                    trafficLogger,
+                    userData,
+                    sendingInterceptor,
+                    wsOpen.cleanup());
             if (trafficLogger != null) {
                 trafficLogger.connectionOpened(connection);
             }

@@ -22,7 +22,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.stork.SmallRyeStorkRecorder;
 import io.quarkus.stork.StorkConfigProvider;
-import io.quarkus.stork.StorkConfiguration;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.smallrye.stork.spi.LoadBalancerProvider;
 import io.smallrye.stork.spi.ServiceDiscoveryProvider;
@@ -87,9 +86,8 @@ public class SmallRyeStorkProcessor {
     @Consume(AlwaysBuildItem.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx,
-            StorkConfiguration configuration) {
-        storkRecorder.initialize(shutdown, vertx.getVertx(), configuration);
+    void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx) {
+        storkRecorder.initialize(shutdown, vertx.getVertx());
     }
 
     private static final class AlwaysBuildItem extends EmptyBuildItem {

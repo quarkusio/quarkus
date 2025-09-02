@@ -5,7 +5,7 @@ import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.get
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.FAST_JAR;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

@@ -140,8 +140,9 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     @Override
-    public void clearSettings() {
+    public StandardServiceRegistryBuilder clearSettings() {
         settings.clear();
+        return this;
     }
 
     /**

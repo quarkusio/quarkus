@@ -25,15 +25,17 @@ import io.quarkus.runtime.SnapStartRecorder;
  */
 public class SnapStartProcessor {
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     @Record(ExecutionTime.STATIC_INIT)
     public void processSnapStart(BuildProducer<PreloadClassesEnabledBuildItem> preload,
             BuildProducer<SnapStartEnabledBuildItem> snapStartEnabled,
             SnapStartRecorder recorder,
             SnapStartConfig config,
             Optional<SnapStartDefaultValueBuildItem> defaultVal) {
-        if (config.enable().isPresent()) {
-            if (!config.enable().get().booleanValue()) {
+        Optional<Boolean> snapstartEnabled = config.enable().isPresent() ? config.enable() : config.enabled();
+
+        if (snapstartEnabled.isPresent()) {
+            if (!snapstartEnabled.get().booleanValue()) {
                 return;
             }
 
@@ -46,7 +48,7 @@ public class SnapStartProcessor {
         recorder.register(config.fullWarmup());
     }
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public void generateClassListFromApplication(
             SnapStartConfig config,
             Optional<SnapStartDefaultValueBuildItem> defaultVal,
@@ -54,8 +56,10 @@ public class SnapStartProcessor {
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses) {
-        if (config.enable().isPresent()) {
-            if (!config.enable().get()) {
+        Optional<Boolean> snapstartEnabled = config.enable().isPresent() ? config.enable() : config.enabled();
+
+        if (snapstartEnabled.isPresent()) {
+            if (!snapstartEnabled.get().booleanValue()) {
                 return;
             }
         } else if (defaultVal == null || !defaultVal.isPresent() || !defaultVal.get().isDefaultValue()) {

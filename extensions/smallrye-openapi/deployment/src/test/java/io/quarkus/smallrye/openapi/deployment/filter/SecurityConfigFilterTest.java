@@ -148,6 +148,11 @@ class SecurityConfigFilterTest {
         }
 
         @Override
+        public boolean autoAddOpenApiEndpoint() {
+            return false;
+        }
+
+        @Override
         public Optional<String> apiKeyParameterIn() {
             return Optional.ofNullable(apiKeyParameterIn);
         }
@@ -264,7 +269,7 @@ class SecurityConfigFilterTest {
 
         @Override
         public boolean mergeSchemaExamples() {
-            return false;
+            return true;
         }
     }
 }

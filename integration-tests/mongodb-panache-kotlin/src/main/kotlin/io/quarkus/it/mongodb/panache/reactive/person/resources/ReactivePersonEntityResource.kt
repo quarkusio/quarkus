@@ -79,7 +79,7 @@ class ReactivePersonEntityResource {
     @Path("/rename")
     fun rename(
         @QueryParam("previousName") previousName: String,
-        @QueryParam("newName") newName: String
+        @QueryParam("newName") newName: String,
     ): Uni<Response> {
         return ReactivePersonEntity.update("lastname", newName)
             .where("lastname", previousName)

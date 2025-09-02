@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -521,6 +522,34 @@ public final class ValueResolvers {
         @Override
         protected Object compute(Integer op1, Integer op2) {
             return op1 % op2;
+        }
+
+    }
+
+    public static ValueResolver equalsResolver() {
+        return new EqualsResolver();
+    }
+
+    public static final class EqualsResolver implements ValueResolver {
+
+        public boolean appliesTo(EvalContext context) {
+            if (context.getParams().size() != 1) {
+                return false;
+            }
+            String name = context.getName();
+            return name.equals("==") || name.equals("eq") || name.equals("is");
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            Object base = context.getBase();
+            Expression otherExpr = context.getParams().get(0);
+            if (otherExpr.isLiteral()) {
+                Object literalValue = otherExpr.getLiteral();
+                return CompletedStage.of(Objects.equals(base, literalValue));
+            } else {
+                return context.evaluate(otherExpr).thenApply(other -> Objects.equals(base, other));
+            }
         }
 
     }

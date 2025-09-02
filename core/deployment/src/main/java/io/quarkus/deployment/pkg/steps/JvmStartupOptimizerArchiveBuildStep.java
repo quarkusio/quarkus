@@ -29,10 +29,12 @@ import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBu
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveType;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.jar.FastJarFormat;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class JvmStartupOptimizerArchiveBuildStep {
 
@@ -72,7 +74,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         String javaBinPath = null;
         if (containerImage == null) {
             javaBinPath = System.getProperty("java.home") + File.separator + "bin" + File.separator
-                    + JavaBinFinder.simpleBinaryName();
+                    + ProcessUtil.nameOfJava();
             if (!new File(javaBinPath).canExecute()) {
                 log.warnf(
                         "In order to create AppCDS the JDK used to build the Quarkus application must contain an executable named '%s' in its 'bin' directory.",
@@ -191,14 +193,14 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> command;
         if (containerImage != null) {
             List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME
                             : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
             command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
             command.addAll(dockerRunCommand);
             command.add("java");
             command.addAll(javaArgs);
             if (isFastJar) {
-                command.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+                command.add(FastJarFormat.QUARKUS_RUN_JAR);
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
             }
@@ -208,7 +210,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             command.addAll(javaArgs);
             if (isFastJar) {
                 command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                        .add(jarResult.getLibraryDir().getParent().resolve(FastJarFormat.QUARKUS_RUN_JAR)
                                 .getFileName().toString());
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
@@ -253,14 +255,14 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> command;
         if (containerImage != null) {
             List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME
                             : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
             command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
             command.addAll(dockerRunCommand);
             command.add("java");
             command.addAll(javaArgs);
             if (isFastJar) {
-                command.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+                command.add(FastJarFormat.QUARKUS_RUN_JAR);
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
             }
@@ -270,7 +272,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             command.addAll(javaArgs);
             if (isFastJar) {
                 command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                        .add(jarResult.getLibraryDir().getParent().resolve(FastJarFormat.QUARKUS_RUN_JAR)
                                 .getFileName().toString());
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
@@ -291,14 +293,14 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> command;
         if (containerImage != null) {
             List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME
                             : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
             command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
             command.addAll(dockerRunCommand);
             command.add("java");
             command.addAll(javaArgs);
             if (isFastJar) {
-                command.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+                command.add(FastJarFormat.QUARKUS_RUN_JAR);
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
             }
@@ -308,7 +310,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             command.addAll(javaArgs);
             if (isFastJar) {
                 command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                        .add(jarResult.getLibraryDir().getParent().resolve(FastJarFormat.QUARKUS_RUN_JAR)
                                 .getFileName().toString());
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
@@ -322,26 +324,18 @@ public class JvmStartupOptimizerArchiveBuildStep {
             log.debugf("Launching command: '%s'", String.join(" ", command));
         }
 
-        int exitCode;
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(command)
-                    .directory(workingDirectory.toFile());
+            var pb = ProcessBuilder.newBuilder(command.get(0))
+                    .arguments(command.subList(1, command.size()))
+                    .directory(workingDirectory);
             if (log.isDebugEnabled()) {
-                processBuilder.inheritIO();
-            } else {
-                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
+                pb.output().consumeLinesWith(8192, log::debug)
+                        .error().consumeLinesWith(8192, log::debug);
             }
-            exitCode = processBuilder.start().waitFor();
+            pb.run();
         } catch (Exception e) {
-            log.debug("Failed to launch process used to create archive.", e);
-            return null;
+            log.debug("Failed to launch process used to create archive", e);
         }
-
-        if (exitCode != 0) {
-            log.debugf("The process that was supposed to create an archive exited with error code: %d.", exitCode);
-            return null;
-        }
-
         if (!archivePath.toFile().exists()) { // shouldn't happen, but let's avoid any surprises
             return null;
         }

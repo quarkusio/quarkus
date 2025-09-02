@@ -10,7 +10,7 @@ class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
         query: String,
         originalQuery: String?,
         orderBy: String?,
-        paramsArrayOrMap: Any?
+        paramsArrayOrMap: Any?,
     ) = PanacheQueryImpl<Any>(session, query, originalQuery, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>): Uni<MutableList<*>> =

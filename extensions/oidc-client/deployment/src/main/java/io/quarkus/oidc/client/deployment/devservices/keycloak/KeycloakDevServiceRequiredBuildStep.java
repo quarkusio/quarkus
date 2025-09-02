@@ -2,8 +2,8 @@ package io.quarkus.oidc.client.deployment.devservices.keycloak;
 
 import java.util.HashMap;
 
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -13,7 +13,8 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { OidcClientBuildStep.IsEnabled.class, DevServicesConfig.Enabled.class })
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcClientBuildStep.IsEnabled.class,
+        DevServicesConfig.Enabled.class })
 public class KeycloakDevServiceRequiredBuildStep {
 
     private static final String CONFIG_PREFIX = "quarkus.oidc-client.";

@@ -17,8 +17,8 @@ import org.mockito.Mockito;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.panache.mock.PanacheMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 
 @QuarkusTest
 public class PanacheMockingTest {
@@ -30,7 +30,7 @@ public class PanacheMockingTest {
     public void setup() {
         SelectionQuery mockQuery = Mockito.mock(SelectionQuery.class);
         Mockito.doNothing().when(session).persist(Mockito.any());
-        Mockito.when(session.createSelectionQuery(Mockito.anyString(), Mockito.any())).thenReturn(mockQuery);
+        Mockito.when(session.createSelectionQuery(Mockito.anyString(), Mockito.<Class<?>> any())).thenReturn(mockQuery);
         Mockito.when(mockQuery.getSingleResult()).thenReturn(0l);
     }
 

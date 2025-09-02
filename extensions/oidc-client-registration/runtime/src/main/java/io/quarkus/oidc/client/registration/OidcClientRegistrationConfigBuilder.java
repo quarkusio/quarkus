@@ -1,11 +1,15 @@
 package io.quarkus.oidc.client.registration;
 
+import static io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig.getDefaultClientRegistration;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * The {@link OidcClientRegistrationConfig} builder. This builder is not thread safe.
@@ -60,14 +64,31 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         }
     }
 
+    /**
+     * {@link OidcClientRegistrationConfig} with documented defaults.
+     * Cached here so that we avoid building the SmallRye Config again and again when no-args builder constructors
+     * are used.
+     */
+    private static volatile OidcClientRegistrationConfig configWithDefaults = null;
+
     private Optional<String> id;
     private boolean registrationEnabled;
     private boolean registerEarly;
     private Optional<String> initialToken;
     private OidcClientRegistrationConfig.Metadata metadata;
 
-    OidcClientRegistrationConfigBuilder(OidcClientRegistrationConfig config) {
-        super(config);
+    /**
+     * Creates {@link OidcClientRegistrationConfig} builder populated with documented default values.
+     */
+    public OidcClientRegistrationConfigBuilder() {
+        this(getConfigWithDefaults());
+    }
+
+    /**
+     * Creates {@link OidcClientRegistrationConfig} builder populated with {@code config} values.
+     */
+    public OidcClientRegistrationConfigBuilder(OidcClientRegistrationConfig config) {
+        super(Objects.requireNonNull(config));
         this.id = config.id();
         this.registrationEnabled = config.registrationEnabled();
         this.registerEarly = config.registerEarly();
@@ -171,7 +192,7 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         }
 
         public MetadataBuilder() {
-            this.configBuilder = null;
+            this(new OidcClientRegistrationConfigBuilder());
         }
 
         public OidcClientRegistrationConfig.Metadata build() {
@@ -234,5 +255,17 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
             this.extraProps.putAll(extraProps);
             return this;
         }
+    }
+
+    private static OidcClientRegistrationConfig getConfigWithDefaults() {
+        if (configWithDefaults == null) {
+            final OidcClientRegistrationsConfig clientRegistrationsConfig = new SmallRyeConfigBuilder()
+                    .addDiscoveredConverters()
+                    .withMapping(OidcClientRegistrationsConfig.class)
+                    .build()
+                    .getConfigMapping(OidcClientRegistrationsConfig.class);
+            configWithDefaults = getDefaultClientRegistration(clientRegistrationsConfig);
+        }
+        return configWithDefaults;
     }
 }

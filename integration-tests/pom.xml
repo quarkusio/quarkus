@@ -21,6 +21,9 @@
         <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
+
+        <!-- for now, relax forbiddenapis in ITs entirely, we will provide a specific configuration file later -->
+        <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
     </properties>
 
     <!-- modules are in profile test-modules -->
@@ -62,13 +65,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <configuration>
-                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
-                </configuration>
             </plugin>
         </plugins>
         <pluginManagement>
@@ -221,6 +217,7 @@
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
+                <module>hibernate-reactive-orm-compatibility</module>
                 <module>hibernate-search-orm-elasticsearch</module>
                 <module>hibernate-search-orm-elasticsearch-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>
@@ -229,6 +226,7 @@
                 <module>hibernate-search-standalone-opensearch</module>
                 <module>hibernate-orm-tenancy</module>
                 <module>hibernate-orm-jpamodelgen</module>
+                <module>hibernate-orm-data</module>
                 <module>hibernate-orm-envers</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
@@ -255,6 +253,7 @@
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
                 <module>observability-lgtm</module>
+                <module>observability-lgtm-fixedports</module>
                 <module>observability-lgtm-prometheus</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
@@ -330,6 +329,7 @@
                 <module>smallrye-stork-registration</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
+                <module>quartz-deferred-datasource</module>
                 <module>redis-client</module>
                 <module>redis-cache</module>
                 <module>logging-gelf</module>
@@ -382,11 +382,13 @@
                 <module>opentelemetry-vertx-exporter</module>
                 <module>opentelemetry-reactive-messaging</module>
                 <module>opentelemetry-redis-instrumentation</module>
+                <module>opentelemetry-exporter-logging</module>
                 <module>logging-json</module>
                 <module>jaxb</module>
                 <module>jaxp</module>
                 <module>mailer</module>
                 <module>native-config-profile</module>
+                <module>native-image-annotations</module>
                 <module>logging-min-level-unset</module>
                 <module>logging-min-level-set</module>
                 <module>logging-panache</module>
@@ -447,6 +449,7 @@
             </activation>
             <properties>
                 <quarkus.native.enabled>true</quarkus.native.enabled>
+                <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
             </properties>
             <build>
                 <pluginManagement>

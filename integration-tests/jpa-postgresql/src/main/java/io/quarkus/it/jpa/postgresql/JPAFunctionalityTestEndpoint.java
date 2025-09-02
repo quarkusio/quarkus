@@ -20,6 +20,7 @@ import io.quarkus.it.jpa.postgresql.defaultpu.EntityWithJson;
 import io.quarkus.it.jpa.postgresql.defaultpu.MyUUIDEntity;
 import io.quarkus.it.jpa.postgresql.defaultpu.Person;
 import io.quarkus.it.jpa.postgresql.defaultpu.SequencedAddress;
+import io.quarkus.it.jpa.postgresql.defaultpu.SomeEmbeddable;
 import io.quarkus.it.jpa.postgresql.otherpu.EntityWithJsonOtherPU;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 
@@ -133,7 +134,8 @@ public class JPAFunctionalityTestEndpoint {
     public String json() {
         QuarkusTransaction.requiringNew().run(() -> {
             EntityWithJson entity = new EntityWithJson(
-                    new EntityWithJson.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
+                    new EntityWithJson.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)),
+                    new SomeEmbeddable(100, LocalDate.of(2023, 7, 29)));
             em.persist(entity);
         });
 

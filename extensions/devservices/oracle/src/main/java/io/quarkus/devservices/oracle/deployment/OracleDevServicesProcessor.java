@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -90,6 +91,12 @@ public class OracleDevServicesProcessor {
                     containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                     containerConfig.getCommand().ifPresent(container::setCommand);
                     containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                    if (containerConfig.getInitPrivilegedScriptPath().isPresent()) {
+                        for (String initScript : containerConfig.getInitPrivilegedScriptPath().get()) {
+                            container.withCopyFileToContainer(MountableFile.forClasspathResource(initScript),
+                                    "/container-entrypoint-startdb.d/" + initScript);
+                        }
+                    }
                     if (containerConfig.isShowLogs()) {
                         container.withLogConsumer(new JBossLoggingConsumer(LOG));
                     }

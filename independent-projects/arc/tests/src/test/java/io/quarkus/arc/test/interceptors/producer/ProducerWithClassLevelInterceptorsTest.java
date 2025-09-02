@@ -31,8 +31,8 @@ public class ProducerWithClassLevelInterceptorsTest {
     @Test
     public void test() {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
-        assertEquals("intercepted1: intercepted2: hello1", nonbean.hello1());
-        assertEquals("hello2", nonbean.hello2());
+        assertEquals("intercepted1: intercepted2: hello1_foobar", nonbean.hello1());
+        assertEquals("hello2_foobar", nonbean.hello2());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -70,13 +70,23 @@ public class ProducerWithClassLevelInterceptorsTest {
     @MyBinding1
     @MyBinding2
     static class MyNonbean {
+        private final String value;
+
+        MyNonbean() {
+            this(null);
+        }
+
+        MyNonbean(String value) {
+            this.value = value;
+        }
+
         String hello1() {
-            return "hello1";
+            return "hello1_" + value;
         }
 
         @NoClassInterceptors
         String hello2() {
-            return "hello2";
+            return "hello2_" + value;
         }
     }
 
@@ -84,7 +94,7 @@ public class ProducerWithClassLevelInterceptorsTest {
     static class MyProducer {
         @Produces
         MyNonbean produce(InterceptionProxy<MyNonbean> proxy) {
-            return proxy.create(new MyNonbean());
+            return proxy.create(new MyNonbean("foobar"));
         }
     }
 }

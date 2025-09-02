@@ -20,7 +20,8 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.1.20</kotlin.version>
+        <kotlin.version>2.2.10</kotlin.version>
+        <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.0.0</dokka.version>
         <scala.version>2.13.12</scala.version>
         <scala-maven-plugin.version>4.9.5</scala-maven-plugin.version>
@@ -29,19 +30,19 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.3.0</jandex.version>
+        <jandex.version>3.4.0</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.11.1</htmlunit.version>
-        <javaparser-core.version>3.26.4</javaparser-core.version>
+        <htmlunit.version>4.16.0</htmlunit.version>
+        <javaparser-core.version>3.27.0</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.24.0</commonmark.version>
-        <jgit.version>7.2.0.202503040940-r</jgit.version>
+        <commonmark.version>0.25.1</commonmark.version>
+        <jgit.version>7.3.0.202506031305-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -62,7 +63,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.9</proposed-maven-version>
         <maven-wrapper.version>3.3.2</maven-wrapper.version>
-        <gradle-wrapper.version>8.13</gradle-wrapper.version>
+        <gradle-wrapper.version>9.0.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -73,12 +74,12 @@
         <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>8.15.0</elasticsearch-server.version>
+        <elasticsearch-server.version>9.1.3</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
         <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
         <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>2.16.0</opensearch-server.version>
+        <opensearch-server.version>3.1.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.2.0</junit-pioneer.version>
@@ -96,32 +97,32 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.1.3</keycloak.server.version>
+        <keycloak.server.version>26.3.0</keycloak.server.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>7.0.2</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.3</unboundid-ldap.version>
 
-        <assertj.version>3.27.3</assertj.version>
+        <assertj.version>3.27.4</assertj.version>
 
-        <wiremock.version>3.12.1</wiremock.version>
+        <wiremock.version>3.13.1</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.40.0</artemis.version>
+        <artemis.version>2.42.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.46.0</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
         <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
-        <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
+        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
@@ -135,9 +136,6 @@
         <revapi.checkdeps>true</revapi.checkdeps>
         <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
         <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
-
-        <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
         <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
@@ -154,7 +152,7 @@
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
         <!-- Quarkus Analytics -->
-        <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
+        <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
         <!-- If PTS is enabled at the global level  -->
@@ -275,6 +273,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc-test-supplement</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -443,8 +446,11 @@
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
-                        <!-- the add-opens is here to allow to clear the propertiesCache in com.sun.naming.internal.ResourceManager -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED</argLine>
+                        <!-- the add-opens java.naming/com.sun.naming.internal is here to allow to clear
+                             the propertiesCache in com.sun.naming.internal.ResourceManager -->
+                        <!-- the add-opens java.base/java.lang=ALL-UNNAMED is here for
+                             org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals() -->
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
@@ -582,11 +588,6 @@
                     <version>${build-helper-plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.revapi</groupId>
-                    <artifactId>revapi-maven-plugin</artifactId>
-                    <version>${revapi-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.jetbrains.kotlin</groupId>
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
@@ -602,7 +603,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.26</version>
+                            <version>4.0.28</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -614,7 +615,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>
@@ -668,6 +668,11 @@
                     <groupId>io.smallrye.certs</groupId>
                     <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
                     <version>${smallrye-certificate-generator.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>2.44.4</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -771,7 +776,6 @@
                     <plugin>
                         <groupId>com.diffplug.spotless</groupId>
                         <artifactId>spotless-maven-plugin</artifactId>
-                        <version>2.35.0</version>
                         <executions>
                             <execution>
                                 <id>format-kotlin</id>
@@ -1031,6 +1035,7 @@
                     <plugin>
                         <groupId>org.revapi</groupId>
                         <artifactId>revapi-maven-plugin</artifactId>
+                        <version>${revapi-maven-plugin.version}</version>
                         <dependencies>
                             <dependency>
                                 <groupId>io.quarkus</groupId>
@@ -1135,18 +1140,24 @@
             <id>mac-m1</id>
             <activation>
                 <os>
+                    <family>mac</family>
                     <arch>aarch64</arch>
                 </os>
             </activation>
             <properties>
                 <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
                 <volume.access.modifier></volume.access.modifier>
+            </properties>
+        </profile>
 
-                <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
-                and https://www.emmanuelgautier.com/blog/mysql-docker-arm-m1
-                This hopefully should be temporary -->
-                <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
-
+        <profile>
+            <id>aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
                 <!-- See
                 https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
                 The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all. -->

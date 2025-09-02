@@ -66,8 +66,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.github.crac</groupId>
-            <artifactId>org-crac</artifactId>
+            <groupId>org.crac</groupId>
+            <artifactId>crac</artifactId>
         </dependency>
         <!-- needed when quarkus.http.compressors contains "br" see https://github.com/quarkusio/quarkus/issues/43556 -->
         <dependency>
@@ -116,6 +116,9 @@
                     <capabilities>
                         <provides>io.quarkus.vertx.http</provides>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:quarkus-devui:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>
@@ -131,6 +134,9 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
+                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

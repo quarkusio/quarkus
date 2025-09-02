@@ -11,10 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.maven.model.Model;
-import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.repository.WorkspaceRepository;
 
@@ -96,18 +94,15 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     }
 
     @Override
-    public Model resolveRawModel(String groupId, String artifactId, String versionConstraint)
-            throws UnresolvableModelException {
-        if (findArtifact(new DefaultArtifact(groupId, artifactId, null, ArtifactCoords.TYPE_POM, versionConstraint)) != null) {
-            return getProject(groupId, artifactId).getRawModel();
-        }
-        return null;
+    public Model resolveRawModel(String groupId, String artifactId, String versionConstraint) {
+        var lp = getLocalProjectOrNull(groupId, artifactId, versionConstraint);
+        return lp == null ? null : lp.getRawModel();
     }
 
     @Override
-    public Model resolveEffectiveModel(String groupId, String artifactId, String versionConstraint)
-            throws UnresolvableModelException {
-        return null;
+    public Model resolveEffectiveModel(String groupId, String artifactId, String versionConstraint) {
+        var lp = getLocalProjectOrNull(groupId, artifactId, versionConstraint);
+        return lp == null ? null : lp.getEffectiveModel();
     }
 
     public Map<ArtifactKey, LocalProject> getProjects() {
@@ -121,13 +116,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
 
     @Override
     public File findArtifact(Artifact artifact) {
-        final LocalProject lp = getProject(artifact.getGroupId(), artifact.getArtifactId());
-        final String findVersion = artifact.getVersion();
-        if (lp == null
-                || !findVersion.isEmpty()
-                        && !lp.getVersion().equals(findVersion)
-                        && !(ModelUtils.isUnresolvedVersion(findVersion)
-                                && lp.getVersion().equals(resolvedVersion))) {
+        final LocalProject lp = getLocalProjectOrNull(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
+        if (lp == null) {
             return null;
         }
 
@@ -170,6 +160,18 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
             // otherwise, this project hasn't been built yet
         }
         return null;
+    }
+
+    public LocalProject getLocalProjectOrNull(String groupId, String artifactId, String version) {
+        final LocalProject lp = getProject(groupId, artifactId);
+        if (lp == null
+                || !version.isEmpty()
+                        && !lp.getVersion().equals(version)
+                        && !(ModelUtils.isUnresolvedVersion(version)
+                                && lp.getVersion().equals(resolvedVersion))) {
+            return null;
+        }
+        return lp;
     }
 
     private Path emptyJarOutput(LocalProject lp, Artifact artifact) {
@@ -251,21 +253,13 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
         this.resolvedVersion = resolvedVersion;
     }
 
-    LocalProject getCurrentProject() {
-        return currentProject;
-    }
-
-    void setCurrentProject(LocalProject currentProject) {
-        this.currentProject = currentProject;
-    }
-
     void setBootstrapMavenContext(BootstrapMavenContext mvnCtx) {
         this.mvnCtx = mvnCtx;
     }
 
     @Override
     public WorkspaceModule getProjectModule(String groupId, String artifactId, String version) {
-        final LocalProject project = getProject(groupId, artifactId);
-        return project == null || !project.getVersion().equals(version) ? null : project.toWorkspaceModule(mvnCtx);
+        final LocalProject project = getLocalProjectOrNull(groupId, artifactId, version);
+        return project == null ? null : project.toWorkspaceModule(mvnCtx);
     }
 }

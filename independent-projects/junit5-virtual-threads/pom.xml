@@ -41,15 +41,23 @@
         <compiler.plugin.version>3.14.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
-        <jandex.version>3.3.0</jandex.version>
+        <jandex.version>3.4.0</jandex.version>
+        <smallrye-common.version>2.13.8</smallrye-common.version>
 
-        <junit5.version>5.12.1</junit5.version>
-        <junit.testkit.version>1.10.3</junit.testkit.version>
-        <assertj.version>3.27.3</assertj.version>
+        <junit5.version>5.13.4</junit5.version>
+        <assertj.version>3.27.4</assertj.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
@@ -70,7 +78,10 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-testkit</artifactId>
-            <version>${junit.testkit.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
@@ -158,17 +169,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-release</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

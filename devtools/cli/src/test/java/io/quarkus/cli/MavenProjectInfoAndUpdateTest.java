@@ -51,7 +51,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
     @Test
     void testClean() throws Exception {
 
-        final CliDriver.Result createResult = run(workDir(), "create", "acme-clean",
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-clean",
                 "-x supersonic,acme-quarkiverse-extension");
         assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
@@ -83,7 +83,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
     @Test
     void testMisalignedPlatformExtensionVersion() throws Exception {
 
-        final CliDriver.Result createResult = run(workDir(), "create", "acme-misaligned-ext-version",
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-misaligned-ext-version",
                 "-x supersonic,acme-quarkiverse-extension,org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0");
         assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
@@ -104,14 +104,17 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         assertRegistryExtensions(infoResult.stdout, "registry.acme.org",
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme:acme-quarkiverse-extension:1.0");
 
-        final CliDriver.Result rectifyResult = run(projectDir, "update", "--platform-version=1.0.0", "--no-rewrite");
-        assertThat(rectifyResult.getExitCode()).isEqualTo(0);
+        CliDriver.Result updateResult = run(projectDir, "update", "--platform-version=1.0.0", "--no-rewrite");
+        assertThat(updateResult.getExitCode()).isEqualTo(0);
 
-        assertThat(rectifyResult.stdout)
+        assertThat(updateResult.stdout)
                 .contains(
                         "-       org.acme.quarkus.platform:acme-quarkus-subatomic:[1.0.0 -> managed]");
+        assertQuarkusPlatformBomUpdates(updateResult.stdout,
+                ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "[2.0.0 -> 1.0.0]"),
+                ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "[2.0.0 -> 1.0.0]"));
 
-        final CliDriver.Result updateResult = run(projectDir, "update", "-Dquarkus.platform.version=1.0.0", "--no-rewrite");
+        updateResult = run(projectDir, "update", "-Dquarkus.platform.version=1.0.0", "--no-rewrite");
         assertThat(updateResult.getExitCode()).isEqualTo(0);
         assertQuarkusPlatformBomUpdates(updateResult.stdout,
                 ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "[1.0.0 -> 2.0.0]"),

@@ -1,23 +1,15 @@
 package io.quarkus.hibernate.orm.runtime.proxies;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.boot.Metadata;
-import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.internal.util.ReflectHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.proxy.pojo.ProxyFactoryHelper;
-import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
-import org.jboss.logging.Logger;
-
-import net.bytebuddy.ClassFileVersion;
 
 /**
  * Runtime proxies are used by Hibernate ORM to handle a number of corner cases;
@@ -39,44 +31,36 @@ import net.bytebuddy.ClassFileVersion;
  * will have us abort the bootstrap process with a critical error.
  * On the other hand, having the entities marked as "final" is handled gracefully, as we
  * can simply fall back to not use the enhanced proxy for the specific entity, and because
- * it's a common case when writing entities in Kotlin.
+ * it's a common case when writing entities in Kotlin. "abstract" entity types are handled similarly.
  */
 public final class ProxyDefinitions {
 
     private final Map<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap;
-    private static final Logger LOGGER = Logger.getLogger(ProxyDefinitions.class.getName());
 
     private ProxyDefinitions(Map<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap) {
         this.proxyDefinitionMap = proxyDefinitionMap;
     }
 
     public static ProxyDefinitions createFromMetadata(Metadata storeableMetadata, PreGeneratedProxies preGeneratedProxies) {
-        //Check upfront for any need across all metadata: would be nice to avoid initializing the Bytecode provider.
-        LazyBytecode lazyBytecode = new LazyBytecode();
         if (needAnyProxyDefinitions(storeableMetadata)) {
             final HashMap<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap = new HashMap<>();
-            try {
-                for (PersistentClass persistentClass : storeableMetadata.getEntityBindings()) {
-                    if (needsProxyGeneration(persistentClass)) {
-                        final Class mappedClass = persistentClass.getMappedClass();
-                        final Class proxyClassDefinition = generateProxyClass(persistentClass, lazyBytecode,
-                                preGeneratedProxies);
-                        if (proxyClassDefinition == null) {
-                            continue;
-                        }
-                        final boolean overridesEquals = ReflectHelper.overridesEquals(mappedClass);
-                        try {
-                            proxyDefinitionMap.put(mappedClass,
-                                    new ProxyClassDetailsHolder(overridesEquals, proxyClassDefinition.getConstructor()));
-                        } catch (NoSuchMethodException e) {
-                            throw new HibernateException(
-                                    "Failed to generate Enhanced Proxy: default constructor is missing for entity '"
-                                            + mappedClass.getName() + "'. Please add a default constructor explicitly.");
-                        }
+            for (PersistentClass persistentClass : storeableMetadata.getEntityBindings()) {
+                if (needsProxyGeneration(persistentClass)) {
+                    final Class<?> mappedClass = persistentClass.getMappedClass();
+                    final Class<?> proxyClassDefinition = getProxyClass(persistentClass, preGeneratedProxies);
+                    if (proxyClassDefinition == null) {
+                        continue;
+                    }
+                    final boolean overridesEquals = ReflectHelper.overridesEquals(mappedClass);
+                    try {
+                        proxyDefinitionMap.put(mappedClass,
+                                new ProxyClassDetailsHolder(overridesEquals, proxyClassDefinition.getConstructor()));
+                    } catch (NoSuchMethodException e) {
+                        throw new HibernateException(
+                                "Failed to generate Enhanced Proxy: default constructor is missing for entity '"
+                                        + mappedClass.getName() + "'. Please add a default constructor explicitly.");
                     }
                 }
-            } finally {
-                lazyBytecode.close();
             }
             return new ProxyDefinitions(proxyDefinitionMap);
         } else {
@@ -97,61 +81,22 @@ public final class ProxyDefinitions {
         return persistentClass.isLazy() && (persistentClass.getMappedClass() != null);
     }
 
-    private static Class<?> generateProxyClass(PersistentClass persistentClass,
-            Supplier<ByteBuddyProxyHelper> byteBuddyProxyHelper,
+    private static Class<?> getProxyClass(PersistentClass persistentClass,
             PreGeneratedProxies preGeneratedProxies) {
-        final String entityName = persistentClass.getEntityName();
-        final Class mappedClass = persistentClass.getMappedClass();
-        if (Modifier.isFinal(mappedClass.getModifiers())) {
-            LOGGER.warn("Could not generate an enhanced proxy for entity '" + entityName + "' (class='"
-                    + mappedClass.getCanonicalName()
-                    + "') as it's final. Your application might perform better if we're allowed to extend it.");
-            return null;
-        }
-        final java.util.Set<Class<?>> proxyInterfaces = org.hibernate.proxy.pojo.ProxyFactoryHelper
-                .extractProxyInterfaces(persistentClass, entityName);
         PreGeneratedProxies.ProxyClassDetailsHolder preProxy = preGeneratedProxies.getProxies()
                 .get(persistentClass.getClassName());
-        Class<?> preGeneratedProxy = null;
-        boolean match = true;
-        if (preProxy != null) {
-            match = proxyInterfaces.size() == preProxy.getProxyInterfaces().size();
-            if (match) {
-                for (Class i : proxyInterfaces) {
-                    if (!preProxy.getProxyInterfaces().contains(i.getName())) {
-                        match = false;
-                        break;
-                    }
-                }
-            }
-            if (match) {
-                try {
-                    preGeneratedProxy = Class.forName(preProxy.getClassName(), false,
-                            Thread.currentThread().getContextClassLoader());
-                } catch (ClassNotFoundException e) {
-                    //should never happen
-                    throw new RuntimeException("Unable to load proxy class", e);
-                }
-            }
+        if (preProxy == null) {
+            // Behavior determined at runtime: will either log a warning and not use a proxy, or fail bootstrap.
+            // See QuarkusProxyFactory for details.
+            return null;
         }
 
-        if (preGeneratedProxy == null) {
-            if (match) {
-                LOGGER.warnf("Unable to find a build time generated proxy for entity %s",
-                        persistentClass.getClassName());
-            } else {
-                //TODO: this should be changed to an exception after 1.4
-                //really it should be an exception now
-                LOGGER.errorf(
-                        "Unable to use a build time generated proxy for entity %s, as the build time proxy " +
-                                "interfaces %s are different to the runtime ones %s. This should not happen, please open an " +
-                                "issue at https://github.com/quarkusio/quarkus/issues",
-                        persistentClass.getClassName(), preProxy.getProxyInterfaces(), proxyInterfaces);
-            }
-            Class<?> proxyDef = byteBuddyProxyHelper.get().buildProxy(mappedClass, toArray(proxyInterfaces));
-            return proxyDef;
-        } else {
-            return preGeneratedProxy;
+        try {
+            return Class.forName(preProxy.getClassName(), false,
+                    Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            //should never happen
+            throw new RuntimeException("Unable to load proxy class", e);
         }
     }
 
@@ -182,27 +127,6 @@ public final class ProxyDefinitions {
 
         public Constructor getConstructor() {
             return constructor;
-        }
-    }
-
-    private static final class LazyBytecode implements Supplier<ByteBuddyProxyHelper> {
-
-        ByteBuddyProxyHelper helper;
-        private BytecodeProviderImpl bytecodeProvider;
-
-        @Override
-        public ByteBuddyProxyHelper get() {
-            if (helper == null) {
-                bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
-                helper = bytecodeProvider.getByteBuddyProxyHelper();
-            }
-            return helper;
-        }
-
-        void close() {
-            if (bytecodeProvider != null) {
-                bytecodeProvider.resetCaches();
-            }
         }
     }
 

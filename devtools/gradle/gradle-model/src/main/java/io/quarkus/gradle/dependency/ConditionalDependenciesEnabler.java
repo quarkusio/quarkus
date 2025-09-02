@@ -20,6 +20,10 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * @deprecated since 3.25.1 in favor of {@link QuarkusComponentVariants}
+ */
+@Deprecated(forRemoval = true)
 public class ConditionalDependenciesEnabler {
 
     /**
@@ -178,9 +182,16 @@ public class ConditionalDependenciesEnabler {
         // on conditional dependencies (https://github.com/gradle/gradle/issues/6881)
         // However, if we use a named configuration we run into issues preventing IDEs to import projects
         // (https://github.com/quarkusio/quarkus/issues/41825) and ./gradlew refreshVersions seems to break as well.
-        Configuration conditionalDepConfiguration = project.getConfigurations()
-                .detachedConfiguration()
-                .extendsFrom(enforcedPlatforms);
+        Configuration conditionalDepConfiguration = project.getConfigurations().detachedConfiguration();
+        enforcedPlatforms.getExcludeRules().forEach(rule -> {
+            Map<String, String> excludeProperties = new HashMap<>();
+            excludeProperties.put("group", rule.getGroup());
+            excludeProperties.put("module", rule.getModule());
+            conditionalDepConfiguration.exclude(excludeProperties);
+        });
+        enforcedPlatforms.getAllDependencies().forEach(dependency -> {
+            conditionalDepConfiguration.getDependencies().add(dependency);
+        });
         conditionalDepConfiguration.getDependencies().add(conditionalDep);
         return conditionalDepConfiguration;
     }

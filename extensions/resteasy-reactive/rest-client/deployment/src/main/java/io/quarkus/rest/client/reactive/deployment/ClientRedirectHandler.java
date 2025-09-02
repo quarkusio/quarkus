@@ -112,7 +112,8 @@ class ClientRedirectHandler {
                 if (paramType.name().equals(ResteasyReactiveDotNames.RESPONSE)) {
                     targetMethodParamHandle = handle.getMethodParam(0);
                 } else {
-                    String message = DotNames.CLIENT_EXCEPTION_MAPPER + " can only take parameters of type '" + ResteasyReactiveDotNames.RESPONSE + "' or '" + DotNames.METHOD + "'"
+                    String message = DotNames.CLIENT_EXCEPTION_MAPPER + " can only take parameters of type '"
+                            + ResteasyReactiveDotNames.RESPONSE + "' or '" + DotNames.METHOD + "'"
                             + " Offending instance is '" + targetMethod.declaringClass().name().toString()
                             + "#" + targetMethod.name() + "'";
                     throw new IllegalStateException(message);

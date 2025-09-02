@@ -20,7 +20,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -47,7 +47,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
  * It uses <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker</a> as image.
  * See <a href="https://artemiscloud.io/">Artemis Cloud</a> for details.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class AmqpDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(AmqpDevServicesProcessor.class);
@@ -211,7 +211,7 @@ public class AmqpDevServicesProcessor {
         return amqpContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .map(containerAddress -> getRunningService(config, launchMode, containerAddress))
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(config.imageName, "amqp", "activemq-artemis", "rabbitmq"),
+                        List.of(config.imageName, "amqp", "activemq-artemis", "amq-broker", "rabbitmq"),
                         AMQP_PORT,
                         launchMode.getLaunchMode(), useSharedNetwork)
                         .map(this::getRunningService))

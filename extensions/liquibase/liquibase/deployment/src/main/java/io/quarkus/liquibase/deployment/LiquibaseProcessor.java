@@ -163,11 +163,7 @@ class LiquibaseProcessor {
                 liquibase.executor.ExecutorService.class.getName(),
                 liquibase.change.ColumnConfig.class.getName(),
                 liquibase.change.AddColumnConfig.class.getName(),
-                liquibase.change.core.LoadDataColumnConfig.class.getName(),
-                liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
-                liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
-                liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
-                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName())
+                liquibase.change.core.LoadDataColumnConfig.class.getName())
                 .reason(getClass().getName())
                 .constructors().methods().fields().build());
 
@@ -196,6 +192,17 @@ class LiquibaseProcessor {
                         .reason(getClass().getName())
                         .constructors().methods().fields().build());
 
+        // the subclasses of AbstractSqlVisitor are also accessed reflectively
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.sql.visitor.AbstractSqlVisitor.class.getName(),
+                liquibase.sql.visitor.AppendSqlIfNotPresentVisitor.class.getName(),
+                liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
+                liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
+                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
+                liquibase.sql.visitor.ReplaceSqlVisitor.class.getName())
+                .reason(getClass().getName())
+                .constructors().methods().fields().build());
+
         // register all liquibase.datatype.core.* data types
         Set<String> classesAnnotatedWithDataTypeInfo = combinedIndex.getIndex().getAnnotations(DATA_TYPE_INFO_ANNOTATION)
                 .stream()
@@ -222,6 +229,11 @@ class LiquibaseProcessor {
                     .reason(getClass().getName())
                     .constructors().methods().fields().build());
         });
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.precondition.PreconditionLogic.class.getName())
+                .reason(getClass().getName())
+                .fields().build());
 
         var dependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
         resource.produce(NativeImageResourceBuildItem.ofDependencyResources(

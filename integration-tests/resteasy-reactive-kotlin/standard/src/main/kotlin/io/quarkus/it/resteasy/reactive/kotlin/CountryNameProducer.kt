@@ -13,6 +13,6 @@ class CountryNameProducer {
             .items(
                 Country("Greece", "Athens"),
                 Country("USA", "Washington D.C"),
-                Country("France", "Paris")
+                Country("France", "Paris"),
             )
 }

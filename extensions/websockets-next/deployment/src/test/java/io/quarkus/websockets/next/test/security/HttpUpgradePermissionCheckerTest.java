@@ -33,6 +33,7 @@ import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.UpgradeRejectedException;
 
 public class HttpUpgradePermissionCheckerTest extends SecurityTestBase {
@@ -138,8 +139,8 @@ public class HttpUpgradePermissionCheckerTest extends SecurityTestBase {
     public static class AdminEndpoint {
 
         @OnOpen
-        String open() {
-            return "ready";
+        Uni<String> open() {
+            return Uni.createFrom().item("ready");
         }
 
         @OnTextMessage

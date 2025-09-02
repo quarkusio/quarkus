@@ -1,7 +1,7 @@
 import { LitElement, html, css} from 'lit';
-import {unsafeHTML} from 'lit/directives/unsafe-html.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import { infoUrl } from 'build-time-data';
+import { JsonRpc } from 'jsonrpc';
 import '@vaadin/progress-bar';
 import '@qomponent/qui-card';
 import '@vaadin/icon';
@@ -10,6 +10,8 @@ import '@vaadin/icon';
  * This component shows the Info Screen
  */
 export class QwcInfo extends LitElement {
+
+    jsonRpc = new JsonRpc(this);
 
     static styles = css`
         :host {
@@ -46,19 +48,14 @@ export class QwcInfo extends LitElement {
 
     constructor() {
         super();
-        this._infoUrl = infoUrl;
         this._info = null;
     }
 
     async connectedCallback() {
         super.connectedCallback();
-        await this.load();
-    }
-
-    async load() {
-        const response = await fetch(this._infoUrl);
-        const data = await response.json();
-        this._info = data;
+        this.jsonRpc.getApplicationAndEnvironmentInfo().then(jsonRpcResponse => { 
+            this._info = jsonRpcResponse.result;
+        });
     }
 
     render() {
@@ -191,10 +188,15 @@ export class QwcInfo extends LitElement {
             externalConstributors.map(key => {
                     const extInfo = info[key];
                     const rows = [];
+                    let displayName = key;
                     for (const property of Object.keys(extInfo)){
-                        rows.push(html`<tr><td class="row-header">${property}</td><td>${extInfo[property]}</td></tr>`);
+                        if (property === 'displayName'){
+                            displayName = extInfo[property];
+                        }else{
+                            rows.push(html`<tr><td class="row-header">${property}</td><td>${extInfo[property]}</td></tr>`);
+                        }
                     }
-                    cards.push(html`<qui-card header=${key}>
+                    cards.push(html`<qui-card header=${displayName}>
                         <div class="cardContent" slot="content">
                             <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
                             <table class="table">

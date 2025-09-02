@@ -10,8 +10,8 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.liquibase.common.runtime.NativeImageResourceAccessor;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
-import io.quarkus.liquibase.runtime.NativeImageResourceAccessor;
 import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.util.StringUtil;

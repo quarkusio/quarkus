@@ -1,5 +1,5 @@
 plugins {
-    id("com.gradle.develocity") version "3.19.2"
+    id("com.gradle.develocity") version "4.1.1"
 }
 
 develocity {

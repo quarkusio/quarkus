@@ -12,7 +12,7 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.builder.item.BuildItem;
 
-// needs to be in a class of it's own in order to avoid java.lang.IncompatibleClassChangeError
+// needs to be in a class of its own in order to avoid java.lang.IncompatibleClassChangeError
 public class ProdModeTestBuildChainBuilderConsumer implements Consumer<BuildChainBuilder> {
     private final String buildStepClassName;
     private final List<String> producesClassNames;

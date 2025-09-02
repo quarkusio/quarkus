@@ -26,7 +26,6 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.CodestartResourceLoadersBuilder;
-import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
@@ -59,13 +58,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     protected List<RemoteRepository> repos;
 
     @Parameter(property = "bomGroupId", required = false)
-    private String bomGroupId;
+    String bomGroupId;
 
     @Parameter(property = "bomArtifactId", required = false)
-    private String bomArtifactId;
+    String bomArtifactId;
 
     @Parameter(property = "bomVersion", required = false)
-    private String bomVersion;
+    String bomVersion;
 
     @Component
     QuarkusWorkspaceProvider workspaceProvider;
@@ -91,7 +90,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         }
 
         final QuarkusProject quarkusProject;
-        if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
+        if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null && bomVersion == null) {
             try {
                 quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
                         project.getModel().getProperties(), artifactResolver(), getExtensionCatalogResolver(),
@@ -103,12 +102,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         } else {
             final ExtensionCatalog extensionCatalog = resolveExtensionCatalog();
             final List<ResourceLoader> codestartsResourceLoader = CodestartResourceLoadersBuilder
-                    .codestartLoadersBuilder()
+                    .codestartLoadersBuilder(log)
                     .artifactResolver(artifactResolver())
                     .catalog(extensionCatalog)
                     .build();
             quarkusProject = QuarkusProject.of(baseDir(), extensionCatalog,
-                    codestartsResourceLoader, log, buildTool, JavaVersion.NA);
+                    codestartsResourceLoader, log, buildTool,
+                    MavenProjectBuildFile.resolveJavaVersion(project.getModel().getProperties()));
         }
 
         doExecute(quarkusProject, getMessageWriter());
@@ -159,17 +159,20 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                     throw new MojoExecutionException(
                             "Couldn't resolve the Quarkus platform catalog since none of the Quarkus extension registries are available");
                 }
-                if (bomGroupId == null) {
-                    bomGroupId = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID;
-                }
-                ArtifactCoords platformBom = null;
+                ArtifactCoords platformBom;
                 try {
                     platformBom = getSingleMatchingBom(bomGroupId, bomArtifactId, bomVersion,
                             getExtensionCatalogResolver().resolvePlatformCatalog());
                 } catch (RegistryResolutionException e) {
                     throw new MojoExecutionException("Failed to resolve the catalog of Quarkus platforms", e);
                 }
-                return importedPlatforms = List.of(platformBom);
+                if (platformBom == null && bomVersion != null) {
+                    platformBom = ArtifactCoords.pom(
+                            bomGroupId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID : bomGroupId,
+                            bomArtifactId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID : bomArtifactId,
+                            bomVersion);
+                }
+                return importedPlatforms = platformBom == null ? List.of() : List.of(platformBom);
             }
             importedPlatforms = collectImportedPlatforms();
         }
@@ -233,13 +236,10 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         if (bomGroupId == null && bomArtifactId == null && bomVersion == null) {
             return null;
         }
-        if (bomGroupId == null) {
-            bomGroupId = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID;
-        }
         ArtifactCoords platformBom = null;
         List<ArtifactCoords> matches = null;
         for (Platform p : platformCatalog.getPlatforms()) {
-            if (!p.getPlatformKey().equals(bomGroupId)) {
+            if (bomGroupId != null && !p.getPlatformKey().equals(bomGroupId)) {
                 continue;
             }
             for (PlatformStream s : p.getStreams()) {
@@ -260,6 +260,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                             }
                             matches.add(bom);
                         }
+                        // we don't need to match more BOMs from this release at this point
+                        break;
                     }
                 }
             }

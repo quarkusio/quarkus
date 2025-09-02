@@ -26,7 +26,12 @@ public class OidcClientConfigBuilderTest {
     @Test
     public void testDefaultValues() {
         var config = OidcClientConfig.builder().id("default-test").build();
+        testDefaultValues(config);
+        config = new OidcClientConfigBuilder().id("default-test").build();
+        testDefaultValues(config);
+    }
 
+    private static void testDefaultValues(OidcClientConfig config) {
         // OidcClientConfig methods
         assertEquals("default-test", config.id().orElse(null));
         assertTrue(config.clientEnabled());

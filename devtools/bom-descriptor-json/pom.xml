@@ -63,6 +63,25 @@
         </plugins>
     </build>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+        <!-- Required by quarkus-platform-bom-maven-plugin -->
+        <pluginRepository>
+            <id>gradle</id>
+            <url>https://repo.gradle.org/artifactory/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <!-- This module is a bit special in that it needs to depend on all extensions to ensure a proper build order.
          On the other hand for incremental builds, since all integration-tests depend on this module,
          a change to a single extension would trigger all IT modules which is a huge drop of efficiency.
@@ -74,6 +93,32 @@
          or further upstream might have been changed, requiring all IT modules to be built! -->
 
     <profiles>
+        <profile>
+            <!-- Unfortunately, the go-offline plugin doesn't respect exclusions, see https://github.com/apache/maven-dependency-plugin/issues/1350 -->
+            <id>go-offline</id>
+            <activation>
+                <property>
+                    <name>go-offline</name>
+                </property>
+            </activation>
+            <repositories>
+                <repository>
+                    <id>central</id>
+                    <name>Maven Central</name>
+                    <url>https://repo.maven.apache.org/maven2</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+                <repository>
+                    <id>confluent</id>
+                    <url>https://packages.confluent.io/maven/</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
         <profile>
             <id>bom-descriptor-json-hollow</id>
             <activation>
@@ -216,6 +261,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-arc</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-assistant</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -463,6 +521,32 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-datasource</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-devservices</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-devui</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -827,6 +911,19 @@
                 <dependency>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-hibernate-orm</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-hibernate-orm-derby</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

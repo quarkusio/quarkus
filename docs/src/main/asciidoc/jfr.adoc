@@ -251,6 +251,22 @@ We can check if the Resource Method was executed as expected by the HTTP Method 
 
 Client records information about the accessing client.
 
+=== Runtime Event
+This event is recorded by default.
+The following three JFR events are recorded in JFR chunks.
+
+QuarkusRuntime::
+
+  Records information about Quarkus running. This event includes the Quarkus version, its profiles, and the mode in which it is running.
+
+QuarkusApplication::
+
+  Records information about Quarkus application running. This event includes the name of the application and its version.
+
+Extension::
+
+  Records information about extensions included in the running Quarkus. This event includes the name of the extensions installed in Quarkus.
+
 === Native Image
 
 Native executables supports Java Flight Recorder.

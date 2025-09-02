@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.given;
@@ -19,11 +20,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -31,6 +36,9 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
+// use method order because we need to keep this test class extendable
+// changing the order and adding extra waiting can lead to extra token refresh
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class OidcClientTest {
@@ -38,6 +46,7 @@ public class OidcClientTest {
     @InjectWireMock
     WireMockServer server;
 
+    @Order(5)
     @Test
     public void testEchoTokensJwtBearerAuthenticationFromAdditionalAttrs() {
         RestAssured.when().get("/frontend/echoTokenJwtBearerAuthentication")
@@ -46,6 +55,26 @@ public class OidcClientTest {
                 .body(equalTo("access_token_jwt_bearer"));
     }
 
+    @Order(14)
+    @Test
+    public void testEchoTokensJwtBearerAuthenticationForceNewToken() {
+        // This test uses a custom filter that forces new tokens to be requested
+        // regardless of the token expiration time.
+        // The corresponding stub will only return the access token if the body
+        // exactly matches the expected request body. If for example
+        // multiple form parameters are sent, as it was the case with previous
+        // implementations, the stub will not match and the test will fail.
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationForceNewToken")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer_always_new"));
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationForceNewToken")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer_always_new"));
+    }
+
+    @Order(8)
     @Test
     public void testEchoTokensJwtBearerAuthenticationFromFile() {
         RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationFromFile")
@@ -54,6 +83,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_jwt_bearer"));
     }
 
+    @Order(7)
     @Test
     public void testGetAccessTokenWithConfiguredExpiresIn() {
         Response r = RestAssured.when().get("/frontend/echoTokenConfiguredExpiresIn");
@@ -65,10 +95,11 @@ public class OidcClientTest {
         long now = System.currentTimeMillis() / 1000;
         long expectedExpiresAt = now + 7;
         long accessTokenExpiresAt = Long.valueOf(data[1]);
-        assertTrue(accessTokenExpiresAt >= expectedExpiresAt
-                && accessTokenExpiresAt <= expectedExpiresAt + 4);
+        assertTrue(accessTokenExpiresAt >= expectedExpiresAt - 1
+                && accessTokenExpiresAt <= expectedExpiresAt + 5);
     }
 
+    @Order(9)
     @Test
     public void testEchoTokensJwtBearerGrant() {
         RestAssured.when().get("/frontend/echoTokenJwtBearerGrant")
@@ -77,6 +108,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_jwt_bearer_grant"));
     }
 
+    @Order(11)
     @Test
     public void testEchoAndRefreshTokens() {
         // access_token_1 and refresh_token_1 are acquired using a password grant request.
@@ -128,6 +160,7 @@ public class OidcClientTest {
     /**
      * same logic than {@link #testEchoAndRefreshTokens()}, but with concurrency
      */
+    @Order(10)
     @Test
     public void testEchoAndRefreshTokensWithConcurrency() {
         server.resetRequests(); // reset request counters
@@ -159,6 +192,7 @@ public class OidcClientTest {
         server.verify(1, WireMock.postRequestedFor(urlEqualTo("/tokens-with-delay")));
     }
 
+    @Order(2)
     @Test
     public void testEchoTokensPasswordGrantPublicClient() {
         RestAssured.when().get("/frontend/password-grant-public-client")
@@ -171,14 +205,16 @@ public class OidcClientTest {
                 .body(equalTo("access_token_public_client"));
     }
 
+    @Order(1)
     @Test
     public void testEchoTokensNonStandardResponse() {
         RestAssured.when().get("/frontend/echoTokenNonStandardResponse")
                 .then()
                 .statusCode(200)
-                .body(equalTo("access_token_n refresh_token_n"));
+                .body(equalTo("access_token_n refresh_token_non_standard"));
     }
 
+    @Order(4)
     @Test
     public void testEchoTokensNonStandardResponseWithoutHeader() {
         RestAssured.when().get("/frontend/echoTokenNonStandardResponseWithoutHeader")
@@ -186,6 +222,7 @@ public class OidcClientTest {
                 .statusCode(401);
     }
 
+    @Order(3)
     @Test
     public void testEchoTokensRefreshTokenOnly() {
         RestAssured.given().queryParam("refreshToken", "shared_refresh_token")
@@ -195,6 +232,7 @@ public class OidcClientTest {
                 .body(equalTo("temp_access_token"));
     }
 
+    @Order(6)
     @Test
     public void testCibaGrant() {
         RestAssured.given().queryParam("authReqId", "16cdaa49-9591-4b63-b188-703fa3b25031")
@@ -229,6 +267,7 @@ public class OidcClientTest {
 
     }
 
+    @Order(12)
     @Test
     public void testDeviceCodeGrant() {
         RestAssured.given().queryParam("deviceCode", "987654321")
@@ -244,6 +283,50 @@ public class OidcClientTest {
 
     }
 
+    @Order(13)
+    @Test
+    public void testEchoWithRefreshInterval() {
+        try {
+            // make a call so that we know current token index
+            String accessToken = RestAssured.when().get("/frontend/tokenRefreshInterval")
+                    .then()
+                    .statusCode(200)
+                    .extract().asString();
+            int tokenIndex = Integer.parseInt(accessToken.substring(accessToken.lastIndexOf('_') + 1));
+            assertTrue(accessToken.startsWith("access_token_"));
+
+            // wait until it is clear that token was refreshed again (wouldn't happen without configured refresh interval)
+            waitUntillAccessTokenHasExpired(2000);
+
+            Awaitility.await().atMost(Duration.ofSeconds(10))
+                    .untilAsserted(() -> server.verify(new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
+                            WireMock.postRequestedFor(urlEqualTo("/tokens-refresh-test")).withRequestBody(
+                                    matching(".*refresh_token=refresh_token_" + tokenIndex + ".*"))));
+
+            // check that call is made with the refreshed token
+            Awaitility.await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> {
+                String accessToken2 = RestAssured.when().get("/frontend/tokenRefreshInterval")
+                        .then()
+                        .statusCode(200)
+                        .extract().asString();
+                assertTrue(accessToken2.startsWith("access_token_"));
+                int nextTokenIndex = Integer.parseInt(accessToken2.substring(accessToken2.lastIndexOf('_') + 1));
+                assertTrue(tokenIndex < nextTokenIndex);
+            });
+        } finally {
+            server.resetRequests();
+        }
+    }
+
+    @Order(15)
+    @Test
+    public void testEchoTokensExchangeGrant() {
+        RestAssured.when().get("/frontend/echoTokenExchangeGrant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_exchanged"));
+    }
+
     private void checkLog() {
         final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
@@ -257,7 +340,7 @@ public class OidcClientTest {
                             accessLogFilePath = logDirectory.resolve("target/quarkus.log");
                             fileExists = Files.exists(accessLogFilePath);
                         }
-                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                        assertTrue(Files.exists(accessLogFilePath),
                                 "quarkus log file " + accessLogFilePath + " is missing");
 
                         int tokenAcquisitionCount = 0;

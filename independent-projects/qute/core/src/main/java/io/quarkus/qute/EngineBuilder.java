@@ -43,6 +43,7 @@ public final class EngineBuilder {
     long timeout;
     boolean useAsyncTimeout;
     final List<EngineListener> listeners;
+    boolean enableTracing;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -156,7 +157,7 @@ public final class EngineBuilder {
                 ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
                 ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty(),
                 ValueResolvers.arrayResolver(), ValueResolvers.plusResolver(), ValueResolvers.minusResolver(),
-                ValueResolvers.modResolver(), ValueResolvers.numberValueResolver());
+                ValueResolvers.modResolver(), ValueResolvers.numberValueResolver(), ValueResolvers.equalsResolver());
     }
 
     /**
@@ -333,6 +334,19 @@ public final class EngineBuilder {
      */
     public EngineBuilder addEngineListener(EngineListener listener) {
         this.listeners.add(Objects.requireNonNull(listener));
+        return this;
+    }
+
+    /**
+     * If set to {@code true} then trace listeners that enable logging, profiling, or building interactive debugging tools, can
+     * be registered with the {@link TraceManager}.
+     *
+     * @param value
+     * @return self
+     * @see Engine#getTraceManager()
+     */
+    public EngineBuilder enableTracing(boolean value) {
+        this.enableTracing = value;
         return this;
     }
 

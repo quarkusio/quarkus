@@ -18,11 +18,16 @@ public class EntitiesInDefaultPUWithImplicitDatasourceConfigUrlMissingTest {
                     .addClass(MyEntity.class))
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "The default datasource must be configured for Hibernate Reactive",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .assertException(t -> {
+                assertThat(t)
+                        .isInstanceOf(ConfigurationException.class)
+                        .hasMessageContainingAll(
+                                "Unable to find datasource '<default>' for persistence unit '<default>'",
+                                "Datasource '<default>' was deactivated automatically because its URL is not set.",
+                                "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                                "To activate the datasource, set configuration property 'quarkus.datasource.reactive.url'",
+                                "Refer to https://quarkus.io/guides/datasource for guidance.");
+            });
 
     @Test
     public void testInvalidConfiguration() {

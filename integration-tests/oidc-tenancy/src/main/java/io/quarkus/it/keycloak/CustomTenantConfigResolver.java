@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,6 +28,11 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         return requestContext.runBlocking(new Supplier<OidcTenantConfig>() {
             @Override
             public OidcTenantConfig get() {
+                if (context.normalizedPath().startsWith("/ws/tenant-annotation/bearer-step-up-auth")
+                        || context.normalizedPath().startsWith("/tenant-ann-step-up-auth")) {
+                    // use @Tenant annotation to resolve configuration
+                    return null;
+                }
 
                 // Make sure this resolver is called only once during a given request
                 if (context.get("dynamic_config_resolved") != null) {
@@ -47,7 +53,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.getAuthentication().setUserInfoRequired(true);
                     config.setAllowUserInfoCache(false);
                     return config;
-                } else if ("tenant-oidc".equals(tenantId)) {
+                } else if ("tenant-oidc".equals(tenantId) || context.normalizedPath().startsWith("/step-up-auth")) {
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId("tenant-oidc");
                     String uri = context.request().absoluteURI();
@@ -62,7 +68,11 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                             authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/admin-permission", "/oidc");
                         }
                     } else {
-                        authServerUri = uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+                        if (path.contains("/step-up-auth")) {
+                            authServerUri = uri.substring(0, uri.indexOf("/step-up-auth")) + "/oidc";
+                        } else {
+                            authServerUri = uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+                        }
                     }
                     config.setAuthServerUrl(authServerUri);
                     config.setClientId("client");
@@ -73,11 +83,24 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     // try the absolute URI
                     config.setIntrospectionPath(authServerUri + "/introspect");
                     return config;
+                } else if ("tenant-introspection-multiple-required-claims".equals(tenantId)) {
+                    String uri = context.request().absoluteURI();
+                    String authServerUri = uri.replace("/tenant-introspection/tenant-introspection-multiple-required-claims",
+                            "/oidc");
+                    return OidcTenantConfig
+                            .authServerUrl(authServerUri)
+                            .tenantId("tenant-introspection-multiple-required-claims")
+                            .discoveryEnabled(false)
+                            .clientId("client")
+                            .introspectionPath(authServerUri + "/introspect")
+                            .allowTokenIntrospectionCache(false)
+                            .token().requiredClaims("required_claim", Set.of("1", "2")).end()
+                            .build();
                 } else if ("tenant-introspection-required-claims".equals(tenantId)) {
 
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId("tenant-introspection-required-claims");
-                    config.token.setRequiredClaims(Map.of("required_claim", "1"));
+                    config.token.setRequiredClaims(Map.of("required_claim", Set.of("1")));
                     String uri = context.request().absoluteURI();
                     String authServerUri = uri.replace("/tenant-introspection/tenant-introspection-required-claims",
                             "/oidc");

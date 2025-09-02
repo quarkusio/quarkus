@@ -13,13 +13,12 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
-import io.quarkus.oidc.runtime.devui.OidcDevUiRpcSvcPropertiesBean;
+import io.quarkus.oidc.runtime.OidcTenantConfig;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRpcSvcPropertiesBean;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
@@ -43,8 +42,11 @@ public abstract class AbstractDevUIProcessor {
             Map<String, String> keycloakUsers,
             List<String> keycloakRealms,
             boolean alwaysLogoutUserInDevUiOnReload,
-            VertxHttpConfig httpConfig, boolean discoverMetadata, String authServerUrl) {
+            boolean discoverMetadata,
+            String authServerUrl) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
+
+        cardPage.setLogo("oidc_logo.png", "oidc_logo.png");
 
         // prepare provider component
         cardPage.addPage(Page
@@ -74,6 +76,10 @@ public abstract class AbstractDevUIProcessor {
             graphqlUiPath = null;
         }
 
+        final String devUiLogoutPath = nonApplicationRootPathBuildItem.resolvePath("quarkus-oidc/logout");
+        final String devUiReadSessionCookiePath = nonApplicationRootPathBuildItem
+                .resolvePath("quarkus-oidc/readSessionCookie");
+
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
         RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
@@ -81,9 +87,9 @@ public abstract class AbstractDevUIProcessor {
                 keycloakUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                 introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
                 graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload, discoverMetadata,
-                authServerUrl);
+                authServerUrl, devUiLogoutPath, devUiReadSessionCookiePath);
 
-        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties, httpConfig);
+        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties);
 
         return cardPage;
     }
@@ -110,11 +116,11 @@ public abstract class AbstractDevUIProcessor {
     protected static void registerOidcWebAppRoutes(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .nestedRoute("io.quarkus.quarkus-oidc", "readSessionCookie")
+                .nestedRoute("quarkus-oidc", "readSessionCookie")
                 .handler(recorder.readSessionCookieHandler())
                 .build());
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .nestedRoute("io.quarkus.quarkus-oidc", "logout")
+                .nestedRoute("quarkus-oidc", "logout")
                 .handler(recorder.logoutHandler())
                 .build());
     }

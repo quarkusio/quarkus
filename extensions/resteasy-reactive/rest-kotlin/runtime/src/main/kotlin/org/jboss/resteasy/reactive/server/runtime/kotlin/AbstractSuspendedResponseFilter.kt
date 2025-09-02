@@ -16,14 +16,14 @@ abstract class AbstractSuspendedResponseFilter : ResteasyReactiveContainerRespon
 
     abstract suspend fun doFilter(
         requestContext: ResteasyReactiveContainerRequestContext,
-        responseContext: ContainerResponseContext
+        responseContext: ContainerResponseContext,
     ): Any
 
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
 
     override fun filter(
         requestContext: ResteasyReactiveContainerRequestContext,
-        responseContext: ContainerResponseContext
+        responseContext: ContainerResponseContext,
     ) {
         val (dispatcher, coroutineScope) =
             prepareExecution(requestContext.serverRequestContext as ResteasyReactiveRequestContext)

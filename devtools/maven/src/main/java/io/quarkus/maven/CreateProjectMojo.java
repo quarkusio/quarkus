@@ -296,7 +296,7 @@ public class CreateProjectMojo extends AbstractMojo {
             catalog = CreateProjectHelper.completeCatalog(catalog, extensions, mvn);
             sanitizeOptions();
 
-            final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
+            final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder(log)
                     .catalog(catalog)
                     .artifactResolver(mvn)
                     .build();

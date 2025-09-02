@@ -190,13 +190,12 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Uni<Response> execute(String command, String... args) {
         nonNull(command, "command");
-        return execute(CommandMap.normalize(Command.create(command)), args);
+        return execute(Command.create(command), args);
     }
 
     @Override
     public Uni<Response> execute(Command command, String... args) {
         nonNull(command, "command");
-        command = CommandMap.normalize(command);
         Request request = Request.cmd(command);
         for (String arg : args) {
             request.arg(arg);
@@ -207,7 +206,6 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Uni<Response> execute(io.vertx.redis.client.Command command, String... args) {
         nonNull(command, "command");
-        command = CommandMap.normalize(command);
         Request request = Request.newInstance(io.vertx.redis.client.Request.cmd(command));
         for (String arg : args) {
             request.arg(arg);

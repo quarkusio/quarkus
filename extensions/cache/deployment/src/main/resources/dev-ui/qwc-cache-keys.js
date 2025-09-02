@@ -12,10 +12,14 @@ import '@vaadin/grid/vaadin-grid-sort-column.js';
 export class QwcCacheKeys extends LitElement {
     
      static styles = css`
+        .datatable {
+            height: 100%;
+        }
         .keys {
             padding-left: 20px;
             justify-content: space-between;
             padding-right: 20px;
+            height: 100%;
         }
     
         .keys h4 {
@@ -24,12 +28,11 @@ export class QwcCacheKeys extends LitElement {
         }
     `;
     
-    jsonRpc = new JsonRpc("io.quarkus.quarkus-cache");
-
     static properties = {
         cacheName: {type: String},
         _keys: {state: true},
-        _numberOfKeys: {state: true}
+        _numberOfKeys: {state: true},
+        extensionName: {type: String}
     };
 
     constructor() {
@@ -40,6 +43,7 @@ export class QwcCacheKeys extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
+        this.jsonRpc = new JsonRpc(this.extensionName);
         this.jsonRpc.getKeys({name: this.cacheName}).then(jsonRpcResponse => {
             this._keys = jsonRpcResponse.result;
             this._numberOfKeys = jsonRpcResponse.result.length;

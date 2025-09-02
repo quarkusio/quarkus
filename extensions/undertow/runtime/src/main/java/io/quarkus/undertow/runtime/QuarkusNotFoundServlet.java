@@ -21,7 +21,7 @@ public class QuarkusNotFoundServlet extends HttpServlet {
         if (accept != null && accept.contains("application/json")) {
             resp.setContentType("application/json");
             resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            resp.getWriter().write(Json.encodePrettily(resourceNotFoundData.getJsonContent()));
+            resp.getWriter().write(Json.encodePrettily(resourceNotFoundData.getAllEndpoints()));
         } else {
             //We default to HTML representation
             resp.setContentType("text/html");

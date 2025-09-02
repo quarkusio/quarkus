@@ -76,6 +76,11 @@ public class QuarkusRestClientProperties {
     public static final String HTTP2 = "io.quarkus.rest.client.http2";
 
     /**
+     * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+     */
+    public static final String HTTP2_UPGRADE_MAX_CONTENT_LENGTH = "io.quarkus.rest.client.http2UpgradeMaxContentLength";
+
+    /**
      * Set to true to explicitly use the Application-Layer Protocol Negotiation extension.
      */
     public static final String ALPN = "io.quarkus.rest.client.alpn";

@@ -34,6 +34,8 @@ public class TypesafeGraphQLClientClientAuthenticationBadKeystoreTest {
                 quarkus.tls.my-tls-client.key-store.p12.password=wrong-password
                 quarkus.smallrye-graphql-client.my-client.url=https://127.0.0.1:%d/
                 quarkus.tls.my-tls-client.trust-all=true
+                quarkus.tls.key-store.p12.path=target/certs/graphql-client-keystore.p12
+                quarkus.tls.key-store.p12.password=password
             """.formatted(PORT);
 
     @RegisterExtension

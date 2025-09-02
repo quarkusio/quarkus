@@ -92,7 +92,6 @@ export class QwcArcBeanGraph extends LitElement {
             }else {
                 newNode.category = catindex;
             }
-            //console.log('Adding node: ' + newNode.name);
             return this._nodes.push(newNode) - 1;
         }
         return index;

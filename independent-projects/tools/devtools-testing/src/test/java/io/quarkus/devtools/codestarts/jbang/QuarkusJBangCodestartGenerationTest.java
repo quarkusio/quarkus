@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusJBangCodestartGenerationTest {
@@ -61,7 +62,7 @@ class QuarkusJBangCodestartGenerationTest {
     }
 
     private QuarkusJBangCodestartCatalog getCatalog() throws IOException {
-        return QuarkusJBangCodestartCatalog.fromBaseCodestartsResources();
+        return QuarkusJBangCodestartCatalog.fromBaseCodestartsResources(MessageWriter.info());
     }
 
 }

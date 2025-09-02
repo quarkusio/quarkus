@@ -7,9 +7,11 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 
 public class DevServicesCustomPortProfile implements QuarkusTestProfile {
 
+    public static final String PORT = "6371";
+
     @Override
     public Map<String, String> getConfigOverrides() {
-        return Collections.singletonMap("quarkus.redis.devservices.port", "6371");
+        return Collections.singletonMap("quarkus.redis.devservices.port", PORT);
     }
 
     @Override

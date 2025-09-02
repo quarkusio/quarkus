@@ -49,7 +49,7 @@ public class BearerAuthenticationOidcDevServicesTest {
                 .get("/secured/user-only")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("alice"))
+                .body(Matchers.startsWith("alice@example.com "))
                 .body(Matchers.containsString("admin"))
                 .body(Matchers.containsString("user"));
     }
@@ -66,8 +66,29 @@ public class BearerAuthenticationOidcDevServicesTest {
                 .get("/secured/user-only")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("bob"))
+                .body(Matchers.startsWith("bob@example.com "))
                 .body(Matchers.containsString("user"));
+    }
+
+    @Test
+    void testEmailAndName() {
+        // test users get an @example.com appended if username is not an email address
+        RestAssured.given()
+                .auth().oauth2(getAccessToken("bob"))
+                .get("/secured/user-only")
+                .then()
+                .statusCode(200)
+                .body(Matchers.startsWith("bob@example.com "))
+                .body(Matchers.containsString(" Bob"));
+
+        // Test no additional @example.com is appended if requested username is likely already an email address
+        RestAssured.given()
+                .auth().oauth2(getAccessToken("bob@example.com"))
+                .get("/secured/user-only")
+                .then()
+                .statusCode(200)
+                .body(Matchers.startsWith("bob@example.com "))
+                .body(Matchers.containsString(" Bob"));
     }
 
     private String getAccessToken(String user) {

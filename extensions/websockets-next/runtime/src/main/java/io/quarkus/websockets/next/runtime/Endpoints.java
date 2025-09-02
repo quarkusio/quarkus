@@ -25,6 +25,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClosedException;
 import io.vertx.core.http.WebSocketBase;
 import io.vertx.core.http.WebSocketFrame;
 import io.vertx.core.http.WebSocketFrameType;
@@ -113,6 +114,9 @@ class Endpoints {
                             });
                         }
                     } else {
+                        if (telemetrySupport != null) {
+                            telemetrySupport.connectionOpeningFailed(r.cause());
+                        }
                         handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnOpen callback", connection);
                     }
                 });
@@ -220,7 +224,12 @@ class Endpoints {
             timerId = vertx.setPeriodic(autoPingInterval.get().toMillis(), new Handler<Long>() {
                 @Override
                 public void handle(Long timerId) {
-                    connection.sendAutoPing();
+                    if (connection.isOpen()) {
+                        connection.sendAutoPing();
+                    } else {
+                        LOG.debugf("Try to cancel the autoPing timer for a closed connection: %s", connection.id());
+                        vertx.cancelTimer(timerId);
+                    }
                 }
             });
         } else {
@@ -237,16 +246,20 @@ class Endpoints {
                     @Override
                     public void handle(Void event) {
                         endpoint.onClose().onComplete(r -> {
-                            if (r.succeeded()) {
-                                LOG.debugf("@OnClose callback completed: %s", connection);
-                            } else {
-                                handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnClose callback",
-                                        connection);
-                            }
-                            securitySupport.onClose();
-                            onClose.run();
-                            if (timerId != null) {
-                                vertx.cancelTimer(timerId);
+                            try {
+                                if (r.succeeded()) {
+                                    LOG.debugf("@OnClose callback completed: %s", connection);
+                                } else {
+                                    handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnClose callback",
+                                            connection);
+                                }
+                                securitySupport.onClose();
+                                onClose.run();
+                            } finally {
+                                // Make sure we always try to cancel the timer
+                                if (timerId != null) {
+                                    vertx.cancelTimer(timerId);
+                                }
                             }
                         });
                     }
@@ -330,6 +343,9 @@ class Endpoints {
     }
 
     static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
+        if (throwable instanceof HttpClosedException) {
+            return true;
+        }
         if (!connection.isClosed()) {
             return false;
         }

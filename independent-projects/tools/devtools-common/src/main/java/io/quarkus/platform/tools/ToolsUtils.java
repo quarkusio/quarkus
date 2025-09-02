@@ -8,7 +8,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
@@ -235,7 +237,27 @@ public class ToolsUtils {
     @SuppressWarnings("unchecked")
     public static Map<String, Object> readProjectData(ExtensionCatalog catalog) {
         Map<Object, Object> map = (Map<Object, Object>) catalog.getMetadata().getOrDefault("project", Map.of());
-        return (Map<String, Object>) map.getOrDefault("codestart-data", Map.of());
+        Map<String, Object> projectData = (Map<String, Object>) map.getOrDefault("codestart-data", Map.of());
+
+        // fix the dockerfile entries for Platform < 3.23.1
+        if (!projectData.containsKey("tooling-dockerfiles.dockerfile.jvm.from-template")) {
+            projectData = projectData.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            e -> {
+                                if (!e.getKey().startsWith("dockerfile.")) {
+                                    return e.getKey();
+                                }
+                                String key = e.getKey();
+                                if ("dockerfile.native-micro".equals(key)) {
+                                    key += ".from";
+                                }
+
+                                return "tooling-dockerfiles." + key;
+                            },
+                            Entry::getValue, (v1, v2) -> v1));
+        }
+
+        return projectData;
     }
 
     public static String requireProperty(Properties props, String name) {

@@ -29,6 +29,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
             <optional>true</optional>
         </dependency>
@@ -86,6 +90,9 @@
                     <capabilities>
                         <provides>io.quarkus.kafka</provides>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

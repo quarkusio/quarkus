@@ -13,7 +13,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient
 class CountriesEndpoint(
     @RestClient private val countriesGateway: CountriesGateway,
     private val countryNameConsumer: CountryNameConsumer,
-    @Channel("countries-emitter") private val countryEmitter: Emitter<Country>
+    @Channel("countries-emitter") private val countryEmitter: Emitter<Country>,
 ) {
 
     @GET

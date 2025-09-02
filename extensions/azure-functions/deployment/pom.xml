@@ -54,7 +54,23 @@
                 </exclusion>
                 <exclusion>
                     <groupId>com.azure</groupId>
+                    <artifactId>azure-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.azure.resourcemanager</groupId>
+                    <artifactId>azure-resourcemanager-appservice</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.azure</groupId>
+                    <artifactId>azure-json</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.azure</groupId>
                     <artifactId>azure-core-management</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.azure</groupId>
+                    <artifactId>azure-core-http-netty</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>com.microsoft.azure</groupId>
@@ -82,12 +98,23 @@
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core</artifactId>
-            <version>1.33.0</version>
+            <version>1.55.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.projectreactor</groupId>
+                    <artifactId>reactor-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
-            <artifactId>azure-core-management</artifactId>
-            <version>1.8.0</version>
+            <artifactId>azure-json</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-core-http-netty</artifactId>
+            <version>1.15.11</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.azure</groupId>
@@ -96,47 +123,42 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>msal4j</artifactId>
-            <version>1.13.3</version>
+            <groupId>com.azure.resourcemanager</groupId>
+            <artifactId>azure-resourcemanager-appservice</artifactId>
+            <version>2.45.0</version>
             <exclusions>
                 <exclusion>
-                    <groupId>net.minidev</groupId>
-                    <artifactId>json-smart</artifactId>
+                    <groupId>com.azure</groupId>
+                    <artifactId>azure-json</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>javax.activation</groupId>
-                    <artifactId>activation</artifactId>
+                    <groupId>com.azure</groupId>
+                    <artifactId>azure-core</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>net.minidev</groupId>
-            <artifactId>json-smart</artifactId>
-            <version>2.4.8</version>
-        </dependency>
-    </dependencies>
+   </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-compile</id>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>io.quarkus</groupId>
-                                    <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>${project.version}</version>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+   <build>
+       <plugins>
+           <plugin>
+               <artifactId>maven-compiler-plugin</artifactId>
+               <executions>
+                   <execution>
+                       <id>default-compile</id>
+                       <configuration>
+                           <annotationProcessorPaths>
+                               <path>
+                                   <groupId>io.quarkus</groupId>
+                                   <artifactId>quarkus-extension-processor</artifactId>
+                                   <version>${project.version}</version>
+                               </path>
+                           </annotationProcessorPaths>
+                       </configuration>
+                   </execution>
+               </executions>
+           </plugin>
 
-        </plugins>
-    </build>
+       </plugins>
+   </build>
 </project>

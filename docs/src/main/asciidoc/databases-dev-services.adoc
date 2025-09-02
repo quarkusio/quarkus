@@ -150,11 +150,13 @@ Dev Services volumes can be mapped to the filesystem or the classpath:
 # Using a filesystem volume:
 quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
 # Using a classpath volume:
-quarkus.datasource.devservices.volumes."classpath:./file"=/container/to <2>
+quarkus.datasource.devservices.volumes."classpath\:./file"=/container/to <2>
 ----
 
 <1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
 <2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
+
+CAUTION: The colon character `:` needs to be escaped in `.properties` files as `\:`, or it will be interpreted as a key/value separator.
 
 IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission.
 
@@ -181,7 +183,7 @@ When starting Dev Services (for example, in tests or in dev mode), you will see 
 [IMPORTANT]
 ====
 When using Dev Services with Hibernate ORM, by default Quarkus will wipe out the database on application startup, which will wipe out the database data on your Docker host's filesystem.
-Configure `quarkus.hibernate-orm.database.generation=none` or `quarkus.hibernate-orm.database.generation=validate` to avoid this behavior.
+Configure `quarkus.hibernate-orm.schema-management.strategy=none` or `quarkus.hibernate-orm.schema-management.strategy=validate` to avoid this behavior.
 
 Also, using Flyway to migrate your schema when starting the application will modify the database data on your Docker hosts's file system.
 ====
@@ -217,7 +219,7 @@ Login credentials are the same for most databases, except when the database requ
 |`quarkus` for the default datasource or name of the datasource
 
 |Microsoft SQL Server
-|`SA`
+|`sa`
 |`Quarkus123`
 |
 
@@ -292,6 +294,45 @@ In the labels tab, we see that Quarkus added the datasource label, which can be 
 Dev Services have been started.
 ====
 
+[[Compose]]
+== Compose
+
+The Database Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
+It relies on a `compose-devservices.yml`, such as:
+
+[source,yaml]
+----
+name: <application name>
+services:
+  postgresql:
+    image: docker.io/postgres:17
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: quarkus
+      POSTGRES_PASSWORD: quarkus
+      POSTGRES_DB: quarkus
+  oracle:
+    image: docker.io/gvenzl/oracle-free:23-slim-faststart
+    ports:
+      - "1521"
+    environment:
+      ORACLE_PASSWORD: quarkus
+      ORACLE_DATABASE: quarkus
+      APP_USER: quarkus
+      APP_USER_PASSWORD: quarkus
+    labels:
+      io.quarkus.devservices.compose.wait_for.logs: .*DATABASE IS READY TO USE.*
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - "1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: Quarkus123
+    labels:
+      io.quarkus.devservices.compose.jdbc.parameters: trustServerCertificate=true
+----
 
 [[configuration-reference]]
 == Configuration Reference

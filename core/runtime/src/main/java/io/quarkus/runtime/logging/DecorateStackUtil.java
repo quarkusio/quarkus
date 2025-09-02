@@ -130,6 +130,9 @@ public class DecorateStackUtil {
 
     private static String getFullPath(String fullClassName, String fileName) {
         int lastDotIndex = fullClassName.lastIndexOf(".");
+        if (lastDotIndex == -1) {
+            return fileName;
+        }
         String packageName = fullClassName.substring(0, lastDotIndex);
         String path = packageName.replace('.', '/');
         return path + "/" + fileName;

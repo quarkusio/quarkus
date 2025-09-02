@@ -11,8 +11,6 @@ import io.micrometer.core.instrument.Timer;
 public class RequestMetricInfo {
     static final Logger log = Logger.getLogger(RequestMetricInfo.class);
 
-    public static final Pattern TRAILING_SLASH_PATTERN = Pattern.compile("/$");
-    public static final Pattern MULTIPLE_SLASH_PATTERN = Pattern.compile("//+");
     public static final String ROOT = "/";
 
     public static final String HTTP_REQUEST_PATH = "HTTP_REQUEST_PATH";
@@ -85,12 +83,30 @@ public class RequestMetricInfo {
         if (uri == null || uri.isEmpty() || ROOT.equals(uri)) {
             return ROOT;
         }
-        // Label value consistency: result should begin with a '/' and should not end with one
-        String workingPath = MULTIPLE_SLASH_PATTERN.matcher('/' + uri).replaceAll("/");
-        workingPath = TRAILING_SLASH_PATTERN.matcher(workingPath).replaceAll("");
-        if (workingPath.isEmpty()) {
-            return ROOT;
+
+        String workingPath = new String(uri);
+
+        // Remove all leading slashes
+        // detect
+        int start = 0;
+        while (start < workingPath.length() && workingPath.charAt(start) == '/') {
+            start++;
         }
+        // Add missing / and remove multiple leading
+        if (start != 1) {
+            workingPath = "/" + workingPath.substring(start);
+        }
+
+        // Collapse multiple trailing slashes
+        int end = workingPath.length();
+        while (end > 1 && workingPath.charAt(end - 1) == '/') {
+            end--;
+        }
+
+        if (end != workingPath.length()) {
+            workingPath = workingPath.substring(0, end);
+        }
+
         return workingPath;
     }
 }

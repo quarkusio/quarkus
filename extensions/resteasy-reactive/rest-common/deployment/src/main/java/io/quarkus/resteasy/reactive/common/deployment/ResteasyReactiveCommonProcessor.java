@@ -49,7 +49,9 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -57,6 +59,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
@@ -276,7 +279,8 @@ public class ResteasyReactiveCommonProcessor {
         for (GeneratedJaxRsResourceBuildItem generatedJaxRsResource : generatedJaxRsResources) {
             indexer.index(new ByteArrayInputStream(generatedJaxRsResource.getData()));
             generatedBeansProducer
-                    .produce(new GeneratedBeanBuildItem(generatedJaxRsResource.getName(), generatedJaxRsResource.getData()));
+                    .produce(new GeneratedBeanBuildItem(generatedJaxRsResource.internalName(),
+                            generatedJaxRsResource.getData()));
         }
         return new JaxRsResourceIndexBuildItem(CompositeIndex.create(combinedIndex.getComputingIndex(), indexer.complete()));
     }
@@ -391,5 +395,11 @@ public class ResteasyReactiveCommonProcessor {
         Set<DotName> res = ResteasyReactiveParameterContainerScanner.scanParameterContainers(index,
                 applicationResultBuildItem.getResult());
         parameterContainersBuildItemBuildProducer.produce(new ParameterContainersBuildItem(res));
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    public void setupBlockingOperationSupport(ResteasyReactiveCommonRecorder recorder) {
+        recorder.setupBlockingOperationSupport();
     }
 }

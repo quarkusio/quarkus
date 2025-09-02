@@ -24,15 +24,14 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.quarkus.test.junit.mockito.InjectSpy;
 import io.quarkus.test.junit.mockito.MockitoConfig;
 
 public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implements TestBuildChainCustomizerProducer {
 
-    static final DotName INJECT_MOCK = DotName.createSimple(io.quarkus.test.InjectMock.class.getName());
-    static final DotName DEPRECATED_INJECT_MOCK = DotName.createSimple(InjectMock.class.getName());
+    static final DotName INJECT_MOCK = DotName.createSimple(InjectMock.class.getName());
     static final DotName INJECT_SPY = DotName.createSimple(InjectSpy.class.getName());
     static final DotName MOCKITO_CONFIG = DotName.createSimple(MockitoConfig.class.getName());
 
@@ -47,7 +46,6 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                     public void execute(BuildContext context) {
                         Set<DotName> mockTypes = new HashSet<>();
                         List<AnnotationInstance> instances = new ArrayList<>();
-                        instances.addAll(testClassesIndex.getAnnotations(DEPRECATED_INJECT_MOCK));
                         instances.addAll(testClassesIndex.getAnnotations(INJECT_SPY));
                         instances.addAll(testClassesIndex.getAnnotations(MOCKITO_CONFIG));
                         for (AnnotationInstance instance : instances) {

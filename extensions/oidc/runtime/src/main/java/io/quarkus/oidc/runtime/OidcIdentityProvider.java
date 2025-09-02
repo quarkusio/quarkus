@@ -6,7 +6,6 @@ import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutin
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -105,6 +104,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request, Map<String, Object> requestData,
             TenantConfigContext resolvedContext) {
+        if (!isIdToken(request.getToken()) && resolvedContext.oidcConfig().token().decryptAccessToken()) {
+            String decryptedToken = OidcUtils.decryptToken(resolvedContext, request.getToken().getToken());
+            request = new TokenAuthenticationRequest(new AccessTokenCredential(decryptedToken));
+        }
         if (resolvedContext.oidcConfig().authServerUrl().isPresent()) {
             return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
         } else if (resolvedContext.oidcConfig().certificateChain().trustStoreFile().isPresent()) {
@@ -197,7 +200,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<TokenVerificationResult> verifyPrimaryTokenUni(Map<String, Object> requestData,
             TokenAuthenticationRequest request, TenantConfigContext resolvedContext, UserInfo userInfo) {
+        StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
         if (isInternalIdToken(request)) {
+            if (stepUpAuthPolicy != null) {
+                return Uni.createFrom().failure(new OIDCException(
+                        "The @AuthenticationContext annotation cannot be used with an internal ID token"));
+            }
             if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
                 // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
                 return Uni.createFrom()
@@ -321,6 +329,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                     });
                 }
+            }
+
+            if (stepUpAuthPolicy != null) {
+                result = result.invoke(stepUpAuthPolicy);
             }
 
             return result;
@@ -450,7 +462,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     String errorMessage = "Token and UserInfo do not have matching `sub` claims";
                     return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
                 }
-
+                final String principalClaim = resolvedContext.oidcConfig().token().principalClaim().orElse(null);
+                if (principalClaim != null && !tokenJson.containsKey(principalClaim) && userInfo != null
+                        && userInfo.contains(principalClaim)) {
+                    tokenJson.put(principalClaim, userInfo.getString(principalClaim));
+                }
                 JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
                         userInfo);
                 SecurityIdentity securityIdentity = validateAndCreateIdentity(requestData, tokenCred,
@@ -499,12 +515,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     principalName = result.introspectionResult.getSubject();
                 }
                 userName = principalName != null ? principalName : "";
-
-                Set<String> scopes = result.introspectionResult.getScopes();
-                if (scopes != null) {
-                    builder.addRoles(scopes);
-                    OidcUtils.addTokenScopesAsPermissions(builder, scopes);
-                }
+                OidcUtils.setIntrospectionScopes(builder, result.introspectionResult);
             }
             builder.setPrincipal(new Principal() {
                 @Override
@@ -614,7 +625,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (isIdToken(request)
                 && (resolvedContext.oidcConfig().authentication().verifyAccessToken()
                         || resolvedContext.oidcConfig().roles().source().orElse(null) == Source.accesstoken)) {
-            final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+            String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+            if (resolvedContext.oidcConfig().token().decryptAccessToken()) {
+                codeAccessToken = OidcUtils.decryptToken(resolvedContext, codeAccessToken);
+                requestData.put(OidcConstants.ACCESS_TOKEN_VALUE, codeAccessToken);
+            }
             return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false,
                     false, true, userInfo);
         } else {
@@ -683,7 +698,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<TokenVerificationResult> verifySelfSignedTokenUni(TenantConfigContext resolvedContext, String token) {
         try {
             return Uni.createFrom().item(
-                    resolvedContext.provider().verifySelfSignedJwtToken(token, resolvedContext.getInternalIdTokenSecretKey()));
+                    resolvedContext.provider().verifySelfSignedJwtToken(token, resolvedContext.getInternalIdTokenSigningKey()));
         } catch (Throwable t) {
             return Uni.createFrom().failure(t);
         }
@@ -768,6 +783,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         try {
             TokenVerificationResult result = resolvedContext.provider().verifyJwtToken(request.getToken().getToken(),
                     resolvedContext.oidcConfig().token().subjectRequired(), false, null);
+            StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
+            if (stepUpAuthPolicy != null) {
+                stepUpAuthPolicy.accept(result);
+            }
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(Map.of(), request.getToken(), resolvedContext,
                             result.localVerificationResult, result.localVerificationResult, null, null, request));
@@ -789,6 +808,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
         LOG.debug("Requesting UserInfo");
         String contextAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+        if (contextAccessToken == null && isIdToken(request)) {
+            throw new AuthenticationCompletionException(
+                    "Authorization code flow access token which is required to get UserInfo is missing");
+        }
         final String accessToken = contextAccessToken != null ? contextAccessToken : request.getToken().getToken();
 
         UserInfoCache userInfoCache = tenantResolver.getUserInfoCache();

@@ -1,21 +1,16 @@
 package io.quarkus.websockets.next.runtime.telemetry;
 
-import static io.quarkus.websockets.next.runtime.telemetry.TracesConnectionInterceptor.CONNECTION_OPENED_SPAN_CTX;
-
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import io.opentelemetry.api.trace.SpanContext;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
-import io.quarkus.websockets.next.WebSocketClientConnection;
-import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
 import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.spi.telemetry.EndpointKind;
+import io.quarkus.websockets.next.runtime.spi.telemetry.WebSocketTracesInterceptor;
 
 /**
  * Installs traces support into the WebSockets extension.
@@ -29,54 +24,54 @@ public final class TracesBuilderCustomizer implements Consumer<WebSocketTelemetr
     WebSocketsClientRuntimeConfig clientRuntimeConfig;
 
     @Inject
-    Instance<Tracer> tracerInstance;
+    Instance<WebSocketTracesInterceptor> tracesInterceptorInstance;
 
     @Override
     public void accept(WebSocketTelemetryProviderBuilder builder) {
+        if (!tracesInterceptorInstance.isResolvable()) {
+            return;
+        }
         var serverTracesEnabled = serverRuntimeConfig.telemetry().tracesEnabled();
         var clientTracesEnabled = clientRuntimeConfig.telemetry().tracesEnabled();
         if (serverTracesEnabled || clientTracesEnabled) {
-            final Tracer tracer = tracerInstance.get();
+            final WebSocketTracesInterceptor tracesInterceptor = this.tracesInterceptorInstance.get();
             if (serverTracesEnabled) {
-                addServerTracesSupport(builder, tracer);
+                addServerTracesSupport(builder, tracesInterceptor);
             }
             if (clientTracesEnabled) {
-                addClientTracesSupport(builder, tracer);
+                addClientTracesSupport(builder, tracesInterceptor);
             }
         }
     }
 
-    private static void addServerTracesSupport(WebSocketTelemetryProviderBuilder builder, Tracer tracer) {
+    private static void addServerTracesSupport(WebSocketTelemetryProviderBuilder builder,
+            WebSocketTracesInterceptor tracesInterceptor) {
         builder.serverEndpointDecorator(new Function<>() {
             @Override
             public WebSocketEndpoint apply(TelemetryWebSocketEndpointContext ctx) {
-                var onOpenSpanCtx = (SpanContext) ctx.contextData().get(CONNECTION_OPENED_SPAN_CTX);
-                return new TracesForwardingWebSocketEndpoint(ctx.endpoint(), tracer, (WebSocketConnection) ctx.connection(),
-                        onOpenSpanCtx, ctx.path());
+                return new TracesForwardingWebSocketEndpoint(ctx.endpoint(), tracesInterceptor, ctx.forServer());
             }
         });
         builder.pathToServerConnectionInterceptor(new Function<>() {
             @Override
             public ConnectionInterceptor apply(String path) {
-                return new TracesConnectionInterceptor(tracer, SpanKind.SERVER, path);
+                return new TracesConnectionInterceptor(tracesInterceptor, path, EndpointKind.SERVER);
             }
         });
     }
 
-    private static void addClientTracesSupport(WebSocketTelemetryProviderBuilder builder, Tracer tracer) {
+    private static void addClientTracesSupport(WebSocketTelemetryProviderBuilder builder,
+            WebSocketTracesInterceptor tracesInterceptor) {
         builder.clientEndpointDecorator(new Function<>() {
             @Override
             public WebSocketEndpoint apply(TelemetryWebSocketEndpointContext ctx) {
-                var onOpenSpanCtx = (SpanContext) ctx.contextData().get(CONNECTION_OPENED_SPAN_CTX);
-                return new TracesForwardingWebSocketEndpoint(ctx.endpoint(), tracer,
-                        (WebSocketClientConnection) ctx.connection(),
-                        onOpenSpanCtx, ctx.path());
+                return new TracesForwardingWebSocketEndpoint(ctx.endpoint(), tracesInterceptor, ctx.forClient());
             }
         });
         builder.pathToClientConnectionInterceptor(new Function<>() {
             @Override
             public ConnectionInterceptor apply(String path) {
-                return new TracesConnectionInterceptor(tracer, SpanKind.CLIENT, path);
+                return new TracesConnectionInterceptor(tracesInterceptor, path, EndpointKind.CLIENT);
             }
         });
     }

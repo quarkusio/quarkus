@@ -30,11 +30,11 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }))
-public class Http2Test {
+class Http2Test {
 
     protected static final String PING_DATA = "12345678";
 
-    @TestHTTPResource(value = "/ping", ssl = true)
+    @TestHTTPResource(value = "/ping", tls = true)
     URL sslUrl;
 
     @TestHTTPResource(value = "/ping")
@@ -42,14 +42,14 @@ public class Http2Test {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
+            .withApplicationRoot(jar -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
     @Test
-    public void testHttp2EnabledSsl() throws ExecutionException, InterruptedException {
+    void testHttp2EnabledSsl() throws ExecutionException, InterruptedException {
         WebClientOptions options = new WebClientOptions()
                 .setUseAlpn(true)
                 .setProtocolVersion(HttpVersion.HTTP_2)
@@ -62,7 +62,7 @@ public class Http2Test {
     }
 
     @Test
-    public void testHttp2EnabledPlain() throws ExecutionException, InterruptedException {
+    void testHttp2EnabledPlain() throws ExecutionException, InterruptedException {
         WebClientOptions options = new WebClientOptions()
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true);
@@ -71,19 +71,22 @@ public class Http2Test {
     }
 
     private void runTest(WebClient client, int port) throws InterruptedException, ExecutionException {
-        CompletableFuture<String> result = new CompletableFuture<>();
+        CompletableFuture<HttpResponse<Buffer>> result = new CompletableFuture<>();
+
         client
                 .get(port, "localhost", "/ping")
                 .send(ar -> {
                     if (ar.succeeded()) {
                         // Obtain response
-                        HttpResponse<Buffer> response = ar.result();
-                        result.complete(response.bodyAsString());
+                        result.complete(ar.result());
                     } else {
                         result.completeExceptionally(ar.cause());
                     }
                 });
-        Assertions.assertEquals(PING_DATA, result.get());
+
+        HttpResponse<Buffer> response = result.get();
+        Assertions.assertEquals(HttpVersion.HTTP_2, response.version());
+        Assertions.assertEquals(PING_DATA, response.bodyAsString());
     }
 
     @ApplicationScoped

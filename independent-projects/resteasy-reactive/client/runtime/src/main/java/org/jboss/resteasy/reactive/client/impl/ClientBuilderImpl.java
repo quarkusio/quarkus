@@ -72,16 +72,17 @@ public class ClientBuilderImpl extends ClientBuilder {
     // overridden security settings
     private TlsConfig tlsConfig;
 
-    private LoggingScope loggingScope;
+    private ClientLogger clientLogger = new DefaultClientLogger();
+    private LoggingScope loggingScope = LoggingScope.NONE;
     private Integer loggingBodySize = 100;
 
     private int maxChunkSize = 8096;
     private MultiQueryParamMode multiQueryParamMode;
 
-    private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
 
     private Boolean enableCompression;
+    private Integer http2UpgradeMaxContentLength;
 
     public ClientBuilderImpl() {
         configuration = new ConfigurationImpl(RuntimeType.CLIENT);
@@ -152,6 +153,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilder http2(boolean http2) {
         this.http2 = http2;
+        return this;
+    }
+
+    public ClientBuilder http2UpgradeMaxContentLength(int http2UpgradeMaxContentLength) {
+        this.http2UpgradeMaxContentLength = http2UpgradeMaxContentLength;
         return this;
     }
 
@@ -226,6 +232,10 @@ public class ClientBuilderImpl extends ClientBuilder {
         if (http2 || alpn) {
             options.setUseAlpn(true);
             options.setAlpnVersions(List.of(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
+        }
+
+        if (http2UpgradeMaxContentLength != null) {
+            options.setHttp2UpgradeMaxContentLength(http2UpgradeMaxContentLength);
         }
 
         if (tlsConfig != null) {

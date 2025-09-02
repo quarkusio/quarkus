@@ -19,6 +19,7 @@ import java.util.Optional;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.Nonbinding;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
@@ -275,6 +276,7 @@ public class BeanRegistrarTest {
 
         int age();
 
+        @Nonbinding
         Class<?>[] classes();
 
     }

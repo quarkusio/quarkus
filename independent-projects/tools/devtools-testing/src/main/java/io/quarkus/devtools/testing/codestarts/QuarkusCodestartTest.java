@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.SnapshotTesting;
@@ -354,7 +355,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     }
 
     protected List<ResourceLoader> getCodestartsResourceLoaders() {
-        return codestartLoadersBuilder()
+        return codestartLoadersBuilder(MessageWriter.info())
                 .catalog(getExtensionsCatalog())
                 .addExtraCodestartsArtifactCoords(artifacts)
                 .build();

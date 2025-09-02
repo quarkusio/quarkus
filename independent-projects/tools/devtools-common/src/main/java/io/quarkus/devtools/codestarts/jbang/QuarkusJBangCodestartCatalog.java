@@ -12,6 +12,7 @@ import java.util.Map;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 
 public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<QuarkusJBangCodestartProjectInput> {
@@ -48,9 +49,9 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
         super(codestarts);
     }
 
-    public static QuarkusJBangCodestartCatalog fromBaseCodestartsResources()
+    public static QuarkusJBangCodestartCatalog fromBaseCodestartsResources(MessageWriter log)
             throws IOException {
-        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(),
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(log),
                 QUARKUS_JBANG_CODESTARTS_DIR);
         return new QuarkusJBangCodestartCatalog(codestarts.values());
     }

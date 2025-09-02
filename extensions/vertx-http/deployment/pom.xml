@@ -31,6 +31,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny-deployment</artifactId>
         </dependency>
         <dependency>
@@ -50,51 +54,10 @@
             <artifactId>quarkus-security-spi</artifactId>
         </dependency>
 
-        <!-- Dev UI -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.mvnpm</groupId>
-            <artifactId>importmap</artifactId>
-        </dependency>
-        <!-- Used for the dev ui. Note that there is no corresponding runtime dependency -->
-        <dependency>
-            <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-common</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.maven.resolver</groupId>
-                    <artifactId>maven-resolver-connector-basic</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <artifactId>quarkus-devui-resources</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -148,6 +111,13 @@
             <artifactId>apacheds-protocol-dns</artifactId>
             <version>${apacheds-protocol-dns.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <!-- exclude bcprov-jdk15on to avoid conflicts with bcprov-jdk18on -->
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -177,6 +147,9 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
+                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

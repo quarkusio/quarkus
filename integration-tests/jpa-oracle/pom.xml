@@ -260,40 +260,6 @@
                 </plugins>
             </build>
         </profile>
-        <!-- In general, we want to avoid os- or arch-based guards on tests, but the Oracle
-         db would not start on M1 - see https://stackoverflow.com/questions/68605011/oracle-12c-docker-setup-on-apple-m1 -->
-        <profile>
-            <id>mac-m1</id>
-            <activation>
-                <os>
-                    <arch>aarch64</arch>
-                </os>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>${oracle.image}</name>
-                                    <run>
-                                        <skip>true</skip>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 
 </project>

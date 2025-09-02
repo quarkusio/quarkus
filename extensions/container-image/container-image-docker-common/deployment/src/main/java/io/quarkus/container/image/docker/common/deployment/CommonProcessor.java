@@ -30,7 +30,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
-import io.quarkus.deployment.util.ExecUtil;
+import io.smallrye.common.process.ProcessBuilder;
 
 public abstract class CommonProcessor<C extends CommonConfig> {
     private static final Logger LOGGER = Logger.getLogger(CommonProcessor.class);
@@ -164,13 +164,10 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
         // Check if we need to login first
         if (containerImageConfig.username().isPresent() && containerImageConfig.password().isPresent()) {
-            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u", containerImageConfig.username().get(),
-                    "-p", containerImageConfig.password().get());
-
-            if (!loginSuccessful) {
-                throw containerRuntimeException(executableName,
-                        new String[] { "-u", containerImageConfig.username().get(), "-p", "********" });
-            }
+            ProcessBuilder.newBuilder(executableName)
+                    .arguments("login", registry, "-u", containerImageConfig.username().get(), "-p",
+                            containerImageConfig.password().get())
+                    .run();
         }
     }
 
@@ -203,11 +200,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 .map(additionalTag -> new String[] { "tag", image, additionalTag })
                 .forEach(tagArgs -> {
                     LOGGER.infof("Running '%s %s'", executableName, String.join(" ", tagArgs));
-                    var tagSuccessful = ExecUtil.exec(executableName, tagArgs);
-
-                    if (!tagSuccessful) {
-                        throw containerRuntimeException(executableName, tagArgs);
-                    }
+                    ProcessBuilder.exec(executableName, tagArgs);
                 });
     }
 
@@ -221,13 +214,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
     }
 
     protected void pushImage(String image, String executableName, C config) {
-        String[] pushArgs = createPushArgs(image, config);
-        var pushSuccessful = ExecUtil.exec(executableName, pushArgs);
-
-        if (!pushSuccessful) {
-            throw containerRuntimeException(executableName, pushArgs);
-        }
-
+        ProcessBuilder.exec(executableName, createPushArgs(image, config));
         LOGGER.infof("Successfully pushed %s image %s", getProcessorImplementation(), image);
     }
 
@@ -243,11 +230,10 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
         LOGGER.infof("Executing the following command to build image: '%s %s'", executableName,
                 String.join(" ", args));
-        var buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), executableName, args);
-
-        if (!buildSuccessful) {
-            throw containerRuntimeException(executableName, args);
-        }
+        ProcessBuilder.newBuilder(executableName)
+                .directory(out.getOutputDirectory())
+                .arguments(args)
+                .run();
 
         if (createAdditionalTags && !containerImageInfo.getAdditionalImageTags().isEmpty()) {
             createAdditionalTags(containerImageInfo.getImage(), containerImageInfo.getAdditionalImageTags(),

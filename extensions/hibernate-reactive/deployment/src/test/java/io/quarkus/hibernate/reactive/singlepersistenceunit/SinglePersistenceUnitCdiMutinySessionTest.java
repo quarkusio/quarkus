@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.inject.Inject;
 
-import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

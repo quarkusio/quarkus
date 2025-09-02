@@ -39,16 +39,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 
-import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.deployment.pkg.jar.FastJarFormat;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 @DisableForNative
 public class JarRunnerIT extends MojoTestBase {
@@ -220,7 +218,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         Path jar = testDir.toPath().toAbsolutePath()
                 .resolve(Paths.get("target",
-                        JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME,
+                        FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME,
                         "quarkus-run.jar"));
         Assertions.assertFalse(Files.exists(jar));
 
@@ -533,7 +531,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         //now reaugment
         List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.add("-Dquarkus.http.root-path=/moved");
         commands.add("-Dquarkus.launch.rebuild=true");
         commands.add("-jar");
@@ -572,7 +570,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         //now reaugment
         commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.add("-Dquarkus.http.root-path=/anothermove");
         commands.add("-Dquarkus.launch.rebuild=true");
         commands.add("-jar");
@@ -607,7 +605,6 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_11)
     public void testThatAppCDSAreUsable() throws Exception {
         File testDir = initProject("projects/classic", "projects/project-classic-console-output-appcds");
         RunningInvoker running = new RunningInvoker(testDir, false);
@@ -702,7 +699,7 @@ public class JarRunnerIT extends MojoTestBase {
     static ProcessBuilder doLaunch(final File workingDir, final Path jar, File output, Collection<String> vmArgs)
             throws IOException {
         List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.addAll(vmArgs);
         commands.add("-jar");
         commands.add(jar.toString());
@@ -831,7 +828,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         jar = testDir.toPath().toAbsolutePath()
                 .resolve(Paths.get("target",
-                        outputDir == null ? JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME : outputDir,
+                        outputDir == null ? FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME : outputDir,
                         "quarkus-run.jar"));
         Assertions.assertTrue(Files.exists(jar));
         File output = new File(testDir, "target/output.log");

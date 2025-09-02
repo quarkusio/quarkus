@@ -21,8 +21,8 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-group 'org.acme'
-version '1.0.0-SNAPSHOT'
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
 
 quarkus {
     properties {

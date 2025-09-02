@@ -128,7 +128,16 @@ public class ClientEndpointIndexer
     protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i,
             Set<String> fileFormNames) {
         ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
-        methodParameters[i] = parseClientBeanParam(beanParamClassInfo, index);
+        if (methodParameters[i] != null) {
+            // TODO: we might want to make this smarter
+            List<Item> items = BeanParamParser.parse(beanParamClassInfo, index);
+            ClientBeanParamInfo clientBeanParamInfo = new ClientBeanParamInfo(items, beanParamClassInfo.name().toString());
+            clientBeanParamInfo.setDeclaredType(methodParameters[i].getDeclaredType());
+            methodParameters[i] = clientBeanParamInfo;
+
+        } else {
+            methodParameters[i] = parseClientBeanParam(beanParamClassInfo, index);
+        }
 
         return false;
     }
@@ -142,7 +151,7 @@ public class ClientEndpointIndexer
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans, boolean hasRuntimeConverters) {
-        throw new RuntimeException("Injectable beans not supported in client");
+        throw new RuntimeException("Injectable beans are not supported in client");
     }
 
     @Override

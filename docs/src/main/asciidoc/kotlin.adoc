@@ -462,6 +462,11 @@ data class ResultItem(
 ...
 ----
 
+[NOTE]
+====
+When using Kotlin with Quarkus REST, it is worth considering the use of `quarkus-rest-kotlin-serialization` which leverages the Kotlin Serialization framework instead of Jackson.
+====
+
 == Kotlin and the Kubernetes Client
 
 When working with the `quarkus-kubernetes` extension and have Kotlin classes bound to CustomResource definitions (like you do for building operators), you need to be aware that the underlying Fabric8 Kubernetes Client uses its own static Jackson `ObjectMapper` s, which can be configured as follows with the `KotlinModule`:

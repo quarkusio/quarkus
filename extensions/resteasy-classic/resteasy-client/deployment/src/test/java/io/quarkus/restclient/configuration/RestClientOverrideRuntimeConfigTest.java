@@ -27,11 +27,9 @@ public class RestClientOverrideRuntimeConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(EchoResource.class, EchoClient.class, RestClientBuildTimeConfigSource.class,
-                            RestClientRunTimeConfigSource.class)
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.restclient.configuration.RestClientBuildTimeConfigSource",
-                            "io.quarkus.restclient.configuration.RestClientRunTimeConfigSource"));
+                    .addClasses(EchoResource.class, EchoClient.class, RestClientBuildTimeConfigBuilderCustomizer.class)
+                    .addAsServiceProvider("io.smallrye.config.SmallRyeConfigBuilderCustomizer",
+                            "io.quarkus.restclient.configuration.RestClientBuildTimeConfigBuilderCustomizer"));
 
     @Inject
     @RestClient
@@ -59,7 +57,7 @@ public class RestClientOverrideRuntimeConfigTest {
         ConfigValue quarkusValue = config
                 .getConfigValue("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
         assertEquals(mpValue.getValue(), quarkusValue.getValue());
-        assertEquals(RestClientRunTimeConfigSource.class.getName(), quarkusValue.getConfigSourceName());
+        assertEquals("RestClientRuntimeConfigSource", quarkusValue.getConfigSourceName());
         // There is no relocate for MP names, so it keeps the same name
         assertEquals(mpValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
         // We use the Quarkus name, because that is the one that has priority

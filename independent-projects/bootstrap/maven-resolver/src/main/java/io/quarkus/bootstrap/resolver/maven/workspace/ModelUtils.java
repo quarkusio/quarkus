@@ -176,7 +176,7 @@ public class ModelUtils {
     }
 
     public static String resolveVersion(String rawVersion, Model rawModel) {
-        final Map<String, String> props = new HashMap<>();
+        final Map<String, String> props = new HashMap<>(rawModel.getProperties().size() + System.getProperties().size());
         putAll(props, rawModel.getProperties());
         putAll(props, System.getProperties());
 

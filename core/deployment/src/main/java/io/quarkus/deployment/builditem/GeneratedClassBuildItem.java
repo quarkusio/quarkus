@@ -2,6 +2,19 @@ package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * A build item representing a Java class file generated during the build process.
+ * <p>
+ * This is a {@link MultiBuildItem}. Each instance holds information about a single generated class:
+ * <ul>
+ * <li>Whether it's considered an application class ({@link #isApplicationClass()}).</li>
+ * <li>The class name in binary format (e.g., {@code com.example.MyClass}) via {@link #binaryName()}.</li>
+ * <li>The class name in internal format (e.g., {@code com/example/MyClass}) via {@link #internalName()}.</li>
+ * <li>The raw bytecode of the class via {@link #getClassData()}.</li>
+ * <li>Optional source file information for debugging via {@link #getSource()}.</li>
+ * </ul>
+ * These generated classes are typically added to the application's class path or packaged into the final artifact.
+ */
 public final class GeneratedClassBuildItem extends MultiBuildItem {
 
     final boolean applicationClass;

@@ -11,11 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
@@ -124,6 +125,44 @@ public class LocalWorkspaceDiscoveryTest {
         IoUtils.recursiveDelete(workDir);
     }
 
+    private static Path getModuleDir(String name) {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader().getResource(name);
+        assertNotNull(moduleUrl);
+        try {
+            return Path.of(moduleUrl.toURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void customResourceDirectories() throws Exception {
+        var project = LocalProject.loadWorkspace(getModuleDir("custom-resource-dirs"));
+        assertThat(project).isNotNull();
+
+        var module = project.toWorkspaceModule();
+        assertThat(module).isNotNull();
+        var mainSources = module.getMainSources();
+        var resourceDirs = mainSources.getResourceDirs().iterator();
+
+        assertThat(resourceDirs).hasNext();
+        SourceDir resourceDir = resourceDirs.next();
+        assertThat(resourceDir.getDir()).isEqualTo(project.getDir().resolve("relative-base-dir"));
+        assertThat(resourceDir.getOutputDir()).isEqualTo(project.getDir().resolve("target/classes/META-INF/resources"));
+
+        assertThat(resourceDirs).hasNext();
+        resourceDir = resourceDirs.next();
+        assertThat(resourceDir.getDir()).isEqualTo(project.getDir().resolve("src/main/custom"));
+        assertThat(resourceDir.getOutputDir()).isEqualTo(project.getDir().resolve("target/processed-custom"));
+
+        assertThat(resourceDirs).hasNext();
+        resourceDir = resourceDirs.next();
+        assertThat(resourceDir.getDir()).isEqualTo(project.getDir().resolve("src/main/other"));
+        assertThat(resourceDir.getOutputDir()).isEqualTo(project.getDir().resolve("target/classes"));
+
+        assertThat(resourceDirs).isExhausted();
+    }
+
     /**
      * This test is making sure the current module isn't overridden by another module
      * from the workspace that happens to have the same group and artifact IDs
@@ -132,11 +171,7 @@ public class LocalWorkspaceDiscoveryTest {
      */
     @Test
     public void workspaceWithDuplicateModuleGroupIdAndArtifactId() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("duplicate-ga/test/case");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Path.of(moduleUrl.toURI());
-        assertNotNull(moduleUrl);
+        final Path moduleDir = getModuleDir("duplicate-ga/test/case");
 
         final LocalWorkspace ws = LocalProject.loadWorkspace(moduleDir).getWorkspace();
 
@@ -150,11 +185,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void moduleWithDifferentParentPomRawModel() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("workspace-module-with-different-parent");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Path.of(moduleUrl.toURI());
-        assertNotNull(moduleUrl);
+        final Path moduleDir = getModuleDir("workspace-module-with-different-parent");
 
         final LocalWorkspace ws = LocalProject.loadWorkspace(moduleDir).getWorkspace();
 
@@ -168,11 +199,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void moduleWithDifferentParentPomEffectiveModel() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("workspace-module-with-different-parent");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Path.of(moduleUrl.toURI());
-        assertNotNull(moduleUrl);
+        final Path moduleDir = getModuleDir("workspace-module-with-different-parent");
 
         final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setEffectiveModelBuilder(true)
@@ -189,15 +216,8 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void nonParentAggregator() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("non-parent-aggregator/service-extension/deployment");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Paths.get(moduleUrl.toURI());
-
-        final URL aggregatorUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("non-parent-aggregator/aggregator");
-        assertNotNull(aggregatorUrl);
-        final Path aggregatorDir = Paths.get(aggregatorUrl.toURI());
+        final Path moduleDir = getModuleDir("non-parent-aggregator/service-extension/deployment");
+        final Path aggregatorDir = getModuleDir("non-parent-aggregator/aggregator");
 
         final String topLevelBaseDirProp = "maven.top-level-basedir";
         final String originalBaseDir = System.getProperty(topLevelBaseDirProp);
@@ -229,10 +249,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadEffectiveModelBuilderModulesInProfiles() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("modules-in-profiles/integration-tests/rest-tests");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Path.of(moduleUrl.toURI());
+        final Path moduleDir = getModuleDir("modules-in-profiles/integration-tests/rest-tests");
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setEffectiveModelBuilder(true)
@@ -252,10 +269,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadModulesInProfiles() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("modules-in-profiles/integration-tests/rest-tests");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Path.of(moduleUrl.toURI());
+        final Path moduleDir = getModuleDir("modules-in-profiles/integration-tests/rest-tests");
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setCurrentProject(moduleDir.toString()))
@@ -274,10 +288,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadOverlappingWorkspaceLayout() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("overlapping-workspace-layout/root/root/module1");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Paths.get(moduleUrl.toURI());
+        final Path moduleDir = getModuleDir("overlapping-workspace-layout/root/root/module1");
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setCurrentProject(moduleDir.toString()))
@@ -294,9 +305,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceWithDirBreaks() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-with-dir-breaks/root");
-        assertNotNull(projectUrl);
-        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        final Path rootProjectDir = getModuleDir("workspace-with-dir-breaks/root");
         assertTrue(Files.exists(rootProjectDir));
         final Path nestedProjectDir = rootProjectDir.resolve("module1/break/nested-project/module1");
         assertTrue(Files.exists(nestedProjectDir));
@@ -315,9 +324,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceWithMissingModule() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-missing-module/root");
-        assertNotNull(projectUrl);
-        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        final Path rootProjectDir = getModuleDir("workspace-missing-module/root");
         assertTrue(Files.exists(rootProjectDir));
         final Path nestedProjectDir = rootProjectDir.resolve("module1");
         assertTrue(Files.exists(nestedProjectDir));
@@ -333,9 +340,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceRootWithNoModules() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-root-no-module/root");
-        assertNotNull(projectUrl);
-        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        final Path rootProjectDir = getModuleDir("workspace-root-no-module/root");
         assertTrue(Files.exists(rootProjectDir));
         final Path nestedProjectDir = rootProjectDir.resolve("module1/module2");
         assertTrue(Files.exists(nestedProjectDir));
@@ -353,9 +358,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceFromRootDirWithParentInChildDir() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-parent-is-not-root-dir");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-parent-is-not-root-dir");
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
 
@@ -366,9 +369,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceFromRootDirWithParentInChildDirEffectiveModel() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-parent-is-not-root-dir");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-parent-is-not-root-dir");
         assertTrue(Files.exists(projectDir));
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
@@ -386,10 +387,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceFromModuleDirWithParentInChildDir() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("workspace-parent-is-not-root-dir/acme-application");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-parent-is-not-root-dir/acme-application");
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
 
@@ -401,10 +399,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceFromModuleDirWithParentInSiblingDir() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("workspace-parent-is-not-root-dir/acme-backend/acme-backend-lib");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-parent-is-not-root-dir/acme-backend/acme-backend-lib");
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
 
@@ -429,10 +424,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceWithAlternatePomDefaultPom() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("workspace-alternate-pom/root/module1");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-alternate-pom/root/module1");
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
         assertParents(project, "root");
@@ -460,10 +452,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void loadWorkspaceWithAlternatePom() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("workspace-alternate-pom/root/module1/pom2.xml");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-alternate-pom/root/module1/pom2.xml");
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
         assertParents(project, "root");
@@ -617,9 +606,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void testVersionRevisionPropertyEffectiveModel() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/module1");
-        assertNotNull(projectUrl);
-        final Path projectDir = Paths.get(projectUrl.toURI());
+        final Path projectDir = getModuleDir("workspace-revision/root/module1");
         assertTrue(Files.exists(projectDir));
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
@@ -692,10 +679,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void testBuildDirs() throws Exception {
-        final URL projectUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("build-directories/multimodule/runner");
-        assertNotNull(projectUrl);
-        final Path runnerDir = Paths.get(projectUrl.toURI());
+        final Path runnerDir = getModuleDir("build-directories/multimodule/runner");
         assertTrue(Files.exists(runnerDir));
         final LocalProject project = LocalProject.loadWorkspace(runnerDir);
         assertNotNull(project);
@@ -714,11 +698,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     @Test
     public void warnOnFailingWorkspaceModules() throws Exception {
-        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
-                .getResource("invalid-module");
-        assertNotNull(moduleUrl);
-        final Path moduleDir = Path.of(moduleUrl.toURI());
-        assertNotNull(moduleUrl);
+        final Path moduleDir = getModuleDir("invalid-module");
 
         final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setOffline(true)
@@ -734,10 +714,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     private void testMavenCiFriendlyVersion(String placeholder, String testResourceDirName, String expectedResolvedVersion,
             boolean resolvesFromWorkspace) throws Exception {
-        final URL module1Url = Thread.currentThread().getContextClassLoader()
-                .getResource(testResourceDirName + "/root/module1");
-        assertNotNull(module1Url);
-        final Path module1Dir = Paths.get(module1Url.toURI());
+        final Path module1Dir = getModuleDir(testResourceDirName + "/root/module1");
         assertTrue(Files.exists(module1Dir));
 
         final LocalProject module1 = LocalProject.load(module1Dir);
@@ -763,7 +740,10 @@ public class LocalWorkspaceDiscoveryTest {
         final WorkspaceModule wsModule = module1.toWorkspaceModule();
         assertThat(wsModule.getModuleDir()).isEqualTo(module1Dir.toFile());
         assertThat(wsModule.getBuildDir()).isEqualTo(module1Dir.resolve("target").toFile());
-        SourceDir src = wsModule.getMainSources().getResourceDirs().iterator().next();
+
+        final Iterator<SourceDir> resourcesIterator = wsModule.getMainSources().getResourceDirs().iterator();
+        assertThat(resourcesIterator).hasNext();
+        SourceDir src = resourcesIterator.next();
         PathTree sourceTree = src.getSourceTree();
         assertThat(sourceTree).isNotNull();
         Collection<Path> roots = sourceTree.getRoots();

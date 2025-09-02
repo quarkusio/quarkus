@@ -76,6 +76,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.Declaration;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -164,6 +165,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.ForEachLoop;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -259,9 +261,14 @@ public class JaxrsClientReactiveProcessor {
     }
 
     @BuildStep
-    void initializeStorkFilter(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void initializeStorkFilter(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
+        if (!capabilities.isPresent(Capability.SMALLRYE_STORK)) {
+            return;
+        }
+
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StorkClientRequestFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(StorkClientRequestFilter.class.getName()));
@@ -290,6 +297,7 @@ public class JaxrsClientReactiveProcessor {
             RecorderContext recorderContext,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
+            BuildProducer<JaxrsClientReactiveInfoBuildItem> jaxrsClientReactiveInfoBuildItemProducer,
             List<RestClientDefaultProducesBuildItem> defaultConsumes,
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
             List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
@@ -319,6 +327,7 @@ public class JaxrsClientReactiveProcessor {
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
             recorder.setupClientProxies(new HashMap<>(), Collections.emptyMap());
+            jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(new HashSet<>()));
             return;
         }
         ResourceScanningResult result = resourceScanningResultBuildItem.get().getResult();
@@ -439,6 +448,7 @@ public class JaxrsClientReactiveProcessor {
         }
 
         recorder.setupClientProxies(clientImplementations, failures);
+        jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(clientImplementations.keySet()));
 
         for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
             String readerClass = additionalReader.getHandlerClass();
@@ -904,6 +914,9 @@ public class JaxrsClientReactiveProcessor {
                 enricher.getEnricher().forClass(classContext.constructor, baseTarget, interfaceClass, index);
             }
 
+            Map<DotName, Map<String, Type>> hierarchyIdentifierTypeLookupMap = buildhierarchyIdentifierTypeLookupMap(index,
+                    interfaceClass, null);
+
             //
             // go through all the methods of the jaxrs interface. Create specific WebTargets (in the constructor) and methods
             //
@@ -932,7 +945,8 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, interfaceClass, index, defaultMediaType,
                             httpAnnotationToMethod, name, classContext, baseTarget, methodIndex, method,
                             javaMethodParameters, jandexMethod, multipartResponseTypes, Collections.emptyList(),
-                            generatedSubResources, new HashMap<>());
+                            generatedSubResources, hierarchyIdentifierTypeLookupMap
+                                    .getOrDefault(jandexMethod.declaringClass().name(), Collections.emptyMap()));
                 } else {
                     FieldDescriptor methodField = classContext.createJavaMethodField(interfaceClass, jandexMethod,
                             methodIndex);
@@ -1138,6 +1152,19 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterIdx = paramIdx;
                         } else if (param.parameterType == ParameterType.HEADER) {
+                            Type paramType = jandexMethod.parameterType(paramIdx);
+                            Type effectiveParamType = paramType;
+                            boolean isOptional = isOptional(paramType, index);
+                            if (isOptional) {
+                                effectiveParamType = Type.create(Object.class);
+                                if (paramType.kind() == PARAMETERIZED_TYPE) {
+                                    Type objectType = paramType.asParameterizedType().arguments().get(0);
+                                    if ((objectType.kind() == CLASS) || (objectType.kind() == PARAMETERIZED_TYPE)) {
+                                        effectiveParamType = objectType;
+                                    }
+                                }
+                            }
+
                             // headers are added at the invocation builder level
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(name,
                                     method.getName() + "$$" + methodIndex + "$$handleHeader$$" + paramIdx,
@@ -1149,8 +1176,15 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
-                            addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
-                                    handleHeaderMethod.getMethodParam(1), param.type,
+                            ResultHandle headerValue = handleHeaderMethod.getMethodParam(1);
+                            addHeaderParam(jandexMethod, handleHeaderMethod, invocationBuilderRef, param.name,
+                                    isOptional
+                                            ? handleHeaderMethod.invokeVirtualMethod(
+                                                    MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+                                                            Object.class),
+                                                    headerValue, handleHeaderMethod.loadNull())
+                                            : headerValue,
+                                    effectiveParamType, index,
                                     handleHeaderMethod.getThis(),
                                     getGenericTypeFromArray(handleHeaderMethod, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(handleHeaderMethod, methodParamAnnotationsField, paramIdx));
@@ -1230,7 +1264,8 @@ public class JaxrsClientReactiveProcessor {
                     handleReturn(interfaceClass, defaultMediaType, method.getHttpMethod(),
                             method.getConsumes(), jandexMethod, methodCreator, formParams,
                             bodyParameterIdx == null ? null : methodCreator.getMethodParam(bodyParameterIdx), builder,
-                            multipart, Collections.emptyMap());
+                            multipart, hierarchyIdentifierTypeLookupMap.getOrDefault(jandexMethod.declaringClass().name(),
+                                    Collections.emptyMap()));
                 }
             }
 
@@ -1395,57 +1430,155 @@ public class JaxrsClientReactiveProcessor {
                 "got " + result + " of type: " + result.kind());
     }
 
+    /**
+     * Tries to figure out the real type of type variable present in the given type, using the provided
+     * ownerIdentifierTypeLookupMap. Currently, types of kind PARAMETERIZED_TYPE and TYPE_VARIABLE are handled.
+     *
+     * @param type the type to resolve
+     * @param ownerIdentifierTypeLookupMap the lookup map type variable -> real type
+     * @param declaration The jandex declaration where the type was used.
+     * @return A type where all type variables are resolved, never null.
+     * @throws IllegalArgumentException if a type variable could not be resolved
+     */
+    private Type resolveType(Type type,
+            Map<String, Type> ownerIdentifierTypeLookupMap, Declaration declaration) {
+        if (type.kind() == PARAMETERIZED_TYPE) {
+
+            ParameterizedType parameterizedReturnType = type.asParameterizedType();
+            ParameterizedType.Builder methodReturnTypeBuilder = ParameterizedType.builder(type.name());
+            for (int i = 0; i < parameterizedReturnType.arguments().size(); i++) {
+                Type paramReturnTypeArg = parameterizedReturnType.arguments().get(i);
+                Type resolvedType;
+                if (paramReturnTypeArg.kind() == TYPE_VARIABLE) {
+                    // method returns another subresource, and one of the arguments is a type variable e.g.  Wrapper<T>
+                    resolvedType = ownerIdentifierTypeLookupMap.get(paramReturnTypeArg.asTypeVariable().identifier());
+                    if (resolvedType == null) {
+                        String declarationSite = declaration.toString();
+                        if (declaration.kind() == AnnotationTarget.Kind.METHOD) {
+                            declarationSite = "method %s in class %s".formatted(declaration,
+                                    declaration.asMethod().declaringClass());
+                        }
+                        throw new IllegalArgumentException(
+                                "Type variable %s of %s could not be resolved."
+                                        .formatted(paramReturnTypeArg.asTypeVariable().identifier(), declarationSite));
+                    }
+                } else if (paramReturnTypeArg.kind() == PARAMETERIZED_TYPE) {
+                    // parameterized type contains another parameterized type with either a type variable e.g.  Wrapper<List<T>> or without, e.g. Wrapper<List<String>>
+                    resolvedType = resolveType(paramReturnTypeArg, ownerIdentifierTypeLookupMap, declaration);
+                } else {
+                    resolvedType = paramReturnTypeArg;
+                }
+
+                methodReturnTypeBuilder.addArgument(resolvedType);
+            }
+
+            // rewrite parameterized type to reflect the resolved type variable
+            // i.e. Wrapper<String> instead of Wrapper<V>
+            return methodReturnTypeBuilder.build();
+        } else if (type.kind() == TYPE_VARIABLE) {
+            TypeVariable typeVariable = type.asTypeVariable();
+            // rewrite type to reflect the resolved type variable
+            // i.e. String instead of Type Variable V
+            Type resolvedType = ownerIdentifierTypeLookupMap.get(typeVariable.identifier());
+            if (resolvedType == null) {
+                String declarationSite = declaration.toString();
+                if (declaration.kind() == AnnotationTarget.Kind.METHOD) {
+                    declarationSite = "method %s in class %s".formatted(declaration, declaration.asMethod().declaringClass());
+                }
+                throw new IllegalArgumentException(
+                        "Type variable %s of %s could not be resolved."
+                                .formatted(typeVariable.identifier(), declarationSite));
+            }
+            return resolvedType;
+        }
+
+        return type;
+    }
+
+    private Map<DotName, Map<String, Type>> buildhierarchyIdentifierTypeLookupMap(IndexView index, ClassInfo owner,
+            Type ownerType) {
+
+        Map<DotName, Map<String, Type>> hierarchyIdentifierTypeLookupMap = new HashMap<>();
+
+        if (ownerType != null) {
+            hierarchyIdentifierTypeLookupMap.put(ownerType.name(), determineIdentifierTypeLookupMap(index, ownerType));
+
+            if (owner == null) {
+                owner = index.getClassByName(ownerType.name());
+            }
+        }
+
+        fillHierarchyIdentifierTypeLookupMap(index, owner, hierarchyIdentifierTypeLookupMap);
+
+        return hierarchyIdentifierTypeLookupMap;
+    }
+
+    private void fillHierarchyIdentifierTypeLookupMap(IndexView index, ClassInfo owner,
+            Map<DotName, Map<String, Type>> hierarchyIdentifierTypeLookupMap) {
+        List<Type> interfaceTypes = owner.interfaceTypes();
+        // no need to check for Object, not an interface
+        if (!owner.isInterface() || interfaceTypes.isEmpty()) {
+            return;
+        }
+
+        for (Type interfaceType : interfaceTypes) {
+            Type resolvedInterfaceType = resolveType(interfaceType,
+                    hierarchyIdentifierTypeLookupMap.getOrDefault(owner.name(), Collections.emptyMap()), null);
+
+            Map<String, Type> identifierTypeLookupMap = determineIdentifierTypeLookupMap(index, resolvedInterfaceType);
+
+            if (hierarchyIdentifierTypeLookupMap.putIfAbsent(interfaceType.name(), identifierTypeLookupMap) != null) {
+                if (!hierarchyIdentifierTypeLookupMap.get(interfaceType.name()).equals(identifierTypeLookupMap)) {
+                    // Just to be safe, java should prevent this. This could maybe happen with different versions of a library on the classpath?
+                    throw new IllegalArgumentException(
+                            "parameterized type %s can not be inherited from by %s (or a predecessor) with different type arguments."
+                                    .formatted(interfaceType.name(), owner.name()));
+                }
+            }
+
+            fillHierarchyIdentifierTypeLookupMap(index, index.getClassByName(interfaceType.name()),
+                    hierarchyIdentifierTypeLookupMap);
+        }
+    }
+
+    private Map<String, Type> determineIdentifierTypeLookupMap(IndexView index, Type type) {
+        Map<String, Type> result = new HashMap<>();
+        if (type.kind() == PARAMETERIZED_TYPE) {
+            ClassInfo classInfo = index.getClassByName(type.name());
+            ParameterizedType parameterizedType = type.asParameterizedType();
+
+            for (int i = 0; i < parameterizedType.arguments().size(); i++) {
+                // No need to check if the class even has type parameters, if the type has an argument for it, then the class must have a type parameter for it
+                Type typeParameter = classInfo.typeParameters().get(i);
+
+                // type arguments from the type and type parameters of the class are sorted the same
+                result.put(typeParameter.asTypeVariable().identifier(),
+                        parameterizedType.arguments().get(i));
+            }
+        }
+
+        return result;
+    }
+
     private void handleSubResourceMethod(List<JaxrsClientReactiveEnricherBuildItem> enrichers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo interfaceClass, IndexView index,
             String defaultMediaType, Map<DotName, String> httpAnnotationToMethod, String name,
             ClassRestClientContext ownerContext, ResultHandle ownerTarget, int methodIndex,
             ResourceMethod method, String[] javaMethodParameters, MethodInfo jandexMethod,
             Set<ClassInfo> multipartResponseTypes, List<SubResourceParameter> ownerSubResourceParameters,
-            Map<GeneratedSubResourceKey, String> generatedSubResources, Map<String, Type> ownerIdentifierToTypeVariable) {
+            Map<GeneratedSubResourceKey, String> generatedSubResources, Map<String, Type> ownerIdentifierTypeLookupMap) {
 
-        Map<String, Type> identifierToTypeVariable = new HashMap<>();
-        Type returnType = jandexMethod.returnType();
-        if (returnType.kind() == PARAMETERIZED_TYPE) {
+        // resolve type variables of the reurntype, mainly for the generatedSubResources cache
+        Type returnType = resolveType(jandexMethod.returnType(), ownerIdentifierTypeLookupMap, jandexMethod);
 
-            ParameterizedType parameterizedReturnType = returnType.asParameterizedType();
-            ClassInfo returnClass = index.getClassByName(returnType.name());
-            ParameterizedType.Builder methodReturnTypeBuilder = ParameterizedType.builder(returnType.name());
-            for (int i = 0; i < parameterizedReturnType.arguments().size(); i++) {
-                Type paramReturnTypeArg = parameterizedReturnType.arguments().get(i);
-                Type resolvedType;
-                if (paramReturnTypeArg.kind() == TYPE_VARIABLE) {
-                    // method returns another subresource, and one of the arguments is a type variable e.g.  Wrapper<T>
-                    resolvedType = ownerIdentifierToTypeVariable.get(paramReturnTypeArg.asTypeVariable().identifier());
-                    if (resolvedType == null) {
-                        throw new IllegalArgumentException(
-                                "Type variable %s of the sub resource locator method's return type %s could not be resolved."
-                                        .formatted(paramReturnTypeArg.asTypeVariable().identifier(), jandexMethod));
-                    }
-                } else {
-                    // Subresource, but no type variable, e.g. Wrapper<String>
-                    resolvedType = paramReturnTypeArg;
-                }
-
-                identifierToTypeVariable.put(returnClass.typeParameters().get(i).identifier(), resolvedType);
-                methodReturnTypeBuilder.addArgument(resolvedType);
-            }
-
-            // rewrite returnType to reflect the resolved type variable for the generatedSubResources cache
-            // i.e. Wrapper<String> instead of Wrapper<V>
-            returnType = methodReturnTypeBuilder.build();
-        } else if (returnType.kind() == TYPE_VARIABLE) {
-            TypeVariable typeVariable = returnType.asTypeVariable();
-            // rewrite returnType to reflect the resolved type variable for the generatedSubResources cache
-            // i.e. String instead of Type Variable V
-            returnType = identifierToTypeVariable.get(typeVariable.identifier());
-            if (returnType == null) {
-                return;
-            }
-
-        } else if (returnType.kind() != CLASS) {
+        if (returnType.kind() != CLASS && returnType.kind() != PARAMETERIZED_TYPE) {
             // sort of sub-resource method that returns a thing that isn't a class
             throw new IllegalArgumentException("Sub resource type is not a class: " + returnType.name().toString());
         }
+
+        Map<DotName, Map<String, Type>> hierarchyIdentifierTypeLookupMap = buildhierarchyIdentifierTypeLookupMap(index, null,
+                returnType);
+
         ClassInfo subInterface = index.getClassByName(returnType.name());
         if (!Modifier.isInterface(subInterface.flags())) {
             throw new IllegalArgumentException(
@@ -1528,10 +1661,10 @@ public class JaxrsClientReactiveProcessor {
             for (int i = 0; i < method.getParameters().length; i++) {
                 MethodParameter param = method.getParameters()[i];
                 if (param.parameterType != ParameterType.PATH) {
-                    FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i, param.type)
+                    FieldDescriptor paramField = subContext.classCreator.getFieldCreator("param" + i, param.declaredType)
                             .setModifiers(Modifier.PUBLIC)
                             .getFieldDescriptor();
-                    subParamFields.add(new SubResourceParameter(method.getParameters()[i], param.type,
+                    subParamFields.add(new SubResourceParameter(method.getParameters()[i], param.declaredType,
                             jandexMethod.parameterType(i), paramField, methodParamAnnotationsField,
                             methodGenericParametersField,
                             i));
@@ -1670,6 +1803,19 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = paramValue;
                         } else if (param.parameterType == ParameterType.HEADER) {
+                            Type paramType = jandexSubMethod.parameterType(subParamField.paramIndex);
+                            Type effectiveParamType = paramType;
+                            boolean isOptional = isOptional(paramType, index);
+                            if (isOptional) {
+                                effectiveParamType = Type.create(Object.class);
+                                if (paramType.kind() == PARAMETERIZED_TYPE) {
+                                    Type objectType = paramType.asParameterizedType().arguments().get(0);
+                                    if ((objectType.kind() == CLASS) || (objectType.kind() == PARAMETERIZED_TYPE)) {
+                                        effectiveParamType = objectType;
+                                    }
+                                }
+                            }
+
                             // headers are added at the invocation builder level
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$param"
@@ -1682,9 +1828,15 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
-                            addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
-                                    handleHeaderMethod.getMethodParam(1),
-                                    param.type,
+                            ResultHandle headerValue = handleHeaderMethod.getMethodParam(1);
+                            addHeaderParam(jandexMethod, handleHeaderMethod, invocationBuilderRef, param.name,
+                                    isOptional
+                                            ? handleHeaderMethod.invokeVirtualMethod(
+                                                    MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+                                                            Object.class),
+                                                    headerValue, handleHeaderMethod.loadNull())
+                                            : headerValue,
+                                    effectiveParamType, index,
                                     handleHeaderMethod.readInstanceField(clientField, handleHeaderMethod.getThis()),
                                     getGenericTypeFromArray(handleHeaderMethod, subParamField.genericsParametersField,
                                             subParamField.paramIndex),
@@ -1796,6 +1948,19 @@ public class JaxrsClientReactiveProcessor {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = subMethodCreator.getMethodParam(paramIdx);
                         } else if (param.parameterType == ParameterType.HEADER) {
+                            Type paramType = jandexSubMethod.parameterType(paramIdx);
+                            Type effectiveParamType = paramType;
+                            boolean isOptional = isOptional(paramType, index);
+                            if (isOptional) {
+                                effectiveParamType = Type.create(Object.class);
+                                if (paramType.kind() == PARAMETERIZED_TYPE) {
+                                    Type objectType = paramType.asParameterizedType().arguments().get(0);
+                                    if ((objectType.kind() == CLASS) || (objectType.kind() == PARAMETERIZED_TYPE)) {
+                                        effectiveParamType = objectType;
+                                    }
+                                }
+                            }
+
                             // headers are added at the invocation builder level
                             MethodDescriptor handleHeaderDescriptor = MethodDescriptor.ofMethod(subName,
                                     subMethod.getName() + "$$" + subMethodIndex + "$$handleHeader$$" + paramIdx,
@@ -1806,9 +1971,16 @@ public class JaxrsClientReactiveProcessor {
 
                             AssignableResultHandle invocationBuilderRef = handleHeaderMethod
                                     .createVariable(Invocation.Builder.class);
+                            ResultHandle headerValue = handleHeaderMethod.getMethodParam(1);
                             handleHeaderMethod.assign(invocationBuilderRef, handleHeaderMethod.getMethodParam(0));
-                            addHeaderParam(handleHeaderMethod, invocationBuilderRef, param.name,
-                                    handleHeaderMethod.getMethodParam(1), param.type,
+                            addHeaderParam(jandexMethod, handleHeaderMethod, invocationBuilderRef, param.name,
+                                    isOptional
+                                            ? handleHeaderMethod.invokeVirtualMethod(
+                                                    MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+                                                            Object.class),
+                                                    headerValue, handleHeaderMethod.loadNull())
+                                            : headerValue,
+                                    effectiveParamType, index,
                                     handleHeaderMethod.readInstanceField(clientField, handleHeaderMethod.getThis()),
                                     getGenericTypeFromArray(handleHeaderMethod, subMethodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(handleHeaderMethod, subMethodParamAnnotationsField, paramIdx));
@@ -1895,7 +2067,9 @@ public class JaxrsClientReactiveProcessor {
                     handleReturn(subInterface, defaultMediaType,
                             getHttpMethod(jandexSubMethod, subMethod.getHttpMethod(), httpAnnotationToMethod),
                             consumes, jandexSubMethod, subMethodCreator, formParams, bodyParameterValue,
-                            builder, multipart, identifierToTypeVariable);
+                            builder, multipart,
+                            hierarchyIdentifierTypeLookupMap.getOrDefault(jandexSubMethod.declaringClass().name(),
+                                    Collections.emptyMap()));
                 } else {
                     // finding corresponding jandex method, used by enricher (MicroProfile enricher stores it in a field
                     // to later fill in context with corresponding java.lang.reflect.Method)
@@ -1908,7 +2082,8 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, subInterface, index,
                             defaultMediaType, httpAnnotationToMethod, subName, subContext, subMethodTarget,
                             subMethodIndex, subMethod, subJavaMethodParameters, jandexSubMethod,
-                            multipartResponseTypes, subParamFields, generatedSubResources, identifierToTypeVariable);
+                            multipartResponseTypes, subParamFields, generatedSubResources, hierarchyIdentifierTypeLookupMap
+                                    .getOrDefault(jandexSubMethod.declaringClass().name(), Collections.emptyMap()));
                 }
 
             }
@@ -1998,7 +2173,7 @@ public class JaxrsClientReactiveProcessor {
         for (int i = 0; i < method.getParameters().length; i++) {
             MethodParameter param = method.getParameters()[i];
             if (param.parameterType != ParameterType.PATH) {
-                FieldDescriptor paramField = FieldDescriptor.of(subName, "param" + i, param.type);
+                FieldDescriptor paramField = FieldDescriptor.of(subName, "param" + i, param.declaredType);
                 ownerMethod.writeInstanceField(paramField, subInstance, ownerMethod.getMethodParam(i));
             }
 
@@ -2046,8 +2221,8 @@ public class JaxrsClientReactiveProcessor {
         return client;
     }
 
-    private void handleMultipartField(String formParamName, String partType, String partFilename,
-            String type, String parameterSignature,
+    private void handleMultipartField(IndexView index, String formParamName, String mimeType, String partFilename,
+            Type type, String parameterSignature,
             ResultHandle fieldValue, AssignableResultHandle multipartForm,
             BytecodeCreator methodCreator,
             ResultHandle client, String restClientInterfaceClassName, ResultHandle parameterAnnotations,
@@ -2055,49 +2230,81 @@ public class JaxrsClientReactiveProcessor {
 
         BytecodeCreator ifValueNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
 
+        if (isCollection(type, index)) {
+            Type componentType = null;
+            if (type.kind() == PARAMETERIZED_TYPE) {
+                Type paramType = type.asParameterizedType().arguments().get(0);
+                if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                    componentType = paramType;
+                }
+            }
+            if (componentType == null) {
+                componentType = Type.create(Object.class);
+            }
+            ForEachLoop loop = ifValueNotNull.forEach(fieldValue);
+            BytecodeCreator block = loop.block();
+            doHandleMultipartField(formParamName, mimeType, partFilename, componentType, null, loop.element(),
+                    multipartForm,
+                    methodCreator,
+                    client, restClientInterfaceClassName, parameterAnnotations, genericType, errorLocation, block);
+        } else {
+            doHandleMultipartField(formParamName, mimeType, partFilename, type, parameterSignature, fieldValue, multipartForm,
+                    methodCreator,
+                    client, restClientInterfaceClassName, parameterAnnotations, genericType, errorLocation, ifValueNotNull);
+        }
+    }
+
+    private void doHandleMultipartField(String formParamName, String mimeType, String partFilename, Type type,
+            String parameterSignature, ResultHandle fieldValue, AssignableResultHandle multipartForm,
+            BytecodeCreator methodCreator, ResultHandle client, String restClientInterfaceClassName,
+            ResultHandle parameterAnnotations, ResultHandle genericType, String errorLocation,
+            BytecodeCreator bytecodeCreator) {
         // we support string, and send it as an attribute unconverted
-        if (type.equals(String.class.getName())) {
-            addString(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
-        } else if (type.equals(File.class.getName())) {
+        String typeStr = type.name().toString();
+        if (typeStr.equals(String.class.getName())) {
+            addString(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue);
+        } else if (typeStr.equals(File.class.getName())) {
             // file is sent as file :)
-            ResultHandle filePath = ifValueNotNull.invokeVirtualMethod(
+            ResultHandle filePath = bytecodeCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
-            addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, filePath);
-        } else if (type.equals(Path.class.getName())) {
+            addFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, filePath);
+        } else if (typeStr.equals(Path.class.getName())) {
             // and so is path
-            addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
-        } else if (type.equals(FileUpload.class.getName())) {
+            addFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue);
+        } else if (typeStr.equals(FileUpload.class.getName())) {
             addFileUpload(fieldValue, multipartForm, methodCreator);
-        } else if (type.equals(InputStream.class.getName())) {
+        } else if (typeStr.equals(InputStream.class.getName())) {
             // and so is path
-            addInputStream(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, type);
-        } else if (type.equals(Buffer.class.getName())) {
+            addInputStream(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue, typeStr);
+        } else if (typeStr.equals(Buffer.class.getName())) {
             // and buffer
-            addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
-        } else if (type.startsWith("[")) {
+            addBuffer(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue, errorLocation);
+        } else if (typeStr.startsWith("[")) {
             // byte[] can be sent as file too
-            if (!type.equals("[B")) {
-                throw new IllegalArgumentException("Array of unsupported type: " + type
+            if (!typeStr.equals("[B")) {
+                throw new IllegalArgumentException("Array of unsupported type: " + typeStr
                         + " on " + errorLocation);
             }
-            ResultHandle buffer = ifValueNotNull.invokeStaticInterfaceMethod(
+            ResultHandle buffer = bytecodeCreator.invokeStaticInterfaceMethod(
                     MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                     fieldValue);
-            addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, errorLocation);
-        } else if (parameterSignature.equals(MULTI_BYTE_SIGNATURE)) {
-            addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
-        } else if (partType != null) {
+            addBuffer(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, buffer, errorLocation);
+        } else if (MULTI_BYTE_SIGNATURE.equals(parameterSignature)) {
+            addMultiAsFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue,
+                    errorLocation);
+        } else if (mimeType != null) {
             if (partFilename != null) {
                 log.warnf("Using the @PartFilename annotation is unsupported on the type '%s'. Problematic field is: '%s'",
-                        partType, formParamName);
+                        mimeType, formParamName);
             }
             // assume POJO:
-            addPojo(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, type);
+            addPojo(bytecodeCreator, multipartForm, formParamName, mimeType, fieldValue, typeStr);
         } else {
             // go via converter
-            ResultHandle convertedFormParam = convertParamToString(ifValueNotNull, client, fieldValue, type, genericType,
+            ResultHandle convertedFormParam = convertParamToString(bytecodeCreator, client, fieldValue, typeStr,
+                    genericType,
                     parameterAnnotations);
-            BytecodeCreator parameterIsStringBranch = checkStringParam(ifValueNotNull, convertedFormParam,
+            BytecodeCreator parameterIsStringBranch = checkStringParam(bytecodeCreator, convertedFormParam,
                     restClientInterfaceClassName, errorLocation);
             addString(parameterIsStringBranch, multipartForm, formParamName, null, partFilename, convertedFormParam);
         }
@@ -2337,20 +2544,9 @@ public class JaxrsClientReactiveProcessor {
     private void handleReturn(ClassInfo restClientInterface, String defaultMediaType, String httpMethod, String[] consumes,
             MethodInfo jandexMethod, MethodCreator methodCreator, ResultHandle formParams,
             ResultHandle bodyValue, AssignableResultHandle builder, boolean multipart,
-            Map<String, Type> identifierToTypeVariable) {
-        Type returnType = jandexMethod.returnType();
+            Map<String, Type> identifierTypeLookupMap) {
+        Type returnType = resolveType(jandexMethod.returnType(), identifierTypeLookupMap, jandexMethod);
         ReturnCategory returnCategory = ReturnCategory.BLOCKING;
-
-        if (returnType.kind() == TYPE_VARIABLE) {
-            TypeVariable typeVariable = returnType.asTypeVariable();
-            Type resolvedTypeVariable = identifierToTypeVariable.get(typeVariable.identifier());
-            if (resolvedTypeVariable != null) {
-                returnType = resolvedTypeVariable;
-            } else {
-                throw new RuntimeException("Type variable %s of the return type of method %s could not be resolved."
-                        .formatted(typeVariable.identifier(), jandexMethod));
-            }
-        }
 
         String simpleReturnType = returnType.name().toString();
         ResultHandle genericReturnType = null;
@@ -2801,10 +2997,10 @@ public class JaxrsClientReactiveProcessor {
                     break;
                 case HEADER_PARAM:
                     HeaderParamItem headerParam = (HeaderParamItem) item;
-                    addHeaderParam(invoEnricher, invocationBuilder,
+                    addHeaderParam(jandexMethod, invoEnricher, invocationBuilder,
                             headerParam.getHeaderName(),
                             headerParam.extract(invoEnricher, invoEnricher.getMethodParam(1)),
-                            headerParam.getParamType(), invocationEnricherClient,
+                            headerParam.getParamType(), index, invocationEnricherClient,
                             getGenericTypeFromParameter(invoEnricher, beanParamDescriptorField, item.fieldName()),
                             getAnnotationsFromParameter(invoEnricher, beanParamDescriptorField, item.fieldName()));
                     break;
@@ -3122,23 +3318,86 @@ public class JaxrsClientReactiveProcessor {
         return isAssignableFrom(OPTIONAL, type.name(), index);
     }
 
-    private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
-            String paramName, ResultHandle headerParamHandle, String paramType, ResultHandle client,
+    private void addHeaderParam(MethodInfo jandexMethod, BytecodeCreator invoBuilderEnricher,
+            AssignableResultHandle invocationBuilder,
+            String headerName, ResultHandle headerValueHandle,
+            Type paramType, IndexView index,
+            ResultHandle client,
             ResultHandle genericType, ResultHandle annotations) {
 
-        BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerParamHandle).falseBranch();
+        BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerValueHandle).falseBranch();
 
-        headerParamHandle = notNullValue.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
-                        Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                client, headerParamHandle,
-                notNullValue.loadClassFromTCCL(paramType), genericType, annotations);
+        if (isMap(paramType, index)) {
+            Map.Entry<Type, Type> resolvesTypes = resolveMapTypes(paramType, index, jandexMethod);
+            Type keyType = resolvesTypes.getKey();
+            if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
+                throw new IllegalArgumentException(
+                        "Map parameter types must have String keys. Offending method is: " + jandexMethod);
+            }
 
-        notNullValue.assign(invocationBuilder,
-                notNullValue.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class,
-                                String.class, Object.class),
-                        invocationBuilder, notNullValue.load(paramName), headerParamHandle));
+            // Loop through the keys
+            ResultHandle keySet = notNullValue.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
+                    headerValueHandle);
+            ResultHandle keysSetIterator = notNullValue.invokeInterfaceMethod(
+                    ofMethod(Set.class, "iterator", Iterator.class), keySet);
+            BytecodeCreator keySetLoop = notNullValue.whileLoop(c -> iteratorHasNext(c, keysSetIterator)).block();
+            ResultHandle mapKey = keySetLoop.invokeInterfaceMethod(
+                    ofMethod(Iterator.class, "next", Object.class), keysSetIterator);
+            // get the value and convert
+            ResultHandle mapValue = keySetLoop.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
+                    headerValueHandle, mapKey);
+            Type valueType = resolvesTypes.getValue();
+            String effectiveValueTypeStr = valueType.name().toString();
+            if (isCollection(valueType, index)) {
+                if (valueType.kind() == PARAMETERIZED_TYPE) {
+                    Type componentType = valueType.asParameterizedType().arguments().get(0);
+                    if ((componentType.kind() == CLASS) || (componentType.kind() == PARAMETERIZED_TYPE)) {
+                        effectiveValueTypeStr = componentType.name().toString();
+                    }
+                }
+                if (effectiveValueTypeStr == null) {
+                    effectiveValueTypeStr = DotNames.OBJECT.toString();
+                }
+                ForEachLoop mapValueForLoop = keySetLoop.forEach(mapValue);
+                BytecodeCreator mapValueCreator = mapValueForLoop.block();
+
+                mapValue = mapValueCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
+                                Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                        client, mapValueForLoop.element(),
+                        mapValueCreator.loadClassFromTCCL(effectiveValueTypeStr), genericType, annotations);
+
+                mapValueCreator.assign(invocationBuilder,
+                        mapValueCreator.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class,
+                                        String.class, Object.class),
+                                invocationBuilder, mapKey, mapValue));
+            } else {
+                mapValue = keySetLoop.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
+                                Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                        client, mapValue,
+                        keySetLoop.loadClassFromTCCL(valueType.name().toString()), genericType, annotations);
+
+                keySetLoop.assign(invocationBuilder,
+                        keySetLoop.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class,
+                                        String.class, Object.class),
+                                invocationBuilder, mapKey, mapValue));
+            }
+        } else {
+            headerValueHandle = notNullValue.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
+                            Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                    client, headerValueHandle,
+                    notNullValue.loadClassFromTCCL(paramType.name().toString()), genericType, annotations);
+
+            notNullValue.assign(invocationBuilder,
+                    notNullValue.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class,
+                                    String.class, Object.class),
+                            invocationBuilder, notNullValue.load(headerName), headerValueHandle));
+        }
     }
 
     private void addPathParam(BytecodeCreator methodCreator, AssignableResultHandle methodTarget,
@@ -3164,9 +3423,9 @@ public class JaxrsClientReactiveProcessor {
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
             ResultHandle parameterAnnotations, boolean multipart,
-            String partType, String partFilename, String errorLocation) {
+            String mimeType, String partFilename, String errorLocation) {
         if (multipart) {
-            handleMultipartField(paramName, partType, partFilename, parameterType.name().toString(), parameterSignature,
+            handleMultipartField(index, paramName, mimeType, partFilename, parameterType, parameterSignature,
                     formParamHandle,
                     formParams, methodCreator,
                     client, restClientInterfaceClassName, parameterAnnotations, genericType,

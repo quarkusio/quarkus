@@ -3,6 +3,10 @@ package io.quarkus.cli.common;
 import picocli.CommandLine;
 
 public class DevOptions {
+
+    @CommandLine.Option(names = { "-B", "--batch-mode" }, description = "Run in non-interactive (batch) mode.")
+    boolean batchMode;
+
     @CommandLine.Option(order = 2, names = { "--dry-run" }, description = "Show actions that would be taken.")
     boolean dryRun = false;
 
@@ -29,8 +33,13 @@ public class DevOptions {
         return dryRun || dryRun2;
     }
 
+    public boolean isBatchMode() {
+        return batchMode;
+    }
+
     @Override
     public String toString() {
-        return "DevOptions [clean=" + clean + ", tests=" + runTests + ", offline=" + offline + "]";
+        return "DevOptions [clean=" + clean + ", tests=" + runTests + ", offline=" + offline +
+                ", batch-mode=" + batchMode + ", dry-run=" + isDryRun() + "]";
     }
 }

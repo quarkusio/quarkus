@@ -20,6 +20,7 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -135,6 +136,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Consumes(MediaType.APPLICATION_JSON)
     public DogRecord emptyCtorEchoRecord(DogRecord dogRecord) {
         return dogRecord;
+    }
+
+    @POST
+    @Path("/kotlin-data-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public TokenResponse echoKotlinData(TokenResponse tokenResponse) {
+        return tokenResponse;
     }
 
     @POST
@@ -499,6 +507,46 @@ public class SimpleJsonResource extends SuperClass<Person> {
         item.setNameExtended("Name-Extended");
         item.setEmailExtended("E-mail-Extended");
         return item;
+    }
+
+    @POST
+    @Path("/json-value-public-method")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePublicMethod echoJsonValuePublicMethod(@RestQuery int value) {
+        return new ItemJsonValuePublicMethod(value);
+    }
+
+    @POST
+    @Path("/json-value-public-field")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePublicField echoJsonValuePublicField(@RestQuery int value) {
+        return new ItemJsonValuePublicField(value);
+    }
+
+    @POST
+    @Path("/json-value-private-method")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePrivateMethod echoJsonValuePrivateMethod(@RestQuery int value) {
+        return new ItemJsonValuePrivateMethod(value);
+    }
+
+    @POST
+    @Path("/json-value-private-field")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePrivateField echoJsonValuePrivateField(@RestQuery int value) {
+        return new ItemJsonValuePrivateField(value);
+    }
+
+    @POST
+    @Path("/primitive-types-bean")
+    public PrimitiveTypesBean echoPrimitiveTypesBean(PrimitiveTypesBean bean) {
+        return bean;
+    }
+
+    @POST
+    @Path("/primitive-types-record")
+    public PrimitiveTypesRecord echoPrimitiveTypesRecord(PrimitiveTypesRecord record) {
+        return record;
     }
 
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {

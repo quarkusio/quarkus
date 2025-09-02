@@ -22,17 +22,17 @@ dependencies {
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    compileOnly "org.hibernate.orm:hibernate-jpamodelgen"
+    compileOnly "org.hibernate.orm:hibernate-processor"
     compileOnly enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen"
+    annotationProcessor "org.hibernate.orm:hibernate-processor"
     annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-group 'io.playground'
-version '1.0'
+group = 'io.playground'
+version = '1.0'
 
 compileJava {
     options.encoding = 'UTF-8'

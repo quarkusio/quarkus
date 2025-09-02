@@ -2,11 +2,11 @@ package io.quarkus.redis.datasource.search;
 
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
+import static io.quarkus.redis.runtime.datasource.Validation.validateTimeout;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
-import static io.smallrye.mutiny.helpers.ParameterValidation.validate;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -339,7 +339,8 @@ public class QueryArgs implements RedisCommandExtraArguments {
      * @return the current {@code QueryArgs}
      */
     public QueryArgs timeout(Duration timeout) {
-        this.timeout = validate(timeout, "timeout");
+        validateTimeout(timeout, "timeout");
+        this.timeout = timeout;
         return this;
     }
 

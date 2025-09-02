@@ -17,13 +17,12 @@ import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests that the workaround for https://github.com/quarkusio/quarkus/issues/43703 /
+ * Tests that DB version checks can be disabled explicitly.
+ * <p>
+ * This was originally introduced to work around problems with version checks,
+ * such as https://github.com/quarkusio/quarkus/issues/43703 /
  * https://github.com/quarkusio/quarkus/issues/42255
- * is effective.
  */
-// TODO remove this test when change the default to "always enabled" when we solve version detection problems
-//   See https://github.com/quarkusio/quarkus/issues/43703
-//   See https://github.com/quarkusio/quarkus/issues/42255
 public class DbVersionCheckDisabledExplicitlyTest {
 
     private static final String ACTUAL_H2_VERSION = DialectVersions.Defaults.H2;

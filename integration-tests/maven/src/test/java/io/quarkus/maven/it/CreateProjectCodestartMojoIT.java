@@ -44,7 +44,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
 
     private static Stream<Arguments> provideLanguages() {
         return Stream.of("java", "kotlin")
-                .flatMap(l -> Stream.of("", "resteasy", "qute").map(e -> Arguments.of(l, e)));
+                .flatMap(l -> Stream.of("", "rest", "qute").map(e -> Arguments.of(l, e)));
     }
 
     @Test
@@ -98,12 +98,12 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     }
 
     @Test
-    public void generateCustomRESTEasyJavaProject() throws Exception {
+    public void generateCustomRESTJavaProject() throws Exception {
         final HashMap<String, String> options = new HashMap<>();
         options.put("path", "/bonjour");
         options.put("className", "com.andy.BonjourResource");
         final Path generatedProjectPath = generateProject("maven", "java",
-                "resteasy", options);
+                "rest", options);
         checkDir(generatedProjectPath.resolve("src/main/java/com/andy"));
         checkContent(generatedProjectPath.resolve("src/main/java/com/andy/BonjourResource.java"),
                 "package com.andy;",

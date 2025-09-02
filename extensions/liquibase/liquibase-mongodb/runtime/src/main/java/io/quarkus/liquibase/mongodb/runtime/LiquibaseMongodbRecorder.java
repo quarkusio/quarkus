@@ -16,25 +16,30 @@ import liquibase.Liquibase;
 
 @Recorder
 public class LiquibaseMongodbRecorder {
+    private final LiquibaseMongodbBuildTimeConfig buildTimeConfig;
+    private final RuntimeValue<LiquibaseMongodbConfig> runtimeConfig;
+    private final RuntimeValue<MongodbConfig> mongodbRuntimeConfig;
 
-    private final RuntimeValue<LiquibaseMongodbConfig> config;
-
-    public LiquibaseMongodbRecorder(RuntimeValue<LiquibaseMongodbConfig> config) {
-        this.config = config;
+    public LiquibaseMongodbRecorder(
+            final LiquibaseMongodbBuildTimeConfig buildTimeConfig,
+            final RuntimeValue<LiquibaseMongodbConfig> runtimeConfig,
+            final RuntimeValue<MongodbConfig> mongodbRuntimeConfig) {
+        this.buildTimeConfig = buildTimeConfig;
+        this.runtimeConfig = runtimeConfig;
+        this.mongodbRuntimeConfig = mongodbRuntimeConfig;
     }
 
-    public Supplier<LiquibaseMongodbFactory> liquibaseSupplier(LiquibaseMongodbConfig config,
-            LiquibaseMongodbBuildTimeConfig buildTimeConfig, MongodbConfig mongodbConfig) {
+    public Supplier<LiquibaseMongodbFactory> liquibaseSupplier() {
         return new Supplier<LiquibaseMongodbFactory>() {
             @Override
             public LiquibaseMongodbFactory get() {
-                return new LiquibaseMongodbFactory(config, buildTimeConfig, mongodbConfig);
+                return new LiquibaseMongodbFactory(runtimeConfig.getValue(), buildTimeConfig, mongodbRuntimeConfig.getValue());
             }
         };
     }
 
     public void doStartActions() {
-        if (!config.getValue().enabled()) {
+        if (!runtimeConfig.getValue().enabled()) {
             return;
         }
         try {

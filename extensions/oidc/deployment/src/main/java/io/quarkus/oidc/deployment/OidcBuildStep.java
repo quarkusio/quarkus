@@ -6,7 +6,13 @@ import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.arc.processor.DotNames.NAMED;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
+import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
+import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectAnnotatedClasses;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectClassMethodsWithoutRbacAnnotation;
+import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectMethodsWithoutRbacAnnotation;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
@@ -15,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Singleton;
@@ -25,8 +32,10 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -63,6 +72,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
@@ -73,13 +83,14 @@ import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.Jose4jRecorder;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
-import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
@@ -88,20 +99,33 @@ import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.ResourceMetadataHandler;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
+import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
-import io.quarkus.security.runtime.SecurityConfig;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
+import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
@@ -112,12 +136,16 @@ public class OidcBuildStep {
             DotNames.INJECTABLE_INSTANCE);
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
+    private static final DotName AUTHENTICATION_CONTEXT_NAME = DotName.createSimple(AuthenticationContext.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
     private static final DotName USER_INFO_NAME = DotName.createSimple(UserInfo.class);
     private static final DotName JSON_WEB_TOKEN_NAME = DotName.createSimple(JsonWebToken.class);
     private static final DotName ID_TOKEN_NAME = DotName.createSimple(IdToken.class);
-
+    private static final DotName AUTHORIZATION_CODE_FLOW_NAME = DotName.createSimple(AuthorizationCodeFlow.class);
+    private static final DotName BEARER_TOKEN_AUTHENTICATION_NAME = DotName.createSimple(BearerTokenAuthentication.class);
+    private static final DotName OIDC_REQUEST_FILTER = DotName.createSimple(OidcRequestFilter.class.getName());
+    private static final DotName OIDC_RESPONSE_FILTER = DotName.createSimple(OidcResponseFilter.class.getName());
     private static final String QUARKUS_TOKEN_PROPAGATION_PACKAGE = "io.quarkus.oidc.token.propagation";
     private static final String SMALLRYE_JWT_PACKAGE = "io.smallrye.jwt";
 
@@ -187,6 +215,7 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTokenStateManager.class)
                 .addBeanClass(OidcSessionImpl.class)
                 .addBeanClass(BackChannelLogoutHandler.class)
+                .addBeanClass(ResourceMetadataHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
@@ -199,12 +228,12 @@ public class OidcBuildStep {
 
     @BuildStep(onlyIf = IsCacheEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public SyntheticBeanBuildItem addDefaultCacheBean(OidcConfig config,
+    public SyntheticBeanBuildItem addDefaultCacheBean(
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem) {
         return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
                 .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
-                .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx()))
+                .supplier(recorder.setupTokenCache(vertxBuildItem.getVertx()))
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
@@ -223,7 +252,7 @@ public class OidcBuildStep {
         return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
             @Override
             public Map<DotName, Set<String>> getAdditionalQualifiers() {
-                return Map.of(TENANT_FEATURE_NAME, Set.of());
+                return Map.of(TENANT_FEATURE_NAME, Set.of("value"));
             }
         });
     }
@@ -328,12 +357,11 @@ public class OidcBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    SyntheticBeanBuildItem setup(OidcConfig config, OidcRecorder recorder, SecurityConfig securityConfig,
-            CoreVertxBuildItem vertxBuildItem, TlsRegistryBuildItem tlsRegistryBuildItem) {
+    SyntheticBeanBuildItem setup(OidcRecorder recorder, CoreVertxBuildItem vertxBuildItem,
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .createWith(recorder.createTenantConfigBean(config, vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
-                        securityConfig))
+                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry()))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
@@ -348,7 +376,8 @@ public class OidcBuildStep {
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
         if (!httpBuildTimeConfig.auth().proactive()
-                && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
+                && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY)
+                        || capabilities.isPresent(Capability.WEBSOCKETS_NEXT))) {
             boolean foundTenantResolver = combinedIndexBuildItem
                     .getIndex()
                     .getAnnotations(TENANT_NAME)
@@ -390,13 +419,112 @@ public class OidcBuildStep {
     @BuildStep
     List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
         return List.of(
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(AuthorizationCodeFlow.class), CODE_FLOW_CODE),
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER_SCHEME));
+                new HttpAuthMechanismAnnotationBuildItem(AUTHORIZATION_CODE_FLOW_NAME, CODE_FLOW_CODE, OIDC_REQUEST_FILTER,
+                        OIDC_RESPONSE_FILTER),
+                new HttpAuthMechanismAnnotationBuildItem(BEARER_TOKEN_AUTHENTICATION_NAME, BEARER_SCHEME, OIDC_REQUEST_FILTER,
+                        OIDC_RESPONSE_FILTER));
     }
 
     @BuildStep
     RunTimeConfigBuilderBuildItem useOidcTenantDefaultIdConfigBuilder() {
         return new RunTimeConfigBuilderBuildItem(OidcTenantDefaultIdConfigBuilder.class);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    public void registerAuthenticationContextInterceptor(Capabilities capabilities, OidcRecorder recorder,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
+            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer) {
+        var authCtxAnnotations = combinedIndexBuildItem.getIndex().getAnnotations(AUTHENTICATION_CONTEXT_NAME);
+        if (authCtxAnnotations.isEmpty() || !areEagerSecInterceptorsSupported(capabilities, httpBuildTimeConfig)) {
+            return;
+        }
+        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authenticationContextInterceptorCreator(),
+                ai -> {
+                    AnnotationValue maxAgeAnnotationValue = ai.value("maxAge");
+                    String maxAge = maxAgeAnnotationValue == null ? "" : maxAgeAnnotationValue.asString();
+
+                    String acrValues = "";
+                    AnnotationValue annotationValue = ai.value();
+                    String[] annotationValues = annotationValue == null ? null : annotationValue.asStringArray();
+                    if (annotationValues == null || annotationValues.length == 0) {
+                        // no acr values and no max age
+                        throw new ConfigurationException("Annotation '" + AUTHENTICATION_CONTEXT_NAME + "' placed on '"
+                                + toTargetName(ai.target()) + "' specifies no 'acr' value");
+                    } else {
+                        acrValues = String.join(",", annotationValues);
+                    }
+
+                    return acrValues + ACR_VALUES_TO_MAX_AGE_SEPARATOR + maxAge;
+                }, true, AUTHENTICATION_CONTEXT_NAME));
+
+        // @AuthenticationContext -> authentication required
+        // register @Authenticated for annotated methods
+        Set<MethodInfo> annotatedMethods = collectMethodsWithoutRbacAnnotation(authCtxAnnotations
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(at -> at.kind() == METHOD)
+                .map(AnnotationTarget::asMethod)
+                .toList());
+        additionalSecuredMethodsProducer
+                .produce(new AdditionalSecuredMethodsBuildItem(annotatedMethods, Optional.of(List.of("**"))));
+        // method-level security; this registers @Authenticated if no RBAC is explicitly declared
+        Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
+        Set<MethodInfo> annotatedClassMethods = collectClassMethodsWithoutRbacAnnotation(
+                collectAnnotatedClasses(authCtxAnnotations, Predicate.not(useClassLevelSecurity)));
+        additionalSecuredMethodsProducer
+                .produce(new AdditionalSecuredMethodsBuildItem(annotatedClassMethods, Optional.of(List.of("**"))));
+        // class-level security; this registers @Authenticated if no RBAC is explicitly declared
+        collectAnnotatedClasses(authCtxAnnotations, useClassLevelSecurity).stream()
+                .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
+                .forEach(c -> registerClassSecurityCheckProducer.produce(
+                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
+                                .builder(Authenticated.class).buildWithTarget(c))));
+    }
+
+    @BuildStep
+    public void registerHealthCheck(OidcBuildTimeConfig config, BuildProducer<HealthBuildItem> healthBuildItems,
+            Capabilities capabilities) {
+        if (config.healthEnabled() && capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            healthBuildItems.produce(new HealthBuildItem(OidcTenantHealthCheck.class.getName(), true));
+        }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerBackChannelLogoutHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        Handler<RoutingContext> handler = recorder.getBackChannelLogoutHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @BuildStep
+    void supportIdentityUpdateForWebSocketConnections(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        if (capabilities.isPresent(Capability.WEBSOCKETS_NEXT)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketIdentityUpdateProvider.class));
+        }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        if (httpBuildTimeConfig.auth().proactive()) {
+            throw new RuntimeException("The '%s' annotation is only supported when proactive authentication is disabled"
+                    .formatted(AUTHENTICATION_CONTEXT_NAME));
+        } else if (capabilities.isMissing(Capability.WEBSOCKETS_NEXT) && capabilities.isMissing(Capability.RESTEASY_REACTIVE)
+                && capabilities.isMissing(Capability.RESTEASY)) {
+            throw new RuntimeException("The '%s' can only be used on Jakarta REST or WebSockets Next endpoints");
+        }
+        return true;
     }
 
     private static boolean isInjected(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem, DotName requiredType,

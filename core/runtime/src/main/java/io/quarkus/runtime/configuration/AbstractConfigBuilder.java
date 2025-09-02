@@ -84,7 +84,11 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
 
     protected static void withMappingInstance(SmallRyeConfigBuilder builder, ConfigClass mapping) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType()));
+        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
+    }
+
+    protected static void withMappingIgnore(SmallRyeConfigBuilder builder, String path) {
+        builder.withMappingIgnore(path);
     }
 
     protected static void withBuilder(SmallRyeConfigBuilder builder, ConfigBuilder configBuilder) {
@@ -119,7 +123,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     public static ConfigClass configClass(final String mappingClass, final String prefix) {
         try {
             // To support mappings that are not public
-            return ConfigClass.configClass(Thread.currentThread().getContextClassLoader().loadClass(mappingClass), prefix);
+            Class<?> klass = Thread.currentThread().getContextClassLoader().loadClass(mappingClass);
+            return ConfigClass.configClass(klass, prefix);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -128,7 +133,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     public static void ensureLoaded(final String mappingClass) {
         try {
             // To support mappings that are not public
-            ConfigMappingLoader.ensureLoaded(Thread.currentThread().getContextClassLoader().loadClass(mappingClass));
+            Class<?> klass = Thread.currentThread().getContextClassLoader().loadClass(mappingClass);
+            ConfigMappingLoader.ensureLoaded(klass);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

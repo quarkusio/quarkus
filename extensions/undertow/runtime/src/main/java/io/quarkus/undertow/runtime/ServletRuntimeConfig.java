@@ -13,7 +13,8 @@ import io.smallrye.config.WithDefault;
 public interface ServletRuntimeConfig {
 
     /**
-     * The buffer size to use for Servlet. If this is not specified the default will depend on the amount
+     * The buffer size to use for Servlet, up to {@code Integer.MAX_VALUE} bytes. If this is not specified the default will
+     * depend on the amount
      * of available memory. If there is less than 64mb it will default to 512b heap buffer, less that 128mb
      * 1k direct buffer and otherwise 16k direct buffers.
      *

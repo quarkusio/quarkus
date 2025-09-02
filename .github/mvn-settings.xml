@@ -1,14 +1,5 @@
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
-  <servers>
-    <!-- Quarkus-->
-    <server>
-      <id>sonatype-nexus-snapshots</id>
-      <username>${env.SERVER_USERNAME}</username>
-      <password>${env.SERVER_PASSWORD}</password>
-    </server>
-    <!-- END OF Quarkus-->
-  </servers>
   <profiles>
     <profile>
       <id>google-mirror</id>
@@ -35,6 +26,41 @@
           </releases>
           <snapshots>
             <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+    <profile>
+      <id>snapshots</id>
+      <repositories>
+        <repository>
+          <id>sonatype-maven-central</id>
+          <name>Sonatype Maven Central Snapshots</name>
+          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <layout>default</layout>
+          <releases>
+            <enabled>false</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>sonatype-maven-central</id>
+          <name>Sonatype Maven Central Snapshots</name>
+          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <layout>default</layout>
+          <releases>
+            <enabled>false</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
           </snapshots>
         </pluginRepository>
       </pluginRepositories>

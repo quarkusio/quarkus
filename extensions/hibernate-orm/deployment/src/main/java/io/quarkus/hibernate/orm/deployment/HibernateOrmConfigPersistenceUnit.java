@@ -74,7 +74,8 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * [NOTE]
      * ====
-     * Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
+     * Quarkus supports files with SQL statements or comments spread over multiple lines,
+     * or `.zip` files containing those files.
      * Each SQL statement must be terminated by a semicolon.
      * ====
      *
@@ -303,12 +304,41 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
+         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
+         *             or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         *
          * @asciidoclet
          */
-        Optional<@WithConverter(TrimmedStringConverter.class) String> storageEngine();
+        @WithConverter(TrimmedStringConverter.class)
+        @Deprecated
+        Optional<String> storageEngine();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for MariaDB
+         */
+        MySQLDialectConfig mariadb();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for MySQL
+         */
+        MySQLDialectConfig mysql();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for Oracle
+         */
+        OracleDialectConfig oracle();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for Microsoft SQLServer
+         */
+        SqlServerDialectConfig mssql();
 
         default boolean isAnyPropertySet() {
-            return dialect().isPresent() || storageEngine().isPresent();
+            return dialect().isPresent() || storageEngine().isPresent()
+                    || mysql().isAnyPropertySet()
+                    || oracle().isAnyPropertySet()
+                    || mssql().isAnyPropertySet()
+                    || mariadb().isAnyPropertySet();
         }
     }
 
@@ -485,6 +515,19 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         @WithDefault("true")
         boolean inClauseParameterPadding();
+
+        /**
+         * When limits cannot be applied on the database side,
+         * trigger an exception instead of attempting badly-performing in-memory result set limits.
+         *
+         * When pagination is used in combination with a fetch join applied to a collection or many-valued association,
+         * the limit must be applied in-memory instead of on the database.
+         * This should be avoided as it typically has terrible performance characteristics.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("false")
+        boolean failOnPaginationOverCollectionFetch();
 
         default boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize() != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE

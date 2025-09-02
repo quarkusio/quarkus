@@ -34,9 +34,11 @@ public class QuarkusComponentTestExtensionBuilder {
     private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
     private final List<Converter<?>> configConverters = new ArrayList<>();
     private boolean useDefaultConfigProperties = false;
+    private boolean useSystemConfigSources = false;
     private boolean addNestedClassesAsComponents = true;
     private int configSourceOrdinal = QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL;
     private Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
+    private boolean buildShouldFail;
 
     /**
      * The initial set of components under test is derived from the test class. The types of all fields annotated with
@@ -139,6 +141,16 @@ public class QuarkusComponentTestExtensionBuilder {
     }
 
     /**
+     * Use config sources for system properties and ENV variables in the test config.
+     *
+     * @return self
+     */
+    public QuarkusComponentTestExtensionBuilder useSystemConfigSources(boolean value) {
+        this.useSystemConfigSources = value;
+        return this;
+    }
+
+    /**
      * Configure a new mock of a bean.
      * <p>
      * Note that a mock is created automatically for all unsatisfied dependencies in the test. This API provides full control
@@ -150,6 +162,11 @@ public class QuarkusComponentTestExtensionBuilder {
      */
     public <T> MockBeanConfigurator<T> mock(Class<T> beanClass) {
         return new MockBeanConfiguratorImpl<>(this, beanClass);
+    }
+
+    QuarkusComponentTestExtensionBuilder buildShouldFail() {
+        this.buildShouldFail = true;
+        return this;
     }
 
     /**
@@ -168,7 +185,8 @@ public class QuarkusComponentTestExtensionBuilder {
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
                 Set.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
                 addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer));
+                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer, useSystemConfigSources),
+                buildShouldFail);
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

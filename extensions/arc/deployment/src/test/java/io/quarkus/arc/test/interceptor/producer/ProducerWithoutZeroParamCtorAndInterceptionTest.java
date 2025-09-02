@@ -32,7 +32,8 @@ public class ProducerWithoutZeroParamCtorAndInterceptionTest {
     @Test
     public void test() {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
-        assertEquals("intercepted: hello", nonbean.hello());
+        assertEquals("intercepted: hello1_foobar", nonbean.hello1());
+        assertEquals("hello2_foobar", nonbean.hello2());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -52,12 +53,19 @@ public class ProducerWithoutZeroParamCtorAndInterceptionTest {
     }
 
     static class MyNonbean {
-        MyNonbean(int ignored) {
+        private final String value;
+
+        private MyNonbean(String value) {
+            this.value = value;
         }
 
         @MyBinding
-        String hello() {
-            return "hello";
+        String hello1() {
+            return "hello1_" + value;
+        }
+
+        String hello2() {
+            return "hello2_" + value;
         }
     }
 
@@ -66,7 +74,7 @@ public class ProducerWithoutZeroParamCtorAndInterceptionTest {
         @Produces
         @Unremovable
         MyNonbean produce(InterceptionProxy<MyNonbean> proxy) {
-            return proxy.create(new MyNonbean(0));
+            return proxy.create(new MyNonbean("foobar"));
         }
     }
 }

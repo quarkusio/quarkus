@@ -44,7 +44,7 @@ public class TransactionSessions {
         }
         return sessions.computeIfAbsent(unitName, (un) -> new TransactionScopedSession(
                 getTransactionManager(), getTransactionSynchronizationRegistry(),
-                jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
+                jpaConfig.getEntityManagerFactory(un, false).unwrap(SessionFactory.class), un,
                 jpaConfig.getRequestScopedSessionEnabled(), requestScopedSession));
     }
 
@@ -55,7 +55,7 @@ public class TransactionSessions {
         }
         return staleSessions.computeIfAbsent(unitName, (un) -> new TransactionScopedStatelessSession(
                 getTransactionManager(), getTransactionSynchronizationRegistry(),
-                jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
+                jpaConfig.getEntityManagerFactory(un, false).unwrap(SessionFactory.class), un,
                 jpaConfig.getRequestScopedSessionEnabled(), requestScopedStatelessSession));
     }
 

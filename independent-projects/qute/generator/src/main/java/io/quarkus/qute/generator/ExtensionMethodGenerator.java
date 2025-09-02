@@ -3,9 +3,8 @@ package io.quarkus.qute.generator;
 import static io.quarkus.qute.generator.ValueResolverGenerator.generatedNameFromTarget;
 import static io.quarkus.qute.generator.ValueResolverGenerator.packageName;
 import static io.quarkus.qute.generator.ValueResolverGenerator.simpleName;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
@@ -33,21 +32,16 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.qute.EvalContext;
-import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
@@ -175,490 +169,468 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
 
         String suffix = SUFFIX + "_" + method.name() + "_" + sha1(parameters.toString());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, suffix);
-        generatedTypes.add(generatedName.replace('/', '.'));
+        String generatedClassName = generatedName.replace('/', '.');
+        generatedTypes.add(generatedClassName);
 
-        ClassCreator valueResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(ValueResolver.class).build();
+        String effectiveMatchRegex = matchRegex;
+        int effectivePriority = priority;
+        String effectiveMatchName = matchName;
+        List<String> effectiveMatchNames = matchNames;
 
-        FieldDescriptor patternField = null;
-        if (matchRegex != null && !matchRegex.isEmpty()) {
-            patternField = valueResolver.getFieldCreator(PATTERN, Pattern.class)
-                    .setModifiers(ACC_PRIVATE | ACC_FINAL).getFieldDescriptor();
-            MethodCreator constructor = valueResolver.getMethodCreator(MethodDescriptor.INIT, "V");
-            // Invoke super()
-            constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
-            // Compile the regex pattern
-            constructor.writeInstanceField(patternField, constructor.getThis(),
-                    constructor.invokeStaticMethod(Descriptors.PATTERN_COMPILE, constructor.load(matchRegex)));
-            constructor.returnValue(null);
-        }
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(ValueResolver.class);
+            FieldDesc pattern = null;
+            if (effectiveMatchRegex != null && !effectiveMatchRegex.isEmpty()) {
+                pattern = cc.field(PATTERN, fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(Pattern.class);
+                    fc.setInitializer(fci -> {
+                        fci.yield(fci.invokeStatic(Descriptors.PATTERN_COMPILE, Const.of(effectiveMatchRegex)));
+                    });
+                });
+            }
+            cc.defaultConstructor();
 
-        implementGetPriority(valueResolver, priority);
+            implementGetPriority(cc, effectivePriority);
 
-        Parameters params = new Parameters(method,
-                patternField != null || !matchNames.isEmpty() || matchName.equals(TemplateExtension.ANY), false);
-        implementAppliesTo(valueResolver, method, matchName, matchNames, patternField, params);
-        implementResolve(valueResolver, declaringClass, method, matchName, matchNames, patternField, params);
+            Parameters params = new Parameters(method,
+                    pattern != null || !effectiveMatchNames.isEmpty() || effectiveMatchName.equals(TemplateExtension.ANY),
+                    false);
+            implementAppliesTo(cc, method, effectiveMatchName, effectiveMatchNames, pattern, params);
+            implementResolve(cc, declaringClass, method, effectiveMatchName, effectiveMatchNames, pattern, params);
 
-        valueResolver.close();
-        return generatedName.replace('/', '.');
+        });
+
+        return generatedClassName;
     }
 
-    public NamespaceResolverCreator createNamespaceResolver(ClassInfo declaringClass, String namespace, int priority) {
-        return new NamespaceResolverCreator(declaringClass, namespace, priority);
+    public String generateNamespaceResolver(ClassInfo declaringClass, String namespace, int priority,
+            List<ExtensionMethodInfo> extensionMethods) {
+        String baseName;
+        if (declaringClass.enclosingClass() != null) {
+            baseName = simpleName(declaringClass.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
+                    + simpleName(declaringClass);
+        } else {
+            baseName = simpleName(declaringClass);
+        }
+        String targetPackage = packageName(declaringClass.name());
+
+        String suffix = NAMESPACE_SUFFIX + "_" + sha1(namespace) + "_" + priority;
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, suffix);
+        String generatedClassName = generatedName.replace('/', '.');
+        generatedTypes.add(generatedClassName);
+
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(NamespaceResolver.class);
+            for (ExtensionMethodInfo extensionMethod : extensionMethods) {
+                String matchRegex = extensionMethod.matchRegex();
+                if (matchRegex != null && !matchRegex.isEmpty()) {
+                    cc.field(PATTERN + "_" + sha1(extensionMethod.method().toString()), fc -> {
+                        fc.private_();
+                        fc.final_();
+                        fc.setType(Pattern.class);
+                        fc.setInitializer(fci -> {
+                            fci.yield(fci.invokeStatic(Descriptors.PATTERN_COMPILE, Const.of(matchRegex)));
+                        });
+                    });
+                }
+            }
+            cc.defaultConstructor();
+
+            implementGetNamespace(cc, namespace);
+            implementGetPriority(cc, priority);
+
+            cc.method("resolve", mc -> {
+                mc.returning(CompletionStage.class);
+                ParamVar evalContext = mc.parameter("ec", EvalContext.class);
+
+                mc.body(bc -> {
+                    LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
+                    LocalVar paramsCount = bc.localVar("count", bc.invokeInterface(Descriptors.COLLECTION_SIZE,
+                            bc.invokeInterface(Descriptors.GET_PARAMS, evalContext)));
+                    for (ExtensionMethodInfo extensionMethod : extensionMethods) {
+                        String matchRegex = extensionMethod.matchRegex();
+                        FieldDesc patternField = matchRegex != null ? FieldDesc.of(cc.type(),
+                                PATTERN + "_" + sha1(extensionMethod.method().toString()), Pattern.class) : null;
+                        addNamespaceExtensionMethod(cc, bc, evalContext, patternField, extensionMethod.method(),
+                                extensionMethod.matchName(),
+                                extensionMethod.matchNames(), matchRegex, name, paramsCount);
+                    }
+                    bc.return_(bc.invokeStatic(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+                });
+            });
+        });
+        return generatedClassName;
+    }
+
+    private void addNamespaceExtensionMethod(ClassCreator namespaceResolver, BlockCreator resolve, ParamVar evalContext,
+            FieldDesc patternField,
+            MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Var name, Var paramsCount) {
+        boolean isNameParamRequired = patternField != null || !matchNames.isEmpty()
+                || matchName.equals(TemplateExtension.ANY);
+        Parameters params = new Parameters(method, isNameParamRequired, true);
+        boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
+        boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
+
+        resolve.block(nested -> {
+            // Test property name
+            if (!matchAny) {
+                if (patternField != null) {
+                    Expr pattern = namespaceResolver.this_().field(patternField);
+                    Expr matcher = nested.invokeVirtual(Descriptors.PATTERN_MATCHER, pattern, name);
+                    nested.ifNot(nested.invokeVirtual(Descriptors.MATCHER_MATCHES, matcher),
+                            notMatching -> notMatching.break_(nested));
+
+                } else if (!matchNames.isEmpty()) {
+                    // Any of the name matches
+                    nested.block(namesMatch -> {
+                        for (String match : matchNames) {
+                            namesMatch.if_(namesMatch.objEquals(name, Const.of(match)),
+                                    matching -> matching.break_(namesMatch));
+                        }
+                        namesMatch.break_(nested);
+                    });
+
+                } else {
+                    nested.ifNot(nested.objEquals(name, Const.of(matchName)), matching -> matching.break_(nested));
+                }
+            }
+            // Test number of parameters
+            int realParamSize = params.evaluated().size();
+            if (!isVarArgs || realParamSize > 1) {
+                if (isVarArgs) {
+                    // For varargs methods match the minimal number of params
+                    nested.if_(nested.le(paramsCount, Const.of(realParamSize - 1)), lessEqual -> lessEqual.break_(nested));
+                } else {
+                    // https://github.com/quarkusio/gizmo/issues/467
+                    // workaround: use the constant as the second argument
+                    nested.if_(nested.ne(paramsCount, Const.of(realParamSize)), notEqual -> notEqual.break_(nested));
+                }
+            }
+
+            if (!params.needsEvaluation()) {
+                Expr[] args = new Expr[params.size()];
+                for (int i = 0; i < params.size(); i++) {
+                    Param param = params.get(i);
+                    if (param.kind == ParamKind.NAME) {
+                        args[i] = name;
+                    } else if (param.kind == ParamKind.ATTR) {
+                        args[i] = nested.invokeInterface(Descriptors.GET_ATTRIBUTE, evalContext,
+                                Const.of(param.name));
+                    }
+                }
+                nested.return_(nested.invokeStatic(Descriptors.COMPLETED_STAGE_OF,
+                        nested.invokeStatic(methodDescOf(method), args)));
+            } else {
+                LocalVar ret = nested.localVar("ret", nested.new_(CompletableFuture.class));
+                // Evaluate params first
+                // The CompletionStage upon which we invoke whenComplete()
+                LocalVar evaluatedParams = nested.localVar("evaluatedParams",
+                        nested.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE,
+                                evalContext));
+                Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
+
+                // Function that is called when params are evaluated
+                Expr whenCompleteFun = nested.lambda(BiConsumer.class, lc -> {
+                    Var capturedName = isNameParamRequired ? lc.capture(name) : null;
+                    Var capturedRet = lc.capture(ret);
+                    Var capturedEvaluatedParams = lc.capture(evaluatedParams);
+                    Var capturedEvalContext = lc.capture(evalContext);
+                    @SuppressWarnings("unused")
+                    ParamVar result = lc.parameter("r", 0);
+                    ParamVar throwable = lc.parameter("t", 1);
+
+                    lc.body(accept -> {
+                        accept.ifElse(accept.isNull(throwable), success -> {
+                            // Check type parameters and return NO_RESULT if failed
+                            List<Param> evaluated = params.evaluated();
+                            LocalVar paramTypes = success.localVar("pt", success.newArray(Class.class, evaluated.stream()
+                                    .map(p -> Const.of(classDescOf(p.type)))
+                                    .toList()));
+                            success.ifNot(success.invokeVirtual(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
+                                    capturedEvaluatedParams, Const.of(isVarArgs), paramTypes),
+                                    typeMatchFailed -> {
+                                        typeMatchFailed.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                                                typeMatchFailed.invokeStatic(Descriptors.NOT_FOUND_FROM_EC,
+                                                        capturedEvalContext));
+                                        typeMatchFailed.return_();
+                                    });
+
+                            // try-catch
+                            success.try_(tc -> {
+
+                                tc.body(tcb -> {
+
+                                    // Collect the params
+                                    Expr[] args = new Expr[params.size()];
+                                    int evalIdx = 0;
+                                    int lastIdx = params.size() - 1;
+                                    for (int i = 0; i < params.size(); i++) {
+                                        Param param = params.get(i);
+                                        if (param.kind == ParamKind.NAME) {
+                                            args[i] = capturedName;
+                                        } else if (param.kind == ParamKind.ATTR) {
+                                            args[i] = tcb.invokeInterface(Descriptors.GET_ATTRIBUTE, capturedEvalContext,
+                                                    Const.of(param.name));
+                                        } else {
+                                            if (isVarArgs && i == lastIdx) {
+                                                // Last param is varargs
+                                                Type varargsParam = params.get(lastIdx).type;
+                                                Expr componentType = Const
+                                                        .of(classDescOf(varargsParam.asArrayType().elementType()));
+                                                Expr varargsResults = tcb.invokeVirtual(
+                                                        Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
+                                                        capturedEvaluatedParams, Const.of(evaluated.size()), componentType);
+                                                args[i] = varargsResults;
+                                            } else {
+                                                args[i] = tcb.invokeVirtual(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                                        capturedEvaluatedParams, Const.of(evalIdx++));
+                                            }
+                                        }
+                                    }
+                                    // Invoke the extension method
+                                    Expr invokeRet = tcb.invokeStatic(methodDescOf(method), args);
+                                    tcb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet, invokeRet);
+                                });
+
+                                tc.catch_(Throwable.class, "e", (cb, e) -> {
+                                    cb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, capturedRet, e);
+                                });
+                            });
+                        },
+                                failure -> {
+                                    failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                            capturedRet,
+                                            throwable);
+                                });
+                        accept.return_();
+                    });
+
+                });
+                nested.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun);
+                nested.return_(ret);
+            }
+        });
+    }
+
+    public record ExtensionMethodInfo(MethodInfo method, String matchName, List<String> matchNames, String matchRegex) {
+
     }
 
     private void implementGetNamespace(ClassCreator namespaceResolver, String namespace) {
-        MethodCreator getNamespace = namespaceResolver.getMethodCreator("getNamespace", String.class)
-                .setModifiers(ACC_PUBLIC);
-        getNamespace.returnValue(getNamespace.load(namespace));
+        namespaceResolver.method("getNamespace", mc -> {
+            mc.returning(String.class);
+            mc.body(bc -> bc.return_(namespace));
+        });
     }
 
     private void implementGetPriority(ClassCreator valueResolver, int priority) {
-        MethodCreator getPriority = valueResolver.getMethodCreator("getPriority", int.class)
-                .setModifiers(ACC_PUBLIC);
-        getPriority.returnValue(getPriority.load(priority));
+        valueResolver.method("getPriority", mc -> {
+            mc.returning(int.class);
+            mc.body(bc -> bc.return_(priority));
+        });
     }
 
     private void implementResolve(ClassCreator valueResolver, ClassInfo declaringClass, MethodInfo method, String matchName,
-            List<String> matchNames, FieldDescriptor patternField, Parameters params) {
-        MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
-                .setModifiers(ACC_PUBLIC);
+            List<String> matchNames, FieldDesc patternField, Parameters params) {
+        valueResolver.method("resolve", mc -> {
+            mc.returning(CompletionStage.class);
+            ParamVar evalContext = mc.parameter("evalContext", EvalContext.class);
 
-        ResultHandle evalContext = resolve.getMethodParam(0);
-        ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        boolean isNameParamRequired = patternField != null || !matchNames.isEmpty() || matchName.equals(TemplateExtension.ANY);
-        boolean returnsCompletionStage = hasCompletionStage(method.returnType());
+            mc.body(bc -> {
+                boolean isNameParamRequired = patternField != null || !matchNames.isEmpty()
+                        || matchName.equals(TemplateExtension.ANY);
+                boolean returnsCompletionStage = hasCompletionStage(method.returnType());
 
-        ResultHandle ret;
-        if (!params.needsEvaluation()) {
-            // No parameter needs to be evaluated
-            ResultHandle[] args = new ResultHandle[params.size()];
-            for (int i = 0; i < params.size(); i++) {
-                Param param = params.get(i);
-                if (param.kind == ParamKind.BASE) {
-                    args[i] = base;
-                } else if (param.kind == ParamKind.NAME) {
-                    args[i] = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-                } else if (param.kind == ParamKind.ATTR) {
-                    args[i] = resolve.invokeInterfaceMethod(Descriptors.GET_ATTRIBUTE, evalContext, resolve.load(param.name));
-                }
-            }
-            // Invoke the extension method
-            ResultHandle result = resolve
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(declaringClass.name().toString(), method.name(),
-                            method.returnType().name().toString(),
-                            params.parameterTypesAsStringArray()),
-                            args);
-            if (returnsCompletionStage) {
-                ret = result;
-            } else {
-                ret = resolve.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, result);
-            }
-        } else {
-            ret = resolve
-                    .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
-            // Evaluate params first
-            ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-            // The CompletionStage upon which we invoke whenComplete()
-            ResultHandle evaluatedParamsHandle = resolve.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE,
-                    evalContext);
-            ResultHandle paramsReadyHandle = resolve.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
-                    evaluatedParamsHandle);
-
-            // Function that is called when params are evaluated
-            FunctionCreator whenCompleteFun = resolve.createFunction(BiConsumer.class);
-            resolve.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReadyHandle, whenCompleteFun.getInstance());
-            BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
-            AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
-            whenComplete.assign(whenBase, base);
-            AssignableResultHandle whenName = null;
-            if (isNameParamRequired) {
-                whenName = whenComplete.createVariable(String.class);
-                whenComplete.assign(whenName, name);
-            }
-            AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-            whenComplete.assign(whenRet, ret);
-            AssignableResultHandle whenEvaluatedParams = whenComplete.createVariable(EvaluatedParams.class);
-            whenComplete.assign(whenEvaluatedParams, evaluatedParamsHandle);
-            AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
-            whenComplete.assign(whenEvalContext, evalContext);
-
-            BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-            BytecodeCreator success = throwableIsNull.trueBranch();
-            boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-
-            // Check type parameters and return NO_RESULT if failed
-            List<Param> evaluated = params.evaluated();
-            ResultHandle paramTypesHandle = success.newArray(Class.class, evaluated.size());
-            int idx = 0;
-            for (Param p : evaluated) {
-                success.writeArrayValue(paramTypesHandle, idx++,
-                        ValueResolverGenerator.loadParamType(success, p.type));
-            }
-            BytecodeCreator typeMatchFailed = success
-                    .ifNonZero(success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
-                            whenEvaluatedParams, success.load(isVarArgs), paramTypesHandle))
-                    .falseBranch();
-            typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                    typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
-            typeMatchFailed.returnValue(null);
-
-            // try
-            TryBlock tryCatch = success.tryBlock();
-            // catch (Throwable e)
-            CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
-            // CompletableFuture.completeExceptionally(Throwable)
-            exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                    exception.getCaughtException());
-
-            // Collect the params
-            ResultHandle[] args = new ResultHandle[params.size()];
-            int evalIdx = 0;
-            int lastIdx = params.size() - 1;
-            for (int i = 0; i < params.size(); i++) {
-                Param param = params.get(i);
-                if (param.kind == ParamKind.BASE) {
-                    args[i] = whenBase;
-                } else if (param.kind == ParamKind.NAME) {
-                    args[i] = whenName;
-                } else if (param.kind == ParamKind.ATTR) {
-                    args[i] = tryCatch.invokeInterfaceMethod(Descriptors.GET_ATTRIBUTE, whenEvalContext,
-                            tryCatch.load(param.name));
-                } else {
-                    if (isVarArgs && i == lastIdx) {
-                        // Last param is varargs
-                        Type varargsParam = params.get(lastIdx).type;
-                        ResultHandle componentType = tryCatch
-                                .loadClass(varargsParam.asArrayType().constituent().name().toString());
-                        ResultHandle varargsResults = tryCatch.invokeVirtualMethod(
-                                Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
-                                evaluatedParamsHandle, tryCatch.load(evaluated.size()), componentType);
-                        args[i] = varargsResults;
-                    } else {
-                        args[i] = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                                whenEvaluatedParams, tryCatch.load(evalIdx++));
+                if (!params.needsEvaluation()) {
+                    LocalVar ret = bc.localVar("ret", Const.ofNull(CompletionStage.class));
+                    // No parameter needs to be evaluated
+                    Expr[] args = new Expr[params.size()];
+                    for (int i = 0; i < params.size(); i++) {
+                        Param param = params.get(i);
+                        if (param.kind == ParamKind.BASE) {
+                            args[i] = bc.localVar("base", bc.invokeInterface(Descriptors.GET_BASE, evalContext));
+                        } else if (param.kind == ParamKind.NAME) {
+                            args[i] = bc.invokeInterface(Descriptors.GET_NAME, evalContext);
+                        } else if (param.kind == ParamKind.ATTR) {
+                            args[i] = bc.invokeInterface(Descriptors.GET_ATTRIBUTE, evalContext, Const.of(param.name));
+                        }
                     }
+                    // Invoke the extension method
+                    Expr result = bc.invokeStatic(methodDescOf(method), args);
+                    if (returnsCompletionStage) {
+                        bc.set(ret, result);
+                    } else {
+                        bc.set(ret, bc.invokeStatic(Descriptors.COMPLETED_STAGE_OF, result));
+                    }
+                    bc.return_(ret);
+                } else {
+                    LocalVar ret = bc.localVar("ret", bc.new_(CompletableFuture.class));
+                    LocalVar base = bc.localVar("base", bc.invokeInterface(Descriptors.GET_BASE, evalContext));
+                    // Evaluate params first
+                    LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
+                    // The CompletionStage upon which we invoke whenComplete()
+                    LocalVar evaluatedParams = bc.localVar("evaluatedParams",
+                            bc.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE,
+                                    evalContext));
+                    Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
+
+                    // Function that is called when params are evaluated
+                    Expr whenCompleteFun = bc.lambda(BiConsumer.class, lc -> {
+                        Var capturedBase = lc.capture(base);
+                        Var capturedName = isNameParamRequired ? lc.capture(name) : null;
+                        Var capturedRet = lc.capture(ret);
+                        Var capturedEvaluatedParams = lc.capture(evaluatedParams);
+                        Var capturedEvalContext = lc.capture(evalContext);
+                        @SuppressWarnings("unused")
+                        ParamVar result = lc.parameter("r", 0);
+                        ParamVar throwable = lc.parameter("t", 1);
+
+                        lc.body(accept -> {
+                            accept.ifElse(accept.isNull(throwable), success -> {
+                                boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
+                                // Check type parameters and return NO_RESULT if failed
+                                List<Param> evaluated = params.evaluated();
+                                LocalVar paramTypes = success.localVar("pt",
+                                        success.newArray(Class.class, evaluated.stream()
+                                                .map(p -> Const.of(classDescOf(p.type)))
+                                                .toList()));
+                                success.ifNot(success.invokeVirtual(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
+                                        capturedEvaluatedParams, Const.of(isVarArgs), paramTypes),
+                                        typeMatchFailed -> {
+                                            typeMatchFailed.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                                                    typeMatchFailed.invokeStatic(Descriptors.NOT_FOUND_FROM_EC,
+                                                            capturedEvalContext));
+                                            typeMatchFailed.return_();
+                                        });
+
+                                // try-catch
+                                success.try_(tc -> {
+
+                                    tc.body(tcb -> {
+
+                                        // Collect the params
+                                        Expr[] args = new Expr[params.size()];
+                                        int evalIdx = 0;
+                                        int lastIdx = params.size() - 1;
+                                        for (int i = 0; i < params.size(); i++) {
+                                            Param param = params.get(i);
+                                            if (param.kind == ParamKind.BASE) {
+                                                args[i] = capturedBase;
+                                            } else if (param.kind == ParamKind.NAME) {
+                                                args[i] = capturedName;
+                                            } else if (param.kind == ParamKind.ATTR) {
+                                                args[i] = tcb.invokeInterface(Descriptors.GET_ATTRIBUTE, capturedEvalContext,
+                                                        Const.of(param.name));
+                                            } else {
+                                                if (isVarArgs && i == lastIdx) {
+                                                    // Last param is varargs
+                                                    Type varargsParam = params.get(lastIdx).type;
+                                                    Expr componentType = Const
+                                                            .of(classDescOf(varargsParam.asArrayType().constituent().name()));
+                                                    Expr varargsResults = tcb.invokeVirtual(
+                                                            Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
+                                                            capturedEvaluatedParams, Const.of(evaluated.size()), componentType);
+                                                    args[i] = varargsResults;
+                                                } else {
+                                                    args[i] = tcb.invokeVirtual(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                                            capturedEvaluatedParams, Const.of(evalIdx++));
+                                                }
+                                            }
+                                        }
+                                        // Invoke the extension method
+                                        Expr invokeRet = tcb.invokeStatic(methodDescOf(method), args);
+                                        tcb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet, invokeRet);
+                                    });
+
+                                    tc.catch_(Throwable.class, "e", (cb, e) -> {
+                                        cb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, capturedRet, e);
+                                    });
+                                });
+                            },
+                                    failure -> {
+                                        failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                                capturedRet,
+                                                throwable);
+                                    });
+
+                            accept.return_();
+                        });
+
+                    });
+                    bc.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun);
+                    bc.return_(ret);
                 }
-            }
-
-            // Invoke the extension method
-            ResultHandle invokeRet = tryCatch
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(declaringClass.name().toString(), method.name(),
-                            method.returnType().name().toString(),
-                            params.parameterTypesAsStringArray()),
-                            args);
-            tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
-
-            BytecodeCreator failure = throwableIsNull.falseBranch();
-            failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                    whenComplete.getMethodParam(1));
-            whenComplete.returnValue(null);
-        }
-
-        resolve.returnValue(ret);
+            });
+        });
     }
 
     private void implementAppliesTo(ClassCreator valueResolver, MethodInfo method, String matchName, List<String> matchNames,
-            FieldDescriptor patternField, Parameters params) {
-        MethodCreator appliesTo = valueResolver.getMethodCreator("appliesTo", boolean.class, EvalContext.class)
-                .setModifiers(ACC_PUBLIC);
+            FieldDesc patternField, Parameters params) {
+        valueResolver.method("appliesTo", mc -> {
+            mc.returning(boolean.class);
+            ParamVar evalContext = mc.parameter("ec", EvalContext.class);
 
-        boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
-        boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-        ResultHandle evalContext = appliesTo.getMethodParam(0);
-        ResultHandle base = appliesTo.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        ResultHandle name = appliesTo.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-        BytecodeCreator baseNull = appliesTo.ifNull(base).trueBranch();
-        baseNull.returnValue(baseNull.load(false));
+            boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
+            boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
 
-        // Test base object class
-        ResultHandle baseClass = appliesTo.invokeVirtualMethod(Descriptors.GET_CLASS, base);
-        // Perform autoboxing for primitives
-        ResultHandle testClass = appliesTo.loadClass(box(params.getFirst(ParamKind.BASE).type).name().toString());
-        ResultHandle baseClassTest = appliesTo.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass,
-                baseClass);
-        BytecodeCreator baseNotAssignable = appliesTo.ifTrue(baseClassTest).falseBranch();
-        baseNotAssignable.returnValue(baseNotAssignable.load(false));
+            mc.body(bc -> {
+                LocalVar base = bc.localVar("base", bc.invokeInterface(Descriptors.GET_BASE, evalContext));
+                bc.ifNull(base, baseNull -> baseNull.returnFalse());
 
-        // Test property name
-        if (!matchAny) {
-            if (patternField != null) {
-                // if (!pattern.matcher(value).match()) {
-                //   return false;
-                // }
-                ResultHandle pattern = appliesTo.readInstanceField(patternField, appliesTo.getThis());
-                ResultHandle matcher = appliesTo.invokeVirtualMethod(Descriptors.PATTERN_MATCHER, pattern, name);
-                BytecodeCreator nameNotMatched = appliesTo
-                        .ifFalse(appliesTo.invokeVirtualMethod(Descriptors.MATCHER_MATCHES, matcher)).trueBranch();
-                nameNotMatched.returnValue(appliesTo.load(false));
-            } else if (!matchNames.isEmpty()) {
-                // Any of the name matches
-                BytecodeCreator namesMatch = appliesTo.createScope();
-                for (String match : matchNames) {
-                    ResultHandle nameTest = Gizmo.equals(namesMatch, name, namesMatch.load(match));
-                    namesMatch.ifTrue(nameTest).trueBranch().breakScope(namesMatch);
-                }
-                namesMatch.returnValue(namesMatch.load(false));
-            } else {
-                ResultHandle nameTest = Gizmo.equals(appliesTo, name, appliesTo.load(matchName));
-                BytecodeCreator nameNotMatched = appliesTo.ifFalse(nameTest).trueBranch();
-                nameNotMatched.returnValue(nameNotMatched.load(false));
-            }
-        }
+                // Test base object class
+                // Perform autoboxing for primitives
+                Expr baseClass = bc.invokeVirtual(Descriptors.GET_CLASS, base);
+                Expr testClass = Const.of(classDescOf(box(params.getFirst(ParamKind.BASE).type)));
+                bc.ifNot(bc.invokeVirtual(Descriptors.IS_ASSIGNABLE_FROM, testClass, baseClass),
+                        baseNotAssignable -> baseNotAssignable.returnFalse());
 
-        // Test number of parameters
-        int evaluatedParamsSize = params.evaluated().size();
-        if (!isVarArgs || evaluatedParamsSize > 1) {
-            ResultHandle paramsHandle = appliesTo.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
-            ResultHandle paramsCount = appliesTo.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, paramsHandle);
-            BytecodeCreator paramsNotMatching;
-            if (isVarArgs) {
-                // For varargs methods match the minimal number of params
-                paramsNotMatching = appliesTo.ifIntegerGreaterThan(appliesTo.load(evaluatedParamsSize - 1), paramsCount)
-                        .trueBranch();
-            } else {
-                paramsNotMatching = appliesTo.ifIntegerEqual(appliesTo.load(evaluatedParamsSize), paramsCount).falseBranch();
-            }
-            paramsNotMatching.returnValue(paramsNotMatching.load(false));
-        }
-
-        appliesTo.returnValue(appliesTo.load(true));
-    }
-
-    public class NamespaceResolverCreator implements AutoCloseable {
-
-        private final ClassCreator namespaceResolver;
-
-        public NamespaceResolverCreator(ClassInfo declaringClass, String namespace, int priority) {
-            String baseName;
-            if (declaringClass.enclosingClass() != null) {
-                baseName = simpleName(declaringClass.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
-                        + simpleName(declaringClass);
-            } else {
-                baseName = simpleName(declaringClass);
-            }
-            String targetPackage = packageName(declaringClass.name());
-
-            String suffix = NAMESPACE_SUFFIX + "_" + sha1(namespace) + "_" + priority;
-            String generatedName = generatedNameFromTarget(targetPackage, baseName, suffix);
-            generatedTypes.add(generatedName.replace('/', '.'));
-
-            this.namespaceResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                    .interfaces(NamespaceResolver.class).build();
-
-            implementGetNamespace(namespaceResolver, namespace);
-            implementGetPriority(namespaceResolver, priority);
-        }
-
-        public String getClassName() {
-            return namespaceResolver.getClassName().replace('/', '.');
-        }
-
-        public ResolveCreator implementResolve() {
-            return new ResolveCreator();
-        }
-
-        @Override
-        public void close() {
-            namespaceResolver.close();
-        }
-
-        public class ResolveCreator implements AutoCloseable {
-
-            private final MethodCreator resolve;
-            private final MethodCreator constructor;
-            private final ResultHandle evalContext;
-            private final ResultHandle name;
-            private final ResultHandle paramsHandle;
-            private final ResultHandle paramsCount;
-
-            public ResolveCreator() {
-                this.resolve = namespaceResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
-                        .setModifiers(ACC_PUBLIC);
-                this.evalContext = resolve.getMethodParam(0);
-                this.name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-                this.paramsHandle = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
-                this.paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, paramsHandle);
-                this.constructor = namespaceResolver.getMethodCreator(MethodDescriptor.INIT, "V");
-                // Invoke super()
-                this.constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
-            }
-
-            public void addMethod(MethodInfo method, String matchName, List<String> matchNames, String matchRegex) {
-                FieldDescriptor patternField = null;
-                if (matchRegex != null && !matchRegex.isEmpty()) {
-                    patternField = namespaceResolver.getFieldCreator(PATTERN + "_" + sha1(method.toString()), Pattern.class)
-                            .setModifiers(ACC_PRIVATE | ACC_FINAL).getFieldDescriptor();
-                    constructor.writeInstanceField(patternField, constructor.getThis(),
-                            constructor.invokeStaticMethod(Descriptors.PATTERN_COMPILE, constructor.load(matchRegex)));
+                // Test number of parameters
+                int evaluatedParamsSize = params.evaluated().size();
+                if (!isVarArgs || evaluatedParamsSize > 1) {
+                    Expr paramsCount = bc.invokeInterface(Descriptors.COLLECTION_SIZE,
+                            bc.invokeInterface(Descriptors.GET_PARAMS, evalContext));
+                    if (isVarArgs) {
+                        // For varargs methods match the minimal number of params
+                        bc.if_(bc.gt(Const.of(evaluatedParamsSize - 1), paramsCount), gt -> gt.returnFalse());
+                    } else {
+                        // https://github.com/quarkusio/gizmo/issues/467
+                        // workaround: use the constant as the second argument
+                        bc.if_(bc.ne(paramsCount, Const.of(evaluatedParamsSize)), notEqual -> notEqual.returnFalse());
+                    }
                 }
 
-                boolean isNameParamRequired = patternField != null || !matchNames.isEmpty()
-                        || matchName.equals(TemplateExtension.ANY);
-                Parameters params = new Parameters(method, isNameParamRequired, true);
+                LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
 
-                BytecodeCreator matchScope = createNamespaceExtensionMatchScope(resolve, method, params.evaluated().size(),
-                        matchName, matchNames, patternField, name, paramsHandle, paramsCount);
+                // Test property name
+                if (!matchAny) {
+                    if (patternField != null) {
+                        // if (!pattern.matcher(value).match()) {
+                        //   return false;
+                        // }
+                        Expr pattern = valueResolver.this_().field(patternField);
+                        Expr matcher = bc.invokeVirtual(Descriptors.PATTERN_MATCHER, pattern, name);
+                        bc.ifNot(bc.invokeVirtual(Descriptors.MATCHER_MATCHES, matcher),
+                                nameNotMatched -> nameNotMatched.returnFalse());
 
-                if (!params.needsEvaluation()) {
-                    ResultHandle[] args = new ResultHandle[params.size()];
-                    for (int i = 0; i < params.size(); i++) {
-                        Param param = params.get(i);
-                        if (param.kind == ParamKind.NAME) {
-                            args[i] = name;
-                        } else if (param.kind == ParamKind.ATTR) {
-                            args[i] = matchScope.invokeInterfaceMethod(Descriptors.GET_ATTRIBUTE, evalContext,
-                                    matchScope.load(param.name));
-                        }
-                    }
-                    matchScope.returnValue(matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF,
-                            matchScope.invokeStaticMethod(MethodDescriptor.of(method), args)));
-                } else {
-                    ResultHandle ret = matchScope.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
-
-                    // Evaluate params first
-                    // The CompletionStage upon which we invoke whenComplete()
-                    ResultHandle evaluatedParamsHandle = matchScope.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE,
-                            evalContext);
-                    ResultHandle paramsReadyHandle = matchScope.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
-                            evaluatedParamsHandle);
-
-                    // Function that is called when params are evaluated
-                    FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
-                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReadyHandle,
-                            whenCompleteFun.getInstance());
-                    BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
-                    AssignableResultHandle whenName = null;
-                    if (isNameParamRequired) {
-                        whenName = whenComplete.createVariable(String.class);
-                        whenComplete.assign(whenName, name);
-                    }
-                    AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-                    whenComplete.assign(whenRet, ret);
-                    AssignableResultHandle whenEvaluatedParams = whenComplete.createVariable(EvaluatedParams.class);
-                    whenComplete.assign(whenEvaluatedParams, evaluatedParamsHandle);
-                    AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
-                    whenComplete.assign(whenEvalContext, evalContext);
-
-                    BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-                    BytecodeCreator success = throwableIsNull.trueBranch();
-                    boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-
-                    // Check type parameters and return NO_RESULT if failed
-                    List<Param> evaluated = params.evaluated();
-                    ResultHandle paramTypesHandle = success.newArray(Class.class, evaluated.size());
-                    int idx = 0;
-                    for (Param p : evaluated) {
-                        success.writeArrayValue(paramTypesHandle, idx++,
-                                ValueResolverGenerator.loadParamType(success, p.type));
-                    }
-                    BytecodeCreator typeMatchFailed = success
-                            .ifTrue(success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
-                                    whenEvaluatedParams, success.load(isVarArgs), paramTypesHandle))
-                            .falseBranch();
-                    typeMatchFailed.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                            typeMatchFailed.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext));
-                    typeMatchFailed.returnValue(null);
-
-                    // try
-                    TryBlock tryCatch = success.tryBlock();
-                    // catch (Throwable e)
-                    CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
-                    // CompletableFuture.completeExceptionally(Throwable)
-                    exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                            exception.getCaughtException());
-
-                    // Collect the params
-                    ResultHandle[] args = new ResultHandle[params.size()];
-                    int evalIdx = 0;
-                    int lastIdx = params.size() - 1;
-                    for (int i = 0; i < params.size(); i++) {
-                        Param param = params.get(i);
-                        if (param.kind == ParamKind.NAME) {
-                            args[i] = whenName;
-                        } else if (param.kind == ParamKind.ATTR) {
-                            args[i] = tryCatch.invokeInterfaceMethod(Descriptors.GET_ATTRIBUTE, whenEvalContext,
-                                    tryCatch.load(param.name));
-                        } else {
-                            if (isVarArgs && i == lastIdx) {
-                                // Last param is varargs
-                                Type varargsParam = params.get(lastIdx).type;
-                                ResultHandle componentType = tryCatch
-                                        .loadClass(varargsParam.asArrayType().constituent().name().toString());
-                                ResultHandle varargsResults = tryCatch.invokeVirtualMethod(
-                                        Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
-                                        whenEvaluatedParams, tryCatch.load(evaluated.size()), componentType);
-                                args[i] = varargsResults;
-                            } else {
-                                args[i] = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                                        whenEvaluatedParams, tryCatch.load(evalIdx++));
+                    } else if (!matchNames.isEmpty()) {
+                        // Any of the name matches
+                        bc.block(nested -> {
+                            for (String match : matchNames) {
+                                nested.if_(nested.objEquals(name, Const.of(match)), namesMatch -> namesMatch.break_(nested));
                             }
-                        }
+                            nested.returnFalse();
+                        });
+
+                    } else {
+                        bc.ifNot(bc.objEquals(name, Const.of(matchName)),
+                                nameNotMatched -> nameNotMatched.returnFalse());
                     }
-
-                    ResultHandle invokeRet = tryCatch.invokeStaticMethod(MethodDescriptor.of(method), args);
-                    tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
-
-                    BytecodeCreator failure = throwableIsNull.falseBranch();
-                    failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                            whenComplete.getMethodParam(1));
-                    whenComplete.returnValue(null);
-
-                    matchScope.returnValue(ret);
                 }
-            }
-
-            @Override
-            public void close() {
-                constructor.returnValue(null);
-                resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
-            }
-
-        }
-
-    }
-
-    private BytecodeCreator createNamespaceExtensionMatchScope(BytecodeCreator bytecodeCreator, MethodInfo method,
-            int realParamSize, String matchName, List<String> matchNames, FieldDescriptor patternField, ResultHandle name,
-            ResultHandle params,
-            ResultHandle paramsCount) {
-
-        boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
-        boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-
-        BytecodeCreator matchScope = bytecodeCreator.createScope();
-        // Test property name
-        if (!matchAny) {
-            if (patternField != null) {
-                ResultHandle pattern = matchScope.readInstanceField(patternField, matchScope.getThis());
-                ResultHandle matcher = matchScope.invokeVirtualMethod(Descriptors.PATTERN_MATCHER, pattern, name);
-                matchScope.ifFalse(matchScope.invokeVirtualMethod(Descriptors.MATCHER_MATCHES, matcher)).trueBranch()
-                        .breakScope(matchScope);
-            } else if (!matchNames.isEmpty()) {
-                // Any of the name matches
-                BytecodeCreator namesMatch = matchScope.createScope();
-                for (String match : matchNames) {
-                    ResultHandle nameTest = Gizmo.equals(namesMatch, name, namesMatch.load(match));
-                    namesMatch.ifTrue(nameTest).trueBranch().breakScope(namesMatch);
-                }
-                namesMatch.breakScope(matchScope);
-            } else {
-                matchScope.ifTrue(Gizmo.equals(matchScope, matchScope.load(matchName), name))
-                        .falseBranch().breakScope(matchScope);
-            }
-        }
-        // Test number of parameters
-        if (!isVarArgs || realParamSize > 1) {
-            if (isVarArgs) {
-                // For varargs methods match the minimal number of params
-                matchScope.ifIntegerLessEqual(matchScope.load(realParamSize - 1), paramsCount).falseBranch()
-                        .breakScope(matchScope);
-            } else {
-                matchScope.ifIntegerEqual(matchScope.load(realParamSize), paramsCount).falseBranch().breakScope(matchScope);
-            }
-        }
-        return matchScope;
+                bc.returnTrue();
+            });
+        });
     }
 
     static String sha1(String value) {

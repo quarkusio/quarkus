@@ -135,11 +135,17 @@ public class SmallRyeReactiveMessagingProcessor {
             }
 
             @Override
+            public int priority() {
+                // Must run after the SpringDIProcessor annotation transformer, which has default priority 1000
+                return 500;
+            }
+
+            @Override
             public void transform(AnnotationsTransformer.TransformationContext ctx) {
                 if (ctx.isClass()) {
                     ClassInfo clazz = ctx.getTarget().asClass();
                     Map<DotName, List<AnnotationInstance>> annotations = clazz.annotationsMap();
-                    if (scopes.isScopeDeclaredOn(clazz)
+                    if (scopes.isScopeIn(ctx.getAnnotations())
                             || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PATH)
                             || annotations.containsKey(ReactiveMessagingDotNames.REST_CONTROLLER)
                             || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PROVIDER)) {

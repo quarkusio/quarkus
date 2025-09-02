@@ -1,11 +1,13 @@
 package io.quarkus.gradle.tooling;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -13,6 +15,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.initialization.IncludedBuild;
+import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.composite.internal.DefaultIncludedBuild;
 import org.gradle.internal.composite.IncludedBuildInternal;
@@ -44,7 +47,7 @@ public class ToolingUtils {
                 || Category.REGULAR_PLATFORM.equals(category.getName()));
     }
 
-    public static IncludedBuild includedBuild(final Project project, final String buildName) {
+    public static IncludedBuild includedBuild(final Project project, final String buildPath) {
         Gradle currentGradle = project.getRootProject().getGradle();
         while (null != currentGradle) {
             for (IncludedBuild ib : currentGradle.getIncludedBuilds()) {
@@ -52,7 +55,7 @@ public class ToolingUtils {
                     continue;
                 }
 
-                if (ib.getName().equals(buildName)) {
+                if (((IncludedBuildInternal) ib).getTarget().getBuildIdentifier().getBuildPath().equals(buildPath)) {
                     return ib;
                 }
             }
@@ -177,14 +180,53 @@ public class ToolingUtils {
     }
 
     public static ApplicationModel create(Project project, LaunchMode mode) {
+        return create(project, mode, null);
+    }
+
+    public static ApplicationModel create(Project project, LaunchMode mode, TaskDependencyFactory taskDepFactory) {
         final ModelParameter params = new ModelParameterImpl();
         params.setMode(mode.toString());
-        return create(project, params);
+        return create(project, params, taskDepFactory);
     }
 
     public static ApplicationModel create(Project project, ModelParameter params) {
-        return (ApplicationModel) new GradleApplicationModelBuilder().buildAll(ApplicationModel.class.getName(), params,
+        return create(project, params, null);
+    }
+
+    public static ApplicationModel create(Project project, ModelParameter params, TaskDependencyFactory taskDepFactory) {
+        return (ApplicationModel) new GradleApplicationModelBuilder(taskDepFactory).buildAll(ApplicationModel.class.getName(),
+                params,
                 project);
     }
 
+    /**
+     * This method is meant to figure out the output directory containing class files for a compile task
+     * which is not available in the plugin classpath. An example would be KotlinCompile.
+     *
+     * @param compileTask a compile task
+     */
+    public static File getClassesOutputDir(Task compileTask) {
+        if (compileTask.getOutputs().getHasOutput()) {
+            final AtomicReference<File> result = new AtomicReference<>();
+            compileTask.getOutputs().getFiles().getAsFileTree().visit(visitor -> {
+                // We are looking for the first class file, since a compile task would typically
+                // have a single output location for classes.
+                // There in fact could be a few output locations, the rest though would typically be some internal caching bits
+                if (visitor.getName().endsWith(".class")) {
+                    visitor.stopVisiting();
+                    var file = visitor.getFile();
+                    int relativeSegments = visitor.getRelativePath().getSegments().length;
+                    while (file != null && relativeSegments > 0) {
+                        relativeSegments--;
+                        file = file.getParentFile();
+                    }
+                    if (file != null) {
+                        result.set(file);
+                    }
+                }
+            });
+            return result.get();
+        }
+        return null;
+    }
 }

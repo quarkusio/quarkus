@@ -58,7 +58,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -81,7 +81,6 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.ServerInterceptorStorage;
-import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
@@ -98,6 +97,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -492,9 +492,16 @@ public class GrpcServerProcessor {
                     }
 
                     @Override
+                    public int priority() {
+                        // Must run after the SpringDIProcessor annotation transformer, which has default priority 1000
+                        return 500;
+                    }
+
+                    @Override
                     public void transform(TransformationContext context) {
                         ClassInfo clazz = context.getTarget().asClass();
-                        if (userDefinedServices.contains(clazz.name()) && !customScopes.isScopeDeclaredOn(clazz)) {
+                        if (userDefinedServices.contains(clazz.name())
+                                && !customScopes.isScopeIn(context.getAnnotations())) {
                             // Add @Singleton to make it a bean
                             context.transform()
                                     .add(BuiltinScope.SINGLETON.getName())
@@ -539,7 +546,7 @@ public class GrpcServerProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     KubernetesPortBuildItem registerGrpcServiceInKubernetes(List<BindableServiceBuildItem> bindables) {
         if (!bindables.isEmpty()) {
             boolean useSeparateServer = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.use-separate-server",
@@ -688,7 +695,6 @@ public class GrpcServerProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder,
-            GrpcConfiguration config,
             GrpcBuildTimeConfig buildTimeConfig,
             ShutdownContextBuildItem shutdown,
             List<BindableServiceBuildItem> bindables,
@@ -724,12 +730,12 @@ public class GrpcServerProcessor {
                 if (capabilities.isPresent(Capability.SECURITY)) {
                     securityHandlers = filterBuildItems
                             .stream()
-                            .filter(filter -> filter.getPriority() == FilterBuildItem.AUTHENTICATION
-                                    || filter.getPriority() == FilterBuildItem.AUTHORIZATION)
+                            .filter(filter -> filter.getPriority() == SecurityHandlerPriorities.AUTHENTICATION
+                                    || filter.getPriority() == SecurityHandlerPriorities.AUTHORIZATION)
                             .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
                     // for the moment being, the main router doesn't have QuarkusErrorHandler, but we need to make
                     // sure that exceptions raised during proactive authentication or HTTP authorization are handled
-                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue, config);
+                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue);
                 }
             } else {
                 routerRuntimeValue = routerBuildItem.getHttpRouter();
@@ -744,7 +750,7 @@ public class GrpcServerProcessor {
                     });
             recorder.initializeGrpcServer(bindableServiceBeanStream.isEmpty(), beanContainerBuildItem.getValue(),
                     vertx.getVertx(), routerRuntimeValue,
-                    config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
+                    shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
                     capabilities.isPresent(Capability.SECURITY), securityHandlers);
             return new ServiceStartBuildItem(GRPC_SERVER);
         }

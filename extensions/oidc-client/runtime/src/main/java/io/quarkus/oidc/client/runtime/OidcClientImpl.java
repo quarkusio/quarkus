@@ -148,8 +148,7 @@ public class OidcClientImpl implements OidcClient {
         // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
         // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
         // However this period of time can be set to unpredictable value.
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
         return resp.statusCode() == 503 ? false : true;
     }
 
@@ -194,7 +193,7 @@ public class OidcClientImpl implements OidcClient {
             if (clientAssertion == null && clientAssertionProvider != null) {
                 clientAssertion = clientAssertionProvider.getClientAssertion();
                 if (clientAssertion != null) {
-                    body.add(OidcConstants.CLIENT_ASSERTION, clientAssertion);
+                    body.set(OidcConstants.CLIENT_ASSERTION, clientAssertion);
                 }
             }
             if (clientAssertion == null) {
@@ -204,7 +203,7 @@ public class OidcClientImpl implements OidcClient {
                 LOG.error(errorMessage);
                 throw new OidcClientException(errorMessage);
             }
-            body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+            body.set(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
         } else if (clientJwtKey != null) {
             // if it is a refresh then a map has already been copied
             body = !refresh ? copyMultiMap(body) : body;
@@ -243,7 +242,8 @@ public class OidcClientImpl implements OidcClient {
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer).sendBuffer(buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer)
+                .sendBuffer(OidcCommonUtils.getRequestBuffer(requestProps, buffer))
                 .onFailure(SocketException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount())
@@ -256,8 +256,7 @@ public class OidcClientImpl implements OidcClient {
     }
 
     private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, boolean refresh) {
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN);
         if (resp.statusCode() == 200) {
             LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.id().get(), (refresh ? "refreshed" : "acquired"));
             JsonObject json = buffer.toJsonObject();
@@ -365,5 +364,9 @@ public class OidcClientImpl implements OidcClient {
             }
         }
         return request;
+    }
+
+    OidcClientConfig getConfig() {
+        return oidcConfig;
     }
 }

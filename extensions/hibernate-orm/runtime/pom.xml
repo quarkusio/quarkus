@@ -48,6 +48,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
@@ -64,12 +69,6 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <!-- HCANN is marked as a "runtime" dependency of Hibernate ORM but we need it to compile the extension -->
-        <dependency>
-            <groupId>org.hibernate.common</groupId>
-            <artifactId>hibernate-commons-annotations</artifactId>
             <scope>compile</scope>
         </dependency>
 
@@ -138,6 +137,11 @@
             <artifactId>quarkus-jaxb</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-derby</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
+        </dependency>
     </dependencies>
 
     <build>
@@ -153,6 +157,9 @@
                         <excludedArtifact>javax.persistence:javax.persistence-api</excludedArtifact>
                         <excludedArtifact>javax.persistence:persistence-api</excludedArtifact>
                     </excludedArtifacts>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

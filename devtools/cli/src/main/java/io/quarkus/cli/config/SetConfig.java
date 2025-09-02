@@ -46,14 +46,14 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
                 value = findKey(lines, name).getValue();
             }
             args.add(value);
-            if (value == null || value.length() == 0) {
+            if (value == null || value.isEmpty()) {
                 output.error("Cannot encrypt an empty value");
                 return -1;
             }
 
             ConfigValue encryptionKey = findKey(lines, "smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key");
             if (encryptionKey.getValue() != null) {
-                args.add("--key=" + encryptionKey.getValue());
+                args.add("--key=\\\"" + encryptionKey.getValue() + "\"\\");
             }
             ConfigValue encryptionDecode = findKey(lines,
                     "smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key-decode");

@@ -27,10 +27,9 @@ public class UnremoveableMockTestBuildChainCustomizerProducer implements TestBui
                     @Override
                     public void execute(BuildContext context) {
                         Set<String> mockTypes = new HashSet<>();
-                        List<AnnotationInstance> instances = new ArrayList<>(testClassesIndex.getAnnotations(
-                                SingletonToApplicationScopedTestBuildChainCustomizerProducer.DEPRECATED_INJECT_MOCK));
-                        instances.addAll(testClassesIndex
-                                .getAnnotations(SingletonToApplicationScopedTestBuildChainCustomizerProducer.INJECT_MOCK));
+                        List<AnnotationInstance> instances = new ArrayList<>(testClassesIndex
+                                .getAnnotations(
+                                        SingletonToApplicationScopedTestBuildChainCustomizerProducer.INJECT_MOCK));
                         for (AnnotationInstance instance : instances) {
                             mockTypes.add(instance.target().asField().type().name().toString());
                         }

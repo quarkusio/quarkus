@@ -23,11 +23,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-dev</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.arc</groupId>
@@ -47,6 +51,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-test-supplement</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Used to test wrong @Singleton detection -->

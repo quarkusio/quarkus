@@ -26,10 +26,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-stork-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-config-deployment</artifactId>
         </dependency>
         <dependency>
@@ -72,6 +68,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-vertx</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit-pioneer</groupId>
             <artifactId>junit-pioneer</artifactId>
             <scope>test</scope>
@@ -99,6 +100,11 @@
         <dependency>
             <groupId>io.smallrye.stork</groupId>
             <artifactId>stork-load-balancer-least-response-time</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-stork-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

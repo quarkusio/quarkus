@@ -143,7 +143,13 @@ For extension development, use `org.jboss.logging.Logger.getLogger(String)` inst
 
 The injection of a configured `org.jboss.logging.Logger` logger instance with the `@Inject` annotation is another alternative to adding an application logger, but is applicable only to CDI beans.
 
-You can use `@Inject Logger log`, where the logger gets named after the class you inject it to, or `@Inject @LoggerName("...") Logger log`, where the logger will receive the specified name.
+You can use `@Inject Logger log`, where the logger gets named after the class you inject it to, or `@LoggerName("...") Logger log`, where the logger receives the specified name.
+
+[NOTE]
+====
+`@Inject` is not required if you already annotated your `Logger` with `@LoggerName("...")`.
+====
+
 Once injected, you can use the `log` object to invoke logging methods.
 
 .An example of two different types of logger injection:
@@ -236,6 +242,17 @@ To adjust runtime logging, modify the `application.properties` file.
 ----
 quarkus.log.level=INFO
 quarkus.log.category."org.hibernate".level=DEBUG
+----
+
+The equivalent in YAML (assuming the https://quarkus.io/guides/config-yaml[Quarkus YAML extension] is included) would be:
+[source, yaml]
+----
+quarkus:
+  log:
+    level: INFO
+    category:
+      org.hibernate: # The org.hibernate as a single key here is important
+        level: DEBUG
 ----
 
 When you set the log level to below `DEBUG`, you must also adjust the minimum log level.
@@ -674,7 +691,7 @@ To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see th
 
 
 === OpenTelemetry logging
-Logging entries from all appenders can be sent by using OpenTelemetry Logging.
+You can enable sending log entries from all appenders to OpenTelemetry Logging.
 
 For details, see the Quarkus xref:opentelemetry-logging.adoc[OpenTelemetry Logging] guide.
 

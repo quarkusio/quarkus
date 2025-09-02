@@ -126,6 +126,7 @@ public class Role extends PanacheEntity {
 This example demonstrates storing and accessing roles. To update an existing user or create a new one, annotate `public List<Role> roles` with `@Cascade(CascadeType.ALL)` or choose a specific `CascadeType`.
 ====
 
+[id="password-storage-and-hashing"]
 == Password storage and hashing
 
 When developing applications with Quarkus, you can decide how to manage password storage and hashing. You can keep the default password and hashing settings of Quarkus, or you can hash passwords manually.

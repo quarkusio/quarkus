@@ -55,7 +55,6 @@ public class AgroalRecorder {
 
     public Function<SyntheticCreationalContext<AgroalDataSource>, AgroalDataSource> agroalDataSourceSupplier(
             String dataSourceName,
-            @SuppressWarnings("unused") DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             Optional<RuntimeValue<Boolean>> otelEnabled) {
         return new Function<>() {
             @SuppressWarnings("deprecation")

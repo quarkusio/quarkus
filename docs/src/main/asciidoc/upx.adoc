@@ -25,12 +25,29 @@ Note that UPX compression:
 The UPX compression requires:
 
 * the `upx` command to be available in the system `PATH`;
+* an explicitly defined `quarkus.native.compression.container-image`;
 * or to have built the native executable using an in-container build.
 
+If `quarkus.native.compression.container-image` is not set explicitly, it will implicitly default to `quarkus.native.builder-image`.
+
 If you have the `upx` command available on your path, Quarkus uses it.
-Otherwise, if you built the native image using an in-container build (using `quarkus.native.container-build=true`) and if the builder image provides the `upx` command, Quarkus compresses the executable from inside the container.
+Otherwise, if you built the native image using an in-container build (using `quarkus.native.container-build=true`) and if the compression image provides the `upx` command, Quarkus compresses the executable from inside the container.
+
+If you want to force compression to take place in a container, you can set `quarkus.native.compression.container-build` to `true` (or `false` to explicitly not run compression in a container).
 
 If you are not in one of these cases, the compression fails.
+
+Setting `quarkus.native.compression.container-image` results in the compression to run in a container.
+If you want to set the variable, but not run the compression in a container, set `quakrus.native.compression.container-build` explicitly to `false`.
+
+[IMPORTANT]
+.`WORKDIR` for the image used for compression
+====
+The executable to compress is mounted in directory `/project`.
+Since the container runs `upx` in the current working directory, the `WORKDIR` of the image used for compression must be `/project`.
+====
+
+Compression can be explicitly en-/disabled by setting `quarkus.native.compression.enabled`.
 
 [IMPORTANT]
 .upx is cross-platform.

@@ -197,10 +197,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
-        ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
-                isDockerLaunch);
-        devServicesProps = devServicesLaunchResult.properties();
-        containerNetworkId = devServicesLaunchResult.networkId();
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -208,10 +204,17 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             Class<?> requiredTestClass = context.getRequiredTestClass();
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
+
+            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+            // prepare dev services after profile and properties have been determined
+            ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
+                    isDockerLaunch);
+
+            devServicesProps = devServicesLaunchResult.properties();
+            containerNetworkId = devServicesLaunchResult.networkId();
             for (String devServicesProp : devServicesProps.keySet()) {
                 sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
             }
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
                     copyEntriesFromProfile(testProfileAndProperties.testProfile,
@@ -232,7 +235,10 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             // propagate Quarkus properties set from the build tool
             Properties existingSysProps = System.getProperties();
             for (String name : existingSysProps.stringPropertyNames()) {
-                if (name.startsWith("quarkus.")) {
+                if (name.startsWith("quarkus.")
+                        // don't include 'quarkus.profile' as that has already been taken into account when determining the launch profile
+                        // so we don't want this to end up in multiple launch arguments
+                        && !name.equals("quarkus.profile")) {
                     additionalProperties.put(name, existingSysProps.getProperty(name));
                 }
             }
@@ -253,9 +259,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
             context.getStore(ExtensionContext.Namespace.GLOBAL).put(
                     QuarkusIntegrationTestExtension.class.getName() + ".systemProps",
-                    new ExtensionContext.Store.CloseableResource() {
+                    new AutoCloseable() {
                         @Override
-                        public void close() throws Throwable {
+                        public void close() throws Exception {
                             for (Map.Entry<String, String> i : old.entrySet()) {
                                 old.put(i.getKey(), System.getProperty(i.getKey()));
                                 if (i.getValue() == null) {

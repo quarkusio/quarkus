@@ -33,7 +33,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -43,7 +43,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
@@ -53,7 +52,6 @@ import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.Elastics
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneElasticsearchMapperContext;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRecorder;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
@@ -79,8 +77,6 @@ class HibernateSearchStandaloneProcessor {
 
     @BuildStep
     public void configure(CombinedIndexBuildItem combinedIndexBuildItem,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HibernateSearchStandaloneEnabledBuildItem> enabled) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
@@ -165,7 +161,6 @@ class HibernateSearchStandaloneProcessor {
     @BuildStep
     void defineSearchMappingBean(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
             HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (!enabled.isPresent()) {
             // No boot
@@ -179,7 +174,7 @@ class HibernateSearchStandaloneProcessor {
                 .unremovable()
                 .addQualifier(Default.class)
                 .setRuntimeInit()
-                .createWith(recorder.createSearchMappingFunction(enabled.get().mapperContext, runtimeConfig))
+                .createWith(recorder.createSearchMappingFunction(enabled.get().mapperContext))
                 .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
                 .done());
     }
@@ -189,8 +184,7 @@ class HibernateSearchStandaloneProcessor {
     @Consume(BeanContainerBuildItem.class) // Pre-boot needs access to the CDI container
     public void preBoot(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
             RecorderContext recorderContext,
-            HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig) {
+            HibernateSearchStandaloneRecorder recorder) {
         if (enabled.isEmpty()) {
             // No pre-boot
             return;
@@ -199,8 +193,7 @@ class HibernateSearchStandaloneProcessor {
         // Make it possible to record the settings as bytecode:
         recorderContext.registerSubstitution(ElasticsearchVersion.class,
                 String.class, ElasticsearchVersionSubstitution.class);
-        recorder.preBoot(enabled.get().mapperContext, buildTimeConfig,
-                enabled.get().getRootAnnotationMappedClassNames());
+        recorder.preBoot(enabled.get().mapperContext, enabled.get().getRootAnnotationMappedClassNames());
     }
 
     @BuildStep
@@ -208,17 +201,16 @@ class HibernateSearchStandaloneProcessor {
     @Consume(BeanContainerBuildItem.class)
     void boot(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
             HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig,
             BuildProducer<ServiceStartBuildItem> serviceStart) {
         if (enabled.isEmpty()) {
             // No boot
             return;
         }
-        recorder.bootEagerly(runtimeConfig);
+        recorder.bootEagerly();
         serviceStart.produce(new ServiceStartBuildItem("Hibernate Search Standalone"));
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     void devServices(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
             HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
             BuildProducer<DevservicesElasticsearchBuildItem> buildItemBuildProducer,

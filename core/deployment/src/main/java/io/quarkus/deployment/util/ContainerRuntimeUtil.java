@@ -1,22 +1,15 @@
 package io.quarkus.deployment.util;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class ContainerRuntimeUtil {
@@ -57,7 +50,19 @@ public final class ContainerRuntimeUtil {
                         : List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
     }
 
+    public static ContainerRuntime detectContainerRuntime(boolean required, boolean silent,
+            ContainerRuntime... orderToCheckRuntimes) {
+        return detectContainerRuntime(required, silent,
+                ((orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0)) ? Arrays.asList(orderToCheckRuntimes)
+                        : List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
+    }
+
     public static ContainerRuntime detectContainerRuntime(boolean required, List<ContainerRuntime> orderToCheckRuntimes) {
+        return detectContainerRuntime(required, false, orderToCheckRuntimes);
+    }
+
+    public static ContainerRuntime detectContainerRuntime(boolean required, boolean silent,
+            List<ContainerRuntime> orderToCheckRuntimes) {
         ContainerRuntime containerRuntime = loadContainerRuntimeFromSystemProperty();
         if ((containerRuntime != null) && orderToCheckRuntimes.contains(containerRuntime)) {
             return containerRuntime;
@@ -76,7 +81,7 @@ public final class ContainerRuntimeUtil {
         }
 
         // we have a working container environment, let's resolve it fully
-        containerRuntime = fullyResolveContainerRuntime(containerRuntimeEnvironment);
+        containerRuntime = fullyResolveContainerRuntime(containerRuntimeEnvironment, silent);
 
         storeContainerRuntimeInSystemProperty(containerRuntime);
 
@@ -138,74 +143,57 @@ public final class ContainerRuntimeUtil {
         return ContainerRuntime.UNAVAILABLE;
     }
 
-    private static ContainerRuntime fullyResolveContainerRuntime(ContainerRuntime containerRuntimeEnvironment) {
-        boolean rootless = false;
-        boolean isInWindowsWSL = false;
-        Process rootlessProcess = null;
-        ProcessBuilder pb = null;
+    private static ContainerRuntime fullyResolveContainerRuntime(ContainerRuntime containerRuntimeEnvironment,
+            boolean silent) {
+        String execName = containerRuntimeEnvironment.getExecutableName();
         try {
-            pb = new ProcessBuilder(containerRuntimeEnvironment.getExecutableName(), "info").redirectErrorStream(true);
-            rootlessProcess = pb.start();
-            int exitCode = rootlessProcess.waitFor();
-            if (exitCode != 0) {
-                log.warnf("Command \"%s\" exited with error code %d. "
+            return ProcessBuilder.newBuilder(execName)
+                    .arguments("info")
+                    .output().gatherOnFail(true).processWith(br -> {
+                        boolean rootless = false;
+                        boolean isInWindowsWSL = false;
+                        boolean isDocker = containerRuntimeEnvironment.isDocker();
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            if (isDocker) {
+                                if (line.trim().equals("rootless") || line.contains("Docker Desktop")
+                                        || line.contains("desktop-linux")) {
+                                    rootless = true;
+                                }
+                            } else {
+                                if (line.trim().equals("rootless: true")) {
+                                    rootless = true;
+                                }
+                            }
+                            if (OS.current() == OS.LINUX && isDocker) {
+                                if (line.trim().contains("WSL")) {
+                                    isInWindowsWSL = true;
+                                }
+                            }
+                        }
+                        if (rootless) {
+                            if (isInWindowsWSL) {
+                                return ContainerRuntime.WSL_ROOTLESS;
+                            }
+                            return containerRuntimeEnvironment == ContainerRuntime.DOCKER ? ContainerRuntime.DOCKER_ROOTLESS
+                                    : ContainerRuntime.PODMAN_ROOTLESS;
+                        }
+
+                        if (isInWindowsWSL) {
+                            return ContainerRuntime.WSL;
+                        }
+
+                        return containerRuntimeEnvironment;
+                    })
+                    .run();
+        } catch (Exception e) {
+            if (!silent) {
+                log.warnf("Command \"%s\" failed. "
                         + "Rootless container runtime detection might not be reliable or the container service is not running at all.",
-                        String.join(" ", pb.command()), exitCode);
+                        execName);
             }
-            try (InputStream inputStream = rootlessProcess.getInputStream();
-                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                    BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-                bufferedReader.mark(MAX_ANTICIPATED_CHARACTERS_IN_DOCKER_INFO);
-                if (exitCode != 0) {
-                    log.debugf("Command \"%s\" output: %s", String.join(" ", pb.command()),
-                            bufferedReader.lines().collect(Collectors.joining(System.lineSeparator())));
-                    return ContainerRuntime.UNAVAILABLE;
-                } else {
-                    Predicate<String> stringPredicate;
-                    // Docker includes just "rootless" under SecurityOptions, while podman includes "rootless: <boolean>"
-                    if (containerRuntimeEnvironment.isDocker()) {
-                        // We also treat Docker Desktop as "rootless" since the way it binds mounts does not
-                        // transparently map the host user ID and GID
-                        // see https://docs.docker.com/desktop/faqs/linuxfaqs/#how-do-i-enable-file-sharing
-                        stringPredicate = line -> line.trim().equals("rootless") || line.contains("Docker Desktop")
-                                || line.contains("desktop-linux");
-                    } else {
-                        stringPredicate = line -> line.trim().equals("rootless: true");
-                    }
-                    rootless = bufferedReader.lines().anyMatch(stringPredicate);
-
-                    if (SystemUtils.IS_OS_LINUX && containerRuntimeEnvironment.isDocker()) {
-                        stringPredicate = line -> line.trim().contains("WSL");
-                        bufferedReader.reset();
-                        isInWindowsWSL = bufferedReader.lines().anyMatch(stringPredicate);
-                    }
-                }
-            } catch (Exception ex) {
-                log.debugf(ex, "Failure to read info output from %s", String.join(" ", pb.command()));
-                return ContainerRuntime.UNAVAILABLE;
-            }
-        } catch (IOException | InterruptedException e) {
-            log.debugf(e, "Failure to execute %s", String.join(" ", pb.command()));
             return ContainerRuntime.UNAVAILABLE;
-        } finally {
-            if (rootlessProcess != null) {
-                rootlessProcess.destroy();
-            }
         }
-
-        if (rootless) {
-            if (isInWindowsWSL) {
-                return ContainerRuntime.WSL_ROOTLESS;
-            }
-            return containerRuntimeEnvironment == ContainerRuntime.DOCKER ? ContainerRuntime.DOCKER_ROOTLESS
-                    : ContainerRuntime.PODMAN_ROOTLESS;
-        }
-
-        if (isInWindowsWSL) {
-            return ContainerRuntime.WSL;
-        }
-
-        return containerRuntimeEnvironment;
     }
 
     private static ContainerRuntime loadContainerRuntimeFromSystemProperty() {
@@ -229,35 +217,16 @@ public final class ContainerRuntimeUtil {
     }
 
     private static String getVersionOutputFor(ContainerRuntime containerRuntime) {
-        Process versionProcess = null;
+        String execName = containerRuntime.getExecutableName();
         try {
-            final ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "--version")
-                    .redirectErrorStream(true);
-            versionProcess = pb.start();
-            final int timeoutS = 10;
-            boolean processExitedBeforeWaitTimeElapsed = versionProcess.waitFor(timeoutS, TimeUnit.SECONDS);
-            int exitStatus = versionProcess.exitValue();
-
-            if ((exitStatus == 0) && processExitedBeforeWaitTimeElapsed) {
-                return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            } else {
-                if (exitStatus != 0) {
-                    log.debugf("Failure. Exit status (%d) for command %s was not 0.", exitStatus,
-                            containerRuntime.getExecutableName());
-                } else {
-                    log.debugf("Failure. It took command %s more than %d seconds to execute.",
-                            containerRuntime.getExecutableName(), timeoutS);
-                }
-                return "";
-            }
-        } catch (IOException | InterruptedException e) {
+            return ProcessBuilder.newBuilder(execName)
+                    .arguments("--version")
+                    .output().gatherOnFail(true).toSingleString(16384)
+                    .run();
+        } catch (Throwable t) {
             // If an exception is thrown in the process, just return an empty String
-            log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());
+            log.debugf(t, "Failure to read version output from %s", execName);
             return "";
-        } finally {
-            if (versionProcess != null) {
-                versionProcess.destroy();
-            }
         }
     }
 
@@ -291,7 +260,7 @@ public final class ContainerRuntimeUtil {
         }
 
         public boolean isDocker() {
-            return this.executableName.equals("docker");
+            return this == DOCKER || this == DOCKER_ROOTLESS || this == WSL || this == WSL_ROOTLESS;
         }
 
         public boolean isPodman() {
@@ -304,6 +273,10 @@ public final class ContainerRuntimeUtil {
 
         public boolean isRootless() {
             return rootless;
+        }
+
+        public boolean isUnavailable() {
+            return this == UNAVAILABLE;
         }
 
         public static ContainerRuntime of(String value) {

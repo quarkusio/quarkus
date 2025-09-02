@@ -15,9 +15,17 @@ public interface ArcDevModeConfig {
     boolean monitoringEnabled();
 
     /**
-     * If set to true then the dependency graphs are generated and available in the Dev UI.
+     * If set to {@code true} then the dependency graphs are generated and available in the Dev UI. If set to {@code auto}
+     * then the dependency graphs are generated if there's less than 1000 beans in the application. If set to {@code false} the
+     * dependency graphs are not generated.
      */
-    @WithDefault("true")
-    boolean generateDependencyGraphs();
+    @WithDefault("auto")
+    GenerateDependencyGraphs generateDependencyGraphs();
+
+    public enum GenerateDependencyGraphs {
+        TRUE,
+        FALSE,
+        AUTO
+    }
 
 }

@@ -11,13 +11,12 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestCo
 class EntityStreamSettingContainerResponseFilter : ContainerResponseFilter {
     override fun filter(
         requestContext: ContainerRequestContext?,
-        responseContext: ContainerResponseContext?
+        responseContext: ContainerResponseContext?,
     ) {
         if (requestContext is ResteasyReactiveContainerRequestContext) {
             if (
-                "hello".equals(
-                    requestContext.serverRequestContext.resteasyReactiveResourceInfo.name
-                )
+                "hello"
+                    .equals(requestContext.serverRequestContext.resteasyReactiveResourceInfo.name)
             ) {
                 responseContext?.setEntity(
                     ByteArrayInputStream("Hello Quarkus REST".toByteArray(Charsets.UTF_8))

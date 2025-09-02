@@ -21,14 +21,16 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
     private final String expectedTableName;
     private final String expectedClassName;
     private final Integer expectedResults;
+    private final boolean reactive;
 
     public AbstractDevUIHibernateOrmTest(String expectedPersistenceUnitName, String expectedTableName,
-            String expectedClassName, Integer expectedResults) {
-        super("io.quarkus.quarkus-hibernate-orm");
+            String expectedClassName, Integer expectedResults, boolean reactive) {
+        super("quarkus-hibernate-orm");
         this.expectedPersistenceUnitName = expectedPersistenceUnitName;
         this.expectedTableName = expectedTableName;
         this.expectedClassName = expectedClassName;
         this.expectedResults = expectedResults;
+        this.reactive = reactive;
     }
 
     @Test
@@ -69,6 +71,10 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
                 JsonNode namedQueries = persistenceUnit.get("namedQueries");
                 assertNotNull(namedQueries);
                 assertTrue(namedQueries.isArray());
+
+                JsonNode reactive = persistenceUnit.get("reactive");
+                assertTrue(reactive.isBoolean());
+                assertEquals(this.reactive, reactive.asBoolean());
             }
         }
     }
@@ -101,7 +107,7 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
     public void testExecuteHQL() throws Exception {
         String entityName = expectedTableName != null ? expectedTableName : "MyEntity";
         Map<String, Object> arguments = Map.of(
-                "hql", "select e from " + entityName + " e where e.id = 1",
+                "query", "select e from " + entityName + " e where e.id = 1",
                 "persistenceUnit", expectedPersistenceUnitName != null ? expectedPersistenceUnitName : "",
                 "pageNumber", 1,
                 "pageSize", 15);
@@ -111,11 +117,11 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
         if (expectedResults != null) {
             // Expect number of results
             assertNotNull(dataSet);
-            assertTrue(dataSet.has("totalNumberOfElements"));
+            assertTrue(dataSet.has("resultCount"));
             assertTrue(dataSet.has("data"));
             assertFalse(dataSet.has("error"));
 
-            JsonNode elements = dataSet.get("totalNumberOfElements");
+            JsonNode elements = dataSet.get("resultCount");
             assertTrue(elements.isNumber());
             assertEquals(expectedResults, elements.intValue());
 
@@ -130,11 +136,11 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
         } else if (expectedPersistenceUnitName != null) {
             // Expecting an empty result set
             assertNotNull(dataSet);
-            assertTrue(dataSet.has("totalNumberOfElements"));
+            assertTrue(dataSet.has("resultCount"));
             assertTrue(dataSet.has("data"));
             assertFalse(dataSet.has("error"));
 
-            JsonNode elements = dataSet.get("totalNumberOfElements");
+            JsonNode elements = dataSet.get("resultCount");
             assertTrue(elements.isNumber());
             assertEquals(0, elements.intValue());
 
@@ -144,11 +150,11 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
         } else {
             // Expecting an error
             assertNotNull(dataSet);
-            assertTrue(dataSet.has("totalNumberOfElements"));
+            assertTrue(dataSet.has("resultCount"));
             assertFalse(dataSet.has("data"));
             assertTrue(dataSet.has("error"));
 
-            JsonNode elements = dataSet.get("totalNumberOfElements");
+            JsonNode elements = dataSet.get("resultCount");
             assertTrue(elements.isNumber());
             assertEquals(-1, elements.intValue());
 

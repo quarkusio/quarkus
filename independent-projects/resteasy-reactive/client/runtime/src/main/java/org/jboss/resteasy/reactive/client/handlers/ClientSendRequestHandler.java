@@ -101,6 +101,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
+                if (requestContext.isUserCanceled()) {
+                    // in this case the user aborted before the request was even created
+                    return;
+                }
+
                 requestContext.setHttpClientRequest(httpClientRequest);
 
                 // adapt headers to HTTP/2 depending on the underlying HTTP connection
@@ -338,11 +343,16 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         }
                                     });
 
-                        } else if (requestContext.isInputStreamDownload()) {
+                        } else if (requestContext.isInputStreamDownload() ||
+                        // when returning Response (and not Uni<Response>) we don't buffer the result
+                        // but instead set up the proper InputStream
+                        // for Uni<Response> we can't buffer because setting up the InputSteam would result in blocking the event loop
+                                (requestContext.isJakartaResponseDownload()
+                                        && !requestContext.invokedMethodReturnsAsyncType())) {
                             if (loggingScope != LoggingScope.NONE) {
                                 clientLogger.logResponse(clientResponse, false);
                             }
-                            //TODO: make timeout configureable
+                            //TODO: make timeout configurable
                             requestContext
                                     .setResponseEntityStream(
                                             new VertxClientInputStream(clientResponse, 100000));
@@ -474,14 +484,13 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
     private QuarkusMultipartFormUpload setMultipartHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state) throws Exception {
-        if (!(state.getEntity().getEntity() instanceof QuarkusMultipartForm)) {
+        if (!(state.getEntity().getEntity() instanceof QuarkusMultipartForm multipartForm)) {
             throw new IllegalArgumentException(
                     "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
         }
 
         MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
         updateRequestHeadersFromConfig(state, headerMap);
-        QuarkusMultipartForm multipartForm = (QuarkusMultipartForm) state.getEntity().getEntity();
         multipartForm.preparePojos(state);
 
         Object property = state.getConfiguration().getProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE);

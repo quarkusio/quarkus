@@ -73,12 +73,18 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 @Recorder
 public class LoggingSetupRecorder {
-
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
 
-    final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
+    private final LogBuildTimeConfig logBuildTimeConfig;
+    private final RuntimeValue<LogRuntimeConfig> logRuntimeConfig;
+    private final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
 
-    public LoggingSetupRecorder(RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig) {
+    public LoggingSetupRecorder(
+            final LogBuildTimeConfig logBuildTimeConfig,
+            final RuntimeValue<LogRuntimeConfig> logRuntimeConfig,
+            final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig) {
+        this.logBuildTimeConfig = logBuildTimeConfig;
+        this.logRuntimeConfig = logRuntimeConfig;
         this.consoleRuntimeConfig = consoleRuntimeConfig;
     }
 
@@ -114,18 +120,17 @@ public class LoggingSetupRecorder {
                         return "Logging Config";
                     }
                 }).build();
-        LogRuntimeConfig logRuntimeConfig = loggingConfig.getConfigMapping(LogRuntimeConfig.class);
         LogBuildTimeConfig logBuildTimeConfig = loggingConfig.getConfigMapping(LogBuildTimeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = loggingConfig.getConfigMapping(LogRuntimeConfig.class);
         ConsoleRuntimeConfig consoleRuntimeConfig = loggingConfig.getConfigMapping(ConsoleRuntimeConfig.class);
-        new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(logRuntimeConfig,
-                logBuildTimeConfig,
-                DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(), emptyList(),
-                emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+        new LoggingSetupRecorder(logBuildTimeConfig, new RuntimeValue<>(logRuntimeConfig),
+                new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(
+                        DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(),
+                        emptyList(),
+                        emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
     public ShutdownListener initializeLogging(
-            final LogRuntimeConfig config,
-            final LogBuildTimeConfig buildConfig,
             final DiscoveredLogComponents discoveredLogComponents,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
@@ -139,6 +144,9 @@ public class LoggingSetupRecorder {
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
             final LaunchMode launchMode,
             final boolean includeFilters) {
+
+        LogBuildTimeConfig buildConfig = logBuildTimeConfig;
+        LogRuntimeConfig config = logRuntimeConfig.getValue();
 
         ShutdownNotifier shutdownNotifier = new ShutdownNotifier();
         Map<String, CategoryConfig> categories = config.categories();
@@ -177,7 +185,7 @@ public class LoggingSetupRecorder {
         ArrayList<Handler> handlers = new ArrayList<>(
                 3 + additionalHandlers.size() + (config.handlers().isPresent() ? config.handlers().get().size() : 0));
 
-        if (config.console().enable()) {
+        if (config.console().enable().orElse(config.console().enabled())) {
             Handler consoleHandler = configureConsoleHandler(config.console(), consoleRuntimeConfig.getValue(), errorManager,
                     cleanupFiler,
                     namedFilters, possibleConsoleFormatters, possibleBannerSupplier, launchMode, includeFilters);
@@ -203,12 +211,12 @@ public class LoggingSetupRecorder {
             });
         }
 
-        if (config.file().enable()) {
+        if (config.file().enable().orElse(config.file().enabled())) {
             handlers.add(configureFileHandler(config.file(), errorManager, cleanupFiler, namedFilters, possibleFileFormatters,
                     includeFilters));
         }
 
-        if (config.syslog().enable()) {
+        if (config.syslog().enable().orElse(config.syslog().enabled())) {
             Handler syslogHandler = configureSyslogHandler(config.syslog(), errorManager, cleanupFiler, namedFilters,
                     possibleSyslogFormatters, includeFilters);
             if (syslogHandler != null) {
@@ -216,7 +224,7 @@ public class LoggingSetupRecorder {
             }
         }
 
-        if (config.socket().enable()) {
+        if (config.socket().enable().orElse(config.socket().enabled())) {
             final Handler socketHandler = configureSocketHandler(config.socket(), errorManager, cleanupFiler,
                     namedFilters, possibleSocketFormatters, includeFilters);
             if (socketHandler != null) {
@@ -334,7 +342,7 @@ public class LoggingSetupRecorder {
         LogCleanupFilter logCleanupFilter = new LogCleanupFilter(filterElements, dummy);
 
         ArrayList<Handler> handlers = new ArrayList<>(3);
-        if (config.console().enable()) {
+        if (config.console().enable().orElse(config.console().enabled())) {
             Handler consoleHandler = configureConsoleHandler(config.console(), consoleConfig, errorManager, logCleanupFilter,
                     emptyMap(), emptyList(), new RuntimeValue<>(Optional.empty()), launchMode, false);
             errorManager = consoleHandler.getErrorManager();
@@ -409,7 +417,7 @@ public class LoggingSetupRecorder {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers().entrySet()) {
             ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
-            if (!namedConsoleConfig.enable()) {
+            if (!namedConsoleConfig.enable().orElse(namedConsoleConfig.enabled())) {
                 continue;
             }
             final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig,
@@ -419,7 +427,7 @@ public class LoggingSetupRecorder {
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers().entrySet()) {
             FileConfig namedFileConfig = fileConfigEntry.getValue();
-            if (!namedFileConfig.enable()) {
+            if (!namedFileConfig.enable().orElse(namedFileConfig.enabled())) {
                 continue;
             }
             final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter, namedFilters,
@@ -428,7 +436,7 @@ public class LoggingSetupRecorder {
         }
         for (Entry<String, LogRuntimeConfig.SyslogConfig> sysLogConfigEntry : config.syslogHandlers().entrySet()) {
             LogRuntimeConfig.SyslogConfig namedSyslogConfig = sysLogConfigEntry.getValue();
-            if (!namedSyslogConfig.enable()) {
+            if (!namedSyslogConfig.enable().orElse(namedSyslogConfig.enabled())) {
                 continue;
             }
             final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter,
@@ -439,7 +447,7 @@ public class LoggingSetupRecorder {
         }
         for (Entry<String, SocketConfig> socketConfigEntry : config.socketHandlers().entrySet()) {
             SocketConfig namedSocketConfig = socketConfigEntry.getValue();
-            if (!namedSocketConfig.enable()) {
+            if (!namedSocketConfig.enable().orElse(namedSocketConfig.enabled())) {
                 continue;
             }
             final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter,
@@ -613,10 +621,13 @@ public class LoggingSetupRecorder {
         consoleHandler.setErrorManager(defaultErrorManager);
         applyFilter(includeFilters, defaultErrorManager, cleanupFilter, config.filter(), namedFilters, consoleHandler);
 
-        Handler handler = config.async().enable() ? createAsyncHandler(config.async(), config.level(), consoleHandler)
+        boolean asyncEnabled = config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()));
+
+        Handler handler = asyncEnabled
+                ? createAsyncHandler(config.async(), config.level(), consoleHandler)
                 : consoleHandler;
 
-        if (color && launchMode.isDevOrTest() && !config.async().enable()) {
+        if (color && launchMode.isDevOrTest() && !asyncEnabled) {
             final Handler delegate = handler;
             handler = new ExtHandler() {
                 @Override
@@ -654,7 +665,9 @@ public class LoggingSetupRecorder {
             final boolean includeFilters) {
         FileHandler handler;
         FileConfig.RotationConfig rotationConfig = config.rotation();
-        if (rotationConfig.fileSuffix().isPresent()) {
+        if (!rotationConfig.enabled()) {
+            handler = new FileHandler();
+        } else if (rotationConfig.fileSuffix().isPresent()) {
             PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
             periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix().get());
             periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize().asLongValue());
@@ -706,7 +719,7 @@ public class LoggingSetupRecorder {
             handler.getErrorManager().error("Multiple file formatters were activated", null, ErrorManager.GENERIC_FAILURE);
         }
 
-        if (config.async().enable()) {
+        if (config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()))) {
             return createAsyncHandler(config.async(), config.level(), handler);
         }
         return handler;
@@ -742,7 +755,12 @@ public class LoggingSetupRecorder {
             handler.setProtocol(config.protocol());
             handler.setBlockOnReconnect(config.blockOnReconnect());
             handler.setTruncate(config.truncate());
-            handler.setUseCountingFraming(config.useCountingFraming());
+            handler.setUseCountingFraming(switch (config.useCountingFraming()) {
+                case PROTOCOL_DEPENDENT ->
+                    config.protocol() == SyslogHandler.Protocol.TCP || config.protocol() == SyslogHandler.Protocol.SSL_TCP;
+                case TRUE -> true;
+                case FALSE -> false;
+            });
             handler.setLevel(config.level());
             if (config.maxLength().isPresent()) {
                 BigInteger maxLen = config.maxLength().get().asBigInteger();
@@ -788,7 +806,7 @@ public class LoggingSetupRecorder {
                         ErrorManager.GENERIC_FAILURE);
             }
 
-            if (config.async().enable()) {
+            if (config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()))) {
                 return createAsyncHandler(config.async(), config.level(), handler);
             }
             return handler;
@@ -835,7 +853,7 @@ public class LoggingSetupRecorder {
                         ErrorManager.GENERIC_FAILURE);
             }
 
-            if (config.async().enable()) {
+            if (config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()))) {
                 return createAsyncHandler(config.async(), config.level(), handler);
             }
             return handler;
@@ -856,9 +874,6 @@ public class LoggingSetupRecorder {
     private static boolean isColorEnabled(ConsoleRuntimeConfig consoleConfig, ConsoleConfig logConfig) {
         if (consoleConfig.color().isPresent()) {
             return consoleConfig.color().get();
-        }
-        if (logConfig.color().isPresent()) {
-            return logConfig.color().get();
         }
         return QuarkusConsole.hasColorSupport();
     }

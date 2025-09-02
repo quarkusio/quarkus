@@ -1,40 +1,23 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import jakarta.enterprise.inject.Alternative;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import io.quarkus.bootstrap.BootstrapException;
-import io.quarkus.bootstrap.app.AugmentAction;
-import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.deployment.dev.testing.TestConfig;
-import io.quarkus.logging.Log;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.test.common.RestorableSystemProperties;
+import io.quarkus.runner.bootstrap.StartupActionImpl;
+import io.quarkus.test.junit.classloading.FacadeClassLoader;
 import io.smallrye.config.SmallRyeConfig;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
@@ -43,8 +26,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
     protected static final String TEST_PROFILE = "test-profile";
-
-    protected ClassLoader originalCl;
 
     // Used to preserve state from the previous run, so we know if we should restart an application
     protected static RunningQuarkusApplication runningQuarkusApplication;
@@ -55,84 +36,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     protected static Class<?> currentJUnitTestClass;
 
-    // TODO only used by QuarkusMainTest, fix that class and delete this
-    protected PrepareResult createAugmentor(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws Exception {
-
-        originalCl = Thread.currentThread().getContextClassLoader();
-        final Class<?> requiredTestClass = context.getRequiredTestClass();
-
-        CuratedApplication curatedApplication = getCuratedApplication(requiredTestClass, context, shutdownTasks);
-
-        // TODO need to handle the gradle case - can we put it in that method?
-        Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
-
-        // TODO is this needed?
-        //        Index testClassesIndex = TestClassIndexer.indexTestClasses(testClassLocation);
-        //        // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
-        //        TestClassIndexer.writeIndex(testClassesIndex, testClassLocation, requiredTestClass);
-
-        Timing.staticInitStarted(curatedApplication.getOrCreateBaseRuntimeClassLoader(),
-                curatedApplication.getQuarkusBootstrap()
-                        .isAuxiliaryApplication());
-
-        final Map<String, Object> props = new HashMap<>();
-        props.put(TEST_LOCATION, testClassLocation);
-        props.put(TEST_CLASS, requiredTestClass);
-
-        // clear the test.url system property as the value leaks into the run when using different profiles
-        System.clearProperty("test.url");
-        Map<String, String> additional = new HashMap<>();
-
-        QuarkusTestProfile profileInstance = getQuarkusTestProfile(profile, shutdownTasks, additional);
-
-        if (profile != null) {
-            props.put(TEST_PROFILE, profile.getName());
-        }
-        quarkusTestProfile = profile;
-        return new PrepareResult(curatedApplication
-                .createAugmentor(TestBuildChainFunction.class.getName(), props), profileInstance,
-                curatedApplication, testClassLocation);
-    }
-
-    protected CuratedApplication getCuratedApplication(Class<?> requiredTestClass, ExtensionContext context,
-            Collection<Runnable> shutdownTasks) throws BootstrapException, AppModelResolverException, IOException {
-        // TODO make this abstract, push this implementation down to QuarkusTestExtension, since that is the only place it will work
-        CuratedApplication curatedApplication = ((QuarkusClassLoader) requiredTestClass.getClassLoader())
-                .getCuratedApplication();
-        return curatedApplication;
-    }
-
-    protected static QuarkusTestProfile getQuarkusTestProfile(Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks, Map<String, String> additional)
-            throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        QuarkusTestProfile profileInstance = null;
-        if (profile != null) {
-            profileInstance = profile.getConstructor().newInstance();
-            // TODO the stuff below here is unique to this class - TODO what does this comment even mean?
-            additional.putAll(profileInstance.getConfigOverrides());
-            if (!profileInstance.getEnabledAlternatives().isEmpty()) {
-                additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()
-                        .peek((c) -> {
-                            if (!c.isAnnotationPresent(Alternative.class)) {
-                                throw new RuntimeException(
-                                        "Enabled alternative " + c + " is not annotated with @Alternative");
-                            }
-                        })
-                        .map(Class::getName).collect(Collectors.joining(",")));
-            }
-            if (profileInstance.disableApplicationLifecycleObservers()) {
-                additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
-            }
-            if (profileInstance.getConfigProfile() != null) {
-                additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
-            }
-            //we just use system properties for now
-            //it's a lot simpler
-            shutdownTasks.add(RestorableSystemProperties.setProperties(additional)::close);
-        }
-        return profileInstance;
-    }
+    private static final Logger log = Logger.getLogger(StartupActionImpl.class);
 
     // TODO is it nicer to pass in the test class, or invoke the getter twice?
     public static Class<? extends QuarkusTestProfile> getQuarkusTestProfile(Class testClass,
@@ -242,12 +146,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook our config on that.
 
         // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
-        boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
+        boolean isFlatClasspath = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
 
         ClassLoader original = Thread.currentThread().getContextClassLoader();
 
         // In native mode tests, a testconfig will not have been registered on the system classloader with a testconfig instance of our classloader, so in those cases, we do not want to set the TCCL
-        if (!isRunningOnSystem) {
+        if (!isFlatClasspath && !(original instanceof FacadeClassLoader)) {
+            // In most cases, we reset the TCCL to the system classloader after discovery finishes, so we could get away without this setting of the TCCL
+            // However, in multi-module and continuous tests the TCCL lifecycle is more complex, so this setting is still needed (for now)
             Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
         }
 
@@ -257,16 +163,47 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     .unwrap(SmallRyeConfig.class)
                     .getConfigMapping(TestConfig.class);
         } catch (Exception | ServiceConfigurationError e) {
-            // Tracked by https://github.com/quarkusio/quarkus/issues/46048
-            Log.error("Could not read configuration while evaluating whether to run " + context.getRequiredTestClass()
-                    + ". This usually happens when re-running a test that has already failed, for example if surefire.rerunFailingTestsCount is set. To work around this limitation, either adjust the test so that it passes, or isolate the test into a project whose tests all use the same combination of @TestProfile and resources.");
-            Log.debug("Underlying exception: " + e);
-            Log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
-            Log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
-            throw new IllegalStateException("Non-viable test classloader, " + Thread.currentThread().getContextClassLoader()
-                    + ". Is this a re-run of a failing test?");
+            String javaCommand = System.getProperty("sun.java.command");
+            boolean isEclipse = javaCommand != null
+                    && javaCommand.contains("JUnit5TestLoader");
+
+            // VS Code has the exact same java command and runner as Eclipse, but needs its own message
+            boolean isVSCode = isEclipse && (System.getProperty("java.class.path").contains("vscode"));
+            boolean isMaybeVSCode = isEclipse && (javaCommand.contains("testNames") && javaCommand.contains("testNameFile"));
+
+            if (isVSCode) {
+                // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
+                log.error(
+                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
+            } else if (isMaybeVSCode) {
+                // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
+                log.error(
+                        "Could not read configuration while evaluating whether to run a test. It looks like you're probably running tests with VS Code. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
+            } else if (isEclipse) {
+                // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257; fixed in Eclipse 4.37
+                log.error(
+                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the Eclipse IDE. To work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
+                                + context.getRequiredTestClass().getName()
+                                + "]` in the program arguments. Running the whole package, or running individual test methods, will also work without any extra configuration.");
+            } else {
+                log.error("Internal error: Could not read configuration while evaluating whether to run "
+                        + context.getRequiredTestClass()
+                        + ". Please let the Quarkus team know what you were doing when this error happened.");
+
+            }
+            log.debug("Underlying exception: " + e);
+            log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
+            log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
+            String message = isVSCode || isMaybeVSCode
+                    ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
+                    : isEclipse
+                            ? "Could not execute test class because it was loaded with the wrong classloader by the Eclipse test runner. Try running test methods individually, or edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
+                                    + context.getRequiredTestClass().getName()
+                                    + "]` in the program arguments. "
+                            : "Internal error: Test class was loaded with an unexpected classloader or the thread context classloader was incorrect.";
+            throw new IllegalStateException(message, e);
         } finally {
-            if (!isRunningOnSystem) {
+            if (!isFlatClasspath) {
                 Thread.currentThread().setContextClassLoader(original);
             }
         }
@@ -297,20 +234,5 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
         return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
                 + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
-    }
-
-    protected static class PrepareResult {
-        protected final AugmentAction augmentAction;
-        protected final QuarkusTestProfile profileInstance;
-        protected final CuratedApplication curatedApplication;
-        protected final Path testClassLocation;
-
-        public PrepareResult(AugmentAction augmentAction, QuarkusTestProfile profileInstance,
-                CuratedApplication curatedApplication, Path testClassLocation) {
-            this.augmentAction = augmentAction;
-            this.profileInstance = profileInstance;
-            this.curatedApplication = curatedApplication;
-            this.testClassLocation = testClassLocation;
-        }
     }
 }

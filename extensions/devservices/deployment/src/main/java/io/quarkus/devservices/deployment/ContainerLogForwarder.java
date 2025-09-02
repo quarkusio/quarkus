@@ -13,6 +13,7 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.output.FrameConsumerResultCallback;
 import org.testcontainers.containers.output.OutputFrame;
 
+import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 
 public class ContainerLogForwarder implements Closeable {
@@ -20,14 +21,12 @@ public class ContainerLogForwarder implements Closeable {
     private final DevServiceDescriptionBuildItem devService;
     private final AtomicLong timestamp = new AtomicLong(0L);
     private final Logger logger;
-    private final String shortId;
     private FrameConsumerResultCallback resultCallback;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     public ContainerLogForwarder(DevServiceDescriptionBuildItem devService) {
         this.devService = devService;
         this.logger = Logger.getLogger(devService.getName());
-        this.shortId = devService.getContainerInfo().getShortId();
     }
 
     public DevServiceDescriptionBuildItem getDevService() {
@@ -39,22 +38,28 @@ public class ContainerLogForwarder implements Closeable {
     }
 
     public void start() {
-        if (running.compareAndSet(false, true)) {
-            this.resultCallback = new FrameConsumerResultCallback();
-            this.resultCallback.addConsumer(STDOUT, frame -> {
-                if (running.get())
-                    logger.infof("[%s] %s", shortId, updateTimestamp(frame));
-            });
-            this.resultCallback.addConsumer(STDERR, frame -> {
-                if (running.get())
-                    logger.errorf("[%s] %s", shortId, updateTimestamp(frame));
-            });
-            DockerClientFactory.lazyClient().logContainerCmd(devService.getContainerInfo().id())
-                    .withFollowStream(true)
-                    .withStdErr(true)
-                    .withStdOut(true)
-                    .withSince(timestamp.intValue())
-                    .exec(resultCallback);
+        ContainerInfo containerInfo = devService.getContainerInfo();
+
+        if (containerInfo != null) {
+            String shortId = containerInfo.getShortId();
+
+            if (running.compareAndSet(false, true)) {
+                this.resultCallback = new FrameConsumerResultCallback();
+                this.resultCallback.addConsumer(STDOUT, frame -> {
+                    if (running.get())
+                        logger.infof("[%s] %s", shortId, updateTimestamp(frame));
+                });
+                this.resultCallback.addConsumer(STDERR, frame -> {
+                    if (running.get())
+                        logger.errorf("[%s] %s", shortId, updateTimestamp(frame));
+                });
+                DockerClientFactory.lazyClient().logContainerCmd(containerInfo.id())
+                        .withFollowStream(true)
+                        .withStdErr(true)
+                        .withStdOut(true)
+                        .withSince(timestamp.intValue())
+                        .exec(resultCallback);
+            }
         }
     }
 

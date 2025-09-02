@@ -50,6 +50,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
+import io.quarkus.deployment.pkg.jar.LegacyThinJarFormat;
 import io.quarkus.deployment.steps.LocaleProcessor;
 import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -58,6 +59,9 @@ import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.AbnormalExitException;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class NativeImageBuildStep {
 
@@ -73,11 +77,6 @@ public class NativeImageBuildStep {
      * Name of the <em>environment</em> variable to retrieve JAVA_HOME
      */
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
-
-    /**
-     * The name of the environment variable containing the system path.
-     */
-    private static final String PATH = "PATH";
 
     private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
@@ -280,13 +279,14 @@ public class NativeImageBuildStep {
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
-            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs,
-                    nativeImageName,
-                    resultingExecutableName, outputDir,
-                    graalVMVersion, nativeConfig.debug().enabled(),
-                    processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-            if (buildNativeResult.getExitCode() != 0) {
-                throw imageGenerationFailed(buildNativeResult.getExitCode(), isContainerBuild);
+            try {
+                buildRunner.build(nativeImageArgs,
+                        nativeImageName,
+                        resultingExecutableName, outputDir,
+                        graalVMVersion, nativeConfig.debug().enabled(),
+                        processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+            } catch (Throwable t) {
+                throw imageGenerationFailed(t, isContainerBuild);
             }
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
@@ -407,7 +407,7 @@ public class NativeImageBuildStep {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
-        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+        Path libDir = targetDirectory.resolve(LegacyThinJarFormat.LIB);
         File libDirFile = libDir.toFile();
         if (!libDirFile.exists()) {
             libDirFile.mkdirs();
@@ -446,7 +446,7 @@ public class NativeImageBuildStep {
     private void removeJarSourcesFromLib(OutputTargetBuildItem outputTargetBuildItem) {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
-        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+        Path libDir = targetDirectory.resolve(LegacyThinJarFormat.LIB);
 
         final File[] jarSources = libDir.toFile()
                 .listFiles((file, name) -> name.endsWith("-sources.jar"));
@@ -483,19 +483,19 @@ public class NativeImageBuildStep {
         }
     }
 
-    private RuntimeException imageGenerationFailed(int exitValue, boolean isContainerBuild) {
-        if (exitValue == OOM_ERROR_VALUE) {
+    private RuntimeException imageGenerationFailed(Throwable cause, boolean isContainerBuild) {
+        if (cause instanceof AbnormalExitException aee && aee.exitCode() == OOM_ERROR_VALUE) {
             if (isContainerBuild && !OS.LINUX.isCurrent()) {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property");
+                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
             } else {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
                         + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property");
+                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
             }
         } else {
-            return new ImageGenerationFailureException("Image generation failed. Exit code: " + exitValue);
+            return new ImageGenerationFailureException("Image generation failed", cause);
         }
     }
 
@@ -546,22 +546,9 @@ public class NativeImageBuildStep {
             }
         }
 
-        // System path
-        String systemPath = System.getenv(PATH);
-        if (systemPath != null) {
-            String[] pathDirs = systemPath.split(File.pathSeparator);
-            for (String pathDir : pathDirs) {
-                File dir = new File(pathDir);
-                if (dir.isDirectory()) {
-                    File file = new File(dir, executableName);
-                    if (file.exists()) {
-                        return new NativeImageBuildLocalRunner(file.getAbsolutePath());
-                    }
-                }
-            }
-        }
-
-        return null;
+        return ProcessUtil.pathOfCommand(Path.of(executableName))
+                .map(value -> new NativeImageBuildLocalRunner(value.toString()))
+                .orElse(null);
     }
 
     private static String getNativeImageExecutableName() {
@@ -571,7 +558,7 @@ public class NativeImageBuildStep {
     private static String detectNoPIE() {
         String argument = testGCCArgument("-no-pie");
 
-        return argument.length() == 0 ? testGCCArgument("-nopie") : argument;
+        return argument.isEmpty() ? testGCCArgument("-nopie") : argument;
     }
 
     private static String detectPIE() {
@@ -580,17 +567,13 @@ public class NativeImageBuildStep {
 
     private static String testGCCArgument(String argument) {
         try {
-            Process gcc = new ProcessBuilder("cc", "-v", "-E", argument, "-").start();
-            gcc.getOutputStream().close();
-            if (gcc.waitFor() == 0) {
-                return argument;
-            }
-
-        } catch (IOException | InterruptedException e) {
-            // eat
+            ProcessBuilder<Void> pb = ProcessBuilder.newBuilder("cc", "-v", "-E", argument, "-");
+            pb.error().logOnSuccess(log.isTraceEnabled());
+            pb.run();
+            return argument;
+        } catch (Exception ignored) {
+            return "";
         }
-
-        return "";
     }
 
     private static class NativeImageInvokerInfo {
@@ -800,7 +783,8 @@ public class NativeImageBuildStep {
                      * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
                      * debug info for debugging and monitoring tools. This parameter may break compatibility with Truffle.
                      * Affected users should explicitly pass {@code -H:-TrackNodeSourcePosition} through
-                     * {@code quarkus.native.additional-build-args} to override it.
+                     * {@code quarkus.native.additional-build-args} or {@code quarkus.native.additional-build-args-append}
+                     * to override it.
                      *
                      * See https://github.com/quarkusio/quarkus/issues/30772 for more details.
                      */
@@ -848,9 +832,18 @@ public class NativeImageBuildStep {
                 }
 
                 /*
+                 * Always install exit handlers, it will become the default and the flag will be deprecated
+                 * in GraalVM for JDK 25 see https://github.com/quarkusio/quarkus/issues/47799
+                 */
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
+                    nativeImageArgs.add("--install-exit-handlers");
+                }
+
+                /*
                  * Any parameters following this call are forced over the user provided parameters in
-                 * quarkus.native.additional-build-args. So if you need a parameter to be overridable through
-                 * quarkus.native.additional-build-args please make sure to add it before this call.
+                 * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need
+                 * a parameter to be overridable through quarkus.native.additional-build-args or
+                 * quarkus.native.additional-build-args-append please make sure to add it before this call.
                  */
                 handleAdditionalProperties(nativeImageArgs);
 
@@ -865,8 +858,9 @@ public class NativeImageBuildStep {
                  * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions
                  * @formatter:on
                  */
-                if ((graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0) >= 0 && AMD64.active) ||
-                        graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0
+                        && graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0
+                        && AMD64.active) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
                 }
 
@@ -959,11 +953,6 @@ public class NativeImageBuildStep {
                 }
 
                 Set<NativeConfig.MonitoringOption> monitoringOptions = new LinkedHashSet<>();
-                if (!OS.WINDOWS.isCurrent() || containerBuild) {
-                    // --enable-monitoring=heapdump is not supported on Windows
-                    monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
-                }
-
                 if (nativeMonitoringItems != null && !nativeMonitoringItems.isEmpty()) {
                     monitoringOptions.addAll(nativeMonitoringItems.stream()
                             .map(NativeMonitoringBuildItem::getOption)
@@ -973,6 +962,30 @@ public class NativeImageBuildStep {
                 if (nativeConfig.monitoring().isPresent()) {
                     monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
+
+                if (monitoringOptions.remove(NativeConfig.MonitoringOption.NONE)) {
+                    // Don't add any monitoring options since 'none' was present.
+                    // Only log a warning when additional options were present as well
+                    if (!monitoringOptions.isEmpty()) {
+                        String otherOpts = monitoringOptions.stream()
+                                .map(o -> o.name().toLowerCase(Locale.ROOT))
+                                .collect(Collectors.joining(","));
+                        log.warn(
+                                "Your application is setting monitoring option 'quarkus.native.monitoring' to 'none' AND '"
+                                        + otherOpts + "'"
+                                        + " Please consider removing options '" + otherOpts + "' as they will be ignored."
+                                        + " Monitoring option 'none' disables all monitoring options regardless of other settings.");
+                        // Explicitly clear all monitoring options otherwise specified
+                        monitoringOptions.clear();
+                    }
+                } else {
+                    // Add heapdump monitoring option if and only if 'none' wasn't included
+                    if (!OS.WINDOWS.isCurrent() || containerBuild) {
+                        // --enable-monitoring=heapdump is not supported on Windows
+                        monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                    }
+                }
+
                 if (!monitoringOptions.isEmpty()) {
                     nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
                             .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
@@ -1035,7 +1048,7 @@ public class NativeImageBuildStep {
                 if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {
                     final String errs = unsupportedOSes.stream()
                             .filter(o -> o.triggerError(containerBuild))
-                            .map(o -> o.error)
+                            .map(UnsupportedOSBuildItem::error)
                             .collect(Collectors.joining(", "));
                     if (!errs.isEmpty()) {
                         throw new UnsupportedOperationException(errs);
@@ -1061,8 +1074,13 @@ public class NativeImageBuildStep {
             }
 
             private void handleAdditionalProperties(List<String> command) {
-                if (nativeConfig.additionalBuildArgs().isPresent()) {
-                    List<String> strings = nativeConfig.additionalBuildArgs().get();
+                Optional<List<String>>[] additionalBuildArgs = new Optional[] { nativeConfig.additionalBuildArgs(),
+                        nativeConfig.additionalBuildArgsAppend() };
+                for (Optional<List<String>> args : additionalBuildArgs) {
+                    if (args.isEmpty()) {
+                        continue;
+                    }
+                    List<String> strings = args.get();
                     for (String buildArg : strings) {
                         String trimmedBuildArg = buildArg.trim();
                         if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {
@@ -1108,8 +1126,8 @@ public class NativeImageBuildStep {
 
     private static class ImageGenerationFailureException extends RuntimeException {
 
-        private ImageGenerationFailureException(String message) {
-            super(message);
+        private ImageGenerationFailureException(final String message, final Throwable cause) {
+            super(message, cause);
         }
     }
 }

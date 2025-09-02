@@ -36,6 +36,7 @@
 
         <!-- HTTP -->
         <module>vertx-http</module>
+        <module>devui</module>
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>
@@ -96,6 +97,7 @@
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>
+        <module>hibernate-orm-derby</module>
         <module>hibernate-envers</module>
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
@@ -225,7 +227,7 @@
 
         <!-- JMS -->
         <module>jms-spi</module>
-
+        <module>assistant</module>
     </modules>
 
     <build>

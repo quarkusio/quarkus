@@ -60,7 +60,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
     }
 
     private static void setDPopProof(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
-        if (OidcConstants.DPOP_SCHEME.equals(oidcTenantConfig.token().authorizationScheme())) {
+        if (OidcUtils.isDPoPScheme(oidcTenantConfig.token().authorizationScheme())) {
 
             List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
             if (proofs == null || proofs.isEmpty()) {
@@ -138,8 +138,19 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return tenantContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends ChallengeData>>() {
             @Override
             public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
+                String wwwAuthHeaderValue;
+                if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(context)) {
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme() +
+                            StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
+                } else {
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
+                    if (tenantContext.oidcConfig().resourceMetadata().enabled()) {
+                        wwwAuthHeaderValue += ResourceMetadataHandler.resourceMetadataAuthenticateParameter(context, resolver,
+                                tenantContext.oidcConfig());
+                    }
+                }
                 return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-                        HttpHeaderNames.WWW_AUTHENTICATE, tenantContext.oidcConfig().token().authorizationScheme()));
+                        HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue));
             }
         });
     }

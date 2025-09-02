@@ -3,7 +3,6 @@ package io.quarkus.deployment.configuration;
 import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +26,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingInterface.LeafProperty;
@@ -37,12 +37,14 @@ import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 
 public class ConfigMappingUtils {
-
     public static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
+    public static final DotName CONFIG_ROOT_NAME = DotName.createSimple(ConfigRoot.class.getName());
 
     private ConfigMappingUtils() {
+        throw new UnsupportedOperationException();
     }
 
+    // Used for application Mappings and MP ConfigProperties
     public static void processConfigClasses(
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -57,6 +59,11 @@ public class ConfigMappingUtils {
             AnnotationValue annotationPrefix = instance.value("prefix");
 
             if (!target.kind().equals(CLASS)) {
+                continue;
+            }
+
+            // Skip roots
+            if (target.hasAnnotation(CONFIG_ROOT_NAME)) {
                 continue;
             }
 
@@ -103,7 +110,7 @@ public class ConfigMappingUtils {
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        Class<?> configClass = configClassWithPrefix.getKlass();
+        Class<?> configClass = configClassWithPrefix.getType();
         String prefix = configClassWithPrefix.getPrefix();
 
         List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
@@ -191,9 +198,9 @@ public class ConfigMappingUtils {
         }
     }
 
+    @Deprecated(forRemoval = true, since = "3.25")
     public static Object newInstance(Class<?> configClass) {
         if (configClass.isAnnotationPresent(ConfigMapping.class)) {
-            // TODO - radcortez - mapping classes cannot be initialized like this.
             return ReflectUtil.newInstance(ConfigMappingLoader.ensureLoaded(configClass).implementation());
         } else {
             return ReflectUtil.newInstance(configClass);
@@ -222,7 +229,7 @@ public class ConfigMappingUtils {
         DotName configIfaceName = DotName.createSimple(configClass.getName());
         ClassInfo configIfaceInfo = index.getClassByName(configIfaceName);
         if ((configIfaceInfo == null) || configIfaceInfo.interfaceNames().isEmpty()) {
-            return Collections.singleton(Type.create(configIfaceName, Type.Kind.CLASS));
+            return Set.of(Type.create(configIfaceName, Type.Kind.CLASS));
         }
 
         Set<DotName> allIfaces = new HashSet<>();

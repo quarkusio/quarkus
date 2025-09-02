@@ -3,6 +3,7 @@ package io.quarkus.qute.generator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -26,6 +27,7 @@ import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.NamespaceResolver;
@@ -39,9 +41,9 @@ public class SimpleGeneratorTest {
 
     @BeforeAll
     public static void init() throws IOException {
-        TestClassOutput classOutput = new TestClassOutput();
+        ClassOutput classOutput = ClassOutput.fileWriter(new File("target/test-classes/").toPath());
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
-                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class);
+                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class, SomeBean.class, SomeInterface.class);
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
                 .addClass(myServiceClazz)
@@ -51,6 +53,7 @@ public class SimpleGeneratorTest {
                 .addClass(index.getClassByName(List.class))
                 .addClass(index.getClassByName(MyEnum.class))
                 .addClass(index.getClassByName(StringBuilder.class), stringBuilderTemplateData())
+                .addClass(index.getClassByName(SomeBean.class))
                 .build();
 
         generator.generate();
@@ -150,6 +153,11 @@ public class SimpleGeneratorTest {
         assertEquals("one", engine.parse("{MyEnum:valueOf('ONE').name}").render());
         assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
         assertEquals("foo", engine.parse("{builder.append('foo')}").data("builder", new StringBuilder()).render());
+
+        // Exact match takes precedence over the getter
+        assertEquals("bar::true::true::ping::false",
+                engine.parse("{some.image}::{some.hasImage}::{some.hasImage('bar')}::{some.png}::{some.hasPng('bar')}")
+                        .data("some", new SomeBean("bar")).render());
     }
 
     @Test

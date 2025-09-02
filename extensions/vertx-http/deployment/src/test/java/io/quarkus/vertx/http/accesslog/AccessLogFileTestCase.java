@@ -17,7 +17,6 @@ package io.quarkus.vertx.http.accesslog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -119,7 +118,7 @@ public class AccessLogFileTestCase {
                         }
                         Path path = logDirectory.resolve("server.log");
                         Assertions.assertTrue(Files.exists(path));
-                        String data = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                        String data = Files.readString(path);
                         Assertions.assertFalse(data.contains("/health"));
                         Assertions.assertFalse(data.contains("/liveliness"));
                         Assertions.assertTrue(data.contains("/does-not-exist"));

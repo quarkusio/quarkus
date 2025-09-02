@@ -1,9 +1,10 @@
 package io.quarkus.deployment.mutability;
 
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.BUILD_SYSTEM_PROPERTIES;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEPLOYMENT_LIB;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.LIB;
-import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.APPMODEL_DAT;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.BUILD_SYSTEM_PROPERTIES;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEPLOYMENT_LIB;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.LIB;
+import static io.quarkus.deployment.pkg.jar.FastJarFormat.QUARKUS;
 
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -20,7 +21,6 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.MutableJarApplicationModel;
-import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 
 public class ReaugmentTask {
 
@@ -29,7 +29,7 @@ public class ReaugmentTask {
         Path deploymentLib = appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB);
         Path buildSystemProps = appRoot.resolve(QUARKUS).resolve(BUILD_SYSTEM_PROPERTIES);
         try (ObjectInputStream in = new ObjectInputStream(
-                Files.newInputStream(deploymentLib.resolve(JarResultBuildStep.APPMODEL_DAT)))) {
+                Files.newInputStream(deploymentLib.resolve(APPMODEL_DAT)))) {
             Properties buildSystemProperties = new Properties();
             try (InputStream buildIn = Files
                     .newInputStream(buildSystemProps)) {

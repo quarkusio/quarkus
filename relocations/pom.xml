@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-relocations-parent</artifactId>
-    <name>Quarkus - Relocations Parent</name>
+    <name>Quarkus - Relocations</name>
     <description>This is the parent of relocated artifacts, that are still released for compatibility reasons.</description>
     <packaging>pom</packaging>
 
@@ -20,6 +20,8 @@
         <module>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</module>
         <module>quarkus-webjars-locator</module>
         <module>quarkus-webjars-locator-deployment</module>
+        <module>quarkus-vertx-http-dev-ui-spi</module>
+        <module>quarkus-vertx-http-dev-ui-tests</module>
     </modules>
 
 </project>

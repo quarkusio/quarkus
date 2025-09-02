@@ -32,7 +32,7 @@ public class AgroalDevUITestCase extends DevUIJsonRPCTest {
             });
 
     public AgroalDevUITestCase() {
-        super("io.quarkus.quarkus-agroal");
+        super("quarkus-agroal");
     }
 
     @Test

@@ -26,7 +26,7 @@ public @interface TestHTTPResource {
      * @return If the URL should use the HTTPS protocol and SSL port
      * @deprecated use #tls instead
      */
-    @Deprecated
+    @Deprecated(since = "3.10", forRemoval = true)
     boolean ssl() default false;
 
     /**

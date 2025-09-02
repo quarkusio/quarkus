@@ -12,7 +12,7 @@ import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @Path("/unprocessable")
-@RegisterRestClient(configKey = "w-fault-tolerance")
+@RegisterRestClient(configKey = "w-fault-tolerance-int")
 @CircuitBreaker(requestVolumeThreshold = 2, delay = 1, delayUnit = ChronoUnit.MINUTES)
 public interface FaultToleranceOnInterfaceClient {
     @GET

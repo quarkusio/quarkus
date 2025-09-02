@@ -81,7 +81,7 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     private final Handler<RoutingContext> handler;
 
-    private final HandlerType typeOfHandler = HandlerType.NORMAL;
+    private final HandlerType typeOfHandler;
 
     private final boolean displayOnNotFoundPage;
     private final String notFoundPageTitle;
@@ -89,6 +89,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final String routeConfigKey;
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @Deprecated(since = "3.25", forRemoval = true)
     public RouteBuildItem(RouteType typeOfRoute, String path, Consumer<Route> customizer,
             boolean isManagement,
             Handler<RoutingContext> handler,
@@ -97,6 +98,7 @@ public final class RouteBuildItem extends MultiBuildItem {
             String routeConfigKey, OptionalInt order) {
         this.order = order;
         this.typeOfRoute = typeOfRoute;
+        this.typeOfHandler = HandlerType.NORMAL;
         this.path = path;
         this.handler = handler;
         this.displayOnNotFoundPage = displayOnNotFoundPage;
@@ -104,6 +106,20 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routeConfigKey = routeConfigKey;
         this.customizer = customizer;
         this.isManagement = isManagement;
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private RouteBuildItem(Builder builder) {
+        this.order = builder.order;
+        this.typeOfRoute = builder.typeOfRoute;
+        this.typeOfHandler = builder.typeOfHandler;
+        this.path = builder.path;
+        this.handler = builder.handler;
+        this.displayOnNotFoundPage = builder.displayOnNotFoundPage;
+        this.notFoundPageTitle = builder.notFoundPageTitle;
+        this.routeConfigKey = builder.routeConfigKey;
+        this.customizer = builder.customizer;
+        this.isManagement = builder.isManagement;
     }
 
     public RouteType getTypeOfRoute() {
@@ -391,9 +407,7 @@ public final class RouteBuildItem extends MultiBuildItem {
                 throw new IllegalArgumentException("The route handler must be set");
             }
 
-            return new RouteBuildItem(typeOfRoute, path, customizer, isManagement, handler, displayOnNotFoundPage,
-                    notFoundPageTitle,
-                    routeConfigKey, order);
+            return new RouteBuildItem(this);
         }
     }
 

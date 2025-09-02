@@ -30,7 +30,7 @@ public class PanacheJAXBTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(JAXBEntity.class, JAXBTestResource.class)
-                    .addAsResource(new StringAsset("quarkus.hibernate-orm.database.generation=none"),
+                    .addAsResource(new StringAsset("quarkus.hibernate-orm.schema-management.strategy=none"),
                             "application.properties"));
 
     @Test

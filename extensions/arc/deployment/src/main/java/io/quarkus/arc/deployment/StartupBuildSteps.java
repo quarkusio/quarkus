@@ -99,7 +99,7 @@ public class StartupBuildSteps {
             @Override
             public boolean test(BeanInfo bean) {
                 if (bean.isClassBean()) {
-                    return bean.getTarget().get().asClass().annotationsMap().containsKey(STARTUP_NAME);
+                    return bean.getTarget().get().asClass().hasAnnotation(STARTUP_NAME);
                 } else if (bean.isProducerMethod()) {
                     return !getAnnotations(Kind.METHOD, STARTUP_NAME, bean.getTarget().get().asMethod().annotations())
                             .isEmpty();

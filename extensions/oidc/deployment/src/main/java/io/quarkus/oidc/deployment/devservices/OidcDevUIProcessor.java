@@ -7,7 +7,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -17,16 +17,15 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.devservices.oidc.OidcDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
-import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
-import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 public class OidcDevUIProcessor extends AbstractDevUIProcessor {
 
@@ -44,11 +43,10 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     OidcBuildTimeConfig oidcConfig;
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Consume(CoreVertxBuildItem.class) // metadata discovery requires Vertx instance
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(Capabilities capabilities,
-            VertxHttpConfig httpConfig,
             BeanContainerBuildItem beanContainer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
@@ -90,12 +88,13 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
                     null,
                     null,
                     true,
-                    httpConfig, discoverMetadata, authServerUrl);
+                    discoverMetadata,
+                    authServerUrl);
             cardPageProducer.produce(cardPage);
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
         return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }

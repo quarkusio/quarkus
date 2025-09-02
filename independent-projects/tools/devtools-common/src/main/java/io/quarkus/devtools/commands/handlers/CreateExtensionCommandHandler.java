@@ -63,7 +63,7 @@ public class CreateExtensionCommandHandler {
             throws QuarkusCommandException {
         try {
             final QuarkusExtensionCodestartCatalog catalog = QuarkusExtensionCodestartCatalog
-                    .fromBaseCodestartsResources();
+                    .fromBaseCodestartsResources(log);
             catalog.createProject(input).generate(newExtensionDir);
 
             final String extensionDirName = newExtensionDir.getFileName().toString();

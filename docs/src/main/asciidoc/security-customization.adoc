@@ -162,10 +162,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        return Uni.createFrom().item(build(identity));
-
-        // Do 'return context.runBlocking(build(identity));'
-        // if a blocking call is required to customize the identity
+        return Uni.createFrom().item(build(identity)); <1>
     }
 
     private Supplier<SecurityIdentity> build(SecurityIdentity identity) {
@@ -182,6 +179,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
     }
 }
 ----
+<1> Augment the security identity. See the <<security-augmentation-request-context>> section for an example of how to augment the identity in a blocking mode.
 
 Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-tls[mutual TLS (mTLS) authentication] request to add more roles:
 
@@ -239,6 +237,9 @@ If more than one custom `SecurityIdentityAugmentor` is registered then they will
 You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
 ====
 
+[[security-augmentation-request-context]]
+=== Activate Request Context
+
 By default, the request context is not activated when augmenting the security identity, this means that if you want to use for example Hibernate
 that mandates a request context, you will have a `jakarta.enterprise.context.ContextNotActiveException`.
 
@@ -248,52 +249,45 @@ The solution is to activate the request context, the following example shows how
 
 [source,java]
 ----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.smallrye.mutiny.Uni;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
 @ApplicationScoped
 public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Inject
-    Instance<SecurityIdentitySupplier> identitySupplierInstance;
+    UserEntityAugmentor userEntityAugmentor;
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        if(identity.isAnonymous()) {
+        if (identity.isAnonymous()) {
             return Uni.createFrom().item(identity);
         }
 
         // Hibernate ORM is blocking
-        SecurityIdentitySupplier identitySupplier = identitySupplierInstance.get();
-        identitySupplier.setIdentity(identity);
-        return context.runBlocking(identitySupplier);
+        return context.runBlocking(() -> userEntityAugmentor.augment(identity));
     }
 }
 ----
 
 [source,java]
 ----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.context.control.ActivateRequestContext;
-import java.util.function.Supplier;
+@ApplicationScoped
+class UserEntityAugmentor {
 
-@Dependent
-class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
-
-    private SecurityIdentity identity;
-
-    @Override
     @ActivateRequestContext
-    public SecurityIdentity get() {
+    public SecurityIdentity augment(SecurityIdentity identity) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
         String user = identity.getPrincipal().getName();
 
@@ -302,10 +296,6 @@ class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
                 .forEach(role -> builder.addRole(role.role));
 
         return builder.build();
-    }
-
-    public void setIdentity(SecurityIdentity identity) {
-        this.identity = identity;
     }
 }
 ----

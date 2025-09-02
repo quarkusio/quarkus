@@ -17,9 +17,12 @@ import com.salesforce.jprotoc.GeneratorException;
 import com.salesforce.jprotoc.ProtoTypeMap;
 import com.salesforce.jprotoc.ProtocPlugin;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 /**
  * @author Paulo Lopes
  */
+@SuppressForbidden(reason = "It is fine to use java.util.logging")
 public class MutinyGrpcGenerator extends Generator {
 
     private static final Logger log = Logger.getLogger(MutinyGrpcGenerator.class.getName());

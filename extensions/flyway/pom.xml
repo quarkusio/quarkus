@@ -17,5 +17,6 @@
     <modules>
         <module>runtime</module>
         <module>deployment</module>
+        <module>runtime-dev</module>
     </modules>
 </project>

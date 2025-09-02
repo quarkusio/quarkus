@@ -31,7 +31,7 @@ class GreetingResource(val headers: HttpHeaders) {
     suspend fun body(
         @PathParam(value = "name") name: String,
         greeting: Greeting,
-        @Context uriInfo: UriInfo
+        @Context uriInfo: UriInfo,
     ) = Response.ok(greeting).build()
 
     @GET

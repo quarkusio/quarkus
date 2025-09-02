@@ -68,13 +68,27 @@ public interface QuarkusTransaction {
     }
 
     /**
-     * If a transaction is active.
+     * Returns whether a transaction is associated to the current request scope. The name of this method is misleading. Don't
+     * use it.
      *
-     * @return {@code true} if the transaction is active.
+     * @return {@code true} if a transaction is associated to the current request scope.
+     *
+     * @deprecated the name of this method was misleading and it shouldn't be used anymore. Use {@link #getStatus()} for a
+     *             better semantic instead.
      */
+    @Deprecated(forRemoval = true, since = "3.22")
     static boolean isActive() {
+        return getStatus() != Status.STATUS_NO_TRANSACTION;
+    }
+
+    /**
+     * Returns the status of the current transaction.
+     *
+     * @return The status of the current transaction based on the {@link Status} constants.
+     */
+    static int getStatus() {
         try {
-            return UserTransaction.userTransaction().getStatus() != Status.STATUS_NO_TRANSACTION;
+            return UserTransaction.userTransaction().getStatus();
         } catch (SystemException e) {
             throw new QuarkusTransactionException(e);
         }
@@ -86,11 +100,7 @@ public interface QuarkusTransaction {
      * @return If the transaction has been marked for rollback
      */
     static boolean isRollbackOnly() {
-        try {
-            return UserTransaction.userTransaction().getStatus() == Status.STATUS_MARKED_ROLLBACK;
-        } catch (SystemException e) {
-            throw new QuarkusTransactionException(e);
-        }
+        return getStatus() == Status.STATUS_MARKED_ROLLBACK;
     }
 
     /**

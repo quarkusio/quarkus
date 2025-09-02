@@ -1,15 +1,18 @@
 package io.quarkus.runtime.graal;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.TargetClass;
-
-import io.quarkus.logging.Log;
 
 /**
  * Implements version parsing from the {@code com.oracle.svm.core.VM} property inspired by
@@ -18,6 +21,7 @@ import io.quarkus.logging.Log;
  * {@code org.graalvm.polyglot:polyglot}.
  */
 public final class GraalVM {
+    private static final Logger log = Logger.getLogger(GraalVM.class);
 
     static final class VersionParseHelper {
 
@@ -40,16 +44,23 @@ public final class GraalVM {
 
         private static final String VERSION_GROUP = "VNUM";
 
-        private static final Version UNKNOWN_VERSION = null;
-
         static Version parse(String value) {
             Matcher versionMatcher = VENDOR_VERS_PATTERN.matcher(value);
             if (versionMatcher.find()) {
                 String vendor = versionMatcher.group(VENDOR_PREFIX_GROUP);
                 if (GRAALVM_CE_VERS_PREFIX.equals(vendor) || ORACLE_GRAALVM_VERS_PREFIX.equals(vendor)) {
                     String version = versionMatcher.group(VERSION_GROUP);
-                    String jdkFeature = version.split("\\.", 2)[0];
-                    return new Version(value, Version.GRAAL_MAPPING.get(jdkFeature), Distribution.GRAALVM);
+                    String tokens[] = version.split("\\.", 3);
+                    String jdkFeature = tokens[0];
+                    String jdkVers = jdkFeature;
+                    if (tokens.length == 3) {
+                        String interim = tokens[1];
+                        String update = tokens[2].split("\\+")[0];
+                        jdkVers = String.format("%s.%s.%s", jdkFeature, interim, update);
+                    }
+                    // For JDK 26+ there is no more version mapping use the JDK version
+                    String versionMapping = Version.GRAAL_MAPPING.getOrDefault(jdkFeature, version);
+                    return new Version(value, versionMapping, jdkVers, Distribution.GRAALVM);
                 } else if (LIBERICA_NIK_VERS_PREFIX.equals(vendor)) {
                     return new Version(value, versionMatcher.group(VERSION_GROUP), Distribution.LIBERICA);
                 } else if (MANDREL_VERS_PREFIX.equals(vendor)) {
@@ -57,7 +68,7 @@ public final class GraalVM {
                 }
             }
 
-            Log.warnf("Failed to parse GraalVM version from: %s. Defaulting to currently supported version %s ", value,
+            log.warnf("Failed to parse GraalVM version from: %s. Defaulting to currently supported version %s ", value,
                     Version.CURRENT);
             return Version.CURRENT;
         }
@@ -78,8 +89,18 @@ public final class GraalVM {
                 "21", "23.1",
                 "22", "24.0",
                 "23", "24.1",
-                "24", "24.2",
-                "25", "25.0");
+                "24", "24.2");
+        // Mapping of community major.minor pair to the JDK major version based on
+        // GRAAL_MAPPING
+        private static final Map<String, String> MANDREL_JDK_REV_MAP;
+
+        static {
+            Map<String, String> reverseMap = new HashMap<>(GRAAL_MAPPING.size());
+            for (Entry<String, String> entry : GRAAL_MAPPING.entrySet()) {
+                reverseMap.put(entry.getValue(), entry.getKey());
+            }
+            MANDREL_JDK_REV_MAP = Collections.unmodifiableMap(reverseMap);
+        }
 
         /**
          * The minimum version of GraalVM supported by Quarkus.
@@ -97,6 +118,7 @@ public final class GraalVM {
          */
         public static final Version MINIMUM_SUPPORTED = CURRENT;
 
+        private static final String DEFAULT_JDK_VERSION = "21";
         protected final String fullVersion;
         public final Runtime.Version javaVersion;
         protected final Distribution distribution;
@@ -104,7 +126,10 @@ public final class GraalVM {
         private String suffix;
 
         Version(String fullVersion, String version, Distribution distro) {
-            this(fullVersion, version, "21", distro);
+            this(fullVersion, version,
+                    distro == Distribution.MANDREL || distro == Distribution.LIBERICA ? communityJDKvers(version)
+                            : DEFAULT_JDK_VERSION,
+                    distro);
         }
 
         Version(String fullVersion, String version, String javaVersion, Distribution distro) {
@@ -125,6 +150,37 @@ public final class GraalVM {
                 version = version.substring(0, dash);
             }
             this.versions = Arrays.stream(version.split("\\.")).mapToInt(Integer::parseInt).toArray();
+        }
+
+        /*
+         * Reconstruct the JDK version from the given GraalVM community version (Mandrel or Liberica)
+         */
+        private static String communityJDKvers(String communityVersion) {
+            try {
+                String[] parts = communityVersion.split("\\.", 4);
+                int major = Integer.parseInt(parts[0]);
+                int minor = Integer.parseInt(parts[1]);
+                if ((major == 23 && minor > 0) ||
+                        major > 23) {
+                    String mandrelMajorMinor = String.format("%s.%s", parts[0], parts[1]);
+                    // If we don't find a reverse mapping we use a JDK version >= 25, thus
+                    // the feature version is the first part of the quadruple.
+                    String feature = MANDREL_JDK_REV_MAP.getOrDefault(mandrelMajorMinor, parts[0]);
+                    // Heuristic: The update version of Mandrel and the JDK match.
+                    // Interim is usually 0 for the JDK version.
+                    // Skip trailing zeroes, as they are not supported by java.lang.Runtime.Version.parse.
+                    if ("0".equals(parts[2])) {
+                        return feature;
+                    }
+                    return String.format("%s.%s.%s", feature, "0", parts[2]);
+                }
+            } catch (Throwable e) {
+                // fall-through do default
+                log.warnf("Failed to parse JDK version from GraalVM version: %s. Defaulting to currently supported version %s ",
+                        communityVersion,
+                        DEFAULT_JDK_VERSION);
+            }
+            return DEFAULT_JDK_VERSION;
         }
 
         @Override

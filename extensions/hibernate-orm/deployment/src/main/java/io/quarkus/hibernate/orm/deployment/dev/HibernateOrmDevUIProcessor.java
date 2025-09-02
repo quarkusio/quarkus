@@ -5,7 +5,7 @@ import java.util.List;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -15,16 +15,21 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
+import io.quarkus.hibernate.orm.dev.HibernateOrmDevInfoCreateDDLSupplier;
+import io.quarkus.hibernate.orm.dev.ui.HibernateOrmDevJsonRpcService;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoCreateDDLSupplier;
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevJsonRpcService;
 
-@BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsDevelopment.class })
+@BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsLocalDevelopment.class })
 public class HibernateOrmDevUIProcessor {
 
     @BuildStep
     public CardPageBuildItem create(HibernateOrmConfig config) {
         CardPageBuildItem card = new CardPageBuildItem();
+        card.setLogo("hibernate_icon_dark.svg", "hibernate_icon_light.svg");
+        card.addLibraryVersion("org.hibernate.orm", "hibernate-core", "Hibernate", "https://hibernate.org/orm/");
+        card.addLibraryVersion("jakarta.persistence", "jakarta.persistence-api", "Jakarta Persistence",
+                "https://jakarta.ee/specifications/persistence/");
+
         card.addPage(Page.webComponentPageBuilder()
                 .title("Persistence Units")
                 .componentLink("hibernate-orm-persistence-units.js")

@@ -43,6 +43,14 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-required-claims")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminRequiredClaims() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-azure")
     @GET
     @Authenticated
@@ -65,6 +73,30 @@ public class AdminResource {
     @Produces(MediaType.APPLICATION_JSON)
     public String adminIssuerTest() {
         return "static.tenant.id=" + routingContext.get("static.tenant.id");
+    }
+
+    @Path("bearer-encrypted-with-decryption-key")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerEncryptedWithDecryptionKey() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-encrypted-with-client-secret")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerEncryptedWithClientSecret() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-encrypted-without-decryption-key")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerEncryptedWithoutDecryptionKey() {
+        throw new RuntimeException("Unencrypted token can not be validated");
     }
 
     @Path("bearer-certificate-full-chain")

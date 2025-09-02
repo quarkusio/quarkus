@@ -249,7 +249,7 @@ public final class AmazonLambdaProcessor {
             }
         } else if (lambdas == null || lambdas.isEmpty()) {
             String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
-                    + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
+                    + RequestHandler.class.getName() + " or " + RequestStreamHandler.class.getName() + " implementation";
             throw new RuntimeException(errorMessage);
         }
     }

@@ -28,6 +28,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Typed;
@@ -47,7 +49,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
-import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
@@ -83,10 +84,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -119,7 +120,9 @@ class RestClientReactiveProcessor {
     private static final Logger log = Logger.getLogger(RestClientReactiveProcessor.class);
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
+    private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
+    private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
@@ -140,11 +143,6 @@ class RestClientReactiveProcessor {
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(Feature.REST_CLIENT));
-    }
-
-    @BuildStep
-    void registerQueryParamStyleForConfig(BuildProducer<ConfigurationTypeBuildItem> configurationTypes) {
-        configurationTypes.produce(new ConfigurationTypeBuildItem(QueryParamStyle.class));
     }
 
     @BuildStep
@@ -364,7 +362,7 @@ class RestClientReactiveProcessor {
             // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
-                builder.addBeanClass(value.asClass().toString());
+                builder.addBeanClass(value.asClass().name().toString());
             }
         }
         return builder.build();
@@ -473,10 +471,23 @@ class RestClientReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
             RestClientsBuildTimeConfig clientsBuildConfig,
+            LaunchModeBuildItem launchMode,
             RestClientRecorder recorder,
             ShutdownContextBuildItem shutdown) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+
+        Set<DotName> requestedRestClientMocks = Collections.emptySet();
+        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
+            // we need to determine which RestClient interfaces have been marked for mocking
+            requestedRestClientMocks = combinedIndexBuildItem.getIndex().getAnnotations(INJECT_MOCK)
+                    .stream()
+                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.FIELD)
+                    .map(ai -> ai.target().asField())
+                    .filter(f -> f.hasAnnotation(REST_CLIENT))
+                    .map(f -> f.type().name())
+                    .collect(Collectors.toSet());
+        }
 
         Map<String, String> configKeys = new HashMap<>();
         var annotationsStore = new AnnotationStore(index, restClientAnnotationsTransformerBuildItem.stream()
@@ -552,6 +563,8 @@ class RestClientReactiveProcessor {
                 Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
 
                 ResultHandle baseUriHandle = constructor.load(baseUri.isPresent() ? baseUri.get() : "");
+                boolean lazyDelegate = scope.getDotName().equals(REQUEST_SCOPED)
+                        || requestedRestClientMocks.contains(jaxrsInterface.name());
                 constructor.invokeSpecialMethod(
                         MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
                                 String.class, boolean.class),
@@ -559,7 +572,7 @@ class RestClientReactiveProcessor {
                         constructor.loadClassFromTCCL(jaxrsInterface.toString()),
                         baseUriHandle,
                         configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull(),
-                        constructor.load(scope.getDotName().equals(REQUEST_SCOPED)));
+                        constructor.load(lazyDelegate));
                 constructor.returnValue(null);
 
                 // METHODS:
@@ -574,6 +587,11 @@ class RestClientReactiveProcessor {
                     //     return InterfaceClass.super.get();
                     // }
                     MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
+                    for (Type exception : method.exceptions()) {
+                        // declared exceptions are important in case the client is intercepted, because interception
+                        // subclasses wrap undeclared checked exceptions into `ArcUndeclaredThrowableException`
+                        methodCreator.addException(exception.name().toString());
+                    }
                     methodCreator.setSignature(method.genericSignatureIfRequired());
 
                     // copy method annotations, there can be interceptors bound to them:

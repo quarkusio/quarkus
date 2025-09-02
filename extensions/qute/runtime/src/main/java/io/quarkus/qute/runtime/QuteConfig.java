@@ -90,6 +90,12 @@ public interface QuteConfig {
     Charset defaultCharset();
 
     /**
+     * The strategy used when multiple templates with the same path are found in the application.
+     */
+    @WithDefault("PRIORITIZE")
+    DuplicitTemplatesStrategy duplicitTemplatesStrategy();
+
+    /**
      * Development mode configuration.
      */
     QuteDevModeConfig devMode();
@@ -98,5 +104,24 @@ public interface QuteConfig {
      * Test mode configuration.
      */
     QuteTestModeConfig testMode();
+
+    public enum DuplicitTemplatesStrategy {
+
+        /**
+         * If multiple templates with the same path are found then determine the highest priority value and eliminate all
+         * templates with lowest priority. If there is exactly one template remaining then use this template. Otherwise, fail
+         * the build.
+         * <p>
+         * Templates from the root application archive have the priority {@code 30}. Templates from other application archives
+         * have the priority {@code 10}. Templates from build items can define any priority.
+         */
+        PRIORITIZE,
+
+        /**
+         * Fail the build if multiple templates with the same path are found.
+         */
+        FAIL,
+
+    }
 
 }

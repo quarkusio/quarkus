@@ -238,7 +238,7 @@ public class GradleRunner implements BuildSystemRunner {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
-        setGradleProperties(args, false);
+        setGradleProperties(args, commonOptions.isBatchMode());
 
         if (commonOptions.clean) {
             args.add("clean");

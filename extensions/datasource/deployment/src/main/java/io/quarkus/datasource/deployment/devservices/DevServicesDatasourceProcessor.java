@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -32,6 +33,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -41,8 +43,9 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesDatasourceProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesDatasourceProcessor.class);
@@ -62,6 +65,7 @@ public class DevServicesDatasourceProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             List<DevServicesDatasourceProviderBuildItem> devDBProviders,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             LaunchModeBuildItem launchMode,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
@@ -70,6 +74,10 @@ public class DevServicesDatasourceProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
+
+        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                devServicesSharedNetworkBuildItem);
+
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
         if (databases != null) {
@@ -136,7 +144,7 @@ public class DevServicesDatasourceProcessor {
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
                     dockerStatusBuildItem, composeProjectBuildItem,
                     launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
-                    devServicesConfig);
+                    devServicesConfig, useSharedNetwork);
             if (devService != null) {
                 runningDevServices.add(devService);
                 results.put(entry.getKey(), toDbResult(devService));
@@ -189,6 +197,7 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.db-name", config.devservices().dbName());
             res.put(name + ".devservices.image-name", config.devservices().imageName());
             res.put(name + ".devservices.init-script-path", config.devservices().initScriptPath());
+            res.put(name + ".devservices.init-privileged-script-path", config.devservices().initPrivilegedScriptPath());
             res.put(name + ".devservices.password", config.devservices().password());
             res.put(name + ".devservices.port", config.devservices().port());
             res.put(name + ".devservices.properties", config.devservices().properties());
@@ -217,7 +226,8 @@ public class DevServicesDatasourceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig) {
+            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig, boolean useSharedNetwork) {
+
         String dataSourcePrettyName = DataSourceUtil.isDefault(dbName) ? "default datasource" : "datasource " + dbName;
 
         if (!ConfigUtils.getFirstOptionalValue(
@@ -232,6 +242,13 @@ public class DevServicesDatasourceProcessor {
             log.debug("Not starting Dev Services for " + dataSourcePrettyName
                     + " as it has been disabled in the configuration");
             return null;
+        }
+
+        if (useSharedNetwork && dataSourceBuildTimeConfig.devservices().port().isPresent()) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Cannot set a port for the Dev Service of datasource '%s' using '%s', because it is using a shared network, which disables port mapping",
+                    DataSourceUtil.dataSourcePropertyKey(dbName, "devservices.port"),
+                    dataSourcePrettyName));
         }
 
         Boolean enabled = dataSourceBuildTimeConfig.devservices().enabled().orElse(!hasNamedDatasources);
@@ -301,6 +318,7 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices().username(),
                     dataSourceBuildTimeConfig.devservices().password(),
                     dataSourceBuildTimeConfig.devservices().initScriptPath(),
+                    dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
                     dataSourceBuildTimeConfig.devservices().volumes(),
                     dataSourceBuildTimeConfig.devservices().reuse(),
                     dataSourceBuildTimeConfig.devservices().showLogs());

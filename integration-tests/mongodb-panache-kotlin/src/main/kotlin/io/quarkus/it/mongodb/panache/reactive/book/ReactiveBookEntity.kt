@@ -18,6 +18,7 @@ class ReactiveBookEntity : ReactivePanacheMongoEntity() {
     @BsonProperty("bookTitle")
     var title: String? = null
         private set
+
     var author: String? = null
         private set
 
@@ -26,6 +27,7 @@ class ReactiveBookEntity : ReactivePanacheMongoEntity() {
     @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd") var creationDate: LocalDate? = null
     var categories: List<String> = ArrayList()
         private set
+
     var details: BookDetail? = null
         private set
 

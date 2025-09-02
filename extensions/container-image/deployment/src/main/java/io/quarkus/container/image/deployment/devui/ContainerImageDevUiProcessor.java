@@ -10,9 +10,9 @@ import io.quarkus.bootstrap.app.ArtifactResult;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.container.image.runtime.devui.ContainerBuilderJsonRpcService;
+import io.quarkus.container.image.runtime.dev.ui.ContainerBuilderJsonRpcService;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
@@ -22,14 +22,15 @@ import io.quarkus.devui.spi.page.Page;
 
 public class ContainerImageDevUiProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     CardPageBuildItem create(List<AvailableContainerImageExtensionBuildItem> extensions) {
         // Get the list of builders
         List<String> array = extensions.stream().map(AvailableContainerImageExtensionBuildItem::getName).sorted()
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
 
         CardPageBuildItem card = new CardPageBuildItem();
-        card.addBuildTimeData("builderTypes", array);
+        card.addBuildTimeData("builderTypes", array,
+                "Available builder types that can be used in the `quarkus-container-image_build` method (mcp tool) as input in the `builder` parameter");
         card.addPage(Page.webComponentPageBuilder()
                 .title("Build Container")
                 .componentLink("qwc-container-image-build.js")
@@ -37,7 +38,7 @@ public class ContainerImageDevUiProcessor {
         return card;
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForContainerBuild() {
         DevConsoleManager.register("container-image-build-action", build());
         return new JsonRPCProvidersBuildItem(ContainerBuilderJsonRpcService.class);

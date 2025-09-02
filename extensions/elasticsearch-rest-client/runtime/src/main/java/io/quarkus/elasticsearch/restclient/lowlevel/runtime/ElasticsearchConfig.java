@@ -53,13 +53,13 @@ public interface ElasticsearchConfig {
     /**
      * The maximum number of connections to all the Elasticsearch servers.
      */
-    @WithDefault("20")
+    @WithDefault("40")
     int maxConnections();
 
     /**
      * The maximum number of connections per Elasticsearch server.
      */
-    @WithDefault("10")
+    @WithDefault("20")
     int maxConnectionsPerRoute();
 
     /**

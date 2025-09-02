@@ -260,11 +260,11 @@ public interface RestClientsConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
      * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
      * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * The default TLS configuration will be ignored.
      * <p>
-     * If no TLS configuration is set, then the keys-tore, trust-store, etc. properties will be used.
+     * If no named TLS configuration is set, then the key-store, trust-store, etc. properties will be used.
      * <p>
      * This property is not applicable to the RESTEasy Client.
      */
@@ -277,9 +277,17 @@ public interface RestClientsConfig {
     boolean http2();
 
     /**
+     * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("64K")
+    Optional<MemorySize> http2UpgradeMaxContentLength();
+
+    /**
      * Configures two different things:
      * <ul>
-     * <li>The max HTTP chunk size</li>
+     * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
      * <li>The size of the chunk to be read when an {@link InputStream} is being used as an input</li>
      * </ul>
      * <p>
@@ -543,11 +551,11 @@ public interface RestClientsConfig {
         /**
          * The name of the TLS configuration to use.
          * <p>
-         * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
          * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
          * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+         * The default TLS configuration will be ignored.
          * <p>
-         * If no TLS configuration is set, then the keys-tore, trust-store, etc. properties will be used.
+         * If no named TLS configuration is set, then the key-store, trust-store, etc. properties will be used.
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
@@ -614,9 +622,17 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
+         * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("64K")
+        Optional<MemorySize> http2UpgradeMaxContentLength();
+
+        /**
          * Configures two different things:
          * <ul>
-         * <li>The max HTTP chunk size</li>
+         * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
          * <li>The size of the chunk to be read when an {@link InputStream} is being read and sent to the server</li>
          * </ul>
          * <p>

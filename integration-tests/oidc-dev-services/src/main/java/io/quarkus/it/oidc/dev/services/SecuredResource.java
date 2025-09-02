@@ -44,7 +44,7 @@ public class SecuredResource {
     @GET
     @Path("user-only")
     public String getUserOnly() {
-        return userInfo.getPreferredUserName() + " " + securityIdentity.getRoles();
+        return userInfo.getPreferredUserName() + " " + securityIdentity.getRoles() + " " + userInfo.getName();
     }
 
     @GET

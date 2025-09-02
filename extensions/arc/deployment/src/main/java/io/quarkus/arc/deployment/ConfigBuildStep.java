@@ -28,9 +28,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.inject.CreationException;
-
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -66,15 +63,11 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.inject.ConfigProducer;
 
@@ -248,27 +241,6 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    void registerConfigRootsAsBeans(ConfigurationBuildItem configItem, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
-        for (RootDefinition rootDefinition : configItem.getReadResult().getAllRoots()) {
-            if (rootDefinition.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED
-                    || rootDefinition.getConfigPhase() == ConfigPhase.RUN_TIME) {
-                Class<?> configRootClass = rootDefinition.getConfigurationClass();
-                syntheticBeans.produce(SyntheticBeanBuildItem.configure(configRootClass).types(configRootClass)
-                        .scope(Dependent.class).creator(mc -> {
-                            // e.g. return Config.ApplicationConfig
-                            ResultHandle configRoot = mc.readStaticField(rootDefinition.getDescriptor());
-                            // BUILD_AND_RUN_TIME_FIXED roots are always set before the container is started (in the static initializer of the generated Config class)
-                            // However, RUN_TIME roots may be not be set when the bean instance is created
-                            mc.ifNull(configRoot).trueBranch().throwException(CreationException.class,
-                                    String.format("Config root [%s] with config phase [%s] not initialized yet.",
-                                            configRootClass.getName(), rootDefinition.getConfigPhase().name()));
-                            mc.returnValue(configRoot);
-                        }).done());
-            }
-        }
-    }
-
-    @BuildStep
     AnnotationsTransformerBuildItem vetoMPConfigProperties() {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
@@ -304,34 +276,18 @@ public class ConfigBuildStep {
     void registerConfigMappingsBean(
             BeanRegistrationPhaseBuildItem beanRegistration,
             List<ConfigClassBuildItem> configClasses,
-            CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
         if (configClasses.isEmpty()) {
             return;
         }
 
-        Set<ConfigClassBuildItem> configMappings = new HashSet<>();
-
-        // Add beans for all unremovable mappings
-        for (ConfigClassBuildItem configClass : configClasses) {
-            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
-                configMappings.add(configClass);
-            }
-        }
-
-        // Add beans for all injection points
-        Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
-        for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
-            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
-            ConfigClassBuildItem configClass = configMappingTypes.get(type);
-            if (configClass != null) {
-                configMappings.add(configClass);
-            }
-        }
-
         // Generate the mappings beans
-        for (ConfigClassBuildItem configClass : configMappings) {
+        for (ConfigClassBuildItem configClass : configClasses) {
+            if (!configClass.isMapping()) {
+                continue;
+            }
+
             BeanConfigurator<Object> bean = beanRegistration.getContext()
                     .configure(configClass.getConfigClass())
                     .types(configClass.getTypes().toArray(new Type[] {}))
@@ -352,41 +308,35 @@ public class ConfigBuildStep {
     void registerConfigPropertiesBean(
             BeanRegistrationPhaseBuildItem beanRegistration,
             List<ConfigClassBuildItem> configClasses,
-            CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
         if (configClasses.isEmpty()) {
             return;
         }
 
-        Map<Type, ConfigClassBuildItem> configPropertiesTypes = configClassesToTypesMap(configClasses, PROPERTIES);
-        Set<ConfigClassBuildItem> configProperties = new HashSet<>();
-        for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
-            AnnotationInstance instance = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTIES_NAME);
-            if (instance == null) {
+        // Generate the mappings beans
+        for (ConfigClassBuildItem configClass : configClasses) {
+            if (!configClass.isProperties()) {
                 continue;
             }
 
-            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
-            ConfigClassBuildItem configClass = configPropertiesTypes.get(type);
-            if (configClass != null) {
-                configProperties.add(configClass);
-            }
-        }
+            BeanConfigurator<Object> bean = beanRegistration.getContext()
+                    .configure(configClass.getConfigClass())
+                    .types(configClass.getTypes().toArray(new Type[] {}))
+                    .addQualifier(create(MP_CONFIG_PROPERTIES_NAME, null,
+                            new AnnotationValue[] {
+                                    createStringValue("prefix", configClass.getPrefix())
+                            }))
+                    .creator(ConfigMappingCreator.class)
+                    .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
+                    .param("type", configClass.getConfigClass())
+                    .param("prefix", configClass.getPrefix());
 
-        for (ConfigClassBuildItem configClass : configProperties) {
-            beanConfigurator.produce(new BeanConfiguratorBuildItem(
-                    beanRegistration.getContext()
-                            .configure(configClass.getConfigClass())
-                            .types(configClass.getTypes().toArray(new Type[] {}))
-                            .addQualifier(create(MP_CONFIG_PROPERTIES_NAME, null,
-                                    new AnnotationValue[] {
-                                            createStringValue("prefix", configClass.getPrefix())
-                                    }))
-                            .creator(ConfigMappingCreator.class)
-                            .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
-                            .param("type", configClass.getConfigClass())
-                            .param("prefix", configClass.getPrefix())));
+            if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
+                bean.unremovable();
+            }
+
+            beanConfigurator.produce(new BeanConfiguratorBuildItem(bean));
         }
     }
 
@@ -437,14 +387,14 @@ public class ConfigBuildStep {
         }
 
         if (arcConfig.shouldEnableBeanRemoval()) {
-            Set<String> unremovableClassNames = unremovableBeans.stream()
+            Set<DotName> unremovableClassNames = unremovableBeans.stream()
                     .map(UnremovableBeanBuildItem::getClassNames)
                     .flatMap(Collection::stream)
                     .collect(toSet());
 
             for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
                 if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)
-                        || unremovableClassNames.contains(configClass.getName().toString())) {
+                        || unremovableClassNames.contains(configClass.getName())) {
                     toRegister.add(new ConfigMappingBuildItem(configClass.getConfigClass(), configClass.getPrefix()));
                 }
             }

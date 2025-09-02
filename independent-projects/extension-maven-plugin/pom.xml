@@ -30,7 +30,6 @@
     </scm>
     <properties>
         <angus-activation.version>1.0.0</angus-activation.version>
-        <expressly.version>5.0.0</expressly.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -38,10 +37,10 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <maven-core.version>3.9.9</maven-core.version>
-        <jackson-bom.version>2.18.3</jackson-bom.version>
-        <smallrye-beanbag.version>1.5.2</smallrye-beanbag.version>
-        <junit5.version>5.12.1</junit5.version>
-        <mockito.version>5.17.0</mockito.version>
+        <jackson-bom.version>2.20.0</jackson-bom.version>
+        <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
+        <junit5.version>5.13.4</junit5.version>
+        <mockito.version>5.19.0</mockito.version>
     </properties>
     <build>
         <testResources>
@@ -166,6 +165,34 @@
                     <execution>
                         <id>default-descriptor</id>
                         <phase>process-classes</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- copy the Maven wrapper to make sure we don't inherit the configuration from the root .mvn in the nested projects -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-maven-wrapper</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <propertiesEncoding>UTF-8</propertiesEncoding>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.multiModuleProjectDirectory}/</directory>
+                                    <includes>
+                                        <include>.mvn/wrapper/**</include>
+                                        <include>mvnw</include>
+                                        <include>mvnw.cmd</include>
+                                    </includes>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -396,17 +423,6 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-release</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

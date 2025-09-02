@@ -16,5 +16,12 @@
             <groupId>org.acme</groupId>
             <artifactId>acme-common-transitive</artifactId>
         </dependency>
+        <!-- begin comment
+        <dependency>
+            <groupId>org.acme.extra</groupId>
+            <artifactId>acme-extra</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        end comment -->
     </dependencies>
 </project>

@@ -3,9 +3,9 @@ package io.quarkus.annotation.processor.extension;
 import static javax.lang.model.util.ElementFilter.methodsIn;
 import static javax.lang.model.util.ElementFilter.typesIn;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -26,18 +26,15 @@ import io.quarkus.annotation.processor.util.Utils;
 
 public class ExtensionBuildProcessor implements ExtensionProcessor {
 
-    private Config config;
     private Utils utils;
 
-    private final Set<String> processorClassNames = new HashSet<>();
-    private final Set<String> recorderClassNames = new HashSet<>();
-    private final Set<String> configRootClassNames = new HashSet<>();
-    private final Set<String> buildSteps = new HashSet<>();
+    private final Set<String> processorClassNames = new TreeSet<>();
+    private final Set<String> recorderClassNames = new TreeSet<>();
+    private final Set<String> configRootClassNames = new TreeSet<>();
     private final Map<String, Boolean> annotationUsageTracker = new ConcurrentHashMap<>();
 
     @Override
     public void init(Config config, Utils utils) {
-        this.config = config;
         this.utils = utils;
     }
 
@@ -69,8 +66,22 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     public void finalizeProcessing() {
         validateAnnotationUsage();
 
-        utils.filer().write(Outputs.META_INF_QUARKUS_BUILD_STEPS, buildSteps);
-        utils.filer().write(Outputs.META_INF_QUARKUS_CONFIG_ROOTS, configRootClassNames);
+        /*
+         * During an incremental compilation (i.e. while developing extensions in Intellij IDEA)
+         * the Annotation Processor API will include only changed classes
+         * creating a subset of processors that are not enough to run a quarkus app
+         * By assuming a full compilation was made initially, all the processors are included inside the
+         * META-INF/quarkus-build-steps.list file
+         * So by reading it we can ensure that all the processors are included.
+         * See
+         * https://youtrack.jetbrains.com/issue/IJPL-196660/During-an-incremental-build-getElementsAnnotatedWith-doesnt-include-
+         * all-the-elements-but-only-the-one-recompiled
+         */
+        Set<String> allProcessorClassNames = new TreeSet<>(processorClassNames);
+        allProcessorClassNames.addAll(utils.filer().readSet(Outputs.META_INF_QUARKUS_BUILD_STEPS));
+        utils.filer().writeSet(Outputs.META_INF_QUARKUS_BUILD_STEPS, allProcessorClassNames);
+
+        utils.filer().writeSet(Outputs.META_INF_QUARKUS_CONFIG_ROOTS, configRootClassNames);
     }
 
     private void processBuildStep(RoundEnvironment roundEnv, TypeElement annotation) {
@@ -91,7 +102,6 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
             if (processorClassNames.add(binaryName)) {
                 validateRecordBuildSteps(clazz);
                 utils.accessorGenerator().generateAccessor(clazz);
-                buildSteps.add(binaryName);
             }
         }
     }
@@ -155,22 +165,12 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     private void processConfigRoot(RoundEnvironment roundEnv, TypeElement annotation) {
         for (TypeElement configRoot : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             configRootClassNames.add(utils.element().getBinaryName(configRoot));
-
-            // TODO ideally we would use config.useConfigMapping() but core is currently a mess
-            // so using the annotations instead
-            if (!utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
-                utils.accessorGenerator().generateAccessor(configRoot);
-            }
         }
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {
         for (TypeElement configGroup : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
-            // TODO for config groups, we generate an accessor only if we don't use @ConfigMapping
-            // and for core and messaging which are still a mess
-            if (!config.useConfigMapping() || config.getExtension().isMixedModule()) {
-                utils.accessorGenerator().generateAccessor(configGroup);
-            }
+            // do nothing for now
         }
     }
 

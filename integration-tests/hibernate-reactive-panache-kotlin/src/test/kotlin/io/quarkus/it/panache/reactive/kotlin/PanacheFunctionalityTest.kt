@@ -95,7 +95,7 @@ open class PanacheFunctionalityTest {
         val personAsString = objectMapper.writeValueAsString(person)
         assertEquals(
             "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-            personAsString
+            personAsString,
         )
     }
 
@@ -284,7 +284,7 @@ open class PanacheFunctionalityTest {
     fun testPersistenceException(asserter: UniAsserter) {
         asserter.assertFailedWith(
             { Panache.withSession { Person().delete() } },
-            PersistenceException::class.java
+            PersistenceException::class.java,
         )
     }
 }

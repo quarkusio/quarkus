@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
 import static java.util.stream.Collectors.toList;
@@ -60,18 +61,19 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
+import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
@@ -93,6 +95,18 @@ public class OpenTelemetryProcessor {
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
+
+    @BuildStep(onlyIfNot = MetricsEnabled.class)
+    void registerForReflection(BuildProducer<ReflectiveMethodBuildItem> reflectiveItem) {
+        if (isClassPresentAtRuntime(
+                "io.opentelemetry.exporter.logging.LoggingMetricExporter")) {
+            reflectiveItem.produce(new ReflectiveMethodBuildItem(
+                    "Used by OpenTelemetry Export Logging",
+                    false,
+                    "io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil",
+                    "addMeterConfiguratorCondition"));
+        }
+    }
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
@@ -123,7 +137,6 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void openTelemetryBean(OpenTelemetryRecorder recorder,
-            OTelRuntimeConfig oTelRuntimeConfig,
             OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer) {
@@ -139,7 +152,7 @@ public class OpenTelemetryProcessor {
                                         DotName.createSimple(
                                                 AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName())) },
                                 null))
-                .createWith(recorder.opentelemetryBean(oTelRuntimeConfig))
+                .createWith(recorder.opentelemetryBean())
                 .destroyer(OpenTelemetryDestroyer.class)
                 .done());
 
@@ -157,7 +170,7 @@ public class OpenTelemetryProcessor {
                 .orElseGet(oTelBuildConfig::enabled);
 
         openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(
-                tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled(oTelRuntimeConfig)));
+                tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
     }
 
     @BuildStep
@@ -309,17 +322,14 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupVertx(InstrumentationRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-            Capabilities capabilities, OTelBuildConfig config) {
+            Capabilities capabilities) {
         boolean sqlClientAvailable = capabilities.isPresent(Capability.REACTIVE_DB2_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MSSQL_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MYSQL_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_ORACLE_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
-        recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
-                sqlClientAvailable,
-                redisClientAvailable,
-                config);
+        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable, redisClientAvailable);
     }
 
     @BuildStep

@@ -1,9 +1,12 @@
 package io.quarkus.agroal.runtime;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -153,6 +156,9 @@ public class DataSources {
             throw new IllegalArgumentException(
                     "Datasource " + dataSourceName + " does not have a JDBC URL and should not be created");
         }
+
+        // we first make sure that all available JDBC drivers are loaded in the current TCCL
+        loadDriversInTCCL();
 
         AgroalDataSourceSupport.Entry matchingSupportEntry = agroalDataSourceSupport.entries.get(dataSourceName);
         String resolvedDriverClass = matchingSupportEntry.resolvedDriverClass;
@@ -311,7 +317,12 @@ public class DataSources {
         }
 
         // Connection management
-        poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
+        if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
+            poolConfiguration.connectionValidator(ConnectionValidator
+                    .defaultValidatorWithTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds()));
+        } else {
+            poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
+        }
         if (dataSourceJdbcRuntimeConfig.acquisitionTimeout().isPresent()) {
             poolConfiguration.acquisitionTimeout(dataSourceJdbcRuntimeConfig.acquisitionTimeout().get());
         }
@@ -326,6 +337,9 @@ public class DataSources {
                 @Override
                 public boolean isValid(Connection connection) {
                     try (Statement stmt = connection.createStatement()) {
+                        if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
+                            stmt.setQueryTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds());
+                        }
                         stmt.execute(validationQuery);
                         return true;
                     } catch (Exception e) {
@@ -348,6 +362,30 @@ public class DataSources {
         }
         poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport());
         poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose());
+        poolConfiguration.recoveryEnable(dataSourceJdbcRuntimeConfig.enableRecovery());
     }
 
+    /**
+     * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context
+     * of the current {@link Thread#getContextClassLoader() TCCL}.
+     * <p>
+     * This is necessary to have JDBC URLs work properly, in particular when using custom drivers,
+     * and in particular when the app gets "restarted" in a single system (?) classloader,
+     * because DriverManager's list of available drivers would get cleared on shutdown.
+     * <p>
+     * See also https://github.com/quarkusio/quarkus/issues/46324#issuecomment-2687615191
+     */
+    private static void loadDriversInTCCL() {
+        // load JDBC drivers in the current TCCL
+        final ServiceLoader<Driver> drivers = ServiceLoader.load(Driver.class);
+        final Iterator<Driver> iterator = drivers.iterator();
+        while (iterator.hasNext()) {
+            try {
+                // load the driver
+                iterator.next();
+            } catch (Throwable t) {
+                // ignore
+            }
+        }
+    }
 }

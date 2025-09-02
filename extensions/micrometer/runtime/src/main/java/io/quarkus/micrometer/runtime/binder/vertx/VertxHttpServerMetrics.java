@@ -25,6 +25,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -126,7 +127,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             pushCounter
                     .withTags(Tags.of(
-                            HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode(),
+                            HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                                     config.isServerSuppress4xxErrors()),
                             VertxMetricsTags.method(method),
                             VertxMetricsTags.outcome(response),
@@ -183,7 +184,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     sample::stop,
                     requestsTimer.withTags(Tags.of(
                             VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, requestMetric.initialPath, 0, false),
+                            HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
                             Outcome.CLIENT_ERROR.asTag(),
                             HttpCommonTags.STATUS_RESET)),
                     requestMetric.request().context());
@@ -209,7 +210,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Sample sample = requestMetric.getSample();
             Tags allTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.request().method()),
-                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode(),
+                    HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                             config.isServerSuppress4xxErrors()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
@@ -248,7 +249,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             return websocketConnectionTimer
-                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.initialPath, 0, false)))
+                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false)))
                     .start();
         }
         return null;
@@ -269,5 +270,9 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     private record DefaultContext(HttpServerRequest request,
             HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
+        @Override
+        public <T> T requestContextLocalData(Object key) {
+            return ((HttpServerRequestInternal) request).context().getLocal(key);
+        }
     }
 }

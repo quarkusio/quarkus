@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import java.util.Optional;
 
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Authentication mechanism and SecurityRealm name information used for configuring HTTP auth
@@ -18,9 +19,11 @@ public interface AuthConfig {
     Optional<Boolean> basic();
 
     /**
-     * Form Auth config
+     * If form authentication is enabled.
      */
-    FormAuthConfig form();
+    @WithDefault("false")
+    @WithName("form.enabled")
+    boolean form();
 
     /**
      * If this is true and credentials are present then a user will always be authenticated

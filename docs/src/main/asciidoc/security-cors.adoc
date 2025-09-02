@@ -54,7 +54,7 @@ quarkus.http.cors.access-control-allow-credentials=true <7>
 ----
 
 <1> Enables the CORS filter.
-<2> Specifies allowed origins, including a regular expression.
+<2> Specifies allowed origins, including a regular expression. When not specified, CORS is not permitted, and only same-origin requests are allowed.
 <3> Lists allowed HTTP methods for cross-origin requests.
 <4> Declares custom headers that clients can include in requests.
 <5> Identifies response headers that clients can access.
@@ -90,6 +90,45 @@ Only allow all origins in the development profile (`%dev`).
 Allowing unrestricted origins in production environments poses severe security risks, such as unauthorized data access or resource abuse.
 For production, define explicit origins in the `quarkus.http.cors.origins` property.
 ====
+
+[[cors-filter-programmatic-set-up]]
+== Configuring the CORS filter programmatically
+
+To enforce CORS policies in your application, enable the Quarkus CORS filter with the `io.quarkus.vertx.http.security.HttpSecurity` CDI event:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class CorsProgrammaticConfig {
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.cors("https://example.com");
+    }
+}
+----
+
+The `io.quarkus.vertx.http.security.CORS` builder allows you to create a complete CORS configuration:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.CORS;
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class CorsProgrammaticConfig {
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.cors(CORS.builder()
+                .origin("https://example.com")
+                .method("POST")
+                .build());
+    }
+}
+----
 
 == References
 

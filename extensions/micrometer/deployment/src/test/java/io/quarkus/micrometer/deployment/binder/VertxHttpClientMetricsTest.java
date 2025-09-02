@@ -89,6 +89,7 @@ public class VertxHttpClientMetricsTest {
             Assertions.assertEquals("HELLO", client.post("hello"));
 
             Assertions.assertNotNull(getMeter("http.client.connections").longTaskTimer());
+            Assertions.assertNotNull(getMeter("http.client.active.connections").gauge());
 
             // Body sizes
             double expectedBytesWritten = sizeBefore + 5;
@@ -105,6 +106,7 @@ public class VertxHttpClientMetricsTest {
                 // Because of the different tag, the timer got called a single time
                 return getMeter("http.client.requests").timer().count() == 1;
             });
+            await().until(() -> getMeter("http.client.active.connections").gauge().value() == 1);
 
             Assertions.assertEquals(1, registry.find("http.client.requests")
                     .tag("uri", "root")

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.trace.TraceListener;
 
 /**
  * Represents a central point for template management.
@@ -183,6 +184,45 @@ public interface Engine extends ErrorInitializer {
     boolean removeStandaloneLines();
 
     /**
+     * Returns the {@link TraceManager} responsible for managing trace listeners and
+     * firing trace events during template rendering.
+     *
+     * @return the trace manager instance or {@code null} if tracing is disabled
+     * @see EngineBuilder#enableTracing(boolean)
+     */
+    TraceManager getTraceManager();
+
+    /**
+     * Registers a new {@link TraceListener} to receive trace events.
+     * <p>
+     * The listener will be notified of template rendering and resolution events.
+     *
+     * @param listener the trace listener to add; must not be {@code null}
+     */
+    default void addTraceListener(TraceListener listener) {
+        TraceManager manager = getTraceManager();
+        if (manager == null) {
+            throw new IllegalStateException("Tracing not enabled");
+        }
+        manager.addTraceListener(listener);
+    }
+
+    /**
+     * Unregisters a previously registered {@link TraceListener}.
+     * <p>
+     * After removal, the listener will no longer receive trace events.
+     *
+     * @param listener the trace listener to remove; must not be {@code null}
+     */
+    default void removeTraceListener(TraceListener listener) {
+        TraceManager manager = getTraceManager();
+        if (manager == null) {
+            throw new IllegalStateException("Tracing not enabled");
+        }
+        manager.removeTraceListener(listener);
+    }
+
+    /**
      * Initializes a new {@link EngineBuilder} instance from this engine.
      * <p>
      * The {@link EngineBuilder#iterationMetadataPrefix(String) is not set but if a
@@ -191,4 +231,5 @@ public interface Engine extends ErrorInitializer {
      * @return a new builder instance initialized from this engine
      */
     EngineBuilder newBuilder();
+
 }

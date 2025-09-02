@@ -19,17 +19,11 @@ import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmJoinedSubclassEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmRootEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmUnionSubclassEntityType;
-import org.hibernate.boot.jaxb.mapping.EntityOrMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.JaxbConverter;
-import org.hibernate.boot.jaxb.mapping.JaxbEmbeddable;
-import org.hibernate.boot.jaxb.mapping.JaxbEntity;
-import org.hibernate.boot.jaxb.mapping.JaxbEntityListener;
-import org.hibernate.boot.jaxb.mapping.JaxbEntityListeners;
-import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
-import org.hibernate.boot.jaxb.mapping.JaxbMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitDefaults;
-import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitMetadata;
-import org.hibernate.boot.jaxb.mapping.ManagedType;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntity;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListenerContainerImpl;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappingsImpl;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityOrMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbManagedType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -99,6 +93,10 @@ public final class JpaJandexScavenger {
         for (DotName annotation : ClassNames.JPA_LISTENER_ANNOTATIONS) {
             enlistPotentialCdiBeanClasses(collector, annotation);
         }
+
+        enlistPotentialClassReferences(collector, ClassNames.GENERIC_GENERATOR, "type", "strategy");
+        enlistPotentialClassReferences(collector, ClassNames.ID_GENERATOR_TYPE, "value");
+        enlistPotentialClassReferences(collector, ClassNames.VALUE_GENERATION_TYPE, "generatedBy");
 
         for (JpaModelPersistenceUnitContributionBuildItem persistenceUnitContribution : persistenceUnitContributions) {
             enlistExplicitMappings(collector, persistenceUnitContribution);
@@ -190,54 +188,62 @@ public final class JpaJandexScavenger {
         }
     }
 
-    private void enlistOrmXmlMapping(Collector collector, JaxbEntityMappings mapping) {
+    private void enlistOrmXmlMapping(Collector collector, JaxbEntityMappingsImpl mapping) {
         String packageName = mapping.getPackage();
         String packagePrefix = packageName == null ? "" : packageName + ".";
 
-        JaxbPersistenceUnitMetadata metadata = mapping.getPersistenceUnitMetadata();
-        JaxbPersistenceUnitDefaults defaults = metadata == null ? null : metadata.getPersistenceUnitDefaults();
+        var metadata = mapping.getPersistenceUnitMetadata();
+        var defaults = metadata == null ? null : metadata.getPersistenceUnitDefaults();
         if (defaults != null) {
-            enlistOrmXmlMappingListeners(collector, packagePrefix, defaults.getEntityListeners());
+            enlistOrmXmlMappingListeners(collector, packagePrefix, defaults.getEntityListenerContainer());
         }
 
-        for (JaxbEntity entity : mapping.getEntities()) {
+        for (var entity : mapping.getEntities()) {
             enlistOrmXmlMappingManagedClass(collector, packagePrefix, entity, "entity");
         }
-        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclasses()) {
+        for (var mappedSuperclass : mapping.getMappedSuperclasses()) {
             enlistOrmXmlMappingManagedClass(collector, packagePrefix, mappedSuperclass, "mapped-superclass");
         }
-        for (JaxbEmbeddable embeddable : mapping.getEmbeddables()) {
+        for (var embeddable : mapping.getEmbeddables()) {
             String name = safeGetClassName(packagePrefix, embeddable, "embeddable");
             enlistExplicitClass(collector, name);
         }
-        for (JaxbConverter converter : mapping.getConverters()) {
+        for (var converter : mapping.getConverters()) {
             collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
         }
     }
 
-    private void enlistOrmXmlMappingManagedClass(Collector collector, String packagePrefix, EntityOrMappedSuperclass managed,
+    private void enlistOrmXmlMappingManagedClass(Collector collector, String packagePrefix,
+            JaxbEntityOrMappedSuperclass managed,
             String nodeName) {
         String name = safeGetClassName(packagePrefix, managed, nodeName);
         enlistExplicitClass(collector, name);
-        if (managed instanceof JaxbEntity) {
+        if (managed instanceof JaxbEntity entity) {
             // The call to 'enlistExplicitClass' above may not
             // detect that this class is an entity if it is not annotated
             collector.entityTypes.add(name);
+
+            // Generators may be instantiated reflectively
+            if (entity.getGenericGenerator() != null) {
+                var generator = entity.getGenericGenerator();
+                enlistPotentialClassReference(collector, generator == null ? null : generator.getClazz());
+            }
         }
 
-        enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListeners());
+        enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListenerContainer());
     }
 
-    private void enlistOrmXmlMappingListeners(Collector collector, String packagePrefix, JaxbEntityListeners entityListeners) {
+    private void enlistOrmXmlMappingListeners(Collector collector, String packagePrefix,
+            JaxbEntityListenerContainerImpl entityListeners) {
         if (entityListeners == null) {
             return;
         }
-        for (JaxbEntityListener listener : entityListeners.getEntityListener()) {
+        for (var listener : entityListeners.getEntityListeners()) {
             collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, listener.getClazz())));
         }
     }
 
-    private static String safeGetClassName(String packagePrefix, ManagedType managedType, String nodeName) {
+    private static String safeGetClassName(String packagePrefix, JaxbManagedType managedType, String nodeName) {
         String name = managedType.getClazz();
         if (name == null) {
             throw new IllegalArgumentException("Missing attribute '" + nodeName + ".class'");
@@ -429,27 +435,57 @@ public final class JpaJandexScavenger {
 
         for (AnnotationInstance annotation : jpaAnnotations) {
             AnnotationTarget target = annotation.target();
-            ClassInfo beanType;
-            switch (target.kind()) {
-                case CLASS:
-                    beanType = target.asClass();
-                    break;
-                case FIELD:
-                    beanType = target.asField().declaringClass();
-                    break;
-                case METHOD:
-                    beanType = target.asMethod().declaringClass();
-                    break;
-                case METHOD_PARAMETER:
-                case TYPE:
-                case RECORD_COMPONENT:
-                default:
-                    throw new IllegalArgumentException(
-                            "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
-            }
+            ClassInfo beanType = switch (target.kind()) {
+                case CLASS -> target.asClass();
+                case FIELD -> target.asField().declaringClass();
+                case METHOD -> target.asMethod().declaringClass();
+                default -> throw new IllegalArgumentException(
+                        "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
+            };
             DotName beanTypeDotName = beanType.name();
             collector.potentialCdiBeanTypes.add(beanTypeDotName);
         }
+    }
+
+    private void enlistPotentialClassReferences(Collector collector, DotName dotName, String... referenceAttributes) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            for (String referenceAttribute : referenceAttributes) {
+                var referenceValue = annotation.value(referenceAttribute);
+                if (referenceValue == null) {
+                    continue;
+                }
+                String reference = switch (referenceValue.kind()) {
+                    case CLASS -> referenceValue.asClass().name().toString();
+                    case STRING -> {
+                        String stringRef = referenceValue.asString();
+                        if (stringRef.isEmpty() || index.getClassByName(stringRef) == null) {
+                            // No reference, or reference to a built-in strategy name like 'sequence'
+                            // (which we can't resolve here and handle through GraalVMFeatures.registerGeneratorAndOptimizerClassesForReflections)
+                            yield null;
+                        }
+                        yield stringRef;
+                    }
+                    default -> null;
+                };
+                enlistPotentialClassReference(collector, reference);
+            }
+        }
+    }
+
+    /**
+     * Add the class to the reflective list with only constructor and method access.
+     */
+    private void enlistPotentialClassReference(Collector collector, String reference) {
+        if (reference == null) {
+            return;
+        }
+        collector.javaTypes.add(reference);
     }
 
     /**

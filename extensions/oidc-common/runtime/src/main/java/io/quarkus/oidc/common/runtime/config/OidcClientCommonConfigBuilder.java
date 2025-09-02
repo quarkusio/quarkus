@@ -13,6 +13,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigBuilder<T> {
 
@@ -169,10 +170,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         private Jwt jwt;
 
         public CredentialsBuilder() {
-            this.builder = null;
-            this.secret = Optional.empty();
-            this.clientSecret = new SecretBuilder<>().build();
-            this.jwt = new JwtBuilder<>().build();
+            this(getConfigBuilderWithDefaults());
         }
 
         public CredentialsBuilder(OidcClientCommonConfigBuilder<T> builder) {
@@ -267,6 +265,21 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          */
         public Credentials build() {
             return new CredentialsImpl(secret, clientSecret, jwt);
+        }
+
+        private static <T> OidcClientCommonConfigBuilder<T> getConfigBuilderWithDefaults() {
+            final OidcClientCommonConfig clientCommonConfig = new SmallRyeConfigBuilder()
+                    .addDiscoveredConverters()
+                    .withMapping(OidcClientCommonConfig.class)
+                    .build()
+                    .getConfigMapping(OidcClientCommonConfig.class);
+            return new OidcClientCommonConfigBuilder<>(clientCommonConfig) {
+                @Override
+                protected T getBuilder() {
+                    throw new UnsupportedOperationException(
+                            "Use the 'OidcClientCommonConfigBuilder.CredentialsBuilder#build' method instead");
+                }
+            };
         }
     }
 

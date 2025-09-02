@@ -22,6 +22,7 @@ import io.opentelemetry.exporter.internal.marshal.Marshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
+import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -101,19 +102,34 @@ public final class VertxHttpSender implements HttpSender {
             return;
         }
 
+        String marshalerType = marshaler.getClass().getSimpleName();
         String requestURI = basePath + signalPath;
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
                 contentLength, onHttpResponseRead,
                 onError, marshaler, 1, isShutdown::get);
-        initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, onError, isShutdown::get);
+        initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
+            @Override
+            public void accept(Throwable throwable) {
+                failOnClientRequest(marshalerType, throwable, onError);
+            }
+        });
+    }
+
+    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
+    private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
+        String message = "Failed to export "
+                + type
+                + ". The request could not be executed. Full error message: "
+                + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
+        logger.log(Level.WARNING, message);
+        onError.accept(t);
     }
 
     private static void initiateSend(HttpClient client, String requestURI,
             int numberOfAttempts,
             Handler<HttpClientRequest> clientRequestSuccessHandler,
-            Consumer<Throwable> onError,
-            Supplier<Boolean> isShutdown) {
+            Consumer<Throwable> onFailureCallback) {
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
             @Override
             public CompletionStage<HttpClientRequest> get() {
@@ -144,30 +160,38 @@ public final class VertxHttpSender implements HttpSender {
                             public void accept(HttpClientRequest request) {
                                 clientRequestSuccessHandler.handle(request);
                             }
-                        }, onError);
+                        }, onFailureCallback);
     }
 
     @Override
+    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     public CompletableResultCode shutdown() {
         if (!isShutdown.compareAndSet(false, true)) {
             logger.log(Level.FINE, "Calling shutdown() multiple times.");
             return shutdownResult;
         }
 
-        client.close()
-                .onSuccess(
-                        new Handler<>() {
-                            @Override
-                            public void handle(Void event) {
-                                shutdownResult.succeed();
-                            }
-                        })
-                .onFailure(new Handler<>() {
-                    @Override
-                    public void handle(Throwable event) {
-                        shutdownResult.fail();
-                    }
-                });
+        try {
+            client.close()
+                    .onSuccess(
+                            new Handler<>() {
+                                @Override
+                                public void handle(Void event) {
+                                    shutdownResult.succeed();
+                                }
+                            })
+                    .onFailure(new Handler<>() {
+                        @Override
+                        public void handle(Throwable event) {
+                            shutdownResult.fail();
+                        }
+                    });
+        } catch (RejectedExecutionException e) {
+            internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
+            // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
+            // which we need to handle
+            shutdownResult.fail();
+        }
         return shutdownResult;
     }
 
@@ -227,8 +251,7 @@ public final class VertxHttpSender implements HttpSender {
                                             initiateSend(client, requestURI,
                                                     MAX_ATTEMPTS - attemptNumber,
                                                     newAttempt(),
-                                                    onError,
-                                                    isShutdown);
+                                                    onError);
                                             return;
                                         }
                                     }
@@ -254,8 +277,7 @@ public final class VertxHttpSender implements HttpSender {
                                         initiateSend(client, requestURI,
                                                 MAX_ATTEMPTS - attemptNumber,
                                                 newAttempt(),
-                                                onError,
-                                                isShutdown);
+                                                onError);
                                     } else {
                                         onError.accept(bodyResult.cause());
                                     }
@@ -268,8 +290,7 @@ public final class VertxHttpSender implements HttpSender {
                             initiateSend(client, requestURI,
                                     MAX_ATTEMPTS - attemptNumber,
                                     newAttempt(),
-                                    onError,
-                                    isShutdown);
+                                    onError);
                         } else {
                             onError.accept(callResult.cause());
                         }

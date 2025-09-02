@@ -21,6 +21,7 @@ class ObjectWithEmbeddableId : PanacheEntityBase {
         private var part2: String? = null
 
         constructor() {}
+
         constructor(part1: String?, part2: String?) {
             this.part1 = part1
             this.part2 = part2

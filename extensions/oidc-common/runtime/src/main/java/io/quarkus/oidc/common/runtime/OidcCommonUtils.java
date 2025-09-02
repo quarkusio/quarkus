@@ -586,8 +586,7 @@ public class OidcCommonUtils {
         }
         return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
 
-            Buffer buffer = resp.body();
-            filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.DISCOVERY);
+            Buffer buffer = filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.DISCOVERY);
 
             if (resp.statusCode() == 200) {
                 return buffer.toJsonObject();
@@ -622,15 +621,34 @@ public class OidcCommonUtils {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public static void filterHttpResponse(OidcRequestContextProperties requestProps,
-            HttpResponse<Buffer> resp, Buffer buffer,
-            Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+    public static Buffer filterHttpResponse(OidcRequestContextProperties requestProps,
+            HttpResponse<Buffer> resp, Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+        Buffer responseBody = resp.body();
         if (!responseFilters.isEmpty()) {
-            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(), buffer);
+            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(),
+                    responseBody);
             for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
                 filter.filter(context);
             }
+            return getResponseBuffer(requestProps, responseBody);
         }
+        return responseBody;
+    }
+
+    public static Buffer getRequestBuffer(OidcRequestContextProperties requestProps, Buffer buffer) {
+        if (requestProps == null) {
+            return buffer;
+        }
+        Buffer updatedRequestBody = requestProps.get(OidcRequestContextProperties.REQUEST_BODY);
+        return updatedRequestBody == null ? buffer : updatedRequestBody;
+    }
+
+    public static Buffer getResponseBuffer(OidcRequestContextProperties requestProps, Buffer buffer) {
+        if (requestProps == null) {
+            return buffer;
+        }
+        Buffer updatedResponseBody = requestProps.get(OidcRequestContextProperties.RESPONSE_BODY);
+        return updatedResponseBody == null ? buffer : updatedResponseBody;
     }
 
     public static String getDiscoveryUri(String authServerUrl) {
@@ -663,27 +681,38 @@ public class OidcCommonUtils {
         return out.toByteArray();
     }
 
+    public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters(Predicate<Class<?>> appliesTo) {
+        return getOidcFilters(OidcRequestFilter.class, appliesTo);
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters(Predicate<Class<?>> appliesTo) {
+        return getOidcFilters(OidcResponseFilter.class, appliesTo);
+    }
+
     public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters() {
-        return getOidcFilters(OidcRequestFilter.class);
+        return getOidcFilters(OidcRequestFilter.class, null);
     }
 
     public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters() {
-        return getOidcFilters(OidcResponseFilter.class);
+        return getOidcFilters(OidcResponseFilter.class, null);
     }
 
-    private static <T> Map<OidcEndpoint.Type, List<T>> getOidcFilters(Class<T> filterClass) {
+    private static <T> Map<OidcEndpoint.Type, List<T>> getOidcFilters(Class<T> filterClass, Predicate<Class<?>> appliesTo) {
         ArcContainer container = Arc.container();
         if (container != null) {
             Map<OidcEndpoint.Type, List<T>> map = new HashMap<>();
             for (T filter : container.listAll(filterClass).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
-                OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
-                if (endpoint != null) {
-                    for (OidcEndpoint.Type type : endpoint.value()) {
-                        map.computeIfAbsent(type, k -> new ArrayList<T>()).add(filter);
+                var actualBeanClass = ClientProxy.unwrap(filter).getClass();
+                if (appliesTo == null || appliesTo.test(actualBeanClass)) {
+                    OidcEndpoint endpoint = actualBeanClass.getAnnotation(OidcEndpoint.class);
+                    if (endpoint != null) {
+                        for (OidcEndpoint.Type type : endpoint.value()) {
+                            map.computeIfAbsent(type, k -> new ArrayList<T>()).add(filter);
+                        }
+                    } else {
+                        map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<T>()).add(filter);
                     }
-                } else {
-                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<T>()).add(filter);
                 }
             }
             return map;

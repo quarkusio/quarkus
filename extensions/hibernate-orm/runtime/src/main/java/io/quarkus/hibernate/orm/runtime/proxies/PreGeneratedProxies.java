@@ -1,9 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.proxies;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A holder class for proxies that were generated at build time,
@@ -31,15 +29,13 @@ public class PreGeneratedProxies {
     public static class ProxyClassDetailsHolder {
 
         private String className;
-        private Set<String> proxyInterfaces = new HashSet<>();
 
         public ProxyClassDetailsHolder() {
 
         }
 
-        public ProxyClassDetailsHolder(String className, Set<String> proxyInterfaces) {
+        public ProxyClassDetailsHolder(String className) {
             this.className = className;
-            this.proxyInterfaces = proxyInterfaces;
         }
 
         public String getClassName() {
@@ -48,14 +44,6 @@ public class PreGeneratedProxies {
 
         public void setClassName(String className) {
             this.className = className;
-        }
-
-        public Set<String> getProxyInterfaces() {
-            return proxyInterfaces;
-        }
-
-        public void setProxyInterfaces(Set<String> proxyInterfaces) {
-            this.proxyInterfaces = proxyInterfaces;
         }
 
     }

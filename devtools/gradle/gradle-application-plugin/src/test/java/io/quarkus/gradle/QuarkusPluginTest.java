@@ -97,63 +97,60 @@ public class QuarkusPluginTest {
 
         final Set<File> outputSourceDirs = extension.combinedOutputSourceDirs();
         assertThat(outputSourceDirs).hasSize(4);
-        assertThat(outputSourceDirs).contains(new File(project.getBuildDir(), "classes/java/main"),
-                new File(project.getBuildDir(), "classes/java/test"),
-                new File(project.getBuildDir(), "classes/scala/main"),
-                new File(project.getBuildDir(), "classes/scala/test"));
+        assertThat(outputSourceDirs).contains(
+                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/java/main"),
+                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/java/test"),
+                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/scala/main"),
+                new File(project.getLayout().getBuildDirectory().getAsFile().get(), "classes/scala/test"));
     }
 
     @Test
     public void shouldNotFailOnProjectDependenciesWithoutMain(@TempDir Path testProjectDir) throws IOException {
-        var kotlinVersion = System.getProperty("kotlin_version", "2.1.20");
-        var settingFile = testProjectDir.resolve("settings.gradle.kts");
+        var kotlinVersion = System.getProperty("kotlin_version", "2.2.10");
+        var settingFile = testProjectDir.resolve("settings.gradle");
         var mppProjectDir = testProjectDir.resolve("mpp");
         var quarkusProjectDir = testProjectDir.resolve("quarkus");
-        var mppBuild = mppProjectDir.resolve("build.gradle.kts");
-        var quarkusBuild = quarkusProjectDir.resolve("build.gradle.kts");
+        var mppBuild = mppProjectDir.resolve("build.gradle");
+        var quarkusBuild = quarkusProjectDir.resolve("build.gradle");
         Files.createDirectory(mppProjectDir);
         Files.createDirectory(quarkusProjectDir);
-        Files.writeString(settingFile,
-                "rootProject.name = \"quarkus-mpp-sample\"\n" +
-                        "\n" +
-                        "include(\n" +
-                        "    \"mpp\",\n" +
-                        "    \"quarkus\"\n" +
-                        ")");
+        Files.writeString(settingFile, """
+                pluginManagement {
+                    plugins {
+                        id 'org.jetbrains.kotlin.jvm' version "%1$s"
+                        id 'org.jetbrains.kotlin.plugin.allopen' version "%1$s"
+                    }
+                }
 
-        Files.writeString(mppBuild,
-                "buildscript {\n" +
-                        "    repositories {\n" +
-                        "        mavenLocal()\n" +
-                        "        mavenCentral()\n" +
-                        "    }\n" +
-                        "    dependencies {\n" +
-                        "        classpath(\"org.jetbrains.kotlin:kotlin-gradle-plugin:" + kotlinVersion + "\")\n" +
-                        "    }\n" +
-                        "}\n" +
-                        "\n" +
-                        "apply(plugin = \"org.jetbrains.kotlin.multiplatform\")\n" +
-                        "\n" +
-                        "repositories {\n" +
-                        "    mavenCentral()\n" +
-                        "}\n" +
-                        "\n" +
-                        "configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension>{\n" +
-                        "    jvm()\n" +
-                        "}");
+                rootProject.name = "quarkus-mpp-sample"
 
-        Files.writeString(quarkusBuild,
-                "plugins {\n" +
-                        "    id(\"io.quarkus\")\n" +
-                        "}\n" +
-                        "\n" +
-                        "repositories {\n" +
-                        "    mavenCentral()\n" +
-                        "}\n" +
-                        "\n" +
-                        "dependencies {\n" +
-                        "    implementation(project(\":mpp\"))\n" +
-                        "}");
+                include(
+                    "mpp",
+                    "quarkus"
+                )
+                """.formatted(kotlinVersion));
+
+        Files.writeString(mppBuild, """
+                plugins {
+                    id 'org.jetbrains.kotlin.jvm'
+                }
+
+                compileKotlin {
+                    kotlinOptions.javaParameters = true
+                }""");
+
+        Files.writeString(quarkusBuild, """
+                plugins {
+                    id("io.quarkus")
+                }
+
+                repositories {
+                    mavenCentral()
+                }
+
+                dependencies {
+                    implementation(project(":mpp"))
+                }""");
 
         BuildResult result = GradleRunner.create()
                 .withPluginClasspath()

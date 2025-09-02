@@ -17,7 +17,8 @@ public class SessionContextTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(TestServlet.class, Foo.class, ObservingBean.class));
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(TestServlet.class, Foo.class, ObservingBean.class, SessionScopedObserver.class));
 
     @Test
     public void testServlet() {
@@ -38,12 +39,17 @@ public class SessionContextTestCase {
 
         // make sure we start with zero events to keep this test method independent
         observingBean.resetState();
+        SessionScopedObserver.resetState();
 
         // following request creates a session and also destroys it by enforcing invalidation
         when().get("/foo?destroy=true").then().statusCode(200);
         Assertions.assertEquals(1, observingBean.getTimesInitObserved());
         Assertions.assertEquals(1, observingBean.getTimesBeforeDestroyedObserved());
         Assertions.assertEquals(1, observingBean.getTimesDestroyedObserved());
+
+        // assert that @SessionScoped bean can observe init and before destroyed events as well
+        Assertions.assertEquals(1, SessionScopedObserver.timesInitObserved);
+        Assertions.assertEquals(1, SessionScopedObserver.timesBeforeDestroyedObserved);
     }
 
 }

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -65,6 +66,8 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
     }
+
+    private static final Set<String> CATCH_ALL_COMMANDS = Set.of("create", "image", "extension", "ext", "plugin", "plug");
 
     @Inject
     CommandLine.IFactory factory;
@@ -125,7 +128,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             pluginCommandFactory.populateCommands(cmd, plugins);
             missingCommand.filter(m -> !plugins.containsKey(m)).ifPresent(m -> {
                 try {
-                    output.info("Command %s is not available, looking for available plugins ...", m);
+                    output.info("Unable to match command `%s`, looking for available plugins...", m);
                     Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                     if (installable.containsKey(m)) {
                         Plugin candidate = installable.get(m);
@@ -140,10 +143,10 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                             pluginCommandFactory.populateCommands(cmd, plugins);
                         }
                     } else {
-                        output.error("Command %s is missing and can't be installed.", m);
+                        output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
                     }
                 } catch (Exception e) {
-                    output.error("Command %s is missing and can't be installed.", m);
+                    output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
                 }
             });
         } catch (MutuallyExclusiveArgsException e) {
@@ -166,6 +169,12 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
         try {
             ParseResult currentParseResult = root.parseArgs(args);
+
+            // some commands are catch all and they will match always
+            if (CATCH_ALL_COMMANDS.contains(currentParseResult.commandSpec().name())) {
+                return Optional.empty();
+            }
+
             StringBuilder missingCommand = new StringBuilder();
 
             do {
@@ -188,6 +197,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
             return Optional.empty();
         } catch (UnmatchedArgumentException e) {
+            // the first element was matched so it's not missing
+            if (e.getCommandLine() != root) {
+                return Optional.empty();
+            }
+
             return Optional.of(args[0]);
         } catch (Exception e) {
             // For any other exceptions (e.g. MissingParameterException), we should just ignore.

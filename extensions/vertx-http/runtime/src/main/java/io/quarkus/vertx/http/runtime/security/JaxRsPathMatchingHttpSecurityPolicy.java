@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.vertx.http.runtime.PolicyMappingConfig.AppliesTo.JAXRS;
+import static io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy.duplicateNamedPoliciesNotAllowedEx;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +37,8 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
             Instance<HttpSecurityPolicy> installedPolicies, VertxHttpConfig httpConfig,
             VertxHttpBuildTimeConfig httpBuildTimeConfig, BlockingSecurityExecutor blockingSecurityExecutor) {
         this.storage = storage;
-        this.delegate = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth().permissions(),
+        this.delegate = new AbstractPathMatchingHttpSecurityPolicy(
+                HttpSecurityConfiguration.get().httpPermissions(),
                 httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(), installedPolicies, JAXRS);
         this.foundNoAnnotatedMethods = storage.getMethodToPolicyName().isEmpty();
         this.requestContext = new DefaultAuthorizationRequestContext(blockingSecurityExecutor);
@@ -46,7 +48,10 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
             var allPolicies = new HashMap<String, HttpSecurityPolicy>();
             for (HttpSecurityPolicy installedPolicy : installedPolicies) {
                 if (installedPolicy.name() != null) {
-                    allPolicies.put(installedPolicy.name(), installedPolicy);
+                    var previousPolicy = allPolicies.put(installedPolicy.name(), installedPolicy);
+                    if (previousPolicy != null) {
+                        throw duplicateNamedPoliciesNotAllowedEx(previousPolicy, installedPolicy);
+                    }
                 }
             }
             var annotationPoliciesOnly = new HashMap<String, HttpSecurityPolicy>();

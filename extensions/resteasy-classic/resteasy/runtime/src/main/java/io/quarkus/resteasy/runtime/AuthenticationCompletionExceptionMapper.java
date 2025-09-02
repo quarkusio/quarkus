@@ -17,7 +17,7 @@ public class AuthenticationCompletionExceptionMapper implements ExceptionMapper<
     @Override
     public Response toResponse(AuthenticationCompletionException ex) {
         log.debug("Authentication has failed, returning HTTP status 401");
-        if (LaunchMode.isDev() && ex.getMessage() != null) {
+        if (LaunchMode.current().isDev() && ex.getMessage() != null) {
             return Response.status(401).entity(ex.getMessage()).build();
         }
         return Response.status(401).build();

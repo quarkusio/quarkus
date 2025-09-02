@@ -20,6 +20,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.deployment.CheckedTemplateBuildItem;
+import io.quarkus.qute.deployment.EffectiveTemplatePathsBuildItem;
 import io.quarkus.qute.deployment.ImplicitValueResolverBuildItem;
 import io.quarkus.qute.deployment.TemplateDataBuildItem;
 import io.quarkus.qute.deployment.TemplateExtensionMethodBuildItem;
@@ -28,12 +29,13 @@ import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class QuteDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void pages(
-            List<TemplatePathBuildItem> templatePaths,
+            EffectiveTemplatePathsBuildItem effectiveTemplatePaths,
             List<CheckedTemplateBuildItem> checkedTemplates,
             TemplateVariantsBuildItem variants,
             TemplatesAnalysisBuildItem templatesAnalysis,
@@ -45,7 +47,7 @@ public class QuteDevUIProcessor {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
-        List<TemplatePathBuildItem> sortedTemplatePaths = templatePaths.stream()
+        List<TemplatePathBuildItem> sortedTemplatePaths = effectiveTemplatePaths.getTemplatePaths().stream()
                 .sorted(Comparator.comparing(tp -> tp.getPath().toLowerCase())).collect(Collectors.toList());
         pageBuildItem.addBuildTimeData("templates",
                 createTemplatesJson(sortedTemplatePaths, checkedTemplates, templatesAnalysis, variants));
@@ -147,6 +149,7 @@ public class QuteDevUIProcessor {
         return data;
     }
 
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     private List<Map<String, String>> createExtensionMethodsJson(
             List<TemplateExtensionMethodBuildItem> sortedExtensionMethods) {
         List<Map<String, String>> extensionMethods = new ArrayList<>();

@@ -37,7 +37,6 @@
 
     <properties>
         <angus-activation.version>1.0.0</angus-activation.version>
-        <expressly.version>5.0.0</expressly.version>
         <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
@@ -45,36 +44,33 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.3.0</jandex.version>
+        <jandex.version>3.4.0</jandex.version>
         <bytebuddy.version>1.15.11</bytebuddy.version>
-        <junit5.version>5.12.1</junit5.version>
+        <junit5.version>5.13.4</junit5.version>
         <maven.version>3.9.9</maven.version>
-        <assertj.version>3.27.3</assertj.version>
+        <assertj.version>3.27.4</assertj.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <gizmo.version>1.9.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <mutiny.version>2.8.0</mutiny.version>
-        <smallrye-common.version>2.11.0</smallrye-common.version>
-        <vertx.version>4.5.14</vertx.version>
-        <rest-assured.version>5.5.1</rest-assured.version>
+        <mutiny.version>2.9.4</mutiny.version>
+        <smallrye-common.version>2.13.8</smallrye-common.version>
+        <vertx.version>4.5.20</vertx.version>
+        <rest-assured.version>5.5.6</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.18.3</jackson-bom.version>
+        <jackson-bom.version>2.20.0</jackson-bom.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
-        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
+        <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <awaitility.version>4.3.0</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>3.18.1</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>3.19.2</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <mockito.version>5.17.0</mockito.version>
-        <wiremock.version>3.12.1</wiremock.version>
+        <mockito.version>5.19.0</mockito.version>
+        <wiremock.version>3.13.1</wiremock.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
-
-        <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
     </properties>
 
     <modules>
@@ -241,9 +237,12 @@
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny</artifactId>
+                <artifactId>mutiny-bom</artifactId>
                 <version>${mutiny.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
+
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>mutiny-zero-flow-adapters</artifactId>
@@ -500,7 +499,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>
@@ -523,17 +521,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

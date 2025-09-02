@@ -1,2 +1,2 @@
-io.quarkus.test.junit.mockito.internal.ResetOuterMockitoMocksCallback
+io.quarkus.test.junit.mockito.internal.ResetMockitoMocksAfterAllCallback
 io.quarkus.test.junit.mockito.internal.CreateMockitoSpiesCallback

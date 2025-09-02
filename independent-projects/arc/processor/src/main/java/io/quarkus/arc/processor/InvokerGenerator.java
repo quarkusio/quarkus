@@ -52,6 +52,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class InvokerGenerator extends AbstractGenerator {
     private static final Logger LOGGER = Logger.getLogger(InvokerGenerator.class);
@@ -791,6 +792,7 @@ public class InvokerGenerator extends AbstractGenerator {
             this.invoker = invoker;
         }
 
+        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
         CandidateMethod resolve() {
             if (matching.size() == 1) {
                 return matching.get(0);

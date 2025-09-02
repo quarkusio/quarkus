@@ -2,6 +2,7 @@ package io.quarkus.quartz.runtime;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -119,6 +120,13 @@ public interface QuartzRuntimeConfig {
      */
     @WithDefault("false")
     boolean runBlockingScheduledMethodOnQuartzThread();
+
+    /**
+     * The name of the datasource to use.
+     * <p>
+     * This property in valid only in combination with {@link QuartzBuildTimeConfig#deferDatasourceCheck()}
+     */
+    Optional<String> deferredDatasourceName();
 
     interface QuartzMisfirePolicyConfig {
         /**

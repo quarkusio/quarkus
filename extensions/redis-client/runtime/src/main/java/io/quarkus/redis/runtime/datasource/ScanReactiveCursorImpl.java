@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.redis.datasource.ReactiveCursor;
 import io.quarkus.redis.datasource.keys.ReactiveKeyScanCursor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -15,11 +14,13 @@ public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements 
 
     private final Type typeOfKey;
     private long cursor;
+    private boolean initial;
     private final List<String> extra = new ArrayList<>();
 
     public ScanReactiveCursorImpl(RedisCommandExecutor redis, Marshaller marshaller, Type typeOfKey, List<String> extra) {
         super(redis, marshaller);
-        this.cursor = ReactiveCursor.INITIAL_CURSOR_ID;
+        this.cursor = 0;
+        this.initial = true;
         this.typeOfKey = typeOfKey;
         this.extra.addAll(extra);
     }
@@ -31,14 +32,14 @@ public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements 
 
     @Override
     public boolean hasNext() {
-        return cursor != 0;
+        return initial || cursor != 0;
     }
 
     @Override
     public Uni<Set<K>> next() {
-        long pos = cursor == INITIAL_CURSOR_ID ? 0 : cursor;
-        return execute(RedisCommand.of(Command.SCAN).put(pos).putAll(extra))
-                .invoke(response -> cursor = response.get(0).toLong())
+        initial = false;
+        return execute(RedisCommand.of(Command.SCAN).put(Long.toUnsignedString(cursor)).putAll(extra))
+                .invoke(response -> cursor = Long.parseUnsignedLong(response.get(0).toString()))
                 .map(response -> marshaller.decodeAsSet(response.get(1), typeOfKey));
     }
 

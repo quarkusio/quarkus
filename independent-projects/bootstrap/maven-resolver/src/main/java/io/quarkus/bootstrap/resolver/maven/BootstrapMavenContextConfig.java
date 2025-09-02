@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.function.Function;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.settings.crypto.SettingsDecrypter;
@@ -18,6 +17,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.WorkspaceModulePom;
 
 public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T>> {
 
@@ -58,7 +58,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T
     protected boolean preferPomsFromWorkspace;
     protected Boolean effectiveModelBuilder;
     protected Boolean wsModuleParentHierarchy;
-    protected Function<Path, Model> modelProvider;
+    protected List<WorkspaceModulePom> providedModules;
     protected List<String> excludeSisuBeanPackages;
     protected List<String> includeSisuBeanPackages;
     protected Boolean warnOnFailedWorkspaceModules;
@@ -366,16 +366,20 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T
     }
 
     /**
-     * When workspace discovery is enabled, this method allows to set a POM
-     * provider that would return a {@link org.apache.maven.model.Model} for
-     * a given workspace module directory.
+     * When workspace discovery is enabled, this method allows providing POMs
+     * for a given workspace POM file. It doesn't have to be a complete list of modules.
      *
-     * @param modelProvider POM provider
+     * @param pomFile POM file, never nul
+     * @param rawModel raw POM model or null
+     * @param effectiveModel effective POM model or null
      * @return this instance
      */
     @SuppressWarnings("unchecked")
-    public T setProjectModelProvider(Function<Path, Model> modelProvider) {
-        this.modelProvider = modelProvider;
+    public T addProvidedModule(Path pomFile, Model rawModel, Model effectiveModel) {
+        if (providedModules == null || providedModules.isEmpty()) {
+            providedModules = new ArrayList<>();
+        }
+        providedModules.add(new WorkspaceModulePom(pomFile, rawModel, effectiveModel));
         return (T) this;
     }
 

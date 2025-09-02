@@ -20,6 +20,7 @@ public class AdditionalTemplatePathDuplicatesTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
+            .overrideConfigKey("quarkus.qute.duplicit-templates-strategy", "fail")
             .addBuildChainCustomizer(buildCustomizer())
             .setExpectedException(IllegalStateException.class, true);
 

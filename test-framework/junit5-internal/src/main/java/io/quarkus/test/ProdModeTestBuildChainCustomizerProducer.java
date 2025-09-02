@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 import io.quarkus.builder.BuildChainBuilder;
 
-// needs to be in a class of it's own in order to avoid java.lang.IncompatibleClassChangeError
+// needs to be in a class of its own in order to avoid java.lang.IncompatibleClassChangeError
 public class ProdModeTestBuildChainCustomizerProducer
         implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 

@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.KotlinUtils.isNoninterceptableKotlinMetho
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -68,18 +68,7 @@ final class Methods {
                 if (skipForClientProxy(method, transformUnproxyableClasses, methodsFromWhichToRemoveFinal)) {
                     continue;
                 }
-                methods.computeIfAbsent(new Methods.MethodKey(method), key -> {
-                    // If parameterized try to resolve the type variables
-                    Type returnType = key.method.returnType();
-                    Type[] params = new Type[key.method.parametersCount()];
-                    for (int i = 0; i < params.length; i++) {
-                        params[i] = key.method.parameterType(i);
-                    }
-                    List<TypeVariable> typeVariables = key.method.typeParameters();
-                    return MethodInfo.create(classInfo, key.method.name(), params, returnType, key.method.flags(),
-                            typeVariables.toArray(new TypeVariable[] {}),
-                            key.method.exceptions().toArray(Type.EMPTY_ARRAY));
-                });
+                methods.putIfAbsent(new Methods.MethodKey(method), method);
             }
             // Methods declared on superclasses
             if (classInfo.superClassType() != null) {
@@ -106,17 +95,18 @@ final class Methods {
         if (Modifier.isStatic(method.flags()) || Modifier.isPrivate(method.flags())) {
             return true;
         }
-        if (IGNORED_METHODS.contains(method.name())) {
+        String methodName = method.name();
+        if (IGNORED_METHODS.contains(methodName)) {
             return true;
         }
         // skip all Object methods except for toString()
-        if (method.declaringClass().name().equals(DotNames.OBJECT) && !method.name().equals(TO_STRING)) {
+        if (method.declaringClass().name().equals(DotNames.OBJECT) && !methodName.equals(TO_STRING)) {
             return true;
         }
         if (Modifier.isFinal(method.flags())) {
             String className = method.declaringClass().name().toString();
             if (!className.startsWith("java.")) {
-                if (transformUnproxyableClasses && (methodsFromWhichToRemoveFinal != null)) {
+                if (transformUnproxyableClasses && methodsFromWhichToRemoveFinal != null) {
                     methodsFromWhichToRemoveFinal.computeIfAbsent(className, (k) -> new HashSet<>())
                             .add(new MethodKey(method));
                     return false;
@@ -124,13 +114,13 @@ final class Methods {
                 // in case we want to transform classes but are unable to, we log a WARN
                 LOGGER.warn(String.format(
                         "Final method %s.%s() is ignored during proxy generation and should never be invoked upon the proxy instance!",
-                        className, method.name()));
+                        className, methodName));
             } else {
                 // JDK classes with final method are not proxyable and not transformable, we skip those methods and log a WARN
                 LOGGER.warn(String.format(
                         "JDK class %s with final method %s() cannot be proxied and is not transformable. " +
                                 "This method will be ignored during proxy generation and should never be invoked upon the proxy instance!",
-                        className, method.name()));
+                        className, methodName));
             }
             return true;
         }
@@ -185,17 +175,17 @@ final class Methods {
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
         for (MethodInfo method : classInfo.methods()) {
-            MethodKey key = new MethodKey(method);
-            if (candidates.containsKey(key)) {
+            MethodKey methodKey = new MethodKey(method);
+            if (candidates.containsKey(methodKey)) {
                 continue;
             }
 
             // Note that we must merge the bindings first
             Set<AnnotationInstance> bindings = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
-                    ignoreMethodLevelBindings, method, noClassInterceptorsMethods, bindingsDiscovery);
+                    ignoreMethodLevelBindings, method, methodKey, noClassInterceptorsMethods, bindingsDiscovery);
             boolean possiblyIntercepted = !bindings.isEmpty() || targetHasAroundInvokes;
             if (!possiblyIntercepted) {
-                candidates.put(key, bindings);
+                candidates.put(methodKey, bindings);
                 continue;
             }
             if (skipPredicate.test(method)) {
@@ -211,7 +201,7 @@ final class Methods {
                 }
             }
             if (addToCandidates) {
-                candidates.put(key, bindings);
+                candidates.put(methodKey, bindings);
             }
         }
         skipPredicate.methodsProcessed();
@@ -246,11 +236,10 @@ final class Methods {
 
     private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
             Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method,
-            Set<MethodKey> noClassInterceptorsMethods, BindingsDiscovery bindingsDiscovery) {
+            MethodKey methodKey, Set<MethodKey> noClassInterceptorsMethods, BindingsDiscovery bindingsDiscovery) {
 
-        MethodKey key = new MethodKey(method);
         if (bindingsDiscovery.hasAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS)
-                || noClassInterceptorsMethods.contains(key)) {
+                || noClassInterceptorsMethods.contains(methodKey)) {
             // The set of methods with `@NoClassInterceptors` is shared in the traversal of class hierarchy, so once
             // a method with the annotation is found, all subsequent occurences of the "same" method are treated
             // as if they also had it. Given that we traverse classes bottom-up, this works as expected: presence
@@ -264,7 +253,7 @@ final class Methods {
             // inheritance chain of each interface is also processed bottom-up. However, if a `default` method from
             // an interface is inherited multiple times, `@NoClassInterceptors` declared on that method may behave
             // weirdly. This is enough of a corner case that we'll leave it and solve it when it becomes problematic.
-            noClassInterceptorsMethods.add(key);
+            noClassInterceptorsMethods.add(methodKey);
             classLevelBindings = Set.of();
         }
 
@@ -333,36 +322,52 @@ final class Methods {
 
     static class MethodKey {
 
+        private static final DotName[] NO_PARAMS = new DotName[0];
+
         final String name;
-        final List<DotName> params;
+        final DotName[] params;
         final DotName returnType;
         final MethodInfo method; // this is intentionally ignored for equals/hashCode
+        private final int hashCode;
 
         public MethodKey(MethodInfo method) {
             this.method = Objects.requireNonNull(method, "Method must not be null");
             this.name = method.name();
             this.returnType = method.returnType().name();
-            this.params = new ArrayList<>();
-            for (Type i : method.parameterTypes()) {
-                params.add(i.name());
+            if (method.parametersCount() == 0) {
+                this.params = NO_PARAMS;
+            } else {
+                this.params = new DotName[method.parametersCount()];
+                for (int i = 0; i < method.parametersCount(); i++) {
+                    this.params[i] = method.parameterType(i).name();
+                }
             }
+
+            // the Map can be resized several times so it's worth caching the hashCode
+            this.hashCode = buildHashCode(this.name, this.params, this.returnType);
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o)
                 return true;
-            if (!(o instanceof MethodKey))
+            if (!(o instanceof MethodKey methodKey))
                 return false;
-            MethodKey methodKey = (MethodKey) o;
             return Objects.equals(name, methodKey.name)
-                    && Objects.equals(params, methodKey.params)
+                    && Arrays.equals(params, methodKey.params)
                     && Objects.equals(returnType, methodKey.returnType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, params, returnType);
+            return hashCode;
+        }
+
+        private static int buildHashCode(String name, DotName[] params, DotName returnType) {
+            int result = Objects.hashCode(name);
+            result = 31 * result + Arrays.hashCode(params);
+            result = 31 * result + Objects.hashCode(returnType);
+            return result;
         }
     }
 
@@ -435,7 +440,7 @@ final class Methods {
      */
     static class SubclassSkipPredicate implements Predicate<MethodInfo> {
 
-        private static final List<DotName> INTERCEPTOR_ANNOTATIONS = List.of(DotNames.AROUND_INVOKE, DotNames.POST_CONSTRUCT,
+        private static final Set<DotName> INTERCEPTOR_ANNOTATIONS = Set.of(DotNames.AROUND_INVOKE, DotNames.POST_CONSTRUCT,
                 DotNames.PRE_DESTROY);
 
         private final BiFunction<Type, Type, Boolean> assignableFromFun;
@@ -458,8 +463,13 @@ final class Methods {
         void startProcessing(ClassInfo clazz, ClassInfo originalClazz) {
             this.clazz = clazz;
             this.originalClazz = originalClazz;
-            this.regularMethods = new ArrayList<>();
-            for (MethodInfo method : clazz.methods()) {
+
+            List<MethodInfo> methodsInfos = clazz.methods();
+            // the list will sometimes be a bit larger than strictly necessary but it should be better sized than the default
+            // and the excluded methods are usually exceptions
+            // this way, we will avoid resizing the list
+            this.regularMethods = new ArrayList<>(methodsInfos.size());
+            for (MethodInfo method : methodsInfos) {
                 if (!Modifier.isAbstract(method.flags()) && !method.isSynthetic() && !isBridge(method)) {
                     regularMethods.add(method);
                 }

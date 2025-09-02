@@ -93,7 +93,7 @@ class ReactiveBookEntityResource {
         @QueryParam("author") author: String?,
         @QueryParam("title") title: String?,
         @QueryParam("dateFrom") dateFrom: String?,
-        @QueryParam("dateTo") dateTo: String?
+        @QueryParam("dateTo") dateTo: String?,
     ): Uni<ReactiveBookEntity?> {
         return if (author != null) {
             ReactiveBookEntity.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
@@ -101,7 +101,7 @@ class ReactiveBookEntityResource {
             ReactiveBookEntity.find(
                     "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
                     parse(dateFrom),
-                    parse(dateTo)
+                    parse(dateTo),
                 )
                 .firstResult()
     }
@@ -112,18 +112,18 @@ class ReactiveBookEntityResource {
         @QueryParam("author") author: String?,
         @QueryParam("title") title: String?,
         @QueryParam("dateFrom") dateFrom: String?,
-        @QueryParam("dateTo") dateTo: String?
+        @QueryParam("dateTo") dateTo: String?,
     ): Uni<ReactiveBookEntity?> =
         if (author != null) {
             ReactiveBookEntity.find(
                     "{'author': :author,'bookTitle': :title}",
-                    with("author", author).and("title", title)
+                    with("author", author).and("title", title),
                 )
                 .firstResult()
         } else {
             ReactiveBookEntity.find(
                     "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
-                    with("dateFrom", parse(dateFrom)).and("dateTo", parse(dateTo))
+                    with("dateFrom", parse(dateFrom)).and("dateTo", parse(dateTo)),
                 )
                 .firstResult()
         }

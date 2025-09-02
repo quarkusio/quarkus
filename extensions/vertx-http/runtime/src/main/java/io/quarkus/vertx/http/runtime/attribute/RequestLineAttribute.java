@@ -38,32 +38,8 @@ public class RequestLineAttribute implements ExchangeAttribute {
             httpMethod = exchange.request().method();
             uri = exchange.request().uri();
         }
-        StringBuilder sb = new StringBuilder()
-                .append(httpMethod)
-                .append(' ')
-                .append(uri);
-        sb.append(' ');
-        String httpVersion = "-";
-        switch (exchange.request().version()) {
-            case HTTP_1_0:
-                httpVersion = "HTTP/1.0";
-                break;
-            case HTTP_1_1:
-                httpVersion = "HTTP/1.1";
-                break;
-            case HTTP_2:
-                httpVersion = "HTTP/2";
-                break;
-            default:
-                // best effort to try and infer the HTTP version from
-                // any "unknown" enum value
-                httpVersion = exchange.request().version().name()
-                        .replace("HTTP_", "HTTP/")
-                        .replace("_", ".");
-                break;
-        }
-        sb.append(httpVersion);
-        return sb.toString();
+
+        return httpMethod + " " + uri + " " + RequestProtocolAttribute.getHttpVersionStr(exchange.request().version());
     }
 
     @Override

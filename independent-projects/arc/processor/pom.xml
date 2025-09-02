@@ -34,6 +34,11 @@
             <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>
@@ -63,5 +68,30 @@
         </dependency>
 
     </dependencies>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+                <executions>
+                    <execution>
+                        <id>verify-forbidden-apis</id>
+                        <configuration>
+                            <signaturesFiles>
+                                <signaturesFile>./banned-signatures.txt</signaturesFile>
+                            </signaturesFiles>
+                            <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                            <suppressAnnotations>
+                                <annotation>**.SuppressForbidden</annotation>
+                            </suppressAnnotations>
+                        </configuration>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

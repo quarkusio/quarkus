@@ -14,8 +14,8 @@ import org.mockito.Mockito;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.quarkus.test.junit.mockito.MockitoConfig;
 
 public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCallback {
@@ -25,17 +25,11 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         Class<?> current = testInstance.getClass();
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
-                InjectMock deprecatedInjectMock = field.getAnnotation(InjectMock.class);
-                if (deprecatedInjectMock != null) {
-                    boolean returnsDeepMocks = deprecatedInjectMock.returnsDeepMocks();
+                InjectMock injectMock = field.getAnnotation(InjectMock.class);
+                if (injectMock != null) {
+                    MockitoConfig config = field.getAnnotation(MockitoConfig.class);
+                    boolean returnsDeepMocks = config != null ? config.returnsDeepMocks() : false;
                     injectField(testInstance, field, InjectMock.class, returnsDeepMocks);
-                } else {
-                    io.quarkus.test.InjectMock injectMock = field.getAnnotation(io.quarkus.test.InjectMock.class);
-                    if (injectMock != null) {
-                        MockitoConfig config = field.getAnnotation(MockitoConfig.class);
-                        boolean returnsDeepMocks = config != null ? config.returnsDeepMocks() : false;
-                        injectField(testInstance, field, io.quarkus.test.InjectMock.class, returnsDeepMocks);
-                    }
                 }
             }
             current = current.getSuperclass();

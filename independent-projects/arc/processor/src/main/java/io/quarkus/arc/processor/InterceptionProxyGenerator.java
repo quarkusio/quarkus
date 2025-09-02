@@ -8,6 +8,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -18,6 +19,7 @@ import jakarta.interceptor.InvocationContext;
 import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.objectweb.asm.Opcodes;
@@ -42,18 +44,22 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
     private static final String INTERCEPTION_SUBCLASS = "_InterceptionSubclass";
 
     private final Predicate<DotName> applicationClassPredicate;
+    private final IndexView beanArchiveIndex;
     private final AnnotationLiteralProcessor annotationLiterals;
     private final ReflectionRegistration reflectionRegistration;
 
     InterceptionProxyGenerator(boolean generateSources, Predicate<DotName> applicationClassPredicate,
-            AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
+            BeanDeployment deployment, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
         super(generateSources);
         this.applicationClassPredicate = applicationClassPredicate;
+        this.beanArchiveIndex = deployment.getBeanArchiveIndex();
         this.annotationLiterals = annotationLiterals;
         this.reflectionRegistration = reflectionRegistration;
     }
 
-    Collection<Resource> generate(BeanInfo bean) {
+    Collection<Resource> generate(BeanInfo bean, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean transformUnproxyableClasses) {
         if (bean.getInterceptionProxy() == null) {
             return Collections.emptyList();
         }
@@ -69,7 +75,8 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
         createInterceptionProxyProvider(classOutput, bean);
         createInterceptionProxy(classOutput, bean);
-        createInterceptionSubclass(classOutput, bean.getInterceptionProxy());
+        createInterceptionSubclass(classOutput, bean.getInterceptionProxy(),
+                bytecodeTransformerConsumer, transformUnproxyableClasses);
 
         return classOutput.getResources();
     }
@@ -148,7 +155,8 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
         }
     }
 
-    private void createInterceptionSubclass(ClassOutput classOutput, InterceptionProxyInfo interceptionProxy) {
+    private void createInterceptionSubclass(ClassOutput classOutput, InterceptionProxyInfo interceptionProxy,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
         BeanInfo pseudoBean = interceptionProxy.getPseudoBean();
         ClassInfo pseudoBeanClass = pseudoBean.getImplClazz();
         String pseudoBeanClassName = pseudoBeanClass.name().toString();
@@ -355,6 +363,49 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
             MethodCreator getDelegate = clazz.getMethodCreator("arc_delegate", Object.class);
             getDelegate.returnValue(getDelegate.readInstanceField(delegate.getFieldDescriptor(), getDelegate.getThis()));
+
+            // forward non-intercepted methods to the delegate unconditionally
+            Collection<MethodInfo> methodsToForward = collectMethodsToForward(pseudoBean,
+                    bytecodeTransformerConsumer, transformUnproxyableClasses);
+            for (MethodInfo method : methodsToForward) {
+                MethodCreator mc = clazz.getMethodCreator(MethodDescriptor.of(method));
+                ResultHandle dlgt = mc.readInstanceField(delegate.getFieldDescriptor(), mc.getThis());
+                ResultHandle[] args = new ResultHandle[method.parametersCount()];
+                for (int i = 0; i < method.parametersCount(); i++) {
+                    args[i] = mc.getMethodParam(i);
+                }
+                ResultHandle result = method.declaringClass().isInterface()
+                        ? mc.invokeInterfaceMethod(method, dlgt, args)
+                        : mc.invokeVirtualMethod(method, dlgt, args);
+                mc.returnValue(result);
+            }
         }
+    }
+
+    // uses the same algorithm as `ClientProxyGenerator`
+    private Collection<MethodInfo> collectMethodsToForward(BeanInfo pseudoBean,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
+        ClassInfo pseudoBeanClass = pseudoBean.getImplClazz();
+
+        Map<Methods.MethodKey, MethodInfo> methods = new HashMap<>();
+        Map<String, Set<Methods.MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
+
+        Methods.addDelegatingMethods(beanArchiveIndex, pseudoBeanClass, methods, methodsFromWhichToRemoveFinal,
+                transformUnproxyableClasses);
+
+        if (!methodsFromWhichToRemoveFinal.isEmpty()) {
+            for (Map.Entry<String, Set<Methods.MethodKey>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+                String className = entry.getKey();
+                bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
+                        new Methods.RemoveFinalFromMethod(entry.getValue())));
+            }
+        }
+
+        for (MethodInfo interceptedMethod : pseudoBean.getInterceptedMethods().keySet()) {
+            // these methods are intercepted, so they don't need to (and in fact _must not_) forward directly
+            methods.remove(new Methods.MethodKey(interceptedMethod));
+        }
+
+        return methods.values();
     }
 }

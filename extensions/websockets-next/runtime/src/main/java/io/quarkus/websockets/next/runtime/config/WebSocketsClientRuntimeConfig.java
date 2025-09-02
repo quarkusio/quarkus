@@ -36,7 +36,7 @@ public interface WebSocketsClientRuntimeConfig {
 
     /**
      * The maximum size of a frame in bytes. The default values is
-     * {@value io.vertx.core.http.HttpClientOptions#DEFAULT_MAX_WEBSOCKET_FRAME_SIZEX}.
+     * {@value io.vertx.core.http.HttpClientOptions#DEFAULT_MAX_WEBSOCKET_FRAME_SIZE}.
      */
     OptionalInt maxFrameSize();
 
@@ -46,6 +46,20 @@ public interface WebSocketsClientRuntimeConfig {
      * Ping messages are not sent automatically by default.
      */
     Optional<Duration> autoPingInterval();
+
+    /**
+     * If set then a connection will be closed if no data is received nor sent within the given timeout.
+     */
+    Optional<Duration> connectionIdleTimeout();
+
+    /**
+     * The amount of time a client will wait until it closes the TCP connection after sending a close frame.
+     * Any value will be {@link Duration#toSeconds() converted to seconds} and limited to {@link Integer#MAX_VALUE}.
+     * The default value is {@value io.vertx.core.http.HttpClientOptions#DEFAULT_WEBSOCKET_CLOSING_TIMEOUT}s
+     *
+     * @see io.vertx.core.http.WebSocketClientOptions#setClosingTimeout(int)
+     */
+    Optional<Duration> connectionClosingTimeout();
 
     /**
      * The strategy used when an error occurs but no error handler can handle the failure.

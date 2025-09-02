@@ -28,6 +28,7 @@ import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -55,6 +56,7 @@ import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.gradle.process.ExecOperations;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.analytics.AnalyticsService;
@@ -73,6 +75,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.ExtensionDevModeJvmOptionFilter;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
+import io.quarkus.gradle.dependency.QuarkusComponentVariants;
 import io.quarkus.gradle.dsl.CompilerOption;
 import io.quarkus.gradle.dsl.CompilerOptions;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
@@ -88,6 +91,7 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private final Configuration quarkusDevConfiguration;
     private final SourceSet mainSourceSet;
+    private final ObjectFactory objectFactory;
 
     private final CompilerOptions compilerOptions = new CompilerOptions();
     private final ExtensionDevModeJvmOptionFilter extensionJvmOptions = new ExtensionDevModeJvmOptionFilter();
@@ -122,10 +126,10 @@ public abstract class QuarkusDev extends QuarkusTask {
         mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        final ObjectFactory objectFactory = getProject().getObjects();
+        objectFactory = getProject().getObjects();
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
 
         environmentVariables = objectFactory.mapProperty(String.class, String.class);
 
@@ -182,8 +186,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     /**
      * The directory to be used as the working dir for the dev process.
      *
-     * Defaults to the main source set's classes directory. If there are
-     * multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
+     * Defaults to the project directory.
      *
      * @return workingDirectory
      */
@@ -324,6 +327,9 @@ public abstract class QuarkusDev extends QuarkusTask {
         getTests().set(tests);
     }
 
+    @Inject
+    public abstract ExecOperations getExecOperations();
+
     @TaskAction
     public void startDev() {
         if (!sourcesExist()) {
@@ -358,7 +364,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             final DevModeCommandLine runner = newLauncher(analyticsService);
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
-                getProject().exec(action -> {
+                getExecOperations().exec(action -> {
                     action.commandLine(runner.getArguments()).workingDir(getWorkingDirectory().get());
                     action.environment(getEnvVars());
                     action.setStandardInput(System.in)
@@ -552,13 +558,16 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private void addQuarkusDevModeDeps(DevModeCommandLineBuilder builder, ApplicationModel appModel) {
 
-        var devModeDependencyConfiguration = getProject().getConfigurations()
+        final ConfigurationContainer configContainer = getProject().getConfigurations();
+        var devModeDependencyConfiguration = configContainer
                 .findByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         if (devModeDependencyConfiguration == null) {
-            final Configuration platformConfig = getProject().getConfigurations().findByName(
+            final Configuration platformConfig = configContainer.findByName(
                     ToolingUtils.toPlatformConfigurationName(
                             ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT)));
-            getProject().getConfigurations().register(
+            final boolean disableComponentVariants = ApplicationDeploymentClasspathBuilder
+                    .isDisableComponentVariants(getProject());
+            configContainer.register(
                     ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION,
                     configuration -> {
                         configuration.setCanBeConsumed(false);
@@ -566,8 +575,12 @@ public abstract class QuarkusDev extends QuarkusTask {
                         configuration.getDependencies().add(getQuarkusGradleBootstrapResolver());
                         configuration.getDependencies().add(getQuarkusMavenBootstrapResolver());
                         configuration.getDependencies().add(getQuarkusCoreDeployment(appModel));
+                        if (!disableComponentVariants) {
+                            configuration.attributes(
+                                    attrs -> QuarkusComponentVariants.setCommonAttributes(attrs, objectFactory));
+                        }
                     });
-            devModeDependencyConfiguration = getProject().getConfigurations()
+            devModeDependencyConfiguration = configContainer
                     .getByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         }
 

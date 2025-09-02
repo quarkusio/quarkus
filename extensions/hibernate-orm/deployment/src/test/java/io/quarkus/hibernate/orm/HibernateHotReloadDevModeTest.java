@@ -28,7 +28,7 @@ public class HibernateHotReloadDevModeTest {
                             //TODO: we can't use devservices here because of issues with the class loading
                             //sometimes the external application.properties is picked up and sometimes it isn't
                             ContinuousTestingTestUtils.appProperties(
-                                    "quarkus.hibernate-orm.database.generation=drop-and-create",
+                                    "quarkus.hibernate-orm.schema-management.strategy=drop-and-create",
                                     "quarkus.datasource.jdbc.url=jdbc:h2:mem:test",
                                     "%test.quarkus.datasource.jdbc.url=jdbc:h2:mem:testrunner")),
                             "application.properties")

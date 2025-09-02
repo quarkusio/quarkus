@@ -8,11 +8,14 @@ import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -71,9 +74,11 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         // private static final AtomicReferenceFieldUpdater<ContextInstances, ContextInstanceHandle> LAZY_1L_UPDATER;
         // private volatile ContextInstanceHandle 1;
         // private volatile Lock 1l;
-        Map<String, InstanceAndLock> idToFields = new HashMap<>();
+        // This map is used to generate fields and static initialization code so we need it to be sorted
+        // We also need to iterate the beans in order for the indices to be deterministic
+        Map<String, InstanceAndLock> idToFields = new TreeMap<>();
         int fieldIndex = 0;
-        for (BeanInfo bean : beans) {
+        for (BeanInfo bean : beans.stream().sorted(Comparator.comparing(BeanInfo::getIdentifier)).toList()) {
             String beanIdx = "" + fieldIndex++;
             FieldCreator handleField = contextInstances.getFieldCreator(beanIdx, ContextInstanceHandle.class)
                     .setModifiers(ACC_PRIVATE | ACC_VOLATILE);
@@ -94,9 +99,9 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
         constructor.returnVoid();
 
-        implementComputeIfAbsent(contextInstances, beans, idToFields, lazyLocks);
-        implementGetIfPresent(contextInstances, beans, idToFields);
-        List<MethodDescriptor> remove = implementRemove(contextInstances, beans, idToFields, lazyLocks);
+        implementComputeIfAbsent(contextInstances, idToFields, lazyLocks);
+        implementGetIfPresent(contextInstances, idToFields);
+        List<MethodDescriptor> remove = implementRemove(contextInstances, idToFields, lazyLocks);
         implementGetAllPresent(contextInstances, idToFields);
         implementRemoveEach(contextInstances, remove);
 
@@ -208,7 +213,7 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         removeEach.returnVoid();
     }
 
-    private List<MethodDescriptor> implementRemove(ClassCreator contextInstances, List<BeanInfo> beans,
+    private List<MethodDescriptor> implementRemove(ClassCreator contextInstances,
             Map<String, InstanceAndLock> idToFields, Map<String, MethodDescriptor> lazyLocks) {
         MethodCreator remove = contextInstances
                 .getMethodCreator("remove", ContextInstanceHandle.class, String.class)
@@ -217,9 +222,11 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         StringSwitch strSwitch = remove.stringSwitch(remove.getMethodParam(0));
         // https://github.com/quarkusio/gizmo/issues/164
         strSwitch.fallThrough();
-        List<MethodDescriptor> removeMethods = new ArrayList<>(beans.size());
-        for (BeanInfo bean : beans) {
-            InstanceAndLock fields = idToFields.get(bean.getIdentifier());
+        List<MethodDescriptor> removeMethods = new ArrayList<>(idToFields.size());
+        for (Entry<String, InstanceAndLock> idToFieldsEntry : idToFields.entrySet()) {
+            String beanIdentifier = idToFieldsEntry.getKey();
+            InstanceAndLock fields = idToFieldsEntry.getValue();
+
             FieldDescriptor instanceField = fields.instance;
             // There is a separate remove method for every instance handle field
             // To eliminate large stack map table in the bytecode
@@ -238,14 +245,14 @@ public class ContextInstancesGenerator extends AbstractGenerator {
             ResultHandle copy = removeHandle.readInstanceField(instanceField, removeHandle.getThis());
             removeHandle.ifNull(copy).trueBranch()
                     .returnValue(removeHandle.loadNull());
-            ResultHandle lock = removeHandle.invokeVirtualMethod(lazyLocks.get(bean.getIdentifier()), removeHandle.getThis());
+            ResultHandle lock = removeHandle.invokeVirtualMethod(lazyLocks.get(beanIdentifier), removeHandle.getThis());
             removeHandle.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
             copy = removeHandle.readInstanceField(instanceField, removeHandle.getThis());
             removeHandle.writeInstanceField(instanceField, removeHandle.getThis(), removeHandle.loadNull());
             removeHandle.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
             removeHandle.returnValue(copy);
             removeMethods.add(removeHandle.getMethodDescriptor());
-            strSwitch.caseOf(bean.getIdentifier(), bc -> {
+            strSwitch.caseOf(beanIdentifier, bc -> {
                 bc.returnValue(bc.invokeVirtualMethod(removeHandle.getMethodDescriptor(), bc.getThis()));
             });
         }
@@ -253,7 +260,7 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         return removeMethods;
     }
 
-    private void implementGetIfPresent(ClassCreator contextInstances, List<BeanInfo> beans,
+    private void implementGetIfPresent(ClassCreator contextInstances,
             Map<String, InstanceAndLock> idToFields) {
         MethodCreator getIfPresent = contextInstances
                 .getMethodCreator("getIfPresent", ContextInstanceHandle.class, String.class)
@@ -262,15 +269,15 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         StringSwitch strSwitch = getIfPresent.stringSwitch(getIfPresent.getMethodParam(0));
         // https://github.com/quarkusio/gizmo/issues/164
         strSwitch.fallThrough();
-        for (BeanInfo bean : beans) {
-            strSwitch.caseOf(bean.getIdentifier(), bc -> {
-                bc.returnValue(bc.readInstanceField(idToFields.get(bean.getIdentifier()).instance, bc.getThis()));
+        for (Entry<String, InstanceAndLock> idToFieldsEntry : idToFields.entrySet()) {
+            strSwitch.caseOf(idToFieldsEntry.getKey(), bc -> {
+                bc.returnValue(bc.readInstanceField(idToFieldsEntry.getValue().instance, bc.getThis()));
             });
         }
         strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
     }
 
-    private void implementComputeIfAbsent(ClassCreator contextInstances, List<BeanInfo> beans,
+    private void implementComputeIfAbsent(ClassCreator contextInstances,
             Map<String, InstanceAndLock> idToFields, Map<String, MethodDescriptor> lazyLocks) {
         MethodCreator computeIfAbsent = contextInstances
                 .getMethodCreator("computeIfAbsent", ContextInstanceHandle.class, String.class, Supplier.class)
@@ -279,8 +286,9 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         StringSwitch strSwitch = computeIfAbsent.stringSwitch(computeIfAbsent.getMethodParam(0));
         // https://github.com/quarkusio/gizmo/issues/164
         strSwitch.fallThrough();
-        for (BeanInfo bean : beans) {
-            InstanceAndLock fields = idToFields.get(bean.getIdentifier());
+        for (Entry<String, InstanceAndLock> idToFieldsEntry : idToFields.entrySet()) {
+            String beanIdentifier = idToFieldsEntry.getKey();
+            InstanceAndLock fields = idToFieldsEntry.getValue();
             // There is a separate compute method for every bean instance field
             MethodCreator compute = contextInstances.getMethodCreator("c" + fields.instance.getName(),
                     ContextInstanceHandle.class, Supplier.class).setModifiers(ACC_PRIVATE);
@@ -306,7 +314,7 @@ public class ContextInstancesGenerator extends AbstractGenerator {
             // }
             ResultHandle copy = compute.readInstanceField(fields.instance, compute.getThis());
             compute.ifNotNull(copy).trueBranch().returnValue(copy);
-            ResultHandle lock = compute.invokeVirtualMethod(lazyLocks.get(bean.getIdentifier()), compute.getThis());
+            ResultHandle lock = compute.invokeVirtualMethod(lazyLocks.get(beanIdentifier), compute.getThis());
             compute.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
             copy = compute.readInstanceField(fields.instance, compute.getThis());
             BytecodeCreator nonNullCopy = compute.ifNotNull(copy).trueBranch();
@@ -321,7 +329,7 @@ public class ContextInstancesGenerator extends AbstractGenerator {
             catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
             catchBlock.throwException(catchBlock.getCaughtException());
 
-            strSwitch.caseOf(bean.getIdentifier(), bc -> {
+            strSwitch.caseOf(beanIdentifier, bc -> {
                 bc.returnValue(bc.invokeVirtualMethod(compute.getMethodDescriptor(), bc.getThis(), bc.getMethodParam(1)));
             });
         }

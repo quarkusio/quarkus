@@ -15,11 +15,12 @@ public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends Abstra
                             + "quarkus.datasource.jdbc.url=jdbc:h2:mem:test\n"
                             + "quarkus.datasource.\"nameddatasource\".db-kind=h2\n"
                             + "quarkus.datasource.\"nameddatasource\".jdbc.url=jdbc:h2:mem:test2\n"
+                            + "quarkus.datasource.\"nameddatasource\".reactive=false\n" // No H2 reactive driver!
                             // Hibernate ORM is inactive for the default PU
                             + "quarkus.hibernate-orm.active=false\n"
                             + "quarkus.hibernate-orm.datasource=<default>\n"
                             + "quarkus.hibernate-orm.packages=io.quarkus.test.devui\n"
-                            + "quarkus.hibernate-orm.\"namedpu\".database.generation=drop-and-create\n"
+                            + "quarkus.hibernate-orm.\"namedpu\".schema-management.strategy=drop-and-create\n"
                             // ... but it's (implicitly) active for a named PU
                             + "quarkus.hibernate-orm.\"namedpu\".datasource=nameddatasource\n"
                             + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.test.devui.namedpu\n"),
@@ -28,7 +29,7 @@ public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends Abstra
                     .addClasses(MyNamedPuEntity.class));
 
     public DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest() {
-        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity", null);
+        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity", null, false);
     }
 
 }

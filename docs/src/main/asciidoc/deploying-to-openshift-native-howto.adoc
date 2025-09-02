@@ -4,8 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploying-to-openshift-native-howto"]
-= Deploy {project-name} applications compiled to native executables
-
+= Deploying {project-name} applications compiled to native executables
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native
@@ -15,17 +14,23 @@ include::_attributes.adoc[]
 
 You can deploy your native {project-name} applications to {openshift} compiled to native executables by using the Docker build strategy.
 
-You must create a native executable for your application that targets the Linux AMD64 operating system.
-If your host operating system is different from this, create a native Linux executable by using a container runtime, for example, Docker or Podman.
+You must create a native executable for your application that targets a supported operating system and match the architecture.
+This means, if you are building on Windows, you create a native Linux executable by using a container runtime, for example, Docker or Podman.
 
 Your Quarkus project includes pregenerated Dockerfiles with instructions.
 If you want to use a custom Dockerfile, add the file to the `src/main/docker` directory or any location inside the module.
-Additionally, set the path to your Dockerfile by using the `quarkus.openshift.native-dockerfile` property.
+Additionally, if you want to have multiple Docker files and switch between them, set the path to your preferred Dockerfile by using the `quarkus.openshift.native-dockerfile` property.
+
+[NOTE]
+====
+This guide describes this strategy by using a Quarkus project with Maven as the example project.
+====
 
 == Prerequisites
 
-* You have a Linux AMD64 system or an Open Container Initiative (OCI) compatible container runtime, such as Podman or Docker.
+* A supported operating system or an Open Container Initiative (OCI) compatible container runtime, such as Podman or Docker.
 * You have a Quarkus Maven project that includes the `quarkus-openshift` extension.
+* You have access to an {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
 * You are working in the correct OpenShift project namespace.
 
 == Procedure

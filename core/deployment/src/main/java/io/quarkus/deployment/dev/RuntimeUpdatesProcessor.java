@@ -673,14 +673,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     //we have some filters, for files that we don't want to delete
                     continue;
                 }
-                log.info("Scheduled for removal " + file);
                 if (removedFiles.isEmpty()) {
                     removedFiles = new ArrayList<>();
                 }
                 removedFiles.add(applicationRoot.resolve(file));
             }
             if (!removedFiles.isEmpty()) {
-                DevModeMediator.removedFiles.addLast(removedFiles);
+                DevModeMediator.scheduleDelete(removedFiles);
             }
             return ret;
         } catch (IOException e) {
@@ -727,12 +726,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             final List<Path> moduleChangedSourceFilePaths = new ArrayList<>();
 
             for (Path sourcePath : cuf.apply(module).getSourcePaths()) {
-                final Set<File> changedSourceFiles;
-                Path start = sourcePath;
-                if (!Files.exists(start)) {
+                if (!Files.exists(sourcePath)) {
                     continue;
                 }
-                try (final Stream<Path> sourcesStream = Files.walk(start)) {
+                final Set<File> changedSourceFiles;
+                try (final Stream<Path> sourcesStream = Files.walk(sourcePath)) {
                     changedSourceFiles = sourcesStream
                             .parallel()
                             .filter(p -> matchingHandledExtension(p).isPresent()
@@ -849,10 +847,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             .collect(Collectors.toSet());
 
                     for (Path classFilePath : classFilePaths) {
-                        final Path sourceFilePath = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
-                                module, cuf, timestampSet);
-
+                        Path sourceFilePath = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
+                                module, cuf, timestampSet, false);
                         if (sourceFilePath != null) {
+                            if (!sourceFilePath.toFile().exists()) {
+                                // We need to refresh this in case the source file has changed
+                                // This can happen if you rename a kotlin file, the same class will now be provided by a new file
+                                var updated = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
+                                        module, cuf, timestampSet, true);
+                                if (updated != null) {
+                                    sourceFilePath = updated;
+                                }
+                            }
                             if (!sourceFilePath.toFile().exists()) {
                                 // Source file has been deleted. Delete class and restart
                                 cleanUpClassFile(classFilePath, timestampSet);
@@ -888,9 +894,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private Path retrieveSourceFilePathForClassFile(Path classFilePath, List<Path> moduleChangedSourceFiles,
             DevModeContext.ModuleInfo module, Function<DevModeContext.ModuleInfo, DevModeContext.CompilationUnit> cuf,
-            TimestampSet timestampSet) {
+            TimestampSet timestampSet, boolean forceRefresh) {
         Path sourceFilePath = timestampSet.classFilePathToSourceFilePath.get(classFilePath);
-        if (sourceFilePath == null || moduleChangedSourceFiles.contains(sourceFilePath)) {
+        if (sourceFilePath == null || moduleChangedSourceFiles.contains(sourceFilePath) || forceRefresh) {
             sourceFilePath = compiler.findSourcePath(classFilePath, cuf.apply(module).getSourcePaths(),
                     cuf.apply(module).getClassesPath());
         }

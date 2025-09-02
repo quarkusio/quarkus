@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.runtime;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.addAuthenticationFailureToEvent;
+
 import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.Priorities;
@@ -35,6 +37,7 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
         if (context != null) {
             HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
             if (authenticator != null) {
+                addAuthenticationFailureToEvent(exception, currentVertxRequest.getCurrent());
                 ChallengeData challengeData = authenticator.getChallenge(context)
                         .await().indefinitely();
                 int statusCode = challengeData == null ? 401 : challengeData.status;
@@ -42,7 +45,7 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
                 if (challengeData != null && challengeData.headerName != null) {
                     responseBuilder.header(challengeData.headerName.toString(), challengeData.headerContent);
                 }
-                if (LaunchMode.isDev() && exception.getMessage() != null && statusCode == 401) {
+                if (LaunchMode.current().isDev() && exception.getMessage() != null && statusCode == 401) {
                     responseBuilder.entity(exception.getMessage());
                 }
                 log.debugf("Returning an authentication challenge, status code: %d", statusCode);
@@ -53,7 +56,7 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
         } else {
             log.error("RoutingContext is not found, returning HTTP status 401");
         }
-        if (LaunchMode.isDev() && exception.getMessage() != null) {
+        if (LaunchMode.current().isDev() && exception.getMessage() != null) {
             return Response.status(401).entity(exception.getMessage()).build();
         }
         return Response.status(401).entity("Not Authenticated").build();

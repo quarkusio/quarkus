@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraint-mappings
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://jakarta.ee/xml/ns/validation/mapping https://jakarta.ee/xml/ns/validation/validation-mapping-3.0.xsd"
+        xmlns="https://jakarta.ee/xml/ns/validation/mapping" version="3.0">
+
+    <bean class="io.quarkus.it.hibernate.validator.xml.MyXmlBean">
+        <field name="id">
+            <constraint annotation="jakarta.validation.constraints.Positive"/>
+        </field>
+        <field name="name">
+            <constraint annotation="jakarta.validation.constraints.NotNull"/>
+        </field>
+    </bean>
+</constraint-mappings>

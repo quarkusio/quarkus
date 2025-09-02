@@ -30,7 +30,7 @@ class CountriesResource(private val json: Json) {
                         "Sweden",
                         "SE",
                         "Stockholm",
-                        listOf(Currency("SEK", "Swedish Crowns", "kr"))
+                        listOf(Currency("SEK", "Swedish Crowns", "kr")),
                     )
                 )
             rc.response().setStatusCode(200).end(result.capital)
@@ -73,7 +73,7 @@ class CountriesResource(private val json: Json) {
                         "Sweden",
                         "SE",
                         "Stockholm",
-                        listOf(Currency("SEK", "Swedish Crowns", "kr"))
+                        listOf(Currency("SEK", "Swedish Crowns", "kr")),
                     )
                 )
 

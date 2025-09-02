@@ -13,6 +13,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,15 +24,22 @@ import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartFilename;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
+import org.jboss.resteasy.reactive.server.multipart.FormValue;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -39,6 +49,7 @@ public class MultipartFilenameTest {
 
     public static final String FILE_NAME = "clientFile";
     public static final String FILE_CONTENT = "file content";
+    public static final String FILE_CONTENT2 = "file content2";
     public static final String EXPECTED_OUTPUT = FILE_NAME + ":" + FILE_CONTENT;
 
     @TestHTTPResource
@@ -98,6 +109,11 @@ public class MultipartFilenameTest {
             @Override
             public String charSet() {
                 return "";
+            }
+
+            @Override
+            public MultivaluedMap<String, String> getHeaders() {
+                return new QuarkusMultivaluedHashMap<>();
             }
         };
         assertThat(client.postMultipartFileUpload(form)).isEqualTo(file.getName());
@@ -193,6 +209,52 @@ public class MultipartFilenameTest {
     }
 
     @Test
+    void shouldWorkWithListOfFiles() throws IOException {
+        Client client = RestClientBuilder.newBuilder()
+                .baseUri(baseUri)
+                // we use this encoder mode on the client in order to make it possible for the server to read items with the same name
+                .property("io.quarkus.rest.client.multipart-post-encoder-mode",
+                        PausableHttpPostRequestEncoder.EncoderMode.HTML5)
+                .build(Client.class);
+
+        File file = File.createTempFile("MultipartTest", ".txt");
+        Files.writeString(file.toPath(), FILE_CONTENT);
+        file.deleteOnExit();
+        ClientListForm form = new ClientListForm();
+        form.files = List.of(file);
+
+        String responseStr = client.postMultipartWithFileContentAsMultipartFormDataInput(form);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Result result = mapper.readValue(responseStr, Result.class);
+        assertThat(result).satisfies(r -> {
+            assertThat(r.count).isEqualTo(1);
+            assertThat(r.items).singleElement().satisfies(i -> {
+                assertThat(i.name).isEqualTo("myFile");
+                assertThat(i.size).isEqualTo(FILE_CONTENT.length());
+                assertThat(i.isFileItem).isEqualTo(true);
+            });
+        });
+
+        File file2 = File.createTempFile("MultipartTest2", ".txt");
+        Files.writeString(file2.toPath(), FILE_CONTENT2);
+        file2.deleteOnExit();
+        form = new ClientListForm();
+        form.files = List.of(file, file2);
+
+        responseStr = client.postMultipartWithFileContentAsMultipartFormDataInput(form);
+
+        result = mapper.readValue(responseStr, Result.class);
+        assertThat(result).satisfies(r -> {
+            assertThat(r.count).isEqualTo(2);
+            assertThat(r.items).hasSize(2).extracting(Item::name).containsOnly("myFile");
+            assertThat(r.items).hasSize(2).extracting(Item::size).containsOnly((long) FILE_CONTENT.length(),
+                    (long) FILE_CONTENT2.length());
+        });
+    }
+
+    @Test
     void shouldCopyFileContentToBytes() throws IOException {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
@@ -255,6 +317,25 @@ public class MultipartFilenameTest {
             return new BufferedReader(new InputStreamReader(form.fileContentAsInputStream, StandardCharsets.UTF_8))
                     .lines()
                     .collect(Collectors.joining(System.lineSeparator()));
+        }
+
+        @POST
+        @Path("/file-content-as-multipart-form-data-input")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        public String uploadMultipartFormDataInput(MultipartFormDataInput input) throws IOException {
+            Map<String, Collection<FormValue>> map = input.getValues();
+            List<Item> items = new ArrayList<>();
+            for (var entry : map.entrySet()) {
+                for (FormValue value : entry.getValue()) {
+                    items.add(new Item(
+                            entry.getKey(),
+                            value.isFileItem() ? value.getFileItem().getFileSize() : value.getValue().length(),
+                            value.getCharset(),
+                            value.isFileItem()));
+                }
+
+            }
+            return new ObjectMapper().writeValueAsString(new Result(items, items.size()));
         }
     }
 
@@ -363,12 +444,23 @@ public class MultipartFilenameTest {
         @Path("/file-content-as-inputstream")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipartWithFileContentAsInputStream(@MultipartForm ClientForm clientForm);
+
+        @POST
+        @Path("/file-content-as-multipart-form-data-input")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartWithFileContentAsMultipartFormDataInput(@MultipartForm ClientListForm clientForm);
     }
 
     public static class ClientForm {
         @FormParam("myFile")
         @PartType(APPLICATION_OCTET_STREAM)
         public File file;
+    }
+
+    public static class ClientListForm {
+        @FormParam("myFile")
+        @PartType(APPLICATION_OCTET_STREAM)
+        public List<File> files;
     }
 
     public static class ClientFormUsingFileUpload {
@@ -416,5 +508,21 @@ public class MultipartFilenameTest {
         @PartType(APPLICATION_OCTET_STREAM)
         @PartFilename(FILE_NAME)
         public Multi<Byte> file;
+    }
+
+    public record Item(String name, long size, String charset, boolean isFileItem) {
+    }
+
+    public static class Result {
+        public List<Item> items;
+        public int count;
+
+        public Result() {
+        }
+
+        public Result(List<Item> items, int count) {
+            this.items = items;
+            this.count = count;
+        }
     }
 }

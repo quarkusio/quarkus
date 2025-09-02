@@ -38,6 +38,11 @@
                 <version>${j2objc.annotations.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>${jspecify.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>${commons-codec.version}</version>
@@ -471,9 +476,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.github.crac</groupId>
-                <artifactId>org-crac</artifactId>
-                <version>${org-crac.version}</version>
+                <groupId>org.crac</groupId>
+                <artifactId>crac</artifactId>
+                <version>${crac.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.beanbag</groupId>

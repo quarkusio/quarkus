@@ -15,7 +15,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpHeaders;
 
-class VertxClientInputStream extends InputStream {
+public class VertxClientInputStream extends InputStream {
 
     private final VertxBlockingInput exchange;
 

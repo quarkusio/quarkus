@@ -94,19 +94,11 @@ public class ClassTransformingBuildStep {
         }
         final Map<String, List<BytecodeTransformerBuildItem>> bytecodeTransformers = new HashMap<>(
                 bytecodeTransformerBuildItems.size());
-        Set<String> noConstScanning = new HashSet<>();
-        Map<String, Set<String>> constScanning = new HashMap<>();
         Set<String> nonCacheable = new HashSet<>();
         Map<String, Integer> classReaderOptions = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i);
-            if (i.getRequireConstPoolEntry() == null || i.getRequireConstPoolEntry().isEmpty()) {
-                noConstScanning.add(i.getClassToTransform());
-            } else {
-                constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
-                        .addAll(i.getRequireConstPoolEntry());
-            }
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
             }
@@ -114,6 +106,7 @@ public class ClassTransformingBuildStep {
                     // class reader options are bit flags (see org.objectweb.asm.ClassReader)
                     (oldValue, newValue) -> oldValue | newValue);
         }
+
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
         // now copy all the contents to the runner jar
@@ -131,19 +124,11 @@ public class ClassTransformingBuildStep {
                 if (classTransformers == null) {
                     return originalBytes;
                 }
+
                 boolean continueOnFailure = classTransformers.stream()
                         .filter(a -> !a.isContinueOnFailure())
                         .findAny().isEmpty();
-                List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = classTransformers.stream()
-                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
-                        .map(BytecodeTransformerBuildItem::getVisitorFunction)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                List<BiFunction<String, byte[], byte[]>> preVisitFunctions = classTransformers.stream()
-                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
-                        .map(BytecodeTransformerBuildItem::getInputTransformer)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(transformCl);
@@ -152,12 +137,25 @@ public class ClassTransformingBuildStep {
                     if (!archives.isEmpty()) {
                         ClassPathElement classPathElement = archives.get(0);
                         byte[] classData = classPathElement.getResource(classFileName).getData();
-                        Set<String> constValues = constScanning.get(className);
-                        if (constValues != null && !noConstScanning.contains(className)) {
-                            if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
-                                return originalBytes;
-                            }
+
+                        List<BytecodeTransformerBuildItem> appliedClassTransformers = classTransformers.stream()
+                                .filter(t -> t.getRequireConstPoolEntry() == null || t.getRequireConstPoolEntry().isEmpty()
+                                        || ConstPoolScanner.constPoolEntryPresent(classData, t.getRequireConstPoolEntry()))
+                                .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority)).toList();
+
+                        if (appliedClassTransformers.isEmpty()) {
+                            return originalBytes;
                         }
+
+                        List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = appliedClassTransformers.stream()
+                                .map(BytecodeTransformerBuildItem::getVisitorFunction)
+                                .filter(Objects::nonNull)
+                                .toList();
+                        List<BiFunction<String, byte[], byte[]>> preVisitFunctions = appliedClassTransformers.stream()
+                                .map(BytecodeTransformerBuildItem::getInputTransformer)
+                                .filter(Objects::nonNull)
+                                .toList();
+
                         byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
                                 classReaderOptions.getOrDefault(className, 0));
                         TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
@@ -211,16 +209,8 @@ public class ClassTransformingBuildStep {
                 boolean continueOnFailure = entry.getValue().stream()
                         .filter(a -> !a.isContinueOnFailure())
                         .findAny().isEmpty();
-                List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue().stream()
-                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
-                        .map(BytecodeTransformerBuildItem::getVisitorFunction)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                List<BiFunction<String, byte[], byte[]>> preVisitFunctions = entry.getValue().stream()
-                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
-                        .map(BytecodeTransformerBuildItem::getInputTransformer)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+                List<BytecodeTransformerBuildItem> classTransformers = entry.getValue();
+
                 transformedToArchive.put(classFileName, jar);
                 transformed.add(buildExecutor.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
                     @Override
@@ -229,12 +219,25 @@ public class ClassTransformingBuildStep {
                         try {
                             byte[] classData = classPathElement.getResource(classFileName).getData();
                             Thread.currentThread().setContextClassLoader(transformCl);
-                            Set<String> constValues = constScanning.get(className);
-                            if (constValues != null && !noConstScanning.contains(className)) {
-                                if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
-                                    return null;
-                                }
+
+                            List<BytecodeTransformerBuildItem> appliedClassTransformers = classTransformers.stream()
+                                    .filter(t -> t.getRequireConstPoolEntry() == null || t.getRequireConstPoolEntry().isEmpty()
+                                            || ConstPoolScanner.constPoolEntryPresent(classData, t.getRequireConstPoolEntry()))
+                                    .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority)).toList();
+
+                            if (appliedClassTransformers.isEmpty()) {
+                                return null;
                             }
+
+                            List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = appliedClassTransformers.stream()
+                                    .map(BytecodeTransformerBuildItem::getVisitorFunction)
+                                    .filter(Objects::nonNull)
+                                    .toList();
+                            List<BiFunction<String, byte[], byte[]>> preVisitFunctions = appliedClassTransformers.stream()
+                                    .map(BytecodeTransformerBuildItem::getInputTransformer)
+                                    .filter(Objects::nonNull)
+                                    .toList();
+
                             byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
                                     classReaderOptions.getOrDefault(className, 0));
                             TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(

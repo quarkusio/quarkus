@@ -1,6 +1,5 @@
 package io.quarkus.kubernetes.client.devservices.it.profiles;
 
-import java.util.Collections;
 import java.util.Map;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -12,6 +11,8 @@ public class DevServiceKubernetes implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
 
-        return Collections.singletonMap("quarkus.kubernetes-client.devservices.api-version", API_VERSION);
+        return Map.of("quarkus.kubernetes-client.devservices.api-version", API_VERSION,
+                "quarkus.kubernetes-client.devservices.image-name",
+                "quay.io/giantswarm/kube-apiserver:v%s".formatted(API_VERSION));
     }
 }

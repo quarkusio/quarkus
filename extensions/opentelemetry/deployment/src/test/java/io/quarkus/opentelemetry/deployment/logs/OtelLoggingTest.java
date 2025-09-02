@@ -99,6 +99,8 @@ public class OtelLoggingTest {
                                 .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
                                 .containsKey(CODE_LINENO.getKey())
+                                .containsEntry("bridge.name",
+                                        "io.quarkus.opentelemetry.deployment.logs.OtelLoggingTest$JBossLoggingBean")
                                 .doesNotContainKey(EXCEPTION_TYPE)
                                 .doesNotContainKey(EXCEPTION_MESSAGE)
                                 .doesNotContainKey(EXCEPTION_STACKTRACE)

@@ -28,9 +28,25 @@ import io.quarkus.paths.PathTree;
 class QuarkusModelBuilderTest {
 
     @Test
+    public void shouldLoadSimpleModuleProdModel() throws URISyntaxException, IOException {
+        File projectDir = getResourcesProject("builder/simple-module-project");
+        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "NORMAL");
+
+        assertNotNull(quarkusModel);
+        assertNotNull(quarkusModel.getApplicationModule());
+        assertThat(quarkusModel.getWorkspaceModules().size()).isEqualTo(1);
+
+        final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
+        assertThat(appArtifact).isNotNull();
+        assertThat(appArtifact.getWorkspaceModule()).isNotNull();
+        final ArtifactSources testSources = appArtifact.getWorkspaceModule().getTestSources();
+        assertThat(testSources).isNull();
+    }
+
+    @Test
     public void shouldLoadSimpleModuleTestModel() throws URISyntaxException, IOException {
         File projectDir = getResourcesProject("builder/simple-module-project");
-        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "TEST");
+        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "TEST", "testClasses");
 
         assertNotNull(quarkusModel);
         assertNotNull(quarkusModel.getApplicationModule());
@@ -165,7 +181,7 @@ class QuarkusModelBuilderTest {
             assertThat(sourceTree.getRoots()).hasSize(1);
             assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/test/resources"));
         } else {
-            assertThat(projectModule.getTestSources()).isNull();
+            assertThat(projectModule.getTestSources().isOutputAvailable()).isFalse();
         }
     }
 

@@ -103,7 +103,7 @@ Users are instead encouraged to use the Jakarta REST standard `jakarta.ws.rs.Bea
 
 Although Quarkus REST provides the same spec compliant behavior as RESTEasy Classic does, it does not include the same exact provider implementations at runtime.
 
-The most common case where the difference in providers might result in different behavior, is the included `jakarta.ws.rs.ext.ExceptionMapper` implementations. To see what classes are included in the application, launch the application in dev mode and navigate to http://localhost:8080/q/dev-ui/io.quarkus.quarkus-rest/exception-mappers.
+The most common case where the difference in providers might result in different behavior, is the included `jakarta.ws.rs.ext.ExceptionMapper` implementations. To see what classes are included in the application, launch the application in dev mode and navigate to http://localhost:8080/q/dev-ui/quarkus-rest/exception-mappers.
 
 ==== Service Loading
 

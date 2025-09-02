@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -37,6 +38,10 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         Path appClasses = (Path) stringObjectMap.get("app-classes");
         DevModeContext devModeContext = new DevModeContext();
         devModeContext.setArgs((String[]) stringObjectMap.get("args"));
+        Properties buildSystemProperties = curatedApplication.getQuarkusBootstrap().getBuildSystemProperties();
+        for (String key : buildSystemProperties.stringPropertyNames()) {
+            devModeContext.getBuildSystemProperties().put(key, buildSystemProperties.getProperty(key));
+        }
 
         ApplicationModel appModel = null;
         try {

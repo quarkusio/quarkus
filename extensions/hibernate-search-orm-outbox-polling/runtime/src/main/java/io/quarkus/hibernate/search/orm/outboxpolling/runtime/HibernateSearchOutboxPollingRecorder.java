@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.search.orm.outboxpolling.runtime;
 
-import static io.quarkus.hibernate.search.orm.outboxpolling.runtime.HibernateSearchOutboxPollingConfigUtil.addCoordinationConfig;
-
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -12,21 +10,29 @@ import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutbo
 
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateSearchOutboxPollingRecorder {
+    private final HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig;
+    private final RuntimeValue<HibernateSearchOutboxPollingRuntimeConfig> runtimeConfig;
 
-    public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
-            HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig, String persistenceUnitName) {
+    public HibernateSearchOutboxPollingRecorder(
+            final HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig,
+            final RuntimeValue<HibernateSearchOutboxPollingRuntimeConfig> runtimeConfig) {
+        this.buildTimeConfig = buildTimeConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public HibernateOrmIntegrationStaticInitListener createStaticInitListener(String persistenceUnitName) {
         HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit puConfig = buildTimeConfig.persistenceUnits()
                 .get(persistenceUnitName);
         return new StaticInitListener(puConfig);
     }
 
-    public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
-            HibernateSearchOutboxPollingRuntimeConfig runtimeConfig, String persistenceUnitName) {
-        HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit puConfig = runtimeConfig.persistenceUnits()
+    public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(String persistenceUnitName) {
+        HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit puConfig = runtimeConfig.getValue().persistenceUnits()
                 .get(persistenceUnitName);
         return new RuntimeInitListener(puConfig);
     }

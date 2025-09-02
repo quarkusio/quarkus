@@ -1,10 +1,10 @@
 package io.quarkus.vertx.http.runtime;
 
-import java.net.URI;
 import java.util.Set;
 
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.MimeMapping;
+import io.vertx.core.net.impl.URIDecoder;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 
@@ -17,7 +17,7 @@ public final class RoutingUtils {
     /**
      * Get the normalized and decoded path:
      * - normalize based on RFC3986
-     * - convert % encoded characters to their non encoded form (using {@link java.net.URI})
+     * - convert % encoded characters to their non encoded form (using {@link URIDecoder#decodeURIComponent})
      * - invalid if the path contains '?' (query section of the path)
      *
      * @param ctx the RoutingContext
@@ -25,10 +25,13 @@ public final class RoutingUtils {
      */
     public static String getNormalizedAndDecodedPath(RoutingContext ctx) {
         String normalizedPath = ctx.normalizedPath();
-        if (normalizedPath.contains("?")) {
+        if (normalizedPath.indexOf('?') != -1) {
             return null;
         }
-        return URI.create(normalizedPath).getPath();
+        if (normalizedPath.indexOf('%') == -1) {
+            return normalizedPath;
+        }
+        return URIDecoder.decodeURIComponent(normalizedPath);
     }
 
     /**

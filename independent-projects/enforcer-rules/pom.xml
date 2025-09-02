@@ -34,7 +34,7 @@
 
         <!-- Keeping 3.0.0.M3 because 3.2.1 requires class changes -->
         <enforcer-api.version>3.0.0-M3</enforcer-api.version>
-        <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
         <maven-core.version>3.9.9</maven-core.version>
 
         <!--
@@ -104,23 +104,12 @@
                     <dependency>
                         <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy</artifactId>
-                        <version>4.0.26</version>
+                        <version>4.0.28</version>
                     </dependency>
                 </dependencies>
             </plugin>
         </plugins>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

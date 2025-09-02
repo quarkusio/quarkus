@@ -25,7 +25,7 @@ public class FormAuthJpaTestCase {
             "quarkus.datasource.reactive=true\n" +
             "quarkus.datasource.reactive.url=${postgres.reactive.url}\n" +
             "quarkus.hibernate-orm.sql-load-script=import.sql\n" +
-            "quarkus.hibernate-orm.database.generation=drop-and-create\n" +
+            "quarkus.hibernate-orm.schema-management.strategy=drop-and-create\n" +
             "#quarkus.hibernate-orm.log.sql=true\n" +
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +

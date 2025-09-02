@@ -38,6 +38,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-websockets-next-kotlin</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-next-spi</artifactId>
+        </dependency>
         <!-- Quarkus Security API -->
         <dependency>
             <groupId>io.quarkus.security</groupId>
@@ -77,6 +81,9 @@
                     <capabilities>
                         <provides>io.quarkus.websockets.next</provides>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

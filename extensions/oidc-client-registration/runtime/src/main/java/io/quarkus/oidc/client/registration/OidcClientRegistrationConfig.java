@@ -1,14 +1,9 @@
 package io.quarkus.oidc.client.registration;
 
-import static io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig.getDefaultClientRegistration;
-
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
-import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.WithDefault;
 
 //https://datatracker.ietf.org/doc/html/rfc7592
@@ -74,13 +69,7 @@ public interface OidcClientRegistrationConfig extends OidcCommonConfig {
      * @return OidcClientRegistrationConfigBuilder builder
      */
     static OidcClientRegistrationConfigBuilder builder() {
-        var clientRegistrationsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(OidcClientRegistrationsConfig.class)
-                .build()
-                .getConfigMapping(OidcClientRegistrationsConfig.class);
-        var clientRegistrationWithDefaultValues = getDefaultClientRegistration(clientRegistrationsConfig);
-        return new OidcClientRegistrationConfigBuilder(clientRegistrationWithDefaultValues);
+        return new OidcClientRegistrationConfigBuilder();
     }
 
     /**
@@ -90,7 +79,6 @@ public interface OidcClientRegistrationConfig extends OidcCommonConfig {
      * @return OidcClientRegistrationConfigBuilder
      */
     static OidcClientRegistrationConfigBuilder builder(OidcClientRegistrationConfig config) {
-        Objects.requireNonNull(config);
         return new OidcClientRegistrationConfigBuilder(config);
     }
 

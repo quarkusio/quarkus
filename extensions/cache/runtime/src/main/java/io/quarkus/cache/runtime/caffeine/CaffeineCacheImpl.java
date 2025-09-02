@@ -1,8 +1,6 @@
 package io.quarkus.cache.runtime.caffeine;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -251,7 +249,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @Override
     public Uni<Void> invalidate(Object key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().item(new Supplier<Void>() {
+        return Uni.createFrom().item(new Supplier<>() {
             @Override
             public Void get() {
                 cache.synchronous().invalidate(key);
@@ -262,7 +260,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public Uni<Void> invalidateAll() {
-        return Uni.createFrom().item(new Supplier<Void>() {
+        return Uni.createFrom().item(new Supplier<>() {
             @Override
             public Void get() {
                 cache.synchronous().invalidateAll();
@@ -273,7 +271,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
-        return Uni.createFrom().item(new Supplier<Void>() {
+        return Uni.createFrom().item(new Supplier<>() {
             @Override
             public Void get() {
                 cache.asMap().keySet().removeIf(predicate);
@@ -284,7 +282,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public Set<Object> keySet() {
-        return Collections.unmodifiableSet(new HashSet<>(cache.asMap().keySet()));
+        return Set.copyOf(cache.asMap().keySet());
     }
 
     @SuppressWarnings("unchecked")

@@ -2,10 +2,13 @@ package io.quarkus.qute.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static java.util.stream.Collectors.toMap;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,8 +59,9 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -66,20 +70,18 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassCreator.Builder;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
@@ -125,7 +127,9 @@ public class MessageBundleProcessor {
     @BuildStep
     List<MessageBundleBuildItem> processBundles(BeanArchiveIndexBuildItem beanArchiveIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses, BeanRegistrationPhaseBuildItem beanRegistration,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BeanRegistrationPhaseBuildItem beanRegistration,
             BuildProducer<BeanConfiguratorBuildItem> configurators,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles,
@@ -183,10 +187,8 @@ public class MessageBundleProcessor {
                     // Find localizations for each interface
                     String defaultLocale = getDefaultLocale(bundleAnnotation, locales);
                     List<ClassInfo> localized = new ArrayList<>();
-                    for (ClassInfo implementor : index.getKnownDirectImplementors(bundleClass.name())) {
-                        if (Modifier.isInterface(implementor.flags())) {
-                            localized.add(implementor);
-                        }
+                    for (ClassInfo implementor : index.getKnownDirectSubinterfaces(bundleClass.name())) {
+                        localized.add(implementor);
                     }
                     Map<String, ClassInfo> localeToInterface = new HashMap<>();
                     for (ClassInfo localizedInterface : localized) {
@@ -272,7 +274,7 @@ public class MessageBundleProcessor {
 
         // Generate implementations
         // name -> impl class
-        Map<String, String> generatedImplementations = generateImplementations(bundles, generatedClasses,
+        Map<String, String> generatedImplementations = generateImplementations(bundles, generatedClasses, generatedResources,
                 messageTemplateMethods, index);
 
         // Register synthetic beans
@@ -678,7 +680,7 @@ public class MessageBundleProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     void generateExamplePropertiesFiles(List<MessageBundleMethodBuildItem> messageBundleMethods,
             BuildSystemTargetBuildItem target, BuildProducer<GeneratedResourceBuildItem> dummy) throws IOException {
         if (messageBundleMethods.isEmpty()) {
@@ -723,12 +725,14 @@ public class MessageBundleProcessor {
 
     private Map<String, String> generateImplementations(List<MessageBundleBuildItem> bundles,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             IndexView index) throws IOException {
 
         Map<String, String> generatedTypes = new HashMap<>();
 
-        ClassOutput defaultClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new AppClassPredicate());
+        ClassOutput defaultClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
+                new AppClassPredicate());
 
         for (MessageBundleBuildItem bundle : bundles) {
             ClassInfo bundleInterface = bundle.getDefaultBundleInterface();
@@ -764,7 +768,7 @@ public class MessageBundleProcessor {
                 var keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile, index);
 
                 String locale = entry.getKey();
-                ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmoAdaptor(generatedClasses,
+                ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
                         new AppClassPredicate(new Function<String, String>() {
                             @Override
                             public String apply(String className) {
@@ -952,196 +956,208 @@ public class MessageBundleProcessor {
         if (locale != null) {
             baseName = baseName + "_" + locale;
         }
+        String generatedClassName = bundleInterface.name()
+                + (locale != null ? "_" + locale : "")
+                + SUFFIX;
+        String resolveMethodPrefix = baseName + SUFFIX;
 
-        String targetPackage = DotNames.internalPackageNameWithTrailingSlash(bundleInterface.name());
-        String generatedName = targetPackage + baseName + SUFFIX;
-
-        // MyMessages_Bundle implements MyMessages, Resolver
-        Builder builder = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(bundleInterface.name().toString(), Resolver.class.getName());
-        if (defaultBundleImpl != null) {
-            builder.superClass(defaultBundleImpl);
-        }
-        ClassCreator bundleCreator = builder.build();
-
-        // key -> method
-        Map<String, MessageMethod> keyMap = new LinkedHashMap<>();
-        List<MethodInfo> methods = new ArrayList<>(bundleInterfaceWrapper.methods());
-        // Sort methods
-        methods.sort(Comparator.comparing(MethodInfo::name).thenComparing(Comparator.comparing(MethodInfo::toString)));
-
-        for (MethodInfo method : methods) {
-            if (!method.returnType().name().equals(DotNames.STRING)) {
-                throw new MessageBundleException(
-                        String.format("A message bundle method must return java.lang.String: %s#%s",
-                                bundleInterface, method.name()));
+        Gizmo.create(classOutput).class_(generatedClassName, cc -> {
+            // MyMessages_Bundle implements MyMessages, Resolver
+            cc.implements_(classDescOf(bundleInterface));
+            cc.implements_(Resolver.class);
+            if (defaultBundleImpl != null) {
+                cc.extends_(ClassDesc.of(defaultBundleImpl));
             }
-            LOG.debugf("Found message bundle method %s on %s", method, bundleInterface);
+            cc.defaultConstructor();
 
-            MethodCreator bundleMethod = bundleCreator.getMethodCreator(MethodDescriptor.of(method));
+            // key -> method
+            Map<String, MessageMethod> keyMap = new LinkedHashMap<>();
+            List<MethodInfo> methods = new ArrayList<>(bundleInterfaceWrapper.methods());
+            // Sort methods
+            methods.sort(Comparator.comparing(MethodInfo::name).thenComparing(Comparator.comparing(MethodInfo::toString)));
 
-            AnnotationInstance messageAnnotation;
-            if (defaultBundleInterface != null) {
-                MethodInfo defaultBundleMethod = bundleInterfaceWrapper.method(method.name(),
-                        method.parameterTypes().toArray(new Type[] {}));
-                if (defaultBundleMethod == null) {
-                    throw new MessageBundleException(
-                            String.format("Default bundle method not found on %s: %s", bundleInterface, method));
-                }
-                messageAnnotation = defaultBundleMethod.annotation(Names.MESSAGE);
-            } else {
-                messageAnnotation = method.annotation(Names.MESSAGE);
-            }
+            for (MethodInfo method : methods) {
+                cc.method(methodDescOf(method), mc -> {
+                    List<ParamVar> params = new ArrayList<>(method.parametersCount());
+                    for (int i = 0; i < method.parametersCount(); i++) {
+                        String paramName = method.parameterName(i);
+                        params.add(mc.parameter(paramName != null ? paramName : "arg" + i, i));
+                    }
+                    if (!method.returnType().name().equals(DotNames.STRING)) {
+                        throw new MessageBundleException(
+                                String.format("A message bundle method must return java.lang.String: %s#%s",
+                                        bundleInterface, method.name()));
+                    }
+                    LOG.debugf("Found message bundle method %s on %s", method, bundleInterface);
 
-            if (messageAnnotation == null) {
-                LOG.debugf("@Message not declared on %s#%s - using the default key/value", bundleInterface, method);
-                messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
-                        .add("name", Message.DEFAULT_NAME).build();
-            }
-
-            String key = getKey(method, messageAnnotation, defaultKeyValue);
-            if (key.equals(MESSAGE)) {
-                throw new MessageBundleException(String.format(
-                        "A message bundle interface method must not use the key 'message' which is reserved for dynamic lookup; defined for %s#%s()",
-                        bundleInterface, method.name()));
-            }
-            if (keyMap.containsKey(key)) {
-                throw new MessageBundleException(String.format("Duplicate key [%s] found on %s", key, bundleInterface));
-            }
-            keyMap.put(key, new SimpleMessageMethod(method));
-
-            boolean generatedTemplate = false;
-            String messageTemplate = messageTemplates.get(method.name());
-            if (messageTemplate == null) {
-                messageTemplate = getMessageAnnotationValue(messageAnnotation, true);
-            }
-
-            if (messageTemplate == null && defaultBundleInterface != null) {
-                // method is annotated with @Message without value() -> fallback to default locale
-                messageTemplate = getMessageAnnotationValue((defaultBundleInterface.method(method.name(),
-                        method.parameterTypes().toArray(new Type[] {}))).annotation(Names.MESSAGE), true);
-            }
-
-            // We need some special handling for enum message bundle methods
-            // A message bundle method that accepts an enum and has no message template receives a generated template:
-            // {#when enumParamName}
-            //   {#is CONSTANT_1}{msg:myEnum_$CONSTANT_1}
-            //   {#is CONSTANT_2}{msg:myEnum_$CONSTANT_2}
-            //   ...
-            // {/when}
-            // Furthermore, a special message method is generated for each enum constant
-            // These methods are used to handle the {msg:myEnum$CONSTANT_1} and {msg:myEnum$CONSTANT_2}
-            if (messageTemplate == null && method.parametersCount() == 1) {
-                Type paramType = method.parameterType(0);
-                if (paramType.kind() == org.jboss.jandex.Type.Kind.CLASS) {
-                    ClassInfo maybeEnum = index.getClassByName(paramType.name());
-                    if (maybeEnum != null && maybeEnum.isEnum()) {
-                        StringBuilder generatedMessageTemplate = new StringBuilder("{#when ")
-                                .append(getParameterName(method, 0))
-                                .append("}");
-                        Set<String> enumConstants = maybeEnum.fields().stream().filter(FieldInfo::isEnumConstant)
-                                .map(FieldInfo::name).collect(Collectors.toSet());
-                        String separator = enumConstantSeparator(enumConstants);
-                        for (String enumConstant : enumConstants) {
-                            // myEnum_CONSTANT
-                            // myEnum_$CONSTANT_1
-                            // myEnum_$CONSTANT$NEXT
-                            String enumConstantKey = toEnumConstantKey(method.name(), separator, enumConstant);
-                            String enumConstantTemplate = messageTemplates.get(enumConstantKey);
-                            if (enumConstantTemplate == null) {
-                                throw new TemplateException(
-                                        String.format("Enum constant message not found in bundle [%s] for key: %s",
-                                                bundleName + (locale != null ? "_" + locale : ""), enumConstantKey));
-                            }
-                            generatedMessageTemplate.append("{#is ")
-                                    .append(enumConstant)
-                                    .append("}{")
-                                    .append(bundle.getName())
-                                    .append(":")
-                                    .append(enumConstantKey)
-                                    .append("}");
-                            // For each constant we generate a method:
-                            // myEnum_CONSTANT(MyEnum val)
-                            // myEnum_$CONSTANT_1(MyEnum val)
-                            // myEnum_$CONSTANT$NEXT(MyEnum val)
-                            generateEnumConstantMessageMethod(bundleCreator, bundleName, locale, bundleInterface,
-                                    defaultBundleInterface, enumConstantKey, keyMap, enumConstantTemplate,
-                                    messageTemplateMethods);
+                    AnnotationInstance messageAnnotation;
+                    if (defaultBundleInterface != null) {
+                        MethodInfo defaultBundleMethod = bundleInterfaceWrapper.method(method.name(),
+                                method.parameterTypes().toArray(new Type[] {}));
+                        if (defaultBundleMethod == null) {
+                            throw new MessageBundleException(
+                                    String.format("Default bundle method not found on %s: %s", bundleInterface, method));
                         }
-                        generatedMessageTemplate.append("{/when}");
-                        messageTemplate = generatedMessageTemplate.toString();
-                        generatedTemplate = true;
+                        messageAnnotation = defaultBundleMethod.annotation(Names.MESSAGE);
+                    } else {
+                        messageAnnotation = method.annotation(Names.MESSAGE);
                     }
-                }
-            }
 
-            if (messageTemplate == null) {
-                throw new MessageBundleException(
-                        String.format("Message template for key [%s] is missing for default locale [%s]", key,
-                                bundle.getDefaultLocale()));
-            }
-
-            String templateId = null;
-            if (messageTemplate.contains("}")) {
-                // Qute is needed - at least one expression/section found
-                if (defaultBundleInterface != null) {
-                    if (locale == null) {
-                        AnnotationInstance localizedAnnotation = bundleInterface.declaredAnnotation(Names.LOCALIZED);
-                        locale = localizedAnnotation.value().asString();
+                    if (messageAnnotation == null) {
+                        LOG.debugf("@Message not declared on %s#%s - using the default key/value", bundleInterface, method);
+                        messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
+                                .add("name", Message.DEFAULT_NAME).build();
                     }
-                    templateId = bundleName + "_" + locale + "_" + key;
-                } else {
-                    templateId = bundleName + "_" + key;
-                }
-            }
 
-            MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, key, templateId,
-                    method, messageTemplate, defaultBundleInterface == null, generatedTemplate);
-            messageTemplateMethods
-                    .produce(messageBundleMethod);
-
-            if (!messageBundleMethod.isValidatable()) {
-                // No expression/tag - no need to use qute
-                bundleMethod.returnValue(bundleMethod.load(messageTemplate));
-            } else {
-                // Obtain the template, e.g. msg_hello_name
-                ResultHandle template = bundleMethod.invokeStaticMethod(
-                        io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_TEMPLATE,
-                        bundleMethod.load(templateId));
-                // Create a template instance
-                ResultHandle templateInstance = bundleMethod
-                        .invokeInterfaceMethod(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template);
-                if (locale != null) {
-                    bundleMethod.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TemplateInstance.class, "setLocale", TemplateInstance.class,
-                                    String.class),
-                            templateInstance, bundleMethod.load(locale));
-                }
-                List<Type> paramTypes = method.parameterTypes();
-                if (!paramTypes.isEmpty()) {
-                    // Set data
-                    int i = 0;
-                    Iterator<Type> it = paramTypes.iterator();
-                    while (it.hasNext()) {
-                        String name = getParameterName(method, i);
-                        bundleMethod.invokeInterfaceMethod(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_DATA,
-                                templateInstance,
-                                bundleMethod.load(name), bundleMethod.getMethodParam(i));
-                        i++;
-                        it.next();
+                    String key = getKey(method, messageAnnotation, defaultKeyValue);
+                    if (key.equals(MESSAGE)) {
+                        throw new MessageBundleException(String.format(
+                                "A message bundle interface method must not use the key 'message' which is reserved for dynamic lookup; defined for %s#%s()",
+                                bundleInterface, method.name()));
                     }
-                }
-                // Render the template
-                // At this point it's already validated that the method returns String
-                bundleMethod.returnValue(bundleMethod.invokeInterfaceMethod(
-                        io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_RENDER, templateInstance));
+                    if (keyMap.containsKey(key)) {
+                        throw new MessageBundleException(String.format("Duplicate key [%s] found on %s", key, bundleInterface));
+                    }
+                    keyMap.put(key, new SimpleMessageMethod(method));
+
+                    boolean generatedTemplate = false;
+                    String messageTemplate = messageTemplates.get(method.name());
+                    if (messageTemplate == null) {
+                        messageTemplate = getMessageAnnotationValue(messageAnnotation, true);
+                    }
+
+                    if (messageTemplate == null && defaultBundleInterface != null) {
+                        // method is annotated with @Message without value() -> fallback to default locale
+                        messageTemplate = getMessageAnnotationValue((defaultBundleInterface.method(method.name(),
+                                method.parameterTypes().toArray(new Type[] {}))).annotation(Names.MESSAGE), true);
+                    }
+
+                    // We need some special handling for enum message bundle methods
+                    // A message bundle method that accepts an enum and has no message template receives a generated template:
+                    // {#when enumParamName}
+                    //   {#is CONSTANT_1}{msg:myEnum_$CONSTANT_1}
+                    //   {#is CONSTANT_2}{msg:myEnum_$CONSTANT_2}
+                    //   ...
+                    // {/when}
+                    // Furthermore, a special message method is generated for each enum constant
+                    // These methods are used to handle the {msg:myEnum$CONSTANT_1} and {msg:myEnum$CONSTANT_2}
+                    if (messageTemplate == null && method.parametersCount() == 1) {
+                        Type paramType = method.parameterType(0);
+                        if (paramType.kind() == org.jboss.jandex.Type.Kind.CLASS) {
+                            ClassInfo maybeEnum = index.getClassByName(paramType.name());
+                            if (maybeEnum != null && maybeEnum.isEnum()) {
+                                StringBuilder generatedMessageTemplate = new StringBuilder("{#when ")
+                                        .append(getParameterName(method, 0))
+                                        .append("}");
+                                Set<String> enumConstants = maybeEnum.fields().stream().filter(FieldInfo::isEnumConstant)
+                                        .map(FieldInfo::name).collect(Collectors.toSet());
+                                String separator = enumConstantSeparator(enumConstants);
+                                for (String enumConstant : enumConstants) {
+                                    // myEnum_CONSTANT
+                                    // myEnum_$CONSTANT_1
+                                    // myEnum_$CONSTANT$NEXT
+                                    String enumConstantKey = toEnumConstantKey(method.name(), separator, enumConstant);
+                                    String enumConstantTemplate = messageTemplates.get(enumConstantKey);
+                                    if (enumConstantTemplate == null) {
+                                        throw new TemplateException(
+                                                String.format("Enum constant message not found in bundle [%s] for key: %s",
+                                                        bundleName + (locale != null ? "_" + locale : ""), enumConstantKey));
+                                    }
+                                    generatedMessageTemplate.append("{#is ")
+                                            .append(enumConstant)
+                                            .append("}{")
+                                            .append(bundle.getName())
+                                            .append(":")
+                                            .append(enumConstantKey)
+                                            .append("}");
+                                    // For each constant we generate a method:
+                                    // myEnum_CONSTANT(MyEnum val)
+                                    // myEnum_$CONSTANT_1(MyEnum val)
+                                    // myEnum_$CONSTANT$NEXT(MyEnum val)
+                                    generateEnumConstantMessageMethod(cc, bundleName, locale, bundleInterface,
+                                            defaultBundleInterface, enumConstantKey, keyMap, enumConstantTemplate,
+                                            messageTemplateMethods);
+                                }
+                                generatedMessageTemplate.append("{/when}");
+                                messageTemplate = generatedMessageTemplate.toString();
+                                generatedTemplate = true;
+                            }
+                        }
+                    }
+
+                    if (messageTemplate == null) {
+                        throw new MessageBundleException(
+                                String.format("Message template for key [%s] is missing for default locale [%s]", key,
+                                        bundle.getDefaultLocale()));
+                    }
+
+                    String templateId = null;
+                    String defaultLocale = locale;
+                    if (messageTemplate.contains("}")) {
+                        // Qute is needed - at least one expression/section found
+                        if (defaultBundleInterface != null) {
+                            if (defaultLocale == null) {
+                                AnnotationInstance localizedAnnotation = bundleInterface.declaredAnnotation(Names.LOCALIZED);
+                                defaultLocale = localizedAnnotation.value().asString();
+                            }
+                            templateId = bundleName + "_" + defaultLocale + "_" + key;
+                        } else {
+                            templateId = bundleName + "_" + key;
+                        }
+                    }
+
+                    MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, key,
+                            templateId,
+                            method, messageTemplate, defaultBundleInterface == null, generatedTemplate);
+                    messageTemplateMethods
+                            .produce(messageBundleMethod);
+
+                    String effectiveMessageTemplate = messageTemplate;
+                    String effectiveTemplateId = templateId;
+                    String effectiveLocale = defaultLocale;
+                    mc.body(bc -> {
+                        if (!messageBundleMethod.isValidatable()) {
+                            // No expression/tag - no need to use qute
+                            bc.return_(Const.of(effectiveMessageTemplate));
+                        } else {
+                            // Obtain the template, e.g. msg_hello_name
+                            LocalVar template = bc.localVar("template", bc.invokeStatic(
+                                    io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_TEMPLATE,
+                                    Const.of(effectiveTemplateId)));
+                            // Create a template instance
+                            LocalVar templateInstance = bc.localVar("templateInstance", bc
+                                    .invokeInterface(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template));
+                            if (effectiveLocale != null) {
+                                bc.invokeInterface(
+                                        MethodDesc.of(TemplateInstance.class, "setLocale", TemplateInstance.class,
+                                                String.class),
+                                        templateInstance, Const.of(effectiveLocale));
+                            }
+                            List<Type> paramTypes = method.parameterTypes();
+                            if (!paramTypes.isEmpty()) {
+                                // Set data
+                                int i = 0;
+                                Iterator<Type> it = paramTypes.iterator();
+                                while (it.hasNext()) {
+                                    String name = getParameterName(method, i);
+                                    bc.invokeInterface(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_DATA,
+                                            templateInstance,
+                                            Const.of(name), params.get(i));
+                                    i++;
+                                    it.next();
+                                }
+                            }
+                            // Render the template
+                            // At this point it's already validated that the method returns String
+                            bc.return_(bc.invokeInterface(
+                                    io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_RENDER, templateInstance));
+                        }
+                    });
+                });
             }
-        }
-
-        implementResolve(defaultBundleImpl, bundleCreator, keyMap);
-
-        bundleCreator.close();
-        return generatedName.replace('/', '.');
+            implementResolve(defaultBundleImpl, cc, keyMap, resolveMethodPrefix, generatedClassName);
+        });
+        return generatedClassName;
     }
 
     private String enumConstantSeparator(Set<String> enumConstants) {
@@ -1183,33 +1199,36 @@ public class MessageBundleProcessor {
                 templateId, null, messageTemplate, defaultBundleInterface == null, true);
         messageTemplateMethods.produce(messageBundleMethod);
 
-        MethodCreator enumConstantMethod = bundleCreator.getMethodCreator(enumConstantKey,
-                String.class);
+        String effectiveTemplateId = templateId;
+        String effectiveLocale = locale;
+        bundleCreator.method(enumConstantKey, mc -> {
+            mc.returning(String.class);
+            mc.body(bc -> {
+                if (!messageBundleMethod.isValidatable()) {
+                    // No expression/tag - no need to use qute
+                    bc.return_(Const.of(messageTemplate));
+                } else {
+                    // Obtain the template, e.g. msg_myEnum$CONSTANT_1
+                    LocalVar template = bc.localVar("template", bc.invokeStatic(
+                            io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_TEMPLATE,
+                            Const.of(effectiveTemplateId)));
+                    // Create a template instance
+                    LocalVar templateInstance = bc.localVar("templateInstance",
+                            bc.invokeInterface(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template));
+                    if (effectiveLocale != null) {
+                        bc.invokeInterface(
+                                MethodDesc.of(TemplateInstance.class, "setLocale", TemplateInstance.class,
+                                        String.class),
+                                templateInstance, Const.of(effectiveLocale));
+                    }
+                    // Render the template
+                    bc.return_(bc.invokeInterface(
+                            io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_RENDER, templateInstance));
+                }
+            });
+            keyMap.put(enumConstantKey, new EnumConstantMessageMethod(mc.desc()));
+        });
 
-        if (!messageBundleMethod.isValidatable()) {
-            // No expression/tag - no need to use qute
-            enumConstantMethod.returnValue(enumConstantMethod.load(messageTemplate));
-        } else {
-            // Obtain the template, e.g. msg_myEnum$CONSTANT_1
-            ResultHandle template = enumConstantMethod.invokeStaticMethod(
-                    io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_TEMPLATE,
-                    enumConstantMethod.load(templateId));
-            // Create a template instance
-            ResultHandle templateInstance = enumConstantMethod
-                    .invokeInterfaceMethod(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template);
-            if (locale != null) {
-                enumConstantMethod.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(TemplateInstance.class, "setLocale", TemplateInstance.class,
-                                String.class),
-                        templateInstance, enumConstantMethod.load(locale));
-            }
-            // Render the template
-            enumConstantMethod.returnValue(enumConstantMethod.invokeInterfaceMethod(
-                    io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_RENDER, templateInstance));
-        }
-
-        keyMap.put(enumConstantKey,
-                new EnumConstantMessageMethod(enumConstantMethod.getMethodDescriptor()));
     }
 
     /**
@@ -1253,186 +1272,218 @@ public class MessageBundleProcessor {
         return name;
     }
 
-    private void implementResolve(String defaultBundleImpl, ClassCreator bundleCreator, Map<String, MessageMethod> keyMap) {
-        MethodCreator resolve = bundleCreator.getMethodCreator("resolve", CompletionStage.class, EvalContext.class);
-        String resolveMethodPrefix = bundleCreator.getClassName().contains("/")
-                ? bundleCreator.getClassName().substring(bundleCreator.getClassName().lastIndexOf('/') + 1)
-                : bundleCreator.getClassName();
+    private void implementResolve(String defaultBundleImpl, ClassCreator bundleCreator, Map<String, MessageMethod> keyMap,
+            String resolveMethodPrefix, String generatedClassName) {
 
-        ResultHandle evalContext = resolve.getMethodParam(0);
-        ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
-        ResultHandle ret = resolve.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
-
-        // First handle dynamic messages, i.e. the "message" virtual method
-        BytecodeCreator dynamicMessage = resolve.ifTrue(Gizmo.equals(resolve, resolve.load(MESSAGE), name))
-                .trueBranch();
-        ResultHandle evaluatedMessageKey = dynamicMessage.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE_MESSAGE_KEY,
-                evalContext);
-        ResultHandle paramsReady = dynamicMessage.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
-                evaluatedMessageKey);
-
-        // Define function called when the message key is ready
-        FunctionCreator whenCompleteFun = dynamicMessage.createFunction(BiConsumer.class);
-        dynamicMessage.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
-        BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
-        AssignableResultHandle whenThis = whenComplete
-                .createVariable(DescriptorUtils.extToInt(bundleCreator.getClassName()));
-        whenComplete.assign(whenThis, dynamicMessage.getThis());
-        AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-        whenComplete.assign(whenRet, ret);
-        AssignableResultHandle whenEvalContext = whenComplete.createVariable(EvalContext.class);
-        whenComplete.assign(whenEvalContext, evalContext);
-        BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-        BytecodeCreator success = throwableIsNull.trueBranch();
-
-        // Return if the name is null or NOT_FOUND
-        ResultHandle resultNotFound = success.invokeStaticMethod(Descriptors.NOT_FOUND_FROM_EC, whenEvalContext);
-        BytecodeCreator nameIsNull = success.ifNull(whenComplete.getMethodParam(0)).trueBranch();
-        nameIsNull.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                resultNotFound);
-        nameIsNull.returnValue(null);
-        BytecodeCreator nameNotFound = success.ifTrue(Gizmo.equals(success, whenComplete.getMethodParam(0), resultNotFound))
-                .trueBranch();
-        nameNotFound.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, resultNotFound);
-        nameNotFound.returnValue(null);
-
-        // Evaluate the rest of the params
-        ResultHandle evaluatedMessageParams = success.invokeStaticMethod(
-                Descriptors.EVALUATED_PARAMS_EVALUATE_MESSAGE_PARAMS,
-                whenEvalContext);
-        // Delegate to BundleClassName_resolve_0 (the first group of messages)
-        ResultHandle res0Ret = success.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(bundleCreator.getClassName(), resolveMethodPrefix + "_resolve_0",
-                        CompletableFuture.class, String.class,
-                        EvaluatedParams.class, CompletableFuture.class),
-                whenThis, whenComplete.getMethodParam(0), evaluatedMessageParams, whenRet);
-        BytecodeCreator ret0Null = success.ifNull(res0Ret).trueBranch();
-        ret0Null.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet,
-                resultNotFound);
-        BytecodeCreator failure = throwableIsNull.falseBranch();
-        failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                whenComplete.getMethodParam(1));
-        whenComplete.returnValue(null);
-        // Return from the resolve method
-        dynamicMessage.returnValue(ret);
-
-        // Proceed with generated messages
         // We do group messages to workaround limits of a JVM method body
-        ResultHandle evaluatedParams = resolve.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE, evalContext);
-        final int groupLimit = 300;
+        int groupLimit = 300;
         int groupIndex = 0;
-        int resolveIndex = 0;
-        MethodCreator resolveGroup = null;
-
+        List<List<Entry<String, MessageMethod>>> resolveGroups = new ArrayList<>();
+        List<Entry<String, MessageMethod>> resolveGroup = new ArrayList<>();
         for (Entry<String, MessageMethod> entry : keyMap.entrySet()) {
-            if (resolveGroup == null || groupIndex++ >= groupLimit) {
+            if (groupIndex++ >= groupLimit) {
                 groupIndex = 0;
-                String resolveMethodName = resolveMethodPrefix + "_resolve_" + resolveIndex++;
-                if (resolveGroup != null) {
-                    // Delegate to the next "resolve_x" method
-                    resolveGroup.returnValue(resolveGroup.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(bundleCreator.getClassName(), resolveMethodName, CompletableFuture.class,
-                                    String.class,
-                                    EvaluatedParams.class, CompletableFuture.class),
-                            resolveGroup.getThis(), resolveGroup.getMethodParam(0), resolveGroup.getMethodParam(1),
-                            resolveGroup.getMethodParam(2)));
-                }
-                resolveGroup = bundleCreator.getMethodCreator(resolveMethodName, CompletableFuture.class, String.class,
-                        EvaluatedParams.class, CompletableFuture.class).setModifiers(0);
-                if (resolveIndex == 1) {
-                    ResultHandle resRet = resolve.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(bundleCreator.getClassName(), resolveMethodName, CompletableFuture.class,
-                                    String.class, EvaluatedParams.class, CompletableFuture.class),
-                            resolve.getThis(), name, evaluatedParams, ret);
-                    resolve.ifNotNull(resRet).trueBranch().returnValue(resRet);
-                }
+                resolveGroups.add(resolveGroup);
+                resolveGroup = new ArrayList<>();
+            } else {
+                resolveGroup.add(entry);
             }
-            addMessageMethod(resolveGroup, entry.getKey(), entry.getValue(), resolveGroup.getMethodParam(0),
-                    resolveGroup.getMethodParam(1), resolveGroup.getMethodParam(2), bundleCreator.getClassName());
+        }
+        if (!resolveGroup.isEmpty()) {
+            // Add the last group
+            resolveGroups.add(resolveGroup);
+        }
+        for (ListIterator<List<Entry<String, MessageMethod>>> it = resolveGroups.listIterator(); it.hasNext();) {
+            int idx = it.nextIndex();
+            List<Entry<String, MessageMethod>> group = it.next();
+            String resolveMethodName = resolveMethodPrefix + "_resolve_" + idx;
+
+            bundleCreator.method(resolveMethodName, mc -> {
+                mc.returning(CompletableFuture.class);
+                ParamVar name = mc.parameter("name", String.class);
+                ParamVar evaluatedParams = mc.parameter("evaluatedParams", EvaluatedParams.class);
+                ParamVar ret = mc.parameter("ret", CompletableFuture.class);
+
+                mc.body(bc -> {
+                    LocalVar this_ = bc.localVar("this_", bundleCreator.this_());
+                    for (Entry<String, MessageMethod> entry : group) {
+                        addMessageMethod(bundleCreator, bc, entry.getKey(), entry.getValue(), name, evaluatedParams,
+                                ret, this_);
+                    }
+                    if (it.hasNext()) {
+                        // Delegate to the next "resolve_x" method
+                        bc.return_(bc.invokeVirtual(ClassMethodDesc.of(ClassDesc.of(generatedClassName),
+                                resolveMethodPrefix + "_resolve_" + (idx + 1),
+                                CompletableFuture.class, String.class,
+                                EvaluatedParams.class, CompletableFuture.class),
+                                bundleCreator.this_(), name, evaluatedParams, bundleCreator.this_()));
+                    } else {
+                        // Last group - return null
+                        bc.returnNull();
+                    }
+                });
+            });
         }
 
-        if (resolveGroup != null) {
-            // Last group - return null
-            resolveGroup.returnValue(resolveGroup.loadNull());
-        }
+        bundleCreator.method("resolve", mc -> {
+            mc.returning(CompletionStage.class);
+            ParamVar evalContext = mc.parameter("ec", EvalContext.class);
 
-        if (defaultBundleImpl != null) {
-            resolve.returnValue(resolve.invokeSpecialMethod(
-                    MethodDescriptor.ofMethod(defaultBundleImpl, "resolve", CompletionStage.class, EvalContext.class),
-                    resolve.getThis(), evalContext));
-        } else {
-            resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
-        }
+            mc.body(bc -> {
+                LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
+                LocalVar ret = bc.localVar("ret", bc.new_(CompletableFuture.class));
+
+                // First handle dynamic messages, i.e. the "message" virtual method
+                bc.if_(bc.objEquals(name, Const.of(MESSAGE)), dynamicMessage -> {
+                    Expr evaluatedMessageKey = dynamicMessage.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE_MESSAGE_KEY,
+                            evalContext);
+                    Expr paramsReady = evaluatedMessageKey.field(Descriptors.EVALUATED_PARAMS_STAGE);
+
+                    // Define function called when the message key is ready
+                    Expr fun = dynamicMessage.lambda(BiConsumer.class, lc -> {
+                        Var capturedRet = lc.capture(ret);
+                        Var capturedEvalContext = lc.capture(evalContext);
+                        Var capturedThis = lc.capture("this_", bundleCreator.this_());
+                        ParamVar result = lc.parameter("r", 0);
+                        ParamVar throwable = lc.parameter("t", 1);
+
+                        lc.body(whenComplete -> {
+                            whenComplete.ifElse(whenComplete.isNull(throwable),
+                                    success -> {
+
+                                        // Return if the name is null or NOT_FOUND
+                                        success.ifNull(result, isNull -> {
+                                            isNull.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                                                    isNull.invokeStatic(Descriptors.NOT_FOUND_FROM_EC, capturedEvalContext));
+                                            isNull.return_();
+                                        });
+                                        success.if_(success.invokeStatic(Descriptors.RESULTS_IS_NOT_FOUND, result),
+                                                isNotFound -> {
+                                                    isNotFound.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE,
+                                                            capturedRet, result);
+                                                    isNotFound.return_();
+                                                });
+
+                                        // Evaluate the rest of the params
+                                        LocalVar evaluatedMessageParams = success.localVar("emp", success.invokeStatic(
+                                                Descriptors.EVALUATED_PARAMS_EVALUATE_MESSAGE_PARAMS,
+                                                capturedEvalContext));
+                                        // Delegate to BundleClassName_resolve_0 (the first group of messages)
+                                        Expr res0Ret = success.invokeVirtual(
+                                                ClassMethodDesc.of(ClassDesc.of(generatedClassName),
+                                                        resolveMethodPrefix + "_resolve_0",
+                                                        CompletableFuture.class, String.class,
+                                                        EvaluatedParams.class, CompletableFuture.class),
+                                                capturedThis, result, evaluatedMessageParams, capturedRet);
+
+                                        success.ifNull(res0Ret, resultIsNull -> {
+                                            resultIsNull.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                                                    resultIsNull.invokeStatic(Descriptors.NOT_FOUND_FROM_EC,
+                                                            capturedEvalContext));
+                                        });
+
+                                        success.return_();
+
+                                    }, failure -> {
+                                        failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                                capturedRet,
+                                                throwable);
+                                        failure.return_();
+                                    });
+                        });
+                    });
+                    dynamicMessage.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, fun);
+                    dynamicMessage.return_(ret);
+                });
+
+                Expr evaluatedParams = bc.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE, evalContext);
+                LocalVar ret0 = bc.localVar("ret0", bc.invokeVirtual(
+                        ClassMethodDesc.of(ClassDesc.of(generatedClassName),
+                                resolveMethodPrefix + "_resolve_0",
+                                CompletableFuture.class, String.class,
+                                EvaluatedParams.class, CompletableFuture.class),
+                        bundleCreator.this_(), name, evaluatedParams, ret));
+                bc.ifNotNull(ret0, retNotNull -> retNotNull.return_(ret0));
+
+                // Proceed with generated messages
+                if (defaultBundleImpl != null) {
+                    bc.return_(bc.invokeSpecial(
+                            ClassMethodDesc.of(ClassDesc.of(defaultBundleImpl), "resolve", CompletionStage.class,
+                                    EvalContext.class),
+                            bundleCreator.this_(), evalContext));
+                } else {
+                    bc.return_(bc.invokeStatic(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
+                }
+            });
+        });
+
     }
 
-    private void addMessageMethod(MethodCreator resolve, String key, MessageMethod method, ResultHandle name,
-            ResultHandle evaluatedParams,
-            ResultHandle ret, String bundleClass) {
+    private void addMessageMethod(ClassCreator cc, BlockCreator resolve, String key, MessageMethod method, Var name,
+            Var evaluatedParams, Var ret, Var this_) {
         List<Type> methodParams = method.parameterTypes();
 
-        BytecodeCreator matched = resolve.ifTrue(Gizmo.equals(resolve, resolve.load(key), name))
-                .trueBranch();
-        if (methodParams.isEmpty()) {
-            matched.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, ret,
-                    method.isMessageBundleInterfaceMethod()
-                            ? matched.invokeInterfaceMethod(method.descriptor(), matched.getThis())
-                            : matched.invokeVirtualMethod(method.descriptor(), matched.getThis()));
-            matched.returnValue(ret);
-        } else {
-            // The CompletionStage upon which we invoke whenComplete()
-            ResultHandle paramsReady = matched.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
-                    evaluatedParams);
-
-            FunctionCreator whenCompleteFun = matched.createFunction(BiConsumer.class);
-            matched.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
-
-            BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
-
-            AssignableResultHandle whenThis = whenComplete
-                    .createVariable(DescriptorUtils.extToInt(bundleClass));
-            whenComplete.assign(whenThis, matched.getThis());
-            AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-            whenComplete.assign(whenRet, ret);
-
-            BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-
-            // complete
-            BytecodeCreator success = throwableIsNull.trueBranch();
-
-            ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
-            if (methodParams.size() == 1) {
-                paramsHandle[0] = whenComplete.getMethodParam(0);
+        resolve.if_(resolve.objEquals(name, Const.of(key)), matched -> {
+            if (methodParams.isEmpty()) {
+                matched.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, ret,
+                        method.isMessageBundleInterfaceMethod()
+                                ? matched.invokeInterface(method.descriptor(), this_)
+                                : matched.invokeVirtual(method.descriptor(), this_));
+                matched.return_(ret);
             } else {
-                for (int i = 0; i < methodParams.size(); i++) {
-                    paramsHandle[i] = success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                            evaluatedParams,
-                            success.load(i));
-                }
+                // The CompletionStage upon which we invoke whenComplete()
+                Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
+
+                Expr fun = matched.lambda(BiConsumer.class, lc -> {
+                    Var capturedRet = lc.capture(ret);
+                    Var capturedThis = lc.capture(this_);
+                    Var capturedEvaluatedParams = lc.capture(evaluatedParams);
+                    ParamVar result = lc.parameter("r", 0);
+                    ParamVar throwable = lc.parameter("t", 1);
+
+                    lc.body(whenComplete -> {
+                        whenComplete.ifElse(whenComplete.isNull(throwable),
+                                success -> {
+
+                                    Var[] args = new Var[methodParams.size()];
+                                    if (methodParams.size() == 1) {
+                                        args[0] = result;
+                                    } else {
+                                        for (int i = 0; i < methodParams.size(); i++) {
+                                            args[i] = success.localVar("arg" + i,
+                                                    success.invokeVirtual(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                                            capturedEvaluatedParams,
+                                                            Const.of(i)));
+                                        }
+                                    }
+                                    success.try_(tc -> {
+                                        tc.body(tryBlock -> {
+                                            tryBlock.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                                                    method.isMessageBundleInterfaceMethod()
+                                                            ? tryBlock.invokeInterface(method.descriptor(), capturedThis,
+                                                                    args)
+                                                            : tryBlock.invokeVirtual(method.descriptor(), capturedThis,
+                                                                    args));
+                                        });
+                                        tc.catch_(Throwable.class, "t", (cbc, t) -> {
+                                            cbc.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                                    capturedRet,
+                                                    t);
+                                        });
+                                    });
+
+                                }, failure -> {
+                                    failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, capturedRet,
+                                            throwable);
+                                });
+                        whenComplete.return_();
+                    });
+
+                });
+                matched.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, fun);
+                matched.return_(ret);
             }
-
-            AssignableResultHandle invokeRet = success.createVariable(Object.class);
-            // try
-            TryBlock tryCatch = success.tryBlock();
-            // catch (Throwable e)
-            CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
-            // CompletableFuture.completeExceptionally(Throwable)
-            exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                    exception.getCaughtException());
-
-            tryCatch.assign(invokeRet,
-                    method.isMessageBundleInterfaceMethod()
-                            ? tryCatch.invokeInterfaceMethod(method.descriptor(), whenThis, paramsHandle)
-                            : tryCatch.invokeVirtualMethod(method.descriptor(), whenThis, paramsHandle));
-
-            tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
-            // CompletableFuture.completeExceptionally(Throwable)
-            BytecodeCreator failure = throwableIsNull.falseBranch();
-            failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                    whenComplete.getMethodParam(1));
-            whenComplete.returnValue(null);
-
-            matched.returnValue(ret);
-        }
+        });
     }
 
     private String getKey(MethodInfo method, AnnotationInstance messageAnnotation, AnnotationValue defaultKeyValue) {
@@ -1651,7 +1702,7 @@ public class MessageBundleProcessor {
 
         List<Type> parameterTypes();
 
-        MethodDescriptor descriptor();
+        MethodDesc descriptor();
 
         default boolean isMessageBundleInterfaceMethod() {
             return true;
@@ -1673,17 +1724,17 @@ public class MessageBundleProcessor {
         }
 
         @Override
-        public MethodDescriptor descriptor() {
-            return MethodDescriptor.of(method);
+        public MethodDesc descriptor() {
+            return methodDescOf(method);
         }
 
     }
 
     static class EnumConstantMessageMethod implements MessageMethod {
 
-        final MethodDescriptor descriptor;
+        final MethodDesc descriptor;
 
-        EnumConstantMessageMethod(MethodDescriptor descriptor) {
+        EnumConstantMessageMethod(MethodDesc descriptor) {
             this.descriptor = descriptor;
         }
 
@@ -1693,7 +1744,7 @@ public class MessageBundleProcessor {
         }
 
         @Override
-        public MethodDescriptor descriptor() {
+        public MethodDesc descriptor() {
             return descriptor;
         }
 

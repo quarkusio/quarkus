@@ -80,7 +80,6 @@ public class JacocoProcessor {
                 transformers.produce(
                         new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
                                 .setCacheable(true)
-                                .setEager(true)
                                 .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
                                     @Override
                                     public byte[] apply(String className, byte[] bytes) {
@@ -91,7 +90,16 @@ public class JacocoProcessor {
                                             }
                                             return enhanced;
                                         } catch (IOException e) {
-                                            throw new RuntimeException(e);
+                                            if (!log.isDebugEnabled()) {
+                                                log.warnf(
+                                                        "Unable to instrument class %s with JaCoCo: %s, keeping the original class",
+                                                        className, e.getMessage());
+                                            } else {
+                                                log.warnf(e,
+                                                        "Unable to instrument class %s with JaCoCo, keeping the original class",
+                                                        className);
+                                            }
+                                            return bytes;
                                         }
                                     }
                                 }).build());
@@ -116,7 +124,8 @@ public class JacocoProcessor {
                 addProjectModule(model.getAppArtifact(), config, info, includes, excludes, classes, sources);
             }
             for (ResolvedDependency d : model.getDependencies()) {
-                if (d.isRuntimeCp() && d.isWorkspaceModule()) {
+                // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
+                if (d.isRuntimeCp() && d.getWorkspaceModule() != null) {
                     addProjectModule(d, config, info, includes, excludes, classes, sources);
                 }
             }

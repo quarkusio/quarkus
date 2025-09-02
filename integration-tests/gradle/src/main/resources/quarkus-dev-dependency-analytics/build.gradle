@@ -4,7 +4,7 @@ plugins {
     id 'application'
 }
 
-group 'com.analytics'
+group = 'com.analytics'
 
 repositories {
     mavenLocal {

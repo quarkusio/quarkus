@@ -62,8 +62,8 @@ class DefaultEffectiveModelResolver implements EffectiveModelResolver {
         if (ws != null) {
             final LocalProject project = ws.getProject(coords.getGroupId(), coords.getArtifactId());
             if (project != null && coords.getVersion().equals(project.getVersion())
-                    && project.getModelBuildingResult() != null) {
-                return project.getModelBuildingResult().getEffectiveModel();
+                    && project.getEffectiveModel() != null) {
+                return project.getEffectiveModel();
             }
         }
 

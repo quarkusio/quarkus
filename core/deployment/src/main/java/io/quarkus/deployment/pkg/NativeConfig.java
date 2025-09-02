@@ -43,6 +43,16 @@ public interface NativeConfig {
     Optional<List<String>> additionalBuildArgs();
 
     /**
+     * Comma-separated, additional arguments to pass to the build process.
+     * The arguments are appended to those provided through {@link #additionalBuildArgs()}, as a result they may override those
+     * passed through {@link #additionalBuildArgs()}.
+     * By convention, this is meant to be set on the command-line, while {@link #additionalBuildArgs()} should be preferred for
+     * use in properties files.
+     * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
+     */
+    Optional<List<String>> additionalBuildArgsAppend();
+
+    /**
      * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
      */
     @WithDefault("true")
@@ -324,6 +334,7 @@ public interface NativeConfig {
      * <li><code>jmxserver</code> for JMX server support (experimental)</li>
      * <li><code>nmt</code> for native memory tracking support</li>
      * <li><code>all</code> for all monitoring features</li>
+     * <li><code>none</code> for explicitly turning off all monitoring features</li>
      * </ul>
      */
     Optional<List<MonitoringOption>> monitoring();
@@ -529,6 +540,25 @@ public interface NativeConfig {
     @ConfigGroup
     interface Compression {
         /**
+         * Whether compression should be enabled.
+         */
+        @WithDefault("true")
+        boolean enabled();
+
+        /**
+         * Whether the compression should be executed within a container.
+         */
+        Optional<Boolean> containerBuild();
+
+        /**
+         * The image used for compression. Defaults to {@code quarkus.native.builder-image} if not
+         * set.
+         * <p>
+         * Setting this variable will automatically activate
+         */
+        Optional<String> containerImage();
+
+        /**
          * The compression level in [1, 10].
          * 10 means <em>best</em>.
          * <p>
@@ -561,7 +591,8 @@ public interface NativeConfig {
         JMXSERVER,
         JMXCLIENT,
         NMT,
-        ALL
+        ALL,
+        NONE
     }
 
     enum ImagePullStrategy {

@@ -3,6 +3,7 @@ package io.quarkus.smallrye.health.deployment;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
@@ -13,6 +14,7 @@ import org.eclipse.microprofile.openapi.models.Paths;
 import org.eclipse.microprofile.openapi.models.media.Content;
 import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
+import org.eclipse.microprofile.openapi.models.tags.Tag;
 
 /**
  * Create OpenAPI entries (if configured)
@@ -25,8 +27,7 @@ public class HealthOpenAPIFilter implements OASFilter {
 
     private static final Schema healthResponseSchemaDefinition = OASFactory.createSchema()
             .type(Collections.singletonList(Schema.SchemaType.OBJECT))
-            .properties(Map.ofEntries(
-
+            .properties(new TreeMap<>(Map.ofEntries(
                     Map.entry("status",
                             OASFactory.createSchema()
                                     .type(Collections.singletonList(Schema.SchemaType.STRING))
@@ -36,12 +37,11 @@ public class HealthOpenAPIFilter implements OASFilter {
                             OASFactory.createSchema()
                                     .type(Collections.singletonList(Schema.SchemaType.ARRAY))
                                     .items(OASFactory.createSchema()
-                                            .ref("#/components/schemas/" + HEALTH_CHECK_SCHEMA_NAME)))));
+                                            .ref("#/components/schemas/" + HEALTH_CHECK_SCHEMA_NAME))))));
 
     private static final Schema healthCheckSchemaDefinition = OASFactory.createSchema()
             .type(Collections.singletonList(Schema.SchemaType.OBJECT))
-            .properties(Map.ofEntries(
-
+            .properties(new TreeMap<>(Map.ofEntries(
                     Map.entry("name",
                             OASFactory.createSchema()
                                     .type(Collections.singletonList(Schema.SchemaType.STRING))),
@@ -53,7 +53,7 @@ public class HealthOpenAPIFilter implements OASFilter {
 
                     Map.entry("data",
                             OASFactory.createSchema()
-                                    .type(List.of(Schema.SchemaType.OBJECT, Schema.SchemaType.NULL)))));
+                                    .type(List.of(Schema.SchemaType.OBJECT, Schema.SchemaType.NULL))))));
 
     private final String rootPath;
     private final String livenessPath;
@@ -79,6 +79,11 @@ public class HealthOpenAPIFilter implements OASFilter {
         if (openAPI.getPaths() == null) {
             openAPI.setPaths(OASFactory.createPaths());
         }
+
+        Tag tag = OASFactory.createTag();
+        tag.setName(MICROPROFILE_HEALTH_TAG.get(0));
+        tag.setDescription("Check the health of the application");
+        openAPI.addTag(tag);
 
         final Paths paths = openAPI.getPaths();
 

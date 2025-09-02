@@ -1,7 +1,7 @@
 subprojects {
     apply plugin: 'java-library'
 
-    version '0.0.1-SNAPSHOT'
+    version = '0.0.1-SNAPSHOT'
     repositories {
         mavenLocal {
             content {

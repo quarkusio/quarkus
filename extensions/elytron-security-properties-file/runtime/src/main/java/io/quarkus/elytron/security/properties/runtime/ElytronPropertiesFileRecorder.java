@@ -44,14 +44,23 @@ public class ElytronPropertiesFileRecorder {
 
     private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronPasswordProvider() };
 
+    private final RuntimeValue<MPRealmRuntimeConfig> runtimeConfig;
+    private final SecurityUsersConfig propertiesConfig;
+
+    public ElytronPropertiesFileRecorder(
+            final RuntimeValue<MPRealmRuntimeConfig> runtimeConfig,
+            final SecurityUsersConfig propertiesConfig) {
+        this.runtimeConfig = runtimeConfig;
+        this.propertiesConfig = propertiesConfig;
+    }
+
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
      *
      * @param realm - a {@linkplain LegacyPropertiesSecurityRealm}
-     * @param propertiesConfig - properties config with a realm configuration info
      * @throws Exception
      */
-    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig) throws Exception {
+    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm) throws Exception {
         return new Runnable() {
             @Override
             public void run() {
@@ -110,12 +119,10 @@ public class ElytronPropertiesFileRecorder {
      * Load the embedded user and role information into the {@linkplain SecurityRealm}
      *
      * @param realm - a {@linkplain SimpleMapBackedSecurityRealm}
-     * @param propertiesConfig - properties config with the realm config
      * @throws Exception
      */
-    public Runnable loadEmbeddedRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig,
-            MPRealmRuntimeConfig runtimeConfig)
-            throws Exception {
+    public Runnable loadEmbeddedRealm(RuntimeValue<SecurityRealm> realm) throws Exception {
+        MPRealmRuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
         return new Runnable() {
             @Override
             public void run() {
@@ -174,11 +181,10 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Create a runtime value for a {@linkplain LegacyPropertiesSecurityRealm}
      *
-     * @param propertiesConfig - properties config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
      */
-    public RuntimeValue<SecurityRealm> createRealm(SecurityUsersConfig propertiesConfig) throws Exception {
+    public RuntimeValue<SecurityRealm> createRealm() throws Exception {
         PropertiesRealmConfig config = propertiesConfig.file();
         log.debugf("createRealm, config=%s", config);
 
@@ -198,11 +204,10 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Create a runtime value for a {@linkplain SimpleMapBackedSecurityRealm}
      *
-     * @param propertiesConfig - properties config with the realm config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
      */
-    public RuntimeValue<SecurityRealm> createEmbeddedRealm(SecurityUsersConfig propertiesConfig) {
+    public RuntimeValue<SecurityRealm> createEmbeddedRealm() {
         MPRealmConfig config = propertiesConfig.embedded();
         log.debugf("createRealm, config=%s", config);
 

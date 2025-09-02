@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.process.ProcessBuilder;
 
 @Mojo(name = "run")
 public class RunMojo extends QuarkusBootstrapMojo {
@@ -43,6 +44,10 @@ public class RunMojo extends QuarkusBootstrapMojo {
         // Add the system properties of the plugin to the system properties
         // if and only if they are not already set.
         for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+
             String key = entry.getKey();
             if (System.getProperty(key) == null) {
                 System.setProperty(key, entry.getValue());
@@ -50,12 +55,12 @@ public class RunMojo extends QuarkusBootstrapMojo {
             }
         }
 
-        try (CuratedApplication curatedApplication = bootstrapApplication(LaunchMode.NORMAL,
+        try (CuratedApplication curatedApplication = bootstrapApplication(LaunchMode.RUN,
                 new Consumer<QuarkusBootstrap.Builder>() {
                     @Override
                     public void accept(QuarkusBootstrap.Builder builder) {
                         // we need this for dev services
-                        builder.setMode(QuarkusBootstrap.Mode.TEST);
+                        builder.setMode(QuarkusBootstrap.Mode.RUN);
                     }
                 })) {
             AugmentAction action = curatedApplication.createAugmentor();
@@ -92,18 +97,14 @@ public class RunMojo extends QuarkusBootstrapMojo {
                         getLog().info("Executing \"" + String.join(" ", args) + "\"");
                     }
                     Path workingDirectory = (Path) cmd.get(1);
-                    try {
-                        ProcessBuilder builder = new ProcessBuilder()
-                                .command(args)
-                                .inheritIO();
-                        if (workingDirectory != null) {
-                            builder.directory(workingDirectory.toFile());
-                        }
-                        Process process = builder.start();
-                        int exit = process.waitFor();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    var pb = ProcessBuilder.newBuilder(args.get(0))
+                            .arguments(args.subList(1, args.size()))
+                            .output().inherited()
+                            .error().inherited();
+                    if (workingDirectory != null) {
+                        pb.directory(workingDirectory);
                     }
+                    pb.run();
                 }
             },
                     RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());

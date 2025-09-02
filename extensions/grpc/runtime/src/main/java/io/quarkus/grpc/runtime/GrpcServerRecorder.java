@@ -95,12 +95,18 @@ public class GrpcServerRecorder {
 
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
 
+    private final RuntimeValue<GrpcConfiguration> runtimeConfig;
+
+    public GrpcServerRecorder(final RuntimeValue<GrpcConfiguration> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
     public static List<GrpcServiceDefinition> getServices() {
         return services;
     }
 
-    public void addMainRouterErrorHandlerIfSameServer(RuntimeValue<Router> mainRouter, GrpcConfiguration config) {
-        if (!config.server().useSeparateServer()) {
+    public void addMainRouterErrorHandlerIfSameServer(RuntimeValue<Router> mainRouter) {
+        if (!runtimeConfig.getValue().server().useSeparateServer()) {
             mainRouter.getValue().route().last().failureHandler(new Handler<>() {
 
                 private final Handler<RoutingContext> errorHandler = new QuarkusErrorHandler(LaunchMode.current().isDevOrTest(),
@@ -125,7 +131,6 @@ public class GrpcServerRecorder {
     public void initializeGrpcServer(boolean hasNoBindableServiceBeans, BeanContainer beanContainer,
             RuntimeValue<Vertx> vertxSupplier,
             RuntimeValue<Router> routerSupplier,
-            GrpcConfiguration cfg,
             ShutdownContext shutdown,
             Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
@@ -136,14 +141,17 @@ public class GrpcServerRecorder {
         }
 
         Vertx vertx = vertxSupplier.getValue();
-        GrpcServerConfiguration configuration = cfg.server();
+        GrpcServerConfiguration configuration = runtimeConfig.getValue().server();
         GrpcBuilderProvider<?> provider = GrpcBuilderProvider.findServerBuilderProvider(configuration);
 
         if (configuration.useSeparateServer()) {
             if (provider == null) {
                 LOGGER.warn(
-                        "Using legacy gRPC support, with separate new HTTP server instance. " +
-                                "Switch to single HTTP server instance usage with quarkus.grpc.server.use-separate-server=false property");
+                        """
+                                Using legacy gRPC support with a separate HTTP server instance. This is the current default to maintain compatibility.
+                                You can switch to the new unified HTTP server by setting quarkus.grpc.server.use-separate-server=false
+                                This change is recommended for new applications and will become the default in future versions.
+                                """);
             }
 
             if (launchMode == LaunchMode.DEVELOPMENT) {

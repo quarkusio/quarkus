@@ -1,6 +1,6 @@
 allprojects {
-    group 'org.acme.s'
-    version '1.0-SNAPSHOT'
+    group = 'org.acme.s'
+    version = '1.0-SNAPSHOT'
 
     apply plugin: 'java'
     apply plugin: 'maven-publish'

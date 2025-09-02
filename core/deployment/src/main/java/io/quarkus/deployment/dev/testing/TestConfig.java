@@ -15,12 +15,7 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
 /**
- * Testing
- * <p>
- * This is used currently only to suppress warnings about unknown properties
- * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
- * <p>
- * TODO refactor code to actually use these values
+ * Testing configuration.
  */
 @ConfigMapping(prefix = "quarkus.test")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
@@ -106,45 +101,6 @@ public interface TestConfig {
     Optional<List<String>> excludeEngines();
 
     /**
-     * Disable the testing status/prompt message at the bottom of the console
-     * and log these messages to STDOUT instead.
-     * <p>
-     * Use this option if your terminal does not support ANSI escape sequences.
-     * <p>
-     * This is deprecated, {@literal quarkus.console.basic} should be used instead.
-     */
-    @Deprecated
-    Optional<Boolean> basicConsole();
-
-    /**
-     * Disable color in the testing status and prompt messages.
-     * <p>
-     * Use this option if your terminal does not support color.
-     * <p>
-     * This is deprecated, {@literal quarkus.console.disable-color} should be used instead.
-     */
-    @Deprecated
-    Optional<Boolean> disableColor();
-
-    /**
-     * If test results and status should be displayed in the console.
-     * <p>
-     * If this is false results can still be viewed in the dev console.
-     * <p>
-     * This is deprecated, {@literal quarkus.console.enabled} should be used instead.
-     */
-    @Deprecated
-    Optional<Boolean> console();
-
-    /**
-     * Disables the ability to enter input on the console.
-     * <p>
-     * This is deprecated, {@literal quarkus.console.disable-input} should be used instead.
-     */
-    @Deprecated
-    Optional<Boolean> disableConsoleInput();
-
-    /**
      * Changes tests to use the 'flat' ClassPath used in Quarkus 1.x versions.
      * <p>
      * This means all Quarkus and test classes are loaded in the same ClassLoader,
@@ -156,12 +112,6 @@ public interface TestConfig {
      */
     @WithDefault("false")
     boolean flatClassPath();
-
-    /**
-     * The profile to use when testing the native image
-     */
-    @WithDefault("prod")
-    String nativeImageProfile();
 
     /**
      * The profile to use when testing using {@code @QuarkusIntegrationTest}
@@ -178,6 +128,11 @@ public interface TestConfig {
      * Container related test settings
      */
     Container container();
+
+    /**
+     * RestAssured related test settings
+     */
+    RestAssured restAssured();
 
     /**
      * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
@@ -302,6 +257,14 @@ public interface TestConfig {
          */
         @ConfigDocMapKey("host-path")
         Map<String, String> volumeMounts();
+    }
+
+    interface RestAssured {
+        /**
+         * Enable logging of both the request and the response if REST Assureds test validation fails
+         */
+        @WithDefault("true")
+        boolean enableLoggingOnFailure();
     }
 
     enum Mode {

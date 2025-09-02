@@ -52,6 +52,10 @@
             <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-next-spi</artifactId>
+        </dependency>
 
         <!-- Optional Dependencies -->
         <dependency>
@@ -162,6 +166,10 @@
                     <groupId>com.squareup.okhttp3</groupId>
                     <artifactId>okhttp</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -194,6 +202,10 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-jdbc</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>
@@ -223,6 +235,14 @@
                         <providesIf>
                             <positive>io.quarkus.opentelemetry.deployment.tracing.TracerEnabled</positive>
                             <name>io.quarkus.opentelemetry.tracer</name>
+                        </providesIf>
+                        <providesIf>
+                            <positive>io.quarkus.opentelemetry.deployment.metric.MetricsEnabled</positive>
+                            <name>io.quarkus.opentelemetry.metrics</name>
+                        </providesIf>
+                        <providesIf>
+                            <positive>io.quarkus.opentelemetry.deployment.logging.LogsEnabled</positive>
+                            <name>io.quarkus.opentelemetry.logs</name>
                         </providesIf>
                     </capabilities>
                 </configuration>

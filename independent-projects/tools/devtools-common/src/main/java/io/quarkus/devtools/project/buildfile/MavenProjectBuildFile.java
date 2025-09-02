@@ -121,14 +121,14 @@ public class MavenProjectBuildFile extends BuildFile {
         }
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
                 projectModel, deps, managedDeps, projectProps, projectPom == null ? null : artifactResolver);
-        final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
+        final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder(log).catalog(extensionCatalog)
                 .artifactResolver(artifactResolver).build();
         final JavaVersion javaVersion = resolveJavaVersion(projectProps);
         return QuarkusProject.of(projectDir, extensionCatalog,
                 codestartResourceLoaders, log, extensionManager, javaVersion);
     }
 
-    private static JavaVersion resolveJavaVersion(Properties projectProps) {
+    public static JavaVersion resolveJavaVersion(Properties projectProps) {
         if (projectProps.containsKey("maven.compiler.release")) {
             return new JavaVersion(projectProps.getProperty("maven.compiler.release"));
         }

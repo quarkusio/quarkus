@@ -1,6 +1,7 @@
 package io.quarkus.vertx.web.deployment;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -97,26 +98,17 @@ class HandlerDescriptor {
 
     boolean isPayloadString() {
         Type type = getPayloadType();
-        if (type == null) {
-            return false;
-        }
-        return type.name().equals(io.quarkus.arc.processor.DotNames.STRING);
+        return type != null && type.name().equals(DotName.STRING_NAME);
     }
 
-    boolean isPayloadTypeBuffer() {
+    boolean isPayloadBuffer() {
         Type type = getPayloadType();
-        if (type == null) {
-            return false;
-        }
-        return type.name().equals(DotNames.BUFFER);
+        return type != null && type.name().equals(DotNames.BUFFER);
     }
 
     boolean isPayloadMutinyBuffer() {
         Type type = getPayloadType();
-        if (type == null) {
-            return false;
-        }
-        return type.name().equals(DotNames.MUTINY_BUFFER);
+        return type != null && type.name().equals(DotNames.MUTINY_BUFFER);
     }
 
     boolean isFailureHandler() {

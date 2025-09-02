@@ -704,7 +704,7 @@ The `EventBus` object provides methods to:
 [source, java]
 ----
 // Case 1
-bus.sendAndForget("greeting", name)
+bus.send("greeting", name)
 // Case 2
 bus.publish("greeting", name)
 // Case 3
@@ -730,7 +730,7 @@ Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
 
 === Use codecs
 
-The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses https://vertx.io/docs/vertx-core/java/#_message_codecs[codecs] to _serialize_ and _deserialize_ message objects.
+The link:++https://vertx.io/docs/vertx-core/java/#event_bus++[Vert.x Event Bus] uses link:++https://vertx.io/docs/vertx-core/java/#_message_codecs++[codecs] to _serialize_ and _deserialize_ message objects.
 Quarkus provides a default codec for local delivery.
 This codec is automatically used for return types and message body parameters of local consumers, i.e. methods annotated with `@ConsumeEvent` where `ConsumeEvent#local() == true` (which is the default).
 

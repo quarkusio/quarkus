@@ -1,12 +1,17 @@
 package io.quarkus.registry;
 
+import static io.quarkus.registry.Constants.OFFERING;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
@@ -21,32 +26,61 @@ class RegistryExtensionResolver {
     public static final int VERSION_RECOGNIZED = 1;
     public static final int VERSION_EXCLUSIVE_PROVIDER = 2;
 
+    private static final String DASH_SUPPORT = "-support";
+
+    /**
+     * Returns offering configured by the user in the registry configuration or null, in case
+     * no offering was configured.
+     *
+     * An offering would be the name part of the {@code <name>-support} in the extension metadata.
+     *
+     * @param config registry configuration
+     * @return user configured offering or null
+     */
+    private static String getConfiguredOfferingOrNull(RegistryConfig config) {
+        var offering = config.getExtra().get(OFFERING);
+        if (offering == null) {
+            return null;
+        }
+        if (!(offering instanceof String)) {
+            throw new IllegalArgumentException("Expected a string value for option " + OFFERING + " but got " + offering
+                    + " of type " + offering.getClass().getName());
+        }
+        final String str = offering.toString();
+        return str.isBlank() ? null : str;
+    }
+
     private final RegistryConfig config;
     private final RegistryClient extensionResolver;
-    private final int index;
 
     private final Pattern recognizedQuarkusVersions;
     private final Collection<String> recognizedGroupIds;
+    /**
+     * {@code -support} extension metadata key that corresponds to the user selected offering, can be null
+     */
+    private final String offeringSupportKey;
 
-    RegistryExtensionResolver(RegistryClient extensionResolver,
-            MessageWriter log, int index) throws RegistryResolutionException {
+    RegistryExtensionResolver(RegistryClient extensionResolver, MessageWriter log) throws RegistryResolutionException {
         this.extensionResolver = Objects.requireNonNull(extensionResolver, "Registry extension resolver is null");
         this.config = extensionResolver.resolveRegistryConfig();
-        this.index = index;
 
         final String versionExpr = config.getQuarkusVersions() == null ? null
                 : config.getQuarkusVersions().getRecognizedVersionsExpression();
         recognizedQuarkusVersions = versionExpr == null ? null : Pattern.compile(GlobUtil.toRegexPattern(versionExpr));
         this.recognizedGroupIds = config.getQuarkusVersions() == null ? Collections.emptyList()
                 : config.getQuarkusVersions().getRecognizedGroupIds();
+
+        final String offering = getConfiguredOfferingOrNull(config);
+        if (offering != null) {
+            log.info("Registry " + config.getId() + " is limited to offerings " + offering);
+            this.offeringSupportKey = offering + DASH_SUPPORT;
+        } else {
+            offeringSupportKey = null;
+        }
     }
 
     String getId() {
         return config.getId();
-    }
-
-    int getIndex() {
-        return index;
     }
 
     int checkQuarkusVersion(String quarkusVersion) {
@@ -94,8 +128,38 @@ class RegistryExtensionResolver {
         return extensionResolver.resolveNonPlatformExtensions(quarkusCoreVersion);
     }
 
+    /**
+     * Resolves a platform extension catalog using a given JSON artifact.
+     *
+     * If a user did not configure an offering the the original catalog is returned.
+     *
+     * If an offering was configured, we filter out extensions that are not part of the selected offering
+     * {@link Constants#DEFAULT_REGISTRY_ARTIFACT_VERSION} to the metadata with the corresponding {@code <name>-support}
+     * as its value that will be used by the extension list commands later to display the relevant support scope.
+     *
+     * @param platform either a BOM or a JSON descriptor coordinates
+     * @return extension catalog
+     * @throws RegistryResolutionException in case of a failure
+     */
     ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platform) throws RegistryResolutionException {
-        return extensionResolver.resolvePlatformExtensions(platform);
+        ExtensionCatalog.Mutable catalog = extensionResolver.resolvePlatformExtensions(platform);
+        // if a user didn't select an offering, return the original catalog
+        if (offeringSupportKey == null) {
+            return catalog;
+        }
+        final Collection<Extension> originalCollection = catalog.getExtensions();
+        List<Extension> filteredCollection = new ArrayList<>(originalCollection.size());
+        for (Extension ext : originalCollection) {
+            if (ext.getMetadata().containsKey(offeringSupportKey)) {
+                ext.getMetadata().put(Constants.REGISTRY_USER_SELECTED_SUPPORT_KEY, offeringSupportKey);
+                filteredCollection.add(ext);
+            } else if (ext.getArtifact().getArtifactId().equals("quarkus-core")) {
+                // we need quarkus-core for proper quarkus-bom to become the primary platform when creating projects
+                filteredCollection.add(ext);
+            }
+        }
+        catalog.setExtensions(filteredCollection);
+        return catalog;
     }
 
     void clearCache() throws RegistryResolutionException {

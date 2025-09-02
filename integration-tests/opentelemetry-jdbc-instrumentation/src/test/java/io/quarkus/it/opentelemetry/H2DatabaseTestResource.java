@@ -32,7 +32,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
 
         Map<String, String> properties = new HashMap<>(initProperties);
         properties.put("quarkus.datasource.h2.jdbc.url", "jdbc:h2:tcp://localhost/mem:test");
-        properties.put("quarkus.hibernate-orm.h2.database.generation", "drop-and-create");
+        properties.put("quarkus.hibernate-orm.h2.schema-management.strategy", "drop-and-create");
         properties.put("quarkus.hibernate-orm.postgresql.active", "false");
         properties.put("quarkus.hibernate-orm.oracle.active", "false");
         properties.put("quarkus.hibernate-orm.mariadb.active", "false");

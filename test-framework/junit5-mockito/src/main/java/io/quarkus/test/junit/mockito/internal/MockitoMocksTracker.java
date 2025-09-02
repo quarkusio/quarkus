@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.mockito.Mockito;
+import org.mockito.internal.util.MockUtil;
 
 final class MockitoMocksTracker {
 
@@ -26,8 +27,15 @@ final class MockitoMocksTracker {
 
     static void reset(Object testInstance) {
         for (Mocked m : getMocks(testInstance)) {
+            MockUtil.resetMock(m.mock);
+        }
+    }
+
+    static void clear(Object testInstance) {
+        for (Mocked m : getMocks(testInstance)) {
             Mockito.framework().clearInlineMock(m.mock);
         }
+        TEST_TO_USED_MOCKS.remove(testInstance);
     }
 
     static Optional<Object> currentMock(Object testInstance, Object beanInstance) {
@@ -40,6 +48,17 @@ final class MockitoMocksTracker {
         return Optional.empty();
     }
 
-    record Mocked(Object mock, Object beanInstance) {
+    // don't use a Record because we don't want the auto-generated methods which delegate to the components
+    // see https://github.com/quarkusio/quarkus/issues/47739
+    @SuppressWarnings("ClassCanBeRecord")
+    final static class Mocked {
+
+        final Object mock;
+        final Object beanInstance;
+
+        Mocked(Object mock, Object beanInstance) {
+            this.mock = mock;
+            this.beanInstance = beanInstance;
+        }
     }
 }

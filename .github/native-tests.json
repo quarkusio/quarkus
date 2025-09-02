@@ -32,8 +32,8 @@
         },
         {
             "category": "Data5",
-            "timeout": 70,
-            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema",
+            "timeout": 75,
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb",
             "os-name": "ubuntu-latest"
         },
         {
@@ -51,7 +51,7 @@
         {
             "category": "Build tools and DevTools",
             "timeout": 75,
-            "test-modules": "maven, gradle, devtools-registry-client",
+            "test-modules": "maven, gradle, devtools-registry-client, compose-devservices",
             "os-name": "ubuntu-latest"
         },
         {
@@ -93,7 +93,7 @@
         {
             "category": "Cache",
             "timeout": 75,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
+            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, redis-devservices, infinispan-cache",
             "os-name": "ubuntu-latest"
         },
         {
@@ -111,7 +111,7 @@
         {
             "category": "Misc2",
             "timeout": 75,
-            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some, locales/default, jaxp, jaxb",
+            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, native-image-annotations, locales/all, locales/some, locales/default, jaxp, jaxb",
             "os-name": "ubuntu-latest"
         },
         {

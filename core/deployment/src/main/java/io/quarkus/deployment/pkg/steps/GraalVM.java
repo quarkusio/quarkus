@@ -28,7 +28,6 @@ public final class GraalVM {
         private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.]+))?";
         private static final String VSTR_FORMAT = VNUM + PRE + BUILD + OPT;
 
-        private static final String VNUM_GROUP = "VNUM";
         private static final String VENDOR_VERSION_GROUP = "VENDOR";
         private static final String BUILD_INFO_GROUP = "BUILDINFO";
 
@@ -67,7 +66,7 @@ public final class GraalVM {
 
                 String vendorVersion = secondMatcher.group(VENDOR_VERSION_GROUP);
 
-                String graalVersion = graalVersion(javaVersion, v.feature());
+                String graalVersion = graalVersion(javaVersion, v);
                 if (vendorVersion.contains("-dev")) {
                     graalVersion = graalVersion + "-dev";
                 }
@@ -137,7 +136,7 @@ public final class GraalVM {
             return null;
         }
 
-        private static String graalVersion(String buildInfo, int jdkFeature) {
+        private static String graalVersion(String buildInfo, Runtime.Version v) {
             if (buildInfo == null) {
                 return null;
             }
@@ -152,7 +151,10 @@ public final class GraalVM {
             if (versMatcher.find()) {
                 return matchVersion(version);
             } else {
-                return Version.GRAAL_MAPPING.get(Integer.toString(jdkFeature));
+                // Only versions from JDK 22 to JDK 25 had GraalVM version mappings.
+                // Use the JDK version triplet for JDK N where N > 25.
+                String fullJDKVersion = String.format("%d.%d.%d", v.feature(), v.interim(), v.update());
+                return Version.GRAAL_MAPPING.getOrDefault(Integer.toString(v.feature()), fullJDKVersion);
             }
         }
 
@@ -170,20 +172,6 @@ public final class GraalVM {
         // Get access to GRAAL_MAPPING without making it public
         private static final Map<String, String> GRAAL_MAPPING = io.quarkus.runtime.graal.GraalVM.Version.GRAAL_MAPPING;
 
-        /**
-         * JDK version used with native-image tool:
-         * e.g. JDK 17.0.1 is Feature version 17, Update version 1.
-         * * Feature: e.g. 11 as in JDK 11, JDK 17, JDK 18 etc.
-         * * Interim: 0 so far for the JDK versions we care about, not used here
-         * * Update: quarterly updates, e.g. 13 as in JDK 11.0.13.
-         * * Patch: emergency release, critical patch, not used here
-         */
-        private static final Pattern OLD_VERS_PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?" +
-                        "(\\(Java Version (?<javaversion>(?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)\\))?$");
-
-        static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
-        static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
@@ -275,43 +263,14 @@ public final class GraalVM {
                     .toList();
 
             if (lines.size() == 3) {
-                // Attempt to parse the new 3-line version scheme first.
                 Version parsedVersion = VersionParseHelper.parse(lines);
                 if (parsedVersion != VersionParseHelper.UNKNOWN_VERSION) {
                     return parsedVersion;
-                }
-            } else if (lines.size() == 1) {
-                // Old, single line version parsing logic
-                final String line = lines.get(0);
-                final Matcher oldVersMatcher = OLD_VERS_PATTERN.matcher(line);
-                if (oldVersMatcher.find()) {
-                    // GraalVM/Mandrel old, single line, version scheme:
-                    final String version = oldVersMatcher.group(VersionParseHelper.VERSION_GROUP);
-                    final String distro = oldVersMatcher.group("distro");
-                    String javaVersion = oldVersMatcher.group("javaversion");
-                    if (javaVersion == null) {
-                        if (version.startsWith("19")) {
-                            javaVersion = "11"; // Fallback to JDK 11 for GraalVM 19.x
-                        } else {
-                            throw new IllegalArgumentException(
-                                    "Cannot parse version from output: \n" + stringOutput);
-                        }
-                    }
-
-                    return new Version(
-                            line,
-                            version,
-                            Runtime.Version.parse(javaVersion),
-                            isMandrel(distro) ? Distribution.MANDREL : Distribution.GRAALVM);
                 }
             }
 
             throw new IllegalArgumentException(
                     "Cannot parse version from output: \n" + stringOutput);
-        }
-
-        private static boolean isMandrel(String s) {
-            return s != null && s.contains("Mandrel Distribution");
         }
 
         public boolean isJava17() {

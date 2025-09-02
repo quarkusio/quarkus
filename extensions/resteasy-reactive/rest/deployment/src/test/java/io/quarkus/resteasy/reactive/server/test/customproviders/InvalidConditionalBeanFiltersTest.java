@@ -1,7 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.customproviders;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.Supplier;
 

@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfigBuilder;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.WithDefault;
 
 public interface OidcClientConfig extends OidcClientCommonConfig {
@@ -31,6 +31,11 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
      * List of access token scopes
      */
     Optional<List<String>> scopes();
+
+    /**
+     * List of access token audiences
+     */
+    Optional<List<String>> audience();
 
     /**
      * Refresh token time skew.
@@ -174,17 +179,22 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Map<String, String> headers();
 
     /**
+     * Token refresh interval.
+     * By default, OIDC client refreshes the token during the current request, when it detects that it has expired,
+     * or nearly expired if the {@link #refreshTokenTimeSkew()} is configured.
+     * But, when this property is configured, OIDC client can refresh the token asynchronously in the configured interval.
+     * This property is only effective with OIDC client filters and other {@link AbstractTokensProducer} extensions,
+     * but not when you use the {@link OidcClient#getTokens()} API directly.
+     */
+    Optional<Duration> refreshInterval();
+
+    /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
      *
      * @return OidcClientConfigBuilder builder
      */
     static OidcClientConfigBuilder builder() {
-        var clientsConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(OidcClientsConfig.class)
-                .build()
-                .getConfigMapping(OidcClientsConfig.class);
-        return builder(OidcClientsConfig.getDefaultClient(clientsConfig));
+        return new OidcClientConfigBuilder();
     }
 
     /**

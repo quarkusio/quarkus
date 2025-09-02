@@ -18,6 +18,12 @@ export class QwcCacheCaches extends LitElement {
 
     // Component style
     static styles = css`
+        .datatable {
+            height: 100%;
+        }
+        .caches {
+            height: 100%;
+        }
         .button {
             background-color: transparent;
             cursor: pointer;
@@ -74,6 +80,7 @@ export class QwcCacheCaches extends LitElement {
     _renderCacheTable() {
         let caches = [...this._caches.values()];
         return html`
+            <div class="caches">
                 <vaadin-grid .items="${caches}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
                                         header="Name"
@@ -90,11 +97,12 @@ export class QwcCacheCaches extends LitElement {
                                         ${columnBodyRenderer(this._actionRenderer, [])}
                                         resizable>
                     </vaadin-grid-column>
-                </vaadin-grid>`;
+                </vaadin-grid>
+            </div>`;
     }
     
     _renderCacheKeys(){
-        return html`<qwc-cache-keys 
+        return html`<qwc-cache-keys extensionName="${this.jsonRpc.getExtensionName()}"
                         cacheName="${this._selectedCache.name}"
                         @cache-keys-back=${this._showCacheTable}></qwc-cache-keys>`;
     }

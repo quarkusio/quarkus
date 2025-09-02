@@ -28,8 +28,8 @@ public class NodeResolveTraceLoggingTest {
         assertEquals("Hello world!", engine.parse("Hello {name}!", null, "hello").data("name", "world").render());
         List<LogRecord> records = handler.records;
         assertEquals(2, records.size());
-        assertEquals("Resolve {name} started: template [hello] line 1", records.get(0).getMessage());
-        assertEquals("Resolve {name} completed: template [hello] line 1", records.get(1).getMessage());
+        assertEquals("Resolve {name} started: template [hello:1]", records.get(0).getMessage());
+        assertEquals("Resolve {name} completed: template [hello:1]", records.get(1).getMessage());
         records.clear();
 
         try {
@@ -38,13 +38,13 @@ public class NodeResolveTraceLoggingTest {
         } catch (TemplateException expected) {
         }
         assertEquals(1, records.size());
-        assertEquals("Resolve {foo} started: template [foo] line 1", records.get(0).getMessage());
+        assertEquals("Resolve {foo} started: template [foo:1]", records.get(0).getMessage());
         records.clear();
 
         assertEquals("Hello world!", engine.parse("Hello {#if true}world{/if}!", null, "helloIf").render());
         assertEquals(2, records.size());
-        assertEquals("Resolve {#if} started: template [helloIf] line 1", records.get(0).getMessage());
-        assertEquals("Resolve {#if} completed: template [helloIf] line 1", records.get(1).getMessage());
+        assertEquals("Resolve {#if} started: template [helloIf:1]", records.get(0).getMessage());
+        assertEquals("Resolve {#if} completed: template [helloIf:1]", records.get(1).getMessage());
         records.clear();
 
         try {
@@ -53,7 +53,7 @@ public class NodeResolveTraceLoggingTest {
         } catch (TemplateException expected) {
         }
         assertEquals(1, records.size());
-        assertEquals("Resolve {#if} started: template [fooIf] line 1", records.get(0).getMessage());
+        assertEquals("Resolve {#if} started: template [fooIf:1]", records.get(0).getMessage());
         records.clear();
 
         try {
@@ -62,8 +62,8 @@ public class NodeResolveTraceLoggingTest {
         } catch (TemplateException expected) {
         }
         assertEquals(2, records.size());
-        assertEquals("Resolve {#if} started: template [fooIf] line 1", records.get(0).getMessage());
-        assertEquals("Resolve {foo} started: template [fooIf] line 1", records.get(1).getMessage());
+        assertEquals("Resolve {#if} started: template [fooIf:1]", records.get(0).getMessage());
+        assertEquals("Resolve {foo} started: template [fooIf:1]", records.get(1).getMessage());
         records.clear();
 
         setLevel(root, previousLevel);

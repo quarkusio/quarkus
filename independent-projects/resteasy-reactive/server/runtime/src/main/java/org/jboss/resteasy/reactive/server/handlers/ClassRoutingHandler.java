@@ -66,6 +66,9 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 mapper = mappers.get(null);
             }
             if (mapper == null) {
+                if (requestContext.restartWithNextInitialMatch()) {
+                    return;
+                }
                 // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
                 String remaining = getRemaining(requestContext);
                 for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
@@ -89,6 +92,9 @@ public class ClassRoutingHandler implements ServerRestHandler {
             }
 
             if (target == null) {
+                if (requestContext.restartWithNextInitialMatch()) {
+                    return;
+                }
                 // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
                 for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : mappers.entrySet()) {
                     if (entry.getKey() == null) {

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +79,85 @@ class BlockingServerInterceptorTest {
         } finally {
             context.detach(previous);
         }
+    }
+
+    @Test
+    void testGrpcMethodMappingWithReservedKeywords() {
+        List<String> reservedKeywords = List.of(
+                "abstract",
+                "assert",
+                "boolean",
+                "break",
+                "byte",
+                "case",
+                "catch",
+                "char",
+                "class",
+                "const",
+                "continue",
+                "default",
+                "do",
+                "double",
+                "else",
+                "enum",
+                "extends",
+                "final",
+                "finally",
+                "float",
+                "for",
+                "goto",
+                "if",
+                "implements",
+                "import",
+                "instanceof",
+                "int",
+                "interface",
+                "long",
+                "native",
+                "new",
+                "package",
+                "private",
+                "protected",
+                "public",
+                "return",
+                "short",
+                "static",
+                "strictfp",
+                "super",
+                "switch",
+                "synchronized",
+                "this",
+                "throw",
+                "throws",
+                "transient",
+                "try",
+                "void",
+                "volatile",
+                "while",
+                "true",
+                "false");
+
+        List<String> javaMethodNames = reservedKeywords.stream().map(r -> r + "_").toList();
+        BlockingServerInterceptor interceptor = new BlockingServerInterceptor(vertx,
+                javaMethodNames, javaMethodNames, null, false) {
+        };
+
+        reservedKeywords
+                .forEach(reservedKeyword -> assertThat(interceptor.apply("my-service/" + reservedKeyword)).isTrue());
+        reservedKeywords
+                .forEach(reservedKeyword -> assertThat(interceptor.applyVirtual("my-service/" + reservedKeyword)).isTrue());
+    }
+
+    @Test
+    void testGrpcMethodMappingWithUnderscores() {
+
+        String javaMethodName = "javabeanspec";
+        BlockingServerInterceptor interceptor = new BlockingServerInterceptor(vertx,
+                Collections.singletonList(javaMethodName), Collections.singletonList(javaMethodName), null, false) {
+        };
+
+        assertThat(interceptor.apply("my-service/J_Ava_BeanSpec")).isTrue();
+        assertThat(interceptor.applyVirtual("my-service/J_Ava_BeanSpec")).isTrue();
     }
 
     static class BlockingServerCallHandler implements ServerCallHandler {

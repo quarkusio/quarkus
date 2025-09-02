@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class {resource.class-name}Test {
 
     @Test
-    def testHelloEndpoint() = {
+    def testHelloEndpoint(): Unit = {
         given()
           .`when`().get("{resource.path}")
           .then()

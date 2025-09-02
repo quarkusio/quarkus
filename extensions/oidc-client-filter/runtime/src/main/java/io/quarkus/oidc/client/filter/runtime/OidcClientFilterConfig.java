@@ -22,4 +22,12 @@ public interface OidcClientFilterConfig {
      * individual MP RestClient with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
      */
     Optional<String> clientName();
+
+    /**
+     * If Quarkus should refresh the access token after the MP REST client request results in 401 Unauthorized error.
+     * The refresh can be useful when the access token can be revoked by other services while the access token
+     * still appears valid locally.
+     */
+    @WithDefault("false")
+    boolean refreshOnUnauthorized();
 }

@@ -6,6 +6,8 @@ import java.net.URLEncoder;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.websockets.next.UserData.TypedKey;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
@@ -62,6 +64,15 @@ public interface WebSocketConnector<CLIENT> {
     }
 
     /**
+     * Set the name of the {@link TlsConfiguration}.
+     *
+     * @param tlsConfigurationName
+     * @return self
+     * @see io.quarkus.tls.TlsConfigurationRegistry#get(String)
+     */
+    WebSocketConnector<CLIENT> tlsConfigurationName(String tlsConfigurationName);
+
+    /**
      * Set the path param.
      * <p>
      * The value is encoded using {@link URLEncoder#encode(String, java.nio.charset.Charset)} before it's used to build the
@@ -93,6 +104,18 @@ public interface WebSocketConnector<CLIENT> {
      * @return self
      */
     WebSocketConnector<CLIENT> addSubprotocol(String value);
+
+    /**
+     * Add a value to the connection user data.
+     *
+     * @param key
+     * @param value
+     * @param <VALUE>
+     * @return self
+     * @see UserData#put(TypedKey, Object)
+     * @see WebSocketClientConnection#userData()
+     */
+    <VALUE> WebSocketConnector<CLIENT> userData(TypedKey<VALUE> key, VALUE value);
 
     /**
      *

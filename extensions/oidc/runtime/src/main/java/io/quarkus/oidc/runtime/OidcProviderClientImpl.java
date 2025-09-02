@@ -277,8 +277,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
         // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
         // However this period of time can be set to unpredictable value.
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
         return resp.statusCode() == 503 ? false : true;
     }
 
@@ -345,7 +344,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
 
         OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer).sendBuffer(buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer)
+                .sendBuffer(OidcCommonUtils.getRequestBuffer(requestProps, buffer))
                 .onFailure(SocketException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount()).onFailure().transform(Throwable::getCause);
@@ -364,8 +364,9 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             tokenExpiresIn = tokenExpiresInObj instanceof Number ? ((Number) tokenExpiresInObj).longValue()
                     : Long.parseLong(tokenExpiresInObj.toString());
         }
+        final String accessTokenScope = json.getString(OidcConstants.TOKEN_SCOPE);
 
-        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, tokenExpiresIn);
+        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, tokenExpiresIn, accessTokenScope);
     }
 
     private UserInfoResponse getUserInfo(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp) {
@@ -380,8 +381,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private JsonObject getJsonObject(OidcRequestContextProperties requestProps, String requestUri, HttpResponse<Buffer> resp,
             OidcEndpoint.Type endpoint) {
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, endpoint);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, endpoint);
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
             return buffer.toJsonObject();
@@ -394,8 +394,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     private String getString(final OidcRequestContextProperties requestProps, String requestUri, HttpResponse<Buffer> resp,
             OidcEndpoint.Type endpoint) {
-        Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, endpoint);
+        Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, endpoint);
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsString());
             return buffer.toString();

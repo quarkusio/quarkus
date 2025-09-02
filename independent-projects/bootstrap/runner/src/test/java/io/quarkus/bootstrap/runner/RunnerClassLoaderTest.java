@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.runner;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -96,6 +97,27 @@ public class RunnerClassLoaderTest {
         }
 
         assertTrue(exceptionsInThreads.isEmpty(), "Exceptions in threads: " + exceptionsInThreads);
+    }
+
+    @Test
+    public void testUrlWithTrailingSlash() {
+        ClassLoadingResource[] classLoadingResources = new ClassLoadingResource[] {
+                createProjectJarResource("simple-project-1.0.jar") };
+
+        Map<String, ClassLoadingResource[]> resourceDirectoryMap = Map.of(
+                "org", classLoadingResources,
+                "org/simple", classLoadingResources);
+
+        RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap,
+                Collections.emptySet(), Collections.emptySet(),
+                Collections.emptyList(), Collections.emptyMap());
+
+        assertThat(runnerClassLoader.findResource("org").toString()).endsWith("/org");
+        assertThat(runnerClassLoader.findResource("org/").toString()).endsWith("/org/");
+        assertThat(runnerClassLoader.findResource("org/simple").toString()).endsWith("/org/simple");
+        assertThat(runnerClassLoader.findResource("org/simple/").toString()).endsWith("/org/simple/");
+        assertThat(runnerClassLoader.findResource("org/simple/SimplePojo1.class").toString())
+                .endsWith("/org/simple/SimplePojo1.class");
     }
 
     private static JarResource createProjectJarResource(String jarName) {

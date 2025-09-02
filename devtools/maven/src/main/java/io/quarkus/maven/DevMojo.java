@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -327,6 +326,14 @@ public class DevMojo extends AbstractMojo {
     private boolean noDeps = false;
 
     /**
+     * Optional list of files to watch for changes that trigger a hot reload in dev mode.
+     * This is useful for extensions developers that can set this property to their extension's
+     * artifacts in their local repository.
+     */
+    @Parameter(property = "watchedFiles", required = false)
+    private List<String> watchedFiles = List.of();
+
+    /**
      * Additional parameters to pass to javac when recompiling changed
      * source files.
      */
@@ -541,6 +548,7 @@ public class DevMojo extends AbstractMojo {
         try {
             DevModeRunner runner = new DevModeRunner(bootstrapId);
             Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
+            Map<Path, Long> additionalWatchedFiles = readAdditionaWatchedFilesTimestampts(watchedFiles);
             runner.run();
             long nextCheck = System.currentTimeMillis() + 100;
             for (;;) {
@@ -557,16 +565,12 @@ public class DevMojo extends AbstractMojo {
                         }
                         return;
                     }
-                    final Set<Path> changed = new HashSet<>();
-                    for (Map.Entry<Path, Long> e : pomFiles.entrySet()) {
-                        long t = Files.getLastModifiedTime(e.getKey()).toMillis();
-                        if (t > e.getValue()) {
-                            changed.add(e.getKey());
-                            pomFiles.put(e.getKey(), t);
-                        }
-                    }
-                    if (!changed.isEmpty()) {
-                        getLog().info("Changes detected to " + changed + ", restarting dev mode");
+                    // we need to keep POM files changes separated for reactor distinctions
+                    List<String> changedPoms = collectChangeFilesFrom(pomFiles);
+                    List<String> changedFiles = collectChangeFilesFrom(additionalWatchedFiles);
+                    changedFiles.addAll(changedPoms);
+                    if (!changedFiles.isEmpty()) {
+                        logChanges(changedFiles);
 
                         // stop the runner before we build the new one as the debug port being free
                         // is tested when building the runner
@@ -574,10 +578,10 @@ public class DevMojo extends AbstractMojo {
 
                         final DevModeRunner newRunner;
                         try {
-                            bootstrapId = handleAutoCompile();
+                            bootstrapId = handleAutoCompile(changedPoms);
                             newRunner = new DevModeRunner(runner.commandLine.getDebugPort(), bootstrapId);
                         } catch (Exception e) {
-                            getLog().info("Could not load changed pom.xml file, changes not applied", e);
+                            getLog().info("Could not load changedPoms pom.xml file, changes not applied", e);
                             continue;
                         }
                         newRunner.run();
@@ -588,6 +592,28 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    private List<String> collectChangeFilesFrom(Map<Path, Long> paths) throws IOException {
+        // unless it's a git or some other command, there won't be many files modified in 100 milliseconds
+        List<String> changedFiles = new ArrayList<>(1);
+        for (Map.Entry<Path, Long> e : paths.entrySet()) {
+            long t = Files.getLastModifiedTime(e.getKey()).toMillis();
+            if (t > e.getValue()) {
+                changedFiles.add(e.getKey().toString());
+                paths.put(e.getKey(), t);
+            }
+        }
+        return changedFiles;
+    }
+
+    private void logChanges(List<String> changedFiles) {
+        final StringBuilder sb = new StringBuilder().append("Restarting dev mode following changes in ");
+        sb.append(changedFiles.get(0));
+        for (int i = 1; i < changedFiles.size(); ++i) {
+            sb.append(", ").append(changedFiles.get(i));
+        }
+        getLog().info(sb.toString());
     }
 
     /**
@@ -649,7 +675,18 @@ public class DevMojo extends AbstractMojo {
     }
 
     private String handleAutoCompile() throws MojoExecutionException {
+        return handleAutoCompile(List.of());
+    }
 
+    /**
+     * Invokes Maven project goals that are meant to be executed before quarkus:dev,
+     * unless they have already been executed.
+     *
+     * @param reloadPoms a list of POM files that should be reloaded from disk instead of read from the reactor
+     * @return bootstrap id
+     * @throws MojoExecutionException in case of an error
+     */
+    private String handleAutoCompile(List<String> reloadPoms) throws MojoExecutionException {
         List<String> goals = session.getGoals();
         // check for default goal(s) if none were specified explicitly,
         // see also org.apache.maven.lifecycle.internal.DefaultLifecycleTaskSegmentCalculator
@@ -761,10 +798,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        final Map<String, String> quarkusGoalParams = Map.of(
-                "mode", LaunchMode.DEVELOPMENT.name(),
-                QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false",
-                "bootstrapId", bootstrapId);
+        Map<String, String> quarkusGoalParams = null;
         for (int phaseIndex = latestHandledPhaseIndex + 1; phaseIndex < PRE_DEV_MODE_PHASES.size(); ++phaseIndex) {
             var executions = phaseExecutions.get(PRE_DEV_MODE_PHASES.get(phaseIndex));
             if (executions == null) {
@@ -774,6 +808,9 @@ public class DevMojo extends AbstractMojo {
                 var executedGoals = executedPluginGoals.getOrDefault(pe.plugin.getId(), List.of());
                 for (String goal : pe.execution.getGoals()) {
                     if (!executedGoals.contains(goal)) {
+                        if (quarkusGoalParams == null) {
+                            quarkusGoalParams = getQuarkusGoalParams(bootstrapId, reloadPoms);
+                        }
                         try {
                             executeGoal(pe, goal,
                                     pe.getPluginId().equals(quarkusPluginId) ? quarkusGoalParams : Map.of());
@@ -791,6 +828,35 @@ public class DevMojo extends AbstractMojo {
             }
         }
         return bootstrapId;
+    }
+
+    /**
+     * Returns a map of parameters for the Quarkus plugin goals to be invoked.
+     *
+     * @param bootstrapId bootstrap id
+     * @param reloadPoms POM files to be reloaded from disk instead of taken from the reactor
+     * @return map of parameters for the Quarkus plugin goals
+     */
+    private Map<String, String> getQuarkusGoalParams(String bootstrapId, List<String> reloadPoms) {
+        final Map<String, String> result = new HashMap<>(4);
+        result.put(QuarkusBootstrapMojo.MODE_PARAM, getLaunchModeClasspath().name());
+        result.put(QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP_PARAM, "false");
+        result.put(QuarkusBootstrapMojo.BOOTSTRAP_ID_PARAM, bootstrapId);
+        if (reloadPoms != null && !reloadPoms.isEmpty()) {
+            String reloadPomsStr;
+            if (reloadPoms.size() == 1) {
+                reloadPomsStr = reloadPoms.get(0);
+            } else {
+                final StringBuilder sb = new StringBuilder();
+                sb.append(reloadPoms.get(0));
+                for (int i = 1; i < reloadPoms.size(); ++i) {
+                    sb.append(",").append(reloadPoms.get(i));
+                }
+                reloadPomsStr = sb.toString();
+            }
+            result.put(QuarkusBootstrapMojo.RELOAD_POMS_PARAM, reloadPomsStr);
+        }
+        return result;
     }
 
     private String getCurrentGoal() {
@@ -1004,7 +1070,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        if ((Xpp3Dom) plugin.getConfiguration() != null) {
+        if (plugin.getConfiguration() != null) {
             mergedConfig = mergedConfig == null ? (Xpp3Dom) plugin.getConfiguration()
                     : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) plugin.getConfiguration(), true);
         }
@@ -1080,6 +1146,15 @@ public class DevMojo extends AbstractMojo {
         Map<Path, Long> ret = new HashMap<>();
         for (Path i : runner.pomFiles()) {
             ret.put(i, Files.getLastModifiedTime(i).toMillis());
+        }
+        return ret;
+    }
+
+    private Map<Path, Long> readAdditionaWatchedFilesTimestampts(List<String> watchedFiles) throws IOException {
+        Map<Path, Long> ret = new HashMap<>();
+        for (String file : watchedFiles) {
+            Path p = Path.of(file);
+            ret.put(p, Files.getLastModifiedTime(p).toMillis());
         }
         return ret;
     }
@@ -1300,17 +1375,15 @@ public class DevMojo extends AbstractMojo {
             process = processBuilder.start();
 
             //https://github.com/quarkusio/quarkus/issues/232
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    process.destroy();
-                    try {
-                        process.waitFor();
-                    } catch (InterruptedException e) {
-                        getLog().warn("Unable to properly wait for dev-mode end", e);
-                    }
-                }
-            }, "Development Mode Shutdown Hook"));
+            Runtime.getRuntime().addShutdownHook(new Thread(this::safeStop, "Development Mode Shutdown Hook"));
+        }
+
+        private void safeStop() {
+            try {
+                stop();
+            } catch (InterruptedException e) {
+                getLog().warn("Unable to properly wait for dev-mode end", e);
+            }
         }
 
         void stop() throws InterruptedException {
@@ -1467,12 +1540,12 @@ public class DevMojo extends AbstractMojo {
                     .setRootProjectDir(rootProjectDir);
 
             // There are a couple of reasons we don't want to use the original Maven session:
-            // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;
+            // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync anymore with the effective POM;
             // 2) in case there is a local module that has a snapshot version, which is also available in a remote snapshot repository,
             // the Maven resolver will be checking for newer snapshots in the remote repository and might end up resolving the artifact from there.
             final BootstrapMavenContext mvnCtx = workspaceProvider.createMavenContext(mvnConfig);
             appModel = new BootstrapAppModelResolver(new MavenArtifactResolver(mvnCtx))
-                    .setDevMode(true)
+                    .setDevMode(getLaunchModeClasspath().isDevOrTest())
                     .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))
                     .setCollectReloadableDependencies(!noDeps)
                     .setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(project.getProperties()))
@@ -1557,9 +1630,13 @@ public class DevMojo extends AbstractMojo {
             jvmArgs = buf.toString();
         }
         if (jvmArgs != null) {
-            builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
+            final String[] arr = CommandLineUtils.translateCommandline(jvmArgs);
+            final List<String> list = new ArrayList<>(arr.length);
+            for (var s : arr) {
+                list.add(s.trim());
+            }
+            builder.jvmArgs(list);
         }
-
     }
 
     private void copySurefireVariables() {

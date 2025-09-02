@@ -5,12 +5,15 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -38,6 +41,13 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
     public static final String VALIDATE_EXTENSION_TASK_NAME = "validateExtension";
 
     public static final String QUARKUS_ANNOTATION_PROCESSOR = "io.quarkus:quarkus-extension-processor";
+
+    TaskDependencyFactory taskDepFactory;
+
+    @Inject
+    public QuarkusExtensionPlugin(TaskDependencyFactory taskDepFactory) {
+        this.taskDepFactory = taskDepFactory;
+    }
 
     @Override
     public void apply(Project project) {
@@ -93,7 +103,8 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                     test.useJUnitPlatform();
                     test.doFirst(task -> {
                         final Map<String, Object> props = test.getSystemProperties();
-                        final ApplicationModel appModel = ToolingUtils.create(deploymentProject, LaunchMode.TEST);
+                        final ApplicationModel appModel = ToolingUtils.create(deploymentProject, LaunchMode.TEST,
+                                taskDepFactory);
                         try {
                             final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
                             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
@@ -102,7 +113,12 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                         }
                     });
                 });
-                exportDeploymentClasspath(deploymentProject);
+                if (ApplicationDeploymentClasspathBuilder.isDisableComponentVariants(project)) {
+                    // This seems to override the deployment configuration that otherwise would be created
+                    // by the ApplicationDeploymentClasspathBuilder, which will not work
+                    // especially for the component variant-based approach.
+                    exportDeploymentClasspath(deploymentProject);
+                }
             }
         });
     }
@@ -111,10 +127,10 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         DeploymentClasspathBuilder deploymentClasspathBuilder = new DeploymentClasspathBuilder(project);
         project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((dependencies) -> deploymentClasspathBuilder
-                        .exportDeploymentClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+                        .exportDeploymentClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, LaunchMode.NORMAL));
         project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((testDependencies) -> deploymentClasspathBuilder
-                        .exportDeploymentClasspath(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
+                        .exportDeploymentClasspath(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, LaunchMode.TEST));
 
     }
 

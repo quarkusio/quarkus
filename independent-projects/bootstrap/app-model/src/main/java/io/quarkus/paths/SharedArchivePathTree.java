@@ -60,11 +60,11 @@ class SharedArchivePathTree extends ArchivePathTree {
             }
         }
         try {
-            this.lastOpen = new SharedOpenArchivePathTree(openFs());
+            lastOpen = this.lastOpen = new SharedOpenArchivePathTree(openFs());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return new CallerOpenPathTree(this.lastOpen);
+        return new CallerOpenPathTree(lastOpen);
     }
 
     private class SharedOpenArchivePathTree extends OpenArchivePathTree {

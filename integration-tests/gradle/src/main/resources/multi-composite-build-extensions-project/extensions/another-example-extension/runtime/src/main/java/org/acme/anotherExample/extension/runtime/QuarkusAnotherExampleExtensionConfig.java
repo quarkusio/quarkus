@@ -1,16 +1,16 @@
 package org.acme.anotherExample.extension.runtime;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = "anotherExample.extension")
-public class QuarkusAnotherExampleExtensionConfig {
-
+@ConfigMapping(prefix = "quarkus.another-extension.extension")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface QuarkusAnotherExampleExtensionConfig {
     /**
      * A Simple example flag
      */
-    @ConfigItem(name = "enabled", defaultValue = "false")
-    public boolean enabled;
-
+    @WithDefault("false")
+    boolean enabled();
 }

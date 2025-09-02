@@ -20,7 +20,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -51,7 +51,7 @@ import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class,
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class,
         ObservabilityDevServiceProcessor.IsEnabled.class })
 class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
@@ -127,7 +127,9 @@ class ObservabilityDevServiceProcessor {
                     new ExtensionsCatalog(
                             QuarkusClassLoader::isResourcePresentAtRuntime,
                             QuarkusClassLoader::isClassPresentAtRuntime,
-                            capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
+                            capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                                    capabilities.isPresent(Capability.OPENTELEMETRY_METRICS) ||
+                                    capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
                             hasMicrometerOtlp(metricsConfiguration)));
 
             if (devService != null) {
@@ -263,7 +265,8 @@ class ObservabilityDevServiceProcessor {
                             null, config);
                 })
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(capturedDevServicesConfiguration.imageName()), LaunchMode.current())
+                        List.of(capturedDevServicesConfiguration.imageName(), capturedDevServicesConfiguration.serviceName()),
+                        LaunchMode.current())
                         .stream().findFirst()
                         .map(r -> {
                             Map<String, String> cfg = new LinkedHashMap<>();
@@ -272,6 +275,7 @@ class ObservabilityDevServiceProcessor {
                                         DockerClientFactory.instance().dockerHostIpAddress(),
                                         port.publicPort()));
                             }
+                            log.infof("Compose Dev Service %s started, config: %s", devId, cfg);
                             return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(),
                                     r.containerInfo().id(), null, cfg);
                         }))

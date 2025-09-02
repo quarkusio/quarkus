@@ -1,5 +1,7 @@
 package io.quarkus.it.kafka;
 
+import java.util.concurrent.ExecutionException;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -15,5 +17,17 @@ public class KafkaEndpoint {
     @Path("/partitions/{topic}")
     public Integer partitions(@PathParam("topic") String topic) {
         return admin.partitions(topic);
+    }
+
+    @GET
+    @Path("/port")
+    public Integer port() throws ExecutionException, InterruptedException {
+        return admin.port();
+    }
+
+    @GET
+    @Path("/image")
+    public String image() throws ExecutionException, InterruptedException {
+        return admin.image();
     }
 }

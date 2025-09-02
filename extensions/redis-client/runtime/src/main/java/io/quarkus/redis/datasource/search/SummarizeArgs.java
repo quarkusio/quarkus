@@ -2,7 +2,6 @@ package io.quarkus.redis.datasource.search;
 
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
-import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 
 import java.util.ArrayList;

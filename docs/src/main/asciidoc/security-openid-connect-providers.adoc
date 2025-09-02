@@ -230,6 +230,21 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
 
+[NOTE]
+====
+By default, Quarkus GitHub provider submits the client id and secret in the HTTP Authorization header.
+However, GitHub may require that both client id and secret are submitted as form parameters instead.
+When you get HTTP 401 error after logging in to GitHub and being redirected back to Quarkus MCP server,
+replace the `quarkus.oidc.credentials.secret=<Secret>` property
+with the following two properties instead:
+
+[source,properties]
+----
+quarkus.oidc.credentials.client-secret.method=post
+quarkus.oidc.credentials.client-secret.value=<Secret>
+----
+====
+
 `quarkus.oidc.provider=github` will request GitHub to add a `user:email` scope to issued access tokens. For information about overriding this scope or requesting more scopes, see the  <<provider-scope>> section.
 
 TIP: You can also send access tokens issued by GitHub to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications.

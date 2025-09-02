@@ -45,6 +45,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         roles.addConfigMappingValues(mapping.roles());
         token.addConfigMappingValues(mapping.token());
         logout.addConfigMappingValues(mapping.logout());
+        resourceMetadata.addConfigMappingValues(mapping.resourceMetadata());
         certificateChain.addConfigMappingValues(mapping.certificateChain());
         authentication.addConfigMappingValues(mapping.authentication());
         codeGrant.addConfigMappingValues(mapping.codeGrant());
@@ -488,6 +489,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          */
         Optional<Set<ClearSiteData>> clearSiteData = Optional.of(Set.of());
 
+        LogoutMode logoutMode = LogoutMode.QUERY;
+
         /**
          * Back-Channel Logout configuration
          */
@@ -552,6 +555,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             postLogoutUriParam = mapping.postLogoutUriParam();
             extraParams = mapping.extraParams();
             clearSiteData = mapping.clearSiteData();
+            logoutMode = mapping.logoutMode();
             backchannel.addConfigMappingValues(mapping.backchannel());
             frontchannel.addConfigMappingValues(mapping.frontchannel());
         }
@@ -589,6 +593,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public Optional<Set<ClearSiteData>> clearSiteData() {
             return clearSiteData;
+        }
+
+        @Override
+        public LogoutMode logoutMode() {
+            return logoutMode;
         }
     }
 
@@ -2222,7 +2231,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          * Strings are the only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or
          * complex claims.
          */
-        public Map<String, String> requiredClaims = new HashMap<>();
+        public Map<String, Set<String>> requiredClaims = new HashMap<>();
 
         /**
          * Expected token type
@@ -2331,6 +2340,16 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          * used to sign the client authentication JWT tokens are also used to decrypt the encrypted ID tokens.
          */
         public Optional<String> decryptionKeyLocation = Optional.empty();
+
+        /**
+         * Decrypt ID token.
+         */
+        Optional<Boolean> decryptIdToken = Optional.empty();
+
+        /**
+         * Decrypt access token.
+         */
+        boolean decryptAccessToken;
 
         /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
@@ -2507,11 +2526,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.decryptionKeyLocation = Optional.of(decryptionKeyLocation);
         }
 
-        public Map<String, String> getRequiredClaims() {
+        public Map<String, Set<String>> getRequiredClaims() {
             return requiredClaims;
         }
 
-        public void setRequiredClaims(Map<String, String> requiredClaims) {
+        public void setRequiredClaims(Map<String, Set<String>> requiredClaims) {
             this.requiredClaims = requiredClaims;
         }
 
@@ -2572,6 +2591,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             authorizationScheme = mapping.authorizationScheme();
             signatureAlgorithm = mapping.signatureAlgorithm().map(Enum::toString).map(SignatureAlgorithm::valueOf);
             decryptionKeyLocation = mapping.decryptionKeyLocation();
+            decryptIdToken = mapping.decryptIdToken();
+            decryptAccessToken = mapping.decryptAccessToken();
             allowJwtIntrospection = mapping.allowJwtIntrospection();
             requireJwtIntrospectionOnly = mapping.requireJwtIntrospectionOnly();
             allowOpaqueTokenIntrospection = mapping.allowOpaqueTokenIntrospection();
@@ -2596,7 +2617,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
-        public Map<String, String> requiredClaims() {
+        public Map<String, Set<String>> requiredClaims() {
             return requiredClaims;
         }
 
@@ -2662,6 +2683,16 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
+        public Optional<Boolean> decryptIdToken() {
+            return decryptIdToken;
+        }
+
+        @Override
+        public boolean decryptAccessToken() {
+            return decryptAccessToken;
+        }
+
+        @Override
         public boolean allowJwtIntrospection() {
             return allowJwtIntrospection;
         }
@@ -2709,6 +2740,38 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.Binding mapping) {
             certificate = mapping.certificate();
+        }
+    }
+
+    @Deprecated(since = "3.25", forRemoval = true)
+    ResourceMetadata resourceMetadata = new ResourceMetadata();
+
+    @Deprecated(since = "3.25", forRemoval = true)
+    public static class ResourceMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata {
+
+        public boolean enabled;
+        public Optional<String> resource = Optional.empty();
+        public boolean forceHttpsScheme = true;
+
+        @Override
+        public boolean enabled() {
+            return enabled;
+        }
+
+        @Override
+        public Optional<String> resource() {
+            return resource;
+        }
+
+        @Override
+        public boolean forceHttpsScheme() {
+            return forceHttpsScheme;
+        }
+
+        private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata mapping) {
+            enabled = mapping.enabled();
+            resource = mapping.resource();
+            forceHttpsScheme = mapping.forceHttpsScheme();
         }
     }
 
@@ -2959,6 +3022,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata resourceMetadata() {
+        return resourceMetadata;
+    }
+
+    @Override
     public io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain certificateChain() {
         return certificateChain;
     }
@@ -3013,11 +3081,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with {@code staticTenantMapping} values.
-     * You want to use this constructor when you have configured static tenant in the application.properties
-     * and your dynamic tenant only differ in a couple of the configuration properties.
+     * Creates {@link OidcTenantConfigBuilder} builder from the existing {@link io.quarkus.oidc.runtime.OidcTenantConfig}
      *
-     * @param mapping OidcTenantConfig created by the SmallRye Config; must not be null
+     * @param mapping existing io.quarkus.oidc.runtime.OidcTenantConfig
      */
     public static OidcTenantConfigBuilder builder(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         return new OidcTenantConfigBuilder(mapping);
@@ -3027,7 +3093,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than
      * the {@link #builder()} method if you don't need to modify the {@code mapping}.
      *
-     * @param mapping tenant config as returned from the SmallRye Config; must not be null
+     * @param mapping existing io.quarkus.oidc.runtime.OidcTenantConfig
      * @return OidcTenantConfig
      */
     public static OidcTenantConfig of(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
@@ -3035,7 +3101,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided base URL.
      *
      * @param authServerUrl {@link #authServerUrl()}
      * @return OidcTenantConfigBuilder builder
@@ -3045,7 +3111,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided client
+     * registration path.
      *
      * @param registrationPath {@link #registrationPath()}
      * @return OidcTenantConfigBuilder builder
@@ -3055,7 +3122,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided token path.
      *
      * @param tokenPath {@link #tokenPath()}
      * @return OidcTenantConfigBuilder builder

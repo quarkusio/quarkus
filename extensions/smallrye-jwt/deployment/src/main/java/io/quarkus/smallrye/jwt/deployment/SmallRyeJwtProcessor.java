@@ -64,6 +64,8 @@ class SmallRyeJwtProcessor {
 
     private static final Logger log = Logger.getLogger(SmallRyeJwtProcessor.class.getName());
 
+    private static final String CLASSPATH_SCHEME = "classpath:";
+
     static final String MP_JWT_VERIFY_KEY_LOCATION = "mp.jwt.verify.publickey.location";
     private static final String MP_JWT_DECRYPT_KEY_LOCATION = "mp.jwt.decrypt.key.location";
 
@@ -146,9 +148,20 @@ class SmallRyeJwtProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
         Optional<String> keyLocation = config.getOptionalValue(propertyName, String.class);
         if (keyLocation.isPresent() && keyLocation.get().length() > 1
-                && (keyLocation.get().indexOf(':') < 0 || keyLocation.get().startsWith("classpath:"))) {
+                && (keyLocation.get().indexOf(':') < 0 || (keyLocation.get().startsWith(CLASSPATH_SCHEME)
+                        && keyLocation.get().length() > CLASSPATH_SCHEME.length()))) {
             log.infof("Adding %s to native image", keyLocation.get());
-            String location = keyLocation.get().startsWith("/") ? keyLocation.get().substring(1) : keyLocation.get();
+
+            String location = keyLocation.get();
+
+            // It can only be `classpath:` at this point
+            if (location.startsWith(CLASSPATH_SCHEME)) {
+                location = location.substring(CLASSPATH_SCHEME.length());
+            }
+            if (location.startsWith("/")) {
+                location = location.substring(1);
+            }
+
             nativeImageResource.produce(new NativeImageResourceBuildItem(location));
         }
     }

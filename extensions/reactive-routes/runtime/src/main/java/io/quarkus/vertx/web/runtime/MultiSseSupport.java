@@ -23,7 +23,7 @@ public class MultiSseSupport {
     }
 
     public static void subscribeString(Multi<String> multi, RoutingContext rc) {
-        subscribeBuffer(multi.map(new Function<String, Buffer>() {
+        subscribeBuffer(multi.map(new Function<>() {
             @Override
             public Buffer apply(String s) {
                 return Buffer.buffer(s);
@@ -63,7 +63,7 @@ public class MultiSseSupport {
             @Override
             public void onNext(Buffer item) {
                 initialize(response);
-                response.write(item, new Handler<AsyncResult<Void>>() {
+                response.write(item, new Handler<>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         onWriteDone(upstream, ar, rc);
@@ -101,7 +101,7 @@ public class MultiSseSupport {
                 Buffer buffer = Buffer.buffer("data: ").appendBuffer(item).appendString("\n")
                         .appendString("id: " + count.getAndIncrement())
                         .appendString("\n\n");
-                response.write(buffer, new Handler<AsyncResult<Void>>() {
+                response.write(buffer, new Handler<>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         onWriteDone(upstream, ar, rc);
@@ -122,7 +122,7 @@ public class MultiSseSupport {
     }
 
     public static void subscribeMutinyBuffer(Multi<io.vertx.mutiny.core.buffer.Buffer> multi, RoutingContext rc) {
-        subscribeBuffer(multi.map(new Function<io.vertx.mutiny.core.buffer.Buffer, Buffer>() {
+        subscribeBuffer(multi.map(new Function<>() {
             @Override
             public Buffer apply(io.vertx.mutiny.core.buffer.Buffer b) {
                 return b.getDelegate();
@@ -132,11 +132,10 @@ public class MultiSseSupport {
 
     public static void subscribeObject(Multi<Object> multi, RoutingContext rc) {
         AtomicLong count = new AtomicLong();
-        write(multi.map(new Function<Object, Buffer>() {
+        write(multi.map(new Function<>() {
             @Override
             public Buffer apply(Object o) {
-                if (o instanceof ReactiveRoutes.ServerSentEvent) {
-                    ReactiveRoutes.ServerSentEvent<?> ev = (ReactiveRoutes.ServerSentEvent<?>) o;
+                if (o instanceof ReactiveRoutes.ServerSentEvent ev) {
                     long id = ev.id() != -1 ? ev.id() : count.getAndIncrement();
                     String e = ev.event() == null ? "" : "event: " + ev.event() + "\n";
                     return Buffer.buffer(e + "data: " + Json.encodeToBuffer(ev.data()) + "\nid: " + id + "\n\n");

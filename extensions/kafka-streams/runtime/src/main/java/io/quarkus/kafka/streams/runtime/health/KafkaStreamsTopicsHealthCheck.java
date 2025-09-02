@@ -1,12 +1,10 @@
 package io.quarkus.kafka.streams.runtime.health;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -16,7 +14,6 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 import org.jboss.logging.Logger;
 
-import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 
 @Readiness
@@ -26,31 +23,27 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopicsHealthCheck.class.getName());
 
     @Inject
-    KafkaStreamsRuntimeConfig kafkaStreamsRuntimeConfig;
-
-    @Inject
     KafkaStreamsTopologyManager manager;
 
-    private List<String> trimmedTopics;
+    private final List<String> checkedTopics;
 
-    @PostConstruct
-    public void init() {
-        if (kafkaStreamsRuntimeConfig.topicsTimeout().compareTo(Duration.ZERO) > 0) {
-            trimmedTopics = kafkaStreamsRuntimeConfig.topics()
-                    .orElseThrow(() -> new IllegalArgumentException("Missing list of topics"))
-                    .stream()
-                    .map(String::trim)
-                    .collect(Collectors.toList());
+    @Inject
+    public KafkaStreamsTopicsHealthCheck(KafkaStreamsTopologyManager manager) {
+        this.manager = manager;
+        this.checkedTopics = new ArrayList<>();
+        if (manager.isTopicsCheckEnabled()) {
+            checkedTopics.addAll(manager.getSourceTopics());
+            checkedTopics.addAll(manager.getSourcePatterns().stream().map(Pattern::pattern).toList());
         }
     }
 
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
-        if (trimmedTopics != null) {
+        if (manager.isTopicsCheckEnabled()) {
             try {
-                Set<String> missingTopics = manager.getMissingTopics(trimmedTopics, kafkaStreamsRuntimeConfig.topicsTimeout());
-                List<String> availableTopics = new ArrayList<>(trimmedTopics);
+                Set<String> missingTopics = manager.getMissingTopics();
+                List<String> availableTopics = new ArrayList<>(checkedTopics);
                 availableTopics.removeAll(missingTopics);
 
                 if (!availableTopics.isEmpty()) {

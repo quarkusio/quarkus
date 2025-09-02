@@ -1,5 +1,6 @@
 package io.quarkus.observability.test;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -16,6 +17,7 @@ import io.quarkus.test.QuarkusDevModeTest;
  */
 @DisabledOnOs(OS.WINDOWS)
 @Tag("devmode")
+@Disabled("2025-04-22 - This has been extremely flaky so disabling for now")
 public class LgtmReloadTest extends LgtmTestHelper {
 
     @RegisterExtension

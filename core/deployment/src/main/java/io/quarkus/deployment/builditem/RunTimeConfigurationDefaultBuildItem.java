@@ -1,12 +1,10 @@
 package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.smallrye.common.constraint.Assert;
 
 /**
- * A build item which specifies a configuration default value for run time, which is used to establish a default other
- * than the one given for {@link ConfigItem#defaultValue()}.
+ * A build item which specifies a configuration default value for run time.
  */
 public final class RunTimeConfigurationDefaultBuildItem extends MultiBuildItem {
     private final String key;

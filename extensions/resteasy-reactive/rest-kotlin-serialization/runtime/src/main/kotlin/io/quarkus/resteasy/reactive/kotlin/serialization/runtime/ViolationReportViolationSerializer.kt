@@ -35,10 +35,7 @@ object ViolationReportViolationSerializer : KSerializer<ViolationReport.Violatio
                 }
             }
 
-            ViolationReport.Violation(
-                requireNotNull(field),
-                requireNotNull(message),
-            )
+            ViolationReport.Violation(requireNotNull(field), requireNotNull(message))
         }
     }
 

@@ -84,19 +84,12 @@ public class H2DevServicesProcessor {
                                         } catch (SQLException t) {
                                             t.printStackTrace();
                                         }
-                                        // TODO Yes, this is a port leak
-                                        // The good news is that because it's an in-memory database, it will get shut down
-                                        // when the JVM stops. Nonetheless, this clearly is not ok, and needs
-                                        // a fix so that we do not start databases in the augmentation phase
-                                        // TODO remove this when #45786 and #45785 are done
-                                        final boolean hackPendingDeferredDevServiceStart = true;
-                                        if (!hackPendingDeferredDevServiceStart) {
-                                            tcpServer.stop();
-                                            LOG.info("Dev Services for H2 shut down; server status: " + tcpServer.getStatus());
-
-                                        }
-                                        // End of #45786 and #45785 workaround
-
+                                        tcpServer.stop();
+                                        LOG.info("Dev Services for H2 shut down; server status: " + tcpServer.getStatus());
+                                    } else {
+                                        LOG.info(
+                                                "Dev Services for H2 was NOT shut down as it appears it was down already; server status: "
+                                                        + tcpServer.getStatus());
                                     }
                                 }
                             });

@@ -1,5 +1,7 @@
 package io.quarkus.test.common.http;
 
+import static io.quarkus.test.common.http.TestHTTPConfigSourceProvider.HTTP_ROOT_PATH_KEY;
+import static io.quarkus.test.common.http.TestHTTPConfigSourceProvider.MANAGEMENT_ROOT_PATH_KEY;
 import static io.quarkus.test.common.http.TestHTTPConfigSourceProvider.TEST_MANAGEMENT_URL_KEY;
 import static io.quarkus.test.common.http.TestHTTPConfigSourceProvider.TEST_MANAGEMENT_URL_SSL_KEY;
 import static io.quarkus.test.common.http.TestHTTPConfigSourceProvider.TEST_URL_KEY;
@@ -28,6 +30,14 @@ public class TestHTTPConfigSourceInterceptor extends ExpressionConfigSourceInter
                 name.equals(TEST_MANAGEMENT_URL_SSL_KEY)) {
 
             return sanitizeUrl(super.getValue(context, name));
+        } else if (name.equals(HTTP_ROOT_PATH_KEY) || name.equals(MANAGEMENT_ROOT_PATH_KEY)) {
+            ConfigValue configValue = super.getValue(context, name);
+            if ((configValue == null) || (configValue.getRawValue() == null) || configValue.getRawValue().isEmpty()
+                    || configValue.getRawValue().startsWith("/")) {
+                return configValue;
+            }
+            return configValue.from().withValue("/" + configValue.getValue()).withRawValue("/" + configValue.getRawValue())
+                    .build();
         }
 
         return context.proceed(name);

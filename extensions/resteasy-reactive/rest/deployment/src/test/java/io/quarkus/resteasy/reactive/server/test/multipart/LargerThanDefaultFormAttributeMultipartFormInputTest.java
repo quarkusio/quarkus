@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.function.Supplier;
 
@@ -48,7 +47,7 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
 
     @Test
     public void test() throws IOException {
-        String fileContents = new String(Files.readAllBytes(FILE.toPath()), StandardCharsets.UTF_8);
+        String fileContents = Files.readString(FILE.toPath());
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10; ++i) {
             sb.append(fileContents);

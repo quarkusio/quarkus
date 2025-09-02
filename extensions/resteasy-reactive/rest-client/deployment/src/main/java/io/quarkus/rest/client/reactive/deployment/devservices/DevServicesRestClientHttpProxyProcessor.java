@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.exception.UncheckedException;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -36,7 +37,7 @@ import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildCo
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.smallrye.config.SmallRyeConfig;
 
-@BuildSteps(onlyIfNot = IsNormal.class)
+@BuildSteps(onlyIf = IsDevServicesSupportedByLaunchMode.class)
 public class DevServicesRestClientHttpProxyProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesRestClientHttpProxyProcessor.class);
@@ -200,9 +201,11 @@ public class DevServicesRestClientHttpProxyProcessor {
             }
 
             devServicePropertiesProducer.produce(
-                    new DevServicesResultBuildItem("rest-client-" + bi.getClassName() + "-proxy",
-                            null,
-                            Map.of(urlKeyName, urlKeyValue)));
+                    DevServicesResultBuildItem.discovered()
+                            .feature(Feature.REST_CLIENT)
+                            .description("rest-client-" + bi.getClassName() + "-proxy")
+                            .config(Map.of(urlKeyName, urlKeyValue))
+                            .build());
         }
 
         closeBuildItem.addCloseTask(new CloseTask(runningProxies, providerCloseables, runningProviders), true);

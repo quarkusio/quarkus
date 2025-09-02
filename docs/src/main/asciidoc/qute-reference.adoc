@@ -399,27 +399,31 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 |===
 |Name |Description	|Examples
 
-|Elvis Operator
+|Elvis Operator: `?:`
 |Outputs the default value if the previous part cannot be resolved or resolves to `null`.
 |`{person.name ?: 'John'}`, `{person.name or 'John'}`, `{person.name.or('John')}`
 
-|orEmpty
+|`orEmpty`
 |Outputs an empty list if the previous part cannot be resolved or resolves to `null`.
 |`{pets.orEmpty.size}` outputs `0` if `pets` is not resolvable or `null`
 
-|Ternary Operator
+|Ternary Operator: `condition ? ifTrue : ifFalse`
 |Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 
-|Logical AND Operator
+|Logical AND Operator: `&&`
 |Outputs `true` if both parts are not `falsy` as described in the <<if_section>>.
 The parameter is only evaluated if needed.
 |`{person.isActive && person.hasStyle}`
 
-|Logical OR Operator
+|Logical OR Operator: `\|\|`
 |Outputs `true` if any of the parts is not `falsy` as described in the <<if_section>>.
 The parameter is only evaluated if needed.
 |`{person.isActive \|\| person.hasStyle}`
+
+|Equals Operator: `==`/`eq`/`is`
+|Outputs `true` if the base object is equal to the argument.
+|`{obj1 is obj2 ? 'Equal' : 'Inequal'}`, `{obj1 == obj2 ? 'Equal' : 'Inequal'}`, `{obj1.eq(obj2) ? 'Equal' : 'Inequal'}`
 
 |===
 
@@ -1002,19 +1006,39 @@ The following operators are supported in `is`/`case` block conditions:
 [[let_section]]
 ==== Let Section
 
-This section allows you to define named local variables:
+This section allows you to define named local variables.
 
+.Let
 [source,html]
 ----
 {#let myParent=order.item.parent isActive=false age=10 price=(order.price + 10)} <1><2>
   <h1>{myParent.name}</h1>
   Is active: {isActive}
   Age: {age}
+  Price: {price}
 {/let} <3>
 ----
 <1> The local variable is initialized with an expression that can also represent a <<literals,literal>>, i.e. `isActive=false` and `age=10`.
 <2> The infix notation is only supported if parentheses are used for grouping, e.g. `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`.
-<3> Keep in mind that the variable is not available outside the `let` section that defines it.
+<3> Variables are not available outside the `let` section.
+
+The variables are not available outside the defining `let` section.
+However, the end tag is optional, if missing then the section ends where the parent section ends.
+
+.Let with optional end tag
+[source,html]
+----
+<ul>
+{#for item in items}
+{#let price=item.price} <1>
+   <li>{price}</li>
+{! a synthetic {/let} is added here automatically !}
+{/for}
+</ul>
+{price} --> BOOM! <2>
+----
+<1> The local variable `price` is initialized with expression `item.price`.
+<2> Variable `price` is not available outside the `let` section.
 
 If a key of a section parameter, such as the name of the local variable, ends with a `?`, then the local variable is only set if the key without the `?` suffix resolves to `null` or _"not found"_:
 
@@ -1102,6 +1126,15 @@ This section can be used to include another template and possibly override some 
 ----
 <1> Include a template with id `foo`. The included template can reference data from the current context.
 <2> It's also possible to define optional parameters that can be used in the included template.
+
+By default, the first unnamed parameter represents the id of a template that should be included.
+And it is taken as is.
+For example, `{#include bar/foo /}` includes a template with id `bar/foo`; i.e. `src/main/resources/templates/bar/foo.html` could be matched.
+However, it is also possible to supply the template id dynamically.
+Just add the `_id` parameter to the tag.
+In this case, the argument value of the `_id` parameter represents an expression that is resolved and the result represents the template id.
+For example, `{#include _id=bar.foo /}` means that `bar.foo` is first resolved and then the resulting template id is used.
+
 
 _Template inheritance_ makes it possible to reuse template layouts.
 
@@ -2057,9 +2090,13 @@ public class ItemResource {
 [[type_safe_fragments]]
 ==== Type-safe Fragments
 
-You can also define a type-safe <<fragments,fragment>> in your Java code.
-A _native static_ method with the name that contains a dollar sign `$` denotes a method that represents a fragment of a type-safe template.
-The name of the fragment is derived from the annotated method name.
+You can also define a type-safe <<fragments,fragment>> of a type-safe template in your Java code.
+There are two ways to define a type-safe fragment:
+
+1. A _native static_ method annotated with `@CheckedTemplate`, with a name that contains a dollar sign `$`.
+2. A Java record that implements `io.quarkus.qute.TemplateInstance` and its name contains a dollar sign `$`.
+
+The name of the fragment is derived from the annotated member name.
 The part before the last occurrence of a dollar sign `$` is the method name of the related type-safe template.
 The part after the last occurrence of a dollar sign is the fragment identifier.
 The strategy defined by the relevant `CheckedTemplate#defaultName()` is honored when constructing the defaulted names.
@@ -2078,6 +2115,9 @@ class Templates {
 
   // defines a fragment of Templates#items() with identifier "item"
   static native TemplateInstance items$item(Item item); <1>
+  
+  // type-safe fragment as a Java record - functionally equivalent to the items$item() method above
+  record items$item(Item item) implements TemplateInstance {}
 }
 ----
 <1> Quarkus validates at build time that each template that corresponds to the `Templates#items()` contains a fragment with identifier `item`. Moreover, the parameters of the fragment method are validated too. In general, all type-safe expressions that are found in the fragment and that reference some data from the original/outer template require a specific parameter to be present.
@@ -2263,9 +2303,9 @@ NOTE: Superfluous matching conditions are ignored. The conditions sorted by prio
 
 An extension method may declare parameters.
 If no namespace is specified then the first parameter that is not annotated with `@TemplateAttribute` is used to pass the base object, i.e. `org.acme.Item` in the first example.
-If matching any name or using a regular expression, then a string method parameter needs to be used to pass the property name.
+If matching any name or using a regular expression, then a string method parameter (not not annotated with `@TemplateAttribute`) needs to be used to pass the property name.
 Parameters annotated with `@TemplateAttribute` are obtained via `TemplateInstance#getAttribute()`.
-All other parameters are resolved when rendering the template and passed to the extension method.
+All other parameters are treated as virtual method parameters and resolved when rendering the template and passed to the extension method.
 
 .Multiple Parameters Example
 [source,java]
@@ -2273,12 +2313,13 @@ All other parameters are resolved when rendering the template and passed to the 
 @TemplateExtension
 class BigDecimalExtensions {
 
-    static BigDecimal scale(BigDecimal val, int scale, RoundingMode mode) { <1>
+    @TemplateExtension(matchNames = {"scale", "setScale"})
+    static BigDecimal scale(BigDecimal val, String ignoredName, int scale, RoundingMode mode) { <1>
         return val.setScale(scale, mode);
     }
 }
 ----
-<1> This method matches an expression with base object of the type `BigDecimal.class`, with the `scale` virtual method name and two virtual method parameters.
+<1> This method matches an expression with base object of the type `BigDecimal.class`, with the `scale()`/`setScale()` virtual method name and two virtual method parameters - `scale` and `mode`.
 
 [source,html]
 ----

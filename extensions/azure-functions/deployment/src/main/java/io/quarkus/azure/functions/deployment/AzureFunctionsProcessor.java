@@ -1,5 +1,7 @@
 package io.quarkus.azure.functions.deployment;
 
+import static io.quarkus.azure.functions.deployment.AzureFunctionsDeployCommand.AZURE_FUNCTIONS;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -46,7 +48,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -75,7 +77,7 @@ public class AzureFunctionsProcessor {
         return new AzureFunctionsAppNameBuildItem(appName);
     }
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsProduction.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem packageFunctions(List<AzureFunctionBuildItem> functions,
             OutputTargetBuildItem target,
             AzureFunctionsConfig functionsConfig,
@@ -104,7 +106,7 @@ public class AzureFunctionsProcessor {
 
         Path rootPath = target.getOutputDirectory().resolve("..");
         Path outputDirectory = target.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(appName.getAppName());
+        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
         copyHostJson(rootPath, functionStagingDir);
 
@@ -113,7 +115,7 @@ public class AzureFunctionsProcessor {
         writeFunctionJsonFiles(objectWriter, configMap, functionStagingDir);
 
         copyJarsToStageDirectory(jar, functionStagingDir);
-        return new ArtifactResultBuildItem(functionStagingDir, "azure-functions", Collections.EMPTY_MAP);
+        return new ArtifactResultBuildItem(functionStagingDir, AZURE_FUNCTIONS, Collections.EMPTY_MAP);
     }
 
     protected void writeFunctionJsonFiles(final ObjectWriter objectWriter,

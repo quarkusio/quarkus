@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.runtime.service;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.persistence.PersistenceException;
+
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
@@ -32,13 +34,16 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
         // We set the version from the dialect since if it wasn't provided explicitly through the `recordedConfig.getDbVersion()`
         // then the version from `DialectVersions.Defaults` will be used:
         this.buildTimeDbVersion = dialect.getVersion();
+        HibernateOrmRuntimeConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDatabase database = runtimePuConfig
+                .database();
+
+        if (database.startOffline() && database.versionCheckEnabled().filter(v -> v.booleanValue()).isPresent()) {
+            throw new PersistenceException(
+                    "When using offline mode `quarkus.hibernate-orm.database.start-offline=true`, version check `quarkus.hibernate-orm.database.version-check.enabled` must be unset or set to `false`");
+        }
+
         this.versionCheckEnabled = runtimePuConfig.database().versionCheckEnabled()
-                // TODO change the default to "always enabled" when we solve version detection problems
-                //   See https://github.com/quarkusio/quarkus/issues/43703
-                //   See https://github.com/quarkusio/quarkus/issues/42255
-                // TODO disable the check by default when offline startup is opted in
-                //   See https://github.com/quarkusio/quarkus/issues/13522
-                .orElse(recordedConfig.getExplicitDialect().isEmpty());
+                .orElse(!database.startOffline());
     }
 
     @Override

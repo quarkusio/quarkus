@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import jakarta.inject.Inject;
 
@@ -26,7 +28,10 @@ public class TemplateDataTest {
                             "templates/foo.txt")
                     .addAsResource(new StringAsset(
                             "{#if tx == TransactionType:FOO}OK{/if}::{io_quarkus_qute_deployment_TemplateDataTest_Foos:BRAVO.toLowerCase}"),
-                            "templates/bar.txt"));
+                            "templates/bar.txt")
+                    .addAsResource(new StringAsset(
+                            "{io_quarkus_qute_deployment_TemplateDataTest_Foo:alphas.0}::{io_quarkus_qute_deployment_TemplateDataTest_Foo:alphas(2).size}"),
+                            "templates/alphas.txt"));
 
     @Inject
     Template foo;
@@ -34,11 +39,15 @@ public class TemplateDataTest {
     @Inject
     Template bar;
 
+    @Inject
+    Template alphas;
+
     @Test
     public void testTemplateData() {
         assertEquals("123.4563 is not 123.46 and true=true and false=false",
                 foo.data("roundingMode", RoundingMode.HALF_UP).data("foo", new Foo(new BigDecimal("123.4563"))).render());
         assertEquals("OK::bravo", bar.data("tx", TransactionType.FOO).render());
+        assertEquals("1::2", alphas.render());
     }
 
     @TemplateData
@@ -57,6 +66,14 @@ public class TemplateDataTest {
 
         public boolean isBaz() {
             return false;
+        }
+
+        public static List<String> alphas() {
+            return List.of("1", "2");
+        }
+
+        public static List<Integer> alphas(int n) {
+            return IntStream.range(0, n).mapToObj(Integer::valueOf).toList();
         }
 
     }

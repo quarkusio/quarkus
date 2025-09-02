@@ -23,7 +23,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.BindMode;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -49,7 +49,7 @@ import io.quarkus.infinispan.client.runtime.InfinispanDevServicesConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class InfinispanDevServiceProcessor {
     private static final Logger log = Logger.getLogger(InfinispanDevServiceProcessor.class);
 
@@ -240,7 +240,7 @@ public class InfinispanDevServiceProcessor {
                 .map(containerAddress -> getRunningDevService(clientName, containerAddress.getId(), null,
                         containerAddress.getUrl(), DEFAULT_USERNAME, DEFAULT_PASSWORD, properties)) // TODO can this be always right ?
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(devServicesConfig.imageName().orElse(IMAGE_BASENAME), "infinispan"),
+                        List.of(devServicesConfig.imageName().orElse(IMAGE_BASENAME), "infinispan", "datagrid"),
                         DEFAULT_INFINISPAN_PORT, launchMode, useSharedNetwork)
                         .map(address -> getRunningDevService(clientName, address, properties)))
                 .orElseGet(infinispanServerSupplier);
@@ -318,7 +318,7 @@ public class InfinispanDevServiceProcessor {
                 log.warn(
                         "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
                                 +
-                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
+                                "You need to use the `quarkus.infinispan-client.devservices.config-files` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
                 log.warn("infinispan:\n" +
                         "        cacheContainer:\n" +
                         "                tracing:\n" +

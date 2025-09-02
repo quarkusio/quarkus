@@ -21,7 +21,7 @@ public class SchemaValidateTest {
                     .addClass(Hero.class))
             .withConfigurationResource("application.properties")
             .assertException(SchemaValidateTest::isSchemaValidationException)
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", "validate");
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "validate");
 
     @Inject
     Mutiny.SessionFactory sessionFactory;

@@ -4,6 +4,17 @@ import java.util.Optional;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * This build item holds essential metadata about the application, specifically its name and version.
+ * The values can be configured using the following properties:
+ * <ul>
+ * <li>{@code quarkus.application.name} - Sets the application name</li>
+ * <li>{@code quarkus.application.version} - Sets the application version</li>
+ * </ul>
+ *
+ * This configuration is intended to be used by extensions that require application metadata,
+ * such as the kubernetes extension.
+ */
 public final class ApplicationInfoBuildItem extends SimpleBuildItem {
 
     public static final String UNSET_VALUE = "<<unset>>";

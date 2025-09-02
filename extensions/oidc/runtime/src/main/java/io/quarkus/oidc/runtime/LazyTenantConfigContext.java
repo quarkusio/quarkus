@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import java.security.Key;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
@@ -30,7 +32,13 @@ final class LazyTenantConfigContext implements TenantConfigContext {
         if (!delegate.ready()) {
             LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
                     delegate.oidcConfig().tenantId().get());
-            return staticTenantCreator.get().invoke(ctx -> LazyTenantConfigContext.this.delegate = ctx);
+            return staticTenantCreator.get().invoke(ctx -> {
+                LazyTenantConfigContext.this.delegate = ctx;
+                if (ctx.ready()) {
+                    BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(ctx.oidcConfig());
+                    ResourceMetadataHandler.fireResourceMetadataReadyEvent(ctx.oidcConfig());
+                }
+            });
         }
         return Uni.createFrom().item(delegate);
     }
@@ -66,22 +74,32 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     }
 
     @Override
-    public SecretKey getStateEncryptionKey() {
-        return delegate.getStateEncryptionKey();
+    public SecretKey getStateCookieEncryptionKey() {
+        return delegate.getStateCookieEncryptionKey();
     }
 
     @Override
-    public SecretKey getTokenEncSecretKey() {
-        return delegate.getTokenEncSecretKey();
+    public SecretKey getSessionCookieEncryptionKey() {
+        return delegate.getSessionCookieEncryptionKey();
     }
 
     @Override
-    public SecretKey getInternalIdTokenSecretKey() {
-        return delegate.getInternalIdTokenSecretKey();
+    public SecretKey getInternalIdTokenSigningKey() {
+        return delegate.getInternalIdTokenSigningKey();
+    }
+
+    @Override
+    public Key getTokenDecryptionKey() {
+        return delegate.getTokenDecryptionKey();
     }
 
     @Override
     public List<OidcRedirectFilter> getOidcRedirectFilters(Redirect.Location loc) {
         return delegate.getOidcRedirectFilters(loc);
+    }
+
+    @Override
+    public Map<Redirect.Location, List<OidcRedirectFilter>> getLocationToRedirectFilters() {
+        return delegate.getLocationToRedirectFilters();
     }
 }

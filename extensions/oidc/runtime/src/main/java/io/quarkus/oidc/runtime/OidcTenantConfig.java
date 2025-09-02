@@ -142,6 +142,35 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     Roles roles();
 
     /**
+     * Configuration to provide protected resource metadata.
+     */
+    @ConfigDocSection
+    ResourceMetadata resourceMetadata();
+
+    /**
+     * Protected resource metadata.
+     */
+    interface ResourceMetadata {
+        /**
+         * If the resource metadata can be provided.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Protected resource identifier.
+         */
+        Optional<String> resource();
+
+        /**
+         * Force a protected resource identifier HTTPS scheme.
+         * This property is ignored if {@link #resource() is an absolute URL}
+         */
+        @WithDefault("true")
+        boolean forceHttpsScheme();
+    }
+
+    /**
      * Configuration to customize validation of token claims.
      */
     @ConfigDocSection
@@ -339,6 +368,25 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * Clear-Site-Data header directives
          */
         Optional<Set<ClearSiteData>> clearSiteData();
+
+        enum LogoutMode {
+            /**
+             * Logout parameters are encoded in the query string
+             */
+            QUERY,
+
+            /**
+             * Logout parameters are encoded as HTML form values that are auto-submitted in the browser
+             * and transmitted by the HTTP POST method using the application/x-www-form-urlencoded content type
+             */
+            FORM_POST
+        }
+
+        /**
+         * Logout mode
+         */
+        @WithDefault("query")
+        LogoutMode logoutMode();
     }
 
     interface Backchannel {
@@ -1002,13 +1050,14 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
 
         /**
          * A map of required claims and their expected values.
-         * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id` claim to
-         * be present and set to `org_xyz`.
-         * Strings are the only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or
-         * complex claims.
+         * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id`
+         * claim to be present and set to `org_xyz`. On the other hand, if it was set to `org_xyz,org_abc`,
+         * the `org_id` claim would need to have both `org_xyz` and `org_abc` values.
+         * Strings and arrays of strings are currently the only supported types.
+         * Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or complex claims.
          */
         @ConfigDocMapKey("claim-name")
-        Map<String, String> requiredClaims();
+        Map<String, Set<@WithConverter(TrimmedStringConverter.class) String>> requiredClaims();
 
         /**
          * Expected token type
@@ -1111,16 +1160,30 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<SignatureAlgorithm> signatureAlgorithm();
 
         /**
-         * Decryption key location.
-         * JWT tokens can be inner-signed and encrypted by OpenId Connect providers.
-         * However, it is not always possible to remotely introspect such tokens because
-         * the providers might not control the private decryption keys.
-         * In such cases set this property to point to the file containing the decryption private key in
-         * PEM or JSON Web Key (JWK) format.
-         * If this property is not set and the `private_key_jwt` client authentication method is used, the private key
-         * used to sign the client authentication JWT tokens are also used to decrypt the encrypted ID tokens.
+         * Decryption key location for encrypted ID and access tokens.
          */
         Optional<String> decryptionKeyLocation();
+
+        /**
+         * Decrypt ID token.
+         *
+         * If the {@link Token#decryptionKeyLocation()} property is configured then the decryption key will be loaded from this
+         * location.
+         * Otherwise, if the JWT authentication token key is available, then it will be used to decrypt the token.
+         * Finally, if a client secret is configured, it will be used as a secret key to decrypt the token.
+         */
+        Optional<Boolean> decryptIdToken();
+
+        /**
+         * Decrypt access token.
+         *
+         * If the {@link Token#decryptionKeyLocation()} property is configured then the decryption key will be loaded from this
+         * location.
+         * Otherwise, if the JWT authentication token key is available, then it will be used to decrypt the token.
+         * Finally, if a client secret is configured, it will be used as a secret key to decrypt the token.
+         */
+        @WithDefault("false")
+        boolean decryptAccessToken();
 
         /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.

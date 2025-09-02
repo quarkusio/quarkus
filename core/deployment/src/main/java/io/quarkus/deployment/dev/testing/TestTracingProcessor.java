@@ -27,7 +27,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -56,7 +56,7 @@ import io.quarkus.gizmo.Gizmo;
  */
 public class TestTracingProcessor {
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     LogCleanupFilterBuildItem handle() {
         return new LogCleanupFilterBuildItem("org.junit.platform.launcher.core.EngineDiscoveryOrchestrator", "0 containers");
     }
@@ -125,7 +125,7 @@ public class TestTracingProcessor {
         for (ClassInfo clazz : combinedIndexBuildItem.getIndex().getKnownClasses()) {
             String theClassName = clazz.name().toString();
             if (isAppClass(theClassName)) {
-                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder().setEager(false)
+                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder()
                         .setClassToTransform(theClassName)
                         .setVisitorFunction(
                                 new BiFunction<String, ClassVisitor, ClassVisitor>() {

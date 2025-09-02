@@ -48,6 +48,8 @@ If you want to protect service applications by using OIDC Bearer token authentic
 
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
+If you are a Vert.x OIDC user, learn about migration options in the xref:security-vertx-oidc-to-quarkus-oidc-migration.adoc[Migrate from Vert.x OIDC to Quarkus OIDC] guide.
+
 == Using the authorization code flow mechanism
 
 === Configuring Quarkus to support authorization code flow
@@ -334,7 +336,7 @@ quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 [[code-flow-oidc-request-filters]]
 === OIDC request filters
 
-You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers and can also log requests.
+You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, customize a request body and can also log requests.
 
 For example:
 
@@ -399,6 +401,35 @@ public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 Currently, you can use a `tenand_id` key to access the OIDC tenant id and a `grant_type` key to access the grant type which the OIDC provider uses to acquire tokens.
 The `grant_type` can only be set to either `authorization_code` or `refresh_token` grant type, when requests are made to the token endpoint. It is `null` in all other cases.
 
+`OidcRequestFilter` can customize a request body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
+and setting it on a request context, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.mutiny.core.buffer.Buffer;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.TOKEN)
+public class TokenRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext rc) {
+        // Add more required properties to the token request
+        rc.requestBody(Buffer.buffer(rc.requestBody().toString() + "&opaque_token_param=opaque_token_value"));
+    }
+}
+----
+
 [[code-flow-oidc-response-filters]]
 === OIDC response filters
 
@@ -442,6 +473,68 @@ public class TokenEndpointResponseFilter implements OidcResponseFilter {
 <2> Check the response `Content-Type` header.
 <3> Use `OidcRequestContextProperties` request properties to check only an `authorization_code` token grant response for the `code-flow-user-info-cached-in-idtoken` tenant.
 <4> Confirm the response JSON contains an `id_token` property.
+
+`OidcResponseFilter` can customize a response body by preparing an instance of `io.vertx.mutiny.core.buffer.Buffer`
+and setting it on a response context, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.TOKEN)
+public class TokenResponseFilter implements OidcResponseFilter {
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        JsonObject body = rc.responseBody().toJsonObject();
+        // JSON `scope` property has multiple values separated by a comma character.
+        // It must be replaced with a space character.
+        String scope = body.getString("scope");
+        body.put("scope", scope.replace(",", " "));
+        rc.responseBody(Buffer.buffer(body.toString()));
+    }
+}
+----
+
+[[restrict-oidc-filter-to-code-flow]]
+=== Restricting OIDC request and response filters to authorization code flow
+
+When you have both the authorization code and xref:security-oidc-bearer-token-authentication.adoc[bearer access token] flows supported by xref:security-openid-connect-multitenancy.adoc[multiple OIDC tenants] and the filters have to deal with a flow specific logic, you can instead have them restricted to the authorization code flow with the `io.quarkus.oidc.AuthorizationCodeFlow` annotation and xref:security-oidc-bearer-token-authentication.adoc#restrict-oidc-filter-to-bearer-auth-flow[the bearer access token flow with the 'io.quarkus.oidc.BearerTokenAuthentication' annotation].
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@AuthorizationCodeFlow
+@ApplicationScoped
+@Unremovable
+public class CustomOidcRequestFilter implements OidcRequestFilter {
+
+    @Override
+    public void filter(OidcRequestContext requestContext) {
+        requestContext.request().putHeader("custom-header-name", "custom-header-value");
+    }
+}
+----
 
 === Redirecting to and from the OIDC provider
 
@@ -794,10 +887,10 @@ For more information about using the default token cache or registering a custom
 For information about the claim verification, including the `iss` (issuer) claim, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-jwt-claim-verification[JSON Web Token claim verification] section.
 It applies to ID tokens and also to access tokens in a JWT format, if the `web-app` application has requested the access token verification.
 
-[[jose4j-validator]]
+[[jose4j-validator-code]]
 ==== Jose4j Validator
 
-You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j] section for more information.
+You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator-bearer[Jose4j] section for more information.
 
 === Proof Key for Code Exchange (PKCE)
 
@@ -1655,6 +1748,64 @@ public class ServiceResource {
 <2> Revoke the authorization code flow access token.
 <3> Revoke the authorization code flow refresh token.
 
+You can also revoke tokens in the security event listeners.
+
+For example, when your application supports a standard <<user-initiated-logout>>, you can catch a logout event and revoke tokens:
+
+[source,java]
+----
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcProviderClient;
+import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.ObservesAsync;
+
+@ApplicationScoped
+public class SecurityEventListener {
+
+    public CompletionStage<Void> processSecurityEvent(@ObservesAsync SecurityEvent event) {
+        if (SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED == event.getEventType()) { <1>
+	    return revokeTokens(event.getSecurityIdentity()).subscribeAsCompletionStage();
+	}
+	return CompletableFuture.completedFuture(null);
+    }
+    private Uni<Void> revokeTokens(SecurityIdentity securityIdentity) {
+        return Uni.join().all(
+                   revokeAccessToken(securityIdentity),
+	           revokeRefreshToken(securityIdentity)
+               ).andCollectFailures()
+                .replaceWithVoid()
+                .onFailure().recoverWithUni(t -> logFailure(t));
+    }
+
+    private static Uni<Boolean> revokeAccessToken(SecurityIdentity securityIdentity) { <2>
+        OidcProviderClient oidcProvider = securityIdentity.getAttribute(OidcProviderClient.class.getName());
+        String accessToken = securityIdentity.getCredential(AccessTokenCredential.class).getToken();
+        return oidcProvider.revokeAccessToken(accessToken);
+    }
+
+    private static Uni<Boolean> revokeRefreshToken(SecurityIdentity securityIdentity) { <3>
+        OidcProviderClient oidcProvider = securityIdentity.getAttribute(OidcProviderClient.class.getName());
+        String refreshToken = securityIdentity.getCredential(RefreshToken.class).getToken();
+        return oidcProvider.revokeRefreshToken(refreshToken);
+    }
+
+    private static Uni<Void> logFailure(Throwable t) {
+        // Log failure as required
+        return Uni.createFrom().voidItem();
+    }
+}
+----
+<1> Revoke tokens if an RP-initiated logout event is observed.
+<2> Revoke the authorization code flow access token.
+<3> Revoke the authorization code flow refresh token.
+
 === Propagating tokens to downstream services
 
 For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section.
@@ -2177,6 +2328,7 @@ section of the OpenID Connect Multi-Tenancy guide.
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
+* xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
 * xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 client and filters reference guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]

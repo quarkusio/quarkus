@@ -9,7 +9,8 @@ public class VertxTcpServerMetrics extends NetworkMetrics {
         super(registry, tags, prefix,
                 "Number of bytes received by the server",
                 "Number of bytes sent by the server",
-                "The duration of the connections");
+                "The duration of the connections",
+                "Number of opened connections to the HTTP Server");
     }
 
 }

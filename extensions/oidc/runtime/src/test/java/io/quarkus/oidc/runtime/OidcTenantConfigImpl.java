@@ -96,6 +96,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CODE_GRANT,
         AUTHENTICATION,
         CERTIFICATION_CHAIN,
+        RESOURCE_METADATA,
         LOGOUT,
         TOKEN,
         ROLES,
@@ -158,10 +159,14 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CERTIFICATION_CHAIN_TRUST_STORE_PASSWORD,
         CERTIFICATION_CHAIN_TRUST_STORE_CERT_ALIAS,
         CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE,
+        RESOURCE_METADATA_ENABLED,
+        RESOURCE_METADATA_RESOURCE,
+        RESOURCE_METADATA_FORCE_HTTPS_SCHEME,
         LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
         LOGOUT_CLEAR_SITE_DATA,
+        LOGOUT_MODE,
         LOGOUT_EXTRA_PARAMS,
         LOGOUT_BACK_CHANNEL,
         LOGOUT_FRONT_CHANNEL,
@@ -187,6 +192,8 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         TOKEN_AUTHORIZATION_SCHEME,
         TOKEN_SIGNATURE_ALGORITHM,
         TOKEN_DECRYPTION_KEY_LOCATION,
+        TOKEN_DECRYPT_ID_TOKEN,
+        TOKEN_DECRYPT_ACCESS_TOKEN,
         TOKEN_ALLOW_JWT_INTROSPECTION,
         TOKEN_REQUIRE_JWT_INTROSPECTION_ONLY,
         TOKEN_ALLOW_OPAQUE_TOKEN_INTROSPECTION,
@@ -337,7 +344,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
-            public Map<String, String> requiredClaims() {
+            public Map<String, Set<String>> requiredClaims() {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_REQUIRED_CLAIMS, true);
                 return Map.of();
             }
@@ -412,6 +419,18 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> decryptionKeyLocation() {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_DECRYPTION_KEY_LOCATION, true);
                 return Optional.empty();
+            }
+
+            @Override
+            public Optional<Boolean> decryptIdToken() {
+                invocationsRecorder.put(ConfigMappingMethods.TOKEN_DECRYPT_ID_TOKEN, true);
+                return Optional.of(false);
+            }
+
+            @Override
+            public boolean decryptAccessToken() {
+                invocationsRecorder.put(ConfigMappingMethods.TOKEN_DECRYPT_ACCESS_TOKEN, true);
+                return false;
             }
 
             @Override
@@ -490,6 +509,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<Set<ClearSiteData>> clearSiteData() {
                 invocationsRecorder.put(ConfigMappingMethods.LOGOUT_CLEAR_SITE_DATA, true);
                 return Optional.of(Set.of());
+            }
+
+            @Override
+            public LogoutMode logoutMode() {
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_MODE, true);
+                return LogoutMode.QUERY;
             }
 
             @Override
@@ -575,6 +600,30 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> trustStoreFileType() {
                 invocationsRecorder.put(ConfigMappingMethods.CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE, true);
                 return Optional.empty();
+            }
+        };
+    }
+
+    @Override
+    public ResourceMetadata resourceMetadata() {
+        invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA, true);
+        return new ResourceMetadata() {
+            @Override
+            public boolean enabled() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_ENABLED, true);
+                return false;
+            }
+
+            @Override
+            public Optional<String> resource() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_RESOURCE, true);
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean forceHttpsScheme() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_FORCE_HTTPS_SCHEME, true);
+                return false;
             }
         };
     }

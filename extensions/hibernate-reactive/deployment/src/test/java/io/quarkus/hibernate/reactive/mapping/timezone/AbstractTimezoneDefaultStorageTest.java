@@ -11,9 +11,10 @@ import java.time.ZonedDateTime;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.SoftAssertions;
-import org.hibernate.SessionFactory;
+import org.hibernate.metamodel.MappingMetamodel;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.hibernate.reactive.SchemaUtil;
 import io.quarkus.test.vertx.UniAsserter;
 
 public class AbstractTimezoneDefaultStorageTest {
@@ -25,10 +26,11 @@ public class AbstractTimezoneDefaultStorageTest {
             .atOffset(ZoneOffset.ofHours(3));
 
     @Inject
-    SessionFactory ormSessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
-
-    @Inject
     Mutiny.SessionFactory sessionFactory;
+
+    MappingMetamodel mappingMetamodel() {
+        return SchemaUtil.mappingMetamodel(sessionFactory);
+    }
 
     protected void assertPersistedThenLoadedValues(UniAsserter asserter, ZonedDateTime expectedZonedDateTime,
             OffsetDateTime expectedOffsetDateTime, OffsetTime expectedOffsetTime) {

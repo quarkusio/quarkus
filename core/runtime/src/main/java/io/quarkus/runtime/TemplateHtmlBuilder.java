@@ -527,6 +527,12 @@ public class TemplateHtmlBuilder {
     }
 
     public static String adjustRoot(String httpRoot, String basePath) {
+        // This should not really happen, but there is some racy code that uses this
+        // where if a user hits a not found during startup this may not have been initialized yet
+        // There is not really a good place to deal with this, but this works around it somewhat
+        if (httpRoot == null) {
+            return basePath;
+        }
         //httpRoot can optionally end with a slash
         //also some templates want the returned path to start with a / and some don't
         //to make this work we check if the basePath starts with a / or not, and make sure we

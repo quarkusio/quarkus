@@ -15,4 +15,8 @@ public class ParameterSubResRootImpl implements ParameterSubResRoot {
         return ParameterSubResClassSub.class;
     }
 
+    @Override
+    public ParameterSubResSubImpl2 getAnotherSubresource() {
+        return new ParameterSubResSubImpl2();
+    }
 }

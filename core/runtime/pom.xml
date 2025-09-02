@@ -254,8 +254,8 @@
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-net</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-os</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-ref</runnerParentFirstArtifact>
-                        <!-- QuarkusEntryPoint needs org-crac class definition -->
-                        <runnerParentFirstArtifact>io.github.crac:org-crac</runnerParentFirstArtifact>
+                        <!-- QuarkusEntryPoint needs crac class definition -->
+                        <runnerParentFirstArtifact>org.crac:crac</runnerParentFirstArtifact>
                         <!-- Make use of byteman frictionless -->
                         <runnerParentFirstArtifact>org.jboss.byteman:byteman</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>

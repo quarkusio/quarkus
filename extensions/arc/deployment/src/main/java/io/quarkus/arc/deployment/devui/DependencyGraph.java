@@ -8,11 +8,11 @@ public class DependencyGraph {
 
     static final DependencyGraph EMPTY = new DependencyGraph(Set.of(), Set.of());
 
-    public final Set<DevBeanInfo> nodes;
+    public final Set<Node> nodes;
     public final Set<Link> links;
     public final int maxLevel;
 
-    public DependencyGraph(Set<DevBeanInfo> nodes, Set<Link> links) {
+    public DependencyGraph(Set<Node> nodes, Set<Link> links) {
         this.nodes = nodes;
         this.links = links;
         this.maxLevel = links.stream().mapToInt(l -> l.level).max().orElse(0);
@@ -25,7 +25,7 @@ public class DependencyGraph {
     DependencyGraph filterLinks(Predicate<Link> predicate) {
         // Filter out links first
         Set<Link> newLinks = new HashSet<>();
-        Set<DevBeanInfo> newNodes = new HashSet<>();
+        Set<Node> newNodes = new HashSet<>();
         Set<String> usedIds = new HashSet<>();
         for (Link link : links) {
             if (predicate.test(link)) {
@@ -35,7 +35,7 @@ public class DependencyGraph {
             }
         }
         // Now keep only nodes for which a link exists...
-        for (DevBeanInfo node : nodes) {
+        for (Node node : nodes) {
             if (usedIds.contains(node.getId())) {
                 newNodes.add(node);
             }

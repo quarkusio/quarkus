@@ -13,7 +13,7 @@ class SuspendAuthorizationPolicy : HttpSecurityPolicy {
     override fun checkPermission(
         request: RoutingContext?,
         identity: Uni<SecurityIdentity>?,
-        requestContext: HttpSecurityPolicy.AuthorizationRequestContext?
+        requestContext: HttpSecurityPolicy.AuthorizationRequestContext?,
     ): Uni<CheckResult> {
         val authZHeader = request?.request()?.getHeader(HttpHeaders.AUTHORIZATION)
         if (authZHeader == "you-can-trust-me") {

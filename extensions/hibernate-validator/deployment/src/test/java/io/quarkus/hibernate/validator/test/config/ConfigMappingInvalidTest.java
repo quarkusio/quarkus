@@ -30,7 +30,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigMapping;
@@ -73,7 +72,6 @@ public class ConfigMappingInvalidTest {
         fail();
     }
 
-    @Unremovable
     @ConfigMapping(prefix = "validator.server")
     public interface Server {
         @Max(3)
@@ -87,13 +85,11 @@ public class ConfigMappingInvalidTest {
         Integer number();
     }
 
-    @Unremovable
     @ConfigMapping(prefix = "validator.hierarchy")
     public interface Child extends Parent {
 
     }
 
-    @Unremovable
     @ConfigMapping(prefix = "validator.repeatable")
     public interface Repeatable {
         @Size(max = 10)
@@ -101,7 +97,6 @@ public class ConfigMappingInvalidTest {
         String name();
     }
 
-    @Unremovable
     @ConfigMapping(prefix = "cloud")
     @Prod
     public interface Cloud {

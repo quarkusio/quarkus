@@ -1,5 +1,7 @@
 package io.quarkus.observability.testcontainers;
 
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -29,6 +31,7 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
         super(DockerImageName.parse(config.imageName()));
         withLogConsumer(frameConsumer());
         withLabel(config.label(), config.serviceName());
+        withLabel(QUARKUS_DEV_SERVICE, config.serviceName());
         Optional<Set<String>> aliases = config.networkAliases();
         aliases.map(s -> s.toArray(new String[0])).ifPresent(this::withNetworkAliases);
         if (config.shared()) {

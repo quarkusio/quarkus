@@ -24,20 +24,19 @@ import io.smallrye.common.cpu.ProcessorInfo;
  */
 @Recorder
 public class ExecutorRecorder {
-
     private static final Logger log = Logger.getLogger("io.quarkus.thread-pool");
 
     private static volatile Executor current;
 
-    final ThreadPoolConfig threadPoolConfig;
+    private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
 
-    public ExecutorRecorder(ThreadPoolConfig threadPoolConfig) {
+    public ExecutorRecorder(RuntimeValue<ThreadPoolConfig> threadPoolConfig) {
         this.threadPoolConfig = threadPoolConfig;
     }
 
     public ScheduledExecutorService setupRunTime(ShutdownContext shutdownContext,
             LaunchMode launchMode, ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
-        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory, contextHandler);
+        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig.getValue(), threadFactory, contextHandler);
         if (launchMode == LaunchMode.DEVELOPMENT) {
             shutdownContext.addLastShutdownTask(new Runnable() {
                 @Override
@@ -52,10 +51,10 @@ public class ExecutorRecorder {
                 }
             });
         } else {
-            Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
+            Runnable shutdownTask = createShutdownTask(threadPoolConfig.getValue(), underlying);
             shutdownContext.addLastShutdownTask(shutdownTask);
         }
-        if (threadPoolConfig.prefill()) {
+        if (threadPoolConfig.getValue().prefill()) {
             underlying.prestartAllCoreThreads();
         }
         ScheduledExecutorService managed = underlying;
@@ -117,8 +116,13 @@ public class ExecutorRecorder {
                                 // do some probing
                                 final int queueSize = executor.getQueueSize();
                                 final Thread[] runningThreads = executor.getRunningThreads();
-                                log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
-                                        runningThreads.length, queueSize);
+                                if (queueSize <= 0) {
+                                    log.infof("Awaiting thread pool shutdown; %d thread(s) running",
+                                            runningThreads.length);
+                                } else {
+                                    log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
+                                            runningThreads.length, queueSize);
+                                }
                                 // make sure no threads are stuck in {@code exit()}
                                 int realWaiting = runningThreads.length;
                                 for (Thread thr : runningThreads) {
@@ -138,7 +142,7 @@ public class ExecutorRecorder {
                                         }
                                     }
                                 }
-                                if (realWaiting == 0 && queueSize == 0) {
+                                if (realWaiting == 0) {
                                     // just exit
                                     executor.shutdownNow();
                                     break;

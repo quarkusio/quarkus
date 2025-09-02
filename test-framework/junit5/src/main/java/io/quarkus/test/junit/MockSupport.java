@@ -13,19 +13,19 @@ class MockSupport {
 
     private static final Deque<List<Object>> contexts = new ArrayDeque<>();
 
-    static void pushContext() {
+    static synchronized void pushContext() {
         contexts.push(new ArrayList<>());
     }
 
-    static void popContext() {
+    static synchronized void popContext() {
         if (contexts.isEmpty()) {
             return; // can happen on error in QuarkusTestResourceLifecycleManagers etc.
         }
         List<Object> val = contexts.pop();
         for (Object i : val) {
             try {
-                if (i instanceof MockedThroughWrapper) {
-                    ((MockedThroughWrapper) i).clearMock();
+                if (i instanceof MockedThroughWrapper m) {
+                    m.clearMock();
                 } else {
                     i.getClass().getDeclaredMethod("arc$clearMock").invoke(i);
 
@@ -38,15 +38,15 @@ class MockSupport {
         }
     }
 
-    static <T> void installMock(T instance, T mock) {
+    static synchronized <T> void installMock(T instance, T mock) {
         //due to class loading issues we can't access the interface directly
         List<Object> inst = contexts.peek();
         if (inst == null) {
             throw new IllegalStateException("No test in progress");
         }
         try {
-            if (instance instanceof MockedThroughWrapper) {
-                ((MockedThroughWrapper) instance).setMock(mock);
+            if (instance instanceof MockedThroughWrapper m) {
+                m.setMock(mock);
                 inst.add(instance);
             } else {
 

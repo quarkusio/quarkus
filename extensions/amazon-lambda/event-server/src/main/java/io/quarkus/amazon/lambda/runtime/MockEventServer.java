@@ -17,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -75,11 +76,15 @@ public class MockEventServer implements Closeable {
         HttpServerOptions options = new HttpServerOptions();
         options.setPort(port == 0 ? -1 : port);
 
-        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
+        Config config = ConfigProvider.getConfig();
+        Optional<MemorySize> maybeMaxHeadersSize = config
                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
-
         if (maybeMaxHeadersSize.isPresent()) {
             options.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+        }
+        Optional<Boolean> enableCompression = config.getOptionalValue("quarkus.http.enable-compression", Boolean.class);
+        if (enableCompression.isPresent()) {
+            options.setCompressionSupported(enableCompression.get());
         }
 
         httpServer = vertx.createHttpServer(options);

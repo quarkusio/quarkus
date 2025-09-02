@@ -50,9 +50,9 @@
         <smallrye-config.version>3.11.4</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.11</smallrye-open-api.version>
+        <smallrye-open-api.version>4.0.12</smallrye-open-api.version>
         <smallrye-graphql.version>2.12.2</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.9.1</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.9.2</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.1</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -119,7 +119,7 @@
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.7</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.4</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.5</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -129,7 +129,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.12.2</junit.jupiter.version>
-        <infinispan.version>15.0.16.Final</infinispan.version>
+        <infinispan.version>15.0.19.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.2.0</caffeine.version>
         <netty.version>4.1.124.Final</netty.version>
@@ -608,6 +608,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-caffeine-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-processor</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -18,7 +18,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
  * {@link AdditionalStaticResourceBuildItem}, {@link NativeImageResourceBuildItem}
  * and {@link io.quarkus.deployment.builditem.GeneratedResourceBuildItem} build items.
  * <br>
- * The value of {@code endpoint} should be prefixed with {@code '/'}.
+ * The value of {@code endpoint} should be prefixed with {@code '/'} and reference a file (no trailing `/`).
  */
 public final class GeneratedStaticResourceBuildItem extends MultiBuildItem {
 
@@ -28,8 +28,14 @@ public final class GeneratedStaticResourceBuildItem extends MultiBuildItem {
     private final byte[] content;
 
     private GeneratedStaticResourceBuildItem(final String endpoint, final byte[] content, final Path file) {
-        if (!requireNonNull(endpoint, "endpoint is required").startsWith("/")) {
-            throw new IllegalArgumentException("endpoint must start with '/'");
+        requireNonNull(endpoint, "endpoint is required");
+        if (!endpoint.startsWith("/")) {
+            throw new IllegalArgumentException(
+                    "GeneratedStaticResourceBuildItem endpoint must start with '/': %s".formatted(endpoint));
+        }
+        if (endpoint.endsWith("/")) {
+            throw new IllegalArgumentException(
+                    "GeneratedStaticResourceBuildItem endpoint must not end with '/': %s".formatted(endpoint));
         }
         this.endpoint = endpoint;
         this.file = file;

@@ -4,6 +4,7 @@ import { basepath } from 'devui-data';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/button';
 import { RouterController } from 'router-controller';
+import {notifier} from 'notifier';
 
 /**
  * This component show settings for the Dev MCP Server
@@ -135,7 +136,12 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
                         <div class="serverDetailsText">
                             <span>Connect to the Quarkus Dev MCP Server with:</span>
                             <span><b>Protocol:</b> Remote Streamable HTTP</span>
-                            <span><b>URL:</b> ${this._mcpPath}</span>
+                            <span><b>URL:</b> ${this._mcpPath}
+                                <vaadin-button theme="tertiary small" title="Copy to clipboard" @click=${() => this._copyToClipboard(this._mcpPath, 'MCP URL')}>
+                                    <vaadin-icon icon="font-awesome-solid:clipboard" slot="prefix" class="btn-icon">
+                                    </vaadin-icon>
+                                </vaadin-button>
+                            </span>
                         <div/>
                 </div>
                 ${this._renderDisableButton()}`;
@@ -184,7 +190,18 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
             });
         }
     }
-    
-    
+
+    _copyToClipboard(txt, what) {
+        navigator.clipboard.writeText(txt).then(
+            () => {
+                notifier.showInfoMessage(`Copied "${what}" to clipboard.`, 'top-end');
+            },
+            () => {
+                notifier.showErrorMessage(`Failed to copy "${what}" to clipboard.`, 'top-end');
+            }
+        );
+    }
+
+
 }
 customElements.define('qwc-dev-mcp-setting', QwcDevMCPSetting);

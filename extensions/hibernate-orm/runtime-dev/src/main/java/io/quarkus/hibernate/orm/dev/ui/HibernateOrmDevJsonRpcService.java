@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -28,9 +29,6 @@ import org.jboss.logging.Logger;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.quarkus.assistant.runtime.dev.Assistant;
-import io.quarkus.devui.runtime.comms.JsonRpcMessage;
-import io.quarkus.devui.runtime.comms.JsonRpcRouter;
-import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevController;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevInfo;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
@@ -44,7 +42,7 @@ public class HibernateOrmDevJsonRpcService {
     private final String allowedHost;
 
     @Inject
-    Optional<Assistant> assistant;
+    Instance<Optional<Assistant>> assistant;
 
     public HibernateOrmDevJsonRpcService() {
         this.isDev = LaunchMode.current().isDev() && !LaunchMode.current().isRemoteDev();
@@ -104,8 +102,8 @@ public class HibernateOrmDevJsonRpcService {
      * based on pageNumber and pageSize are returned. For mutation statements, a custom message including the number of affected
      * records is returned.
      * <p>
-     * This method handles result serialization (to JSON) internally, and returns a {@link JsonRpcMessage<String>} to avoid
-     * further processing by the {@link JsonRpcRouter}.
+     * This method handles result serialization (to JSON) internally, and returns a JsonRpc Message in Map format to avoid
+     * further processing by the Dev UI JsonRpcRouter.
      *
      * @param persistenceUnit The name of the persistence unit within which the query will be executed
      * @param query The user query (be it an HQL query or a plain-text statement when using assistant)
@@ -113,9 +111,9 @@ public class HibernateOrmDevJsonRpcService {
      * @param pageSize The page size, used for selection query results pagination
      * @param assistant Whether to use the assistant to generate the HQL query based on the user input
      * @param interactive Enable assistant's interactive mode, answering the original user request in natural language
-     * @return a {@link JsonRpcMessage<String>} containing the resulting {@link DataSet} serialized to JSON.
+     * @return a JsonRpcMessage containing the resulting {@link DataSet} serialized to JSON.
      */
-    public CompletionStage<JsonRpcMessage<String>> executeHQL(
+    public CompletionStage<Map<String, String>> executeHQL(
             String persistenceUnit,
             String query,
             Integer pageNumber,
@@ -150,7 +148,11 @@ public class HibernateOrmDevJsonRpcService {
         }
 
         if (Boolean.TRUE.equals(assistant)) {
-            Assistant a = this.assistant.orElse(null);
+            if (!this.assistant.isResolvable()) {
+                return errorDataSet(
+                        "The assistant is not available, please install the Chappie extension.");
+            }
+            Assistant a = this.assistant.get().orElse(null);
             if (a == null || !a.isAvailable()) {
                 return errorDataSet(
                         "The assistant is not available, please check the Quarkus assistant extension is correctly configured.");
@@ -176,7 +178,7 @@ public class HibernateOrmDevJsonRpcService {
                 return dataSetCompletionStage.thenCompose(dataSet -> {
                     if (dataSet.error() != null) {
                         // If there was an error executing the query, return it directly
-                        return CompletableFuture.completedStage(toJson(dataSet));
+                        return CompletableFuture.completedStage(toMap(dataSet));
                     }
                     CompletionStage<Map<String, String>> interactiveCompletionStage = a.assistBuilder()
                             .systemMessage(SYSTEM_MESSAGE)
@@ -192,11 +194,11 @@ public class HibernateOrmDevJsonRpcService {
                     });
                 });
             } else {
-                return dataSetCompletionStage.thenApply(HibernateOrmDevJsonRpcService::toJson);
+                return dataSetCompletionStage.thenApply(HibernateOrmDevJsonRpcService::toMap);
             }
         } else {
             DataSet result = executeHqlQuery(query, sf, pageNumber, pageSize);
-            return CompletableFuture.completedStage(toJson(result));
+            return CompletableFuture.completedStage(toMap(result));
         }
     }
 
@@ -259,15 +261,15 @@ public class HibernateOrmDevJsonRpcService {
         });
     }
 
-    private static CompletionStage<JsonRpcMessage<String>> errorDataSet(String errorMessage) {
-        return CompletableFuture.completedStage(toJson(new DataSet(null, null, -1, null, errorMessage)));
+    private static CompletionStage<Map<String, String>> errorDataSet(String errorMessage) {
+        return CompletableFuture.completedStage(toMap(new DataSet(null, null, -1, null, errorMessage)));
     }
 
-    private static JsonRpcMessage<String> messageDataset(String query, String message, long resultCount) {
-        return toJson(new DataSet(null, query, resultCount, message, null));
+    private static Map<String, String> messageDataset(String query, String message, long resultCount) {
+        return toMap(new DataSet(null, query, resultCount, message, null));
     }
 
-    private static JsonRpcMessage<String> toJson(DataSet dataSet) {
+    private static Map<String, String> toMap(DataSet dataSet) {
         StringBuilder jsonBuilder = new StringBuilder("{");
         jsonBuilder.append("\"resultCount\":").append(dataSet.resultCount());
         if (dataSet.data() != null) {
@@ -277,9 +279,13 @@ public class HibernateOrmDevJsonRpcService {
         appendIfNonNull(jsonBuilder, "message", dataSet.message());
         appendIfNonNull(jsonBuilder, "error", dataSet.error());
         jsonBuilder.append("}");
-        JsonRpcMessage<String> message = new JsonRpcMessage<>(jsonBuilder.toString(), MessageType.Response);
-        message.setAlreadySerialized(true);
-        return message;
+
+        Map<String, String> map = Map.of(
+                "response", jsonBuilder.toString(),
+                "messageType", "Response",
+                "alreadySerialized", "true");
+
+        return map;
     }
 
     private static void appendIfNonNull(StringBuilder sb, String fieldName, String value) {

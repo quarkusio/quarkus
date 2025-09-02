@@ -202,15 +202,17 @@ public class JsonRpcRouter {
         }
         uni.subscribe()
                 .with(item -> {
-                    if (item != null && JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
-                        JsonRpcMessage<?> jsonRpcMessage = (JsonRpcMessage<?>) item;
-                        Object response = jsonRpcMessage.getResponse();
-                        if (jsonRpcMessage.isAlreadySerialized()) {
+                    if (item != null && Map.class.isAssignableFrom(item.getClass())) {
+                        Map map = (Map) item;
+                        if (map.size() == 3 && map.containsKey("alreadySerialized") && map.containsKey("messageType")
+                                && map.containsKey("response") && map.get("alreadySerialized").equals("true")) {
+                            Object response = map.get("response");
+
                             // The message response was already serialized, write text directly to socket
                             jrrw.write("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
-                                    + jsonRpcMessage.getMessageType().name() + "\",\"object\":" + response + "}}");
+                                    + map.get("messageType") + "\",\"object\":" + response + "}}");
                         } else {
-                            codec.writeResponse(jrrw, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
+                            codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.Response);
                         }
                     } else {
                         codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.Response);

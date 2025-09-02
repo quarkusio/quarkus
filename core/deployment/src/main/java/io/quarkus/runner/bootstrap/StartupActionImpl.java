@@ -113,6 +113,7 @@ public class StartupActionImpl implements StartupAction {
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
         // Start dev services that weren't started in the augmentation phase
         ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
@@ -223,6 +224,7 @@ public class StartupActionImpl implements StartupAction {
     public int runMainClassBlocking(String... args) throws Exception {
         // Start dev services that weren't started in the augmentation phase
         ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
@@ -308,9 +310,6 @@ public class StartupActionImpl implements StartupAction {
 
             devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
         }
-        if (InitialConfigurator.DELAYED_HANDLER.isActivated()) {
-            InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
-        }
     }
 
     /**
@@ -319,6 +318,7 @@ public class StartupActionImpl implements StartupAction {
     public RunningQuarkusApplication run(String... args) throws Exception {
         // Start dev services that weren't started in the augmentation phase
         ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);

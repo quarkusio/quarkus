@@ -19,8 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devui</artifactId>
-            <optional>true</optional>
+            <artifactId>quarkus-assistant-dev</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

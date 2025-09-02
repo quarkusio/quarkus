@@ -201,14 +201,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!buildTimeConfig.enableGracefulShutdownInDevAndTestMode()) {
-                List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
-                List<AnnotationInstance> outgoings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING);
-                List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
-                List<AnnotationInstance> annotations = new ArrayList<>();
-                annotations.addAll(incomings);
-                annotations.addAll(outgoings);
-                annotations.addAll(channels);
-                for (AnnotationInstance annotation : annotations) {
+                for (AnnotationInstance annotation : discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING)) {
                     String channelName = annotation.value().asString();
                     if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
                         continue;

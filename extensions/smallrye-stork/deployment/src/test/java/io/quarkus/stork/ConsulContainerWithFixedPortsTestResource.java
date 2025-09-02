@@ -16,7 +16,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 public class ConsulContainerWithFixedPortsTestResource implements QuarkusTestResourceLifecycleManager {
 
     private GenericContainer<?> containerWithFixedPorts;
-    protected static final String IMAGE = "consul:1.7";
+    protected static final String IMAGE = "consul:latest";
 
     @Override
     public Map<String, String> start() {

@@ -148,7 +148,7 @@ public class SmallRyeStorkProcessor {
             smallryeHealthCheckDefaultPath = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
                     + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
                     + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();
-            LOGGER.infof("Using Smallrye Health Check defaults: %s", smallryeHealthCheckDefaultPath);
+            LOGGER.debugf("Using Smallrye Health Check defaults: %s", smallryeHealthCheckDefaultPath);
         }
         return smallryeHealthCheckDefaultPath;
     }

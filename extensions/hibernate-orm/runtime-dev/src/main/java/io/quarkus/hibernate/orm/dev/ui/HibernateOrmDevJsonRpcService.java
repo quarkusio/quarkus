@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.dev.ui;
 
-import static org.hibernate.internal.util.StringHelper.isBlank;
 import static org.hibernate.query.sqm.internal.SqmUtil.isMutation;
 
 import java.net.URI;

@@ -22,7 +22,9 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
@@ -767,6 +769,43 @@ public class ArcProcessor {
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer) {
         if (shutdownBuildTimeConfig.delayEnabled()) {
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(new ArcShutdownListener()));
+        }
+    }
+
+    // Quarkus does not support @Specializes (from CDI Full); detect usage and let user know
+    @BuildStep
+    void detectInvalidAnnotations(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            List<KnownSpecializesAnnotationOccurrenceBuildItem> knownSpecializesAnnotationOccurrenceBuildItems,
+            BuildProducer<ValidationErrorBuildItem> errorProducer) {
+        Collection<AnnotationInstance> specializesAnnotations = beanArchiveIndexBuildItem.getIndex()
+                .getAnnotations(DotNames.SPECIALIZES);
+        if (!specializesAnnotations.isEmpty()) {
+            Collection<DotName> knownClasses = new HashSet<>();
+            Collection<String> knownPackages = new HashSet<>();
+
+            for (KnownSpecializesAnnotationOccurrenceBuildItem item : knownSpecializesAnnotationOccurrenceBuildItems) {
+                knownClasses.addAll(item.getClassNames());
+                knownPackages.addAll(item.getPackageInfos());
+            }
+
+            Set<String> definitionErrors = new HashSet<>();
+            for (AnnotationInstance annInstance : specializesAnnotations) {
+                DotName targetClassName = annInstance.target().kind().equals(AnnotationTarget.Kind.CLASS)
+                        ? annInstance.target().asClass().name()
+                        : annInstance.target().asMethod().declaringClass().name();
+                if (!knownPackages.contains(targetClassName.packagePrefix()) && !knownClasses.contains(targetClassName)) {
+                    definitionErrors.add(targetClassName.toString());
+                }
+            }
+
+            if (definitionErrors.size() > 0) {
+                errorProducer.produce(new ValidationErrorBuildItem(new DefinitionException(
+                        "Quarkus does not support CDI Full @Specializes annotation; try using an @Alternative instead. " +
+                                "If you want to mark one or more of these occurrences as Quarkus compatible, take a " +
+                                "look at io.quarkus.arc.deployment.KnownSpecializesAnnotationOccurrenceBuildItem.\n" +
+                                "Annotation was found in the following classes: "
+                                + definitionErrors)));
+            }
         }
     }
 

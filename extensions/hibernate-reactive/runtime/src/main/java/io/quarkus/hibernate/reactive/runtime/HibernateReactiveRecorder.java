@@ -1,8 +1,10 @@
 package io.quarkus.hibernate.reactive.runtime;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -15,6 +17,7 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -41,7 +44,8 @@ public class HibernateReactiveRecorder {
                 integrationRuntimeDescriptors);
     }
 
-    public Supplier<ActiveResult> checkActiveSupplier(String puName, Optional<String> dataSourceName) {
+    public Supplier<ActiveResult> checkActiveSupplier(String puName, Optional<String> dataSourceName,
+            Set<String> entityClassNames) {
         return new Supplier<>() {
             @Override
             public ActiveResult get() {
@@ -49,6 +53,20 @@ public class HibernateReactiveRecorder {
                 if (active.isPresent() && !active.get()) {
                     return ActiveResult.inactive(
                             PersistenceUnitUtil.persistenceUnitInactiveReasonDeactivated(puName, dataSourceName));
+                }
+
+                if (entityClassNames.isEmpty() && dataSourceName.isPresent()) {
+                    // Persistence units are inactive when the corresponding datasource is inactive.
+                    var dataSourceBean = ReactiveDataSourceUtil.dataSourceInstance(dataSourceName.get()).getHandle().getBean();
+                    var dataSourceActive = dataSourceBean.checkActive();
+                    if (!dataSourceActive.value()) {
+                        return ActiveResult.inactive(
+                                String.format(Locale.ROOT,
+                                        "Persistence unit '%s' was deactivated automatically because it doesn't include any entity type and its datasource '%s' was deactivated.",
+                                        puName,
+                                        dataSourceName.get()),
+                                dataSourceActive);
+                    }
                 }
 
                 return ActiveResult.active();

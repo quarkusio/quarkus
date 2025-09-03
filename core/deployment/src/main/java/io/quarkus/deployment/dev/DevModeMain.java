@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +27,7 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.PathList;
+import io.smallrye.common.os.OS;
 
 /**
  * The main entry point for the dev mojo execution
@@ -196,7 +198,18 @@ public class DevModeMain implements Closeable {
             silentDeleteFile(link);
             try {
                 // create a symlink to ensure that user updates to the file have the expected effect in dev-mode
-                Files.createSymbolicLink(link, dotEnvPath);
+                try {
+                    Files.createSymbolicLink(link, dotEnvPath);
+                } catch (FileSystemException e) {
+                    // on Windows fall back to hard link if symlink cannot be created (due to insufficient permissions)
+                    // see https://github.com/quarkusio/quarkus/issues/49785
+                    if (OS.WINDOWS.isCurrent()) {
+                        log.debug("Falling back to hard link on Windows after FileSystemException", e);
+                        Files.createLink(link, dotEnvPath);
+                    } else {
+                        throw e;
+                    }
+                }
             } catch (IOException e) {
                 log.warn("Unable to link .env file", e);
             }

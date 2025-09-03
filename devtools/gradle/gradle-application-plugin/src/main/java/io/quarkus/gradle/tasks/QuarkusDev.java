@@ -129,7 +129,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         objectFactory = getProject().getObjects();
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory.convention(getProject().provider(() -> getProject().getLayout().getProjectDirectory().getAsFile()));
 
         environmentVariables = objectFactory.mapProperty(String.class, String.class);
 
@@ -186,8 +186,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     /**
      * The directory to be used as the working dir for the dev process.
      *
-     * Defaults to the main source set's classes directory. If there are
-     * multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
+     * Defaults to the project directory.
      *
      * @return workingDirectory
      */

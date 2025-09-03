@@ -46,7 +46,7 @@ public class EagerResolutionTaskTest {
         String addingQuarkusExtension = """
                 quarkus {
                   cachingRelevantProperties.add("FOO_ENV_VAR")
-                  quarkusBuildProperties.put("quarkus.package.type", "fast-jar")
+                  quarkusBuildProperties.put("quarkus.package.jar.type", "fast-jar")
                   quarkusBuildProperties.putAll(
                     provider {
                       tasks

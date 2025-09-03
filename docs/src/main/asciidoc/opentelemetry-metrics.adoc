@@ -362,9 +362,9 @@ IMPORTANT: Each unique combination of metric name and dimension produces a uniqu
 Using an unbounded set of dimensional data (many different values like a userId) can lead to a "cardinality explosion", an exponential increase in the creation of new time series.
 Avoid!
 
-OpenTelemetry provides many other types of Counters: `LongUpDownCounter`, `DoubleCounter`, `DoubleUpDownCounter` and also Observable, async counters like `ObservableLongCounter`, `ObservableDoubleCounter`, `ObservableLongUpDownCounter` and `ObservableDoubleUpDownCounter`.
+OpenTelemetry provides many other types of Counters: `LongUpDownCounter`, `DoubleCounter`, `UpDownCounter`,  `DoubleUpDownCounter` and also Observable, async counters like `ObservableLongCounter`, `ObservableDoubleCounter`, `ObservableLongUpDownCounter` and `ObservableDoubleUpDownCounter`.
 
-For more details please refer to the https://opentelemetry.io/docs/languages/java/instrumentation/#using-counters[OpenTelemetry Java documentation about Counters].
+For more details please refer to the https://opentelemetry.io/docs/languages/java/api/#counter[OpenTelemetry Java documentation about Counters].
 
 === Gauges
 Observable Gauges should be used to measure non-additive values.

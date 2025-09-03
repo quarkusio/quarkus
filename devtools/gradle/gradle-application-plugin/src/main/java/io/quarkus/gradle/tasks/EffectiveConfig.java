@@ -1,5 +1,6 @@
 package io.quarkus.gradle.tasks;
 
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableMap;
@@ -140,6 +141,8 @@ public final class EffectiveConfig {
                         properties.put(propertyName, configValue.getValue());
                     }
                 }
+                configClass(PackageConfig.class).getProperties().keySet().forEach(properties::remove);
+                configClass(NativeConfig.class).getProperties().keySet().forEach(properties::remove);
                 return unmodifiableMap(properties);
             }
         });

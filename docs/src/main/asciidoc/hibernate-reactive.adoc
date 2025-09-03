@@ -280,6 +280,24 @@ This will inject the `Mutiny.SessionFactory` of the default persistence unit.
 
 NOTE: Prior to Quarkus 3.0 it was also possible to inject a `@RequestScoped` bean for `Mutiny.Session`. However, the lifecycle of a reactive session does not fit the lifecycle of the CDI request context. Therefore, this bean is removed in Quarkus 3.0.
 
+[[persistence-unit-active]]
+=== Activate/deactivate persistence units
+
+When a persistence unit is configured at build time, the persistence unit is active by default.
+Quarkus starts the corresponding Hibernate Reactive `SessionFactory` when the application starts.
+
+To deactivate a persistence unit at runtime, see xref:hibernate-orm.adoc#persistence-unit-active[the corresponding section of the Hibernate ORM guide].
+
+[NOTE]
+====
+If you decide to follow the example from the Hibernate ORM guide to declare a custom CDI bean for the active persistence unit,
+but you use Hibernate Reactive,
+make sure to work with the `Mutiny.SessionFactory` type instead of `Session`:
+this is one way Hibernate Reactive's API entrypoint differs from Hibernate ORM's.
+
+See <<hr-cdi-integration>> for details.
+====
+
 [[flyway]]
 == Automatically transitioning to Flyway to Manage Schemas
 

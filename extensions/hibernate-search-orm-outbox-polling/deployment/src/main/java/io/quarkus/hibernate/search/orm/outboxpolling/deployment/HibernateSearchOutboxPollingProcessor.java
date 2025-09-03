@@ -38,8 +38,11 @@ class HibernateSearchOutboxPollingProcessor {
                 .reason(getClass().getName())
                 .methods().fields().build());
         for (String className : hibernateOrmTypes) {
+            // These are added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor,
+            // so we pass empty sets of PUs.
+            // The build items tell the Hibernate extension to process the classes at build time:
+            // add to Jandex index, bytecode enhancement, proxy generation, ...
             additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className,
-                    // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
                     Set.of()));
         }
     }

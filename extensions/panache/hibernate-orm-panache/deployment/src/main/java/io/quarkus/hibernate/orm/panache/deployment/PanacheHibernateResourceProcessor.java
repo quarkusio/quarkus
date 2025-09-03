@@ -66,7 +66,10 @@ public final class PanacheHibernateResourceProcessor {
         // only useful for the index resolution: hibernate will register it to be transformed, but BuildMojo
         // only transforms classes from the application jar, so we do our own transforming
         return new AdditionalJpaModelBuildItem("io.quarkus.hibernate.orm.panache.PanacheEntity",
-                // Only added to persistence units actually using this class, using Jandex-based discovery
+                // Only added to persistence units actually using this class, using Jandex-based discovery,
+                // so we pass empty sets of PUs.
+                // The build items tell the Hibernate extension to process the classes at build time:
+                // add to Jandex index, bytecode enhancement, proxy generation, ...
                 Set.of());
     }
 

@@ -19,7 +19,7 @@ public final class AdditionalJpaModelBuildItem extends MultiBuildItem {
      * @deprecated Use {@link AdditionalJpaModelBuildItem#AdditionalJpaModelBuildItem(String, Set)} instead,
      *             which should fit the use case of JBeret better.
      */
-    @Deprecated(since = "3.26", forRemoval = true)
+    @Deprecated(since = "3.28", forRemoval = true)
     public AdditionalJpaModelBuildItem(String className) {
         Objects.requireNonNull(className);
         this.className = className;
@@ -32,6 +32,8 @@ public final class AdditionalJpaModelBuildItem extends MultiBuildItem {
      *        even if the application does not request it explicitly (e.g. using `quarkus.hibernate-orm.packages`).
      *        Note the class can still be added to a persistence unit at static init through other means --
      *        for example Hibernate Envers and Hibernate Search use {@link org.hibernate.boot.spi.AdditionalMappingContributor}.
+     *        In such case the set of persistence units can be empty, and the build item will only ensure build-time processing
+     *        (Jandex indexing, bytecode enhancement, proxy generation, reflection enablement, ...) happens as expected.
      */
     public AdditionalJpaModelBuildItem(String className, Set<String> persistenceUnits) {
         Objects.requireNonNull(className);

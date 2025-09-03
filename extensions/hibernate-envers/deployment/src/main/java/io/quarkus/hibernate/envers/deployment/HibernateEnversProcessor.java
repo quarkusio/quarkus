@@ -29,17 +29,17 @@ public final class HibernateEnversProcessor {
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
         return Arrays.asList(
+                // These are added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor,
+                // so we pass empty sets of PUs.
+                // The build items tell the Hibernate extension to process the classes at build time:
+                // add to Jandex index, bytecode enhancement, proxy generation, ...
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity",
-                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
                         Set.of()),
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
-                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
                         Set.of()),
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping",
-                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
                         Set.of()),
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping",
-                        // Added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor
                         Set.of()));
     }
 

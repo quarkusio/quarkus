@@ -1238,7 +1238,7 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        Set<String> affectedModelClasses = new HashSet<>();
+        Set<String> assignedModelClasses = new HashSet<>();
         for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
             var className = additionalJpaModel.getClassName();
             var persistenceUnits = additionalJpaModel.getPersistenceUnits();
@@ -1246,7 +1246,7 @@ public final class HibernateOrmProcessor {
                 // Legacy behavior -- remove when the deprecated one-argument constructor of AdditionalJpaModelBuildItem gets removed.
                 continue;
             }
-            affectedModelClasses.add(className); // Even if persistenceUnits is empty, the class is still affected (to nothing)
+            assignedModelClasses.add(className); // Even if persistenceUnits is empty, the class is still assigned (to nothing)
             for (String persistenceUnitName : persistenceUnits) {
                 modelClassesAndPackagesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
                 modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(className);
@@ -1259,9 +1259,9 @@ public final class HibernateOrmProcessor {
                     String.join("\n\t- ", modelClassesWithPersistenceUnitAnnotations)));
         }
 
-        affectedModelClasses.addAll(modelClassesAndPackagesPerPersistenceUnits.values().stream().flatMap(Set::stream).toList());
+        assignedModelClasses.addAll(modelClassesAndPackagesPerPersistenceUnits.values().stream().flatMap(Set::stream).toList());
         Set<String> unaffectedModelClasses = jpaModel.getAllModelClassNames().stream()
-                .filter(c -> !affectedModelClasses.contains(c))
+                .filter(c -> !assignedModelClasses.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!unaffectedModelClasses.isEmpty()) {
             LOG.warnf("Could not find a suitable persistence unit for model classes:\n\t- %s",

@@ -28,7 +28,7 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigDocDefault("'true' if Hibernate ORM is enabled; 'false' otherwise")
+    @ConfigDocDefault("`true` if Hibernate ORM is enabled and there are entity types or an active datasource assigned to the persistence unit; `false` otherwise")
     Optional<Boolean> active();
 
     /**

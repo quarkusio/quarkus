@@ -16,10 +16,8 @@ import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.MutationQuery;
 import org.hibernate.query.SelectionQuery;
 
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
@@ -81,12 +79,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public Session getSession(String persistentUnitName) {
         ArcContainer arcContainer = Arc.container();
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
-            InstanceHandle<Session> sessionHandle = arcContainer.instance(Session.class);
-            if (!sessionHandle.isAvailable() && !arcContainer.instance(AgroalDataSource.class).isAvailable()) {
-                throw new IllegalStateException(
-                        "The default datasource has not been properly configured. See https://quarkus.io/guides/datasource#jdbc-datasource for information on how to do that.");
-            }
-            return sessionHandle.get();
+            return arcContainer.instance(Session.class).get();
         } else {
             return arcContainer.instance(Session.class,
                     new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName))

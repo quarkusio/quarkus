@@ -2,13 +2,20 @@ package io.quarkus.hibernate.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.inject.Inject;
+
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
+/**
+ * Test that a persistence unit without any entities does get started,
+ * and can be used, be it only for native queries.
+ */
 public class NoEntitiesTest {
 
     @RegisterExtension
@@ -16,13 +23,28 @@ public class NoEntitiesTest {
             .withEmptyApplication()
             .withConfigurationResource("application.properties");
 
-    // When having no entities,
-    // as long as the Hibernate Reactive beans are not injected anywhere,
-    // we should still be able to start the application.
+    @Inject
+    private Mutiny.SessionFactory sessionFactory;
+
     @Test
-    public void testBootSucceedsButHibernateOrmDeactivated() {
-        // ... but Hibernate Reactive's beans should not be available.
-        assertThat(Arc.container().instance(Mutiny.SessionFactory.class).get()).isNull();
+    public void testNoEntities() {
+        assertThat(sessionFactory.getMetamodel().getEntities()).isEmpty();
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testSessionNativeQuery(UniAsserter asserter) {
+        asserter.assertThat(
+                () -> sessionFactory.withTransaction(s -> s.createNativeQuery("select 1", Long.class).getResultList()),
+                result -> assertThat(result).containsExactly(1L));
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testStatelessSessionNativeQuery(UniAsserter asserter) {
+        asserter.assertThat(
+                () -> sessionFactory.withStatelessTransaction(s -> s.createNativeQuery("select 1", Long.class).getResultList()),
+                result -> assertThat(result).containsExactly(1L));
     }
 
 }

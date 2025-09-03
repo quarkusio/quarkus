@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime.recording;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
@@ -19,6 +20,7 @@ public class RecordedConfig {
     private final Optional<String> supportedDBkind;
     private final Optional<String> dbVersion;
     private final Optional<String> explicitDialect;
+    private final Set<String> entityClassNames;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
     private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
@@ -28,7 +30,7 @@ public class RecordedConfig {
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
             Optional<String> supportedDBkind,
-            Optional<String> dbVersion, Optional<String> explicitDialect,
+            Optional<String> dbVersion, Optional<String> explicitDialect, Set<String> entityClassNames,
             MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
@@ -44,6 +46,7 @@ public class RecordedConfig {
         this.supportedDBkind = supportedDBkind;
         this.dbVersion = dbVersion;
         this.explicitDialect = explicitDialect;
+        this.entityClassNames = entityClassNames;
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
         this.builtinFormatMapperBehaviour = builtinFormatMapperBehaviour;
@@ -69,6 +72,10 @@ public class RecordedConfig {
 
     public Optional<String> getExplicitDialect() {
         return explicitDialect;
+    }
+
+    public Set<String> getEntityClassNames() {
+        return entityClassNames;
     }
 
     public MultiTenancyStrategy getMultiTenancyStrategy() {

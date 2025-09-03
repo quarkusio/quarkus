@@ -550,14 +550,25 @@ public class KeycloakDevServicesProcessor {
             }
 
             if (fixedExposedPort.isPresent()) {
-                addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);
+                if (isHttps()) {
+                    addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_HTTPS_PORT);
+                    addExposedPort(KEYCLOAK_PORT);
+                } else {
+                    addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);
+                }
                 if (useSharedNetwork) {
                     // expose random port for which we are able to ask Testcontainers for the actual mapped port at runtime
                     // as from the host's perspective Testcontainers actually expose container ports on random host port
                     addExposedPort(KEYCLOAK_PORT);
+                    if (isHttps()) {
+                        addExposedPort(KEYCLOAK_HTTPS_PORT);
+                    }
                 }
             } else {
                 addExposedPort(KEYCLOAK_PORT);
+                if (isHttps()) {
+                    addExposedPort(KEYCLOAK_HTTPS_PORT);
+                }
             }
 
             if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
@@ -578,9 +589,6 @@ public class KeycloakDevServicesProcessor {
                 }
                 withCommand(finalStartCommand);
                 addUpConfigResource();
-                if (isHttps()) {
-                    addExposedPort(KEYCLOAK_HTTPS_PORT);
-                }
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);

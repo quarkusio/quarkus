@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
+import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -25,9 +26,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-
-import io.quarkus.bootstrap.BootstrapAppModelFactory;
-import io.quarkus.bootstrap.BootstrapException;
 
 @TopCommand
 @Command(name = "dockerfiles", sortOptions = false, mixinStandardHelpOptions = false, header = "Generate Dockerfiles/Containerfiles.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")

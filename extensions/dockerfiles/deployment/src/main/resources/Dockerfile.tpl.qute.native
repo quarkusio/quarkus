@@ -3,18 +3,24 @@
 #
 # Before building the container image run:
 #
-# {buildtool.cli} {buildtool.cmd.package-native}
+# {#insert quarkusbuild /}
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native -t quarkus/{project.artifact-id} .
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/{application-name}-{type} .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/{project.artifact-id}
+# docker run -i --rm -p 8080:8080 quarkus/{application-name}-{type}
 #
 ###
-FROM {dockerfile.native.from}
+FROM {from}
+
+{#if dependencies}
+# Install additional dependencies required by extensions
+{dependencies}
+{/if}
+
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

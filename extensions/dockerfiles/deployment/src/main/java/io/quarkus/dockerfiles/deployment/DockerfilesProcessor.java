@@ -1,11 +1,13 @@
 package io.quarkus.dockerfiles.deployment;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.dockerfiles.spi.DockerfileDependencyBuildItem;
 import io.quarkus.dockerfiles.spi.GeneratedDockerfile;
 import io.quarkus.dockerfiles.spi.JvmDockerfileFrom;
 import io.quarkus.dockerfiles.spi.NativeDockerfileFrom;
@@ -43,15 +45,26 @@ class DockerfilesProcessor {
 
     @BuildStep
     GeneratedDockerfile.Jvm buildJvmDockerfile(JvmDockerfileFrom.Effective effective, ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget) {
-        return new GeneratedDockerfile.Jvm(DockerfileContent.getJvmDockerfileContent(effective.getFrom(),
-                applicationInfo.getName(), outputTarget.getOutputDirectory()));
+            OutputTargetBuildItem outputTarget, List<DockerfileDependencyBuildItem> dependencies) {
+        String content = DockerfileContent.jvmBuilder()
+                .from(effective.getFrom())
+                .applicationName(applicationInfo.getName())
+                .outputDir(outputTarget.getOutputDirectory())
+                .dependencies(dependencies)
+                .build();
+        return new GeneratedDockerfile.Jvm(content);
     }
 
     @BuildStep
     GeneratedDockerfile.Native buildNativeDockerfile(NativeDockerfileFrom.Effective effective,
-            ApplicationInfoBuildItem applicationInfo, OutputTargetBuildItem outputTarget) {
-        return new GeneratedDockerfile.Native(DockerfileContent.getNativeDockerfileContent(effective.getFrom(),
-                applicationInfo.getName(), outputTarget.getOutputDirectory()));
+            ApplicationInfoBuildItem applicationInfo, OutputTargetBuildItem outputTarget,
+            List<DockerfileDependencyBuildItem> dependencies) {
+        String content = DockerfileContent.nativeBuilder()
+                .from(effective.getFrom())
+                .applicationName(applicationInfo.getName())
+                .outputDir(outputTarget.getOutputDirectory())
+                .dependencies(dependencies)
+                .build();
+        return new GeneratedDockerfile.Native(content);
     }
 }

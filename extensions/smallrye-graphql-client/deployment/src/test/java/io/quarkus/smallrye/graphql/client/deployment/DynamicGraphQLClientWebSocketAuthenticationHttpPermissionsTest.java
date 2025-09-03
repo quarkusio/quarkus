@@ -6,7 +6,6 @@ import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -41,7 +40,6 @@ public class DynamicGraphQLClientWebSocketAuthenticationHttpPermissionsTest {
                     .addAsResource("roles.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
-    @Disabled("TODO: enable after upgrade to smallrye-graphql 1.6.1, with 1.6.0 a websocket upgrade failure causes a hang here")
     @Test
     public void testUnauthenticatedForQueryWebSocket() throws Exception {
         DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()

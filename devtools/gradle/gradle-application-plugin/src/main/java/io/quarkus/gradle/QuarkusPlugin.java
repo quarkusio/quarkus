@@ -382,7 +382,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     });
 
                     quarkusDev.configure(task -> {
-                        task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
+                        task.dependsOn(classesTask, resourcesTask, testResourcesTask,
                                 quarkusGenerateCodeDev,
                                 quarkusGenerateCodeTests);
                     });

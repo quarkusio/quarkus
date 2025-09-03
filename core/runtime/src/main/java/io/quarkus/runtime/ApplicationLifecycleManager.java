@@ -164,8 +164,8 @@ public class ApplicationLifecycleManager {
                     stateLock.unlock();
                 }
             }
-        } catch (Exception e) {
-            Throwable rootCause = ExceptionUtil.getRootCause(e);
+        } catch (Throwable t) {
+            Throwable rootCause = ExceptionUtil.getRootCause(t);
             if (exitCodeHandler == null) {
                 Logger applicationLogger = Logger.getLogger(Application.class);
                 if (rootCause instanceof QuarkusBindException qbe) {
@@ -198,7 +198,7 @@ public class ApplicationLifecycleManager {
                         && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
                     System.err.println(rootCause.getMessage());
                 } else {
-                    applicationLogger.errorv(e, "Failed to start application");
+                    applicationLogger.errorv(t, "Failed to start application");
                     ensureConsoleLogsDrained();
                 }
             }
@@ -214,7 +214,7 @@ public class ApplicationLifecycleManager {
                     ? ((PreventFurtherStepsException) rootCause).getExitCode()
                     : 1;
             currentApplication = null;
-            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
+            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, t);
             return;
         } finally {
             try {

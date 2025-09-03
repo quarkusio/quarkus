@@ -2,7 +2,6 @@ package io.quarkus.restclient.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -309,19 +308,6 @@ class RestClientConfigTest {
         assertEquals(2, restClientConfigThree.headers().size());
         assertEquals("one", restClientConfigThree.headers().get("two"));
         assertEquals("two", restClientConfigThree.headers().get("one"));
-    }
-
-    @Test
-    void buildTimeConfig() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsBuildTimeConfig.class)
-                .build();
-        assertNotNull(config);
-
-        RestClientsBuildTimeConfig buildTimeConfig = config.getConfigMapping(RestClientsBuildTimeConfig.class)
-                .get(List.of(new RegisteredRestClient(ConfigKeyRestClient.class, "key")));
-
-        assertFalse(buildTimeConfig.clients().get(ConfigKeyRestClient.class.getName()).removesTrailingSlash());
     }
 
     @Test

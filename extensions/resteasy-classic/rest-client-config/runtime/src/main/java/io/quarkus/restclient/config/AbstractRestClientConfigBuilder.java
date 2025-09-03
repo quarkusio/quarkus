@@ -29,7 +29,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  * property names provided by each source. This also applies to the REST Client, but since the names are known to
  * Quarkus, the REST Client configuration could be loaded even for sources that don't provide a list of property
  * names. To achieve such behaviour, we use {@link io.smallrye.config.WithKeys} and
- * {@link io.quarkus.restclient.config.RestClientsConfig.RestClientKeysProvider} to provide the REST Client keys.
+ * {@link RestClientKeysProvider} to provide the REST Client keys.
  * <p>
  * The REST Client configuration looks up the following names in order:
  *
@@ -55,19 +55,9 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
     private static final String REST_CLIENT_PREFIX = "quarkus.rest-client.";
 
-    private final boolean runtime;
-
-    public AbstractRestClientConfigBuilder() {
-        this.runtime = true;
-        RestClientsConfig.RestClientKeysProvider.KEYS.clear();
-    }
-
-    public AbstractRestClientConfigBuilder(boolean runtime) {
-        this.runtime = runtime;
-    }
-
     @Override
     public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
+        RestClientKeysProvider.KEYS.clear();
         List<RegisteredRestClient> restClients = getRestClients();
 
         Map<String, String> quarkusFallbacks = new HashMap<>();
@@ -75,9 +65,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         Map<String, List<String>> relocates = new HashMap<>();
 
         for (RegisteredRestClient restClient : restClients) {
-            if (runtime) {
-                RestClientsConfig.RestClientKeysProvider.KEYS.add(restClient.getFullName());
-            }
+            RestClientKeysProvider.KEYS.add(restClient.getFullName());
 
             String quotedFullName = "\"" + restClient.getFullName() + "\"";
             String quotedSimpleName = "\"" + restClient.getSimpleName() + "\"";

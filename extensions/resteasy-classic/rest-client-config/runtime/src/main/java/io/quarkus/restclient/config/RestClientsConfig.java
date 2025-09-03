@@ -1,12 +1,9 @@
 package io.quarkus.restclient.config;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -185,19 +182,6 @@ public interface RestClientsConfig {
      * Can be overwritten by client-specific settings.
      */
     Optional<String> providers();
-
-    /**
-     * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of a CDI
-     * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such
-     * as"ApplicationScoped").
-     * <p>
-     * Default scope for the rest-client extension is "Dependent" (which is the spec-compliant behavior).
-     * <p>
-     * Default scope for the rest-client-reactive extension is "ApplicationScoped".
-     * <p>
-     * Can be overwritten by client-specific settings.
-     */
-    Optional<String> scope();
 
     /**
      * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
@@ -676,14 +660,5 @@ public interface RestClientsConfig {
          * Logging configuration.
          */
         Optional<RestClientLoggingConfig> logging();
-    }
-
-    class RestClientKeysProvider implements Supplier<Iterable<String>> {
-        static List<String> KEYS = new ArrayList<>();
-
-        @Override
-        public Iterable<String> get() {
-            return KEYS;
-        }
     }
 }

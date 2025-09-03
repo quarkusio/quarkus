@@ -57,7 +57,8 @@ public class HibernateReactiveCdiProcessor {
                         // This startup() call is only necessary in order to trigger Arc's usage checks (fail startup if bean injected when a PU is inactive).
                         .startup()
                         .checkActive(recorder.checkActiveSupplier(persistenceUnitName,
-                                persistenceUnitDescriptor.getConfig().getDataSource()))
+                                persistenceUnitDescriptor.getConfig().getDataSource(),
+                                persistenceUnitDescriptor.getConfig().getEntityClassNames()))
                         .createWith(recorder.mutinySessionFactory(persistenceUnitName))
                         .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)));
 

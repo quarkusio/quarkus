@@ -170,11 +170,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     public void additionalJpaModel(BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
+        // Only added to persistence units actually using this class, using Jandex-based discovery,
+        // so we pass empty sets of PUs.
+        // The build items tell the Hibernate extension to process the classes at build time:
+        // add to Jandex index, bytecode enhancement, proxy generation, ...
         additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME,
-                // Only added to persistence units actually using this class, using Jandex-based discovery
                 Set.of()));
         additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME,
-                // Only added to persistence units actually using this class, using Jandex-based discovery
                 Set.of()));
     }
 

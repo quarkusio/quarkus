@@ -105,7 +105,6 @@ public class QuarkusUnitTest
     private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
 
-    private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private Consumer<List<LogRecord>> assertLogRecords;
 
@@ -264,8 +263,9 @@ public class QuarkusUnitTest
         return this;
     }
 
+    @Deprecated(forRemoval = true)
     public QuarkusUnitTest setLogFileName(String logFileName) {
-        this.logFileName = logFileName;
+        PropertyTestUtil.setLogFileProperty(logFileName);
         return this;
     }
 
@@ -588,11 +588,6 @@ public class QuarkusUnitTest
         };
         timeoutTimer = new Timer("Test thread dump timer");
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
-        if (logFileName != null) {
-            PropertyTestUtil.setLogFileProperty(logFileName);
-        } else {
-            PropertyTestUtil.setLogFileProperty();
-        }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
 
         ExclusivityChecker.checkTestType(extensionContext, QuarkusUnitTest.class);

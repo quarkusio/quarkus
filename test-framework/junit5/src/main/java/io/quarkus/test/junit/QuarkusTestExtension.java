@@ -69,7 +69,6 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
@@ -637,7 +636,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     }
                 }
             }
-            PropertyTestUtil.setLogFileProperty();
             try {
                 state = doJavaStart(extensionContext, selectedProfile);
                 setState(extensionContext, state);

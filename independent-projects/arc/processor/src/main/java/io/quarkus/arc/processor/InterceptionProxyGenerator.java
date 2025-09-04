@@ -325,7 +325,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                     }
                 }
 
-                ResultHandle superResult = isInterface
+                ResultHandle superResult = method.declaringClass().isInterface()
                         ? funcBytecode.invokeInterfaceMethod(methodDescriptor, targetHandle, superParamHandles)
                         : funcBytecode.invokeVirtualMethod(methodDescriptor, targetHandle, superParamHandles);
                 funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());

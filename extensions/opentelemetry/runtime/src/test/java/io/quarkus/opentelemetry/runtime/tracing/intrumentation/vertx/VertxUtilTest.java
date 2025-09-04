@@ -113,6 +113,11 @@ class VertxUtilTest {
             }
 
             @Override
+            public @Nullable HostAndPort authority(boolean b) {
+                return null;
+            }
+
+            @Override
             public @Nullable String host() {
                 return "";
             }

@@ -2,10 +2,8 @@ package io.quarkus.hibernate.orm.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.enterprise.context.control.ActivateRequestContext;
-import jakarta.enterprise.inject.CreationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -15,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ConfigActiveFalseDynamicInjectionTest {
@@ -34,12 +33,15 @@ public class ConfigActiveFalseDynamicInjectionTest {
         // So the bean cannot be null.
         assertThat(entityManagerFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        CreationException e = assertThrows(CreationException.class, () -> entityManagerFactory.getMetamodel());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> entityManagerFactory.getMetamodel())
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
-                        "Hibernate ORM was deactivated through configuration properties");
+                        "class=org.hibernate.SessionFactory,",
+                        "Persistence unit '<default>' was deactivated through configuration properties",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the persistence unit, set configuration property 'quarkus.hibernate-orm.active'"
+                                + " to 'true' and configure datasource '<default>'.",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 
     @Test
@@ -51,12 +53,15 @@ public class ConfigActiveFalseDynamicInjectionTest {
         // So the bean cannot be null.
         assertThat(sessionFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        CreationException e = assertThrows(CreationException.class, () -> sessionFactory.getMetamodel());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> sessionFactory.getMetamodel())
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
-                        "Hibernate ORM was deactivated through configuration properties");
+                        "class=org.hibernate.SessionFactory,",
+                        "Persistence unit '<default>' was deactivated through configuration properties",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the persistence unit, set configuration property 'quarkus.hibernate-orm.active'"
+                                + " to 'true' and configure datasource '<default>'.",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 
     @Test
@@ -70,12 +75,14 @@ public class ConfigActiveFalseDynamicInjectionTest {
         assertThat(entityManager).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> entityManager.find(MyEntity.class, 0L))
-                // Note that unlike for EntityManagerFactory/SessionFactory we get an IllegalStateException because
-                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in HibernateOrmRecorder.sessionSupplier()
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
-                        "Hibernate ORM was deactivated through configuration properties");
+                        "class=org.hibernate.Session,",
+                        "Persistence unit '<default>' was deactivated through configuration properties",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the persistence unit, set configuration property 'quarkus.hibernate-orm.active'"
+                                + " to 'true' and configure datasource '<default>'.",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 
     @Test
@@ -89,11 +96,13 @@ public class ConfigActiveFalseDynamicInjectionTest {
         assertThat(session).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> session.find(MyEntity.class, 0L))
-                // Note that unlike for EntityManagerFactory/SessionFactory we get an IllegalStateException because
-                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in HibernateOrmRecorder.sessionSupplier()
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
-                        "Hibernate ORM was deactivated through configuration properties");
+                        "class=org.hibernate.Session,",
+                        "Persistence unit '<default>' was deactivated through configuration properties",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the persistence unit, set configuration property 'quarkus.hibernate-orm.active'"
+                                + " to 'true' and configure datasource '<default>'.",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.KnownSpecializesAnnotationOccurrenceBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -109,6 +110,7 @@ import io.smallrye.graphql.api.federation.requiresscopes.RequiresScopes;
 import io.smallrye.graphql.api.federation.requiresscopes.ScopeGroup;
 import io.smallrye.graphql.api.federation.requiresscopes.ScopeItem;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
+import io.smallrye.graphql.cdi.context.CDISmallRyeContext;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.cdi.tracing.TracingService;
 import io.smallrye.graphql.config.ConfigKey;
@@ -879,6 +881,15 @@ public class SmallRyeGraphQLProcessor {
             additionalIndexedClasses
                     .produce(new AdditionalIndexedClassesBuildItem("io.quarkus.panache.common.Sort$NullPrecedence"));
         }
+    }
+
+    // This build step can be removed after Quarkus updated to any version newer than 2.14.1
+    // See also https://github.com/smallrye/smallrye-graphql/pull/2299
+    @BuildStep
+    void registerKnownSpecializationAnnotation(
+            BuildProducer<KnownSpecializesAnnotationOccurrenceBuildItem> knownAnnotationItem) {
+        knownAnnotationItem.produce(KnownSpecializesAnnotationOccurrenceBuildItem
+                .forClass(DotName.createSimple(CDISmallRyeContext.class)));
     }
 
     // In dev mode, when you click on the logo, you should go to Dev UI

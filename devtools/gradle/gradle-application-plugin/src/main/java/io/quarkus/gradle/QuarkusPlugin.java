@@ -471,39 +471,69 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class,
                             compileJava -> {
+                                // add the code gen sources
+                                final SourceSet generatedSourceSet = sourceSets
+                                        .getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
+                                addCodeGenSourceDirs(compileJava, generatedSourceSet, quarkusExt);
                                 // quarkusGenerateCode is a dependency
                                 compileJava.dependsOn(quarkusGenerateCode);
                                 // quarkusGenerateCodeDev must run before compileJava in case quarkusDev is the target
                                 compileJava.mustRunAfter(quarkusGenerateCodeDev);
-                                // add the code gen sources
-                                addCodeGenSourceDirs(compileJava,
-                                        sourceSets.getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES), quarkusExt);
+
+                                // The code below needs to be reviewed. There is no test coverage for it.
+                                // We need to properly configure/use these tasks. For now they aren't actually used
+                                // but w/o the code below, in some cases, Gradle may fail on determining task ordering.
+                                // https://github.com/quarkusio/quarkus/issues/45057 states that this issue happens with
+                                // org.gradle.parallel=true when building from IntelliJ
+                                // Similar code is added for compileKotlin (although for Kotlin these task don't seem to exist).
+                                if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
+                                    compileJava.mustRunAfter(tasks.named(generatedSourceSet.getCompileJavaTaskName()));
+                                }
                             });
                     tasks.named(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME, JavaCompile.class,
                             compileTestJava -> {
-                                compileTestJava.dependsOn(quarkusGenerateCode);
-                                compileTestJava.dependsOn(quarkusGenerateCodeTests);
+                                // add the code gen test sources
+                                final SourceSet generatedSourceSet = sourceSets
+                                        .getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
+                                addCodeGenSourceDirs(compileTestJava, generatedSourceSet, quarkusExt);
+                                compileTestJava.dependsOn(quarkusGenerateCode, quarkusGenerateCodeTests);
+                                if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
+                                    compileTestJava.mustRunAfter(tasks.named(generatedSourceSet.getCompileJavaTaskName()));
+                                }
                                 if (project.getGradle().getStartParameter().getTaskNames().contains(QUARKUS_DEV_TASK_NAME)) {
                                     compileTestJava.getOptions().setFailOnError(false);
                                 }
-                                // add the code gen test sources
-                                addCodeGenSourceDirs(compileTestJava,
-                                        sourceSets.getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES), quarkusExt);
                             });
                 });
 
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
             quarkusDev.configure(task -> task.shouldPropagateJavaCompilerArgs(false));
             tasks.named("compileKotlin", task -> {
-                task.mustRunAfter(quarkusGenerateCode);
+                final SourceSet generatedSourceSet = project.getExtensions().getByType(SourceSetContainer.class)
+                        .getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
+                addCodeGenSourceDirs(task, generatedSourceSet, quarkusExt);
+                task.dependsOn(quarkusGenerateCode);
                 task.mustRunAfter(quarkusGenerateCodeDev);
-                addCodeGenSourceDirs(task, project.getExtensions().getByType(SourceSetContainer.class)
-                        .getByName(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES), quarkusExt);
+                if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
+                    task.mustRunAfter(tasks.named(generatedSourceSet.getCompileJavaTaskName()));
+                }
+                String generatedSourcesCompileTaskName = generatedSourceSet.getCompileTaskName("kotlin");
+                if (tasks.contains(new NamedImpl(generatedSourcesCompileTaskName))) {
+                    task.mustRunAfter(tasks.named(generatedSourcesCompileTaskName));
+                }
             });
             tasks.named("compileTestKotlin", task -> {
+                final SourceSet generatedSourceSet = project.getExtensions().getByType(SourceSetContainer.class)
+                        .getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
+                addCodeGenSourceDirs(task, generatedSourceSet, quarkusExt);
                 task.dependsOn(quarkusGenerateCodeTests);
-                addCodeGenSourceDirs(task, project.getExtensions().getByType(SourceSetContainer.class)
-                        .getByName(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES), quarkusExt);
+                if (tasks.contains(new NamedImpl(generatedSourceSet.getCompileJavaTaskName()))) {
+                    task.mustRunAfter(tasks.named(generatedSourceSet.getCompileJavaTaskName()));
+                }
+                final String generatedSourcesCompileTaskName = generatedSourceSet.getCompileTaskName("kotlin");
+                if (tasks.contains(new NamedImpl(generatedSourcesCompileTaskName))) {
+                    task.mustRunAfter(tasks.named(generatedSourcesCompileTaskName));
+                }
             });
         });
     }

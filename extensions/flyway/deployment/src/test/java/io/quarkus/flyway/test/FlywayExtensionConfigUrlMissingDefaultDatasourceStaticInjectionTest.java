@@ -19,9 +19,6 @@ public class FlywayExtensionConfigUrlMissingDefaultDatasourceStaticInjectionTest
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
-            // Hibernate ORM is in the test classpath for other tests, but it's not useful here and would fail due to missing configuration.
-            // So we just disable it.
-            .overrideConfigKey("quarkus.hibernate-orm.enabled", "false")
             .assertException(e -> assertThat(e)
                     // Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))

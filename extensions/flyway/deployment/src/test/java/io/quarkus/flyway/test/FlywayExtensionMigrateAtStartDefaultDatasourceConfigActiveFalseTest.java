@@ -20,10 +20,7 @@ public class FlywayExtensionMigrateAtStartDefaultDatasourceConfigActiveFalseTest
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql"))
             .overrideConfigKey("quarkus.datasource.active", "false")
-            .overrideConfigKey("quarkus.flyway.migrate-at-start", "true")
-            // Hibernate ORM is in the test classpath for other tests, but it's not useful here and would fail due to missing configuration.
-            // So we just disable it.
-            .overrideConfigKey("quarkus.hibernate-orm.enabled", "false");
+            .overrideConfigKey("quarkus.flyway.migrate-at-start", "true");
 
     @Inject
     Instance<Flyway> flyway;

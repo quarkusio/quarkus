@@ -18,9 +18,6 @@ public class FlywayExtensionConfigActiveFalseDefaultDatasourceStaticInjectionTes
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.datasource.active", "false")
-            // Hibernate ORM is in the test classpath for other tests, but it's not useful here and would fail due to missing configuration.
-            // So we just disable it.
-            .overrideConfigKey("quarkus.hibernate-orm.enabled", "false")
             .assertException(e -> assertThat(e)
                     // Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))

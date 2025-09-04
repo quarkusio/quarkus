@@ -62,56 +62,62 @@ public class Testflow {
         // Why not use RestAssured? Because it doesn't let you configure Accept-Encoding easily
         // and when it comes to Brotli, not at all.
         // No, given().header("Accept-Encoding", acceptEncoding) doesn't cut it.
-        final WebClient client = WebClient.create(Vertx.vertx(), new WebClientOptions()
-                .setLogActivity(true)
-                .setFollowRedirects(true)
-                // Vert.x Web Client
-                // -----------------
-                // Why not use the client's built-in decompression support?
-                // Why you do decompression manually here?
-                // Because it then removes the original content-encoding header,
-                // and it fakes in a transfer-encoding header the server has never sent. Sad.
-                // RestAssured didn't let us configure Accept-Encoding easily, but at least
-                // it didn't mess with the response headers.
-                .setDecompressionSupported(false));
-        final CompletableFuture<HttpResponse<Buffer>> future = new CompletableFuture<>();
-        client.requestAbs(HttpMethod.GET, endpoint)
-                .putHeader(HttpHeaders.ACCEPT_ENCODING.toString(), acceptEncoding)
-                .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
-                .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
-                .send(ar -> {
-                    if (ar.succeeded()) {
-                        future.complete(ar.result());
-                    } else {
-                        future.completeExceptionally(ar.cause());
-                    }
-                });
+        Vertx vertx = Vertx.vertx();
         try {
-            final HttpResponse<Buffer> response = future.get();
-            final String actualEncoding = response.headers().get("content-encoding");
+            final WebClient client = WebClient.create(vertx, new WebClientOptions()
+                    .setLogActivity(true)
+                    .setFollowRedirects(true)
+                    // Vert.x Web Client
+                    // -----------------
+                    // Why not use the client's built-in decompression support?
+                    // Why you do decompression manually here?
+                    // Because it then removes the original content-encoding header,
+                    // and it fakes in a transfer-encoding header the server has never sent. Sad.
+                    // RestAssured didn't let us configure Accept-Encoding easily, but at least
+                    // it didn't mess with the response headers.
+                    .setDecompressionSupported(false));
+            final CompletableFuture<HttpResponse<Buffer>> future = new CompletableFuture<>();
+            client.requestAbs(HttpMethod.GET, endpoint)
+                    .putHeader(HttpHeaders.ACCEPT_ENCODING.toString(), acceptEncoding)
+                    .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
+                    .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
+                    .send(ar -> {
+                        if (ar.succeeded()) {
+                            future.complete(ar.result());
+                        } else {
+                            future.completeExceptionally(ar.cause());
+                        }
+                    });
+            try {
+                final HttpResponse<Buffer> response = future.get();
+                final String actualEncoding = response.headers().get("content-encoding");
 
-            assertEquals(OK.code(), response.statusCode(),
-                    "Http status must be OK.");
-            assertEquals(contentEncoding, actualEncoding,
-                    "Unexpected compressor selected.");
+                assertEquals(OK.code(), response.statusCode(),
+                        "Http status must be OK.");
+                assertEquals(contentEncoding, actualEncoding,
+                        "Unexpected compressor selected.");
 
-            final int receivedLength = parseInt(response.headers().get("content-length"));
-            final int expectedLength = parseInt(contentLength);
+                final int receivedLength = parseInt(response.headers().get("content-length"));
+                final int expectedLength = parseInt(contentLength);
 
-            if (contentEncoding == null) {
-                assertEquals(expectedLength, receivedLength,
-                        "No compression was expected, so the content-length must match exactly.");
-            } else {
-                final int expectedLengthWithTolerance = expectedLength + (expectedLength / 100 * COMPRESSION_TOLERANCE_PERCENT);
-                assertTrue(receivedLength <= expectedLengthWithTolerance,
-                        "Compression apparently failed: receivedLength: " + receivedLength +
-                                " was supposed to be less or equal to expectedLength: " +
-                                expectedLength + " plus " + COMPRESSION_TOLERANCE_PERCENT + "% tolerance, i.e. "
-                                + expectedLengthWithTolerance + ".");
+                if (contentEncoding == null) {
+                    assertEquals(expectedLength, receivedLength,
+                            "No compression was expected, so the content-length must match exactly.");
+                } else {
+                    final int expectedLengthWithTolerance = expectedLength
+                            + (expectedLength / 100 * COMPRESSION_TOLERANCE_PERCENT);
+                    assertTrue(receivedLength <= expectedLengthWithTolerance,
+                            "Compression apparently failed: receivedLength: " + receivedLength +
+                                    " was supposed to be less or equal to expectedLength: " +
+                                    expectedLength + " plus " + COMPRESSION_TOLERANCE_PERCENT + "% tolerance, i.e. "
+                                    + expectedLengthWithTolerance + ".");
+                }
+                assertEquals(TEXT, decompress(actualEncoding, response.body().getBytes()), "Unexpected body text.");
+            } catch (InterruptedException | ExecutionException e) {
+                fail(e);
             }
-            assertEquals(TEXT, decompress(actualEncoding, response.body().getBytes()), "Unexpected body text.");
-        } catch (InterruptedException | ExecutionException e) {
-            fail(e);
+        } finally {
+            vertx.close();
         }
     }
 
@@ -119,30 +125,35 @@ public class Testflow {
             String method) {
         LOG.infof("Endpoint %s; Accept-Encoding: %s; Content-Encoding: %s; Method: %s",
                 endpoint, acceptEncoding, contentEncoding, method);
-        final WebClient client = WebClient.create(Vertx.vertx(), new WebClientOptions()
-                .setLogActivity(true)
-                .setFollowRedirects(true)
-                .setDecompressionSupported(false));
-        final CompletableFuture<HttpResponse<Buffer>> future = new CompletableFuture<>();
-        client.postAbs(endpoint)
-                .putHeader(HttpHeaders.CONTENT_ENCODING.toString(), contentEncoding)
-                .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
-                .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
-                .sendBuffer(compress(contentEncoding, TEXT), ar -> {
-                    if (ar.succeeded()) {
-                        future.complete(ar.result());
-                    } else {
-                        future.completeExceptionally(ar.cause());
-                    }
-                });
+        Vertx vertx = Vertx.vertx();
         try {
-            final HttpResponse<Buffer> response = future.get();
-            final String actualEncoding = response.headers().get("content-encoding");
-            final String body = decompress(actualEncoding, response.body().getBytes());
-            assertEquals(OK.code(), response.statusCode(), "Http status must be OK.");
-            assertEquals(TEXT, body, "Unexpected body text.");
-        } catch (InterruptedException | ExecutionException e) {
-            fail(e);
+            final WebClient client = WebClient.create(vertx, new WebClientOptions()
+                    .setLogActivity(true)
+                    .setFollowRedirects(true)
+                    .setDecompressionSupported(false));
+            final CompletableFuture<HttpResponse<Buffer>> future = new CompletableFuture<>();
+            client.postAbs(endpoint)
+                    .putHeader(HttpHeaders.CONTENT_ENCODING.toString(), contentEncoding)
+                    .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
+                    .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
+                    .sendBuffer(compress(contentEncoding, TEXT), ar -> {
+                        if (ar.succeeded()) {
+                            future.complete(ar.result());
+                        } else {
+                            future.completeExceptionally(ar.cause());
+                        }
+                    });
+            try {
+                final HttpResponse<Buffer> response = future.get();
+                final String actualEncoding = response.headers().get("content-encoding");
+                final String body = decompress(actualEncoding, response.body().getBytes());
+                assertEquals(OK.code(), response.statusCode(), "Http status must be OK.");
+                assertEquals(TEXT, body, "Unexpected body text.");
+            } catch (InterruptedException | ExecutionException e) {
+                fail(e);
+            }
+        } finally {
+            vertx.close();
         }
     }
 
@@ -178,18 +189,29 @@ public class Testflow {
         if (algorithm != null && !"identity".equalsIgnoreCase(algorithm)) {
             final EmbeddedChannel channel;
             if ("gzip".equalsIgnoreCase(algorithm)) {
-                channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.GZIP));
+                channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.GZIP, 0));
             } else if ("deflate".equalsIgnoreCase(algorithm)) {
-                channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.ZLIB));
+                channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.ZLIB, 0));
             } else if ("br".equalsIgnoreCase(algorithm)) {
                 channel = new EmbeddedChannel(new BrotliDecoder());
             } else {
                 throw new RuntimeException("Unexpected compression used by server: " + algorithm);
             }
+
             channel.writeInbound(Unpooled.copiedBuffer(payload));
             channel.finish();
-            final ByteBuf decompressed = channel.readInbound();
-            return decompressed.readCharSequence(decompressed.readableBytes(), StandardCharsets.UTF_8).toString();
+
+            // Read all output buffers - decompression might produce multiple buffers
+            final StringBuilder result = new StringBuilder();
+            ByteBuf decompressed;
+            while ((decompressed = channel.readInbound()) != null) {
+                try {
+                    result.append(decompressed.readCharSequence(decompressed.readableBytes(), StandardCharsets.UTF_8));
+                } finally {
+                    decompressed.release();
+                }
+            }
+            return result.toString();
         } else {
             return new String(payload, StandardCharsets.UTF_8);
         }

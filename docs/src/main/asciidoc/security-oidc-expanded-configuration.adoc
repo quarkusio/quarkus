@@ -1295,6 +1295,7 @@ In turn, a client that requested the protected resource metadata can use its pro
 
 |quarkus.oidc.resource-metadata.enabled |false|Enable resource metadata properties
 |quarkus.oidc.resource-metadata.resource ||Resource identifier
+|quarkus.oidc.resource-metadata.authorization-server ||Authorization server URL
 |quarkus.oidc.resource-metadata.force-https-scheme |true|Force that a resource identifier URL has an HTTPS scheme
 |====
 
@@ -1307,7 +1308,9 @@ According to the https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Reso
 
 If it is configured as a relative path then it is added to the current request URL's host and port to build a resource identifier URL. If it is not configured at all then, unless it is a default tenant id, the tenand id is added to the current request URL's host and port to build a resource identifier URL.
 
-In such cases, the `quarkus.oidc.resource-metadata.force-https-scheme` property can be used to set a correct URL scheme, which is set to HTTPS by default.
+The resource identifier URL scheme is set to `HTTPS` by default. You can enable an `HTTP` URL scheme with `quarkus.oidc.resource-metadata.force-https-scheme=false`, it can be particularly useful in simple demos and tests.
+
+`quarkus.oidc.resource-metadata.authorization-server` allows to customize an authorization server URL that will be included in the resource metadata. The `quarkus.oidc.auth-server-url` URL is included by default, however, for some cases where an OIDC proxy interposes over the actual OIDC provider, returning the OIDC proxy's URL is required instead.
 
 See also the <<oidc-metadata-properties>> for details about the OIDC provider metadata that Quarkus OIDC uses for its work.
 

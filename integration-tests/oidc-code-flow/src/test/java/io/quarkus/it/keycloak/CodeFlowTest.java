@@ -150,7 +150,7 @@ public class CodeFlowTest {
             checkHealth();
 
             // Static default tenant
-            checkResourceMetadata(null, "quarkus");
+            checkResourceMetadata(null, "/realms/quarkus");
         }
     }
 
@@ -465,7 +465,7 @@ public class CodeFlowTest {
             assertEquals("Unexpected 401", ex.getMessage());
         }
         // Static `tenant-nonce` tenant with custom resource path
-        checkResourceMetadata("metadata", "quarkus");
+        checkResourceMetadata("metadata", ":8080/q/oidc");
     }
 
     private void doTestCodeFlowNonce(boolean wrongRedirect) throws Exception {
@@ -869,7 +869,7 @@ public class CodeFlowTest {
             webClient.getCookieManager().clearCookies();
 
             // Static `tenant-refresh` tenant
-            checkResourceMetadata("tenant-refresh", "logout-realm");
+            checkResourceMetadata("tenant-refresh", "/realms/logout-realm");
         }
     }
 
@@ -1762,7 +1762,7 @@ public class CodeFlowTest {
         return sessionCookie.getValue().split("\\|")[0];
     }
 
-    private static void checkResourceMetadata(String resource, String realm) {
+    private static void checkResourceMetadata(String resource, String authorizationServerSuffix) {
         Response metadataResponse = RestAssured.when()
                 .get("http://localhost:8081" + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH
                         + (resource == null ? "" : "/" + resource));
@@ -1774,6 +1774,6 @@ public class CodeFlowTest {
 
         String authorizationServer = jsonAuthorizarionServers.getString(0);
         assertTrue(authorizationServer.startsWith("http://localhost:"));
-        assertTrue(authorizationServer.endsWith("/realms/" + realm));
+        assertTrue(authorizationServer.endsWith(authorizationServerSuffix));
     }
 }

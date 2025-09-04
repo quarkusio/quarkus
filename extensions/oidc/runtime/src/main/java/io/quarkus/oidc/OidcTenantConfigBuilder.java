@@ -863,12 +863,13 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     public static final class ResourceMetadataBuilder {
 
         private record ResourceMetadataImpl(boolean enabled, Optional<String> resource,
-                boolean forceHttpsScheme) implements ResourceMetadata {
+                Optional<String> authorizationServer, boolean forceHttpsScheme) implements ResourceMetadata {
         }
 
         private final OidcTenantConfigBuilder builder;
         private boolean enabled;
         private Optional<String> resource;
+        private Optional<String> authorizationServer;
         private boolean forceHttpsScheme;
 
         public ResourceMetadataBuilder() {
@@ -879,6 +880,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             this.builder = Objects.requireNonNull(builder);
             this.enabled = builder.resourceMetadata.enabled();
             this.resource = builder.resourceMetadata.resource();
+            this.authorizationServer = builder.resourceMetadata.authorizationServer();
             this.forceHttpsScheme = builder.resourceMetadata.forceHttpsScheme();
         }
 
@@ -906,6 +908,15 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          */
         public ResourceMetadataBuilder resource(String resource) {
             this.resource = Optional.ofNullable(resource);
+            return this;
+        }
+
+        /**
+         * @param resource {@link ResourceMetadata#authorizationServer()}
+         * @return this builder
+         */
+        public ResourceMetadataBuilder authorizationServer(String authorizationServer) {
+            this.authorizationServer = Optional.ofNullable(authorizationServer);
             return this;
         }
 
@@ -938,7 +949,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return built ResourceMetadata
          */
         public ResourceMetadata build() {
-            return new ResourceMetadataImpl(enabled, resource, forceHttpsScheme);
+            return new ResourceMetadataImpl(enabled, resource, authorizationServer, forceHttpsScheme);
         }
     }
 

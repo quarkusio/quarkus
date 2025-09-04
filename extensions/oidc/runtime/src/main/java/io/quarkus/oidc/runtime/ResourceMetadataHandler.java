@@ -147,7 +147,8 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
             metadata.put(OidcConstants.RESOURCE_METADATA_RESOURCE, resourceIdentifier);
 
             JsonArray authorizationServers = new JsonArray();
-            authorizationServers.add(0, oidcConfig.authServerUrl().get());
+            authorizationServers.add(0, oidcConfig.resourceMetadata().authorizationServer()
+                    .orElse(oidcConfig.authServerUrl().get()));
             metadata.put(OidcConstants.RESOURCE_METADATA_AUTHORIZATION_SERVERS, authorizationServers);
             return metadata.toString();
         }

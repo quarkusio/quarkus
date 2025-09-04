@@ -1054,7 +1054,7 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: get-quickstarts-branch
         with:
           result-encoding: string
@@ -1152,7 +1152,7 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: get-platform-branch
         with:
           result-encoding: string

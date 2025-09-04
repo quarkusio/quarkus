@@ -17,7 +17,7 @@ public class ConfigOrmActiveFalseAndIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.active", "false");
 

@@ -454,7 +454,7 @@ If a datasource is not active:
 * Other Quarkus extensions that consume the datasource may cause application startup to fail.
 +
 In this case, you must also deactivate those other extensions.
-To see an example of this scenario, refer to xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide].
+To see an example of this scenario, refer to xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide]. For Hibernate ORM, deactivation of the persistence unit is automatic when the datasource is inactive.
 
 This feature is especially useful when the application must select one datasource from a predefined set at runtime.
 

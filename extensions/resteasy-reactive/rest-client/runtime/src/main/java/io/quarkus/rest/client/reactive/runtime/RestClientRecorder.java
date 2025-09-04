@@ -54,6 +54,17 @@ public class RestClientRecorder {
         return tlsConfigNameToVertxHttpClients.getOrDefault(tlsConfigName, Collections.emptyList());
     }
 
+    public static void removeClientFromTlsConfigMap(String tlsConfigName, HttpClient httpClient) {
+        if (tlsConfigName == null) {
+            return;
+        }
+        List<HttpClient> httpClients = tlsConfigNameToVertxHttpClients.get(tlsConfigName);
+        if (httpClients == null) {
+            return;
+        }
+        httpClients.remove(httpClient);
+    }
+
     public void cleanUp(ShutdownContext shutdown) {
         shutdown.addShutdownTask(new Runnable() {
             @Override

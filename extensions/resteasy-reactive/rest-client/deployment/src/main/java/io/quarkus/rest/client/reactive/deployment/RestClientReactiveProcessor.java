@@ -62,6 +62,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.impl.RestClientClosingTask;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
@@ -151,9 +152,11 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    ServiceProviderBuildItem nativeSpiSupport() {
-        return ServiceProviderBuildItem
-                .allProvidersFromClassPath(MissingMessageBodyReaderErrorMessageContextualizer.class.getName());
+    void nativeSpiSupport(BuildProducer<ServiceProviderBuildItem> producer) {
+        producer.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(MissingMessageBodyReaderErrorMessageContextualizer.class.getName()));
+        producer.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(RestClientClosingTask.class.getName()));
     }
 
     @BuildStep

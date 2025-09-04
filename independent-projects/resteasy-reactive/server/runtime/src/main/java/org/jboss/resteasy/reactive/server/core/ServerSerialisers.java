@@ -484,11 +484,13 @@ public class ServerSerialisers extends Serialisers {
             //there is no response, so we just set the content type
             if (requestContext.getResponseEntity() == null) {
                 vertxResponse.setStatusCode(Response.Status.NO_CONTENT.getStatusCode());
+                sanitizeNoContentResponse(vertxResponse);
             }
             EncodedMediaType contentType = requestContext.getResponseContentType();
             if (contentType != null) {
                 vertxResponse.setResponseHeader(CONTENT_TYPE, contentType.toString());
             }
+
             return;
         }
         Response response = requestContext.getResponse().get();
@@ -531,6 +533,14 @@ public class ServerSerialisers extends Serialisers {
                 vertxResponse.setResponseHeader(entry.getKey(), strValues);
             }
         }
+
+        if (response.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
+            sanitizeNoContentResponse(vertxResponse);
+        }
+    }
+
+    private static void sanitizeNoContentResponse(ServerHttpResponse serverHttpResponse) {
+        serverHttpResponse.removeResponseHeader("Content-Encoding");
     }
 
     private static boolean requireSingleHeader(String header) {

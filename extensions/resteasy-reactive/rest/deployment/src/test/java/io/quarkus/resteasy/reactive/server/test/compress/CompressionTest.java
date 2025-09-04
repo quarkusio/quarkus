@@ -8,6 +8,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
+import org.hamcrest.CoreMatchers;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,12 @@ public class CompressionTest {
         assertUncompressed("/my.doc");
     }
 
+    @Test
+    public void noContent() {
+        assertNoContent("/endpoint/no-content");
+        assertNoContent("/endpoint/void-no-content");
+    }
+
     private void assertCompressed(String path) {
         String bodyStr = get(path).then().statusCode(200).header("Content-Encoding", "gzip").extract().asString();
         assertEquals(MyEndpoint.MESSAGE, bodyStr);
@@ -55,6 +62,13 @@ public class CompressionTest {
                 .then().statusCode(200).extract();
         assertTrue(response.header("Content-Encoding") == null, response.headers().toString());
         assertEquals(MyEndpoint.MESSAGE, response.asString());
+    }
+
+    private static void assertNoContent(String path) {
+        get(path)
+                .then()
+                .statusCode(204)
+                .header("Content-Encoding", CoreMatchers.nullValue());
     }
 
     @Path("endpoint")
@@ -120,6 +134,18 @@ public class CompressionTest {
         @Path("content-type-in-produces-uncompressed")
         public String contentTypeInProducesUncompressed() {
             return MESSAGE;
+        }
+
+        @GET
+        @Path("no-content")
+        public RestResponse<Void> noContent() {
+            return RestResponse.noContent();
+        }
+
+        @GET
+        @Path("void-no-content")
+        public void voidNoContent() {
+
         }
     }
 

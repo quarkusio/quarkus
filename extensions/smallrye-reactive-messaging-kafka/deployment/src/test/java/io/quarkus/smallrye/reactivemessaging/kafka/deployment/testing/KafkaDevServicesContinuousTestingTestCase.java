@@ -21,13 +21,7 @@ public class KafkaDevServicesContinuousTestingTestCase {
             "mp.messaging.incoming.prices.connector=smallrye-kafka",
             "mp.messaging.incoming.prices.health-readiness-enabled=false",
             "mp.messaging.incoming.prices.topic=prices",
-            "mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer",
-            // quarkus-hibernate-reactive-deployment is an optional dependency of this module
-            // (for very artificial reasons, see https://github.com/quarkusio/quarkus/issues/31446)
-            // This means Hibernate Reactive is in the test classpath,
-            // but it's not useful here and would fail due to missing configuration.
-            // So we just disable it.
-            "quarkus.hibernate-orm.enabled=false");
+            "mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer");
 
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
@@ -36,9 +30,7 @@ public class KafkaDevServicesContinuousTestingTestCase {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class)
-                            .addAsResource(new StringAsset(ContinuousTestingTestUtils.appProperties(
-                                    // See FINAL_APP_PROPERTIES
-                                    "quarkus.hibernate-orm.enabled=false")),
+                            .addAsResource(new StringAsset(ContinuousTestingTestUtils.appProperties("")),
                                     "application.properties");
                 }
             }).setTestArchiveProducer(new Supplier<>() {

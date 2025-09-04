@@ -32,74 +32,73 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 == Extending the image
 
 Your application may have additional requirements.
-For example, if you have an application that requires `libfreetype.so`, you need to copy the native libraries to the container.
-In this case, you need to use a multi-stage `dockerfile` to copy the required libraries:
+For example, if you have an application that manipulates graphics, images, or PDFs, you likely have Quarkus AWT extension included in the project and your native executable will require some additional libraries to run.
+In this case, you need to use a multi-stage `dockerfile` to copy the required libraries.
+
+[WARNING]
+====
+Copying handpicked libraries makes up for a small container image, yet it is somewhat britte, differs for different base image versions, and it is a subject to change as transitive dependencies of these libraries might change.
+====
+
+[NOTE]
+====
+Headless graphics, PDF documents, QR code images etc. manipulation is natively supported on amd64/aarch64 Linux only. Neither Windows nor MacOS are supported and require running the application in a Linux container.
+====
 
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6 as BUILD
-RUN microdnf install freetype -y
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6 as nativelibs
+RUN microdnf install -y freetype fontconfig expat
 
 # Second stage - copy the dependencies
 FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
-COPY --from=BUILD \
-   /lib64/libfreetype.so.6 \
-   /lib64/libbz2.so.1 \
-   /lib64/libpng16.so.16 \
-   /lib64/
-
 WORKDIR /work/
-COPY --chmod=0755 target/*-runner /work/application
-EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
-----
-
-If you need to have access to the full AWT support, you need more than just `libfreetype.so`, but also the font and font configurations:
-
-[source, dockerfile]
-----
-# First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6 as BUILD
-RUN microdnf install freetype fontconfig -y
-
-# Second stage - copy the dependencies
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
-COPY --from=BUILD \
+COPY --from=nativelibs \
+   /lib64/libz.so.1 \
+   /lib64/libstdc++.so.6 \
    /lib64/libfreetype.so.6 \
    /lib64/libgcc_s.so.1 \
    /lib64/libbz2.so.1 \
    /lib64/libpng16.so.16 \
    /lib64/libm.so.6 \
-   /lib64/libbz2.so.1 \
+   /lib64/libexpat.so.1 \
    /lib64/libuuid.so.1 \
+   /lib64/libxml2.so.2 \
+   /lib64/libharfbuzz.so.0 \
+   /lib64/libbrotlidec.so.1 \
+   /lib64/libbrotlicommon.so.1 \
+   /lib64/liblzma.so.5 \
+   /lib64/libglib-2.0.so.0 \
+   /lib64/libgraphite2.so.3 \
+   /lib64/libpcre.so.1 \
    /lib64/
-
-COPY --from=BUILD \
+COPY --from=nativelibs \
    /usr/lib64/libfontconfig.so.1 \
    /usr/lib64/
-
-COPY --from=BUILD \
+COPY --from=nativelibs \
     /usr/share/fonts /usr/share/fonts
-
-COPY --from=BUILD \
+COPY --from=nativelibs \
     /usr/share/fontconfig /usr/share/fontconfig
-
-COPY --from=BUILD \
+COPY --from=nativelibs \
     /usr/lib/fontconfig /usr/lib/fontconfig
-
-COPY --from=BUILD \
+COPY --from=nativelibs \
      /etc/fonts /etc/fonts
 
-WORKDIR /work/
-COPY --chmod=0755 target/*-runner /work/application
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+# Shared objects to be dynamically loaded at runtime as needed,
+COPY target/*.so /work/
+COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
+
 EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+USER 1001
+
+ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
-
 == Alternative - Using ubi-minimal
-
 
 If the micro image does not suit your requirements, you can use https://catalog.redhat.com/software/containers/ubi9-minimal/61832888c0d15aff4912fe0d[ubi9-minimal].
 It's a bigger image, but contains more utilities and is closer to a full Linux distribution.
@@ -120,4 +119,26 @@ EXPOSE 8080
 USER 1001
 
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
+
+To make documents processing, graphics, PDFs, etc. available for the application, you can install the required libraries using `microdnf` without manually copying anything:
+
+[source, dockerfile]
+----
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6
+RUN microdnf install -y freetype fontconfig \
+    && microdnf clean all
+
+WORKDIR /work/
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+# Shared objects to be dynamically loaded at runtime as needed
+COPY --chown=1001:root target/*.so /work/
+COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
+
+EXPOSE 8080
+USER 1001
+
+ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----

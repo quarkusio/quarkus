@@ -102,14 +102,17 @@ public class ClientImpl implements Client {
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
     private final String userAgent;
+    private final String tlsConfigName;
 
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext, boolean followRedirects,
             MultiQueryParamMode multiQueryParamMode,
             LoggingScope loggingScope,
-            ClientLogger clientLogger, String userAgent) {
+            ClientLogger clientLogger, String userAgent,
+            String tlsConfigName) {
         this.userAgent = userAgent;
+        this.tlsConfigName = tlsConfigName;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         this.configuration = configuration;
         this.clientContext = clientContext;
@@ -253,6 +256,10 @@ public class ClientImpl implements Client {
 
     public String getUserAgent() {
         return userAgent;
+    }
+
+    public String getTlsConfigName() {
+        return tlsConfigName;
     }
 
     @Override

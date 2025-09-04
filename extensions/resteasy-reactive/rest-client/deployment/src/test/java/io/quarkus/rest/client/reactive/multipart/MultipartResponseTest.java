@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -27,7 +28,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
@@ -161,7 +161,7 @@ public class MultipartResponseTest {
     @Test
     void shouldBeSaneOnServerError() {
         Client client = createClient();
-        assertThatThrownBy(client::error).isInstanceOf(ClientWebApplicationException.class);
+        assertThatThrownBy(client::error).isInstanceOf(InternalServerErrorException.class);
     }
 
     @Test

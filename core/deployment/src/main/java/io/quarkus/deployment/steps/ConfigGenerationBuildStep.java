@@ -408,8 +408,11 @@ public class ConfigGenerationBuildStep {
 
         Map<String, ConfigValue> values = new TreeMap<>();
         BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
-        for (final Map.Entry<String, ConfigValue> entry : readResult.getAllBuildTimeValues().entrySet()) {
+        for (Map.Entry<String, ConfigValue> entry : readResult.getAllBuildTimeValues().entrySet()) {
             if (excludedConfigKeys.contains(entry.getKey())) {
+                continue;
+            }
+            if (readResult.getRunTimeValues().containsKey(entry.getKey())) {
                 continue;
             }
             values.putIfAbsent(entry.getKey(), entry.getValue());
@@ -417,6 +420,9 @@ public class ConfigGenerationBuildStep {
 
         for (Map.Entry<String, ConfigValue> entry : readResult.getBuildTimeRunTimeValues().entrySet()) {
             if (excludedConfigKeys.contains(entry.getKey())) {
+                continue;
+            }
+            if (readResult.getRunTimeValues().containsKey(entry.getKey())) {
                 continue;
             }
             values.put(entry.getKey(), entry.getValue());

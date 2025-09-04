@@ -13,8 +13,6 @@ import io.quarkus.builder.item.MultiBuildItem;
  * Useful when you want to apply different behaviors to REST resources and REST clients.
  */
 public final class RestClientBuildItem extends MultiBuildItem {
-
-    private String interfaceName;
     private final ClassInfo classInfo;
     private final Optional<String> configKey;
     private final Optional<String> defaultBaseUri;

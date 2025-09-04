@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Priorities;
@@ -46,8 +45,6 @@ import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -76,7 +73,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -113,6 +109,8 @@ import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
+import io.quarkus.restclient.config.deployment.RestClientsBuildTimeConfigBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 class RestClientReactiveProcessor {
@@ -121,7 +119,6 @@ class RestClientReactiveProcessor {
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
-    private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
     private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
@@ -161,21 +158,33 @@ class RestClientReactiveProcessor {
             BuildProducer<RestClientDefaultProducesBuildItem> produces,
             BuildProducer<RestClientDisableSmartDefaultProduces> disableSmartProduces,
             BuildProducer<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlash,
-            RestClientReactiveConfig config,
-            RestClientsBuildTimeConfig configsPerClient,
-            List<RegisteredRestClientBuildItem> registeredRestClientBuildItems) {
+            RestClientReactiveConfig restClientReactiveConfig,
+            List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
+            ResourceScanningResultBuildItem resourceScanningResultBuildItem,
+            BuildProducer<RestClientsBuildTimeConfigBuildItem> restClientBuildTimeConfig) {
+
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
-        if (config.disableSmartProduces()) {
+        if (restClientReactiveConfig.disableSmartProduces()) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
         }
 
-        List<RegisteredRestClient> registeredRestClients = toRegisteredRestClients(registeredRestClientBuildItems);
-        RestClientsBuildTimeConfig buildTimeConfig = configsPerClient.get(registeredRestClients);
+        List<RegisteredRestClient> registeredRestClients = new ArrayList<>(
+                toRegisteredRestClients(registeredRestClientBuildItems));
+        resourceScanningResultBuildItem.getResult().getClientInterfaces().forEach((restClient, path) -> {
+            if (registeredRestClients.stream()
+                    .noneMatch(registeredRestClient -> registeredRestClient.getFullName().equals(restClient.toString()))) {
+                registeredRestClients.add(new RegisteredRestClient(restClient.toString(), restClient.withoutPackagePrefix()));
+            }
+        });
+        RestClientsBuildTimeConfigBuildItem restClientsBuildTimeConfigBuildItem = new RestClientsBuildTimeConfigBuildItem(
+                registeredRestClients);
+        restClientBuildTimeConfig.produce(restClientsBuildTimeConfigBuildItem);
 
         List<DotName> clientsToDisable = new ArrayList<>();
         for (RegisteredRestClientBuildItem registeredRestClient : registeredRestClientBuildItems) {
-            if (removesTrailingSlashIsDisabled(buildTimeConfig, registeredRestClient)) {
+            if (removesTrailingSlashIsDisabled(restClientsBuildTimeConfigBuildItem.getRestClientsBuildTimeConfig(),
+                    registeredRestClient)) {
                 clientsToDisable.add(registeredRestClient.getClassInfo().name());
             }
         }
@@ -404,7 +413,8 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    void determineRegisteredRestClients(CombinedIndexBuildItem combinedIndexBuildItem,
+    void determineRegisteredRestClients(
+            CombinedIndexBuildItem combinedIndexBuildItem,
             RestClientsBuildTimeConfig clientsConfig,
             BuildProducer<RegisteredRestClientBuildItem> producer) {
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
@@ -463,14 +473,14 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void addRestClientBeans(Capabilities capabilities,
+    void addRestClientBeans(
+            Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            RestClientsBuildTimeConfigBuildItem restClientsBuildTimeConfig,
             List<RegisteredRestClientBuildItem> registeredRestClients,
             CustomScopeAnnotationsBuildItem scopes,
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            RestClientReactiveConfig clientConfig,
-            RestClientsBuildTimeConfig clientsBuildConfig,
             LaunchModeBuildItem launchMode,
             RestClientRecorder recorder,
             ShutdownContextBuildItem shutdown) {
@@ -529,8 +539,8 @@ class RestClientReactiveProcessor {
                 configKey.ifPresent(
                         key -> configKeys.put(jaxrsInterface.name().toString(), key));
 
-                final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
-                        configKey);
+                final ScopeInfo scope = restClientsBuildTimeConfig.getScope(capabilities, jaxrsInterface)
+                        .orElse(BuiltinScope.APPLICATION).getInfo();
                 // add a scope annotation, e.g. @Singleton
                 classCreator.addAnnotation(scope.getDotName().toString());
                 classCreator.addAnnotation(RestClient.class);
@@ -873,71 +883,5 @@ class RestClientReactiveProcessor {
         return !config.clients()
                 .get(registeredRestClient.getClassInfo().name().toString())
                 .removesTrailingSlash();
-    }
-
-    private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,
-            ClassInfo restClientInterface,
-            Optional<String> configKey) {
-        ScopeInfo scopeToUse = null;
-
-        Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, restClientInterface, configKey);
-
-        Optional<String> configuredGlobalDefaultScope = RestClientConfigUtils.getDefaultScope(config);
-        BuiltinScope globalDefaultScope;
-        if (configuredGlobalDefaultScope.isPresent()) {
-            globalDefaultScope = builtinScopeFromName(DotName.createSimple(configuredGlobalDefaultScope.get()));
-            if (globalDefaultScope == null) {
-                log.warnf("Unable to map the global REST client scope: '%s' to a scope. Using @ApplicationScoped",
-                        configuredGlobalDefaultScope.get());
-                globalDefaultScope = BuiltinScope.APPLICATION;
-            }
-        } else {
-            globalDefaultScope = BuiltinScope.APPLICATION;
-        }
-
-        if (scopeConfig.isPresent()) {
-            final DotName scope = DotName.createSimple(scopeConfig.get());
-            final BuiltinScope builtinScope = builtinScopeFromName(scope);
-            if (builtinScope != null) { // override default @Dependent scope with user defined one.
-                scopeToUse = builtinScope.getInfo();
-            } else if (capabilities.isPresent(Capability.SERVLET)) {
-                if (scope.equals(SESSION_SCOPED) || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
-                    scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
-                }
-            }
-
-            if (scopeToUse == null) {
-                log.warnf("Unsupported default scope %s provided for REST client %s. Defaulting to %s",
-                        scope, restClientInterface.name(), globalDefaultScope.getName());
-            }
-        } else {
-            final Set<DotName> annotations = restClientInterface.annotationsMap().keySet();
-            for (final DotName annotationName : annotations) {
-                final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
-                if (builtinScope != null) {
-                    scopeToUse = builtinScope.getInfo();
-                    break;
-                }
-                if (annotationName.equals(SESSION_SCOPED)) {
-                    scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
-                    break;
-                }
-            }
-        }
-
-        // Initialize a default @Dependent scope as per the spec
-        return scopeToUse != null ? scopeToUse : globalDefaultScope.getInfo();
-    }
-
-    private BuiltinScope builtinScopeFromName(DotName scopeName) {
-        BuiltinScope scope = BuiltinScope.from(scopeName);
-        if (scope == null) {
-            for (BuiltinScope builtinScope : BuiltinScope.values()) {
-                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
-                    scope = builtinScope;
-                }
-            }
-        }
-        return scope;
     }
 }

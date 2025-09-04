@@ -2,9 +2,6 @@ package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import jakarta.enterprise.inject.CreationException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -18,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ConfigActiveFalseDynamicInjectionTest {
@@ -37,12 +35,12 @@ public class ConfigActiveFalseDynamicInjectionTest {
         // So the bean cannot be null.
         assertThat(searchMapping).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        CreationException e = assertThrows(CreationException.class, () -> searchMapping.allIndexedEntities());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> searchMapping.allIndexedEntities())
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the SearchMapping for persistence unit <default>",
-                        "Hibernate Search was deactivated through configuration properties");
+                        "Hibernate Search for persistence unit '<default>' was deactivated through configuration properties",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate Hibernate Search, set configuration property 'quarkus.hibernate-search-orm.active' to 'true'");
 
         // Hibernate Search APIs also throw exceptions,
         // even if the messages are less explicit (we can't really do better).
@@ -60,12 +58,12 @@ public class ConfigActiveFalseDynamicInjectionTest {
         // So the bean cannot be null.
         assertThat(searchSession).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        CreationException e = assertThrows(CreationException.class, () -> searchSession.search(IndexedEntity.class));
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
+        assertThatThrownBy(() -> searchSession.search(IndexedEntity.class))
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the SearchSession for persistence unit <default>",
-                        "Hibernate Search was deactivated through configuration properties");
+                        "Hibernate Search for persistence unit '<default>' was deactivated through configuration properties",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate Hibernate Search, set configuration property 'quarkus.hibernate-search-orm.active' to 'true'");
 
         // Hibernate Search APIs also throw exceptions,
         // even if the messages are less explicit (we can't really do better).

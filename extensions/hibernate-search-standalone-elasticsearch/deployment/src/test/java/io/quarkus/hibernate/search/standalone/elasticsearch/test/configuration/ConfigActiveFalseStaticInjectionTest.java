@@ -1,11 +1,10 @@
 package io.quarkus.hibernate.search.standalone.elasticsearch.test.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import jakarta.enterprise.inject.CreationException;
 
 import jakarta.inject.Inject;
+
+import org.assertj.core.api.Assertions;
 import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -20,24 +19,20 @@ public class ConfigActiveFalseStaticInjectionTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-search-standalone.active", "false");
-
+            .overrideConfigKey("quarkus.hibernate-search-standalone.active", "false")
+            .assertException(e -> assertThat(e)
+                    .hasMessageContainingAll(
+                            "Hibernate Search Standalone was deactivated through configuration properties",
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                            "To activate Hibernate Search Standalone, set configuration property 'quarkus.hibernate-search-standalone.active' to 'true'",
+                            "This bean is injected into",
+                            ConfigActiveFalseStaticInjectionTest.class.getName() + "#searchMapping"));
     @Inject
     SearchMapping searchMapping;
 
     @Test
-    public void searchMapping() {
-        // The bean is always available to be injected during static init
-        // since we don't know whether HSearch will be active at runtime.
-        // So the bean cannot be null.
-        assertThat(searchMapping).isNotNull();
-        // However, any attempt to use it at runtime will fail.
-        CreationException e = assertThrows(CreationException.class, () -> searchMapping.allIndexedEntities());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the SearchMapping",
-                        "Hibernate Search Standalone was deactivated through configuration properties");
+    public void test() {
+        Assertions.fail("Startup should have failed");
     }
 
 }

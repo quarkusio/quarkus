@@ -18,7 +18,7 @@ public class NoConfigNoEntitiesTest {
             .overrideConfigKey("quarkus.devservices.enabled", "false");
 
     // When having no entities, no configuration, no datasource,
-    // as long as the Hibernate Reactive beans are not injected anywhere,
+    // as long as the Hibernate ORM beans are not injected anywhere,
     // we should still be able to start the application.
     @Test
     public void testBootSucceedsButHibernateReactiveDeactivated() {

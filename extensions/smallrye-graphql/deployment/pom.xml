@@ -121,6 +121,9 @@
                         true, some as false, so we need to create a separate JVM per test to run the initializer each time separately.
                         This is reported as https://github.com/smallrye/smallrye-graphql/issues/2039 -->
                     <reuseForks>false</reuseForks>
+                    <systemPropertyVariables>
+                        <quarkus.smallrye-metrics.deprecated.enabled>true</quarkus.smallrye-metrics.deprecated.enabled>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

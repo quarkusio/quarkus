@@ -27,6 +27,7 @@
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <smallrye.faulttolerance.mp-compatibility>true</smallrye.faulttolerance.mp-compatibility>
                         <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
+                        <quarkus.smallrye-metrics.deprecated.enabled>true</quarkus.smallrye-metrics.deprecated.enabled>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

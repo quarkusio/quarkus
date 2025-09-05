@@ -377,21 +377,20 @@ public class EngineProducer {
         // First try the template contents, i.e. templates not backed by files
         LOGGER.debugf("Locate template contents for %s", path);
         String content = templateContents.get(path);
-        if (content == null) {
-            // Try path with suffixes
-            for (String suffix : suffixes) {
-                String pathWithSuffix = path + "." + suffix;
-                if (isExcluded(pathWithSuffix)) {
-                    continue;
-                }
-                content = templateContents.get(pathWithSuffix);
-                if (content != null) {
-                    break;
-                }
-            }
-        }
         if (content != null) {
-            return Optional.of(new ContentTemplateLocation(content, createVariant(path)));
+            return getTemplateLocation(content, path);
+        }
+
+        // Try path with suffixes
+        for (String suffix : suffixes) {
+            String pathWithSuffix = path + "." + suffix;
+            if (isExcluded(pathWithSuffix)) {
+                continue;
+            }
+            content = templateContents.get(pathWithSuffix);
+            if (content != null) {
+                return getTemplateLocation(content, pathWithSuffix);
+            }
         }
 
         // Then try to locate file-based templates
@@ -400,26 +399,32 @@ public class EngineProducer {
             String templatePath = templateRoot + path;
             LOGGER.debugf("Locate template file for %s", templatePath);
             resource = locatePath(templatePath);
-            if (resource == null) {
-                // Try path with suffixes
-                for (String suffix : suffixes) {
-                    String pathWithSuffix = path + "." + suffix;
-                    if (isExcluded(pathWithSuffix)) {
-                        continue;
-                    }
-                    templatePath = templateRoot + pathWithSuffix;
-                    resource = locatePath(templatePath);
-                    if (resource != null) {
-                        break;
-                    }
-                }
-            }
             if (resource != null) {
-                return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
+                return getTemplateLocation(resource, templatePath);
+            }
+            // Try path with suffixes
+            for (String suffix : suffixes) {
+                String pathWithSuffix = path + "." + suffix;
+                if (isExcluded(pathWithSuffix)) {
+                    continue;
+                }
+                templatePath = templateRoot + pathWithSuffix;
+                resource = locatePath(templatePath);
+                if (resource != null) {
+                    return getTemplateLocation(resource, templatePath);
+                }
             }
         }
 
         return Optional.empty();
+    }
+
+    private Optional<TemplateLocation> getTemplateLocation(String content, String pathWithSuffix) {
+        return Optional.of(new ContentTemplateLocation(content, createVariant(pathWithSuffix)));
+    }
+
+    private Optional<TemplateLocation> getTemplateLocation(URL resource, String templatePath) {
+        return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
     }
 
     private URL locatePath(String path) {

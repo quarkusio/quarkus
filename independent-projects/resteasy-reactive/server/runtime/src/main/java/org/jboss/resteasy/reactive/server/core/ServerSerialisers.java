@@ -86,7 +86,7 @@ public class ServerSerialisers extends Serialisers {
     private static final String LENGTH = "Length";
     private static final String LENGTH_LOWER = "length";
     private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
-    private static final String TRANSFER_ENCODING = "Transfer-Encoding";
+    public static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
             new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
@@ -484,11 +484,13 @@ public class ServerSerialisers extends Serialisers {
             //there is no response, so we just set the content type
             if (requestContext.getResponseEntity() == null) {
                 vertxResponse.setStatusCode(Response.Status.NO_CONTENT.getStatusCode());
+                sanitizeNoContentResponse(vertxResponse);
             }
             EncodedMediaType contentType = requestContext.getResponseContentType();
             if (contentType != null) {
                 vertxResponse.setResponseHeader(CONTENT_TYPE, contentType.toString());
             }
+
             return;
         }
         Response response = requestContext.getResponse().get();
@@ -531,6 +533,14 @@ public class ServerSerialisers extends Serialisers {
                 vertxResponse.setResponseHeader(entry.getKey(), strValues);
             }
         }
+
+        if (response.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
+            sanitizeNoContentResponse(vertxResponse);
+        }
+    }
+
+    private static void sanitizeNoContentResponse(ServerHttpResponse serverHttpResponse) {
+        serverHttpResponse.removeResponseHeader("Content-Encoding");
     }
 
     private static boolean requireSingleHeader(String header) {

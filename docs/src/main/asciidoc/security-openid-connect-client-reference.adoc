@@ -768,7 +768,7 @@ You can also inject named `Tokens`, see <<named-oidc-clients,Inject named OidcCl
 Additionally, the `quarkus.oidc-client.refresh-token-time-skew` property can be used for a preemptive access token refreshment to avoid sending nearly expired access tokens that might cause HTTP 401 errors. For example, if this property is set to `3S` and the access token will expire in less than 3 seconds, then this token will be auto-refreshed.
 
 
-By default, OIDC client refreshes the token during the current request, when it detects that it has expired, or nearly expired if the [refresh token time skew](https://quarkus.io/guides/security-openid-connect-client-reference#quarkus-oidc-client_quarkus-oidc-client-refresh-token-time-skew) is configured.
+By default, OIDC client refreshes the token during the current request, when it detects that it has expired, or nearly expired if the xref:#quarkus-oidc-client_quarkus-oidc-client-refresh-token-time-skew[refresh token time skew] is configured.
 Performance critical applications may want to avoid having to wait for a possible token refresh during the incoming requests and configure an asynchronous token refresh instead, for example:
 
 [source,properties]

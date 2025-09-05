@@ -306,7 +306,7 @@ public class ClientBuilderImpl extends ClientBuilder {
                 followRedirects,
                 multiQueryParamMode,
                 loggingScope,
-                clientLogger, userAgent);
+                clientLogger, userAgent, tlsConfig != null ? tlsConfig.getName().orElse(null) : null);
 
     }
 

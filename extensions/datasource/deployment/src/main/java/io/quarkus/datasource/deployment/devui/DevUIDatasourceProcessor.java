@@ -19,7 +19,6 @@ public class DevUIDatasourceProcessor {
         CardPageBuildItem card = new CardPageBuildItem();
 
         List<String> names = new ArrayList<>();
-        names.add("<default>");
         names.addAll(dataSourceBuildTimeConfig.dataSources().keySet());
         Collections.sort(names);
         card.addBuildTimeData("datasources", names);

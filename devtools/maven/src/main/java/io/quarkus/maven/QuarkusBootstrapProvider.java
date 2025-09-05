@@ -110,8 +110,11 @@ public class QuarkusBootstrapProvider implements Closeable {
      * @return raw POM
      */
     private static Model getRawModel(MavenProject mp) {
-        final Model model = mp.getOriginalModel();
+        Model model = mp.getOriginalModel();
         if (model.getDependencyManagement() == null) {
+            // clone the model to not modify the original model associated with the project,
+            // otherwise, the enforcer plugin may fail, for example
+            model = model.clone();
             // this could be the flatten plugin removing the dependencyManagement
             // in which case we set the effective dependency management to not lose the platform info
             model.setDependencyManagement(mp.getDependencyManagement());

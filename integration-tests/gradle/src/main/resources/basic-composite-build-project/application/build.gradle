@@ -18,9 +18,9 @@ dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    implementation 'io.quarkus:quarkus-resteasy'
-    implementation ('org.acme.libs:libraryB')
-    implementation ('org.acme.libs:libraryA')
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'org.acme.libs:libraryB'
+    implementation 'org.acme.libs:libraryA'
 
 }
 

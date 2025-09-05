@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.MemorySizeConverter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class GlobalConfigurationTest {
@@ -78,5 +79,9 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.keyStore().get()).isEqualTo("/path");
         assertThat(configRoot.keyStorePassword().get()).isEqualTo("password");
         assertThat(configRoot.keyStoreType().get()).isEqualTo("JKS");
+        assertThat(configRoot.multipart().fileThreshold().get().asBigInteger())
+                .isEqualTo(new MemorySizeConverter().convert("5M").asBigInteger());
+        assertThat(configRoot.multipart().memoryThreshold().get().asBigInteger())
+                .isEqualTo(new MemorySizeConverter().convert("10M").asBigInteger());
     }
 }

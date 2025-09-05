@@ -14,11 +14,11 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 
-@Path("/offline/dialect")
+@Path("/offline2/dialect")
 @Produces(MediaType.APPLICATION_JSON)
-public class OfflineDialectEndpoint {
+public class Offline2DialectEndpoint {
     @Inject
-    @PersistenceUnit("offline")
+    @PersistenceUnit("offline2")
     SessionFactory sessionFactory;
 
     @GET

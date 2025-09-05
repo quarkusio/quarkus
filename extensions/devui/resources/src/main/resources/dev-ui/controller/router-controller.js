@@ -170,7 +170,7 @@ export class RouterController {
     getFirstPageUrl(){
         for (let entry of RouterController.pageMap) {
             let value = entry[1];
-            if(value.includeInMenu){
+            if(value.includeInMenu && value.internal){
                 return entry[0];
             }
         }

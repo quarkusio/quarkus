@@ -39,14 +39,12 @@ public class ResponseHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         Object result = requestContext.getResult();
-        if (result instanceof Response) {
+        if (result instanceof Response existing) {
             boolean mediaTypeAlreadyExists = false;
             //we already have a response
             //set it explicitly
             ResponseBuilderImpl responseBuilder;
-            Response existing = (Response) result;
-            if (existing.getEntity() instanceof GenericEntity) {
-                GenericEntity<?> genericEntity = (GenericEntity<?>) existing.getEntity();
+            if (existing.getEntity() instanceof GenericEntity<?> genericEntity) {
                 requestContext.setGenericReturnType(genericEntity.getType());
                 responseBuilder = fromResponse(existing);
                 responseBuilder.entity(genericEntity.getEntity());
@@ -56,17 +54,15 @@ public class ResponseHandler implements ServerRestHandler {
                     requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficient
                 responseBuilder = fromResponse(existing);
-                if ((result instanceof ResponseImpl)) {
+                if ((result instanceof ResponseImpl responseImpl)) {
                     // needed in order to preserve entity annotations
-                    ResponseImpl responseImpl = (ResponseImpl) result;
                     if (responseImpl.getEntityAnnotations() != null) {
                         requestContext.setAdditionalAnnotations(responseImpl.getEntityAnnotations());
                     }
 
-                    // this is a weird case where the response comes from the the rest-client
+                    // this is a weird case where the response comes from the rest-client
                     if (responseBuilder.getEntity() == null) {
-                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream) {
-                            ByteArrayInputStream byteArrayInputStream = (ByteArrayInputStream) responseImpl.getEntityStream();
+                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream byteArrayInputStream) {
                             responseBuilder.entity(byteArrayInputStream.readAllBytes());
                         }
                     }
@@ -88,31 +84,27 @@ public class ResponseHandler implements ServerRestHandler {
             } else {
                 requestContext.setResponse(new LazyResponse.Existing(responseBuilder.build()));
             }
-        } else if (result instanceof RestResponse) {
+        } else if (result instanceof RestResponse<?> existing) {
             boolean mediaTypeAlreadyExists = false;
             //we already have a response
             //set it explicitly
             ResponseBuilderImpl responseBuilder;
-            RestResponse<?> existing = (RestResponse<?>) result;
-            if (existing.getEntity() instanceof GenericEntity) {
-                GenericEntity<?> genericEntity = (GenericEntity<?>) existing.getEntity();
+            if (existing.getEntity() instanceof GenericEntity<?> genericEntity) {
                 requestContext.setGenericReturnType(genericEntity.getType());
                 responseBuilder = fromResponse(existing);
                 responseBuilder.entity(genericEntity.getEntity());
             } else {
                 //TODO: super inefficient
                 responseBuilder = fromResponse(existing);
-                if ((result instanceof RestResponseImpl)) {
+                if ((result instanceof RestResponseImpl<?> responseImpl)) {
                     // needed in order to preserve entity annotations
-                    RestResponseImpl<?> responseImpl = (RestResponseImpl<?>) result;
                     if (responseImpl.getEntityAnnotations() != null) {
                         requestContext.setAdditionalAnnotations(responseImpl.getEntityAnnotations());
                     }
 
-                    // this is a weird case where the response comes from the the rest-client
+                    // this is a weird case where the response comes from the rest-client
                     if (responseBuilder.getEntity() == null) {
-                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream) {
-                            ByteArrayInputStream byteArrayInputStream = (ByteArrayInputStream) responseImpl.getEntityStream();
+                        if (responseImpl.getEntityStream() instanceof ByteArrayInputStream byteArrayInputStream) {
                             responseBuilder.entity(byteArrayInputStream.readAllBytes());
                         }
                     }

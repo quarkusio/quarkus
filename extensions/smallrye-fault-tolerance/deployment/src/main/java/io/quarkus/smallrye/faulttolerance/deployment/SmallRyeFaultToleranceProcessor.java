@@ -179,10 +179,7 @@ public class SmallRyeFaultToleranceProcessor {
                         Enablement.class);
 
         int metricsProviders = 0;
-        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-            builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
-            metricsProviders++;
-        } else if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
             metricsProviders++;
         }

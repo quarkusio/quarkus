@@ -97,16 +97,7 @@ public class CodeFlowTest {
             assertEquals("Welcome to Test App", page.getTitleText(),
                     "A second request should not redirect and just re-authenticate the user");
 
-            page = webClient.getPage("http://localhost:8081/web-app/configMetadataIssuer");
-
-            assertEquals(
-                    client.getAuthServerUrl(),
-                    page.asNormalizedText());
-
-            page = webClient.getPage("http://localhost:8081/web-app/configMetadataScopes");
-
-            assertTrue(page.asNormalizedText().contains("openid"));
-            assertTrue(page.asNormalizedText().contains("profile"));
+            verifyConfigurationMetadata(webClient);
 
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
@@ -152,6 +143,47 @@ public class CodeFlowTest {
             // Static default tenant
             checkResourceMetadata(null, "/realms/quarkus");
         }
+    }
+
+    private void verifyConfigurationMetadata(WebClient webClient) throws IOException {
+        // Issuer
+        HtmlPage page = webClient.getPage("http://localhost:8081/web-app/configMetadataIssuer");
+
+        assertEquals(
+                client.getAuthServerUrl(),
+                page.asNormalizedText());
+
+        // Scopes
+        page = webClient.getPage("http://localhost:8081/web-app/configMetadataScopes");
+
+        assertTrue(page.asNormalizedText().contains("openid"));
+        assertTrue(page.asNormalizedText().contains("profile"));
+
+        // Response types
+        page = webClient.getPage("http://localhost:8081/web-app/configMetadataResponseTypes");
+
+        assertTrue(page.asNormalizedText().contains("code"));
+        assertTrue(page.asNormalizedText().contains("token"));
+
+        // Subject types
+        page = webClient.getPage("http://localhost:8081/web-app/configMetadataSubjectTypes");
+
+        assertTrue(page.asNormalizedText().contains("public"));
+        assertTrue(page.asNormalizedText().contains("pairwise"));
+
+        // ID token signing algorithms
+        page = webClient.getPage("http://localhost:8081/web-app/configMetadataIdTokenSigningAlgorithms");
+
+        assertTrue(page.asNormalizedText().contains("RS256"));
+        assertTrue(page.asNormalizedText().contains("ES256"));
+        assertTrue(page.asNormalizedText().contains("PS256"));
+
+        // PKCE code challenge methods
+        page = webClient.getPage("http://localhost:8081/web-app/configMetadataCodeChallengeMethods");
+
+        assertTrue(page.asNormalizedText().contains("S256"));
+        assertTrue(page.asNormalizedText().contains("plain"));
+
     }
 
     private static void checkHealth() {

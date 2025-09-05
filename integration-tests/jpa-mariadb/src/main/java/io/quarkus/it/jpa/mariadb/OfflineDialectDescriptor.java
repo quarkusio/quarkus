@@ -1,5 +1,7 @@
 package io.quarkus.it.jpa.mariadb;
 
+import java.util.Locale;
+
 import org.hibernate.dialect.MariaDBDialect;
 
 public class OfflineDialectDescriptor {
@@ -7,11 +9,15 @@ public class OfflineDialectDescriptor {
     private Boolean noBackslashEscapes;
     private String storageEngine;
 
-    public OfflineDialectDescriptor(MariaDBDialect dialect, String storageEngine) {
+    public OfflineDialectDescriptor(MariaDBDialect dialect) {
         this(
                 determineBytesPerCharacter(dialect),
                 dialect.isNoBackslashEscapesEnabled(),
-                storageEngine);
+                determineStorageEngine(dialect));
+    }
+
+    private static String determineStorageEngine(MariaDBDialect dialect) {
+        return dialect.getTableTypeString().toLowerCase(Locale.ROOT).replace("engine=", "").trim();
     }
 
     private static Integer determineBytesPerCharacter(MariaDBDialect dialect) {

@@ -898,8 +898,6 @@ public final class HibernateOrmProcessor {
         Set<String> modelClassesAndPackagesForDefaultPersistenceUnit = modelClassesAndPackagesPerPersistencesUnits
                 .getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
 
-        Set<String> storageEngineCollector = new HashSet<>();
-
         if (enableDefaultPersistenceUnit) {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
@@ -908,7 +906,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    reflectiveMethods, unremovableBeans, storageEngineCollector, dbKindMetadataBuildItems);
+                    reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         } else if (!modelClassesAndPackagesForDefaultPersistenceUnit.isEmpty()
                 && (!hibernateOrmConfig.defaultPersistenceUnit().datasource().isPresent()
                         || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit().datasource().get()))
@@ -928,12 +926,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    reflectiveMethods, unremovableBeans, storageEngineCollector, dbKindMetadataBuildItems);
-        }
-
-        if (storageEngineCollector.size() > 1) {
-            throw new ConfigurationException(
-                    "The dialect storage engine is a global configuration property: it must be consistent across all persistence units.");
+                    reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
         }
     }
 
@@ -953,7 +946,6 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            Set<String> storageEngineCollector,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
@@ -984,7 +976,7 @@ public final class HibernateOrmProcessor {
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
                 persistenceUnitConfig,
                 dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
-                systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty, storageEngineCollector);
+                systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
 
@@ -1025,8 +1017,7 @@ public final class HibernateOrmProcessor {
             MultiTenancyStrategy multiTenancyStrategy,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BiConsumer<String, String> puPropertiesCollector,
-            Set<String> storageEngineCollector) {
+            BiConsumer<String, String> puPropertiesCollector) {
         final HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
                 .dialect();
 
@@ -1050,10 +1041,8 @@ public final class HibernateOrmProcessor {
                 explicitDbMinVersion,
                 dialectConfig,
                 dbKindMetadataBuildItems,
-                persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
-                puPropertiesCollector,
-                storageEngineCollector);
+                puPropertiesCollector);
 
         if ((dbKind.isPresent() && DatabaseKind.isPostgreSQL(dbKind.get())
                 || (dialect.isPresent() && dialect.get().toLowerCase(Locale.ROOT).contains("postgres")))) {

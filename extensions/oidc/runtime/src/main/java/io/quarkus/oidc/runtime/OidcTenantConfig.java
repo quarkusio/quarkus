@@ -163,6 +163,12 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<String> resource();
 
         /**
+         * Authorization server URL.
+         * 'quarkus.oidc.auth-server-url' property value is reported by default.
+         */
+        Optional<String> authorizationServer();
+
+        /**
          * Force a protected resource identifier HTTPS scheme.
          * This property is ignored if {@link #resource() is an absolute URL}
          */

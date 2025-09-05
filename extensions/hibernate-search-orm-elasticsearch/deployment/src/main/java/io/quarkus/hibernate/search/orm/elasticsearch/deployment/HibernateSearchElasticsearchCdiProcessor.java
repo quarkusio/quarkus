@@ -9,6 +9,7 @@ import jakarta.enterprise.inject.Default;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -33,23 +34,23 @@ public class HibernateSearchElasticsearchCdiProcessor {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit : configuredPersistenceUnits) {
             String persistenceUnitName = persistenceUnit.getPersistenceUnitName();
 
-            boolean isDefaultPersistenceUnit = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
+            var checkActiveSupplier = recorder.checkActiveSupplier(persistenceUnitName);
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPersistenceUnit,
                             SearchMapping.class,
-                            recorder.searchMappingSupplier(persistenceUnitName, isDefaultPersistenceUnit)));
+                            recorder.searchMappingSupplier(persistenceUnitName),
+                            checkActiveSupplier));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
                             SearchSession.class,
-                            recorder.searchSessionSupplier(persistenceUnitName, isDefaultPersistenceUnit)));
+                            recorder.searchSessionSupplier(persistenceUnitName),
+                            checkActiveSupplier));
         }
     }
 
-    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName, boolean isDefaultPersistenceUnit,
-            Class<T> type, Supplier<T> supplier) {
+    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName,
+            Class<T> type, Supplier<T> supplier, Supplier<ActiveResult> checkActiveSupplier) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
                 // NOTE: this is using ApplicationScoped and not Singleton, by design, in order to be mockable
@@ -57,9 +58,13 @@ public class HibernateSearchElasticsearchCdiProcessor {
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .supplier(supplier)
-                .setRuntimeInit();
+                .setRuntimeInit()
+                // Note persistence units _actually_ get started a bit earlier, each in its own thread. See JPAConfig#startAll.
+                // This startup() call is only necessary in order to trigger Arc's usage checks (fail startup if bean injected when inactive).
+                .startup()
+                .checkActive(checkActiveSupplier);
 
-        if (isDefaultPersistenceUnit) {
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             configurator.addQualifier(Default.class);
         }
 

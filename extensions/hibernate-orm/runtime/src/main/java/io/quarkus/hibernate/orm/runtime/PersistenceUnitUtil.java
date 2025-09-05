@@ -1,10 +1,13 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import static io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig.puPropertyKey;
+
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import jakarta.enterprise.inject.Default;
 
@@ -23,6 +26,14 @@ public class PersistenceUnitUtil {
 
     public static boolean isDefaultPersistenceUnit(String name) {
         return DEFAULT_PERSISTENCE_UNIT_NAME.equals(name);
+    }
+
+    public static Annotation qualifier(String persistenceUnitName) {
+        if (isDefaultPersistenceUnit(persistenceUnitName)) {
+            return Default.Literal.INSTANCE;
+        } else {
+            return new PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName);
+        }
     }
 
     public static <T> InjectableInstance<T> singleExtensionInstanceForPersistenceUnit(Class<T> beanType,
@@ -116,5 +127,18 @@ public class PersistenceUnitUtil {
                 "Unable to find datasource '%s' for persistence unit '%s': %s",
                 dataSourceName, persistenceUnitName, cause.getMessage()),
                 cause);
+    }
+
+    public static String persistenceUnitInactiveReasonDeactivated(String puName,
+            Optional<String> datasourceName) {
+        return String.format(Locale.ROOT,
+                "Persistence unit '%s' was deactivated through configuration properties."
+                        + " To activate the persistence unit, set configuration property '%s' to 'true'"
+                        + (datasourceName.isPresent()
+                                ? String.format(Locale.ROOT, " and configure datasource '%s'."
+                                        + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                                        datasourceName.get())
+                                : "."),
+                puName, puPropertyKey(puName, "active"));
     }
 }

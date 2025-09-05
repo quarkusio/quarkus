@@ -366,6 +366,18 @@ public final class DatabaseInspector {
         return CompletableFuture.failedStage(new RuntimeException("Assistant is not available"));
     }
 
+    public CompletionStage<Map<String, String>> englishToSQL(String datasource, String schema, String name, String english) {
+        if (isDev && assistant.isPresent()) {
+            List<Table> tables = getTables(datasource);
+
+            return assistant.get().assistBuilder()
+                    .userMessage(englishToSqlPrompt(tables, schema, name, english))
+                    .assist();
+
+        }
+        return CompletableFuture.failedStage(new RuntimeException("Assistant is not available"));
+    }
+
     private void exportTable(Connection conn, StringWriter writer, String tableName) throws SQLException, IOException {
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)) {
@@ -487,12 +499,51 @@ public final class DatabaseInspector {
                 dataType == Types.OTHER;
     }
 
+    private String englishToSqlPrompt(List<Table> tables, String schema, String name, String english) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Generate valid SQL given the following english statement: ")
+                .append(english)
+                .append("\n\nAnd this is the known tables in the database:\n");
+
+        for (Table table : tables) {
+            sb.append(getTableDefinitionAsString(table));
+            sb.append("\n\n");
+        }
+
+        sb.append("\nIf you can not defer the schema name from the english statement, use ").append(schema)
+                .append(" as the schema name");
+        sb.append("\nIf you can not defer the table name from the english statement, use ").append(name)
+                .append(" as the table name");
+
+        sb.append(
+                "\nReturn the output in a field called `sql` with the contents being valid SQL");
+
+        sb.append(
+                "\nIf you can not reliably create this sql, rather create an output with a field called error containing the reason");
+
+        return sb.toString();
+    }
+
     private String generateInsertPrompt(Table table, int rowCount) {
         StringBuilder sb = new StringBuilder();
         sb.append("Generate a valid SQL script with ")
                 .append(rowCount)
                 .append(" INSERT statements for the following table:\n\n");
 
+        sb.append(getTableDefinitionAsString(table));
+
+        sb.append(
+                "\nReturn the output in a field called `script` with the contents being a SQL script with valid INSERT INTO statements for ")
+                .append(table.tableSchema())
+                .append(".")
+                .append(table.tableName())
+                .append(".\n");
+
+        return sb.toString();
+    }
+
+    private String getTableDefinitionAsString(Table table) {
+        StringBuilder sb = new StringBuilder();
         sb.append("Table name: ")
                 .append(table.tableSchema())
                 .append(".")
@@ -528,14 +579,6 @@ public final class DatabaseInspector {
                         .append(")\n");
             }
         }
-
-        sb.append(
-                "\nReturn the output in a field called `script` with the contents being a SQL script with valid INSERT INTO statements for ")
-                .append(table.tableSchema())
-                .append(".")
-                .append(table.tableName())
-                .append(".\n");
-
         return sb.toString();
     }
 

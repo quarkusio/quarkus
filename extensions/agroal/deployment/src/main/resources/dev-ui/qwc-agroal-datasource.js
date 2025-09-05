@@ -5,6 +5,7 @@ import '@vaadin/combo-box';
 import '@vaadin/item';
 import '@vaadin/icon';
 import '@vaadin/list-box';
+import '@vaadin/text-field';
 import '@qomponent/qui-card';
 import '@vaadin/grid';
 import '@vaadin/tabs';
@@ -19,6 +20,7 @@ import '@vaadin/dialog';
 import '@qomponent/qui-dot';
 import 'qui-assistant-button';
 import 'qui-assistant-warning';
+import '@qomponent/qui-badge';
 import { dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { observeState } from 'lit-element-state';
 import { assistantState } from 'assistant-state';
@@ -91,8 +93,6 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             display: flex;
             align-items: center;
             padding-bottom: 10px;
-            border-bottom-style: dotted;
-            border-bottom-color: var(--lumo-contrast-10pct);
         }
 
         .sqlInput .cm-content {
@@ -111,9 +111,13 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             margin: 0;
         }
     
-        #sql {
+        #sqlInput {
             width: 100%;
         }
+        #assistantInput {
+            width: 100%;
+        }
+    
         .data {
             display: flex;
             flex-direction: column;
@@ -161,6 +165,12 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             align-self: center;
             padding-top: 50px;
         }
+    
+        qui-badge {
+            cursor: pointer;
+            padding-left: 2px;
+            padding-right: 5px;
+        }
     `;
     
     static properties = {
@@ -172,6 +182,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         _selectedTableIndex:{state: true},
         _selectedTableCols:{state: true},
         _currentSQL: {state: true},
+        _currentEnglish: {state: true},
         _currentDataSet: {state: true},
         _isWatching: {state: true},
         _watchId: {state: false},
@@ -186,7 +197,9 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         _showBusyLoadingDialog: {state: true},
         _showAssistantWarning: {state: true},
         _showImportSQLDialog: {state: true},
-        _showErDiagramDialog: {state: true}
+        _showErDiagramDialog: {state: true},
+        _englishToSQLEnabled: {state: true},
+        _englishToSQLLoadingMessage: {state: true}
     };
     
     constructor() {
@@ -199,6 +212,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         this._selectedTableCols = null;
         this._selectedTableIndex = 0;
         this._currentSQL = null;
+        this._currentEnglish = null;
         this._currentDataSet = null;
         this._isWatching = false;
         this._watchId = null;
@@ -214,6 +228,8 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         this._showAssistantWarning = false;
         this._showImportSQLDialog = false;
         this._showErDiagramDialog = false;
+        this._englishToSQLEnabled = false;
+        this._englishToSQLLoadingMessage = null;
     }
     
     connectedCallback() {
@@ -236,6 +252,8 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                     return map;
               }, {});
         });
+        
+        this._englishToSQLEnabled = false; // TODO: Load from storage
     }
     
     disconnectedCallback() {
@@ -551,17 +569,25 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     _renderTableData(){
         if(this._selectedTable && this._currentDataSet && this._currentDataSet.cols){
             return html`<div class="data">
-                            ${this._renderSqlInput()}
                             ${this._renderTableDataGrid()}
+                            ${this._renderSqlInput()}
                         </div>    
                     `;
         }else if(this._displaymessage){
             return html`<span>${this._displaymessage}</span>`;
         }else{
-            return html`<div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching data...</div>
-                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
-            </div>`;
+            if(assistantState.current.isConfigured && this._englishToSQLEnabled){
+                return html`<div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                    <div>${this._englishToSQLLoadingMessage}</div>
+                    <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+                </div>`;
+            }else{
+                return html`<div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                    <div>Fetching data ...</div>
+                    <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+                </div>`;
+            }
+            
         }
     }
     
@@ -633,15 +659,14 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         if (this._allowSql) {
             return html`
                 <div class="sqlInput">
-                    <qui-themed-code-block @shiftEnter=${this._shiftEnterPressed} content="${this._currentSQL}"
-                                    class="font-large cursor-text" id="sql" mode="sql"
-                                    value='${this._currentSQL}' editable></qui-themed-code-block>
-                    <vaadin-button class="no-margin" slot="suffix" theme="icon tertiary small" aria-label="Clear">
+                    ${this._renderEnglishToSQLButton()}
+                    ${this._renderInputTextField()}
+                    <vaadin-button class="no-margin" theme="icon tertiary small" aria-label="Clear">
                         <vaadin-tooltip .hoverDelay=${500} slot="tooltip" text="Clear"></vaadin-tooltip>
-                        <vaadin-icon class="small-icon" @click=${this._clearSqlInput}
+                        <vaadin-icon class="small-icon" @click=${this._clearInput}
                                      icon="font-awesome-solid:broom"></vaadin-icon>
                     </vaadin-button>
-                    <vaadin-button class="no-margin" slot="suffix" theme="icon tertiary small" aria-label="Run">
+                    <vaadin-button class="no-margin" theme="icon tertiary small" aria-label="Run">
                         <vaadin-tooltip .hoverDelay=${500} slot="tooltip" text="Run"></vaadin-tooltip>
                         <vaadin-icon class="small-icon" @click=${this._executeClicked}
                                      icon="font-awesome-solid:play"></vaadin-icon>
@@ -649,6 +674,42 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 </div>`;
         } else {
             return html`<vaadin-button theme="small" @click="${this._handleAllowSqlChange}">Allow any SQL execution from here</vaadin-button>`;
+        }
+    }
+    
+    _renderInputTextField(){
+        if(assistantState.current.isConfigured && this._englishToSQLEnabled){
+           return html`<vaadin-text-field value='${this._currentEnglish}' placeholder="Describe the data you are looking for in English" @keydown="${this._englishKeyDown}" id="assistantInput">
+                            <vaadin-icon slot="prefix" icon="font-awesome-solid:robot" title="${this._currentSQL}"></vaadin-icon>
+                        </vaadin-text-field>`;     
+        }else{
+            return html`<qui-themed-code-block @shiftEnter=${this._shiftEnterPressed} content="${this._currentSQL}"
+                                    class="font-large cursor-text" id="sqlInput" mode="sql"
+                                    value='${this._currentSQL}' editable></qui-themed-code-block>`;
+        }
+    }
+    
+    _renderEnglishToSQLButton(){
+        if(assistantState.current.isConfigured){
+            if(this._englishToSQLEnabled){
+                return html`Using <qui-badge @click=${this._switchEnglishToSQL} color="var(--quarkus-assistant)"><span>Assistant</span></qui-badge>`;
+            }else{
+                return html`Using <qui-badge @click=${this._switchEnglishToSQL}><span>SQL</span></qui-badge>`;
+            }
+        }
+    }
+    
+    _switchEnglishToSQL(){
+        if(this._englishToSQLEnabled){
+            this._englishToSQLEnabled = false;
+        }else{
+            this._englishToSQLEnabled = true;
+        }
+    }
+    
+    _englishKeyDown(e){
+        if (e.key === 'Enter') {
+            this._executeClickedAI();
         }
     }
     
@@ -670,7 +731,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             'value': 'true'
         }).then(e => {
             this._allowSql = true;
-        });;
+        });
     }
     
     _columnNameRenderer(col){
@@ -762,7 +823,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         this._fetchTableDefinitions();
         this._selectedTableIndex = event.detail.value;
         this._selectedTable = this._tables[this._selectedTableIndex];
-        this._clearSqlInput();
+        this._clearInput();
     }
     
     _previousPage(){
@@ -801,7 +862,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                     notifier.showErrorMessage(jsonRpcResponse.result.error);
                 } else if (jsonRpcResponse.result.message){
                     notifier.showInfoMessage(jsonRpcResponse.result.message);
-                    this._clearSqlInput();
+                    this._clearInput();
                 } else {
                     this._currentDataSet = jsonRpcResponse.result;
                     this._currentNumberOfPages = this._getNumberOfPages();
@@ -840,16 +901,55 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     }
     
     _executeClicked(){
-        let newValue = this.shadowRoot.getElementById('sql').getAttribute('value');
+        if(assistantState.current.isConfigured && this._englishToSQLEnabled){
+            this._executeClickedAI();
+        }else {
+            this._executeClickedSQL();
+        }    
+    }
+    
+    _executeClickedSQL(){
+        let newValue = this.shadowRoot.getElementById('sqlInput').getAttribute('value');
         this._executeSQL(newValue);
     }
     
-    _clearSqlInput(){
-        if(this._selectedTable){
-            if(this._appendSql){
-                this._executeSQL("select * from " + this._selectedTable.tableSchema + "." + this._selectedTable.tableName + " " + this._appendSql);
-            }else{
-                this._executeSQL("select * from " + this._selectedTable.tableSchema + "." + this._selectedTable.tableName);
+    _executeClickedAI(){
+        this._currentEnglish = this.shadowRoot.getElementById('assistantInput').value;
+        this._englishToSQLLoadingMessage = "Creating SQL from \"" + this._currentEnglish + "\"";
+        this._currentDataSet = null;
+        this._currentSQL = null;
+        
+        this.jsonRpc.englishToSQL({
+                                    datasource:this._selectedDataSource.name,
+                                    schema: this._selectedTable.tableSchema,
+                                    name: this._selectedTable.tableName,
+                                    english: this._currentEnglish
+                                }).then(jsonRpcResponse => {
+                                    if(jsonRpcResponse.result.error){
+                                        notifier.showErrorMessage(jsonRpcResponse.result.error);
+                                    } else {
+                                        let sql = jsonRpcResponse.result.sql;
+                                        this._englishToSQLLoadingMessage = "Using SQL \"" + sql + "\"";
+                                        notifier.showInfoMessage(sql);
+                                        this._executeSQL(sql);
+                                    }
+                                });
+        
+        
+        
+    }
+    
+    _clearInput(){
+        if(assistantState.current.isConfigured && this._englishToSQLEnabled){
+            this._currentEnglish = null;
+            this.shadowRoot.getElementById('assistantInput').value = '';
+        }else{
+            if(this._selectedTable){
+                if(this._appendSql){
+                    this._executeSQL("select * from " + this._selectedTable.tableSchema + "." + this._selectedTable.tableName + " " + this._appendSql);
+                }else{
+                    this._executeSQL("select * from " + this._selectedTable.tableSchema + "." + this._selectedTable.tableName);
+                }
             }
         }
     }
@@ -861,6 +961,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     _executeSQL(sql){
         this._currentSQL = sql.trim();
         this._executeCurrentSQL();
+        this._englishToSQLLoadingMessage = null;
     }
     
     _startsWithIgnoreCaseAndSpaces(str, searchString) {

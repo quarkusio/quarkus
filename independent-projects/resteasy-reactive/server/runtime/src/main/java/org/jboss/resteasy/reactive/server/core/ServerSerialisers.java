@@ -86,7 +86,7 @@ public class ServerSerialisers extends Serialisers {
     private static final String LENGTH = "Length";
     private static final String LENGTH_LOWER = "length";
     private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
-    private static final String TRANSFER_ENCODING = "Transfer-Encoding";
+    public static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
             new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,

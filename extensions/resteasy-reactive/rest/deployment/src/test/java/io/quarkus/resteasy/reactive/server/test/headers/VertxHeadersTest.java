@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.server.test.headers;
 
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.is;
 
 import java.io.IOException;
 
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.RouteFilter;
-import io.restassured.http.Headers;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxHeadersTest {
@@ -36,16 +34,6 @@ public class VertxHeadersTest {
                 .statusCode(200)
                 .extract().headers();
         assertThat(headers.getValues(HttpHeaders.VARY)).containsExactlyInAnyOrder("Origin", "Prefer");
-    }
-
-    @Test
-    void testTransferEncodingHeaderValues() {
-        Headers headers = when().get("/test/response")
-                .then()
-                .statusCode(200)
-                .header("Transfer-Encoding", is("chunked")).extract().headers();
-
-        assertThat(headers.asList()).noneMatch(h -> h.getName().equals("transfer-encoding"));
     }
 
     public static class VertxFilter {

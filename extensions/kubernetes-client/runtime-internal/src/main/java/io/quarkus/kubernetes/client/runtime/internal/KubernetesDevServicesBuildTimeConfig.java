@@ -37,11 +37,12 @@ public interface KubernetesDevServicesBuildTimeConfig {
     Optional<String> imageName();
 
     /**
-     * The flavor to use (kind, k3s or api-only).
+     * The {@link Flavor} to use .
      * <p>
-     * If not set, Dev Services for Kubernetes will set it to: api-only.
+     * If not set, Dev Services for Kubernetes will set it to: {@link Flavor#api_only}.
      */
-    Optional<Flavor> flavor();
+    @WithDefault("api_only")
+    Flavor flavor();
 
     /**
      * By default, if a kubeconfig is found, Dev Services for Kubernetes will not start.
@@ -52,7 +53,7 @@ public interface KubernetesDevServicesBuildTimeConfig {
 
     /**
      * A list of manifest file paths that should be applied to the Kubernetes cluster Dev Service on startup.
-     *
+     * <p>
      * If not set, no manifests are applied.
      */
     Optional<List<String>> manifests();

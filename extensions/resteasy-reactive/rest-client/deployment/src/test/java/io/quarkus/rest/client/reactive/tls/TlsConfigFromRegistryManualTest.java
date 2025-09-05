@@ -2,8 +2,12 @@ package io.quarkus.rest.client.reactive.tls;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
@@ -15,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.tls.TlsConfiguration;
@@ -46,12 +51,26 @@ public class TlsConfigFromRegistryManualTest {
     TlsConfigurationRegistry registry;
 
     @Test
-    void shouldHello() {
-        Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(registry, Optional.of("rest-client"));
-        assertThat(maybeTlsConfiguration).isPresent();
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUrl(url).tlsConfiguration(maybeTlsConfiguration.get())
-                .build(Client.class);
-        assertThat(client.echo("w0rld")).isEqualTo("hello, w0rld");
+    void test() throws IOException {
+        int count = 10;
+        List<Closeable> closeables = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(registry, Optional.of("rest-client"));
+            assertThat(maybeTlsConfiguration).isPresent();
+            Client client = QuarkusRestClientBuilder.newBuilder().baseUrl(url).tlsConfiguration(maybeTlsConfiguration.get())
+                    .build(Client.class);
+            assertThat(client.echo("w0rld")).isEqualTo("hello, w0rld");
+            closeables.add((Closeable) client);
+        }
+
+        assertThat(RestClientRecorder.clientsUsingTlsConfig("rest-client")).hasSize(count);
+
+        // manually close all clients
+        for (Closeable closeable : closeables) {
+            closeable.close();
+        }
+        // assert that the TLS config was cleaned up
+        assertThat(RestClientRecorder.clientsUsingTlsConfig("rest-client")).isEmpty();
     }
 
     @Path("/hello")

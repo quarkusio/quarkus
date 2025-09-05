@@ -3,7 +3,9 @@ package org.jboss.resteasy.reactive.server.handlers;
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -15,6 +17,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
@@ -25,6 +28,10 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 public class ResponseHandler implements ServerRestHandler {
 
     public static final ResponseHandler NO_CUSTOMIZER_INSTANCE = new ResponseHandler();
+
+    // TODO: we need to think about what other headers coming from the existing Response need to be ignored
+    private static final Set<String> IGNORED_HEADERS = Collections.singleton(ServerSerialisers.TRANSFER_ENCODING.toLowerCase(
+            Locale.ROOT));
 
     private final List<ResponseBuilderCustomizer> responseBuilderCustomizers;
 
@@ -190,6 +197,9 @@ public class ResponseHandler implements ServerRestHandler {
         var headers = response.getHeaders();
         if (headers != null) {
             for (String headerName : headers.keySet()) {
+                if (IGNORED_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
+                    continue;
+                }
                 List<Object> headerValues = headers.get(headerName);
                 for (Object headerValue : headerValues) {
                     b.header(headerName, headerValue);
@@ -206,6 +216,9 @@ public class ResponseHandler implements ServerRestHandler {
             b.entity(response.getEntity());
         }
         for (String headerName : response.getHeaders().keySet()) {
+            if (IGNORED_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
             List<Object> headerValues = response.getHeaders().get(headerName);
             for (Object headerValue : headerValues) {
                 b.header(headerName, headerValue);

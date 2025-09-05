@@ -14,7 +14,6 @@ import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSI
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -379,8 +378,6 @@ public final class HibernateReactiveProcessor {
                 new Properties(),
                 true);
 
-        Set<String> storageEngineCollector = new HashSet<>();
-
         HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
                 .dialect();
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
@@ -390,10 +387,8 @@ public final class HibernateReactiveProcessor {
                 explicitDbMinVersion,
                 dialectConfig,
                 dbKindDialectBuildItems,
-                persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
-                descriptor.getProperties()::setProperty,
-                storageEngineCollector);
+                descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,

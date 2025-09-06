@@ -771,6 +771,21 @@ The `setExpireAfterAccess`, `setExpireAfterWrite` and `setMaximumSize` methods f
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.
 Caffeine is a high performance, near optimal caching library.
 
+== Multiple Backends Simultaneously
+
+This extension can be configured to use multiple backends simultaneously, allowing different caches to leverage either in-memory providers (like Caffeine) or distributed providers (like Redis) as needed, for example:
+
+[source,properties]
+----
+# default cache backend
+quarkus.cache.type=caffeine
+
+# change the cache backend for "weather-cache" to Redis.
+quarkus.cache.weather-cache.type=redis
+----
+
+NOTE: The syntax for the property name is `quarkus.cache."cache-name".type`. If no explicit backend is defined for a cache, the default backend is used. For details on configuring a specific backend, refer to its guide.
+
 === Caffeine configuration properties
 
 Each of the Caffeine caches backing up the Quarkus application data caching extension can be configured using the following

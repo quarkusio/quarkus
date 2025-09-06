@@ -42,6 +42,8 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
+import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
@@ -57,6 +59,7 @@ public class StartupActionImpl implements StartupAction {
     private final String mainClassName;
     private final String applicationClassName;
     private final Map<String, String> devServicesProperties;
+    private final ResolvedJVMRequirements jvmRequirements;
     private volatile boolean devServicesStarted = false;
     private final List<DevServicesResultBuildItem> devServicesResults;
     private final List<DevServicesCustomizerBuildItem> devServicesCustomizers;
@@ -64,6 +67,8 @@ public class StartupActionImpl implements StartupAction {
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
     private final DevServicesRegistryBuildItem devServicesRegistry;
+
+    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.create();
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
@@ -99,6 +104,14 @@ public class StartupActionImpl implements StartupAction {
         }
         this.runtimeClassLoader = runtimeClassLoader;
         runtimeClassLoader.setStartupAction(this);
+        // Adjust JVM module requirements for this app
+        jvmRequirements = buildResult.consume(ResolvedJVMRequirements.class);
+        applyModuleConfigurationToClassloader(runtimeClassLoader);
+    }
+
+    @Override
+    public void applyModuleConfigurationToClassloader(ClassLoader classLoader) {
+        jvmRequirements.applyJavaModuleConfigurationToRuntime(jvmModulesReconfigurer, classLoader);
     }
 
     /**

@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -49,9 +50,10 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys,
-            ExecutorService executorService) {
+            ExecutorService executorService,
+            ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys);
+                generatedClasses, generatedResources, removedArtifactKeys, jvmRequirements);
 
         this.executorService = executorService;
     }
@@ -77,7 +79,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, mainClass.getClassName(),
+            generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, jvmRequirements,
+                    mainClass.getClassName(),
                     applicationInfo);
 
             copyCommonContent(archiveCreator, services, ignoredEntriesPredicate);

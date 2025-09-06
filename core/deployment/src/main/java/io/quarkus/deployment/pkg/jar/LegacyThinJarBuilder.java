@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
@@ -36,9 +37,10 @@ public class LegacyThinJarBuilder extends AbstractLegacyThinJarBuilder<JarBuildI
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys,
-            ExecutorService executorService) {
+            ExecutorService executorService,
+            ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService);
+                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
     }
 
     public JarBuildItem build() throws IOException {

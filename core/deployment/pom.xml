@@ -143,6 +143,17 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- There's a single use of this, as a migration facilitator as we polish Java 25 support.
+                It's probably worth removing soon: the implication would be that the JVM flags required
+                by the various implementations of JvmModulesReconfigurer become strictly required
+                (at least one of these will be required).
+                Currently we're issues warnings when none is set - so in a few release cycles we should be
+                able to expect users will have applied them, then remove this.
+                At that time - please considering removing from the BOM as well -->
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom-quarkus-platform-properties</artifactId>
             <type>pom</type>
@@ -232,6 +243,10 @@
                     <execution>
                         <id>default-compile</id>
                         <configuration>
+                            <!-- We can't set "-release" and also use "-add-exports" -->
+                            <release combine.self="override"></release>
+                            <source>${maven.compiler.release}</source>
+                            <target>${maven.compiler.release}</target>
                             <annotationProcessorPaths>
                                 <path>
                                     <groupId>io.quarkus</groupId>
@@ -241,6 +256,7 @@
                             </annotationProcessorPaths>
                             <compilerArgs>
                                 <arg>-AsplitOnConfigRootDescription=true</arg>
+                                <arg>--add-exports=java.base/jdk.internal.module=ALL-UNNAMED</arg>
                             </compilerArgs>
                         </configuration>
                     </execution>

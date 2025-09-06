@@ -335,6 +335,7 @@
                 <module>redis-cache</module>
                 <module>logging-gelf</module>
                 <module>cache</module>
+                <module>cache-multiple-backends</module>
                 <module>qute</module>
                 <module>injectmock</module>
                 <module>reactive-messaging-amqp</module>

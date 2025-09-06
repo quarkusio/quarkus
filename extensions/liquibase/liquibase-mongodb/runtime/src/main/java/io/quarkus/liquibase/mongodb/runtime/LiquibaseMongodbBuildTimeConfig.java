@@ -20,7 +20,7 @@ import io.smallrye.config.WithUnnamedKey;
 public interface LiquibaseMongodbBuildTimeConfig {
 
     /**
-     * The liquibase configuration config by client name.
+     * Liquibase configuration by client name.
      */
     @ConfigDocMapKey("client-name")
     @ConfigDocSection

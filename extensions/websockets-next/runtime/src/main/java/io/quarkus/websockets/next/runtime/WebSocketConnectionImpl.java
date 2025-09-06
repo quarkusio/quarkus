@@ -20,6 +20,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.WebSocketBase;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
 class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSocketConnection {
@@ -147,6 +148,16 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
         @Override
         public String query() {
             return webSocket.query();
+        }
+
+        @Override
+        public SocketAddress localAddress() {
+            return webSocket.localAddress();
+        }
+
+        @Override
+        public SocketAddress remoteAddress() {
+            return webSocket.remoteAddress();
         }
 
         static Map<String, List<String>> initHeaders(RoutingContext ctx) {

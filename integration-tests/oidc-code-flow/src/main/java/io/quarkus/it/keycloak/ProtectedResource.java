@@ -104,6 +104,30 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("configMetadataResponseTypes")
+    public String configMetadataResponseTypes() {
+        return configMetadata.getSupportedResponseTypes().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataSubjectTypes")
+    public String configMetadataSubjectTypes() {
+        return configMetadata.getSupportedSubjectTypes().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataIdTokenSigningAlgorithms")
+    public String configMetadataIdTokenSigningAlgorithms() {
+        return configMetadata.getSupportedIdTokenSigningAlgorithms().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataCodeChallengeMethods")
+    public String configMetadataCodeChallengeMethods() {
+        return configMetadata.getSupportedCodeChallengeMethods().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
     public String getName() {
         if (!idTokenCredential.getToken().equals(idToken.getRawToken())) {
             throw new OIDCException("ID token values are not equal");

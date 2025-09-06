@@ -2,6 +2,7 @@ package io.quarkus.websockets.next.test.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -91,6 +92,9 @@ public class BasicConnectorTest {
                 })
                 .onClose((c, s) -> closedLatch.countDown())
                 .connectAndAwait();
+        String localAddress1 = connection1.handshakeRequest().localAddress().toString();
+        assertTrue(localAddress1.matches("127\\.0\\.0\\.1:\\d+"));
+        assertEquals("localhost:8081", connection1.handshakeRequest().remoteAddress().toString());
         assertEquals("Lu", connection1.pathParam("name"));
         assertTrue(connection1.userData().get(TypedKey.forBoolean("boolean")));
         assertEquals(Integer.MAX_VALUE, connection1.userData().get(TypedKey.forInt("int")));
@@ -131,6 +135,10 @@ public class BasicConnectorTest {
                 })
                 .connectAndAwait();
         assertNotNull(connection2);
+        String localAddress2 = connection2.handshakeRequest().localAddress().toString();
+        assertTrue(localAddress2.matches("127\\.0\\.0\\.1:\\d+"));
+        assertEquals("localhost:8081", connection2.handshakeRequest().remoteAddress().toString());
+        assertNotEquals(localAddress1, localAddress2);
         assertTrue(conn2Latch.await(5, TimeUnit.SECONDS));
     }
 

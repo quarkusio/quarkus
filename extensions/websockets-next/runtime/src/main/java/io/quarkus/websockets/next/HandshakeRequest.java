@@ -3,6 +3,8 @@ package io.quarkus.websockets.next;
 import java.util.List;
 import java.util.Map;
 
+import io.vertx.core.net.SocketAddress;
+
 /**
  * Provides some useful information about the initial handshake request.
  */
@@ -70,6 +72,18 @@ public interface HandshakeRequest {
      * @return the query string
      */
     String query();
+
+    /**
+     *
+     * @return the local address for this connection
+     */
+    SocketAddress localAddress();
+
+    /**
+     *
+     * @return the remote address for this connection
+     */
+    SocketAddress remoteAddress();
 
     /**
      * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.1">Sec-WebSocket-Key</a>.

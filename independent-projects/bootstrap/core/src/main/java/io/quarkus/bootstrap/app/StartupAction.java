@@ -44,4 +44,15 @@ public interface StartupAction {
 
     void addRuntimeCloseTask(Closeable closeTask);
 
+    /**
+     * This particular StartupAction might need to enforce Java module configurations as
+     * required by the extensions. Such tuning often need to be applied to the running
+     * classloader: if additional classloaders are derived from the application classloader,
+     * they should be adjusted accordingly by invoking this method on them before starting
+     * the application. (This is apparently necessary in the JUnit integration).
+     *
+     * @param classLoader
+     */
+    void applyModuleConfigurationToClassloader(ClassLoader classLoader);
+
 }

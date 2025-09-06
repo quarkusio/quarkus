@@ -43,33 +43,43 @@ public interface HandshakeRequest {
 
     /**
      *
-     * @return the scheme
+     * @return the scheme component of the server endpoint URL
      */
     String scheme();
 
     /**
      *
-     * @return the host
+     * @return the host component of the server endpoint URL
      */
     String host();
 
     /**
      *
-     * @return the port
+     * @return the port number of the server endpoint URL
      */
     int port();
 
     /**
      *
-     * @return the path
+     * @return the path component of the server endpoint URL
      */
     String path();
 
     /**
-     *
-     * @return the query string
+     * @return the query string of the server endpoint URL
      */
     String query();
+
+    /**
+     *
+     * @return the local IP address and port for this connection, or {@code null} if not available
+     */
+    String localAddress();
+
+    /**
+     * @return the remote IP address and port for this connection, or {@code null} if not available
+     */
+    String remoteAddress();
 
     /**
      * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.1">Sec-WebSocket-Key</a>.

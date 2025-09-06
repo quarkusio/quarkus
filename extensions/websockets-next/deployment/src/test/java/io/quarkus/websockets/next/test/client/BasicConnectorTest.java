@@ -91,6 +91,8 @@ public class BasicConnectorTest {
                 })
                 .onClose((c, s) -> closedLatch.countDown())
                 .connectAndAwait();
+        assertTrue(connection1.handshakeRequest().localAddress().matches("127\\.0\\.0\\.1:\\d+"));
+        assertEquals("127.0.0.1:8081", connection1.handshakeRequest().remoteAddress());
         assertEquals("Lu", connection1.pathParam("name"));
         assertTrue(connection1.userData().get(TypedKey.forBoolean("boolean")));
         assertEquals(Integer.MAX_VALUE, connection1.userData().get(TypedKey.forInt("int")));
@@ -131,6 +133,8 @@ public class BasicConnectorTest {
                 })
                 .connectAndAwait();
         assertNotNull(connection2);
+        assertTrue(connection2.handshakeRequest().localAddress().matches("127\\.0\\.0\\.1:\\d+"));
+        assertEquals("127.0.0.1:8081", connection2.handshakeRequest().remoteAddress());
         assertTrue(conn2Latch.await(5, TimeUnit.SECONDS));
     }
 

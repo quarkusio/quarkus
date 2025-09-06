@@ -22,6 +22,7 @@ import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.http.WebSocketBase;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.SocketAddress;
 
 public abstract class WebSocketConnectionBase implements Connection {
 
@@ -190,6 +191,25 @@ public abstract class WebSocketConnectionBase implements Connection {
     @Override
     public UserData userData() {
         return userData;
+    }
+
+    protected static class HandshakeRequestBase {
+
+        protected String formatSocketAddress(SocketAddress socketAddress) {
+            if (socketAddress == null) {
+                return null;
+            }
+            if (socketAddress.isInetSocket() && socketAddress.hostAddress() != null) {
+                return socketAddress.hostAddress() + ":" + socketAddress.port();
+            }
+            if (socketAddress.isInetSocket() && socketAddress.hostName() != null) {
+                return socketAddress.hostName() + ":" + socketAddress.port();
+            }
+            if (socketAddress.isDomainSocket()) {
+                return socketAddress.path();
+            }
+            return null;
+        }
     }
 
 }

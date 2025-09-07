@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.cli.BuildToolContext;
+import io.quarkus.cli.common.BuildToolContext;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "jib", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Jib.", description = "%n"

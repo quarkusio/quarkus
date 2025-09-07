@@ -1,4 +1,4 @@
-package io.quarkus.cli.registry;
+package io.quarkus.cli.common.registry;
 
 import java.nio.file.Path;
 import java.util.Collection;

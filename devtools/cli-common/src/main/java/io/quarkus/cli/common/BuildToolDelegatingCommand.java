@@ -1,4 +1,4 @@
-package io.quarkus.cli;
+package io.quarkus.cli.common;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -9,14 +9,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.build.BuildSystemRunner;
-import io.quarkus.cli.common.BuildOptions;
-import io.quarkus.cli.common.HelpOption;
-import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.cli.common.gradle.GradleInitScript;
-import io.quarkus.cli.registry.ToggleRegistryClientMixin;
+import io.quarkus.cli.common.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;

@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.build.ExecuteUtil;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.build.ExecuteUtil;
 
 public interface PluginCommand extends Callable<Integer> {
 

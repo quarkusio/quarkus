@@ -1,6 +1,6 @@
 package io.quarkus.cli;
 
-import static io.quarkus.cli.build.MavenRunner.MAVEN_SETTINGS;
+import static io.quarkus.cli.common.build.MavenRunner.MAVEN_SETTINGS;
 import static org.apache.maven.cli.MavenCli.LOCAL_REPO_PROPERTY;
 
 import java.io.ByteArrayOutputStream;

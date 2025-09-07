@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import io.quarkus.cli.build.BaseBuildCommand;
+import io.quarkus.cli.BaseBuildCommand;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.project.QuarkusProject;
 import picocli.CommandLine;

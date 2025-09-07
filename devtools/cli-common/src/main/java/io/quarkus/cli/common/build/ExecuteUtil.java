@@ -1,4 +1,4 @@
-package io.quarkus.cli.build;
+package io.quarkus.cli.common.build;
 
 import static picocli.CommandLine.ExitCode.OK;
 import static picocli.CommandLine.ExitCode.SOFTWARE;

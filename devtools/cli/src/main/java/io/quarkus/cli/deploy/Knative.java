@@ -1,6 +1,6 @@
 package io.quarkus.cli.deploy;
 
-import io.quarkus.cli.BuildToolContext;
+import io.quarkus.cli.common.BuildToolContext;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "knative", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Perform the deploy action on Knative.", description = "%n"

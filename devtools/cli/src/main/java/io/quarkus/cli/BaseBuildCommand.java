@@ -1,4 +1,4 @@
-package io.quarkus.cli.build;
+package io.quarkus.cli;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -6,7 +6,8 @@ import java.nio.file.Paths;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.registry.ToggleRegistryClientMixin;
+import io.quarkus.cli.common.build.BuildSystemRunner;
+import io.quarkus.cli.common.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;

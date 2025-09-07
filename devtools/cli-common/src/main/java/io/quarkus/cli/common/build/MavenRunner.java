@@ -1,4 +1,4 @@
-package io.quarkus.cli.build;
+package io.quarkus.cli.common.build;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -21,8 +21,8 @@ import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.common.VersionHelper;
-import io.quarkus.cli.registry.RegistryClientMixin;
-import io.quarkus.cli.update.RewriteGroup;
+import io.quarkus.cli.common.registry.RegistryClientMixin;
+import io.quarkus.cli.common.update.RewriteGroup;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.ListExtensions;

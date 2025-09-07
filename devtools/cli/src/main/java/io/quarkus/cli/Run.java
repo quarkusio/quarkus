@@ -2,6 +2,8 @@ package io.quarkus.cli;
 
 import java.util.Map;
 
+import io.quarkus.cli.common.BuildToolContext;
+import io.quarkus.cli.common.BuildToolDelegatingCommand;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 

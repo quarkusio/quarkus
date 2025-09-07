@@ -1,4 +1,4 @@
-package io.quarkus.cli.build;
+package io.quarkus.cli.common.build;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

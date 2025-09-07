@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.common.registry.RegistryClientMixin;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.config.RegistryConfig;
 

@@ -14,8 +14,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.cli.build.ExecuteUtil;
-import io.quarkus.cli.build.GradleRunner;
+import io.quarkus.cli.common.build.ExecuteUtil;
+import io.quarkus.cli.common.build.GradleRunner;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;

@@ -64,7 +64,7 @@ import picocli.CommandLine.UnmatchedArgumentException;
         Version.class,
         CliPlugins.class,
         Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
-public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
+public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<Integer> {
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
     }

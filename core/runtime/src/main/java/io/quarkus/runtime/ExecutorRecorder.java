@@ -79,10 +79,12 @@ public class ExecutorRecorder {
                 executor.shutdown();
                 final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout();
                 final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval();
-                long remaining = shutdownTimeout.toNanos();
+                final long shutdownRemaining = shutdownTimeout.toNanos();
+                long remaining = shutdownRemaining;
                 final long interval = optionalInterval.orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
                 long intervalRemaining = interval;
-                long interruptRemaining = threadPoolConfig.shutdownInterrupt().toNanos();
+                final long interrupt = threadPoolConfig.shutdownInterrupt().toNanos();
+                long interruptRemaining = interrupt;
 
                 long start = System.nanoTime();
                 int loop = 1;
@@ -94,8 +96,8 @@ public class ExecutorRecorder {
                         if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
                             long elapsed = System.nanoTime() - start;
                             intervalRemaining -= elapsed;
-                            remaining -= elapsed;
-                            interruptRemaining -= elapsed;
+                            remaining = shutdownRemaining - elapsed;
+                            interruptRemaining = interrupt - elapsed;
                             if (interruptRemaining <= 0) {
                                 executor.shutdown(true);
                             }

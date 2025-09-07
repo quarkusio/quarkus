@@ -19,8 +19,10 @@ import jakarta.inject.Inject;
 
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.OutputProvider;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
+import io.quarkus.cli.common.VersionHelper;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginListItem;
@@ -221,7 +223,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        output.info("%n@|bold Quarkus CLI|@ version %s", Version.clientVersion());
+        output.info("%n@|bold Quarkus CLI|@ version %s", VersionHelper.clientVersion());
         output.info("");
         output.info("Create Quarkus projects with Maven, Gradle, or JBang.");
         output.info("Manage extensions and source registries.");

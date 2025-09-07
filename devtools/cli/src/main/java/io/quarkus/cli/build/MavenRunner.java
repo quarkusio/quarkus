@@ -11,7 +11,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import io.quarkus.cli.Version;
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
@@ -21,6 +20,7 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.VersionHelper;
 import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.commands.AddExtensions;
@@ -87,7 +87,7 @@ public class MavenRunner implements BuildSystemRunner {
 
     QuarkusProject quarkusProject() throws Exception {
         QuarkusProjectHelper.setToolsConfig(registryClient.resolveConfig());
-        return MavenProjectBuildFile.getProject(projectRoot, output, Version::clientVersion);
+        return MavenProjectBuildFile.getProject(projectRoot, output, VersionHelper::clientVersion);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class MavenRunner implements BuildSystemRunner {
         setMavenProperties(args, true);
         final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
                 ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
-                Version.clientVersion(),
+                VersionHelper.clientVersion(),
                 QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
         final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
         args.add(ToolsUtils.getPluginKey(props) + ":" + ToolsUtils.getMavenPluginVersion(props) + ":update");

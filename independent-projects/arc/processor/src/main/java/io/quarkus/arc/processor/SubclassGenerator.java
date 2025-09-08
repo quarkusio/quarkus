@@ -190,9 +190,7 @@ public class SubclassGenerator extends AbstractGenerator {
         Map<MethodDescriptor, MethodDescriptor> forwardingMethods = new HashMap<>();
         List<MethodInfo> interceptedOrDecoratedMethods = bean.getInterceptedOrDecoratedMethods();
         for (MethodInfo method : interceptedOrDecoratedMethods) {
-            forwardingMethods.put(MethodDescriptor.of(method), createForwardingMethod(subclass, providerTypeName, method,
-                    (bytecode, virtualMethod, params) -> bytecode.invokeSpecialMethod(virtualMethod, bytecode.getThis(),
-                            params)));
+            forwardingMethods.put(MethodDescriptor.of(method), createForwardingMethod(subclass, providerTypeName, method));
         }
 
         // If a decorator is associated:
@@ -864,13 +862,7 @@ public class SubclassGenerator extends AbstractGenerator {
         return false;
     }
 
-    @FunctionalInterface
-    interface ForwardInvokeGenerator {
-        ResultHandle generate(BytecodeCreator bytecode, MethodDescriptor virtualMethod, ResultHandle[] params);
-    }
-
-    static MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method,
-            ForwardInvokeGenerator forwardInvokeGenerator) {
+    static MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method) {
         MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
         String forwardMethodName = method.name() + "$$superforward";
         MethodDescriptor forwardDescriptor = MethodDescriptor.ofMethod(subclass.getClassName(), forwardMethodName,
@@ -884,7 +876,7 @@ public class SubclassGenerator extends AbstractGenerator {
         }
         MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName, methodDescriptor.getName(),
                 methodDescriptor.getReturnType(), methodDescriptor.getParameterTypes());
-        forward.returnValue(forwardInvokeGenerator.generate(forward, virtualMethod, params));
+        forward.returnValue(forward.invokeSpecialMethod(virtualMethod, forward.getThis(), params));
         return forwardDescriptor;
     }
 

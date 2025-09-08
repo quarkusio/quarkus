@@ -57,15 +57,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
     public RegistryClient buildRegistryClient(RegistryConfig config) throws RegistryResolutionException {
         Objects.requireNonNull(config, "The registry config is null");
 
-        final RegistryDescriptorConfig descriptorConfig = config.getDescriptor();
-        if (descriptorConfig == null) {
-            throw new IllegalArgumentException("The registry descriptor configuration is missing for " + config.getId());
-        }
-
-        final ArtifactCoords originalDescrCoords = descriptorConfig.getArtifact();
-        final Artifact registryDescriptorCoords = new DefaultArtifact(originalDescrCoords.getGroupId(),
-                originalDescrCoords.getArtifactId(), originalDescrCoords.getClassifier(), originalDescrCoords.getType(),
-                originalDescrCoords.getVersion());
+        final Artifact registryDescriptorCoords = getDescriptorCoords(config);
 
         final boolean cleanupTimestampedArtifacts = isCleanupTimestampedArtifacts(config);
 
@@ -170,6 +162,17 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
                                 log),
                 nonPlatformExtensionsResolver,
                 new MavenRegistryCache(config, defaultResolver, log));
+    }
+
+    private static Artifact getDescriptorCoords(RegistryConfig config) {
+        final RegistryDescriptorConfig descriptorConfig = config.getDescriptor();
+        if (descriptorConfig == null) {
+            throw new IllegalArgumentException("The registry descriptor configuration is missing for " + config.getId());
+        }
+        final ArtifactCoords originalDescrCoords = descriptorConfig.getArtifact();
+        return new DefaultArtifact(originalDescrCoords.getGroupId(),
+                originalDescrCoords.getArtifactId(), originalDescrCoords.getClassifier(), originalDescrCoords.getType(),
+                originalDescrCoords.getVersion());
     }
 
     private static boolean isCleanupTimestampedArtifacts(RegistryConfig config) {

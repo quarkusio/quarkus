@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
+import io.quarkus.registry.Constants;
+
 /**
  * A helper class set utility methods to locate the registry client configuration file
  * in the default locations (e.g. user home <code>.quarkus</code> dir, or the project dir) or in
@@ -188,6 +190,8 @@ public class RegistriesConfigLocator {
                                     .setUrl(var.getValue())
                                     .build())
                             .build());
+                } else if (isEnvVarOption(var.getKey(), envvarPrefix, "OFFERING")) {
+                    builder.setExtra(Map.of(Constants.OFFERING, var.getValue()));
                 }
             }
 

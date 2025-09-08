@@ -75,7 +75,8 @@ public interface JsonFormatterCustomizationCheck extends Function<ArcContainer, 
                     }
                     // ObjectMapper was potentially customized
                     causes.add("Detected '" + handle.getBean().getBeanClass().getName() + "' bean registered. "
-                            + "It may have customized the ObjectMapper in a way not compatible with the default one.");
+                            + "It may have customized the ObjectMapper in a way not compatible with the default one. "
+                            + "Review the customizer and apply customizations you need for the database serialization/deserialization of JSON fields to your custom mapper.");
                 }
             }
 
@@ -87,6 +88,14 @@ public interface JsonFormatterCustomizationCheck extends Function<ArcContainer, 
                     "quarkus.jackson.write-durations-as-timestamps", "true",
                     "quarkus.jackson.accept-case-insensitive-enums", "false",
                     "quarkus.jackson.timezone", "UTC");
+            Map<String, String> actionsToTake = Map.of(
+                    "quarkus.jackson.write-dates-as-timestamps",
+                    "disable the corresponding serialization feature, i.e. 'mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)'",
+                    "quarkus.jackson.write-durations-as-timestamps",
+                    "disable the corresponding serialization feature, i.e. 'mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)'",
+                    "quarkus.jackson.accept-case-insensitive-enums",
+                    "enable the corresponding mapper feature, i.e. 'mapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)'",
+                    "quarkus.jackson.timezone", "configure the mapper timezone, i.e. 'mapper.setTimeZone(yourTimezone)'");
             for (String propertyName : ConfigProvider.getConfig().getPropertyNames()) {
                 if (propertyName.startsWith("quarkus.jackson.") && !acceptableConfigs.contains(propertyName)) {
                     String okValue = expectedDefaults.get(propertyName);
@@ -94,8 +103,8 @@ public interface JsonFormatterCustomizationCheck extends Function<ArcContainer, 
                             .equalsIgnoreCase(ConfigProvider.getConfig().getConfigValue(propertyName).getRawValue())) {
                         causes.add("Detected '" + propertyName + "' property set to '"
                                 + ConfigProvider.getConfig().getConfigValue(propertyName).getRawValue() + "'. "
-                                + "For ObjectMapper being compatible with the clean, default one the expected value is: '"
-                                + okValue + "'.");
+                                + "To make your custom ObjectMapper compatible with this configuration: "
+                                + actionsToTake.get(propertyName) + ".");
                     }
                 }
             }
@@ -130,7 +139,8 @@ public interface JsonFormatterCustomizationCheck extends Function<ArcContainer, 
 
                 // JSON-B was potentially customized
                 causes.add("Detected '" + handle.getBean().getBeanClass().getName() + "' bean registered. "
-                        + "It may have customized the Jsonb in a way not compatible with the default one.");
+                        + "It may have customized the Jsonb in a way not compatible with the default one. "
+                        + "Review the customizer and apply customizations you need for the database serialization/deserialization of JSON fields to your custom Jsonb.");
             }
 
             // JSON-B does not have the config properties so nothing else to check..

@@ -13,6 +13,7 @@ import jakarta.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 
 import io.vertx.core.buffer.Buffer;
 
@@ -35,6 +36,11 @@ public class ServerVertxBufferMessageBodyWriter implements ServerMessageBodyWrit
 
     @Override
     public void writeResponse(Buffer buffer, Type genericType, ServerRequestContext context) throws WebApplicationException {
-        context.serverResponse().end(buffer.getBytes());
+        var serverHttpResponse = context.serverResponse();
+        if (serverHttpResponse instanceof final VertxResteasyReactiveRequestContext resteasyContext) {
+            resteasyContext.end(buffer);
+        } else {
+            context.serverResponse().end(buffer.getBytes());
+        }
     }
 }

@@ -2,7 +2,6 @@ package io.quarkus.runtime;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -77,31 +76,31 @@ public class ExecutorRecorder {
             @Override
             public void run() {
                 executor.shutdown();
-                final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout();
-                final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval();
-                final long shutdownRemaining = shutdownTimeout.toNanos();
-                long remaining = shutdownRemaining;
-                final long interval = optionalInterval.orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
-                long intervalRemaining = interval;
-                final long interrupt = threadPoolConfig.shutdownInterrupt().toNanos();
-                long interruptRemaining = interrupt;
+                final long configShutdownTimeout = threadPoolConfig.shutdownTimeout().toNanos();
+                final long configShutdownInterrupt = threadPoolConfig.shutdownInterrupt().toNanos();
+                final long configShutdownCheckInterval = threadPoolConfig.shutdownCheckInterval()
+                        .orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
+                long shutdownTimeout = configShutdownTimeout;
+                long shutdownInterrupt = configShutdownInterrupt;
+                long shutdownCheckInterval = configShutdownCheckInterval;
 
                 long start = System.nanoTime();
                 int loop = 1;
                 for (;;) {
                     // This log can be very useful when debugging problems
-                    log.debugf("loop: %s, remaining: %s, intervalRemaining: %s, interruptRemaining: %s", loop++, remaining,
-                            intervalRemaining, interruptRemaining);
+                    log.debugf("loop: %s, shutdownTimeout: %s, shutdownCheckInterval: %s, shutdownInterrupt: %s", loop++,
+                            shutdownTimeout, shutdownCheckInterval, shutdownInterrupt);
                     try {
-                        if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
+                        if (!executor.awaitTermination(Math.min(shutdownTimeout, shutdownCheckInterval),
+                                TimeUnit.NANOSECONDS)) {
                             long elapsed = System.nanoTime() - start;
-                            intervalRemaining -= elapsed;
-                            remaining = shutdownRemaining - elapsed;
-                            interruptRemaining = interrupt - elapsed;
-                            if (interruptRemaining <= 0) {
+                            shutdownTimeout = configShutdownTimeout - elapsed;
+                            shutdownInterrupt = configShutdownInterrupt - elapsed;
+                            shutdownCheckInterval = configShutdownCheckInterval - elapsed;
+                            if (shutdownInterrupt <= 0) {
                                 executor.shutdown(true);
                             }
-                            if (remaining <= 0) {
+                            if (shutdownTimeout <= 0) {
                                 // done waiting
                                 final List<Runnable> runnables = executor.shutdownNow();
                                 if (!runnables.isEmpty()) {
@@ -113,8 +112,8 @@ public class ExecutorRecorder {
                                 }
                                 break;
                             }
-                            if (intervalRemaining <= 0) {
-                                intervalRemaining = interval;
+                            if (shutdownCheckInterval <= 0) {
+                                shutdownCheckInterval = configShutdownCheckInterval;
                                 // do some probing
                                 final int queueSize = executor.getQueueSize();
                                 final Thread[] runningThreads = executor.getRunningThreads();

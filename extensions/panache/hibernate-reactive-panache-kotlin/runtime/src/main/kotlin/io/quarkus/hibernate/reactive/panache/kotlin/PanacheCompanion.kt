@@ -24,7 +24,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      *
      * @return the current [Mutiny.Session]
      */
-    fun getSession() = AbstractJpaOperations.getSession()
+    @CheckReturnValue fun getSession(): Uni<Mutiny.Session> = AbstractJpaOperations.getSession()
 
     /**
      * Find an entity of this type by ID.
@@ -32,7 +32,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param id the ID of the entity to find.
      * @return the entity found, or `null` if not found.
      */
-    @GenerateBridge fun findById(id: Id): Uni<Entity?> = injectionMissing()
+    @CheckReturnValue @GenerateBridge fun findById(id: Id): Uni<Entity?> = injectionMissing()
 
     /**
      * Find an entity of this type by ID and lock it.
@@ -43,7 +43,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun findById(id: Id, lockModeType: LockModeType): Uni<Entity> = injectionMissing()
+    fun findById(id: Id, lockModeType: LockModeType): Uni<Entity?> = injectionMissing()
 
     /**
      * Find entities using a query, with optional indexed parameters.
@@ -54,7 +54,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, vararg params: Any): PanacheQuery<Entity> = injectionMissing()
+    fun find(query: String, vararg params: Any?): PanacheQuery<Entity> = injectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
@@ -66,7 +66,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, vararg params: Any): PanacheQuery<Entity> =
+    fun find(query: String, sort: Sort, vararg params: Any?): PanacheQuery<Entity> =
         injectionMissing()
 
     /**
@@ -78,7 +78,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, params: Map<String, Any>): PanacheQuery<Entity> = injectionMissing()
+    fun find(query: String, params: Map<String, Any?>): PanacheQuery<Entity> = injectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -90,7 +90,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, params: Map<String, Any>): PanacheQuery<Entity> =
+    fun find(query: String, sort: Sort, params: Map<String, Any?>): PanacheQuery<Entity> =
         injectionMissing()
 
     /**
@@ -145,7 +145,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, vararg params: Any): Uni<List<Entity>> = injectionMissing()
+    fun list(query: String, vararg params: Any?): Uni<List<Entity>> = injectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
@@ -159,7 +159,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, sort: Sort, vararg params: Any): Uni<List<Entity>> = injectionMissing()
+    fun list(query: String, sort: Sort, vararg params: Any?): Uni<List<Entity>> = injectionMissing()
 
     /**
      * Find entities matching a query, with named parameters. This method is a shortcut for
@@ -172,7 +172,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, params: Map<String, Any>): Uni<List<Entity>> = injectionMissing()
+    fun list(query: String, params: Map<String, Any?>): Uni<List<Entity>> = injectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with named parameters. This method
@@ -186,7 +186,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, sort: Sort, params: Map<String, Any>): Uni<List<Entity>> =
+    fun list(query: String, sort: Sort, params: Map<String, Any?>): Uni<List<Entity>> =
         injectionMissing()
 
     /**
@@ -253,7 +253,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun count(query: String, vararg params: Any): Uni<Long> = injectionMissing()
+    fun count(query: String, vararg params: Any?): Uni<Long> = injectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
@@ -264,7 +264,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun count(query: String, params: Map<String, Any>): Uni<Long> = injectionMissing()
+    fun count(query: String, params: Map<String, Any?>): Uni<Long> = injectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
@@ -309,7 +309,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun delete(query: String, vararg params: Any): Uni<Long> = injectionMissing()
+    fun delete(query: String, vararg params: Any?): Uni<Long> = injectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
@@ -324,7 +324,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun delete(query: String, params: Map<String, Any>): Uni<Long> = injectionMissing()
+    fun delete(query: String, params: Map<String, Any?>): Uni<Long> = injectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
@@ -347,7 +347,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param entities the entities to persist
      * @return
      */
-    @CheckReturnValue fun persist(entities: Iterable<Entity>) = INSTANCE.persist(entities)
+    @CheckReturnValue
+    fun persist(entities: Iterable<Entity>): Uni<Void> = INSTANCE.persist(entities)
 
     /**
      * Persist all given entities.
@@ -355,7 +356,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @param entities the entities to persist
      * @return
      */
-    @CheckReturnValue fun persist(entities: Stream<Entity>) = INSTANCE.persist(entities)
+    @CheckReturnValue fun persist(entities: Stream<Entity>): Uni<Void> = INSTANCE.persist(entities)
 
     /**
      * Persist all given entities.
@@ -364,8 +365,8 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      * @return
      */
     @CheckReturnValue
-    fun persist(firstEntity: Entity, vararg entities: Entity) =
-        INSTANCE.persist(listOf(firstEntity) + listOf(*entities))
+    fun persist(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
+        INSTANCE.persist(listOf(firstEntity, *entities))
 
     /**
      * Update all entities of this type matching the given query, with optional indexed parameters.
@@ -376,7 +377,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun update(query: String, vararg params: Any): Uni<Int> = injectionMissing()
+    fun update(query: String, vararg params: Any?): Uni<Int> = injectionMissing()
 
     /**
      * Update all entities of this type matching the given query, with named parameters.
@@ -387,7 +388,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun update(query: String, params: Map<String, Any>): Uni<Int> = injectionMissing()
+    fun update(query: String, params: Map<String, Any?>): Uni<Int> = injectionMissing()
 
     /**
      * Update all entities of this type matching the given query, with named parameters.

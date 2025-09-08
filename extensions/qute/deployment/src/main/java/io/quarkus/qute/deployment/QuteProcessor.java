@@ -132,6 +132,7 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.WhenSectionHelper;
+import io.quarkus.qute.debug.DebugQuteEngineObserver;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
 import io.quarkus.qute.deployment.TypeInfos.Info;
@@ -285,7 +286,7 @@ public class QuteProcessor {
                         TemplateInstance.class, CollectionTemplateExtensions.class,
                         MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class,
                         TimeTemplateExtensions.class, StringTemplateExtensions.class, OrOperatorTemplateExtensions.class,
-                        ObjectsTemplateExtensions.class)
+                        ObjectsTemplateExtensions.class, DebugQuteEngineObserver.class)
                 .build();
     }
 

@@ -115,6 +115,15 @@ public final class QuarkusUpdatesRepository {
                             MessageFormatter.green(String.valueOf(recipes.size()))));
                 }
 
+                log.debug(String.format(
+                        "Detected dependencies:\n %s ",
+                        recipeDirectoryNames.entrySet().stream()
+                                .map(e -> String.format("%s (%s -> %s)", e.getKey(), e.getValue()[0], e.getValue()[1]))
+                                .sorted().collect(Collectors.joining("\n "))));
+                log.debug(String.format(
+                        "Detected recipe(s):\n %s",
+                        recipes.keySet().stream().sorted().collect(Collectors.joining("\n "))));
+
             } catch (BootstrapMavenException e) {
                 throw new RuntimeException("Failed to resolve artifact: " + gav, e);
             } catch (IOException e) {

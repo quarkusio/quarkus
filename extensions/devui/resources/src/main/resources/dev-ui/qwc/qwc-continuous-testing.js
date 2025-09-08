@@ -1,4 +1,5 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+import { StorageController } from 'storage-controller';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/vertical-layout';
 import '@vaadin/icon';
@@ -22,6 +23,7 @@ ring.register();
  */
 export class QwcContinuousTesting extends QwcHotReloadElement {
     jsonRpc = new JsonRpc(this, false);
+    storageControl = new StorageController(this, true);
     
     static styles = css`
         :host {
@@ -91,7 +93,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         this._detailsOpenedItem = [];
         this._chartTitles = ["passed", "failed", "skipped"];
         this._chartColors = ['--lumo-success-text-color', '--lumo-error-text-color', '--lumo-contrast-70pct'];
-        this._displayTags = true;
+        this._displayTags = this.storageControl.get("displayTags");
     }
 
     set _tests(value) {
@@ -269,12 +271,12 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                 >
                 ${
                     this._displayTags && this._hasTestResultWithTags
-                    ? html`<vaadin-grid-sort-column path="tags" header="Tags" ${columnBodyRenderer((prop) => this._tagsRenderer(prop), [])}></vaadin-grid-sort-column>`
+                    ? html`<vaadin-grid-sort-column path="tags" header="Tags" ${columnBodyRenderer((prop) => this._tagsRenderer(prop), [])} resizable width="40px"></vaadin-grid-sort-column>`
                     : ''
                 }
-                <vaadin-grid-sort-column path="testClass" header="Test Class" ${columnBodyRenderer((prop) => this._testRenderer(prop), [])}></vaadin-grid-sort-column>
-                <vaadin-grid-sort-column path="displayName" header="Name" ${columnBodyRenderer((prop) => this._nameRenderer(prop), [])}></vaadin-grid-sort-column>
-                <vaadin-grid-sort-column path="time" header="Time" ${columnBodyRenderer((prop) => this._timeRenderer(prop), [])}>></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="testClass" header="Test Class" ${columnBodyRenderer((prop) => this._testRenderer(prop), [])} resizable auto-width></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="displayName" header="Name" ${columnBodyRenderer((prop) => this._nameRenderer(prop), [])} resizable auto-width></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="time" header="Time" ${columnBodyRenderer((prop) => this._timeRenderer(prop), [])} width="10px" flexGrow = 0></vaadin-grid-sort-column>
             </vaadin-grid>`;
 
         }else{
@@ -477,6 +479,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _toggleDisplayTags(){
         this._displayTags = !this._displayTags;
+        this.storageControl.set('displayTags', this._displayTags);
     }
 }
 customElements.define('qwc-continuous-testing', QwcContinuousTesting);

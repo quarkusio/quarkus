@@ -59,8 +59,8 @@ public enum BuiltinFormatMapperBehaviour {
                         + " and @PersistenceUnitExtension"
                         + (PersistenceUnitUtil.isDefaultPersistenceUnit(puName) ? "" : "(\"%1$s\")")
                         + " to address your database serialization/deserialization needs."
-                        + "\nThe reasons why the check was triggered are: \n\t-"
-                        + String.join("\n\t-", causes)
+                        + "\nThe precise causes for this failure are: \n\t- "
+                        + String.join("\n\t- ", causes)
                         + "\nSee the migration guide for more details and how to proceed.",
                 puName, type);
     }

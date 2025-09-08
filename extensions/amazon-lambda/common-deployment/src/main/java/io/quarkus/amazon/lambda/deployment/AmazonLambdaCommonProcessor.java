@@ -34,15 +34,6 @@ public final class AmazonLambdaCommonProcessor {
                 "The Amazon Lambda extensions are incompatible with the 'native-sources' package type.");
     }
 
-    /**
-     * Lambda custom runtime does not like ipv6.
-     */
-    @BuildStep(onlyIf = NativeBuild.class)
-    void ipv4Only(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        // lambda custom runtime does not like IPv6
-        systemProperty.produce(new SystemPropertyBuildItem("java.net.preferIPv4Stack", "true"));
-    }
-
     @BuildStep
     void tmpdirs(BuildProducer<SystemPropertyBuildItem> systemProperty,
             LaunchModeBuildItem launchModeBuildItem) {

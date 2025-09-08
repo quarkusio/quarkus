@@ -201,13 +201,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
             for (MethodInfo method : pseudoBean.getInterceptedMethods().keySet()) {
                 forwardingMethods.put(MethodDescriptor.of(method), SubclassGenerator.createForwardingMethod(clazz,
-                        pseudoBeanClassName, method, (bytecode, virtualMethod, params) -> {
-                            ResultHandle delegateHandle = bytecode.readInstanceField(delegate.getFieldDescriptor(),
-                                    bytecode.getThis());
-                            return isInterface
-                                    ? bytecode.invokeInterfaceMethod(virtualMethod, delegateHandle, params)
-                                    : bytecode.invokeVirtualMethod(virtualMethod, delegateHandle, params);
-                        }));
+                        pseudoBeanClassName, method));
             }
 
             FieldCreator constructedField = clazz.getFieldCreator(SubclassGenerator.FIELD_NAME_CONSTRUCTED, boolean.class)
@@ -364,16 +358,22 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
             MethodCreator getDelegate = clazz.getMethodCreator("arc_delegate", Object.class);
             getDelegate.returnValue(getDelegate.readInstanceField(delegate.getFieldDescriptor(), getDelegate.getThis()));
 
-            // forward non-intercepted methods to the delegate unconditionally
+            // forward non-intercepted methods to the delegate
             Collection<MethodInfo> methodsToForward = collectMethodsToForward(pseudoBean,
                     bytecodeTransformerConsumer, transformUnproxyableClasses);
             for (MethodInfo method : methodsToForward) {
                 MethodCreator mc = clazz.getMethodCreator(MethodDescriptor.of(method));
-                ResultHandle dlgt = mc.readInstanceField(delegate.getFieldDescriptor(), mc.getThis());
+
                 ResultHandle[] args = new ResultHandle[method.parametersCount()];
                 for (int i = 0; i < method.parametersCount(); i++) {
                     args[i] = mc.getMethodParam(i);
                 }
+
+                BytecodeCreator notConstructed = mc.ifFalse(
+                        mc.readInstanceField(constructedField.getFieldDescriptor(), mc.getThis())).trueBranch();
+                notConstructed.returnValue(notConstructed.invokeSpecialMethod(method, notConstructed.getThis(), args));
+
+                ResultHandle dlgt = mc.readInstanceField(delegate.getFieldDescriptor(), mc.getThis());
                 ResultHandle result = method.declaringClass().isInterface()
                         ? mc.invokeInterfaceMethod(method, dlgt, args)
                         : mc.invokeVirtualMethod(method, dlgt, args);

@@ -37,10 +37,11 @@ final class ExpressionImpl implements Expression {
         if (literal == null) {
             throw new IllegalArgumentException("Literal must not be null");
         }
-        return new ExpressionImpl(id, null,
-                Collections.singletonList(new PartImpl(literal,
-                        value != null ? Expressions.typeInfoFrom(value.getClass().getName()) : null)),
-                value, origin);
+        String typeInfo = null;
+        if (value != null) {
+            typeInfo = Expressions.typeInfoFrom(value.getClass().getName());
+        }
+        return new ExpressionImpl(id, null, List.of(new PartImpl(literal, typeInfo)), value, origin);
     }
 
     static Integer syntheticId() {

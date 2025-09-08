@@ -1113,6 +1113,9 @@ public class QuteProcessor {
             if (defaultValue != null) {
                 MatchResult match;
                 if (defaultValue.isLiteral()) {
+                    if (defaultValue.getLiteral() == null)
+                        // Skip validation for `null`
+                        continue;
                     match = new MatchResult(assignabilityCheck);
                     setMatchValues(match, defaultValue, generatedIdsToMatches, index);
                 } else {

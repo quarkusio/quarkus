@@ -53,9 +53,6 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (headers.get().isEmpty()) {
             return null;
         }
-        if (headers.get().size() == 1 && headers.get().get(0).equals("*")) {
-            return null;
-        }
         return String.join(",", headers.get());
     }
 

@@ -162,6 +162,10 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
     interface BlockInfo extends ParserDelegate, WithOrigin {
 
+        default boolean isMainBlock() {
+            return MAIN_BLOCK_NAME.equals(getLabel());
+        }
+
         String getLabel();
 
         /**

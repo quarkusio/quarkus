@@ -3,8 +3,8 @@ package io.quarkus.qute.runtime;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +52,7 @@ import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.StrEvalNamespaceResolver;
+import io.quarkus.qute.StringTemplateLocation;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
@@ -63,6 +64,7 @@ import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.quarkus.qute.runtime.QuteRecorder.TemplateInfo;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownEvent;
@@ -75,8 +77,7 @@ public class EngineProducer {
     public static final String INJECT_NAMESPACE = "inject";
     public static final String CDI_NAMESPACE = "cdi";
     public static final String DEPENDENT_INSTANCES = "q_dep_inst";
-
-    private static final String TAGS = "tags/";
+    public static final String TAGS = "tags/";
 
     private static final Logger LOGGER = Logger.getLogger(EngineProducer.class);
 
@@ -84,7 +85,7 @@ public class EngineProducer {
     private final ContentTypes contentTypes;
     private final List<String> suffixes;
     private final Set<String> templateRoots;
-    private final Map<String, String> templateContents;
+    private final Map<String, TemplateInfo> templates;
     private final List<Pattern> templatePathExcludes;
     private final Locale defaultLocale;
     private final Charset defaultCharset;
@@ -98,7 +99,7 @@ public class EngineProducer {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes();
         this.templateRoots = context.getTemplateRoots();
-        this.templateContents = Map.copyOf(context.getTemplateContents());
+        this.templates = context.getTemplates();
         this.defaultLocale = locales.defaultLocale().orElse(Locale.getDefault());
         this.defaultCharset = config.defaultCharset();
         this.container = Arc.container();
@@ -110,9 +111,7 @@ public class EngineProducer {
         }
         this.templatePathExcludes = excludesBuilder.build();
 
-        LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(),
-                context.getTags(),
-                context.getResolverClasses());
+        LOGGER.debugf("Initializing Qute [templates: %s, resolvers: %s", templates.keySet(), context.getResolverClasses());
 
         EngineBuilder builder = Engine.builder();
 
@@ -283,22 +282,25 @@ public class EngineProducer {
 
         // Load discovered template files
         Map<String, List<Template>> discovered = new HashMap<>();
-        for (String path : context.getTemplatePaths()) {
-            Template template = engine.getTemplate(path);
-            if (template != null) {
-                for (String suffix : config.suffixes()) {
-                    if (path.endsWith(suffix)) {
-                        String pathNoSuffix = path.substring(0, path.length() - (suffix.length() + 1));
-                        List<Template> templates = discovered.get(pathNoSuffix);
-                        if (templates == null) {
-                            templates = new ArrayList<>();
-                            discovered.put(pathNoSuffix, templates);
+        for (TemplateInfo templateInfo : context.getTemplates().values()) {
+            if (!templateInfo.isTag()) {
+                String path = templateInfo.path;
+                Template template = engine.getTemplate(path);
+                if (template != null) {
+                    for (String suffix : config.suffixes()) {
+                        if (path.endsWith(suffix)) {
+                            String pathNoSuffix = path.substring(0, path.length() - (suffix.length() + 1));
+                            List<Template> templates = discovered.get(pathNoSuffix);
+                            if (templates == null) {
+                                templates = new ArrayList<>();
+                                discovered.put(pathNoSuffix, templates);
+                            }
+                            templates.add(template);
+                            break;
                         }
-                        templates.add(template);
-                        break;
                     }
+                    discoveredInjectTemplates.put(template.getGeneratedId(), hasInjectExpression(template));
                 }
-                discoveredInjectTemplates.put(template.getGeneratedId(), hasInjectExpression(template));
             }
         }
         // If it's a default suffix then register a path without suffix as well
@@ -376,9 +378,9 @@ public class EngineProducer {
         }
         // First try the template contents, i.e. templates not backed by files
         LOGGER.debugf("Locate template contents for %s", path);
-        String content = templateContents.get(path);
-        if (content != null) {
-            return getTemplateLocation(content, path);
+        TemplateInfo template = templates.get(path);
+        if (template != null && template.hasContent()) {
+            return getTemplateLocation(template.content, path);
         }
 
         // Try path with suffixes
@@ -387,9 +389,9 @@ public class EngineProducer {
             if (isExcluded(pathWithSuffix)) {
                 continue;
             }
-            content = templateContents.get(pathWithSuffix);
-            if (content != null) {
-                return getTemplateLocation(content, pathWithSuffix);
+            template = templates.get(pathWithSuffix);
+            if (template != null && template.hasContent()) {
+                return getTemplateLocation(template.content, pathWithSuffix);
             }
         }
 
@@ -400,7 +402,7 @@ public class EngineProducer {
             LOGGER.debugf("Locate template file for %s", templatePath);
             resource = locatePath(templatePath);
             if (resource != null) {
-                return getTemplateLocation(resource, templatePath);
+                return getTemplateLocation(resource, templatePath, path);
             }
             // Try path with suffixes
             for (String suffix : suffixes) {
@@ -411,7 +413,7 @@ public class EngineProducer {
                 templatePath = templateRoot + pathWithSuffix;
                 resource = locatePath(templatePath);
                 if (resource != null) {
-                    return getTemplateLocation(resource, templatePath);
+                    return getTemplateLocation(resource, templatePath, pathWithSuffix);
                 }
             }
         }
@@ -420,11 +422,16 @@ public class EngineProducer {
     }
 
     private Optional<TemplateLocation> getTemplateLocation(String content, String pathWithSuffix) {
-        return Optional.of(new ContentTemplateLocation(content, createVariant(pathWithSuffix)));
+        return Optional.of(new StringTemplateLocation(content, Optional.ofNullable(createVariant(pathWithSuffix))));
     }
 
-    private Optional<TemplateLocation> getTemplateLocation(URL resource, String templatePath) {
-        return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
+    private Optional<TemplateLocation> getTemplateLocation(URL resource, String templatePath, String path) {
+        URI source = null;
+        TemplateInfo template = templates.get(path);
+        if (template != null) {
+            source = template.parseSource();
+        }
+        return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath), source));
     }
 
     private URL locatePath(String path) {
@@ -505,10 +512,12 @@ public class EngineProducer {
 
         private final URL resource;
         private final Optional<Variant> variant;
+        private final Optional<URI> source;
 
-        ResourceTemplateLocation(URL resource, Variant variant) {
+        ResourceTemplateLocation(URL resource, Variant variant, URI source) {
             this.resource = resource;
             this.variant = Optional.ofNullable(variant);
+            this.source = Optional.ofNullable(source);
         }
 
         @Override
@@ -532,26 +541,9 @@ public class EngineProducer {
             return variant;
         }
 
-    }
-
-    static class ContentTemplateLocation implements TemplateLocation {
-
-        private final String content;
-        private final Optional<Variant> variant;
-
-        ContentTemplateLocation(String content, Variant variant) {
-            this.content = content;
-            this.variant = Optional.ofNullable(variant);
-        }
-
         @Override
-        public Reader read() {
-            return new StringReader(content);
-        }
-
-        @Override
-        public Optional<Variant> getVariant() {
-            return variant;
+        public Optional<URI> getSource() {
+            return source;
         }
 
     }

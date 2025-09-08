@@ -3,6 +3,7 @@ package io.quarkus.qute.runtime;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -182,6 +183,14 @@ public class TemplateProducer {
         }
 
         @Override
+        public Optional<URI> getSource() {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getSource();
+            }
+            throw ambiguousTemplates("getSource()");
+        }
+
+        @Override
         public TemplateInstance instance() {
             TemplateInstance instance = new InjectableTemplateInstanceImpl();
             return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults) : instance;
@@ -334,6 +343,11 @@ public class TemplateProducer {
             @Override
             public SectionNode getRootNode() {
                 return InjectableTemplate.this.getRootNode();
+            }
+
+            @Override
+            public Optional<URI> getSource() {
+                return InjectableTemplate.this.getSource();
             }
 
             @Override

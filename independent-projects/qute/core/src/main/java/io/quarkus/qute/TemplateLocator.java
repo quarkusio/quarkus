@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.io.Reader;
+import java.net.URI;
 import java.util.Optional;
 
 /**
@@ -34,6 +35,13 @@ public interface TemplateLocator extends WithPriority {
          * @return the template variant
          */
         Optional<Variant> getVariant();
+
+        /**
+         * @return the source
+         */
+        default Optional<URI> getSource() {
+            return Optional.empty();
+        }
 
     }
 

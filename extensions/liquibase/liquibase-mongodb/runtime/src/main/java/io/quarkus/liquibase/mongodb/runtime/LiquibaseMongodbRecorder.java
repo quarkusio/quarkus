@@ -1,14 +1,18 @@
 package io.quarkus.liquibase.mongodb.runtime;
 
+import java.lang.annotation.Annotation;
+import java.util.Map;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
+import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -29,22 +33,71 @@ public class LiquibaseMongodbRecorder {
         this.mongodbRuntimeConfig = mongodbRuntimeConfig;
     }
 
-    public Supplier<LiquibaseMongodbFactory> liquibaseSupplier() {
+    public Supplier<LiquibaseMongodbFactory> liquibaseSupplier(String clientName) {
         return new Supplier<LiquibaseMongodbFactory>() {
+            private <T> T getRequiredConfig(Map<String, T> map, String errorMessage) {
+                T value = map.get(clientName);
+                if (value == null) {
+                    throw new IllegalArgumentException(errorMessage.formatted(clientName));
+                }
+                return value;
+            }
+
             @Override
             public LiquibaseMongodbFactory get() {
-                return new LiquibaseMongodbFactory(runtimeConfig.getValue(), buildTimeConfig, mongodbRuntimeConfig.getValue());
+                LiquibaseMongodbBuildTimeClientConfig buildTimeClientConfig = getRequiredConfig(
+                        buildTimeConfig.clientConfigs(),
+                        "Liquibase Mongo config (changeLog) named '%s' not found");
+
+                LiquibaseMongodbClientConfig liquibaseMongodbClientConfig = getRequiredConfig(
+                        runtimeConfig.getValue().clientConfigs(),
+                        "Liquibase Mongo client config named '%s' not found");
+
+                MongoClientConfig mongoClientConfig;
+                String clientNameSelected;
+                if (liquibaseMongodbClientConfig.mongoClientName().isPresent()) {
+                    // keep compatibility with the legacy configuration which makes possible set the mongo-client-name
+                    String forceMongoClientName = liquibaseMongodbClientConfig.mongoClientName().get();
+                    mongoClientConfig = mongodbRuntimeConfig.getValue().mongoClientConfigs().get(forceMongoClientName);
+                    if (mongoClientConfig == null) {
+                        throw new IllegalArgumentException(
+                                "Mongo client named '%s' not found".formatted(forceMongoClientName));
+                    }
+                    clientNameSelected = forceMongoClientName;
+                } else if (MongoClientBeanUtil.isDefault(clientName)) {
+                    mongoClientConfig = mongodbRuntimeConfig.getValue().defaultMongoClientConfig();
+                    clientNameSelected = clientName;
+                } else {
+                    mongoClientConfig = getRequiredConfig(
+                            mongodbRuntimeConfig.getValue().mongoClientConfigs(),
+                            "Mongo client named '%s' not found");
+                    clientNameSelected = clientName;
+                }
+                return new LiquibaseMongodbFactory(
+                        liquibaseMongodbClientConfig,
+                        buildTimeClientConfig,
+                        mongoClientConfig,
+                        clientNameSelected);
             }
         };
     }
 
-    public void doStartActions() {
+    private Annotation getLiquibaseMongodbQualifier(String clientName) {
+        if (MongoClientBeanUtil.isDefault(clientName)) {
+            return Default.Literal.INSTANCE;
+        } else {
+            return LiquibaseMongodbClient.LiquibaseMongodbClientLiteral.of(clientName);
+        }
+    }
+
+    public void doStartActions(String clientName) {
         if (!runtimeConfig.getValue().enabled()) {
             return;
         }
+
         try {
             InjectableInstance<LiquibaseMongodbFactory> liquibaseFactoryInstance = Arc.container()
-                    .select(LiquibaseMongodbFactory.class, Any.Literal.INSTANCE);
+                    .select(LiquibaseMongodbFactory.class, getLiquibaseMongodbQualifier(clientName));
             if (liquibaseFactoryInstance.isUnsatisfied()) {
                 return;
             }

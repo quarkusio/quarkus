@@ -18,5 +18,3 @@ pluginManagement {
 includeBuild 'nested'
 
 rootProject.name = 'included'
-
-include ':nested:included-quarkus'

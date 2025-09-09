@@ -52,7 +52,7 @@
         <emoji-regex>8.0.0</emoji-regex>
         <is-fullwidth-code-point.version>3.0.0</is-fullwidth-code-point.version>
         <ansi-regex.version>5.0.1</ansi-regex.version>
-        <ansi-styles.version>4.3.0</ansi-styles.version>
+        <ansi-styles.version>6.2.3</ansi-styles.version>
         <color-convert.version>2.0.1</color-convert.version>
         <color-name.version>1.1.4</color-name.version>
         <dot.version>0.0.1</dot.version>

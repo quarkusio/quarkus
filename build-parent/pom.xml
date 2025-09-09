@@ -75,23 +75,23 @@
 
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>9.1.3</elasticsearch-server.version>
-        <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
-        <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
-        <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
+        <elasticsearch.image>elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
+        <logstash.image>elastic/logstash:${elasticsearch-server.version}</logstash.image>
+        <kibana.image>elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
         <opensearch-server.version>3.1.0</opensearch-server.version>
-        <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+        <opensearch.image>opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.2.0</junit-pioneer.version>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/postgres:17</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
+        <postgres.image>postgres:17</postgres.image>
+        <mariadb.image>mariadb:10.11</mariadb.image>
         <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
-        <mysql.image>docker.io/mysql:8.4</mysql.image>
-        <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
-        <mongo.image>docker.io/mongo:7.0</mongo.image>
+        <mysql.image>mysql:8.4</mysql.image>
+        <oracle.image>gvenzl/oracle-free:23-slim-faststart</oracle.image>
+        <mongo.image>mongo:7.0</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>

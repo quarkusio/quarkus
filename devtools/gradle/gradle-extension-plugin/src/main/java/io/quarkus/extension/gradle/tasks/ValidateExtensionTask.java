@@ -8,6 +8,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
@@ -24,6 +25,7 @@ import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
 
 public class ValidateExtensionTask extends DefaultTask {
 
+    private final Project project;
     private Configuration runtimeModuleClasspath;
     private Configuration deploymentModuleClasspath;
 
@@ -33,12 +35,18 @@ public class ValidateExtensionTask extends DefaultTask {
         setDescription("Validate extension dependencies");
         setGroup("quarkus");
 
+        this.project = super.getProject(); // accessing it during configuration time, as it is not allowed in execution time
         this.runtimeModuleClasspath = runtimeModuleClasspath;
         this.onlyIf(t -> !quarkusExtensionConfiguration.isValidationDisabled().get());
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.
         notCompatibleWithConfigurationCache("The Quarkus Extension Plugin isn't compatible with the configuration cache");
+    }
+
+    @Override
+    public Project getProject() {
+        return project;
     }
 
     @Internal

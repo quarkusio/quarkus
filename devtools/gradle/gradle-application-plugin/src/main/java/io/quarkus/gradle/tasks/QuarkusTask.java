@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.workers.ProcessWorkerSpec;
 import org.gradle.workers.WorkQueue;
@@ -22,6 +23,7 @@ public abstract class QuarkusTask extends DefaultTask {
     private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.");
 
     private final transient QuarkusPluginExtension extension;
+    private final transient Project project;
     protected final File projectDir;
     protected final File buildDir;
 
@@ -32,6 +34,7 @@ public abstract class QuarkusTask extends DefaultTask {
     QuarkusTask(String description, boolean configurationCacheCompatible) {
         setDescription(description);
         setGroup("quarkus");
+        this.project = super.getProject(); // accessing it during configuration time, as it is not allowed in execution time
         this.extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
         this.projectDir = getProject().getProjectDir();
         this.buildDir = getProject().getLayout().getBuildDirectory().getAsFile().get();
@@ -41,6 +44,11 @@ public abstract class QuarkusTask extends DefaultTask {
         if (!configurationCacheCompatible) {
             notCompatibleWithConfigurationCache("The Quarkus Plugin isn't compatible with the configuration cache");
         }
+    }
+
+    @Override
+    public Project getProject() {
+        return project;
     }
 
     @Inject

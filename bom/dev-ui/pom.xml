@@ -32,7 +32,7 @@
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>6.0.0</echarts.version>
         <es-module-shims.version>2.0.10</es-module-shims.version>
-        <path-to-regexp.version>6.3.0</path-to-regexp.version>
+        <path-to-regexp.version>8.3.0</path-to-regexp.version>
         <type-fest.version>4.41.0</type-fest.version>
         <codeblock.version>1.1.1</codeblock.version>
         <qomponent.version>1.0.4</qomponent.version>

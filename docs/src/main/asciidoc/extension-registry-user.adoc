@@ -214,3 +214,26 @@ image:registry-nexus-repository.png[Nexus Repository Proxy]
 - Set the `Remote Storage` URL to `https://registry.quarkus.io/maven`
 
 image:registry-nexus3-repository.png[Nexus Repository Proxy]
+
+==== Environment Variables
+
+Applications using a registry client can be configured using environment variables.
+
+`QUARKUS_REGISTRIES` environment variable can be used to specify which registries should be enabled as a comma-separated list of registry IDs.
+For example
+```
+QUARKUS_REGISTRIES=registry.acme.org,registry.quarkus.io
+```
+That alone will be enough to initialize a registry client to pull extension catalogs from two registries using their default configurations.
+
+Certain registry options could be initialized with their specific environment variables. Each such option will have the following environment variable prefix:
+```
+QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_
+```
+where `<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>` is a registry ID with each character converted to uppercase and a `.` replaced with `_`. For example, `REGISTRY_ACME_ORG`.
+
+The following options can be configured with this approach:
+
+- Repository URL, for example `QUARKUS_REGISTRY_REGISTRY_ACME_ORG_REPO_URL=https://internal.registry.acme.org/maven`
+- Update policy, for example `QUARKUS_REGISTRY_REGISTRY_ACME_ORG_UPDATE_POLICY=always`
+- Offering, for example `QUARKUS_REGISTRY_REGISTRY_ACME_ORG_OFFERING=acme-magic`

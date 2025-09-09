@@ -1,4 +1,4 @@
-package org.acme.quickstart.lra.coordinator;
+package io.quarkus.it.lra;
 
 import static org.eclipse.microprofile.lra.annotation.ws.rs.LRA.LRA_HTTP_CONTEXT_HEADER;
 

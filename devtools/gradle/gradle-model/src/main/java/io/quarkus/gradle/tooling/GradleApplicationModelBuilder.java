@@ -193,6 +193,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         initProjectModule(project, mainModule, sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME), ArtifactSources.MAIN);
         if (workspaceDiscovery) {
+            appArtifact.setReloadable();
             final TaskCollection<Test> testTasks = project.getTasks().withType(Test.class);
             if (!testTasks.isEmpty()) {
                 final Map<File, SourceSet> sourceSetsByClassesDir = new HashMap<>();
@@ -319,7 +320,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                     clearReloadableFlag = true;
                 }
                 dep.setDeploymentCp();
-                if (clearReloadableFlag) {
+                if (clearReloadableFlag && dep != modelBuilder.getApplicationArtifact()) {
                     dep.clearFlag(DependencyFlags.RELOADABLE);
                 }
             }
@@ -480,13 +481,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                     flags = clearFlag(flags, COLLECT_RELOADABLE_MODULES);
                 }
                 modelBuilder.addDependency(depBuilder);
-                if (projectModule == null && depBuilder.getWorkspaceModule() != null) {
-                    projectModule = depBuilder.getWorkspaceModule().mutable();
-                }
 
                 if (artifactFiles != null) {
                     artifactFiles.add(a.getFile());
                 }
+            }
+            if (projectModule == null && depBuilder.getWorkspaceModule() != null) {
+                projectModule = depBuilder.getWorkspaceModule().mutable();
             }
             if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
                 depBuilder.setDirect(true);

@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-oidc-auth0-tutorial"]
-= Protect Quarkus web application by using an Auth0 OpenID Connect provider
+= Protect a Quarkus web application by using an Auth0 OpenID Connect provider
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: security,web

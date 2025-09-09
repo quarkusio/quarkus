@@ -38,7 +38,7 @@ If you want to force compression to take place in a container, you can set `quar
 If you are not in one of these cases, the compression fails.
 
 Setting `quarkus.native.compression.container-image` results in the compression to run in a container.
-If you want to set the variable, but not run the compression in a container, set `quakrus.native.compression.container-build` explicitly to `false`.
+If you want to set the variable, but not run the compression in a container, set `quarkus.native.compression.container-build` explicitly to `false`.
 
 [IMPORTANT]
 .`WORKDIR` for the image used for compression

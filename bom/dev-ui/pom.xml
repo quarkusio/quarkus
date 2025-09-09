@@ -44,7 +44,7 @@
         <escalade.version>3.1.2</escalade.version>
         <get-caller-file.version>2.0.5</get-caller-file.version>
         <require-directory.version>2.1.1</require-directory.version>
-        <string-width.version>4.2.3</string-width.version>
+        <string-width.version>8.1.0</string-width.version>
         <y18n.version>5.0.8</y18n.version>
         <yargs-parser.version>21.1.1</yargs-parser.version>
         <strip-ansi.version>6.0.1</strip-ansi.version>

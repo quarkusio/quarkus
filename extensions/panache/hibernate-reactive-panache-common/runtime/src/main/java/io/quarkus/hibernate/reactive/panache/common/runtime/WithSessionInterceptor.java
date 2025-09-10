@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -17,7 +19,7 @@ public class WithSessionInterceptor extends AbstractUniInterceptor {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
-            return SessionOperations.withSession(s -> proceedUni(context));
+            return SessionOperations.withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> proceedUni(context));
         }
         return context.proceed();
     }

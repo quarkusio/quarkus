@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.kotlin
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
+import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations.implementationInjectionMissing
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
@@ -27,7 +27,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      *
      * @return the current [Mutiny.Session]
      */
-    fun getSession(): Uni<Mutiny.Session> = AbstractJpaOperations.getSession()
+    @GenerateBridge fun getSession(): Uni<Mutiny.Session> = throw implementationInjectionMissing()
 
     @CheckReturnValue
     fun persist(entity: Entity): Uni<Entity> = INSTANCE.persist(entity).map { entity }
@@ -43,7 +43,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     fun persistAndFlush(entity: Entity): Uni<Entity> =
-        INSTANCE.persist(entity).flatMap { INSTANCE.flush() }.map { entity }
+        INSTANCE.persist(entity).flatMap { INSTANCE.flush(entity) }.map { entity }
 
     /**
      * Delete the given entity from the database, if it is already persisted.
@@ -70,7 +70,10 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      *
      * @return nothing
      */
-    @CheckReturnValue fun flush(): Uni<Void> = INSTANCE.flush()
+    @CheckReturnValue
+    fun flush() {
+        getSession().chain(Mutiny.Session::flush)
+    }
 
     // Queries
     /**
@@ -81,7 +84,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun findById(id: Id): Uni<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun findById(id: Id): Uni<Entity> = throw implementationInjectionMissing()
 
     /**
      * Find an entity of this type by ID and lock it.
@@ -93,7 +96,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun findById(id: Id, lockModeType: LockModeType): Uni<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities using a query, with optional indexed parameters.
@@ -105,7 +108,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun find(query: String, vararg params: Any?): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
@@ -118,7 +121,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, vararg params: Any?): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -130,7 +133,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun find(query: String, params: Map<String, Any?>): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -143,7 +146,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, params: Map<String, Any?>): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -155,7 +158,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun find(query: String, params: Parameters): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -168,7 +171,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @GenerateBridge
     fun find(query: String, sort: Sort, params: Parameters): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find all entities of this type.
@@ -176,8 +179,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @return a new [PanacheQuery] instance to find all entities of this type.
      * @see [listAll] listAll
      */
-    @GenerateBridge
-    fun findAll(): PanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    @GenerateBridge fun findAll(): PanacheQuery<Entity> = throw implementationInjectionMissing()
 
     /**
      * Find all entities of this type, in the given order.
@@ -187,7 +189,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @see [listAll] listAll
      */
     @GenerateBridge
-    fun findAll(sort: Sort): PanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun findAll(sort: Sort): PanacheQuery<Entity> = throw implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with optional indexed parameters. This method is a shortcut
@@ -201,7 +203,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun list(query: String, vararg params: Any?): Uni<List<Entity>> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
@@ -216,7 +218,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun list(query: String, sort: Sort, vararg params: Any?): Uni<List<Entity>> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters. This method is a shortcut for
@@ -230,7 +232,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun list(query: String, params: Map<String, Any?>): Uni<List<Entity>> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with named parameters. This method
@@ -245,7 +247,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun list(query: String, sort: Sort, params: Map<String, Any?>): Uni<List<Entity>> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities matching a query, with named parameters. This method is a shortcut for
@@ -259,7 +261,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun list(query: String, params: Parameters): Uni<List<Entity>> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with named parameters. This method
@@ -274,7 +276,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun list(query: String, sort: Sort, params: Parameters): Uni<List<Entity>> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Find all entities of this type. This method is a shortcut for `findAll().list()`.
@@ -285,7 +287,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun listAll(): Uni<List<Entity>> {
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
     }
 
     /**
@@ -298,7 +300,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun listAll(sort: Sort): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun listAll(sort: Sort): Uni<List<Entity>> = throw implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity in the database.
@@ -307,7 +309,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun count(): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun count(): Uni<Long> = throw implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with optional indexed
@@ -320,7 +322,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun count(query: String, vararg params: Any?): Uni<Long> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
@@ -332,7 +334,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun count(query: String, params: Map<String, Any?>): Uni<Long> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
@@ -343,8 +345,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun count(query: String, params: Parameters): Uni<Long> =
-        throw INSTANCE.implementationInjectionMissing()
+    fun count(query: String, params: Parameters): Uni<Long> = throw implementationInjectionMissing()
 
     /**
      * Delete all entities of this type from the database.
@@ -357,7 +358,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun deleteAll(): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun deleteAll(): Uni<Long> = throw implementationInjectionMissing()
 
     /**
      * Delete an entity of this type by ID.
@@ -367,7 +368,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun deleteById(id: Id): Uni<Boolean> = throw INSTANCE.implementationInjectionMissing()
+    fun deleteById(id: Id): Uni<Boolean> = throw implementationInjectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
@@ -383,7 +384,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun delete(query: String, vararg params: Any?): Uni<Long> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
@@ -399,7 +400,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun delete(query: String, params: Map<String, Any?>): Uni<Long> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
@@ -415,7 +416,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun delete(query: String, params: Parameters): Uni<Long> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Persist all given entities.
@@ -454,7 +455,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun update(query: String, vararg params: Any?): Uni<Int> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Update all entities of this type matching the given query, with named parameters.
@@ -466,7 +467,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     @CheckReturnValue
     @GenerateBridge
     fun update(query: String, params: Map<String, Any?>): Uni<Int> =
-        throw INSTANCE.implementationInjectionMissing()
+        throw implementationInjectionMissing()
 
     /**
      * Update all entities of this type matching the given query, with named parameters.
@@ -477,6 +478,5 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun update(query: String, params: Parameters): Uni<Int> =
-        throw INSTANCE.implementationInjectionMissing()
+    fun update(query: String, params: Parameters): Uni<Int> = throw implementationInjectionMissing()
 }

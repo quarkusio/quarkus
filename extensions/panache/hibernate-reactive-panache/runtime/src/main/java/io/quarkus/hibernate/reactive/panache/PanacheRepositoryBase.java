@@ -10,6 +10,7 @@ import jakarta.persistence.LockModeType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
@@ -35,8 +36,9 @@ public interface PanacheRepositoryBase<Entity, Id> {
      *
      * @return the current {@link Mutiny.Session}
      */
+    @GenerateBridge
     public default Uni<Mutiny.Session> getSession() {
-        return INSTANCE.getSession();
+        throw AbstractJpaOperations.implementationInjectionMissing();
     }
 
     /**
@@ -68,7 +70,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
     @CheckReturnValue
     public default Uni<Entity> persistAndFlush(Entity entity) {
         return INSTANCE.persist(entity)
-                .flatMap(v -> INSTANCE.flush())
+                .flatMap(v -> INSTANCE.flush(entity))
                 .map(v -> entity);
     }
 
@@ -107,7 +109,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     @CheckReturnValue
     public default Uni<Void> flush() {
-        return INSTANCE.flush();
+        return getSession().chain(Mutiny.Session::flush);
     }
 
     // Queries

@@ -10,6 +10,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class VertxMDCDataAttribute implements ExchangeAttribute {
 
+    public static final String ORIGINAL_OTEL_TRACE_ID_KEY = "originalOtelTraceId";
     private final String dataKey;
 
     public VertxMDCDataAttribute(String dataKey) {
@@ -19,7 +20,12 @@ public class VertxMDCDataAttribute implements ExchangeAttribute {
     @Override
     public String readAttribute(RoutingContext exchange) {
         VertxMDC mdc = VertxMDC.INSTANCE;
-        return mdc.get(dataKey);
+        String value = mdc.get(dataKey);
+        if (value == null && "traceId".equals(dataKey)) {
+            // get from cache
+            value = exchange.get(ORIGINAL_OTEL_TRACE_ID_KEY);
+        }
+        return value;
     }
 
     @Override

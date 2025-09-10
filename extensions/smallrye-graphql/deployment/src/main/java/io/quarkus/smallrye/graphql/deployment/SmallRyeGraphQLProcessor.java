@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.KnownCompatibleBeanArchiveBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -879,6 +880,15 @@ public class SmallRyeGraphQLProcessor {
             additionalIndexedClasses
                     .produce(new AdditionalIndexedClassesBuildItem("io.quarkus.panache.common.Sort$NullPrecedence"));
         }
+    }
+
+    // This build step can be removed after Quarkus updated to any version newer than 2.14.1
+    // See also https://github.com/smallrye/smallrye-graphql/pull/2299
+    @BuildStep
+    void registerKnownSpecializationAnnotation(
+            BuildProducer<KnownCompatibleBeanArchiveBuildItem> compatArchiveProducer) {
+        compatArchiveProducer.produce(KnownCompatibleBeanArchiveBuildItem.builder("io.smallrye", "smallrye-graphql-cdi")
+                .addReason(KnownCompatibleBeanArchiveBuildItem.Reason.SPECIALIZES_ANNOTATION).build());
     }
 
     // In dev mode, when you click on the logo, you should go to Dev UI

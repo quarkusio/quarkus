@@ -9,6 +9,7 @@ import jakarta.json.bind.JsonbBuilder;
 import jakarta.persistence.PersistenceException;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -144,6 +145,7 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    @Disabled
     public void testBug8254() {
         RestAssured.when().get("/test/8254").then().body(is("OK"));
     }

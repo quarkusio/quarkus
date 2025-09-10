@@ -19,10 +19,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -105,7 +108,10 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final boolean strictMode;
 
-    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode) {
+    // An event mock reference is shared by identical injection points
+    private final ConcurrentMap<TypeAndQualifiers, AtomicReference<Event<?>>> eventMocks;
+
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode, boolean testMode) {
         this.strictMode = strictMode;
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
@@ -123,6 +129,7 @@ public class ArcContainerImpl implements ArcContainer {
         Supplier<ContextInstances> requestContextInstances = null;
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
                 : currentContextFactory;
+        this.eventMocks = testMode ? new ConcurrentHashMap<>() : null;
 
         List<Components> components = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
@@ -480,6 +487,9 @@ public class ArcContainerImpl implements ArcContainer {
             resolved.clear();
             running.set(false);
             InterceptedStaticMethods.clear();
+            if (eventMocks != null) {
+                eventMocks.clear();
+            }
 
             LOGGER.debugf("ArC DI container shut down");
         }
@@ -1042,6 +1052,21 @@ public class ArcContainerImpl implements ArcContainer {
         return unwrap(Arc.container());
     }
 
+    <T> EventImpl<T> getEvent(Type eventType, Set<Annotation> eventQualifiers, InjectionPoint ip) {
+        if (eventMocks != null) {
+            AtomicReference<Event<?>> mock = eventMocks.computeIfAbsent(
+                    new TypeAndQualifiers(eventType, eventQualifiers),
+                    ArcContainerImpl::newEventMockReference);
+            return new MockableEventImpl<>(eventType, eventQualifiers, ip, mock);
+        } else {
+            return new EventImpl<>(eventType, eventQualifiers, ip);
+        }
+    }
+
+    private static AtomicReference<Event<?>> newEventMockReference(TypeAndQualifiers typeAndQualifiers) {
+        return new AtomicReference<>();
+    }
+
     private static final class Resolvable {
 
         private static final Annotation[] ANY_QUALIFIER = { Any.Literal.INSTANCE };
@@ -1095,5 +1120,8 @@ public class ArcContainerImpl implements ArcContainer {
             return Arrays.equals(qualifiers, other.qualifiers);
         }
 
+    }
+
+    private record TypeAndQualifiers(Type requiredType, Set<Annotation> qualifiers) {
     }
 }

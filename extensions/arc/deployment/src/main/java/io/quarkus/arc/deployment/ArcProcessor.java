@@ -621,11 +621,12 @@ public class ArcProcessor {
     @Consume(ResourcesGeneratedPhaseBuildItem.class)
     @Record(STATIC_INIT)
     public ArcContainerBuildItem initializeContainer(ArcConfig config, ArcRecorder recorder,
-            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory)
+            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory,
+            LaunchModeBuildItem launchMode)
             throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
-                config.strictCompatibility());
+                config.strictCompatibility(), launchMode.isTest());
         return new ArcContainerBuildItem(container);
     }
 

@@ -106,7 +106,7 @@ public class InjectionPointInfo {
         return injectionPoints;
     }
 
-    static InjectionPointInfo fromSyntheticInjectionPoint(TypeAndQualifiers typeAndQualifiers) {
+    public static InjectionPointInfo fromSyntheticInjectionPoint(TypeAndQualifiers typeAndQualifiers) {
         return new InjectionPointInfo(typeAndQualifiers, InjectionPointKind.CDI, null, null, false, false);
     }
 

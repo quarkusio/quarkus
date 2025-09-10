@@ -45,10 +45,11 @@ public class ArcRecorder {
     public static volatile Map<String, Supplier<ActiveResult>> syntheticBeanCheckActive;
 
     public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory,
-            boolean strictCompatibility) throws Exception {
-        ArcInitConfig.Builder builder = ArcInitConfig.builder();
-        builder.setCurrentContextFactory(currentContextFactory != null ? currentContextFactory.getValue() : null);
-        builder.setStrictCompatibility(strictCompatibility);
+            boolean strictCompatibility, boolean testMode) throws Exception {
+        ArcInitConfig.Builder builder = ArcInitConfig.builder()
+                .setCurrentContextFactory(currentContextFactory != null ? currentContextFactory.getValue() : null)
+                .setStrictCompatibility(strictCompatibility)
+                .setTestMode(testMode);
         ArcContainer container = Arc.initialize(builder.build());
         shutdown.addShutdownTask(new Runnable() {
             @Override

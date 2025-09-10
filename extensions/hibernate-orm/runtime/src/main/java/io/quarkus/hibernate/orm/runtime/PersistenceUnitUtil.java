@@ -25,6 +25,14 @@ public class PersistenceUnitUtil {
         return DEFAULT_PERSISTENCE_UNIT_NAME.equals(name);
     }
 
+    public static Annotation qualifier(String persistenceUnitName) {
+        if (isDefaultPersistenceUnit(persistenceUnitName)) {
+            return Default.Literal.INSTANCE;
+        } else {
+            return new PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName);
+        }
+    }
+
     public static <T> InjectableInstance<T> singleExtensionInstanceForPersistenceUnit(Class<T> beanType,
             String persistenceUnitName,
             Annotation... additionalQualifiers) {

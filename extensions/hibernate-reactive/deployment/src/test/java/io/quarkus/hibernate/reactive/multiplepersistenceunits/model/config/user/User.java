@@ -1,26 +1,27 @@
-package io.quarkus.hibernate.reactive.multiplepersistencenunits.model.config.inventory;
+package io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.user;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
-public class Plane {
+@Table(name = "User_")
+public class User {
 
     private long id;
 
     private String name;
 
-    public Plane() {
+    public User() {
     }
 
-    public Plane(String name) {
+    public User(String name) {
         this.name = name;
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "planeSeq")
+    @GeneratedValue
     public long getId() {
         return id;
     }
@@ -39,6 +40,6 @@ public class Plane {
 
     @Override
     public String toString() {
-        return "Plane:" + name;
+        return "User:" + name;
     }
 }

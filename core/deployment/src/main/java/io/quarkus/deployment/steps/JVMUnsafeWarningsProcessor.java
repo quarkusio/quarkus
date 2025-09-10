@@ -6,11 +6,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.JVMChecksRecorder;
 
-public class CheckJVMparamsProcessor {
+public class JVMUnsafeWarningsProcessor {
 
     @BuildStep(onlyIfNot = NativeBuild.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void recordJvmChecks(JVMChecksRecorder recorder) {
-        recorder.check();
+    @Record(ExecutionTime.STATIC_INIT) //We need this to trigger before Netty or other Unsafe users get to run: static init seems effective enough
+    public void disableUnsafeRelatedWarnings(JVMChecksRecorder recorder) {
+        recorder.disableUnsafeRelatedWarnings();
     }
+
 }

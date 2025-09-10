@@ -1,36 +1,29 @@
 package io.quarkus.runtime;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.util.List;
-
-import org.jboss.logging.Logger;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class JVMChecksRecorder {
 
-    public void check() {
-        if (!isUnsafeMemoryAccessAllowed()) {
-            Logger.getLogger("JVM").warn(
-                    "Unsafe memory access is not going to be allowed in future versions of the JVM. Since Java 24, the JVM will print a warning on boot (most likely shown above), but several Quarkus extensions still require it. "
-                            +
-                            "There is currently no need to worry: please add the `--sun-misc-unsafe-memory-access=allow` JVM argument to avoid these warnings. "
-                            +
-                            "We are working with the maintainers of those libraries to get this resolved in future versions; when this is done, we will remove the need for this argument.");
-        }
-    }
-
-    public static boolean isUnsafeMemoryAccessAllowed() {
+    /**
+     * This is a horrible hack to disable the Unsafe-related warnings that are printed on startup:
+     * we know about the problem, we're working on it, and there's no need to print a warning scaring our
+     * users with it.
+     */
+    public void disableUnsafeRelatedWarnings() {
         if (Runtime.version().feature() < 24) {
-            //Versions before Java 24 would not complain about the use of Unsafe.
-            //Also, setting `--sun-misc-unsafe-memory-access=allow` isn't possible (not a valid argument) before Java 24.
-            return true;
+            return;
         }
-        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-        List<String> arguments = runtimeMxBean.getInputArguments();
-        return arguments.contains("--sun-misc-unsafe-memory-access=allow");
+        try {
+            Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+            Method trySetMemoryAccessWarnedMethod = unsafeClass.getDeclaredMethod("trySetMemoryAccessWarned");
+            trySetMemoryAccessWarnedMethod.setAccessible(true);
+            trySetMemoryAccessWarnedMethod.invoke(null);
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            //let's ignore it - if we failed with our horrible hack, worst that could happen is that the ugly warning is printed
+        }
     }
-
 }

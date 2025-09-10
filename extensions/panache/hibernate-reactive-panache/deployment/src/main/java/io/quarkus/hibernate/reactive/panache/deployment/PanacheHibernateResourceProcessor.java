@@ -1,8 +1,13 @@
 package io.quarkus.hibernate.reactive.panache.deployment;
 
+import static io.quarkus.hibernate.reactive.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
+
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,15 +29,19 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
+import io.quarkus.hibernate.reactive.panache.runtime.PanacheHibernateReactiveRecorder;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
@@ -94,19 +103,25 @@ public final class PanacheHibernateResourceProcessor {
     void build(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheEntityClassBuildItem> entityClasses,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
+            BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) throws Exception {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
+        Set<String> panacheEntities = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
@@ -121,10 +136,31 @@ public final class PanacheHibernateResourceProcessor {
         PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(index.getIndex(),
                 methodCustomizers,
                 ReactiveJavaJpaTypeBundle.BUNDLE);
+
+        Set<String> modelClasses = new HashSet<>();
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
+            modelClasses.add(entityClassName);
             transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityOperationsEnhancer));
         }
+
+        panacheEntities.addAll(modelClasses);
+
+        determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, panacheEntities, "Panache")
+                .forEach((e, pu) -> {
+                    entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu));
+                });
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void recordEntityToPersistenceUnit(List<EntityToPersistenceUnitBuildItem> items,
+            PanacheHibernateReactiveRecorder recorder) {
+        Map<String, String> map = new HashMap<>();
+        for (EntityToPersistenceUnitBuildItem item : items) {
+            map.put(item.getEntityClass(), item.getPersistenceUnitName());
+        }
+        recorder.setEntityToPersistenceUnit(map);
     }
 
     @BuildStep

@@ -3,7 +3,7 @@
 package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.Panache
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntityBase
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
@@ -83,7 +83,7 @@ class TestEndpoint {
 
     @GET
     @Path("8254")
-    @ReactiveTransactional
+    @WithTransaction
     fun testBug8254(): Uni<String> {
         val owner = CatOwner("8254")
         return owner
@@ -127,7 +127,7 @@ class TestEndpoint {
 
     @GET
     @Path("9025")
-    @ReactiveTransactional
+    @WithTransaction
     fun testBug9025(): Uni<String> {
         val apple = Fruit("apple", "red")
         val orange = Fruit("orange", "orange")
@@ -140,7 +140,7 @@ class TestEndpoint {
 
     @GET
     @Path("9036")
-    @ReactiveTransactional
+    @WithTransaction
     fun testBug9036(): Uni<String> {
         return Person.deleteAll()
             .flatMap { Person().persist<Person>() }
@@ -203,7 +203,7 @@ class TestEndpoint {
 
     @GET
     @Path("composite")
-    @ReactiveTransactional
+    @WithTransaction
     fun testCompositeKey(): Uni<String> {
         val obj = ObjectWithCompositeId()
         obj.part1 = "part1"
@@ -249,7 +249,7 @@ class TestEndpoint {
 
     @GET
     @Path("model")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModel(): Uni<String> {
         return Person.findAll()
             .list()
@@ -549,7 +549,7 @@ class TestEndpoint {
 
     @GET
     @Path("model1")
-    @ReactiveTransactional
+    @WithTransaction
     @Suppress("CAST_NEVER_SUCCEEDS")
     fun testModel1(): Uni<String> {
         return Person.count()
@@ -574,7 +574,7 @@ class TestEndpoint {
 
     @GET
     @Path("model2")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModel2(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -590,7 +590,7 @@ class TestEndpoint {
 
     @GET
     @Path("projection1")
-    @ReactiveTransactional
+    @WithTransaction
     fun testProjection(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -635,7 +635,7 @@ class TestEndpoint {
 
     @GET
     @Path("projection2")
-    @ReactiveTransactional
+    @WithTransaction
     fun testProjection2(): Uni<String> {
         val ownerName = "Julie"
         val catName = "Bubulle"
@@ -718,7 +718,7 @@ class TestEndpoint {
 
     @GET
     @Path("model3")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModel3(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -740,7 +740,7 @@ class TestEndpoint {
 
     @GET
     @Path("model-dao")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModelDao(): Uni<String> {
         return personDao
             .findAll()
@@ -1204,7 +1204,7 @@ class TestEndpoint {
 
     @GET
     @Path("testSortByNullPrecedence")
-    @ReactiveTransactional
+    @WithTransaction
     fun testSortByNullPrecedence(): Uni<String> {
         return Person.deleteAll()
             .flatMap {

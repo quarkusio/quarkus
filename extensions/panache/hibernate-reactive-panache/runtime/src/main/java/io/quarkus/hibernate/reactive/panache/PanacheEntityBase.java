@@ -71,7 +71,7 @@ public abstract class PanacheEntityBase {
     @CheckReturnValue
     public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
         return INSTANCE.persist(this)
-                .flatMap(v -> INSTANCE.flush())
+                .flatMap(v -> INSTANCE.flush(this))
                 .map(v -> (T) this);
     }
 
@@ -112,7 +112,7 @@ public abstract class PanacheEntityBase {
      */
     @CheckReturnValue
     public Uni<Void> flush() {
-        return INSTANCE.flush();
+        return INSTANCE.flush(this);
     }
 
     // Queries

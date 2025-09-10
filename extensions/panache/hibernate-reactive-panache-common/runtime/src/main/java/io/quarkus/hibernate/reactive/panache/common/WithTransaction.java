@@ -1,11 +1,14 @@
 package io.quarkus.hibernate.reactive.panache.common;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.util.Nonbinding;
 import jakarta.interceptor.InterceptorBinding;
 
 /**
@@ -26,5 +29,13 @@ import jakarta.interceptor.InterceptorBinding;
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface WithTransaction {
+
+    /**
+     * The name of the persistence unit. If not specified, the default persistence unit is used.
+     *
+     * @return the persistence unit name
+     */
+    @Nonbinding
+    String value() default DEFAULT_PERSISTENCE_UNIT_NAME;
 
 }

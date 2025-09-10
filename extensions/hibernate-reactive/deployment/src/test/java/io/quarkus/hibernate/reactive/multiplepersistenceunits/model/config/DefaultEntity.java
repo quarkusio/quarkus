@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.multiplepersistencenunits.model.config;
+package io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <angus-activation.version>2.0.2</angus-activation.version>
+        <angus-activation.version>2.0.3</angus-activation.version>
         <angus-mail.version>2.0.4</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
         <bouncycastle.version>1.81</bouncycastle.version>
         <bouncycastle.fips.version>2.1.1</bouncycastle.fips.version>

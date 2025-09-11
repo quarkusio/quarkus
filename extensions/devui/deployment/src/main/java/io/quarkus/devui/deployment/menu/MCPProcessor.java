@@ -36,6 +36,7 @@ public class MCPProcessor {
 
         mcpSettingTab.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)
+                .internal("Dev MCP")
                 .title("Dev MCP")
                 .icon("font-awesome-solid:robot")
                 .componentLink("qwc-dev-mcp-setting.js"));
@@ -45,11 +46,13 @@ public class MCPProcessor {
 
         mcpOtherPages.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)
+                .internal("Dev MCP")
                 .title("Tools")
                 .icon("font-awesome-solid:screwdriver-wrench")
                 .componentLink("qwc-dev-mcp-tools.js"));
         mcpOtherPages.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)
+                .internal("Dev MCP")
                 .title("Resources")
                 .icon("font-awesome-solid:file-invoice")
                 .componentLink("qwc-dev-mcp-resources.js"));

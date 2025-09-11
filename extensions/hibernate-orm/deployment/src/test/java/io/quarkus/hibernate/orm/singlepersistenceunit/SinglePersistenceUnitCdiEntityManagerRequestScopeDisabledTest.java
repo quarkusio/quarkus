@@ -20,8 +20,7 @@ public class SinglePersistenceUnitCdiEntityManagerRequestScopeDisabledTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"))
-            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false");
+                    .addAsResource("application.properties"));
 
     @Inject
     EntityManager entityManager;

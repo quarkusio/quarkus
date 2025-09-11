@@ -29,10 +29,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerRequestScopeDisabledTest {
                     .addClass(DefaultEntity.class)
                     .addClass(User.class)
                     .addClass(Plane.class)
-                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"))
-            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false")
-            .overrideConfigKey("quarkus.hibernate-orm.users.request-scoped.enabled", "false")
-            .overrideConfigKey("quarkus.hibernate-orm.inventory.request-scoped.enabled", "false");
+                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
     EntityManager defaultEntityManager;

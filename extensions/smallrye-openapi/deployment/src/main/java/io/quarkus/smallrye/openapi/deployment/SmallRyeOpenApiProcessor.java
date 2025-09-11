@@ -162,6 +162,11 @@ public class SmallRyeOpenApiProcessor {
     private static final String MANAGEMENT_ENABLED = "quarkus.smallrye-openapi.management.enabled";
 
     @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.SMALLRYE_OPENAPI);
+    }
+
+    @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
         // contribute additional JDK classes to the index, because SmallRye OpenAPI will check if some
         // app types implement Map and Collection and will go through super classes until Object is reached,
@@ -321,7 +326,7 @@ public class SmallRyeOpenApiProcessor {
             // quarkus.http.cors.enabled=true
             // quarkus.http.cors.origins
             Optional<Boolean> maybeCors = c.getOptionalValue("quarkus.http.cors.enabled", Boolean.class);
-            if (!maybeCors.isPresent() || !maybeCors.get().booleanValue()) {
+            if (maybeCors.isEmpty() || !maybeCors.get()) {
                 // We need to set quarkus.http.cors.enabled=true
                 systemProperties.produce(new SystemPropertyBuildItem("quarkus.http.cors.enabled", "true"));
             }
@@ -496,30 +501,27 @@ public class SmallRyeOpenApiProcessor {
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
                 .map(securityInfo -> {
-                    switch (securityInfo.getSecurityModel()) {
-                        case jwt:
-                            return new AutoBearerTokenSecurityFilter(
-                                    config.securitySchemeName(),
-                                    config.securitySchemeDescription(),
-                                    config.getValidSecuritySchemeExtensions(),
-                                    config.jwtSecuritySchemeValue(),
-                                    config.jwtBearerFormat());
-                        case oauth2:
-                            return new AutoBearerTokenSecurityFilter(
-                                    config.securitySchemeName(),
-                                    config.securitySchemeDescription(),
-                                    config.getValidSecuritySchemeExtensions(),
-                                    config.oauth2SecuritySchemeValue(),
-                                    config.oauth2BearerFormat());
-                        case basic:
-                            return new AutoBasicSecurityFilter(
-                                    config.securitySchemeName(),
-                                    config.securitySchemeDescription(),
-                                    config.getValidSecuritySchemeExtensions(),
-                                    config.basicSecuritySchemeValue());
-                        case oidc:
+                    return switch (securityInfo.getSecurityModel()) {
+                        case jwt -> new AutoBearerTokenSecurityFilter(
+                                config.securitySchemeName(),
+                                config.securitySchemeDescription(),
+                                config.getValidSecuritySchemeExtensions(),
+                                config.jwtSecuritySchemeValue(),
+                                config.jwtBearerFormat());
+                        case oauth2 -> new AutoBearerTokenSecurityFilter(
+                                config.securitySchemeName(),
+                                config.securitySchemeDescription(),
+                                config.getValidSecuritySchemeExtensions(),
+                                config.oauth2SecuritySchemeValue(),
+                                config.oauth2BearerFormat());
+                        case basic -> new AutoBasicSecurityFilter(
+                                config.securitySchemeName(),
+                                config.securitySchemeDescription(),
+                                config.getValidSecuritySchemeExtensions(),
+                                config.basicSecuritySchemeValue());
+                        case oidc ->
                             // This needs to be a filter in runtime as the config we use to autoconfigure is in runtime
-                            return securityInfo.getOpenIDConnectInformation()
+                            securityInfo.getOpenIDConnectInformation()
                                     .map(info -> {
                                         AutoUrl openIdConnectUrl = new AutoUrl(
                                                 config.oidcOpenIdConnectUrl().orElse(null),
@@ -533,9 +535,8 @@ public class SmallRyeOpenApiProcessor {
                                                 openIdConnectUrl);
                                     })
                                     .orElse(null);
-                        default:
-                            return null;
-                    }
+                        default -> null;
+                    };
                 })
                 .filter(Objects::nonNull)
                 .findFirst();
@@ -676,7 +677,7 @@ public class SmallRyeOpenApiProcessor {
                     .stream()
                     // drop methods that specify the annotation directly
                     .filter(method -> !method.hasDeclaredAnnotation(annotation.name()))
-                    .filter(method -> isValidOpenAPIMethodForAutoAdd(method))
+                    .filter(SmallRyeOpenApiProcessor::isValidOpenAPIMethodForAutoAdd)
                     .map(method -> {
                         final ClassInfo resourceClass;
 
@@ -814,16 +815,13 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private static List<MethodInfo> getMethods(ClassInfo declaringClass, IndexView index) {
-        List<MethodInfo> methods = new ArrayList<>();
-        methods.addAll(declaringClass.methods());
+        List<MethodInfo> methods = new ArrayList<>(declaringClass.methods());
 
         // Check if the method overrides a method from an interface
         for (Type interfaceType : declaringClass.interfaceTypes()) {
             ClassInfo interfaceClass = index.getClassByName(interfaceType.name());
             if (interfaceClass != null) {
-                for (MethodInfo interfaceMethod : interfaceClass.methods()) {
-                    methods.add(interfaceMethod);
-                }
+                methods.addAll(interfaceClass.methods());
             }
         }
 
@@ -889,8 +887,7 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
+    public void build(BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<OpenApiDocumentBuildItem> openApiDocumentProducer,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
@@ -905,8 +902,6 @@ public class SmallRyeOpenApiProcessor {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
         Config config = ConfigProvider.getConfig();
 
-        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
-
         List<Pattern> urlIgnorePatterns = ignoreStaticDocumentBuildItems.stream()
                 .map(IgnoreStaticDocumentBuildItem::getUrlIgnorePattern)
                 .toList();
@@ -917,7 +912,7 @@ public class SmallRyeOpenApiProcessor {
                 .withApplicationClassLoader(loader)
                 .withScannerClassLoader(loader)
                 .enableModelReader(true)
-                .enableStandardStaticFiles(Boolean.FALSE.equals(smallRyeOpenApiConfig.ignoreStaticDocument()))
+                .enableStandardStaticFiles(!smallRyeOpenApiConfig.ignoreStaticDocument())
                 .withResourceLocator(path -> {
                     URL locator = loader.getResource(path);
                     if (locator == null || shouldIgnore(urlIgnorePatterns, locator.toString())) {
@@ -1095,9 +1090,7 @@ public class SmallRyeOpenApiProcessor {
                 .enableAnnotationScan(false)
                 .enableStandardFilter(false);
 
-        return openApiConfig.additionalDocsDirectory()
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
+        return openApiConfig.additionalDocsDirectory().stream().flatMap(Collection::stream)
                 .map(path -> getResourceFiles(path, target))
                 .flatMap(Collection::stream)
                 .filter(path -> path.endsWith(".json") || path.endsWith(".yaml") || path.endsWith(".yml"))

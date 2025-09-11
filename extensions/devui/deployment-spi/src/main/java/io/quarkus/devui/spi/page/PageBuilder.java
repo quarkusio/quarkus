@@ -112,6 +112,12 @@ public abstract class PageBuilder<T> {
     }
 
     @SuppressWarnings("unchecked")
+    public T namespaceLabel(String namespaceLabel) {
+        this.namespaceLabel = namespaceLabel;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
     public T internal() {
         return this.internal(null);
     }

@@ -602,7 +602,7 @@ xref:config-reference.adoc#multiple-profiles[setting `quarkus.profile`]:
 
 %oracle.quarkus.hibernate-orm."oracle".active=true
 %oracle.quarkus.datasource."oracle".active=true
-# Add any pg-related runtime configuration here, prefixed with "%pg."
+# Add any oracle-related runtime configuration here, prefixed with "%oracle."
 ----
 ====
 

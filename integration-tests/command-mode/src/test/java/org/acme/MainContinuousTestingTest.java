@@ -12,7 +12,7 @@ import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
 
-@Disabled("Fails due to 'More than one @QuarkusMain method found with name '': org.acme.Main and org.acme.Main'")
+@Disabled("See https://github.com/quarkusio/quarkus/issues/49780#issuecomment-3265067545")
 public class MainContinuousTestingTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

@@ -3,7 +3,7 @@ package io.quarkus.cli.image;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.cli.BuildToolContext;
+import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 

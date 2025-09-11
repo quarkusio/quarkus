@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import io.quarkus.cli.QuarkusCli;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import picocli.CommandLine;
 import picocli.CommandLine.Help.ColorScheme;
@@ -71,7 +70,7 @@ public class OutputOptionMixin implements MessageWriter {
     }
 
     private static OutputOptionMixin getOutput(CommandSpec commandSpec) {
-        return ((QuarkusCli) commandSpec.root().userObject()).getOutput();
+        return ((OutputProvider) commandSpec.root().userObject()).getOutput();
     }
 
     @CommandLine.Option(names = { "--verbose" }, description = "Verbose mode.")

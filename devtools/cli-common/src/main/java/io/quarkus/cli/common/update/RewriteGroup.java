@@ -1,4 +1,4 @@
-package io.quarkus.cli.update;
+package io.quarkus.cli.common.update;
 
 import picocli.CommandLine;
 

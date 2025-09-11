@@ -1,6 +1,5 @@
 package io.quarkus.cli.common;
 
-import io.quarkus.cli.Version;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
@@ -58,7 +57,7 @@ public class TargetQuarkusPlatformGroup {
                         // some.group::, use default artifact and client version
                         setBom(bom.substring(0, firstPos),
                                 ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID,
-                                Version.clientVersion());
+                                VersionHelper.clientVersion());
                     } else {
                         // some.group::version, use default artifact id
                         setBom(bom.substring(0, firstPos),
@@ -69,7 +68,7 @@ public class TargetQuarkusPlatformGroup {
                     // :my-bom:, use default group and version
                     setBom(ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID,
                             bom.substring(1, lastPos),
-                            Version.clientVersion());
+                            VersionHelper.clientVersion());
                 } else {
                     platformBom = ArtifactCoords.fromString(bom);
                     validPlatformBom = bom; // keep original (valid) string (dryrun)

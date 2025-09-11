@@ -1,4 +1,4 @@
-package io.quarkus.cli.build;
+package io.quarkus.cli.common.build;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +12,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import io.quarkus.cli.Version;
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.DebugOptions;
@@ -22,8 +21,9 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
-import io.quarkus.cli.registry.RegistryClientMixin;
-import io.quarkus.cli.update.RewriteGroup;
+import io.quarkus.cli.common.VersionHelper;
+import io.quarkus.cli.common.registry.RegistryClientMixin;
+import io.quarkus.cli.common.update.RewriteGroup;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -149,7 +149,7 @@ public class GradleRunner implements BuildSystemRunner {
             throws Exception {
         final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
                 ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
-                Version.clientVersion(),
+                VersionHelper.clientVersion(),
                 QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
         final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
         ArrayDeque<String> args = new ArrayDeque<>();

@@ -1,11 +1,8 @@
-package io.quarkus.cli;
+package io.quarkus.cli.common;
 
 import java.nio.file.Path;
 import java.util.List;
 
-import io.quarkus.cli.common.BuildOptions;
-import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 

@@ -19,15 +19,17 @@ import jakarta.inject.Inject;
 
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.OutputProvider;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
+import io.quarkus.cli.common.VersionHelper;
+import io.quarkus.cli.common.registry.RegistryClientMixin;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginListItem;
 import io.quarkus.cli.plugin.PluginListTable;
 import io.quarkus.cli.plugin.PluginManager;
 import io.quarkus.cli.plugin.PluginManagerSettings;
-import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -62,7 +64,7 @@ import picocli.CommandLine.UnmatchedArgumentException;
         Version.class,
         CliPlugins.class,
         Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
-public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
+public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<Integer> {
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
     }
@@ -221,7 +223,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        output.info("%n@|bold Quarkus CLI|@ version %s", Version.clientVersion());
+        output.info("%n@|bold Quarkus CLI|@ version %s", VersionHelper.clientVersion());
         output.info("");
         output.info("Create Quarkus projects with Maven, Gradle, or JBang.");
         output.info("Manage extensions and source registries.");

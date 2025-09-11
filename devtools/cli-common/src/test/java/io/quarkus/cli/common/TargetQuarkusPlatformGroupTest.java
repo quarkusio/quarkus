@@ -3,13 +3,12 @@ package io.quarkus.cli.common;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.cli.Version;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 
 public class TargetQuarkusPlatformGroupTest {
-    final static String clientVersion = Version.clientVersion();
+    final static String clientVersion = VersionHelper.clientVersion();
 
     TargetQuarkusPlatformGroup qvg = new TargetQuarkusPlatformGroup();
 

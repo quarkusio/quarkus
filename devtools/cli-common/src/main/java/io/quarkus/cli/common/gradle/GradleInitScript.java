@@ -1,4 +1,4 @@
-package io.quarkus.cli.utils;
+package io.quarkus.cli.common.gradle;
 
 import java.io.IOException;
 import java.nio.file.Files;

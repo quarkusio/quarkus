@@ -1,12 +1,12 @@
-package io.quarkus.cli.registry;
+package io.quarkus.cli.common.registry;
 
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
-import io.quarkus.cli.Version;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
+import io.quarkus.cli.common.VersionHelper;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.JavaVersion;
@@ -95,14 +95,14 @@ public class RegistryClientMixin {
                             + "It should still be possible to create a project by providing the groupId:artifactId:version of the desired Quarkus platform BOM, "
                             + "e.g. 'quarkus create -P "
                             + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
-                            + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":" + Version.clientVersion() + "'");
+                            + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":" + VersionHelper.clientVersion() + "'");
             throw e;
         }
 
         if (!catalogResolver.hasRegistries()) {
             log.debug("Falling back to direct resolution of the platform bom");
             // Fall back to previous methods of finding registries (e.g. client has been disabled)
-            return ToolsUtils.resolvePlatformDescriptorDirectly(null, null, Version.clientVersion(),
+            return ToolsUtils.resolvePlatformDescriptorDirectly(null, null, VersionHelper.clientVersion(),
                     QuarkusProjectHelper.artifactResolver(), log);
         }
 

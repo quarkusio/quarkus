@@ -1,4 +1,4 @@
-package io.quarkus.cli.utils;
+package io.quarkus.cli.common.gradle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

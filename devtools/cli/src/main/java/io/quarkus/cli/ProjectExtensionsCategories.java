@@ -4,11 +4,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.build.BaseBuildCommand;
-import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
+import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;

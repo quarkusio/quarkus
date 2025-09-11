@@ -366,7 +366,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public FeatureBuildItem build(
+    public void build(
             SchedulerRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<ScheduledBusinessMethodItem> scheduledMethods,
@@ -415,7 +415,10 @@ public class SchedulerProcessor {
                 .supplier(recorder.createContext(scheduledMetadata, !schedulerForcedStartItems.isEmpty(),
                         discoveredImplementations.getAutoImplementation()))
                 .done());
+    }
 
+    @BuildStep
+    FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SCHEDULER);
     }
 

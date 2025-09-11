@@ -1,6 +1,6 @@
 package io.quarkus.kubernetes.client.deployment;
 
-import static io.quarkus.kubernetes.client.deployment.DevServicesKubernetesProcessor.KUBERNETES_CLIENT_MASTER_URL;
+import static io.quarkus.kubernetes.client.deployment.DevServicesKubernetesProcessor.KUBERNETES_CLIENT_API_SERVER_URL;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.ByteArrayOutputStream;
@@ -68,7 +68,7 @@ abstract class RunningKubeContainer implements ContainerState {
                 .getClusters().get(0).getCluster();
         UserSpec user = kubeConfig.getUsers().get(0).getUser();
         return Map.of(
-                KUBERNETES_CLIENT_MASTER_URL, cluster.getServer(),
+                KUBERNETES_CLIENT_API_SERVER_URL, cluster.getServer(),
                 "quarkus.kubernetes-client.ca-cert-data",
                 cluster.getCertificateAuthorityData(),
                 "quarkus.kubernetes-client.client-cert-data",

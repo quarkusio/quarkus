@@ -1,6 +1,6 @@
 package io.quarkus.kubernetes.client.deployment;
 
-import static io.quarkus.kubernetes.client.deployment.DevServicesKubernetesProcessor.KUBERNETES_CLIENT_MASTER_URL;
+import static io.quarkus.kubernetes.client.deployment.DevServicesKubernetesProcessor.KUBERNETES_CLIENT_API_SERVER_URL;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -71,7 +71,7 @@ public class StartableKubernetesContainer implements Startable {
 
     static Map<String, Function<StartableKubernetesContainer, String>> getKubernetesClientConfigFromRunningContainerKubeConfig() {
         return Map.of(
-                KUBERNETES_CLIENT_MASTER_URL, mapperFor(KUBERNETES_CLIENT_MASTER_URL),
+                KUBERNETES_CLIENT_API_SERVER_URL, mapperFor(KUBERNETES_CLIENT_API_SERVER_URL),
                 "quarkus.kubernetes-client.ca-cert-data",
                 mapperFor("quarkus.kubernetes-client.ca-cert-data"),
                 "quarkus.kubernetes-client.client-cert-data",

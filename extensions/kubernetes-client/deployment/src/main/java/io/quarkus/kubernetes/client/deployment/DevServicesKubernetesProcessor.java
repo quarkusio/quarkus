@@ -9,10 +9,8 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,34 +26,30 @@ import com.dajudge.kindcontainer.KubernetesContainer;
 import com.dajudge.kindcontainer.KubernetesImageSpec;
 import com.dajudge.kindcontainer.KubernetesVersionEnum;
 
-import io.fabric8.kubernetes.api.model.Endpoints;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.ReplicationController;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.apps.ReplicaSet;
-import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
+import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClusterFixtures;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor;
 import io.quarkus.kubernetes.client.spi.KubernetesDevServiceInfoBuildItem;
@@ -69,7 +63,7 @@ public class DevServicesKubernetesProcessor {
     static final int KUBERNETES_PORT = 6443;
     private static final String KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG = "quarkus.kubernetes-client.devservices.override-kubeconfig";
     private static final Logger log = Logger.getLogger(DevServicesKubernetesProcessor.class);
-    static final String KUBERNETES_CLIENT_MASTER_URL = "quarkus.kubernetes-client.api-server-url";
+    static final String KUBERNETES_CLIENT_API_SERVER_URL = "quarkus.kubernetes-client.api-server-url";
     private static final String DEFAULT_MASTER_URL_ENDING_WITH_SLASH = Config.DEFAULT_MASTER_URL + "/";
     private static final ContainerLocator KubernetesContainerLocator = locateContainerWithLabels(KUBERNETES_PORT,
             DEV_SERVICE_LABEL);
@@ -135,8 +129,9 @@ public class DevServicesKubernetesProcessor {
                             .startable(() -> container)
                             .configProvider(
                                     StartableKubernetesContainer.getKubernetesClientConfigFromRunningContainerKubeConfig())
-                            .postStartHook(unused -> log.info(
-                                    "Dev Services for Kubernetes started. Other Quarkus applications in dev mode will find the cluster automatically."))
+                            .postStartHook(started -> log.infof(
+                                    "Dev Services for Kubernetes started at %s. Other Quarkus applications in dev mode will find the cluster automatically.",
+                                    started.getKubeClientConfigFor(KUBERNETES_CLIENT_API_SERVER_URL)))
                             .build();
 
                     devServicesKube.produce(new KubernetesDevServiceInfoBuildItem(
@@ -167,9 +162,9 @@ public class DevServicesKubernetesProcessor {
         }
 
         // Check if kubernetes-client.api-server-url is set
-        if (ConfigUtils.isPropertyNonEmpty(KUBERNETES_CLIENT_MASTER_URL)) {
+        if (ConfigUtils.isPropertyNonEmpty(KUBERNETES_CLIENT_API_SERVER_URL)) {
             log.debug("Not starting Dev Services for Kubernetes as the client has been explicitly configured via "
-                    + KUBERNETES_CLIENT_MASTER_URL);
+                    + KUBERNETES_CLIENT_API_SERVER_URL);
             return true;
         }
 
@@ -227,34 +222,22 @@ public class DevServicesKubernetesProcessor {
     }
 
     /**
-     * Deploys a set of manifests as files in the resources directory to the Kubernetes dev service.
-     * This build step produces a {@link ServiceStartBuildItem} that ensures the Build Step always runs even if no other build
-     * step consumes it.
+     * Prepares configured manifests via {@link KubernetesDevServicesBuildTimeConfig#manifests()} to be applied at runtime
      *
-     * @param kubernetesDevServiceInfoBuildItem This ensures the manifests are deployed after the Kubernetes dev service is
-     *        started.
      * @param kubernetesClientBuildTimeConfig This config is used to read the extension configuration for dev services.
+     * @param clusterFixtures records byte-code to apply configure manifests at runtime
      */
-    @BuildStep
-    @Produce(ServiceStartBuildItem.class)
+    @BuildStep(onlyIf = { IsDevelopment.class, IsTest.class })
+    @Record(ExecutionTime.STATIC_INIT)
     public void applyManifests(
-            KubernetesDevServiceInfoBuildItem kubernetesDevServiceInfoBuildItem,
-            KubernetesClientBuildConfig kubernetesClientBuildTimeConfig) {
-        if (kubernetesDevServiceInfoBuildItem == null) {
-            // Gracefully return in case the Kubernetes dev service could not be spun up.
-            log.warn("Cannot apply manifests because the Kubernetes dev service is not running");
-            return;
-        }
-
+            KubernetesClientBuildConfig kubernetesClientBuildTimeConfig, KubernetesClusterFixtures clusterFixtures) {
         var manifests = kubernetesClientBuildTimeConfig.devservices().manifests();
 
         // Do not run the manifest deployment if no manifests are configured
         if (manifests.isEmpty())
             return;
 
-        try (KubernetesClient client = new KubernetesClientBuilder()
-                .withConfig(Config.fromKubeconfig(kubernetesDevServiceInfoBuildItem.getKubeConfig()))
-                .build()) {
+        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             for (String manifestPath : manifests.get()) {
                 InputStream manifestStream = getManifestStream(manifestPath);
 
@@ -267,47 +250,17 @@ public class DevServicesKubernetesProcessor {
                     try {
                         // A single manifest file may contain multiple resources to deploy
                         List<HasMetadata> resources = client.load(manifestStream).items();
-                        List<HasMetadata> resourcesWithReadiness = new ArrayList<>();
-
-                        if (resources.isEmpty()) {
-                            log.warnf("No resources found in manifest: %s", manifestPath);
-                        } else {
-                            resources.forEach(resource -> {
-                                client.resource(resource).create();
-
-                                if (isReadinessApplicable(resource)) {
-                                    resourcesWithReadiness.add(resource);
-                                }
-                            });
-
-                            resourcesWithReadiness.forEach(resource -> {
-                                log.info("Waiting for " + resource.getClass().getSimpleName() + " "
-                                        + resource.getMetadata().getName()
-                                        + " to be ready...");
-                                client.resource(resource).waitUntilReady(60, TimeUnit.SECONDS);
-                            });
-
-                            log.infof("Applied manifest %s.", manifestPath);
-                        }
+                        // records byte-code to apply the loaded resources at runtime
+                        clusterFixtures.apply(resources);
+                        log.infof("====   Recorded manifest %s to be applied at runtime", manifestPath);
                     } catch (Exception ex) {
-                        log.errorf("Failed to apply manifest %s: %s", manifestPath, ex.getMessage());
+                        log.errorf("Failed to record manifest %s: %s", manifestPath, ex.getMessage());
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to create Kubernetes client while trying to apply manifests.", e);
+            log.error("Failed to create Kubernetes client to load manifests", e);
         }
-    }
-
-    private boolean isReadinessApplicable(HasMetadata item) {
-        return (item instanceof Deployment ||
-                item instanceof io.fabric8.kubernetes.api.model.extensions.Deployment ||
-                item instanceof ReplicaSet ||
-                item instanceof Pod ||
-                item instanceof ReplicationController ||
-                item instanceof Endpoints ||
-                item instanceof Node ||
-                item instanceof StatefulSet);
     }
 
     private InputStream getManifestStream(String manifestPath) throws IOException {

@@ -17,7 +17,7 @@ public class MainContinuousTestingTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot(jar -> jar
-                    .addClass(Main.class)
+                    // Files from this module are added automatically, so no need to add Main.class
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties()), "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MainTest.class));

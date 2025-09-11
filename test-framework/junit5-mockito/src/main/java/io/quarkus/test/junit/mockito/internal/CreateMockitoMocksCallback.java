@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.mockito.Mockito;
@@ -112,6 +113,10 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             if (beanManager.isQualifier(fieldAnnotation.annotationType())) {
                 qualifiers.add(fieldAnnotation);
             }
+        }
+        if (qualifiers.isEmpty()) {
+            // Add @Default as if @InjectMock was a normal @Inject
+            qualifiers.add(Default.Literal.INSTANCE);
         }
         return qualifiers.toArray(new Annotation[0]);
     }

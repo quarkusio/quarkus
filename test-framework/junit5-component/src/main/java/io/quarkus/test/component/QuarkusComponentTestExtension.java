@@ -588,6 +588,10 @@ public class QuarkusComponentTestExtension
                 ret.add(fieldAnnotation);
             }
         }
+        if (ret.isEmpty()) {
+            // Add @Default as if @InjectMock was a normal @Inject
+            ret.add(Default.Literal.INSTANCE);
+        }
         return ret.toArray(new Annotation[0]);
     }
 

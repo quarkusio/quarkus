@@ -35,10 +35,9 @@ public class InjectionPointMetadataWithDynamicLookupTest {
         // but the injection point used does support the required type and qualifiers
         BeanWithInjectionPointMetadata bean = Arc.container().instance(BeanWithInjectionPointMetadata.class).get();
 
-        // this is probably an implementation artifact, not an intentional choice
         bean.assertPresent(ip -> {
             assertEquals(BeanWithInjectionPointMetadata.class, ip.getType());
-            assertEquals(1, ip.getQualifiers().size()); // @Default
+            assertEquals(Set.of(), ip.getQualifiers());
             assertNull(ip.getMember());
             assertNull(ip.getBean());
         });

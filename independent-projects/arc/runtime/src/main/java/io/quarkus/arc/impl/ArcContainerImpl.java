@@ -552,11 +552,6 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private <T> InstanceHandle<T> instanceHandle(Type type, Annotation... qualifiers) {
-        if (qualifiers == null || qualifiers.length == 0) {
-            qualifiers = new Annotation[] { Default.Literal.INSTANCE };
-        } else {
-            registeredQualifiers.verify(qualifiers);
-        }
         return beanInstanceHandle(getBean(type, qualifiers), null, InjectionPointImpl.of(type, qualifiers), null);
     }
 
@@ -596,6 +591,11 @@ public class ArcContainerImpl implements ArcContainer {
 
     @SuppressWarnings("unchecked")
     private <T> InjectableBean<T> getBean(Type requiredType, Annotation... qualifiers) {
+        if (qualifiers == null || qualifiers.length == 0) {
+            qualifiers = new Annotation[] { Default.Literal.INSTANCE };
+        } else {
+            registeredQualifiers.verify(qualifiers);
+        }
         Resolvable resolvable = new Resolvable(requiredType, qualifiers);
         Set<InjectableBean<?>> resolvedBeans = resolved.getValue(resolvable);
         if (resolvedBeans.isEmpty()) {

@@ -36,7 +36,8 @@ public class InjectionPointImpl implements InjectionPoint {
      * @return a new injection point with the given required type and qualifiers
      */
     public static InjectionPointImpl of(Type requiredType, Annotation... qualifiers) {
-        return new InjectionPointImpl(null, requiredType, Set.of(qualifiers), null, Set.of(), null, 0, false);
+        return new InjectionPointImpl(null, requiredType, qualifiers != null ? Set.of(qualifiers) : Set.of(), null, Set.of(),
+                null, 0, false);
     }
 
     private final Type requiredType;

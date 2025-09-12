@@ -24,10 +24,12 @@ public final class ArcInitConfig {
     private ArcInitConfig(Builder builder) {
         this.currentContextFactory = builder.currentContextFactory;
         this.strictCompatibility = builder.strictCompatibility;
+        this.testMode = builder.testMode;
     }
 
     private final boolean strictCompatibility;
     private final CurrentContextFactory currentContextFactory;
+    private final boolean testMode;
 
     public boolean isStrictCompatibility() {
         return strictCompatibility;
@@ -37,14 +39,17 @@ public final class ArcInitConfig {
         return currentContextFactory;
     }
 
+    public boolean isTestMode() {
+        return testMode;
+    }
+
     public static class Builder {
+
         private boolean strictCompatibility;
         private CurrentContextFactory currentContextFactory;
+        private boolean testMode;
 
         private Builder() {
-            // init all values with their defaults
-            this.strictCompatibility = false;
-            this.currentContextFactory = null;
         }
 
         public Builder setStrictCompatibility(boolean strictCompatibility) {
@@ -54,6 +59,11 @@ public final class ArcInitConfig {
 
         public Builder setCurrentContextFactory(CurrentContextFactory currentContextFactory) {
             this.currentContextFactory = currentContextFactory;
+            return this;
+        }
+
+        public Builder setTestMode(boolean testMode) {
+            this.testMode = testMode;
             return this;
         }
 

@@ -43,6 +43,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
@@ -91,14 +92,19 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ArcInitConfig;
 import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.impl.EventBean;
 import io.quarkus.arc.impl.InstanceImpl;
+import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
@@ -486,7 +492,7 @@ public class QuarkusComponentTestExtension
             return;
         }
         // Init ArC
-        Arc.initialize();
+        Arc.initialize(ArcInitConfig.builder().setTestMode(true).build());
 
         QuarkusComponentTestConfiguration configuration = store(context).get(KEY_TEST_CLASS_CONFIG,
                 QuarkusComponentTestConfiguration.class);
@@ -581,6 +587,10 @@ public class QuarkusComponentTestExtension
             if (beanManager.isQualifier(fieldAnnotation.annotationType())) {
                 ret.add(fieldAnnotation);
             }
+        }
+        if (ret.isEmpty()) {
+            // Add @Default as if @InjectMock was a normal @Inject
+            ret.add(Default.Literal.INSTANCE);
         }
         return ret.toArray(new Annotation[0]);
     }
@@ -824,16 +834,24 @@ public class QuarkusComponentTestExtension
                         if (requiredQualifiers.isEmpty()) {
                             requiredQualifiers = Set.of(AnnotationInstance.builder(DotNames.DEFAULT).build());
                         }
-                        unsatisfiedInjectionPoints
-                                .add(new TypeAndQualifiers(Types.jandexType(field.getGenericType()), requiredQualifiers));
+                        TypeAndQualifiers typeAndQualifiers = new TypeAndQualifiers(Types.jandexType(field.getGenericType()),
+                                requiredQualifiers);
+                        if (BuiltinBean.resolve(InjectionPointInfo.fromSyntheticInjectionPoint(typeAndQualifiers)) != null) {
+                            continue;
+                        }
+                        unsatisfiedInjectionPoints.add(typeAndQualifiers);
                     }
                     for (Parameter param : findInjectMockParams(testClass)) {
                         Set<AnnotationInstance> requiredQualifiers = getQualifiers(param, qualifiers);
                         if (requiredQualifiers.isEmpty()) {
                             requiredQualifiers = Set.of(AnnotationInstance.builder(DotNames.DEFAULT).build());
                         }
-                        unsatisfiedInjectionPoints
-                                .add(new TypeAndQualifiers(Types.jandexType(param.getParameterizedType()), requiredQualifiers));
+                        TypeAndQualifiers typeAndQualifiers = new TypeAndQualifiers(
+                                Types.jandexType(param.getParameterizedType()), requiredQualifiers);
+                        if (BuiltinBean.resolve(InjectionPointInfo.fromSyntheticInjectionPoint(typeAndQualifiers)) != null) {
+                            continue;
+                        }
+                        unsatisfiedInjectionPoints.add(typeAndQualifiers);
                     }
 
                     for (TypeAndQualifiers unsatisfied : unsatisfiedInjectionPoints) {
@@ -1222,7 +1240,7 @@ public class QuarkusComponentTestExtension
             BeanManager beanManager = container.beanManager();
             java.lang.reflect.Type requiredType = field.getGenericType();
             Annotation[] qualifiers = getQualifiers(field, beanManager);
-
+            boolean isMock = field.isAnnotationPresent(InjectMock.class);
             Object injectedInstance;
 
             if (Instance.class.isAssignableFrom(QuarkusComponentTestConfiguration.getRawType(requiredType))) {
@@ -1237,31 +1255,52 @@ public class QuarkusComponentTestExtension
                 unsetAction = () -> destroyDependentHandles(unsetHandles);
             } else {
                 InstanceHandle<?> handle = container.instance(requiredType, qualifiers);
-                if (field.isAnnotationPresent(Inject.class)) {
+                InjectableBean<?> bean = handle.getBean();
+                if (isMock) {
+                    // @InjectMock expects a synthetic dummy mock
+                    if (!handle.isAvailable()) {
+                        throw new IllegalStateException(String
+                                .format("The injected field [%s] expects a mocked bean; but obtained null", field));
+                    } else if (bean.getKind() == InjectableBean.Kind.BUILTIN) {
+                        if (!(bean instanceof EventBean)) {
+                            throw new IllegalStateException(
+                                    "Only the jakarta.enterprise.event.Event built-in bean can be mocked: [%s]"
+                                            .formatted(field));
+                        }
+                    } else if (bean.getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
+                        throw new IllegalStateException(String
+                                .format("The injected field [%s] expects a mocked bean; but obtained: %s", field,
+                                        handle.getBean()));
+                    }
+                } else {
+                    // @Inject expects a real component
                     if (!handle.isAvailable()) {
                         throw new IllegalStateException(String
                                 .format("The injected field [%s] expects a real component; but no matching component was registered",
                                         field,
                                         handle.getBean()));
-                    }
-                    if (handle.getBean().getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
+                    } else if (bean.getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
                         throw new IllegalStateException(String
                                 .format("The injected field [%s] expects a real component; but obtained: %s", field,
                                         handle.getBean()));
                     }
-                } else {
-                    if (!handle.isAvailable()) {
-                        throw new IllegalStateException(String
-                                .format("The injected field [%s] expects a mocked bean; but obtained null", field));
-                    }
-                    if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                        throw new IllegalStateException(String
-                                .format("The injected field [%s] expects a mocked bean; but obtained: %s", field,
-                                        handle.getBean()));
-                    }
                 }
-                injectedInstance = handle.get();
-                unsetAction = () -> destroyDependentHandles(List.of(handle));
+                if (isMock && bean instanceof EventBean) {
+                    // Event mocks require special handling
+                    Event<?> mock = Mockito.mock(Event.class);
+                    Object eventInstance = handle.get();
+                    if (eventInstance instanceof Mockable mockable) {
+                        mockable.arc$setMock(mock);
+                    } else {
+                        throw new IllegalStateException(
+                                "%s is not a Mockable Event implementation".formatted(eventInstance.getClass()));
+                    }
+                    injectedInstance = mock;
+                    unsetAction = () -> mockable.arc$clearMock();
+                } else {
+                    injectedInstance = handle.get();
+                    unsetAction = () -> destroyDependentHandles(List.of(handle));
+                }
             }
 
             if (!field.canAccess(testInstance)) {

@@ -69,7 +69,7 @@ public class BeanManagerImpl implements BeanManager {
             InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, null);
             try {
                 return ArcContainerImpl.beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx,
-                        false, null, true).get();
+                        null, null, true).get();
             } finally {
                 InjectionPointProvider.setCurrent(ctx, prev);
             }
@@ -93,7 +93,7 @@ public class BeanManagerImpl implements BeanManager {
             InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, ij);
             try {
                 return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx,
-                        false, null, true).get();
+                        null, null, true).get();
             } finally {
                 InjectionPointProvider.setCurrent(ctx, prev);
             }

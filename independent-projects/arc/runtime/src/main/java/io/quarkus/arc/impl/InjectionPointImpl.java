@@ -8,6 +8,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +27,19 @@ import io.quarkus.arc.InjectableBean;
 
 public class InjectionPointImpl implements InjectionPoint {
 
+    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Object.class, Collections.emptySet(), null, null,
+            null, -1, false);
+
+    /**
+     * @param requiredType
+     * @param qualifiers
+     * @return a new injection point with the given required type and qualifiers
+     */
+    public static InjectionPointImpl of(Type requiredType, Annotation... qualifiers) {
+        return new InjectionPointImpl(null, requiredType, qualifiers != null ? Set.of(qualifiers) : Set.of(), null, Set.of(),
+                null, 0, false);
+    }
+
     private final Type requiredType;
     private final Set<Annotation> qualifiers;
     private final InjectableBean<?> bean;
@@ -37,7 +51,7 @@ public class InjectionPointImpl implements InjectionPoint {
             InjectableBean<?> bean, Set<Annotation> annotations, Member javaMember,
             int position, boolean isTransient) {
         this.requiredType = requiredType;
-        this.qualifiers = CollectionHelpers.toImmutableSmallSet(qualifiers);
+        this.qualifiers = qualifiers != null ? Set.copyOf(qualifiers) : null;
         this.bean = bean;
         if (javaMember instanceof Executable) {
             this.annotated = new InjectionPointImpl.AnnotatedParameterImpl<>(injectionPointType, annotations, position,

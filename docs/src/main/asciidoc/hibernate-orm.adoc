@@ -543,15 +543,19 @@ CriteriaBuilder criteriaBuilder;
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
 
-If a persistence unit is configured at build time,
-by default it is active at runtime,
-that is Quarkus will start the corresponding Hibernate ORM `SessionFactory` on application startup.
+When a persistence unit is configured at build time, the persistence unit is active by default.
+Quarkus starts the corresponding Hibernate ORM `SessionFactory` when the application starts.
 
 To deactivate a persistence unit at runtime, set `quarkus.hibernate-orm[.optional name].active` to `false`.
+
 If a persistence unit is not active:
 
-* The `SessionFactory` will not start during application startup.
-* Accessing the `EntityManagerFactory`/`EntityManager` or `SessionFactory`/`Session` will cause an exception to be thrown.
+* The `SessionFactory` does not start during application startup.
+* Static CDI injection points involving the persistence unit, such as `@Inject SessionFactory sf` or `@Inject Session session`, cause application startup to fail.
+* Dynamic retrieval of the persistence unit, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or an injected `Instance<Session>`, causes an exception to be thrown.
+* Other Quarkus extensions that consume the persistence unit may cause application startup to fail.
++
+In this case, you must also deactivate those other extensions.
 
 This is in particular useful when you want an application to be able
 to xref:datasource.adoc#datasource-active[use one of a pre-determined set of datasources at runtime].
@@ -598,41 +602,53 @@ xref:config-reference.adoc#multiple-profiles[setting `quarkus.profile`]:
 
 %oracle.quarkus.hibernate-orm."oracle".active=true
 %oracle.quarkus.datasource."oracle".active=true
-# Add any pg-related runtime configuration here, prefixed with "%pg."
+# Add any oracle-related runtime configuration here, prefixed with "%oracle."
 ----
 ====
 
-With such a setup, you will need to take care to only ever access the _active_ persistence unit.
-To do so, you may define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] for the default `Session` redirecting to the currently active named `Session`, so that it can be injected directly, like this:
+With this setup, ensure that only the _active_ persistence unit is accessed.
+To achieve this, inject an `InjectableInstance<SessionFactory>` or `InjectableInstance<Session>` with an `@Any` qualifier and call xref:cdi-integration.adoc#inactive-synthetic-beans[`getActive()`].
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    @Any
+    InjectableInstance<Session> session;
+
+    public void doSomething() {
+        Session sessionForActivePersistenceUnit = session.getActive();
+        // ...
+    }
+}
+----
+
+Alternatively, you can define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] for the beans of the default persistence unit.
+This bean producer redirects to the currently active named persistence unit.
+This allows beans to be injected directly, as shown below:
 
 [source,java,indent=0]
 ----
 public class MyProducer {
     @Inject
-    @DataSource("pg")
-    InjectableInstance<AgroalDataSource> pgDataSourceBean; // <1>
-
-    @Inject
-    @DataSource("oracle")
-    InjectableInstance<AgroalDataSource> oracleDataSourceBean;
-
-    @Inject
     @PersistenceUnit("pg")
-    Session pgSessionBean;
+    InjectableInstance<Session> pgSessionBean; // <1>
 
     @Inject
     @PersistenceUnit("oracle")
-    Session oracleSessionBean;
+    InjectableInstance<Session> oracleSessionBean;
 
     @Produces // <2>
     @ApplicationScoped
     public Session session() {
-        if (pgDataSourceBean.getHandle().getBean().isActive()) { // <3>
-            return pgSessionBean;
-        } else if (oracleDataSourceBean.getHandle().getBean().isActive()) { // <3>
-            return oracleSessionBean;
+        if (pgSessionBean.getHandle().getBean().isActive()) { // <3>
+            return pgSessionBean.get();
+        } else if (oracleSessionBean.getHandle().getBean().isActive()) { // <3>
+            return oracleSessionBean.get();
         } else {
-            throw new RuntimeException("No active datasource!");
+            throw new RuntimeException("No active persistence unit!");
         }
     }
 }
@@ -647,13 +663,13 @@ public class MyConsumer {
     }
 }
 ----
-<1> Don't inject a `DataSource` or `AgroalDatasource` directly,
-because that would lead to a failure on startup (can't inject inactive beans).
-Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`.
-<2> Declare a CDI producer method that will define the default session
-as either PostgreSQL or Oracle, depending on what is active.
-<3> Check whether datasource beans are active before retrieving the corresponding session.
-<4> This will get injected with the (only) active session.
+<1> Do not inject a `Session` directly.
+Injecting inactive beans causes a startup failure.
+Instead, inject `InjectableInstance<Session>`.
+<2> Declare a CDI producer method to define the default session.
+It selects either PostgreSQL or Oracle, depending on which persistence unit is active.
+<3> Check if a bean is active before retrieving it.
+<4> Injects the only active persistence unit.
 
 [[persistence-xml]]
 == Setting up and configuring Hibernate ORM with a `persistence.xml`

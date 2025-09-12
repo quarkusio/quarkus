@@ -450,11 +450,11 @@ If a datasource is not active:
 * The datasource does not attempt to connect to the database during application startup.
 * The datasource does not contribute a <<datasource-health-check,health check>>.
 * Static CDI injection points involving the datasource, such as `@Inject DataSource ds` or `@Inject Pool pool`, cause application startup to fail.
-* Dynamic retrieval of the datasource, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or by injecting an `Instance<DataSource>`, causes an exception to be thrown.
+* Dynamic retrieval of the datasource, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or an injected `Instance<DataSource>`, causes an exception to be thrown.
 * Other Quarkus extensions that consume the datasource may cause application startup to fail.
 +
 In this case, you must also deactivate those other extensions.
-To see an example of this scenario, refer to xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide].
+To see an example of this scenario, refer to xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide]. For Hibernate ORM, deactivation of the persistence unit is automatic when the datasource is inactive.
 
 This feature is especially useful when the application must select one datasource from a predefined set at runtime.
 

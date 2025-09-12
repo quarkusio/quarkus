@@ -31,7 +31,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigDocDefault("'true' if Hibernate Search is enabled; 'false' otherwise")
+    @ConfigDocDefault("'true' if Hibernate Search is enabled and the persistence unit is active; 'false' otherwise")
     Optional<Boolean> active();
 
     /**

@@ -15,6 +15,6 @@ public class NoConfigTest {
 
     @Test
     public void testNoConfig() {
-        // we should be able to start the application, even with no configuration at all
+        // we should be able to start the application, even with no (Hibernate/Panache) configuration at all
     }
 }

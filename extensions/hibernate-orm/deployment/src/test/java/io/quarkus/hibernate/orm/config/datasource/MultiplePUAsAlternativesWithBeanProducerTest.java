@@ -11,8 +11,6 @@ import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.agroal.api.AgroalDataSource;
-import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -34,7 +32,7 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
         static QuarkusUnitTest runner = runner("pu-1", "ds-1");
 
         public Pu1ActiveTest() {
-            super("pu-1", "pu-2");
+            super("pu-1", "pu-2", "ds-2");
         }
     }
 
@@ -43,7 +41,7 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
         static QuarkusUnitTest runner = runner("pu-2", "ds-2");
 
         public Pu2ActiveTest() {
-            super("pu-2", "pu-1");
+            super("pu-2", "pu-1", "ds-1");
         }
     }
 
@@ -72,10 +70,12 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     private final String activePuName;
     private final String inactivePuName;
+    private final String inactiveDsName;
 
-    protected MultiplePUAsAlternativesWithBeanProducerTest(String activePuName, String inactivePuName) {
+    protected MultiplePUAsAlternativesWithBeanProducerTest(String activePuName, String inactivePuName, String inactiveDsName) {
         this.activePuName = activePuName;
         this.inactivePuName = inactivePuName;
+        this.inactiveDsName = inactiveDsName;
     }
 
     @Inject
@@ -100,8 +100,12 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
                     .select(Session.class, new PersistenceUnit.PersistenceUnitLiteral(inactivePuName)).get()
                     .find(MyEntity.class, 3L))
                     .hasMessageContainingAll(
-                            "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit " + inactivePuName,
-                            "Hibernate ORM was deactivated through configuration properties");
+                            "Persistence unit '" + inactivePuName + "' was deactivated through configuration properties",
+                            "To activate the persistence unit, set configuration property 'quarkus.hibernate-orm.\""
+                                    + inactivePuName
+                                    + "\".active'"
+                                    + " to 'true' and configure datasource '" + inactiveDsName + "'",
+                            "Refer to https://quarkus.io/guides/datasource for guidance.");
         });
     }
 
@@ -120,30 +124,22 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     private static class MyProducer {
         @Inject
-        @DataSource("ds-1")
-        InjectableInstance<AgroalDataSource> dataSource1Bean;
-
-        @Inject
-        @DataSource("ds-2")
-        InjectableInstance<AgroalDataSource> dataSource2Bean;
-
-        @Inject
         @PersistenceUnit("pu-1")
-        Session pu1SessionBean;
+        InjectableInstance<Session> pu1SessionBean;
 
         @Inject
         @PersistenceUnit("pu-2")
-        Session pu2SessionBean;
+        InjectableInstance<Session> pu2SessionBean;
 
         @Produces
         @ApplicationScoped
         public Session session() {
-            if (dataSource1Bean.getHandle().getBean().isActive()) {
-                return pu1SessionBean;
-            } else if (dataSource2Bean.getHandle().getBean().isActive()) {
-                return pu2SessionBean;
+            if (pu1SessionBean.getHandle().getBean().isActive()) {
+                return pu1SessionBean.get();
+            } else if (pu2SessionBean.getHandle().getBean().isActive()) {
+                return pu2SessionBean.get();
             } else {
-                throw new RuntimeException("No active datasource!");
+                throw new RuntimeException("No active persistence unit!");
             }
         }
     }

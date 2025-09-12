@@ -193,6 +193,7 @@
                       <cluster.deprecation_indexing.enabled>false</cluster.deprecation_indexing.enabled>
                       <indices.lifecycle.history_index_enabled>false</indices.lifecycle.history_index_enabled>
                       <slm.history_index_enabled>false</slm.history_index_enabled>
+                      <ingest.geoip.downloader.enabled>false</ingest.geoip.downloader.enabled>
                     </env>
                     <ports>
                       <port>9200:9200</port>

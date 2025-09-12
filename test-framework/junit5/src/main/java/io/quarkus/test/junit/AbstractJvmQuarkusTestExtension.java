@@ -139,8 +139,8 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
         }
 
-        // At this point, the TCCL is usually the FacadeClassLoader, but sometimes it's a deployment classloader (for multimodule tests), or the runtime classloader (for nested tests)
-        // Getting back to the FacadeClassLoader is non-trivial. We can't use the singleton on the class, because we will be accessing it from different classloaders.
+        // At this point, the TCCL is sometimes a deployment classloader (for multimodule tests), or the runtime classloader (for nested tests), and sometimes a FacadeClassLoader in continuous cases
+        // Getting back to a FacadeClassLoader is non-trivial. We can't use the singleton on the class, because we will be accessing it from different classloaders.
         // We can't have a hook back from the runtime classloader to the facade classloader, because
         // when evaluating execution conditions for native tests, the test will have been loaded with the system classloader, not the runtime classloader.
         // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook our config on that.

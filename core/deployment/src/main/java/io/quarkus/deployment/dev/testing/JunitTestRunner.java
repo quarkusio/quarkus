@@ -98,7 +98,7 @@ public class JunitTestRunner {
     public static final DotName TESTABLE = DotName.createSimple(Testable.class.getName());
     public static final DotName NESTED = DotName.createSimple(Nested.class.getName());
     private static final String ARCHUNIT_FIELDSOURCE_FQCN = "com.tngtech.archunit.junit.FieldSource";
-    public static final String FACADE_CLASS_LOADER_NAME = "io.quarkus.test.junit.classloading.FacadeClassLoader";
+    private static final String FACADE_CLASS_LOADER_NAME = "io.quarkus.test.junit.classloading.FacadeClassLoader";
 
     private final long runId;
     private final DevModeContext.ModuleInfo moduleInfo;

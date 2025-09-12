@@ -15,7 +15,6 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
 
     public static String STRIMZI_KAFKA_IMAGE_KEY = "strimzi.kafka.image";
     public static String KAFKA_PORT_KEY = "kafka.port";
-    public static String KRAFT_KEY = "kraft";
 
     protected String strimziKafkaContainerImage;
     protected Integer kafkaPort;
@@ -56,18 +55,15 @@ public class KafkaCompanionResource implements QuarkusTestResourceLifecycleManag
             strimziKafkaContainerImage = initArgs.get(STRIMZI_KAFKA_IMAGE_KEY);
             String portString = initArgs.get(KAFKA_PORT_KEY);
             kafkaPort = portString == null ? null : Integer.parseInt(portString);
-            kraft = Boolean.parseBoolean(initArgs.get(KRAFT_KEY));
-            kafka = createContainer(strimziKafkaContainerImage);
-            if (kraft) {
-                kafka.withBrokerId(1).withKraft();
-            }
+            kafka = createContainer(strimziKafkaContainerImage)
+                    .withNodeId(1)
+                    .withBrokerId(1);
             if (kafkaPort != null) {
                 kafka.withPort(kafkaPort);
             }
             Map<String, String> configMap = new HashMap<>(initArgs);
             configMap.remove(STRIMZI_KAFKA_IMAGE_KEY);
             configMap.remove(KAFKA_PORT_KEY);
-            configMap.remove(KRAFT_KEY);
             kafka.withKafkaConfigurationMap(configMap);
         }
     }

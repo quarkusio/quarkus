@@ -18,12 +18,15 @@
 
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
+import static io.quarkus.vertx.http.runtime.attribute.VertxMDCDataAttribute.ORIGINAL_OTEL_TRACE_ID_KEY;
+
 import java.util.Collections;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.quarkus.vertx.core.runtime.VertxMDC;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttribute;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeParser;
 import io.quarkus.vertx.http.runtime.attribute.SubstituteEmptyWrapper;
@@ -152,12 +155,20 @@ public class AccessLogHandler implements Handler<RoutingContext> {
             rc.next();
             return;
         }
+
+        // Cache traceId because when the request is done, the OTel related data in the VertxMDC will have been cleared.
+        // We only store the traceId because there can be many spans related with the request.
+        rc.put(ORIGINAL_OTEL_TRACE_ID_KEY, VertxMDC.INSTANCE.get("traceId"));
+
         QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
                 accessLogReceiver.logMessage(tokens.readAttribute(rc));
             }
         });
+
+        rc.remove(ORIGINAL_OTEL_TRACE_ID_KEY);
+
         if (consolidateReroutedRequests) {
             rc.put(OriginalRequestContext.RC_DATA_KEY, new OriginalRequestContext(rc));
         }

@@ -48,6 +48,8 @@ public class HandshakeRequestTest {
         assertEquals(baseUri.getPort(), reply.getInteger("port"));
         assertEquals("/head", reply.getString("path"));
         assertEquals(query, reply.getString("query"));
+        assertEquals("127.0.0.1", reply.getString("localAddress"));
+        assertEquals("127.0.0.1", reply.getString("remoteAddress"));
     }
 
     @WebSocket(path = "/head")
@@ -67,7 +69,9 @@ public class HandshakeRequestTest {
                     .put("host", connection.handshakeRequest().host())
                     .put("port", connection.handshakeRequest().port())
                     .put("path", connection.handshakeRequest().path())
-                    .put("query", connection.handshakeRequest().query());
+                    .put("query", connection.handshakeRequest().query())
+                    .put("localAddress", connection.handshakeRequest().localAddress().toString())
+                    .put("remoteAddress", connection.handshakeRequest().remoteAddress().toString());
         }
 
     }

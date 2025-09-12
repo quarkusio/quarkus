@@ -1861,8 +1861,6 @@ To enable logging, add the `quarkus.rest-client.logging.scope` property to your 
 
 As HTTP messages can have large bodies, we limit the amount of body characters logged. The default limit is `100`, you can change it by specifying `quarkus.rest-client.logging.body-limit`.
 
-NOTE: REST Client is logging the traffic with level DEBUG and does not alter logger properties. You may need to adjust your logger configuration to use this feature.
-
 These configuration properties work globally for all clients injected by CDI.
 If you want configure logging for a specific declarative client, you should do it by specifying named "client" properties, also known as `quarkus.rest-client."client".logging.*` properties.
 

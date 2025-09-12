@@ -306,6 +306,11 @@ public class HibernateValidatorRecorder {
         @Override
         public boolean isReachable(Object entity, Path.Node traversableProperty, Class<?> rootBeanType,
                 Path pathToTraversableObject, ElementType elementType) {
+            if (entity == null) {
+                // The entity can be null if we are validating values, as that's when the validation context does not have the root object,
+                //  In other cases we shouldn't even reach the traversable resolver when the validated bean/entity is null.
+                return true;
+            }
             return attributeLoadedPredicate.test(entity, traversableProperty.getName());
         }
 

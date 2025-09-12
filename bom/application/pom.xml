@@ -52,7 +52,7 @@
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.12</smallrye-open-api.version>
         <smallrye-graphql.version>2.14.1</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.9.2</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.9.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.1</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -4408,58 +4408,10 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance</artifactId>
+                <artifactId>smallrye-fault-tolerance-bom</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-api</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-apiimpl</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-autoconfig-core</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-core</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-context-propagation</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-kotlin</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-mutiny</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-standalone</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-tracing-propagation</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-fault-tolerance-vertx</artifactId>
-                <version>${smallrye-fault-tolerance.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>

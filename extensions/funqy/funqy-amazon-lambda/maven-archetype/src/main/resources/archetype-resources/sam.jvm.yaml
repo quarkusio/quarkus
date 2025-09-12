@@ -34,7 +34,7 @@ AWSTemplateFormatVersion: '2010-09-09'
       Type: AWS::Serverless::Function
       Properties:
         Handler: io.quarkus.funqy.lambda.FunqyStreamHandler::handleRequest
-        Runtime: java8
+        Runtime: java21
         CodeUri: target/${artifactId}-${version}-runner.jar
         MemorySize: 128
         Timeout: 15

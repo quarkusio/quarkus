@@ -1872,9 +1872,6 @@ quarkus.rest-client.logging.scope=request-response
 quarkus.rest-client.logging.body-limit=50
 
 quarkus.rest-client.extensions-api.scope=all
-
-quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
-quarkus.log.console.level=DEBUG
 ----
 
 [TIP]

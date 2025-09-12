@@ -21,8 +21,9 @@ public final class DeploymentJsonRpcMethod extends AbstractJsonRpcMethod {
     public DeploymentJsonRpcMethod(String methodName,
             String description,
             EnumSet<Usage> usage,
+            boolean mcpEnabledAsDefault,
             Function<Map<String, String>, ?> action) {
-        super(methodName, description, usage);
+        super(methodName, description, usage, mcpEnabledAsDefault);
         this.action = action;
     }
 
@@ -30,16 +31,18 @@ public final class DeploymentJsonRpcMethod extends AbstractJsonRpcMethod {
             String description,
             Map<String, Parameter> parameters,
             EnumSet<Usage> usage,
+            boolean mcpEnabledAsDefault,
             Function<Map<String, String>, ?> action) {
-        super(methodName, description, parameters, usage);
+        super(methodName, description, parameters, usage, mcpEnabledAsDefault);
         this.action = action;
     }
 
     public DeploymentJsonRpcMethod(String methodName,
             String description,
             EnumSet<Usage> usage,
+            boolean mcpEnabledAsDefault,
             BiFunction<Object, Map<String, String>, ?> assistantAction) {
-        super(methodName, description, usage);
+        super(methodName, description, usage, mcpEnabledAsDefault);
         this.assistantAction = assistantAction;
     }
 
@@ -47,8 +50,9 @@ public final class DeploymentJsonRpcMethod extends AbstractJsonRpcMethod {
             String description,
             Map<String, Parameter> parameters,
             EnumSet<Usage> usage,
+            boolean mcpEnabledAsDefault,
             BiFunction<Object, Map<String, String>, ?> assistantAction) {
-        super(methodName, description, parameters, usage);
+        super(methodName, description, parameters, usage, mcpEnabledAsDefault);
         this.assistantAction = assistantAction;
     }
 

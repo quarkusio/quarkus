@@ -145,7 +145,6 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                 public void run() {
                     Context context = Vertx.currentContext();
                     contextSupport.start();
-                    securitySupport.start();
                     action.apply(message).subscribe().with(
                             v -> {
                                 context.runOnContext(contextSupportEnd);
@@ -163,7 +162,6 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                 public Void call() {
                     Context context = Vertx.currentContext();
                     contextSupport.start();
-                    securitySupport.start();
                     action.apply(message).subscribe().with(
                             v -> {
                                 context.runOnContext(contextSupportEnd);
@@ -179,7 +177,6 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         } else {
             // Event loop
             contextSupport.start();
-            securitySupport.start();
             action.apply(message).subscribe().with(
                     v -> {
                         contextSupport.end(terminateSession);
@@ -212,7 +209,6 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                         public void run() {
                             Context context = Vertx.currentContext();
                             contextSupport.start();
-                            securitySupport.start();
                             action.apply(throwable).subscribe().with(
                                     v -> {
                                         context.runOnContext(contextSupportEnd);
@@ -230,7 +226,6 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                         public Void call() {
                             Context context = Vertx.currentContext();
                             contextSupport.start();
-                            securitySupport.start();
                             action.apply(throwable).subscribe().with(
                                     v -> {
                                         context.runOnContext(contextSupportEnd);
@@ -249,7 +244,6 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                         public void handle(Void event) {
                             Context context = Vertx.currentContext();
                             contextSupport.start();
-                            securitySupport.start();
                             action.apply(throwable).subscribe().with(
                                     v -> {
                                         context.runOnContext(contextSupportEnd);

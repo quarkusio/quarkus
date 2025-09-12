@@ -32,8 +32,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
-import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -70,6 +68,7 @@ public class DevServicesKubernetesProcessor {
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     public DevServicesResultBuildItem setupKubernetesDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem compose,
@@ -78,12 +77,16 @@ public class DevServicesKubernetesProcessor {
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetwork,
             DevServicesConfig devServicesConfig,
             BuildProducer<KubernetesDevServiceInfoBuildItem> devServicesKube,
-            Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
+            Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest,
+            KubernetesClusterFixtures clusterFixtures) {
         // If the dev service is disabled, we return null to indicate that no dev service was started.
         final var kubeDevServiceConfig = kubernetesClientBuildTimeConfig.devservices();
         if (devServiceDisabled(dockerStatusBuildItem, kubeDevServiceConfig, devServiceKubeRequest)) {
             return null;
         }
+
+        // record byte-code to apply manifests at runtime if needed
+        prepareManifestsForApplication(kubeDevServiceConfig, clusterFixtures);
 
         final var launchMode = launchModeBI.getLaunchMode();
         final var useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
@@ -224,14 +227,13 @@ public class DevServicesKubernetesProcessor {
     /**
      * Prepares configured manifests via {@link KubernetesDevServicesBuildTimeConfig#manifests()} to be applied at runtime
      *
-     * @param kubernetesClientBuildTimeConfig This config is used to read the extension configuration for dev services.
+     * @param kubeDevServiceConfig This config is used to read the extension configuration for dev services.
      * @param clusterFixtures records byte-code to apply configure manifests at runtime
      */
-    @BuildStep(onlyIf = { IsDevelopment.class, IsTest.class })
-    @Record(ExecutionTime.STATIC_INIT)
-    public void applyManifests(
-            KubernetesClientBuildConfig kubernetesClientBuildTimeConfig, KubernetesClusterFixtures clusterFixtures) {
-        var manifests = kubernetesClientBuildTimeConfig.devservices().manifests();
+    private void prepareManifestsForApplication(
+            KubernetesDevServicesBuildTimeConfig kubeDevServiceConfig,
+            KubernetesClusterFixtures clusterFixtures) {
+        var manifests = kubeDevServiceConfig.manifests();
 
         // Do not run the manifest deployment if no manifests are configured
         if (manifests.isEmpty())
@@ -252,7 +254,7 @@ public class DevServicesKubernetesProcessor {
                         List<HasMetadata> resources = client.load(manifestStream).items();
                         // records byte-code to apply the loaded resources at runtime
                         clusterFixtures.apply(resources);
-                        log.infof("====   Recorded manifest %s to be applied at runtime", manifestPath);
+                        log.infof("Recorded manifest %s to be applied at runtime", manifestPath);
                     } catch (Exception ex) {
                         log.errorf("Failed to record manifest %s: %s", manifestPath, ex.getMessage());
                     }

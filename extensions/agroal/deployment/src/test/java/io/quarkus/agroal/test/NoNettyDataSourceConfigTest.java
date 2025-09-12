@@ -29,7 +29,6 @@ public class NoNettyDataSourceConfigTest {
                             "io.quarkus:quarkus-resteasy-server-common-deployment, io.quarkus:quarkus-resteasy-server-common," +
                             "io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-vertx-http-deployment," +
                             "io.quarkus:quarkus-netty,io.quarkus:quarkus-netty-deployment," +
-                            "io.quarkus:quarkus-smallrye-metrics,io.quarkus:quarkus-smallrye-metrics-deployment," +
                             "io.quarkus:quarkus-smallrye-open-api,io.quarkus:quarkus-smallrye-open-api-deployment," +
                             "io.quarkus:quarkus-smallrye-health-deployment,io.quarkus:quarkus-smallrye-health,");
 

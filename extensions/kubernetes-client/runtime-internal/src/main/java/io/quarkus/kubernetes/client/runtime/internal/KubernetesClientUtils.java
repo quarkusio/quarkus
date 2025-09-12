@@ -22,41 +22,36 @@ public class KubernetesClientUtils {
                 .orElse(false);
         Config base = Config.autoConfigure(null);
         boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : globalTrustAll;
-        return new ConfigBuilder()
-                .withTrustCerts(trustAll)
-                .withWatchReconnectInterval(
-                        millisAsInt(buildConfig.watchReconnectInterval()).orElse(base.getWatchReconnectInterval()))
-                .withWatchReconnectLimit(buildConfig.watchReconnectLimit().orElse(base.getWatchReconnectLimit()))
-                .withConnectionTimeout(millisAsInt(buildConfig.connectionTimeout()).orElse(base.getConnectionTimeout()))
-                .withRequestTimeout(millisAsInt(buildConfig.requestTimeout()).orElse(base.getRequestTimeout()))
-                .withMasterUrl(buildConfig.apiServerUrl().or(() -> buildConfig.masterUrl()).orElse(base.getMasterUrl()))
-                .withNamespace(buildConfig.namespace().orElse(base.getNamespace()))
-                .withUsername(buildConfig.username().orElse(base.getUsername()))
-                .withPassword(buildConfig.password().orElse(base.getPassword()))
-                .withOauthToken(buildConfig.token().orElse(base.getOauthToken()))
-                .withCaCertFile(buildConfig.caCertFile().orElse(base.getCaCertFile()))
-                .withCaCertData(buildConfig.caCertData().orElse(base.getCaCertData()))
-                .withClientCertFile(buildConfig.clientCertFile().orElse(base.getClientCertFile()))
-                .withClientCertData(buildConfig.clientCertData().orElse(base.getClientCertData()))
-                .withClientKeyFile(buildConfig.clientKeyFile().orElse(base.getClientKeyFile()))
-                .withClientKeyData(buildConfig.clientKeyData().orElse(base.getClientKeyData()))
-                .withClientKeyPassphrase(buildConfig.clientKeyPassphrase().orElse(base.getClientKeyPassphrase()))
-                .withClientKeyAlgo(buildConfig.clientKeyAlgo().orElse(base.getClientKeyAlgo()))
-                .withHttpProxy(buildConfig.httpProxy().orElse(base.getHttpProxy()))
-                .withHttpsProxy(buildConfig.httpsProxy().orElse(base.getHttpsProxy()))
-                .withProxyUsername(buildConfig.proxyUsername().orElse(base.getProxyUsername()))
-                .withProxyPassword(buildConfig.proxyPassword().orElse(base.getProxyPassword()))
-                .withNoProxy(buildConfig.noProxy().map(list -> list.toArray(new String[0])).orElse(base.getNoProxy()))
-                .withHttp2Disable(base.isHttp2Disable())
-                .withRequestRetryBackoffInterval(millisAsInt(buildConfig.requestRetryBackoffInterval())
-                        .orElse(base.getRequestRetryBackoffInterval()))
-                .withRequestRetryBackoffLimit(buildConfig.requestRetryBackoffLimit().orElse(base.getRequestRetryBackoffLimit()))
-                .build();
+        final var configBuilder = new ConfigBuilder(base).withTrustCerts(trustAll);
+        buildConfig.watchReconnectInterval().ifPresent(d -> configBuilder.withWatchReconnectInterval(millisAsInt(d)));
+        buildConfig.watchReconnectLimit().ifPresent(configBuilder::withWatchReconnectLimit);
+        buildConfig.connectionTimeout().ifPresent(d -> configBuilder.withConnectionTimeout(millisAsInt(d)));
+        buildConfig.requestTimeout().ifPresent(d -> configBuilder.withRequestTimeout(millisAsInt(d)));
+        buildConfig.apiServerUrl().or(buildConfig::masterUrl).ifPresent(configBuilder::withMasterUrl);
+        buildConfig.namespace().ifPresent(configBuilder::withNamespace);
+        buildConfig.username().ifPresent(configBuilder::withUsername);
+        buildConfig.password().ifPresent(configBuilder::withPassword);
+        buildConfig.token().ifPresent(configBuilder::withOauthToken);
+        buildConfig.caCertFile().ifPresent(configBuilder::withCaCertFile);
+        buildConfig.caCertData().ifPresent(configBuilder::withCaCertData);
+        buildConfig.clientCertFile().ifPresent(configBuilder::withClientCertFile);
+        buildConfig.clientCertData().ifPresent(configBuilder::withClientCertData);
+        buildConfig.clientKeyFile().ifPresent(configBuilder::withClientKeyFile);
+        buildConfig.clientKeyData().ifPresent(configBuilder::withClientKeyData);
+        buildConfig.clientKeyAlgo().ifPresent(configBuilder::withClientKeyAlgo);
+        buildConfig.clientKeyPassphrase().ifPresent(configBuilder::withClientKeyPassphrase);
+        buildConfig.httpProxy().ifPresent(configBuilder::withHttpProxy);
+        buildConfig.httpsProxy().ifPresent(configBuilder::withHttpsProxy);
+        buildConfig.proxyUsername().ifPresent(configBuilder::withProxyUsername);
+        buildConfig.proxyPassword().ifPresent(configBuilder::withProxyPassword);
+        buildConfig.noProxy().ifPresent(list -> list.toArray(new String[0]));
+        buildConfig.requestRetryBackoffInterval().ifPresent(d -> configBuilder.withRequestRetryBackoffInterval(millisAsInt(d)));
+        buildConfig.requestRetryBackoffLimit().ifPresent(configBuilder::withRequestRetryBackoffLimit);
+        return configBuilder.build();
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static Optional<Integer> millisAsInt(Optional<Duration> duration) {
-        return duration.map(d -> (int) d.toMillis());
+    private static int millisAsInt(Duration duration) {
+        return (int) duration.toMillis();
     }
 
     public static KubernetesClient createClient(KubernetesClientBuildConfig buildConfig) {
@@ -66,43 +61,41 @@ public class KubernetesClientUtils {
     public static KubernetesClient createClient() {
         org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
         Config base = Config.autoConfigure(null);
-        return new KubernetesClientBuilder().withConfig(new ConfigBuilder()
-                .withTrustCerts(config.getOptionalValue(PREFIX + "trust-certs", Boolean.class).orElse(base.isTrustCerts()))
-                .withWatchReconnectLimit(config.getOptionalValue(PREFIX + "watch-reconnect-limit", Integer.class)
-                        .orElse(base.getWatchReconnectLimit()))
-                .withWatchReconnectInterval((int) config.getOptionalValue(PREFIX + "watch-reconnect-interval", Duration.class)
-                        .orElse(Duration.ofMillis(base.getWatchReconnectInterval())).toMillis())
-                .withConnectionTimeout((int) config.getOptionalValue(PREFIX + "connection-timeout", Duration.class)
-                        .orElse(Duration.ofMillis(base.getConnectionTimeout())).toMillis())
-                .withRequestTimeout((int) config.getOptionalValue(PREFIX + "request-timeout", Duration.class)
-                        .orElse(Duration.ofMillis(base.getRequestTimeout())).toMillis())
-                .withMasterUrl(config.getOptionalValue(PREFIX + "api-server-url", String.class)
-                        .or(() -> config.getOptionalValue(PREFIX + "master-url", String.class)).orElse(base.getMasterUrl()))
-                .withNamespace(config.getOptionalValue(PREFIX + "namespace", String.class).orElse(base.getNamespace()))
-                .withUsername(config.getOptionalValue(PREFIX + "username", String.class).orElse(base.getUsername()))
-                .withPassword(config.getOptionalValue(PREFIX + "password", String.class).orElse(base.getPassword()))
-                .withCaCertFile(config.getOptionalValue(PREFIX + "ca-cert-file", String.class).orElse(base.getCaCertFile()))
-                .withCaCertData(config.getOptionalValue(PREFIX + "ca-cert-data", String.class).orElse(base.getCaCertData()))
-                .withClientCertFile(
-                        config.getOptionalValue(PREFIX + "client-cert-file", String.class).orElse(base.getClientCertFile()))
-                .withClientCertData(
-                        config.getOptionalValue(PREFIX + "client-cert-data", String.class).orElse(base.getClientCertData()))
-                .withClientKeyFile(
-                        config.getOptionalValue(PREFIX + "client-key-file", String.class).orElse(base.getClientKeyFile()))
-                .withClientKeyData(
-                        config.getOptionalValue(PREFIX + "client-key-data", String.class).orElse(base.getClientKeyData()))
-                .withClientKeyPassphrase(config.getOptionalValue(PREFIX + "client-key-passphrase", String.class)
-                        .orElse(base.getClientKeyPassphrase()))
-                .withClientKeyAlgo(
-                        config.getOptionalValue(PREFIX + "client-key-algo", String.class).orElse(base.getClientKeyAlgo()))
-                .withHttpProxy(config.getOptionalValue(PREFIX + "http-proxy", String.class).orElse(base.getHttpProxy()))
-                .withHttpsProxy(config.getOptionalValue(PREFIX + "https-proxy", String.class).orElse(base.getHttpsProxy()))
-                .withProxyUsername(
-                        config.getOptionalValue(PREFIX + "proxy-username", String.class).orElse(base.getProxyUsername()))
-                .withProxyPassword(
-                        config.getOptionalValue(PREFIX + "proxy-password", String.class).orElse(base.getProxyPassword()))
-                .withNoProxy(config.getOptionalValue(PREFIX + "no-proxy", String[].class).orElse(base.getNoProxy()))
-                .build())
-                .build();
+        final var configBuilder = new ConfigBuilder(base);
+        optional(config, "trust-certs", Boolean.class).ifPresent(configBuilder::withTrustCerts);
+        optional(config, "watch-reconnect-limit", Integer.class).ifPresent(configBuilder::withWatchReconnectLimit);
+        optional(config, "watch-reconnect-interval", Duration.class)
+                .map(KubernetesClientUtils::millisAsInt)
+                .ifPresent(configBuilder::withWatchReconnectInterval);
+        optional(config, "connection-timeout", Duration.class)
+                .map(KubernetesClientUtils::millisAsInt)
+                .ifPresent(configBuilder::withConnectionTimeout);
+        optional(config, "request-timeout", Duration.class)
+                .map(KubernetesClientUtils::millisAsInt)
+                .ifPresent(configBuilder::withRequestTimeout);
+        optional(config, "api-server-url", String.class)
+                .or(() -> optional(config, "master-url", String.class))
+                .ifPresent(configBuilder::withMasterUrl);
+        optional(config, "namespace", String.class).ifPresent(configBuilder::withNamespace);
+        optional(config, "username", String.class).ifPresent(configBuilder::withUsername);
+        optional(config, "password", String.class).ifPresent(configBuilder::withPassword);
+        optional(config, "ca-cert-file", String.class).ifPresent(configBuilder::withCaCertFile);
+        optional(config, "ca-cert-data", String.class).ifPresent(configBuilder::withCaCertData);
+        optional(config, "client-cert-file", String.class).ifPresent(configBuilder::withClientCertFile);
+        optional(config, "client-cert-data", String.class).ifPresent(configBuilder::withClientCertData);
+        optional(config, "client-key-file", String.class).ifPresent(configBuilder::withClientKeyFile);
+        optional(config, "client-key-data", String.class).ifPresent(configBuilder::withClientKeyData);
+        optional(config, "client-key-passphrase", String.class).ifPresent(configBuilder::withClientKeyPassphrase);
+        optional(config, "client-key-algo", String.class).ifPresent(configBuilder::withClientKeyAlgo);
+        optional(config, "http-proxy", String.class).ifPresent(configBuilder::withHttpProxy);
+        optional(config, "https-proxy", String.class).ifPresent(configBuilder::withHttpsProxy);
+        optional(config, "proxy-username", String.class).ifPresent(configBuilder::withProxyUsername);
+        optional(config, "proxy-password", String.class).ifPresent(configBuilder::withProxyPassword);
+        optional(config, "no-proxy", String[].class).ifPresent(configBuilder::withNoProxy);
+        return new KubernetesClientBuilder().withConfig(configBuilder.build()).build();
+    }
+
+    private static <T> Optional<T> optional(org.eclipse.microprofile.config.Config config, String key, Class<T> valueType) {
+        return config.getOptionalValue(PREFIX + key, valueType);
     }
 }

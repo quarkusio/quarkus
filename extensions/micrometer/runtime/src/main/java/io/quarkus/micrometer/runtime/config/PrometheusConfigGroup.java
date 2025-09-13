@@ -44,4 +44,13 @@ public interface PrometheusConfigGroup extends MicrometerConfig.CapabilityEnable
      */
     @WithDefault("true")
     boolean defaultRegistry();
+
+    /**
+     * The output format for Prometheus metrics.
+     * <p>
+     * By default, metrics are exported using the OpenMetrics format (application/openmetrics-text).
+     * Set this to {@code PLAIN} to use the legacy Prometheus text format (text/plain).
+     */
+    @WithDefault("OPENMETRICS")
+    PrometheusFormat format();
 }

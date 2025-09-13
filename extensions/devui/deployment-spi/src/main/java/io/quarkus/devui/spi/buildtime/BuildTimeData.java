@@ -7,6 +7,7 @@ public class BuildTimeData {
     private Object content;
     private String description;
     private String contentType = "application/json"; // default
+    private boolean mcpEnabledAsDefault = false;
 
     public BuildTimeData() {
 
@@ -21,9 +22,16 @@ public class BuildTimeData {
         this.description = description;
     }
 
-    public BuildTimeData(Object content, String description, String contentType) {
+    public BuildTimeData(Object content, String description, boolean mcpEnabledAsDefault) {
         this.content = content;
         this.description = description;
+        this.mcpEnabledAsDefault = mcpEnabledAsDefault;
+    }
+
+    public BuildTimeData(Object content, String description, boolean mcpEnabledAsDefault, String contentType) {
+        this.content = content;
+        this.description = description;
+        this.mcpEnabledAsDefault = mcpEnabledAsDefault;
         this.contentType = contentType;
     }
 
@@ -49,5 +57,13 @@ public class BuildTimeData {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public boolean isMcpEnabledAsDefault() {
+        return mcpEnabledAsDefault;
+    }
+
+    public void setMcpEnabledAsDefault(boolean mcpEnabledAsDefault) {
+        this.mcpEnabledAsDefault = mcpEnabledAsDefault;
     }
 }

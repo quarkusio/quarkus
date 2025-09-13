@@ -4,13 +4,12 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
-import '@vaadin/tabs';
-import '@vaadin/tabsheet';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import '@qomponent/qui-code-block';
 import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import '@qomponent/qui-switch';
 
 /**
  * This component show all available resources for MCP clients
@@ -19,19 +18,12 @@ export class QwcDevMCPResources extends observeState(LitElement) {
     jsonRpc = new JsonRpc("resources");
 
     static styles = css`
-        :host {
-            height: 100%;
+        .grid {
             display:flex;
-            width: 100%;
-        }
-    
-        vaadin-tabsheet {
-            width: 100%;
-            height: 100%;
-        }
-    
-        vaadin-grid {
-            height: 100%;
+            flex-direction: column;
+            padding-left: 5px;
+            padding-right: 5px;
+            max-width: 100%;
         }
     `;
 
@@ -86,55 +78,47 @@ export class QwcDevMCPResources extends observeState(LitElement) {
                             []
                         )}
                         ${dialogRenderer(() => this._renderResourceContent(), this._selectedResource)}
-                      ></vaadin-dialog>    
-                    <vaadin-tabsheet>
-                        <vaadin-tabs slot="tabs">
-                            <vaadin-tab id="list-tab">List</vaadin-tab>
-                            <vaadin-tab id="raw-tab">Raw json</vaadin-tab>
-                        </vaadin-tabs>
-                        <div tab="list-tab">
-                            <vaadin-grid .items="${this._resources.resources}" .selectedItems="${this._selectedResource}" theme="row-stripes" all-rows-visible 
-                                @active-item-changed="${(e) => {
-                                    const item = e.detail.value;
-                                    this._selectedResource = item ? [item] : [];
-                                    
-                                    if(this._selectedResource.length>0){
-                                        this._readSelectedResourceContents();
-                                    }else{
-                                        this._selectedResourceContent = null;
-                                    }
-                                }}">
-                                <vaadin-grid-sort-column 
-                                    header='Namespace'
-                                    path="name" 
-                                    auto-width
-                                    ${columnBodyRenderer(this._namespaceRenderer, [])}
-                                >
-                                </vaadin-grid-sort-column>
-                                <vaadin-grid-sort-column 
-                                    header='Resource'
-                                    path="name" 
-                                    auto-width
-                                    ${columnBodyRenderer(this._nameRenderer, [])}
-                                >
-                                </vaadin-grid-sort-column>
-                                <vaadin-grid-sort-column 
-                                    header='Description'
-                                    path="description"
-                                    auto-width>
-                                </vaadin-grid-sort-column>
-                            </vaadin-grid>
-                        </div>
-                        <div tab="raw-tab">
-                            <div class="codeBlock">
-                                <qui-code-block 
-                                    mode='json'
-                                    content='${JSON.stringify(this._resources, null, 2)}'
-                                    theme='${themeState.theme.name}'
-                                    showLineNumbers>
-                                </qui-code-block>
-                            </div>
-                    </vaadin-tabsheet>
+                    ></vaadin-dialog>    
+                    <div class="grid">    
+                        <vaadin-grid .items="${this._resources}" .selectedItems="${this._selectedResource}" theme="row-stripes no-border" all-rows-visible 
+                            @active-item-changed="${(e) => {
+                                const item = e.detail.value;
+                                this._selectedResource = item ? [item] : [];
+
+                                if(this._selectedResource.length>0){
+                                    this._readSelectedResourceContents();
+                                }else{
+                                    this._selectedResourceContent = null;
+                                }
+                            }}">
+                            <vaadin-grid-column
+                                header="Enabled"
+                                frozen
+                                auto-width
+                                flex-grow="0"
+                            ${columnBodyRenderer(this._stateRenderer, [])}
+                            ></vaadin-grid-column>
+                            <vaadin-grid-sort-column 
+                                header='Namespace'
+                                path="name" 
+                                auto-width
+                                ${columnBodyRenderer(this._namespaceRenderer, [])}
+                            >
+                            </vaadin-grid-sort-column>
+                            <vaadin-grid-sort-column 
+                                header='Resource'
+                                path="name" 
+                                auto-width
+                                ${columnBodyRenderer(this._nameRenderer, [])}
+                            >
+                            </vaadin-grid-sort-column>
+                            <vaadin-grid-sort-column 
+                                header='Description'
+                                path="description"
+                                auto-width>
+                            </vaadin-grid-sort-column>
+                        </vaadin-grid>
+                    </div>
                 `;
     }
 
@@ -150,7 +134,17 @@ export class QwcDevMCPResources extends observeState(LitElement) {
 
     _loadResources(){
         this.jsonRpc.list().then(jsonRpcResponse => {
-            this._resources = jsonRpcResponse.result;
+            let er = jsonRpcResponse.result.resources;
+            er = (er ?? []).map(o => ({ ...o, enabled: true }));
+            this.jsonRpc.listDisabled().then(jsonRpcResponse => {
+                let dr = jsonRpcResponse.result.resources;
+                dr = (dr ?? []).map(o => ({ ...o, enabled: false }));
+                
+                const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+                
+                this._resources = [...(er ?? []), ...(dr ?? [])]
+                  .sort((a, b) => collator.compare(a?.name ?? '', b?.name ?? ''));
+            });
         });
     }
 
@@ -164,6 +158,15 @@ export class QwcDevMCPResources extends observeState(LitElement) {
     
     _nameRenderer(prop) {
         return html`${prop.name.split('_')[1]}`;
+    }
+
+    _stateRenderer(prop) {
+        
+        if(prop.enabled){  
+            return html`<qui-switch size="small" checked @valueChanged=${() => this._disableTool(prop)}></qui-switch>`;
+        }else{
+            return html`<qui-switch size="small" @valueChanged=${() => this._enableTool(prop)}></qui-switch>`;
+        }
     }
 
     _readSelectedResourceContents(){
@@ -185,6 +188,22 @@ export class QwcDevMCPResources extends observeState(LitElement) {
                 this._busyReading = false;
             });            
         }
+    }
+
+    _disableTool(e){
+        this.jsonRpc.disableResource({name:e.name}).then(jsonRpcResponse => {
+            this._resources = this._resources.map(o =>
+                o === e ? { ...o, enabled: false } : o
+            );
+        });
+    }
+
+    _enableTool(e){
+        this.jsonRpc.enableResource({name:e.name}).then(jsonRpcResponse => {
+            this._resources = this._resources.map(o =>
+                o === e ? { ...o, enabled: true } : o
+            );
+        });
     }
 
     _isJsonSerializable(value) {

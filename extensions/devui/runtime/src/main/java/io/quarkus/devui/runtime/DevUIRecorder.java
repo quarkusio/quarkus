@@ -100,9 +100,10 @@ public class DevUIRecorder {
             String basePath,
             Map<String, String> urlAndPath,
             Map<String, String> descriptions,
+            Map<String, String> mcpDefaultEnabled,
             Map<String, String> contentTypes) {
         DevUIBuildTimeStaticService buildTimeStaticService = beanContainer.beanInstance(DevUIBuildTimeStaticService.class);
-        buildTimeStaticService.addData(basePath, urlAndPath, descriptions, contentTypes);
+        buildTimeStaticService.addData(basePath, urlAndPath, descriptions, mcpDefaultEnabled, contentTypes);
 
         return new DevUIBuildTimeStaticHandler();
     }

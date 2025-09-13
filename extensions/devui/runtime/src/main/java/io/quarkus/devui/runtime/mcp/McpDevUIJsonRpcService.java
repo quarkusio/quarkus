@@ -21,7 +21,7 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
  * Normal Dev UI Json RPC Service for the Dev MPC Screen
  */
 @ApplicationScoped
-public class DevMcpJsonRpcService {
+public class McpDevUIJsonRpcService {
 
     private final BroadcastProcessor<McpClientInfo> connectedClientStream = BroadcastProcessor.create();
 
@@ -68,6 +68,26 @@ public class DevMcpJsonRpcService {
         return this.mcpServerConfiguration;
     }
 
+    public McpServerConfiguration enableMethod(String name) {
+        this.mcpServerConfiguration.enableMethod(name);
+        storeConfiguration(this.mcpServerConfiguration.toProperties());
+        return this.mcpServerConfiguration;
+    }
+
+    public McpServerConfiguration disableMethod(String name) {
+        this.mcpServerConfiguration.disableMethod(name);
+        storeConfiguration(this.mcpServerConfiguration.toProperties());
+        return this.mcpServerConfiguration;
+    }
+
+    public boolean isExplicitlyEnabled(String methodName) {
+        return this.mcpServerConfiguration.isExplicitlyEnabled(methodName);
+    }
+
+    public boolean isExplicitlyDisabled(String methodName) {
+        return this.mcpServerConfiguration.isExplicitlyDisabled(methodName);
+    }
+
     private Properties loadConfiguration() {
         Properties existingProps = new Properties();
 
@@ -94,5 +114,4 @@ public class DevMcpJsonRpcService {
 
     private final Path configDir = Paths.get(System.getProperty("user.home"), ".quarkus");
     private final Path configFile = configDir.resolve("dev-mcp.properties");
-
 }

@@ -20,6 +20,7 @@ public final class JsonRpcMethod {
     private Map<String, Parameter> parameters;
 
     private List<Usage> usage;
+    private boolean mcpEnabledAsDefault = false;
 
     private RuntimeValue runtimeValue;
 
@@ -66,6 +67,14 @@ public final class JsonRpcMethod {
 
     public void setUsage(List<Usage> usage) {
         this.usage = usage;
+    }
+
+    public boolean isMcpEnabledAsDefault() {
+        return mcpEnabledAsDefault;
+    }
+
+    public void setMcpEnabledAsDefault(boolean mcpEnabledAsDefault) {
+        this.mcpEnabledAsDefault = mcpEnabledAsDefault;
     }
 
     public Method getJavaMethod() {

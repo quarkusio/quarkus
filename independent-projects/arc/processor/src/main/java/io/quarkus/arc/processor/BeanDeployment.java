@@ -41,6 +41,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
@@ -1211,14 +1212,14 @@ public class BeanDeployment {
 
             // inherited methods
             ClassInfo aClass = beanClass;
-            Set<Methods.MethodKey> methods = new HashSet<>();
+            Set<MethodSignatureKey> methods = new HashSet<>();
             while (aClass != null) {
                 for (MethodInfo method : aClass.methods()) {
-                    Methods.MethodKey methodDescriptor = new Methods.MethodKey(method);
-                    if (method.isSynthetic() || Methods.isOverriden(methodDescriptor, methods)) {
+                    MethodSignatureKey methodKey = method.signatureKey();
+                    if (method.isSynthetic() || Methods.isOverridden(methodKey, methods)) {
                         continue;
                     }
-                    methods.add(methodDescriptor);
+                    methods.add(methodKey);
                     Collection<AnnotationInstance> methodAnnotations = annotationStore.getAnnotations(method);
                     if (methodAnnotations.isEmpty()) {
                         continue;

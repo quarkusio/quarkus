@@ -17,6 +17,25 @@
         <gradle-wrapper.path>${project.basedir}/../gradle</gradle-wrapper.path>
         <gradle.executable>gradlew</gradle.executable>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>log4j-jboss-logmanager</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <resources>
             <resource>
@@ -30,47 +49,21 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
+                    <artifactId>maven-resources-plugin</artifactId>
                     <configuration>
-                        <excludes>
-                            <exclude>gradle-wrapper/.gradle/**</exclude>
-                        </excludes>
+                        <propertiesEncoding>UTF-8</propertiesEncoding>
                     </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-gradle-wrapper</id>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <executable>${gradle-wrapper.path}/${gradle.executable}</executable>
-                            <environmentVariables>
-                                <!-- Force a higher value than the default 64m, used by
-                                 gradlew script, to make sure the no-daemon option is honoured
-                                -->
-                                <JAVA_OPTS>-Xmx512m</JAVA_OPTS>
-                            </environmentVariables>
-                            <arguments>
-                                <argument>init</argument>
-                                <argument>--type</argument>
-                                <argument>basic</argument>
-                                <argument>--no-daemon</argument>
-                                <argument>--overwrite</argument>
-                            </arguments>
-                            <workingDirectory>target/classes/gradle-wrapper</workingDirectory>
-                            <addOutputToClasspath>true</addOutputToClasspath>
-                        </configuration>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <gradle-wrapper.version>${gradle-wrapper.version}</gradle-wrapper.version>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -86,6 +79,137 @@
             <properties>
                 <gradle.executable>gradlew.bat</gradle.executable>
             </properties>
+        </profile>
+        <profile>
+            <id>install-gradle-wrapper</id>
+            <activation>
+                <property>
+                    <name>installGradleWrapper</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>init-gradle-project</id>
+                                <phase>generate-sources</phase>
+                                <configuration>
+                                    <executable>${gradle-wrapper.path}/${gradle.executable}</executable>
+                                    <environmentVariables>
+                                        <!-- Force a higher value than the default 64m, used by
+                                         gradlew script, to make sure the no-daemon option is honoured
+                                        -->
+                                        <JAVA_OPTS>-Xmx512m</JAVA_OPTS>
+                                    </environmentVariables>
+                                    <arguments>
+                                        <argument>init</argument>
+                                        <argument>--type</argument>
+                                        <argument>basic</argument>
+                                        <argument>--no-daemon</argument>
+                                        <argument>--overwrite</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/gradle-wrapper</workingDirectory>
+                                    <addOutputToClasspath>true</addOutputToClasspath>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>install-gradle-wrapper</id>
+                                <phase>generate-sources</phase>
+                                <configuration>
+                                    <executable>${gradle-wrapper.path}/${gradle.executable}</executable>
+                                    <environmentVariables>
+                                        <!-- Force a higher value than the default 64m, used by
+                                         gradlew script, to make sure the no-daemon option is honoured
+                                        -->
+                                        <JAVA_OPTS>-Xmx512m</JAVA_OPTS>
+                                    </environmentVariables>
+                                    <arguments>
+                                        <argument>wrapper</argument>
+                                        <argument>--gradle-version</argument>
+                                        <argument>${gradle-wrapper.version}</argument>
+                                        <argument>--no-daemon</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/gradle-wrapper</workingDirectory>
+                                    <addOutputToClasspath>true</addOutputToClasspath>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-gradle-wrapper</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/codestarts/quarkus/tooling/gradle-wrapper/base/</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}/gradle-wrapper/</directory>
+                                            <includes>
+                                                <include>gradle/wrapper/**</include>
+                                                <include>gradlew</include>
+                                                <include>gradlew.bat</include>
+                                            </includes>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>copy-gradle-wrapper</id>
+            <activation>
+                <property>
+                    <name>!installGradleWrapper</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-gradle-wrapper</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/codestarts/quarkus/tooling/gradle-wrapper/base/</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${gradle-wrapper.path}</directory>
+                                            <includes>
+                                                <include>gradle/wrapper/**</include>
+                                                <include>gradlew</include>
+                                                <include>gradlew.bat</include>
+                                            </includes>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

@@ -25,6 +25,7 @@ import java.util.zip.Deflater;
 import org.apache.commons.compress.archivers.zip.DefaultBackingStoreSupplier;
 import org.apache.commons.compress.archivers.zip.ParallelScatterZipCreator;
 import org.apache.commons.compress.archivers.zip.ScatterZipOutputStream;
+import org.apache.commons.compress.archivers.zip.UnixStat;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntryRequest;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
@@ -43,6 +44,9 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
 
     private static final InputStreamSupplier EMPTY_SUPPLIER = () -> new ByteArrayInputStream(new byte[0]);
+
+    private static final int DIR_UNIX_MODE = UnixStat.DIR_FLAG | UnixStat.DEFAULT_DIR_PERM;
+    private static final int FILE_UNIX_MODE = UnixStat.FILE_FLAG | UnixStat.DEFAULT_FILE_PERM;
 
     private final Path archivePath;
     private final FileTime entryTimestamp;
@@ -84,7 +88,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     public void addManifest(Manifest manifest) throws IOException {
         // we add the manifest directly to the final archive to make sure it is the first element added
         ZipArchiveEntry metaInfArchiveEntry = new ZipArchiveEntry("META-INF/");
-        normalizeTimestamps(metaInfArchiveEntry);
+        normalizeTimestampsAndPermissions(metaInfArchiveEntry);
         archive.putArchiveEntry(metaInfArchiveEntry);
         archive.closeArchiveEntry();
 
@@ -93,7 +97,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         byte[] manifestBytes = baos.toByteArray();
 
         ZipArchiveEntry manifestEntry = new ZipArchiveEntry("META-INF/MANIFEST.MF");
-        normalizeTimestamps(manifestEntry);
+        normalizeTimestampsAndPermissions(manifestEntry);
         manifestEntry.setSize(manifestBytes.length);
         archive.putArchiveEntry(manifestEntry);
         archive.write(manifestBytes);
@@ -167,13 +171,13 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         if (!zipArchiveEntry.isDirectory() || zipArchiveEntry.isUnixSymlink()) {
             return;
         }
-        normalizeTimestamps(zipArchiveEntry);
+        normalizeTimestampsAndPermissions(zipArchiveEntry);
         zipArchiveEntry.setMethod(compressionMethod);
         directories.addArchiveEntry(ZipArchiveEntryRequest.createZipArchiveEntryRequest(zipArchiveEntry, EMPTY_SUPPLIER));
     }
 
     private void addEntry(final ZipArchiveEntry zipArchiveEntry, final InputStreamSupplier streamSupplier) throws IOException {
-        normalizeTimestamps(zipArchiveEntry);
+        normalizeTimestampsAndPermissions(zipArchiveEntry);
         zipArchiveEntry.setMethod(compressionMethod);
         if (zipArchiveEntry.isDirectory() && !zipArchiveEntry.isUnixSymlink()) {
             directories.addArchiveEntry(ZipArchiveEntryRequest.createZipArchiveEntryRequest(zipArchiveEntry, streamSupplier));
@@ -208,7 +212,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         };
     }
 
-    private void normalizeTimestamps(ZipArchiveEntry archiveEntry) {
+    private void normalizeTimestampsAndPermissions(ZipArchiveEntry archiveEntry) {
         if (entryTimestamp == null) {
             return;
         }
@@ -217,6 +221,12 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         archiveEntry.setCreationTime(entryTimestamp);
         archiveEntry.setLastModifiedTime(entryTimestamp);
         archiveEntry.setLastAccessTime(entryTimestamp);
+
+        if (archiveEntry.isDirectory()) {
+            archiveEntry.setUnixMode(DIR_UNIX_MODE);
+        } else {
+            archiveEntry.setUnixMode(FILE_UNIX_MODE);
+        }
     }
 
     @Override

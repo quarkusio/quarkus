@@ -1,6 +1,6 @@
 package io.quarkus.it.mongodb.panache;
 
-import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
@@ -182,6 +182,22 @@ class MongodbPanacheResourceTest {
         //test findByIdOptional
         book = get(endpoint + "/optional/" + book.getId().toString()).as(BookDTO.class);
         Assertions.assertNotNull(book);
+
+        //test findByIds
+        String idBook1 = book.getId();
+        String idBook2 = get(endpoint + "/search?author=Charles Baudelaire&title=Les fleurs du mal").as(BookDTO.class).getId();
+
+        list = RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .body(List.of(idBook1, idBook2))
+                .post(endpoint + "/ids")
+                .as(LIST_OF_BOOK_TYPE_REF);
+        Assertions.assertEquals(2, list.size());
+        Assertions.assertNotNull(list.get(0).getTitle());
+        Assertions.assertEquals("Notre-Dame de Paris 2", list.get(0).getTitle());
+        Assertions.assertNotNull(list.get(1).getTitle());
+        Assertions.assertEquals("Les fleurs du mal", list.get(1).getTitle());
 
         // update categories list using HQL
         response = RestAssured

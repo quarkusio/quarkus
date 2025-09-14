@@ -83,6 +83,12 @@ public class PersonEntityResource {
         return PersonEntity.findById(Long.parseLong(id));
     }
 
+    @POST
+    @Path("/ids")
+    public List<PersonEntity> getPerson(List<String> ids) {
+        return PersonEntity.findByIds(ids.stream().map(Long::valueOf).toList());
+    }
+
     @GET
     @Path("/count")
     public long countAll() {

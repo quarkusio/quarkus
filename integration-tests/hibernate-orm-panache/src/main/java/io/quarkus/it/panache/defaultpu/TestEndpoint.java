@@ -273,7 +273,17 @@ public class TestEndpoint {
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
 
+        Person person2 = makeSavedPerson();
+        List<Person> byIds = Person.findByIds(List.of(person.id, Long.MAX_VALUE, person2.id));
+        Assertions.assertEquals(3, byIds.size());
+        Assertions.assertEquals(person, byIds.get(0));
+        Assertions.assertNull(byIds.get(1));
+        Assertions.assertEquals(person2, byIds.get(2));
+        Assertions.assertEquals("Person<" + person.id + ">", byIds.get(0).toString());
+        Assertions.assertEquals("Person<" + person2.id + ">", byIds.get(2).toString());
+
         person.delete();
+        person2.delete();
         Assertions.assertEquals(0, Person.count());
 
         person = makeSavedPerson();
@@ -346,7 +356,7 @@ public class TestEndpoint {
         person1.name = "testFLush1";
         person1.uniqueName = "unique";
         person1.persist();
-        Person person2 = new Person();
+        person2 = new Person();
         person2.name = "testFLush2";
         person2.uniqueName = "unique";
         try {
@@ -820,7 +830,17 @@ public class TestEndpoint {
         byId = personDao.findByIdOptional(person.id, LockModeType.PESSIMISTIC_READ).get();
         Assertions.assertEquals(person, byId);
 
+        Person person2 = makeSavedPersonDao();
+        List<Person> byIds = personDao.findByIds(List.of(person.id, Long.MAX_VALUE, person2.id));
+        Assertions.assertEquals(3, byIds.size());
+        Assertions.assertEquals(person, byIds.get(0));
+        Assertions.assertNull(byIds.get(1));
+        Assertions.assertEquals(person2, byIds.get(2));
+        Assertions.assertEquals("Person<" + person.id + ">", byIds.get(0).toString());
+        Assertions.assertEquals("Person<" + person2.id + ">", byIds.get(2).toString());
+
         personDao.delete(person);
+        personDao.delete(person2);
         Assertions.assertEquals(0, personDao.count());
 
         person = makeSavedPersonDao();
@@ -891,7 +911,7 @@ public class TestEndpoint {
         person1.name = "testFlush1";
         person1.uniqueName = "unique";
         personDao.persist(person1);
-        Person person2 = new Person();
+        person2 = new Person();
         person2.name = "testFlush2";
         person2.uniqueName = "unique";
         try {

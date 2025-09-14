@@ -223,6 +223,9 @@ List<Person> allPersons = Person.listAll();
 // finding a specific person by ID
 person = Person.findById(personId);
 
+// finding specific persons by their IDs
+List<Person> personsById = Person.findByIds(List.of(personId1, personId2));
+
 // finding a specific person by ID via an Optional
 Optional<Person> optional = Person.findByIdOptional(personId);
 person = optional.orElseThrow(() -> new NotFoundException());
@@ -440,6 +443,9 @@ List<Person> allPersons = personRepository.listAll();
 
 // finding a specific person by ID
 person = personRepository.findById(personId);
+
+// finding specific persons by their IDs
+List<Person> personsById = personRepository.findByIds(List.of(personId1, personId2);
 
 // finding a specific person by ID via an Optional
 Optional<Person> optional = personRepository.findByIdOptional(personId);

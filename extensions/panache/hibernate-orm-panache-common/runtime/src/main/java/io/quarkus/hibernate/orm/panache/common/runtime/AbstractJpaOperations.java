@@ -2,11 +2,8 @@ package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
@@ -193,6 +190,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public Optional<?> findByIdOptional(Class<?> entityClass, Object id, LockModeType lockModeType) {
         return Optional.ofNullable(findById(entityClass, id, lockModeType));
+    }
+
+    public List<?> findByIds(Class<?> entityClass, List<?> ids) {
+        return getSession(entityClass).findMultiple(entityClass, ids);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Object... params) {

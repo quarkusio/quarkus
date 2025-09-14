@@ -50,6 +50,8 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class MySQLPoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final TypeLiteral<Instance<MySQLPoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
@@ -224,7 +226,9 @@ public class MySQLPoolRecorder {
                 }
             }
 
-            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
+            mysqlConnectOptions
+                    .setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements()
+                            .orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
             dataSourceReactiveMySQLConfig.charset().ifPresent(mysqlConnectOptions::setCharset);
             dataSourceReactiveMySQLConfig.collation().ifPresent(mysqlConnectOptions::setCollation);

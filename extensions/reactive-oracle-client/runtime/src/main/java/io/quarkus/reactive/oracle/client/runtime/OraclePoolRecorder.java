@@ -44,6 +44,8 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class OraclePoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final Logger log = Logger.getLogger(OraclePoolRecorder.class);
     private static final TypeLiteral<Instance<OraclePoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
@@ -215,6 +217,10 @@ public class OraclePoolRecorder {
                 oracleConnectOptions.setPassword(password);
             }
         }
+
+        oracleConnectOptions
+                .setCachePreparedStatements(
+                        dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
         dataSourceReactiveRuntimeConfig.additionalProperties().forEach(oracleConnectOptions::addProperty);
 

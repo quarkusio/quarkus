@@ -60,6 +60,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
+import io.quarkus.deployment.builditem.FailedDevServiceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -136,130 +137,88 @@ public class KeycloakDevServicesProcessor {
     private static volatile Set<FileTime> capturedRealmFileLastModifiedDate;
     private static volatile Vertx vertxInstance;
 
-    @BuildStep
-    DevServicesResultBuildItem startKeycloakContainer(
-            List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems,
+    private static RunningDevService startContainer(
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            KeycloakDevServicesConfig config,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
-            LaunchModeBuildItem launchMode,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
-
-        if (!devServicesConfig.enabled() || !config.enabled()) {
-            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the configuration");
+            boolean useSharedNetwork, Optional<Duration> timeout,
+            List<String> errors, KeycloakDevServicesConfigurator devServicesConfigurator,
+            BuildProducer<FailedDevServiceBuildItem> failedDevServiceBiP) {
+        if (!capturedDevServicesConfiguration.enabled()) {
+            // explicitly disabled
+            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
             return null;
         }
 
-        if (devSvcRequiredMarkerItems.isEmpty()
-                || oidcDevServicesEnabled()
-                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)) {
-            if (devService != null) {
-                closeDevService();
-            }
-            return null;
-        }
-        var devServicesConfigurator = getDevServicesConfigurator(devSvcRequiredMarkerItems);
+        final Optional<ContainerAddress> maybeContainerAddress = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR.locateContainer(
+                capturedDevServicesConfiguration.serviceName(),
+                capturedDevServicesConfiguration.shared(),
+                LaunchMode.current());
 
-        // Figure out if we need to shut down and restart any existing Keycloak container
-        // if not and the Keycloak container has already started we just return
-        if (devService != null) {
-            boolean restartRequired = !config.equals(capturedDevServicesConfiguration);
-            if (!restartRequired) {
-                Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(
-                        config.realmPath());
-                if (currentRealmFileLastModifiedDate != null
-                        && !currentRealmFileLastModifiedDate.equals(capturedRealmFileLastModifiedDate)) {
-                    restartRequired = true;
-                    capturedRealmFileLastModifiedDate = currentRealmFileLastModifiedDate;
-                }
-            }
-            if (!restartRequired) {
-                DevServicesResultBuildItem result = devService.toBuildItem();
-                String usersString = result.getConfig().get(OIDC_USERS);
-                Map<String, String> users = (usersString == null || usersString.isBlank()) ? Map.of()
-                        : Arrays.stream(usersString.split(","))
-                                .map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
-                String realmsString = result.getConfig().get(KEYCLOAK_REALMS);
-                List<String> realms = (realmsString == null || realmsString.isBlank()) ? List.of()
-                        : Arrays.stream(realmsString.split(",")).toList();
-                keycloakBuildItemBuildProducer
-                        .produce(new KeycloakDevServicesConfigBuildItem(result.getConfig(),
-                                Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realms), false));
-                return result;
-            }
-            closeDevService();
-        }
-        capturedDevServicesConfiguration = config;
-        StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "Keycloak Dev Services Starting:",
-                consoleInstalledBuildItem, loggingSetupBuildItem);
-        try {
-            List<String> errors = new ArrayList<>();
+        String imageName = capturedDevServicesConfiguration.imageName();
+        DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
 
-            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
-                    devServicesSharedNetworkBuildItem);
-            RunningDevService newDevService = startContainer(composeProjectBuildItem,
-                    keycloakBuildItemBuildProducer,
-                    useSharedNetwork,
-                    devServicesConfig.timeout(),
-                    errors, devServicesConfigurator);
-            if (newDevService == null) {
-                if (errors.isEmpty()) {
-                    compressor.close();
-                } else {
-                    compressor.closeAndDumpCaptured();
+        final Supplier<RunningDevService> defaultKeycloakContainerSupplier = () -> {
+            try {
+                QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
+                        capturedDevServicesConfiguration.port(),
+                        composeProjectBuildItem.getDefaultNetworkId(),
+                        useSharedNetwork,
+                        capturedDevServicesConfiguration.realmPath().orElse(List.of()),
+                        resourcesMap(errors),
+                        capturedDevServicesConfiguration.serviceName(),
+                        capturedDevServicesConfiguration.shared(),
+                        capturedDevServicesConfiguration.javaOpts(),
+                        capturedDevServicesConfiguration.startCommand(),
+                        capturedDevServicesConfiguration.features(),
+                        capturedDevServicesConfiguration.showLogs(),
+                        capturedDevServicesConfiguration.containerMemoryLimit(),
+                        errors);
+
+                timeout.ifPresent(oidcContainer::withStartupTimeout);
+                oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv());
+
+                LOG.infof("Attempting to start Keycloak Dev Service (image: %s)...", imageName);
+                oidcContainer.start();
+                LOG.info("Keycloak Dev Service started successfully.");
+
+                if (!errors.isEmpty()) {
+                    LOG.warnf("Errors occurred during Keycloak Dev Service pre-configuration: %s", String.join("; ", errors));
                 }
+
+                String internalBaseUrl = getBaseURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
+                        oidcContainer.getPort());
+                String internalUrl = startURL(internalBaseUrl, oidcContainer.keycloakX);
+                String hostUrl = oidcContainer.useSharedNetwork
+                        // we need to use auto-detected host and port, so it works when docker host != localhost
+                        ? startURL("http://", oidcContainer.getSharedNetworkExternalHost(),
+                                oidcContainer.getSharedNetworkExternalPort(),
+                                oidcContainer.keycloakX)
+                        : null;
+
+                Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
+                        oidcContainer.realmReps, errors, devServicesConfigurator, internalBaseUrl);
+                return new RunningDevService(KEYCLOAK_CONTAINER_NAME, oidcContainer.getContainerId(),
+                        oidcContainer::close, configs);
+            } catch (Exception e) {
+                LOG.warnf(e, "Failed to start Keycloak container (image: %s). Details: %s", imageName, e.getMessage());
+                LOG.warn(
+                        "Keycloak Dev Service will not be available. Attempting to fall back to lightweight OIDC Dev Service if configured.");
+                failedDevServiceBiP.produce(new FailedDevServiceBuildItem(KEYCLOAK_CONTAINER_NAME));
                 return null;
             }
+        };
 
-            devService = newDevService;
-
-            if (first) {
-                first = false;
-                Runnable closeTask = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (devService != null) {
-                            try {
-                                devService.close();
-                            } catch (Throwable t) {
-                                LOG.error("Failed to stop Keycloak container", t);
-                            }
-                        }
-                        if (vertxInstance != null) {
-                            try {
-                                vertxInstance.close();
-                            } catch (Throwable t) {
-                                LOG.error("Failed to close Vertx instance", t);
-                            }
-                        }
-                        first = true;
-                        devService = null;
-                        capturedDevServicesConfiguration = null;
-                        vertxInstance = null;
-                        capturedRealmFileLastModifiedDate = null;
-                    }
-                };
-                closeBuildItem.addCloseTask(closeTask, true);
-            }
-
-            capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath());
-            if (devService != null && errors.isEmpty()) {
-                compressor.close();
-            } else {
-                compressor.closeAndDumpCaptured();
-            }
-        } catch (Throwable t) {
-            compressor.closeAndDumpCaptured();
-            throw new RuntimeException(t);
-        }
-        LOG.info("Dev Services for Keycloak started.");
-
-        return devService.toBuildItem();
+        return maybeContainerAddress
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
+                        KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
+                .map(containerAddress -> {
+                    // TODO: this probably needs to be addressed
+                    String sharedContainerUrl = getSharedContainerUrl(containerAddress);
+                    Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, sharedContainerUrl,
+                            sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
+                    return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
+                })
+                .orElseGet(defaultKeycloakContainerSupplier);
     }
 
     private static boolean oidcDevServicesEnabled() {
@@ -276,23 +235,6 @@ public class KeycloakDevServicesProcessor {
             LOG.warnf("Please configure '%s' or get a working docker instance", requirement.getAuthServerUrl());
         }
         return true;
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    void produceDevUiCardWithKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configProps,
-            List<KeycloakAdminPageBuildItem> keycloakAdminPageBuildItems,
-            BuildProducer<CardPageBuildItem> cardPageProducer) {
-        final String keycloakAdminUrl = getKeycloakUrl(configProps);
-        if (keycloakAdminUrl != null) {
-            keycloakAdminPageBuildItems.forEach(i -> {
-                i.cardPage.addPage(Page
-                        .externalPageBuilder("Keycloak Admin")
-                        .icon("font-awesome-solid:key")
-                        .doNotEmbed(true)
-                        .url(keycloakAdminUrl));
-                cardPageProducer.produce(i.cardPage);
-            });
-        }
     }
 
     private static void closeDevService() {
@@ -390,73 +332,148 @@ public class KeycloakDevServicesProcessor {
         return capturedDevServicesConfiguration.realmName().orElse("quarkus");
     }
 
-    private static RunningDevService startContainer(
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void produceDevUiCardWithKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configProps,
+            List<KeycloakAdminPageBuildItem> keycloakAdminPageBuildItems,
+            BuildProducer<CardPageBuildItem> cardPageProducer) {
+        final String keycloakAdminUrl = getKeycloakUrl(configProps);
+        if (keycloakAdminUrl != null) {
+            keycloakAdminPageBuildItems.forEach(i -> {
+                i.cardPage.addPage(Page
+                        .externalPageBuilder("Keycloak Admin")
+                        .icon("font-awesome-solid:key")
+                        .doNotEmbed(true)
+                        .url(keycloakAdminUrl));
+                cardPageProducer.produce(i.cardPage);
+            });
+        }
+    }
+
+    @BuildStep
+    DevServicesResultBuildItem startKeycloakContainer(
+            List<KeycloakDevServicesRequiredBuildItem> devSvcRequiredMarkerItems,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
-            boolean useSharedNetwork, Optional<Duration> timeout,
-            List<String> errors, KeycloakDevServicesConfigurator devServicesConfigurator) {
-        if (!capturedDevServicesConfiguration.enabled()) {
-            // explicitly disabled
-            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            BuildProducer<FailedDevServiceBuildItem> keycloakFailedBiP,
+            KeycloakDevServicesConfig config,
+            CuratedApplicationShutdownBuildItem closeBuildItem,
+            LaunchModeBuildItem launchMode,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
+
+        if (!devServicesConfig.enabled() || !config.enabled()) {
+            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the configuration");
             return null;
         }
 
-        final Optional<ContainerAddress> maybeContainerAddress = KEYCLOAK_DEV_MODE_CONTAINER_LOCATOR.locateContainer(
-                capturedDevServicesConfiguration.serviceName(),
-                capturedDevServicesConfiguration.shared(),
-                LaunchMode.current());
+        if (devSvcRequiredMarkerItems.isEmpty()
+                || oidcDevServicesEnabled()
+                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)) {
+            if (devService != null) {
+                closeDevService();
+            }
+            return null;
+        }
+        var devServicesConfigurator = getDevServicesConfigurator(devSvcRequiredMarkerItems);
 
-        String imageName = capturedDevServicesConfiguration.imageName();
-        DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
+        // Figure out if we need to shut down and restart any existing Keycloak container
+        // if not and the Keycloak container has already started we just return
+        if (devService != null) {
+            boolean restartRequired = !config.equals(capturedDevServicesConfiguration);
+            if (!restartRequired) {
+                Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(
+                        config.realmPath());
+                if (currentRealmFileLastModifiedDate != null
+                        && !currentRealmFileLastModifiedDate.equals(capturedRealmFileLastModifiedDate)) {
+                    restartRequired = true;
+                    capturedRealmFileLastModifiedDate = currentRealmFileLastModifiedDate;
+                }
+            }
+            if (!restartRequired) {
+                DevServicesResultBuildItem result = devService.toBuildItem();
+                String usersString = result.getConfig().get(OIDC_USERS);
+                Map<String, String> users = (usersString == null || usersString.isBlank()) ? Map.of()
+                        : Arrays.stream(usersString.split(","))
+                                .map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+                String realmsString = result.getConfig().get(KEYCLOAK_REALMS);
+                List<String> realms = (realmsString == null || realmsString.isBlank()) ? List.of()
+                        : Arrays.stream(realmsString.split(",")).toList();
+                keycloakBuildItemBuildProducer
+                        .produce(new KeycloakDevServicesConfigBuildItem(result.getConfig(),
+                                Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realms), false));
+                return result;
+            }
+            closeDevService();
+        }
+        capturedDevServicesConfiguration = config;
+        StartupLogCompressor compressor = new StartupLogCompressor(
+                (launchMode.isTest() ? "(test) " : "") + "Keycloak Dev Services Starting:",
+                consoleInstalledBuildItem, loggingSetupBuildItem);
+        try {
+            List<String> errors = new ArrayList<>();
 
-        final Supplier<RunningDevService> defaultKeycloakContainerSupplier = () -> {
-
-            QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
-                    capturedDevServicesConfiguration.port(),
-                    composeProjectBuildItem.getDefaultNetworkId(),
+            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                    devServicesSharedNetworkBuildItem);
+            RunningDevService newDevService = startContainer(composeProjectBuildItem,
+                    keycloakBuildItemBuildProducer,
                     useSharedNetwork,
-                    capturedDevServicesConfiguration.realmPath().orElse(List.of()),
-                    resourcesMap(errors),
-                    capturedDevServicesConfiguration.serviceName(),
-                    capturedDevServicesConfiguration.shared(),
-                    capturedDevServicesConfiguration.javaOpts(),
-                    capturedDevServicesConfiguration.startCommand(),
-                    capturedDevServicesConfiguration.features(),
-                    capturedDevServicesConfiguration.showLogs(),
-                    capturedDevServicesConfiguration.containerMemoryLimit(),
-                    errors);
+                    devServicesConfig.timeout(),
+                    errors, devServicesConfigurator, keycloakFailedBiP);
+            if (newDevService == null) {
+                if (errors.isEmpty()) {
+                    compressor.close();
+                } else {
+                    compressor.closeAndDumpCaptured();
+                }
+                return null;
+            }
 
-            timeout.ifPresent(oidcContainer::withStartupTimeout);
-            oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv());
-            oidcContainer.start();
+            devService = newDevService;
 
-            String internalBaseUrl = getBaseURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
-                    oidcContainer.getPort());
-            String internalUrl = startURL(internalBaseUrl, oidcContainer.keycloakX);
-            String hostUrl = oidcContainer.useSharedNetwork
-                    // we need to use auto-detected host and port, so it works when docker host != localhost
-                    ? startURL("http://", oidcContainer.getSharedNetworkExternalHost(),
-                            oidcContainer.getSharedNetworkExternalPort(),
-                            oidcContainer.keycloakX)
-                    : null;
+            if (first) {
+                first = false;
+                Runnable closeTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (devService != null) {
+                            try {
+                                devService.close();
+                            } catch (Throwable t) {
+                                LOG.error("Failed to stop Keycloak container", t);
+                            }
+                        }
+                        if (vertxInstance != null) {
+                            try {
+                                vertxInstance.close();
+                            } catch (Throwable t) {
+                                LOG.error("Failed to close Vertx instance", t);
+                            }
+                        }
+                        first = true;
+                        devService = null;
+                        capturedDevServicesConfiguration = null;
+                        vertxInstance = null;
+                        capturedRealmFileLastModifiedDate = null;
+                    }
+                };
+                closeBuildItem.addCloseTask(closeTask, true);
+            }
 
-            Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
-                    oidcContainer.realmReps, errors, devServicesConfigurator, internalBaseUrl);
-            return new RunningDevService(KEYCLOAK_CONTAINER_NAME, oidcContainer.getContainerId(),
-                    oidcContainer::close, configs);
-        };
+            capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath());
+            if (devService != null && errors.isEmpty()) {
+                compressor.close();
+            } else {
+                compressor.closeAndDumpCaptured();
+            }
+        } catch (Throwable t) {
+            compressor.closeAndDumpCaptured();
+            throw new RuntimeException(t);
+        }
+        LOG.info("Dev Services for Keycloak started.");
 
-        return maybeContainerAddress
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(imageName, "keycloak"),
-                        KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
-                .map(containerAddress -> {
-                    // TODO: this probably needs to be addressed
-                    String sharedContainerUrl = getSharedContainerUrl(containerAddress);
-                    Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, sharedContainerUrl,
-                            sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
-                    return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
-                })
-                .orElseGet(defaultKeycloakContainerSupplier);
+        return devService.toBuildItem();
     }
 
     private static Map<String, String> resourcesMap(List<String> errors) {

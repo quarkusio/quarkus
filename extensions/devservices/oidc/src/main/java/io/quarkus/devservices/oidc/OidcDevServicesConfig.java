@@ -8,6 +8,7 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * OpenID Connect Dev Services configuration.
@@ -29,5 +30,15 @@ public interface OidcDevServicesConfig {
      */
     @ConfigDocMapKey("role-name")
     Map<String, List<String>> roles();
+
+    /**
+     * If true, and the Keycloak Dev Service is active but fails to start,
+     * this lightweight OIDC Dev Service will attempt to start as a fallback.
+     * This allows development to continue with a mock OIDC provider even if Keycloak encounters issues.
+     * <p>
+     * This fallback is only considered if {@code quarkus.oidc.devservices.enabled} is not explicitly set to {@code false}.
+     */
+    @WithDefault("false")
+    boolean keycloakFallback();
 
 }

@@ -1,6 +1,7 @@
 package io.quarkus.restclient.config;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -88,6 +89,16 @@ public interface RestClientsConfig {
      * This property is not applicable to the RESTEasy Client.
      */
     Optional<String> nonProxyHosts();
+
+    /**
+     * Proxy connection timeout
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("10s")
+    Optional<Duration> proxyConnectTimeout();
 
     /**
      * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
@@ -483,6 +494,14 @@ public interface RestClientsConfig {
          * This property is not applicable to the RESTEasy Client.
          */
         Optional<String> nonProxyHosts();
+
+        /**
+         * Proxy connection timeout
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("10s")
+        Optional<Duration> proxyConnectTimeout();
 
         /**
          * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",

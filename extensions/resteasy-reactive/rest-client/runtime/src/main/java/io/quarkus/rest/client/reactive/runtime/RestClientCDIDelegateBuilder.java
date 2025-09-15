@@ -194,6 +194,8 @@ public class RestClientCDIDelegateBuilder<T> {
             oneOf(restClientConfig.proxyUser(), configRoot.proxyUser()).ifPresent(builder::proxyUser);
             oneOf(restClientConfig.proxyPassword(), configRoot.proxyPassword()).ifPresent(builder::proxyPassword);
             oneOf(restClientConfig.nonProxyHosts(), configRoot.nonProxyHosts()).ifPresent(builder::nonProxyHosts);
+            oneOf(restClientConfig.proxyConnectTimeout(), configRoot.proxyConnectTimeout())
+                    .ifPresent(builder::proxyConnectTimeout);
         }
     }
 

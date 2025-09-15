@@ -1039,7 +1039,6 @@ Incoming channels (PublisherDecorator) in the order of priority:
 - `io.smallrye.reactive.messaging.providers.locals.ContextDecorator` (0): Ensures messages are dispatched on the message context
 - `io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator` (100): Handles pausable channels
 - `io.smallrye.reactive.messaging.providers.IncomingInterceptorDecorator` (500): Handles `IncomingInterceptor` beans
-- `io.smallrye.reactive.messaging.providers.metrics.MetricDecorator` (1000): MicroProfile Metrics support, enabled with `quarkus-smallrye-metrics` extension
 - `io.smallrye.reactive.messaging.providers.metrics.MicrometerDecorator` (1000): Micrometer Metrics support, enabled with `quarkus-micrometer` extension
 - `io.smallrye.reactive.messaging.providers.extension.ObservationDecorator` (1000): Message observation support for incoming channels
 - `io.smallrye.reactive.messaging.providers.extension.PausableChannelDecorator` (1000): Handles pausable channels

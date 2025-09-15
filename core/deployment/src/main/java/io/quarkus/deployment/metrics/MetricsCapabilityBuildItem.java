@@ -16,7 +16,6 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * The inner functional interface {@link MetricsCapability} defines the contract for checking backend support.
  *
  * @see io.quarkus.runtime.metrics.MetricsFactory#MICROMETER
- * @see io.quarkus.runtime.metrics.MetricsFactory#MP_METRICS
  */
 public final class MetricsCapabilityBuildItem extends SimpleBuildItem {
     @FunctionalInterface
@@ -44,7 +43,6 @@ public final class MetricsCapabilityBuildItem extends SimpleBuildItem {
      * @return true if this factory supports the named metrics system. Arbitrary
      *         strings are allowed. Constants are present for a few.
      * @see io.quarkus.runtime.metrics.MetricsFactory#MICROMETER
-     * @see io.quarkus.runtime.metrics.MetricsFactory#MP_METRICS
      */
     public boolean metricsSupported(String name) {
         return metricsCapability.isSupported(name);

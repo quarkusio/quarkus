@@ -61,31 +61,31 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
     @Deprecated
     public <T> void addAction(String methodName,
             Function<Map<String, String>, T> action) {
-        this.addAction(new DeploymentJsonRpcMethod(methodName, null, Usage.onlyDevUI(), action));
+        this.addAction(new DeploymentJsonRpcMethod(methodName, null, Usage.onlyDevUI(), true, action));
     }
 
     @Deprecated
     public <T> void addAssistantAction(String methodName,
             BiFunction<Object, Map<String, String>, T> action) {
-        this.addAction(new DeploymentJsonRpcMethod(methodName, null, Usage.onlyDevUI(), action));
+        this.addAction(new DeploymentJsonRpcMethod(methodName, null, Usage.onlyDevUI(), true, action));
     }
 
     @Deprecated
     public <T> void addAction(String methodName,
             RuntimeValue runtimeValue) {
-        this.addAction(new RecordedJsonRpcMethod(methodName, null, Usage.onlyDevUI(), runtimeValue));
+        this.addAction(new RecordedJsonRpcMethod(methodName, null, Usage.onlyDevUI(), true, runtimeValue));
     }
 
     @Deprecated
     public <T> void addSubscription(String methodName,
             Function<Map<String, String>, T> action) {
-        this.addSubscription(new DeploymentJsonRpcMethod(methodName, null, Usage.onlyDevUI(), action));
+        this.addSubscription(new DeploymentJsonRpcMethod(methodName, null, Usage.onlyDevUI(), true, action));
     }
 
     @Deprecated
     public <T> void addSubscription(String methodName,
             RuntimeValue runtimeValue) {
-        this.addSubscription(new RecordedJsonRpcMethod(methodName, null, Usage.onlyDevUI(), runtimeValue));
+        this.addSubscription(new RecordedJsonRpcMethod(methodName, null, Usage.onlyDevUI(), true, runtimeValue));
     }
 
     private BuildTimeActionBuildItem addAction(DeploymentJsonRpcMethod deploymentJsonRpcMethod) {
@@ -116,6 +116,7 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
         private Function<Map<String, String>, ?> function;
         private BiFunction<Object, Map<String, String>, ?> assistantFunction;
         private RuntimeValue<?> runtimeValue;
+        private boolean mcpEnabledByDefault = false;
 
         public ActionBuilder methodName(String methodName) {
             this.methodName = methodName;
@@ -138,6 +139,11 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
 
         public ActionBuilder usage(EnumSet<Usage> usage) {
             this.usage = usage;
+            return this;
+        }
+
+        public ActionBuilder enableMcpFuctionByDefault() {
+            this.mcpEnabledByDefault = true;
             return this;
         }
 
@@ -170,13 +176,17 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             if (function != null) {
                 return addAction(
                         new DeploymentJsonRpcMethod(methodName, description, parameters, autoUsage(usage, description),
+                                mcpEnabledByDefault,
                                 function));
             } else if (runtimeValue != null) {
                 return addAction(
-                        new RecordedJsonRpcMethod(methodName, description, autoUsage(usage, description), runtimeValue));
+                        new RecordedJsonRpcMethod(methodName, description, autoUsage(usage, description),
+                                mcpEnabledByDefault,
+                                runtimeValue));
             } else if (assistantFunction != null) {
                 return addAction(
                         new DeploymentJsonRpcMethod(methodName, description, parameters, autoUsage(usage, description),
+                                mcpEnabledByDefault,
                                 assistantFunction));
             } else {
                 throw new IllegalStateException("Either function, assistantFunction or runtimeValue must be provided");
@@ -189,6 +199,7 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
         private String description;
         private Map<String, AbstractJsonRpcMethod.Parameter> parameters = new LinkedHashMap<>();;
         private EnumSet<Usage> usage;
+        private boolean mcpEnabledByDefault = false;
         private Function<Map<String, String>, ?> function;
         private RuntimeValue<?> runtimeValue;
 
@@ -216,6 +227,11 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             return this;
         }
 
+        public SubscriptionBuilder enableMcpFuctionByDefault() {
+            this.mcpEnabledByDefault = true;
+            return this;
+        }
+
         public <T> SubscriptionBuilder function(Function<Map<String, String>, T> function) {
             this.function = function;
             return this;
@@ -233,10 +249,12 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
                 parameters = null;
             if (function != null) {
                 addSubscription(new DeploymentJsonRpcMethod(methodName, description, parameters, autoUsage(usage, description),
+                        mcpEnabledByDefault,
                         function));
             } else if (runtimeValue != null) {
                 addSubscription(
-                        new RecordedJsonRpcMethod(methodName, description, autoUsage(usage, description), runtimeValue));
+                        new RecordedJsonRpcMethod(methodName, description, autoUsage(usage, description), mcpEnabledByDefault,
+                                runtimeValue));
             } else {
                 throw new IllegalStateException("Either function or runtimeValue must be provided");
             }

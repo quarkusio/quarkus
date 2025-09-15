@@ -306,7 +306,9 @@ public class InfoProcessor {
                 .description(
                         "Information about the environment where this Quarkus application is running. "
                                 + "Things like Operating System, Java version Git information and application details is available")
-                .runtime(finalBuildInfo).build());
+                .runtime(finalBuildInfo)
+                .enableMcpFuctionByDefault()
+                .build());
 
         return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
                 .withRoutePathConfigKey("quarkus.info.path")

@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage;
 import jakarta.inject.Inject;
 
 import io.quarkus.assistant.runtime.dev.Assistant;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.smallrye.openapi.runtime.io.Format;
@@ -21,6 +22,7 @@ public class OpenApiJsonRpcService {
     OpenApiDocumentService openApiDocumentService;
 
     @JsonRpcDescription("Get the running application's OpenAPI Schema Document in json format")
+    @DevMCPEnableByDefault
     public String getOpenAPISchema() {
         return new String(openApiDocumentService.getDocument(Format.JSON));
     }

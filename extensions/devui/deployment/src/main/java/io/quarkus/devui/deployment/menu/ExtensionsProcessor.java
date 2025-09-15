@@ -46,7 +46,8 @@ public class ExtensionsProcessor {
 
         extensionsPages.addBuildTimeData("extensions", response, "All the extensions added to this Quarkus application. "
                 + "Some extensions are 'active' meaning they have actions in Dev UI, and some are 'inactive', meaning they will be listed in Dev UI, but a user can not perform any actions."
-                + "For both active and inactive all sorts of information is available about the extension, like it's name, URL to the guide, GAV and much more");
+                + "For both active and inactive all sorts of information is available about the extension, like it's name, URL to the guide, GAV and much more",
+                true, null);
 
         // Page
         extensionsPages.addPage(Page.webComponentPageBuilder()
@@ -127,6 +128,7 @@ public class ExtensionsProcessor {
                         }
                     });
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 
@@ -197,6 +199,7 @@ public class ExtensionsProcessor {
                         }
                     });
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 
@@ -222,6 +225,7 @@ public class ExtensionsProcessor {
                         }
                     });
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 

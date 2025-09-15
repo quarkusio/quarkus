@@ -672,7 +672,7 @@ public class BuildTimeContentProcessor {
         }
 
         internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
-        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS, "All the available logger levels");
+        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS, "All the available logger levels", true);
     }
 
     private void addApplicationInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,

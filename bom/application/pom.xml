@@ -29,7 +29,7 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.12.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.10.0-alpha</opentelemetry-instrumentation.version>
+        <opentelemetry-instrumentation.version>2.20.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.5</quarkus-http.version>
         <micrometer.version>1.14.7</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->

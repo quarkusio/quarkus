@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.vertx.core.json.JsonArray;
@@ -24,6 +25,7 @@ public class ConfigJsonRPCService {
     }
 
     @JsonRpcDescription("Get all configurations and their values for the Quarkus application")
+    @DevMCPEnableByDefault
     public JsonObject getAllValues() {
         JsonObject values = new JsonObject();
         for (ConfigDescription configDescription : configDescriptionBean.getAllConfig()) {

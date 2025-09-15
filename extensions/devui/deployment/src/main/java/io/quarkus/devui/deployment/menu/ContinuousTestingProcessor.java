@@ -112,6 +112,7 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 
@@ -137,6 +138,7 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 
@@ -157,6 +159,7 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 
@@ -258,6 +261,7 @@ public class ContinuousTestingProcessor {
                         throw new RuntimeException(e);
                     }
                 })
+                .enableMcpFuctionByDefault()
                 .build();
     }
 

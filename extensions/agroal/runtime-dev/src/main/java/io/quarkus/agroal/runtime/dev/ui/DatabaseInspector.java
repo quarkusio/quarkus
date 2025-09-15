@@ -40,6 +40,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 
 public final class DatabaseInspector {
@@ -96,6 +97,7 @@ public final class DatabaseInspector {
     }
 
     @JsonRpcDescription("Get all available datasources for the Database")
+    @DevMCPEnableByDefault
     public List<Datasource> getDataSources() {
         if (isDev) {
             List<Datasource> datasources = new ArrayList<>();
@@ -110,6 +112,7 @@ public final class DatabaseInspector {
     }
 
     @JsonRpcDescription("Get a spesific datasource for the Database by name")
+    @DevMCPEnableByDefault
     private Datasource getDatasource(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             AgroalDataSource ads = checkedDataSources.get(datasource);
@@ -126,6 +129,7 @@ public final class DatabaseInspector {
     }
 
     @JsonRpcDescription("Get all the tables for a certain datasource")
+    @DevMCPEnableByDefault
     public List<Table> getTables(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             List<Table> tableList = new ArrayList<>();
@@ -238,6 +242,7 @@ public final class DatabaseInspector {
     }
 
     @JsonRpcDescription("Execute SQL against a certain datasource")
+    @DevMCPEnableByDefault
     public DataSet executeSQL(@JsonRpcDescription("Datasource name") String datasource,
             @JsonRpcDescription("Valid SQL to execute") String sql,
             @JsonRpcDescription("Page number for pagable rusults, starting at 1") Integer pageNumber,

@@ -52,7 +52,17 @@ footerPageBuildItem.addBuildTimeData(
 );
 ----
 
-The extra `description` argument is new: without it the data only appears in the Dev UI. Once supplied, the `jokes` data becomes an MCP resource.
+The extra `description` argument is new: without it the data only appears in the Dev UI. Once supplied, the `jokes` data becomes an MCP resource, however, by default this resource will be disabled. You can change the default by passing in `true` as another parameter after description, that will change this default to be enabled. Users can change this in Dev UI anyway, so this is just a sensible default.
+
+[source,java]
+----
+footerPageBuildItem.addBuildTimeData(
+    "jokes",
+    jokesBuildItem.getJokes(),
+    "Some funny jokes that the user might enjoy",
+    true
+);
+----
 
 ==== MCP Resources against a recorded value
 
@@ -75,6 +85,8 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 <2> Use the builder to configure the action.
 <3> Set a human‑readable description.
 <4> Provide the runtime value returned by your recorder.
+
+By default this resource will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
 
 === MCP tools
 
@@ -99,6 +111,8 @@ public class MyExtensionRPCService {
 ----
 <1> Description of the method.
 <2> Description of each parameter.
+
+By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding the `@DevMCPEnableByDefault` annotation on the method.
 
 You must register the JSON‑RPC service in the deployment module:
 
@@ -144,6 +158,8 @@ BuildTimeActionBuildItem createBuildTimeActions() {
 <2> Description of each parameter.
 
 The code in the `function` runs on the deployment classpath. The function can return a plain value, a `CompletionStage` or `CompletableFuture` for asynchronous work.
+
+By default this tool will be disabled, and the user has to enable it in Dev UI. You can change this default by adding `.enableMcpFuctionByDefault()` in the builder method.
 
 === JSON‑RPC usage
 

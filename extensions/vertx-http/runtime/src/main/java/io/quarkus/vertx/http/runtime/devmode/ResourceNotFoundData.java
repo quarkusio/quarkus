@@ -26,6 +26,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.common.annotation.NonBlocking;
@@ -138,6 +139,7 @@ public class ResourceNotFoundData {
 
     @NonBlocking
     @JsonRpcDescription("Information on endpoints exposed by this application in Dev Mode. This includes Quarkus endpoints and application endpoints")
+    @DevMCPEnableByDefault
     public JsonObject getAllEndpoints() {
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
         JsonObject infoMap = new JsonObject();

@@ -39,6 +39,7 @@ This module may define internal build items.
 Extensions contributing to or using build items from other extensions should depend on `build-spi` modules.
 * `dev`: Contains runtime classes used exclusively in dev mode (e.g., for the Dev UI). This avoids shipping dev-only classes into production artifacts.
 * `codestart`: Contains the _Codestart_ templates for the extension. See https://quarkus.io/guides/extension-codestart[Codestart Guide] for more details.
+* `cli`: Contains CLI commands related to the extension. This is optional and should be used only if the extension provides specific CLI functionality.
 * `codegen`: Contains code generation utilities such as code pre-processors invoked at build time.
 
 Only the `runtime` and `build` modules are mandatory; the others are optional based on the extension's needs.
@@ -54,6 +55,7 @@ my-extension/
 ├── build-spi/
 ├── dev/
 ├── codegen/
+├── cli/
 └── codestart/
 ----
 
@@ -108,7 +110,7 @@ An extension using another extension can be either strongly or loosely coupled, 
 When an extension depends on another extension, it should clearly indicate whether it is tightly or loosely coupled:
 
 * Tightly coupled: The extension depends on the `runtime` or `build` module of another extension, indicating that it requires the full extension to be present.
-* Loosely coupled: The extension depends on the `api` or `build-spi` module of another extension, indicating that it can work independently of the full extension. Note that this may require conditional logic to handle the absence of the extension at runtime.
+* Loosely coupled: The extension depends on the `runtime-api` or `build-spi` module of another extension, indicating that it can work independently of the full extension. Note that this may require conditional logic to handle the absence of the extension at runtime.
 
 An extension can also decide to only support _tight-coupling_ and does not provide a `runtime-api` or `build-spi` module.
 
@@ -179,7 +181,7 @@ To transform an extension name into a package name, use the following pattern:
 ==== runtime module
 * `io.<quarkus|quarkiverse>.<extension-name>.runtime.internal|impl`: Internal implementation. Not part of the public API.
 * `io.<quarkus|quarkiverse>.<extension-name>.runtime.graal`: GraalVM substitutions. Not part of the public API.
-* `io.<quarkus|quarkiverse>.<extension-name>`: Public API when requiring tight-coupling. May include subpackages (excluding `api` and `dev`). Example: `io.quarkus.cache`. Note that this is discouraged in favor of the `runtime-api` module.
+* `io.<quarkus|quarkiverse>.<extension-name>`: Public API when requiring tight-coupling. May include subpackages (excluding `api` and `dev` packages). Example: `io.quarkus.cache`. Note that this is discouraged in favor of the `runtime-api` module.
 
 Non-API packages should be under `.impl` or `internal` like `io.quarkus.<extension-name>.runtime.internal` or `io.quarkus.<extension-name>.runtime.impl`.
 Thus, automated tooling can easily use this information to help generate a `module-info` with the correct exports, as well as excluding those packages from JavaDoc generation.

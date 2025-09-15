@@ -10,7 +10,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.devui.runtime.DevUIRecorder;
-import io.quarkus.devui.runtime.mcp.DevMcpJsonRpcService;
+import io.quarkus.devui.runtime.mcp.McpDevUIJsonRpcService;
 import io.quarkus.devui.runtime.mcp.McpResourcesService;
 import io.quarkus.devui.runtime.mcp.McpToolsService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -84,7 +84,7 @@ public class MCPProcessor {
     void createMCPJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> bp) {
         bp.produce(List.of(new JsonRPCProvidersBuildItem(NS_RESOURCES, McpResourcesService.class),
                 new JsonRPCProvidersBuildItem(NS_TOOLS, McpToolsService.class),
-                new JsonRPCProvidersBuildItem(NS_MCP, DevMcpJsonRpcService.class)));
+                new JsonRPCProvidersBuildItem(NS_MCP, McpDevUIJsonRpcService.class)));
 
     }
 }

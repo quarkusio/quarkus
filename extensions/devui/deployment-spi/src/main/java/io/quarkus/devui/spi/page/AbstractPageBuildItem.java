@@ -62,6 +62,10 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
         this.buildTimeData.put(fieldName, new BuildTimeData(fieldData, description));
     }
 
+    public void addBuildTimeData(String fieldName, Object fieldData, String description, boolean mcpEnabledByDefault) {
+        this.buildTimeData.put(fieldName, new BuildTimeData(fieldData, description, mcpEnabledByDefault));
+    }
+
     public Map<String, BuildTimeData> getBuildTimeData() {
         return this.buildTimeData;
     }

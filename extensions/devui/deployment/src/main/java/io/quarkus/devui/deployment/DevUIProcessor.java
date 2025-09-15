@@ -93,6 +93,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.qute.Qute;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.runtime.annotations.JsonRpcUsage;
 import io.quarkus.runtime.annotations.Usage;
@@ -226,6 +227,7 @@ public class DevUIProcessor {
 
             Map<String, String> urlAndPath = new HashMap<>();
             Map<String, String> descriptions = new HashMap<>();
+            Map<String, String> mcpDefaultEnabled = new HashMap<>();
             Map<String, String> contentTypes = new HashMap<>();
 
             List<DevUIContent> content = staticContentBuildItem.getContent();
@@ -239,12 +241,16 @@ public class DevUIProcessor {
                 if (c.getDescriptions() != null && !c.getDescriptions().isEmpty()) {
                     descriptions.putAll(c.getDescriptions());
                 }
+                if (c.getMcpDefaultEnables() != null && !c.getMcpDefaultEnables().isEmpty()) {
+                    mcpDefaultEnabled.putAll(c.getMcpDefaultEnables());
+                }
+
                 if (c.getContentTypes() != null && !c.getContentTypes().isEmpty()) {
                     contentTypes.putAll(c.getContentTypes());
                 }
             }
             Handler<RoutingContext> buildTimeStaticHandler = recorder.buildTimeStaticHandler(beanContainer.getValue(), basepath,
-                    urlAndPath, descriptions, contentTypes);
+                    urlAndPath, descriptions, mcpDefaultEnabled, contentTypes);
 
             routeProducer.produce(
                     nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH_ALL)
@@ -362,6 +368,7 @@ public class DevUIProcessor {
         Map<String, RuntimeJsonRpcMethod> runtimeSubscriptionsMap = new HashMap<>();// All subscriptions to execute against the runtime classpath
 
         DotName descriptionAnnotation = DotName.createSimple(JsonRpcDescription.class);
+        DotName devMCPEnableByDefaultAnnotation = DotName.createSimple(DevMCPEnableByDefault.class);
 
         // Let's use the Jandex index to find all methods
         for (JsonRPCProvidersBuildItem jsonRPCProvidersBuildItem : jsonRPCProvidersBuildItems) {
@@ -409,6 +416,7 @@ public class DevUIProcessor {
 
                         // Look for @JsonRpcDescription annotation
                         String description = null;
+                        boolean mcpEnabledByDefault = false;
                         AnnotationInstance jsonRpcDescriptionAnnotation = method
                                 .annotation(descriptionAnnotation);
                         if (jsonRpcDescriptionAnnotation != null) {
@@ -417,13 +425,21 @@ public class DevUIProcessor {
                                 description = descriptionValue.asString();
                                 usage = Usage.devUIandDevMCP();
                             }
+
+                            AnnotationInstance devMCPEnableByDefaultAnnotationInstance = method
+                                    .annotation(devMCPEnableByDefaultAnnotation);
+                            if (devMCPEnableByDefaultAnnotationInstance != null) {
+                                mcpEnabledByDefault = true;
+                            }
                         } else {
                             usage = Usage.onlyDevUI();
                         }
 
                         RuntimeJsonRpcMethod runtimeJsonRpcMethod = new RuntimeJsonRpcMethod(methodName, description,
                                 parameters,
-                                usage, clazz,
+                                usage,
+                                mcpEnabledByDefault,
+                                clazz,
                                 method.hasAnnotation(Blocking.class), method.hasAnnotation(NonBlocking.class));
 
                         // Create list of available methods for the Javascript side.
@@ -529,6 +545,7 @@ public class DevUIProcessor {
         o.setMethodName(i.getMethodName());
         o.setDescription(i.getDescription());
         o.setUsage(List.copyOf(i.getUsage()));
+        o.setMcpEnabledByDefault(i.isMcpEnabledByDefault());
         if (i.hasParameters()) {
             for (Map.Entry<String, AbstractJsonRpcMethod.Parameter> ip : i.getParameters().entrySet()) {
                 o.addParameter(ip.getKey(), ip.getValue().getType(), ip.getValue().getDescription());

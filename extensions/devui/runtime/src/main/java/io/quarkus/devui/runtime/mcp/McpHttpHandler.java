@@ -123,7 +123,7 @@ public class McpHttpHandler implements Handler<RoutingContext> {
     private void routeToMCPInitialize(JsonRpcRequest jsonRpcRequest, JsonRpcCodec codec, McpResponseWriter writer) {
         if (jsonRpcRequest.hasParam(CLIENT_INFO)) {
             Map map = jsonRpcRequest.getParam(CLIENT_INFO, Map.class);
-            DevMcpJsonRpcService devMcpJsonRpcService = CDI.current().select(DevMcpJsonRpcService.class).get();
+            McpDevUIJsonRpcService devMcpJsonRpcService = CDI.current().select(McpDevUIJsonRpcService.class).get();
             devMcpJsonRpcService.addClientInfo(McpClientInfo.fromMap(map));
         }
         String input = jsonMapper.toString(jsonRpcRequest, true);

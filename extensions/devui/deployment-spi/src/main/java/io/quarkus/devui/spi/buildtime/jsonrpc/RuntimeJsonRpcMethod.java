@@ -22,10 +22,11 @@ public final class RuntimeJsonRpcMethod extends AbstractJsonRpcMethod {
             String description,
             Map<String, Parameter> parameters,
             EnumSet<Usage> usage,
+            boolean mcpEnabledByDefault,
             Class<?> bean,
             boolean blocking,
             boolean nonBlocking) {
-        super(methodName, description, parameters, usage);
+        super(methodName, description, parameters, usage, mcpEnabledByDefault);
         this.bean = bean;
         this.blocking = blocking;
         this.nonBlocking = nonBlocking;

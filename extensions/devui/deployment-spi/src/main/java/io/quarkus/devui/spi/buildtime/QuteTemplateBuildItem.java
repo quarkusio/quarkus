@@ -33,12 +33,13 @@ public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
     }
 
     public void add(String templatename, Map<String, Object> data) {
-        templateDatas.add(new TemplateData(templatename, templatename, data, Map.of(), Map.of())); // By default the template is used for only one file.
+        templateDatas.add(new TemplateData(templatename, templatename, data, Map.of(), Map.of(), Map.of())); // By default the template is used for only one file.
     }
 
     public void add(String templatename, String fileName, Map<String, Object> data, Map<String, String> descriptions,
+            Map<String, String> mcpDefaultEnabled,
             Map<String, String> contentTypes) {
-        templateDatas.add(new TemplateData(templatename, fileName, data, descriptions, contentTypes));
+        templateDatas.add(new TemplateData(templatename, fileName, data, descriptions, mcpDefaultEnabled, contentTypes));
     }
 
     public static class TemplateData {
@@ -46,14 +47,20 @@ public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
         final String fileName;
         final Map<String, Object> data;
         final Map<String, String> descriptions;
+        final Map<String, String> mcpDefaultEnabled;
         final Map<String, String> contentTypes;
 
-        private TemplateData(String templateName, String fileName, Map<String, Object> data, Map<String, String> descriptions,
+        private TemplateData(String templateName,
+                String fileName,
+                Map<String, Object> data,
+                Map<String, String> descriptions,
+                Map<String, String> mcpDefaultEnabled,
                 Map<String, String> contentTypes) {
             this.templateName = templateName;
             this.fileName = fileName;
             this.data = data;
             this.descriptions = descriptions;
+            this.mcpDefaultEnabled = mcpDefaultEnabled;
             this.contentTypes = contentTypes;
         }
 
@@ -71,6 +78,10 @@ public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
 
         public Map<String, String> getDescriptions() {
             return descriptions;
+        }
+
+        public Map<String, String> getMcpDefaultEnables() {
+            return mcpDefaultEnabled;
         }
 
         public Map<String, String> getContentTypes() {

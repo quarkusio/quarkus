@@ -54,7 +54,7 @@
         <ansi-regex.version>5.0.1</ansi-regex.version>
         <ansi-styles.version>4.3.0</ansi-styles.version>
         <color-convert.version>2.0.1</color-convert.version>
-        <color-name.version>1.1.4</color-name.version>
+        <color-name.version>2.0.2</color-name.version>
         <dot.version>0.0.1</dot.version>
         <viz-js.version>3.12.0</viz-js.version>
     </properties>

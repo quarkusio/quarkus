@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive;
 import java.net.URI;
 import java.net.URL;
 import java.security.KeyStore;
+import java.time.Duration;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 
@@ -225,6 +226,14 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder
      */
     QuarkusRestClientBuilder nonProxyHosts(String nonProxyHosts);
+
+    /**
+     * Specifies the connect timeout for the proxy connection
+     *
+     * @param connectTimeout proxy connect timeout.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder proxyConnectTimeout(Duration connectTimeout);
 
     /**
      * Specifies the URI formatting style to use when multiple query parameter values are passed to the client.

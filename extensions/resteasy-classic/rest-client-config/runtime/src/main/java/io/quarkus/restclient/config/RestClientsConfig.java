@@ -1,6 +1,7 @@
 package io.quarkus.restclient.config;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -88,6 +89,16 @@ public interface RestClientsConfig {
      * This property is not applicable to the RESTEasy Client.
      */
     Optional<String> nonProxyHosts();
+
+    /**
+     * Proxy connection timeout
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("10s")
+    Optional<Duration> proxyConnectTimeout();
 
     /**
      * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
@@ -339,7 +350,7 @@ public interface RestClientsConfig {
          * <li>{@code none} - no additional logging</li>
          * </ul>
          *
-         * This property is applicable to reactive REST clients only.
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
         Optional<String> scope();
 
@@ -348,7 +359,7 @@ public interface RestClientsConfig {
          * <p>
          * By default, set to 100.
          * <p>
-         * This property is applicable to reactive REST clients only.
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
         @WithDefault("100")
         Integer bodyLimit();
@@ -358,7 +369,7 @@ public interface RestClientsConfig {
         /**
          * The max HTTP chunk size (8096 bytes by default).
          * <p>
-         * This property is applicable to reactive REST clients only.
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          *
          * @deprecated Use {@code quarkus.rest-client.max-chunk-size} instead
          */
@@ -417,8 +428,7 @@ public interface RestClientsConfig {
          * url.
          * The override is done using the REST Client class name configuration syntax.
          * <p>
-         * This property is not applicable to the RESTEasy Client, only the Quarkus Rest client (formerly RESTEasy Reactive
-         * client).
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
         Optional<String> overrideUri();
 
@@ -484,6 +494,14 @@ public interface RestClientsConfig {
          * This property is not applicable to the RESTEasy Client.
          */
         Optional<String> nonProxyHosts();
+
+        /**
+         * Proxy connection timeout
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("10s")
+        Optional<Duration> proxyConnectTimeout();
 
         /**
          * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",

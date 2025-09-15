@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyStore;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -81,6 +82,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String proxyUser;
     private String proxyPassword;
     private String nonProxyHosts;
+    private Duration proxyConnectTimeout;
 
     private ClientLogger clientLogger;
     private LoggingScope loggingScope;
@@ -234,6 +236,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
         this.nonProxyHosts = nonProxyHosts;
+        return this;
+    }
+
+    public RestClientBuilderImpl proxyConnectTimeout(Duration proxyConnectTimeout) {
+        this.proxyConnectTimeout = proxyConnectTimeout;
         return this;
     }
 
@@ -568,11 +575,16 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
 
         if (proxyHost != null) {
-            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts);
+            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts, proxyConnectTimeout);
         } else if (restClients.proxyAddress().isPresent()) {
             HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClients.proxyAddress().get());
-            configureProxy(globalProxy.host, globalProxy.port, restClients.proxyUser().orElse(null),
-                    restClients.proxyPassword().orElse(null), restClients.nonProxyHosts().orElse(null));
+            configureProxy(
+                    globalProxy.host,
+                    globalProxy.port,
+                    restClients.proxyUser().orElse(null),
+                    restClients.proxyPassword().orElse(null),
+                    restClients.nonProxyHosts().orElse(null),
+                    restClients.proxyConnectTimeout().orElse(null));
         }
 
         if (!clientBuilder.getConfiguration().hasProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE)) {
@@ -604,7 +616,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     private void configureProxy(String proxyHost, Integer proxyPort, String proxyUser, String proxyPassword,
-            String nonProxyHosts) {
+            String nonProxyHosts, Duration proxyConnectTimeout) {
         if (proxyHost != null) {
             clientBuilder.proxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyPassword != null) {
@@ -614,6 +626,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
             if (nonProxyHosts != null) {
                 clientBuilder.nonProxyHosts(nonProxyHosts);
+            }
+
+            if (proxyConnectTimeout != null) {
+                clientBuilder.proxyConnectTimeout(proxyConnectTimeout);
             }
         }
     }

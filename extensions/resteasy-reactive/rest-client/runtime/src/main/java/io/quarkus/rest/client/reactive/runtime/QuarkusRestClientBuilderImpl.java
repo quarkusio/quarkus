@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.net.URI;
 import java.net.URL;
 import java.security.KeyStore;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -124,6 +125,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder nonProxyHosts(String nonProxyHosts) {
         delegate.nonProxyHosts(nonProxyHosts);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder proxyConnectTimeout(Duration connectTimeout) {
+        delegate.proxyConnectTimeout(connectTimeout);
         return this;
     }
 

@@ -458,6 +458,9 @@ public final class DatabaseInspector {
             return true;
         }
 
+        if (ads == null)
+            return false;
+
         try {
             AgroalDataSourceConfiguration configuration = ads.getConfiguration();
             String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
@@ -469,7 +472,7 @@ public final class DatabaseInspector {
                 return true;
             }
 
-            String cleanUrl = jdbcUrl.replace("jdbc:", "");
+            String cleanUrl = jdbcUrl.replace("jdbc:", "").replaceFirst(";", "?").replace(";", "&");
             URI uri = new URI(cleanUrl);
 
             String host = uri.getHost();

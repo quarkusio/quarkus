@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 
 import graphql.schema.GraphQLSchema;
 import io.quarkus.assistant.runtime.dev.Assistant;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.smallrye.graphql.execution.SchemaPrinter;
 
@@ -26,6 +27,7 @@ public class GraphQLJsonRpcService {
     }
 
     @JsonRpcDescription("Get the running application's GraphQL Schema Document")
+    @DevMCPEnableByDefault
     public String getGraphQLSchema() {
         return schemaPrinter.print(graphQLSchema);
     }

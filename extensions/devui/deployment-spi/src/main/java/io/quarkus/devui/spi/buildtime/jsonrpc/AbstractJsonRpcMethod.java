@@ -15,23 +15,26 @@ public abstract class AbstractJsonRpcMethod {
     private String description;
     private Map<String, Parameter> parameters;
     private EnumSet<Usage> usage;
+    private boolean mcpEnabledByDefault = false;
 
     public AbstractJsonRpcMethod() {
     }
 
     public AbstractJsonRpcMethod(String methodName, String description,
-            EnumSet<Usage> usage) {
+            EnumSet<Usage> usage, boolean mcpEnabledByDefault) {
         this.methodName = methodName;
         this.description = description;
         this.usage = usage;
+        this.mcpEnabledByDefault = mcpEnabledByDefault;
     }
 
     public AbstractJsonRpcMethod(String methodName, String description, Map<String, Parameter> parameters,
-            EnumSet<Usage> usage) {
+            EnumSet<Usage> usage, boolean mcpEnabledByDefault) {
         this.methodName = methodName;
         this.description = description;
         this.parameters = parameters;
         this.usage = usage;
+        this.mcpEnabledByDefault = mcpEnabledByDefault;
     }
 
     public String getMethodName() {
@@ -80,6 +83,14 @@ public abstract class AbstractJsonRpcMethod {
 
     public void setUsage(EnumSet<Usage> usage) {
         this.usage = usage;
+    }
+
+    public boolean isMcpEnabledByDefault() {
+        return mcpEnabledByDefault;
+    }
+
+    public void setMcpEnabledByDefault(boolean mcpEnabledByDefault) {
+        this.mcpEnabledByDefault = mcpEnabledByDefault;
     }
 
     public static class Parameter {

@@ -356,6 +356,7 @@ public class BuildTimeContentProcessor {
 
         var mapper = DatabindCodec.mapper().writerWithDefaultPrettyPrinter();
         Map<String, String> descriptions = new HashMap<>();
+        Map<String, String> mcpDefaultEnabled = new HashMap<>();
         Map<String, String> contentTypes = new HashMap<>();
         for (BuildTimeConstBuildItem buildTimeConstBuildItem : buildTimeConstBuildItems) {
             Map<String, Object> data = new HashMap<>();
@@ -365,13 +366,18 @@ public class BuildTimeContentProcessor {
                         String ns = buildTimeConstBuildItem.getExtensionPathName(curateOutcomeBuildItem);
                         String key = pageData.getKey();
                         String value = mapper.writeValueAsString(pageData.getValue().getContent());
+                        String fullName = ns + UNDERSCORE + key;
+
                         String description = pageData.getValue().getDescription();
                         if (description != null) {
-                            descriptions.put(ns + UNDERSCORE + key, description);
+                            descriptions.put(fullName, description);
                         }
+                        boolean isEnabledByDefault = pageData.getValue().isMcpEnabledByDefault();
+
+                        mcpDefaultEnabled.put(fullName, String.valueOf(isEnabledByDefault));
                         String contentType = pageData.getValue().getContentType();
                         if (contentType != null) {
-                            contentTypes.put(ns + UNDERSCORE + key, contentType);
+                            contentTypes.put(fullName, contentType);
                         }
                         data.put(key, value);
                     } catch (JsonProcessingException ex) {
@@ -385,7 +391,7 @@ public class BuildTimeContentProcessor {
 
                 String ref = buildTimeConstBuildItem.getExtensionPathName(curateOutcomeBuildItem) + "-data";
                 String file = ref + ".js";
-                quteTemplateBuildItem.add("build-time-data.js", file, qutedata, descriptions, contentTypes);
+                quteTemplateBuildItem.add("build-time-data.js", file, qutedata, descriptions, mcpDefaultEnabled, contentTypes);
                 internalImportMapBuildItem.add(ref, contextRoot + file);
             }
         }
@@ -489,6 +495,7 @@ public class BuildTimeContentProcessor {
                 String templateName = e.getTemplateName(); // Relative to BUILD_TIME_PATH
                 Map<String, Object> data = e.getData();
                 Map<String, String> descriptions = e.getDescriptions();
+                Map<String, String> mcpDefaultEnabled = e.getMcpDefaultEnables();
                 Map<String, String> contentTypes = e.getContentTypes();
                 String resourceName = BUILD_TIME_PATH + SLASH + templateName;
                 String fileName = e.getFileName();
@@ -502,6 +509,7 @@ public class BuildTimeContentProcessor {
                                 .template(templateContent)
                                 .addData(data)
                                 .descriptions(descriptions)
+                                .mcpDefaultEnables(mcpDefaultEnabled)
                                 .contentTypes(contentTypes)
                                 .build();
                         contentPerExtension.add(content);
@@ -664,7 +672,7 @@ public class BuildTimeContentProcessor {
         }
 
         internalBuildTimeData.addBuildTimeData("footerTabs", footerTabs);
-        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS, "All the available logger levels");
+        internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS, "All the available logger levels", true);
     }
 
     private void addApplicationInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,

@@ -4,8 +4,6 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
-import '@vaadin/tabs';
-import '@vaadin/tabsheet';
 import '@vaadin/text-field';
 import '@vaadin/button';
 import '@vaadin/dialog';
@@ -13,6 +11,7 @@ import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import '@vaadin/vertical-layout';
 import 'qui-themed-code-block';
 import '@qomponent/qui-badge';
+import '@qomponent/qui-switch';
 
 /**
  * This component show all available tools for MCP clients
@@ -21,23 +20,14 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
     jsonRpc = new JsonRpc("tools");
 
     static styles = css`
-        :host {
-            height: 100%;
+        .grid {
             display:flex;
-            width: 100%;
+            flex-direction: column;
+            padding-left: 5px;
+            padding-right: 5px;
+            max-width: 100%;
         }
-    
-        vaadin-tabsheet {
-            width: 100%;
-            height: 100%;
-        }
-    
-        vaadin-grid {
-            height: 100%;
-        }
-        .filterText {
-            width: 100%;
-        }
+
     `;
 
     static properties = {
@@ -65,11 +55,10 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         this._filteredValue = null;
         this._loadTools();
         this._inputvalues.clear();
-        
     }
 
     render() {
-        if (this._tools) {    
+        if (this._tools) {
             return html`${this._renderTools()}`;
         }else{
             return html`
@@ -89,67 +78,63 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
     _renderTools(){
         return html`${this._renderToolInvovationResultDialog()}
                     ${this._renderToolInvocationInputDialog()}
-                    ${this._renderTabsheet()}`;
+                    ${this._renderGrid()}`;
     }
 
-    _renderTabsheet(){
-        return html`<vaadin-tabsheet>
-                        <vaadin-tabs slot="tabs">
-                            <vaadin-tab id="list-tab">List</vaadin-tab>
-                            <vaadin-tab id="raw-tab">Raw json</vaadin-tab>
-                        </vaadin-tabs>
-                        ${this._renderGridTab()}
-                        ${this._renderRawTab()}
-                    </vaadin-tabsheet>`;
-    }
+    _renderGrid(){
+        return html`<div class="grid">
+                    ${this._renderFilterTextbar()}
 
-    _renderGridTab(){
-        return html`<div tab="list-tab">
-                        ${this._renderFilterTextbar()}
-        
-                        <vaadin-grid .items="${this._filtered}" .selectedItems="${this._selectedTool}" theme="row-stripes" all-rows-visible
-                            @active-item-changed="${(e) => {
-                                const item = e.detail.value;
-                                this._selectedTool = item ? [item] : [];
+                    <vaadin-grid .items="${this._filtered}" .selectedItems="${this._selectedTool}" theme="row-stripes no-border" all-rows-visible
+                        @active-item-changed="${(e) => {
+                            const item = e.detail.value;
+                            this._selectedTool = item ? [item] : [];
 
-                                if(this._selectedTool.length>0){
-                                    let parameters = Object.keys(this._selectedTool[0].inputSchema.properties);
-                                    const propertyCount = parameters.length;
-                                    if(propertyCount>0) {
-                                        this._showInputDialog = true;
-                                    }else {
-                                        this._testJsonRpcCall(this._selectedTool[0], null);
-                                    }
+                            if(this._selectedTool.length>0){
+                                let parameters = Object.keys(this._selectedTool[0].inputSchema.properties);
+                                const propertyCount = parameters.length;
+                                if(propertyCount>0) {
+                                    this._showInputDialog = true;
+                                }else {
+                                    this._testJsonRpcCall(this._selectedTool[0], null);
                                 }
-                            }}">
-                            <vaadin-grid-sort-column 
-                                header='Namespace'
-                                path="name" 
-                                auto-width
-                                ${columnBodyRenderer(this._namespaceRenderer, [])}
-                            >
-                            </vaadin-grid-sort-column>
-                            <vaadin-grid-sort-column 
-                                header='Method'
-                                path="name" 
-                                auto-width
-                                ${columnBodyRenderer(this._nameRenderer, [])}
-                            >
-                            </vaadin-grid-sort-column>
-                            <vaadin-grid-sort-column 
-                                header='Description'
-                                path="description" 
-                                auto-width>
-                            </vaadin-grid-sort-column>
-                            <vaadin-grid-column
-                                header="Params"
-                                frozen-to-end
-                                auto-width
-                                flex-grow="0"
-                                ${columnBodyRenderer(this._noOfParameterRenderer, [])}
-                            ></vaadin-grid-column>    
-                        </vaadin-grid>
-                    </div>`;
+                            }
+                        }}">
+                        <vaadin-grid-column
+                            header="Enabled"
+                            frozen
+                            auto-width
+                            flex-grow="0"
+                            ${columnBodyRenderer(this._stateRenderer, [])}
+                        ></vaadin-grid-column>
+                        <vaadin-grid-sort-column 
+                            header='Namespace'
+                            path="name" 
+                            auto-width
+                            ${columnBodyRenderer(this._namespaceRenderer, [])}
+                        >
+                        </vaadin-grid-sort-column>
+                        <vaadin-grid-sort-column 
+                            header='Method'
+                            path="name" 
+                            auto-width
+                            ${columnBodyRenderer(this._nameRenderer, [])}
+                        >
+                        </vaadin-grid-sort-column>
+                        <vaadin-grid-sort-column 
+                            header='Description'
+                            path="description" 
+                            auto-width>
+                        </vaadin-grid-sort-column>
+                        <vaadin-grid-column
+                            header="Params"
+                            frozen-to-end
+                            auto-width
+                            flex-grow="0"
+                            ${columnBodyRenderer(this._noOfParameterRenderer, [])}
+                        ></vaadin-grid-column>    
+                    </vaadin-grid>
+                </div>`;
     }
 
     _renderFilterTextbar(){
@@ -161,18 +146,6 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                             <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
                             <qui-badge slot="suffix"><span>${this._filtered?.length}</span></qui-badge>
                         </vaadin-text-field>`;
-    }
-
-    _renderRawTab(){
-        return html`<div tab="raw-tab">
-                            <div class="codeBlock">
-                                <qui-themed-code-block 
-                                    mode='json'
-                                    content='${JSON.stringify(this._tools, null, 2)}'
-                                    showLineNumbers>
-                                </qui-themed-code-block>
-                            </div>
-                        </div>`;
     }
 
     _renderToolInvovationResultDialog(){
@@ -277,6 +250,17 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         this._showInputDialog = false;
     }
 
+    _stateRenderer(prop) {
+        
+        if(prop.name.startsWith("tools_") || prop.name.startsWith("resources_")){
+            return html``;
+        }else if(prop.enabled){  
+            return html`<qui-switch size="small" checked @valueChanged=${() => this._disableTool(prop)}></qui-switch>`;
+        }else{
+            return html`<qui-switch size="small" @valueChanged=${() => this._enableTool(prop)}></qui-switch>`;
+        }
+    }
+
     _namespaceRenderer(prop) {
         return html`${prop.name.split('_')[0]}`;
     }
@@ -291,6 +275,28 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         if(propertyCount>0) {
             return html`<qui-badge pill title="${parameters}"><span>${propertyCount}</span></qui-badge>`;
         }        
+    }
+
+    _disableTool(e){
+        this.jsonRpc.disableTool({name:e.name}).then(jsonRpcResponse => {
+            this._tools = this._tools.map(o =>
+                o === e ? { ...o, enabled: false } : o
+            );
+            this._filtered = this._filtered.map(o =>
+                o === e ? { ...o, enabled: false } : o
+            );
+        });
+    }
+
+    _enableTool(e){
+        this.jsonRpc.enableTool({name:e.name}).then(jsonRpcResponse => {
+            this._tools = this._tools.map(o =>
+                o === e ? { ...o, enabled: true } : o
+            );
+            this._filtered = this._filtered.map(o =>
+                o === e ? { ...o, enabled: true } : o
+            );
+        });
     }
 
     _updateSelectedValue(name, key, e){
@@ -341,8 +347,19 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     _loadTools(){
         this.jsonRpc.list().then(jsonRpcResponse => {
-            this._tools = jsonRpcResponse.result.tools;
-            this._filtered = this._tools;
+            let et = jsonRpcResponse.result.tools;
+            et = (et ?? []).map(o => ({ ...o, enabled: true }));
+            
+            this.jsonRpc.listDisabled().then(jsonRpcResponse => {
+                let dt = jsonRpcResponse.result.tools;
+                dt = (dt ?? []).map(o => ({ ...o, enabled: false }));
+                
+                const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+                this._tools = [...(et ?? []), ...(dt ?? [])]
+                  .sort((a, b) => collator.compare(a?.name ?? '', b?.name ?? ''));
+                this._filtered = this._tools;
+            });
         });
     }
 

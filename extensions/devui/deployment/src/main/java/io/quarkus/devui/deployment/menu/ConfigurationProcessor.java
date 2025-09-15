@@ -126,6 +126,7 @@ public class ConfigurationProcessor {
                     updateConfig(name, value, profile, target);
                     return true;
                 })
+                .enableMcpFuctionByDefault()
                 .build();
 
         configActions.actionBuilder()

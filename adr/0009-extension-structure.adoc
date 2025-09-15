@@ -64,33 +64,35 @@ NOTE: `deployment` and `deployment-spi` have been renamed to `build` and `build-
 === Additional Rules
 
 Module dependencies must follow strict rules:
+
 * `build` depends on `runtime`, and `build-spi` (if defined).
 * `runtime` depends on `runtime-api` (if defined).
 * External consumers should rely only on `runtime-api` or `build-spi` to be loose-coupled (See <<coupling-api-and-spi>>.).
 * External consumers should rely only on `runtime` or `build` to be tightly-coupled (forcing the target extension to be present at execution). See <<coupling-api-and-spi>>.
 * Public APIs must be explicitly documented, including build items meant for inter-extension use.
 * Public build items must document their intended usage (produced, consumed, or both).
-* Each module should provide an `Automatic-Module-Name` based on the root package:
+* Each module should provide an `Automatic-Module-Name` based on the root package
+Using the `Automatic-Module-Name` allows extensions to be used as JPMS modules in the future, even if we do not fully adopt JPMS yet.
+Also, it avoids split packages, as the `Automatic-Module-Name` must be unique across all modules in the Quarkus ecosystem:
 
-	Runtime:: `io.<quarkus|quarkiverse>.<extension-name>`
-	Build:: `io.<quarkus|quarkiverse>.<extension-name>.build`
-	Runtime API:: `io.<quarkus|quarkiverse>.<extension-name>.api`
-	Build SPI:: `io.<quarkus|quarkiverse>.<extension-name>.build.spi`
-	Dev:: `io.<quarkus|quarkiverse>.<extension-name>.dev`
-	Codegen:: `io.<quarkus|quarkiverse>.<extension-name>.codegen`
+	- Runtime: `io.<quarkus|quarkiverse>.<extension-name>`
+	- Build: `io.<quarkus|quarkiverse>.<extension-name>.build`
+	- Runtime API: `io.<quarkus|quarkiverse>.<extension-name>.api`
+	- Build SPI: `io.<quarkus|quarkiverse>.<extension-name>.build.spi`
+	- Dev: `io.<quarkus|quarkiverse>.<extension-name>.dev`
+	- Codegen: `io.<quarkus|quarkiverse>.<extension-name>.codegen`
+	- CLI: `io.<quarkus|quarkiverse>.<extension-name>.cli`
+
 * Each module should have artifact idents following the pattern:
 
-	Runtime:: `quarkus-<extension-name>`
-	Build:: `quarkus-<extension-name>-build`
-	Runtime API:: `quarkus-<extension-name>-api`
-	Build SPI:: `quarkus-<extension-name>-build-spi`
-	Dev:: `quarkus-<extension-name>-dev`
-	Codegen:: `quarkus-<extension-name>-codegen`
-    Codestart:: `quarkus-<extension-name>-codestart`
-
-
-Using the `Automatic-Module-Name` allows extensions to be used as JPMS modules in the future, even if we do not fully adopt JPMS yet.
-Also, it avoids split packages, as the `Automatic-Module-Name` must be unique across all modules in the Quarkus ecosystem.
+	- Runtime: `quarkus-<extension-name>`
+	- Build: `quarkus-<extension-name>-build`
+	- Runtime API: `quarkus-<extension-name>-api`
+	- Build SPI: `quarkus-<extension-name>-build-spi`
+	- Dev: `quarkus-<extension-name>-dev`
+	- Codegen: `quarkus-<extension-name>-codegen`
+    - Codestart: `quarkus-<extension-name>-codestart`
+	- CLI: `quarkus-<extension-name>-cli`
 
 [#coupling-api-and-spi]
 === Coupling, API and SPI
@@ -113,6 +115,7 @@ When an extension depends on another extension, it should clearly indicate wheth
 * Loosely coupled: The extension depends on the `runtime-api` or `build-spi` module of another extension, indicating that it can work independently of the full extension. Note that this may require conditional logic to handle the absence of the extension at runtime.
 
 An extension can also decide to only support _tight-coupling_ and does not provide a `runtime-api` or `build-spi` module.
+However, it is strongly recommended to provide at least a `build-spi` module to allow other extensions to integrate with it and `runtime-api` to allow other extensions to use its public API without forcing the full extension to be present.
 
 NOTE: Because of the integration nature of the build items located into the `build-spi` module, we recommend keeping `build-spi` as name.
 

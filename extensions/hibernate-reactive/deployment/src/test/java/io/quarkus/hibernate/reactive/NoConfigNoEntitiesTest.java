@@ -9,13 +9,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class NoEntitiesTest {
+public class NoConfigNoEntitiesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withEmptyApplication()
+            // The config won't really be empty if dev services are enabled
+            .overrideConfigKey("quarkus.devservices.enabled", "false");
 
-    // When having no entities,
+    // When having no entities, no configuration, no datasource,
     // as long as the Hibernate Reactive beans are not injected anywhere,
     // we should still be able to start the application.
     @Test

@@ -176,6 +176,9 @@ class HibernateSearchStandaloneProcessor {
                 .setRuntimeInit()
                 .createWith(recorder.createSearchMappingFunction(enabled.get().mapperContext))
                 .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                // This startup() call is necessary in order to trigger Arc's usage checks (fail startup if bean injected when inactive).
+                .startup()
+                .checkActive(recorder.checkActiveSupplier())
                 .done());
     }
 
@@ -206,7 +209,6 @@ class HibernateSearchStandaloneProcessor {
             // No boot
             return;
         }
-        recorder.bootEagerly();
         serviceStart.produce(new ServiceStartBuildItem("Hibernate Search Standalone"));
     }
 

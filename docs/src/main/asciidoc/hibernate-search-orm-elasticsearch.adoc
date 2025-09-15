@@ -982,6 +982,15 @@ Can also be set to built-in implementations through
 See link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
 for more information.
 
+[[mapping-active]]
+=== Activate/deactivate Hibernate Search
+
+When a persistence unit is configured for Hibernate Search indexing at build time,
+Hibernate Search is active in that persistence unit by default.
+Quarkus starts Hibernate Search when the application starts.
+
+To deactivate Hibernate Search in a given persistence unit at runtime, set `quarkus.hibernate-search-orm-elasticsearch[.optional name].active` to `false`. This works similarly to xref:hibernate-orm.adoc#persistence-unit-active[the corresponding feature of the Hibernate ORM extension], but for <<injecting-entry-points,Hibernate Search beans>>.
+
 [[offline-startup]]
 == Offline startup
 

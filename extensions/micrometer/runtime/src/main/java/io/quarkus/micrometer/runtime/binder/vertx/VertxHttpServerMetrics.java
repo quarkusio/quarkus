@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
@@ -56,19 +57,18 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
             OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions) {
-        super(registry, "http.server", null);
+        super(registry, "http.server", commonTags(httpServerOptions));
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
-
         activeRequests = new LongAdder();
+
+        Tags commonTags = commonTags(httpServerOptions);
+
         Gauge.Builder<LongAdder> activeRequestsBuilder = Gauge
                 .builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
                 .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http");
-        // we add a port tag (the one the application should actually bind to on the network host,
-        // not the public one which we can't know easily) only if it's not random
-        if (httpServerOptions.getPort() > 0) {
-            activeRequestsBuilder
-                    .tag("server.port", "" + httpServerOptions.getPort());
+        for (Tag commonTag : commonTags) {
+            activeRequestsBuilder.tag(commonTag.getKey(), commonTag.getValue());
         }
         activeRequestsBuilder.register(registry);
 
@@ -87,6 +87,16 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 .description("HTTP server response push counter")
                 .withRegistry(registry);
         // not dev-mode changeable -----ˆ
+    }
+
+    private static Tags commonTags(HttpServerOptions httpServerOptions) {
+        Tags result = Tags.empty();
+        // we add a port tag (the one the application should actually bind to on the network host,
+        // not the public one which we can't know easily) only if it's not random
+        if (httpServerOptions.getPort() > 0) {
+            result = result.and("server.port", "" + httpServerOptions.getPort());
+        }
+        return result;
     }
 
     private List<HttpServerMetricsTagsContributor> resolveHttpServerMetricsTagsContributors() {

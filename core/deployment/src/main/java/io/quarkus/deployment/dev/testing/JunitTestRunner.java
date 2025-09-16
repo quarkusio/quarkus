@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,6 +90,9 @@ public class JunitTestRunner {
     public static final DotName QUARKUS_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusTest");
     public static final DotName QUARKUS_MAIN_TEST = DotName.createSimple("io.quarkus.test.junit.main.QuarkusMainTest");
     public static final DotName QUARKUS_INTEGRATION_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
+    public static final DotName QUARKUS_COMPONENT_TEST = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTest");
+    public static final DotName QUARKUS_COMPONENT_TEST_EXTENSION = DotName
+            .createSimple("io.quarkus.test.component.QuarkusComponentTestExtension");
     public static final DotName TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.TestProfile");
     public static final DotName TEST = DotName.createSimple(Test.class.getName());
     public static final DotName REPEATED_TEST = DotName.createSimple(RepeatedTest.class.getName());
@@ -99,6 +103,7 @@ public class JunitTestRunner {
     public static final DotName NESTED = DotName.createSimple(Nested.class.getName());
     private static final String ARCHUNIT_FIELDSOURCE_FQCN = "com.tngtech.archunit.junit.FieldSource";
     private static final String FACADE_CLASS_LOADER_NAME = "io.quarkus.test.junit.classloading.FacadeClassLoader";
+    private static final String TEST_DISCOVERY_PROPERTY = "quarkus.continuous-tests-discovery";
 
     private final long runId;
     private final DevModeContext.ModuleInfo moduleInfo;
@@ -568,6 +573,9 @@ public class JunitTestRunner {
         //for now this is out of scope, we are just going to do annotation based discovery
         //we will need to fix this sooner rather than later though
 
+        // Set the system property that is used for QuarkusComponentTest
+        System.setProperty(TEST_DISCOVERY_PROPERTY, "true");
+
         if (moduleInfo.getTest().isEmpty()) {
             return DiscoveryResult.EMPTY;
         }
@@ -610,6 +618,22 @@ public class JunitTestRunner {
                         quarkusTestClasses.add(clazz.name().toString());
                     }
                 }
+            }
+        }
+
+        Set<String> quarkusComponentTestClasses = new HashSet<>();
+        for (AnnotationInstance a : index.getAnnotations(QUARKUS_COMPONENT_TEST)) {
+            DotName name = a.target().asClass().name();
+            quarkusComponentTestClasses.add(name.toString());
+            for (ClassInfo subclass : index.getAllKnownSubclasses(name)) {
+                quarkusComponentTestClasses.add(subclass.name().toString());
+            }
+        }
+        for (ClassInfo clazz : index.getKnownUsers(QUARKUS_COMPONENT_TEST_EXTENSION)) {
+            DotName name = clazz.name();
+            quarkusComponentTestClasses.add(name.toString());
+            for (ClassInfo subclass : index.getAllKnownSubclasses(name)) {
+                quarkusComponentTestClasses.add(subclass.name().toString());
             }
         }
 
@@ -676,7 +700,8 @@ public class JunitTestRunner {
         for (DotName testClass : allTestClasses) {
             String name = testClass.toString();
             if (integrationTestClasses.contains(name)
-                    || quarkusTestClasses.contains(name)) {
+                    || quarkusTestClasses.contains(name)
+                    || quarkusComponentTestClasses.contains(name)) {
                 continue;
             }
             var enclosing = enclosingClasses.get(testClass);
@@ -705,11 +730,14 @@ public class JunitTestRunner {
         // if we didn't find any test classes, let's return early
         // Make sure you also update the logic for the non-empty case above if you adjust this part
         if (testType == TestType.ALL) {
-            if (unitTestClasses.isEmpty() && quarkusTestClasses.isEmpty()) {
+            if (unitTestClasses.isEmpty()
+                    && quarkusTestClasses.isEmpty()
+                    && quarkusComponentTestClasses.isEmpty()) {
                 return DiscoveryResult.EMPTY;
             }
         } else if (testType == TestType.UNIT) {
-            if (unitTestClasses.isEmpty()) {
+            if (unitTestClasses.isEmpty()
+                    && quarkusComponentTestClasses.isEmpty()) {
                 return DiscoveryResult.EMPTY;
             }
         } else if (quarkusTestClasses.isEmpty()) {
@@ -784,8 +812,9 @@ public class JunitTestRunner {
                 return testProfile.value().asClass().name().toString() + "$$" + aClass.getName();
             }
         }));
+
         QuarkusClassLoader cl = null;
-        if (!unitTestClasses.isEmpty()) {
+        if (!unitTestClasses.isEmpty() || !quarkusComponentTestClasses.isEmpty()) {
             //we need to work the unit test magic
             //this is a lot more complex
             //we need to transform the classes to make the tracing magic work
@@ -810,6 +839,7 @@ public class JunitTestRunner {
             cl = testApplication.createDeploymentClassLoader();
             deploymentClassLoader = cl;
             cl.reset(Collections.emptyMap(), transformedClasses);
+
             for (String i : unitTestClasses) {
                 try {
                     utClasses.add(cl.loadClass(i));
@@ -820,6 +850,30 @@ public class JunitTestRunner {
                 }
             }
 
+            if (!quarkusComponentTestClasses.isEmpty()) {
+                try {
+                    // We use the deployment class loader to load the test class
+                    Class<?> qcfcClazz = cl.loadClass("io.quarkus.test.component.QuarkusComponentFacadeClassLoaderProvider");
+                    Constructor<?> c = qcfcClazz.getConstructor(Class.class, Set.class);
+                    Method getClassLoader = qcfcClazz.getMethod("getClassLoader", String.class, ClassLoader.class);
+                    for (String componentTestClass : quarkusComponentTestClasses) {
+                        try {
+                            Class<?> testClass = cl.loadClass(componentTestClass);
+                            Object ecl = c.newInstance(testClass, classesToTransform);
+                            ClassLoader excl = (ClassLoader) getClassLoader.invoke(ecl, componentTestClass, cl);
+                            utClasses.add(excl.loadClass(componentTestClass));
+                        } catch (Exception e) {
+                            log.debug(e);
+                            log.warnf("Failed to load component test class %s, it will not be executed this run.",
+                                    componentTestClass);
+                        }
+                    }
+                } catch (ClassNotFoundException | IllegalArgumentException
+                        | SecurityException | NoSuchMethodException e) {
+                    log.warn(
+                            "Failed to load QuarkusComponentFacadeClassLoaderProvider, component test classes will not be executed this run.");
+                }
+            }
         }
 
         if (classLoaderToClose != null) {
@@ -831,6 +885,9 @@ public class JunitTestRunner {
                 throw new RuntimeException(e);
             }
         }
+
+        // Unset the system property that is used for QuarkusComponentTest
+        System.clearProperty(TEST_DISCOVERY_PROPERTY);
 
         // Make sure you also update the logic for the empty case above if you adjust this part
         if (testType == TestType.ALL) {

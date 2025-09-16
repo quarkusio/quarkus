@@ -3,12 +3,17 @@ package io.quarkus.hibernate.reactive.panache.deployment;
 import static io.quarkus.hibernate.reactive.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.hibernate.reactive.panache.runtime.PanacheHibernateReactiveRecorder;
 import jakarta.persistence.Id;
 
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -145,6 +150,16 @@ public final class PanacheHibernateResourceProcessor {
                 .forEach((e, pu) -> {
                     entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu));
                 });
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void recordEntityToPersistenceUnit(List<EntityToPersistenceUnitBuildItem> items, PanacheHibernateReactiveRecorder recorder) {
+        Map<String, String> map = new HashMap<>();
+        for (EntityToPersistenceUnitBuildItem item : items) {
+            map.put(item.getEntityClass(), item.getPersistenceUnitName());
+        }
+        recorder.setEntityToPersistenceUnit(map);
     }
 
     @BuildStep

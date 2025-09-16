@@ -5,6 +5,8 @@ import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.
 import io.smallrye.common.annotation.CheckReturnValue
 import io.smallrye.mutiny.Uni
 import jakarta.json.bind.annotation.JsonbTransient
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 interface PanacheEntityBase {
     /**
@@ -13,7 +15,7 @@ interface PanacheEntityBase {
      *
      * @return true if this entity is persistent in the database.
      */
-    @JsonbTransient @JsonIgnore fun isPersistent(): Boolean = INSTANCE.isPersistent(this)
+    @JsonbTransient @JsonIgnore fun isPersistent(): Boolean = INSTANCE.isPersistent(this).await().atMost(5.seconds.toJavaDuration())
 
     /** Persist this entity in the database. This will set its ID field if not already set. */
     @CheckReturnValue

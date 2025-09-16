@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.panache;
 
 import static io.quarkus.hibernate.reactive.panache.runtime.JpaOperations.INSTANCE;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -68,7 +69,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
     @CheckReturnValue
     public default Uni<Entity> persistAndFlush(Entity entity) {
         return INSTANCE.persist(entity)
-                .flatMap(v -> INSTANCE.flush())
+                .flatMap(v -> INSTANCE.flush(entity))
                 .map(v -> entity);
     }
 
@@ -97,7 +98,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return true if the entity is persistent in the database.
      */
     public default boolean isPersistent(Entity entity) {
-        return INSTANCE.isPersistent(entity);
+        return INSTANCE.isPersistent(entity).await().atMost(Duration.ofSeconds(5));
     }
 
     /**
@@ -107,7 +108,9 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     @CheckReturnValue
     public default Uni<Void> flush() {
-        return INSTANCE.flush();
+        // TODO Luca not sure about this should it flush all the sessions?
+        // TODO Luca this will crash
+        return INSTANCE.flush(null);
     }
 
     // Queries

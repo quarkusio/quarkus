@@ -1,5 +1,10 @@
 package io.quarkus.micrometer.runtime.export.handlers;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
@@ -10,6 +15,8 @@ import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
@@ -17,15 +24,44 @@ import io.vertx.ext.web.RoutingContext;
 
 public class PrometheusHandler implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger(PrometheusHandler.class);
+    private final boolean enableCompression;
+    private final Set<String> compressMediaTypes;
 
     private PrometheusMeterRegistry registry;
 
     private boolean setup = false;
 
+    public PrometheusHandler(boolean enableCompression, Optional<List<String>> compressMediaTypes) {
+        this.enableCompression = enableCompression;
+        this.compressMediaTypes = determineCompressMediaTypes(compressMediaTypes);
+    }
+
+    private Set<String> determineCompressMediaTypes(Optional<List<String>> maybeCompressMediaTypes) {
+        if (maybeCompressMediaTypes.isPresent()) {
+            List<String> compressMediaTypes = maybeCompressMediaTypes.get();
+            if (compressMediaTypes.contains("text/plain")) {
+                return Set.of("text/plain", "application/openmetrics-text");
+            }
+        }
+        return Collections.emptySet();
+    }
+
     @Override
     public void handle(RoutingContext routingContext) {
         if (!setup) {
             setup();
+        }
+
+        if (enableCompression) {
+            routingContext.addEndHandler(new Handler<>() {
+
+                @Override
+                public void handle(AsyncResult<Void> result) {
+                    if (result.succeeded()) {
+                        HttpCompressionHandler.compressIfNeeded(routingContext, compressMediaTypes);
+                    }
+                }
+            });
         }
 
         HttpServerResponse response = routingContext.response();

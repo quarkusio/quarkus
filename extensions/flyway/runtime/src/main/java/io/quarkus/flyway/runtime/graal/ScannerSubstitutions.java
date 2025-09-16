@@ -1,5 +1,6 @@
 package io.quarkus.flyway.runtime.graal;
 
+import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.scanner.LocationScannerCache;
 import org.flywaydb.core.internal.scanner.ResourceNameCache;
@@ -15,12 +16,11 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class ScannerSubstitutions<I> {
 
     @Substitute
-    public ScannerSubstitutions(
-            Class<I> implementedInterface,
-            boolean stream,
+    public ScannerSubstitutions(Class<I> implementedInterface,
             ResourceNameCache resourceNameCache,
             LocationScannerCache locationScannerCache,
-            Configuration configuration) {
+            Configuration configuration,
+            Location[] locations) {
         throw new IllegalStateException("'org.flywaydb.core.internal.scanner.Scanner' is never used in Quarkus");
     }
 }

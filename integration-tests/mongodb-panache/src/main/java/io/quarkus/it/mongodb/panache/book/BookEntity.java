@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.validation.constraints.NotNull;
+
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
@@ -15,6 +17,7 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2", readPreference = "primary")
 public class BookEntity extends PanacheMongoEntity {
+    @NotNull
     @BsonProperty("bookTitle")
     private String title;
     private String author;

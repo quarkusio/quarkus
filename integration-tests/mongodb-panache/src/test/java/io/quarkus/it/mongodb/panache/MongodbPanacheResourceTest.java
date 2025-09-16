@@ -416,4 +416,8 @@ class MongodbPanacheResourceTest {
         get("/bugs/23813").then().statusCode(200);
     }
 
+    @Test
+    void validation() {
+        get("/books/entity/validation").then().statusCode(200).body(is("must not be null"));
+    }
 }

@@ -48,10 +48,20 @@ public final class SessionOperations {
                     return new BaseKey<>(Mutiny.Session.class, implementor.getUuid());
                 }
             });
+    private static final LazyValue<Key<Mutiny.StatelessSession>> STATELESS_SESSION_KEY = new LazyValue<>(
+            new Supplier<Key<Mutiny.StatelessSession>>() {
+
+                @Override
+                public Key<Mutiny.StatelessSession> get() {
+                    Implementor implementor = (Implementor) ClientProxy.unwrap(SESSION_FACTORY.get());
+                    return new BaseKey<>(Mutiny.StatelessSession.class, implementor.getUuid());
+                }
+            });
 
     // This key is used to indicate that a reactive session should be opened lazily (when needed) in the current vertx context
     private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
+    private static final String STATELESS_SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.statelessSessionOnDemandOpened";
 
     /**
      * Marks the current vertx duplicated context as "lazy" which indicates that a reactive session should be opened lazily if
@@ -61,6 +71,7 @@ public final class SessionOperations {
      * @param work
      * @return a new {@link Uni}
      * @see #getSession()
+     * @see #getStatelessSession()
      */
     static <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();
@@ -74,13 +85,14 @@ public final class SessionOperations {
             return work.get().eventually(() -> {
                 context.removeLocal(SESSION_ON_DEMAND_KEY);
                 context.removeLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                context.removeLocal(STATELESS_SESSION_ON_DEMAND_OPENED_KEY);
                 return closeSession();
             });
         }
     }
 
     /**
-     * Performs the work in the scope of a reactive transaction. An existing session is reused if possible.
+     * Performs the work in the scope of a reactive transaction. An existing managed session is reused if possible.
      *
      * @param <T>
      * @param work
@@ -88,6 +100,17 @@ public final class SessionOperations {
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
         return withSession(s -> s.withTransaction(t -> work.get()));
+    }
+
+    /**
+     * Performs the work in the scope of a reactive transaction. An existing stateless session is reused if possible.
+     *
+     * @param <T>
+     * @param work
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withStatelessTransaction(Supplier<Uni<T>> work) {
+        return withStatelessSession(s -> s.withTransaction(t -> work.get()));
     }
 
     /**
@@ -122,6 +145,30 @@ public final class SessionOperations {
                     .invoke(s -> context.putLocal(key, s))
                     .chain(work::apply)
                     .eventually(SessionOperations::closeSession);
+        }
+    }
+
+    /**
+     * Performs the work in the scope of a reactive stateless session. An existing stateless session is reused if possible.
+     *
+     * @param <T>
+     * @param work
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withStatelessSession(Function<Mutiny.StatelessSession, Uni<T>> work) {
+        Context context = vertxContext();
+        Key<Mutiny.StatelessSession> key = getStatelessSessionKey();
+        Mutiny.StatelessSession current = context.getLocal(key);
+        if (current != null && current.isOpen()) {
+            // reactive session exists - reuse this session
+            return work.apply(current);
+        } else {
+            // reactive session does not exist - open a new one and close it when the returned Uni completes
+            return getSessionFactory()
+                    .openStatelessSession()
+                    .invoke(s -> context.putLocal(key, s))
+                    .chain(work::apply)
+                    .eventually(SessionOperations::closeStatelessSession);
         }
     }
 
@@ -167,11 +214,67 @@ public final class SessionOperations {
     }
 
     /**
+     * If there is a reactive stateless session stored in the current Vert.x duplicated context then this stateless session is
+     * reused.
+     * <p>
+     * However, if there is no reactive stateless session found then:
+     * <ol>
+     * <li>if the current vertx duplicated context is marked as "lazy" then a new stateless session is opened and stored it in
+     * the
+     * context</li>
+     * <li>otherwise an exception thrown</li>
+     * </ol>
+     *
+     * @throws IllegalStateException If no reactive stateless session was found in the context and the context was not marked to
+     *         open a
+     *         new stateless session lazily
+     * @return the {@link Mutiny.StatelessSession}
+     */
+    public static Uni<Mutiny.StatelessSession> getStatelessSession() {
+        Context context = vertxContext();
+        Key<Mutiny.StatelessSession> key = getStatelessSessionKey();
+        Mutiny.StatelessSession current = context.getLocal(key);
+        if (current != null && current.isOpen()) {
+            // reuse the existing reactive session
+            return Uni.createFrom().item(current);
+        } else {
+            if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
+                if (context.getLocal(STATELESS_SESSION_ON_DEMAND_OPENED_KEY) != null) {
+                    // a new reactive session is opened in a previous stage
+                    return Uni.createFrom().item(SessionOperations::getCurrentStatelessSession);
+                } else {
+                    // open a new reactive session and store it in the vertx duplicated context
+                    // the context was marked as "lazy" which means that the session will be eventually closed
+                    context.putLocal(STATELESS_SESSION_ON_DEMAND_OPENED_KEY, true);
+                    return getSessionFactory().openStatelessSession().invoke(s -> context.putLocal(key, s));
+                }
+            } else {
+                throw new IllegalStateException("No current Mutiny.StatelessSession found"
+                        + "\n\t- no reactive stateless session was found in the Vert.x context and the context was not marked to open a new stateless session lazily"
+                        + "\n\t- a stateless session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
+                        + "\n\t- you may need to annotate the business method with @WithSession(stateless = true) or @WithTransaction(stateless = true)");
+            }
+        }
+    }
+
+    /**
      * @return the current reactive session stored in the context, or {@code null} if no session exists
      */
     public static Mutiny.Session getCurrentSession() {
         Context context = vertxContext();
         Mutiny.Session current = context.getLocal(getSessionKey());
+        if (current != null && current.isOpen()) {
+            return current;
+        }
+        return null;
+    }
+
+    /**
+     * @return the current reactive stateless session stored in the context, or {@code null} if no stateless session exists
+     */
+    public static Mutiny.StatelessSession getCurrentStatelessSession() {
+        Context context = vertxContext();
+        Mutiny.StatelessSession current = context.getLocal(getStatelessSessionKey());
         if (current != null && current.isOpen()) {
             return current;
         }
@@ -204,8 +307,22 @@ public final class SessionOperations {
         return Uni.createFrom().voidItem();
     }
 
+    static Uni<Void> closeStatelessSession() {
+        Context context = vertxContext();
+        Key<Mutiny.StatelessSession> key = getStatelessSessionKey();
+        Mutiny.StatelessSession current = context.getLocal(key);
+        if (current != null && current.isOpen()) {
+            return current.close().eventually(() -> context.removeLocal(key));
+        }
+        return Uni.createFrom().voidItem();
+    }
+
     static Key<Mutiny.Session> getSessionKey() {
         return SESSION_KEY.get();
+    }
+
+    static Key<Mutiny.StatelessSession> getStatelessSessionKey() {
+        return STATELESS_SESSION_KEY.get();
     }
 
     static Mutiny.SessionFactory getSessionFactory() {
@@ -215,5 +332,6 @@ public final class SessionOperations {
     static void clear() {
         SESSION_FACTORY.clear();
         SESSION_KEY.clear();
+        STATELESS_SESSION_KEY.clear();
     }
 }

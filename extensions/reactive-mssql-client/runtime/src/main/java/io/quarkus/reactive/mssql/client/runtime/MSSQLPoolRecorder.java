@@ -49,8 +49,6 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class MSSQLPoolRecorder {
 
-    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
-
     private static final TypeLiteral<Instance<MSSQLPoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
@@ -229,10 +227,6 @@ public class MSSQLPoolRecorder {
                 mssqlConnectOptions.setPassword(password);
             }
         }
-
-        mssqlConnectOptions
-                .setCachePreparedStatements(
-                        dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
         mssqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts());
 

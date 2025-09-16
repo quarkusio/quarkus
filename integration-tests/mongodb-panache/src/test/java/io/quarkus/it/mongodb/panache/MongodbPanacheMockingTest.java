@@ -1,6 +1,7 @@
 package io.quarkus.it.mongodb.panache;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
@@ -127,6 +128,12 @@ public class MongodbPanacheMockingTest {
         Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIdOptional(0L));
         // bridge call
         Assertions.assertEquals(Optional.empty(), ((PanacheMongoRepositoryBase) realPersonRepository).findByIdOptional(0L));
+
+        // normal method call
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(List.of(0L)));
+        // bridge call
+        Assertions.assertEquals(Collections.emptyList(),
+                ((PanacheMongoRepositoryBase) realPersonRepository).findByIds(List.of(0L)));
 
         // normal method call
         Assertions.assertEquals(false, realPersonRepository.deleteById(0L));

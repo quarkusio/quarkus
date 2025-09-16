@@ -205,6 +205,11 @@ List<Person> allPersons = Person.listAll();
 ObjectId personId = new ObjectId(idAsString);
 person = Person.findById(personId);
 
+// finding a specific persons by their ID
+ObjectId personId1 = new ObjectId(id1AsString);
+ObjectId personId2 = new ObjectId(id2AsString);
+List<Person> person = Person.findByIds(List.of(personId1, personId2);
+
 // finding a specific person by ID via an Optional
 Optional<Person> optional = Person.findByIdOptional(personId);
 person = optional.orElseThrow(() -> new NotFoundException());
@@ -372,6 +377,11 @@ List<Person> allPersons = personRepository.listAll();
 // here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 person = personRepository.findById(personId);
+
+// finding a specific persons by their ID
+ObjectId personId1 = new ObjectId(id1AsString);
+ObjectId personId2 = new ObjectId(id2AsString);
+List<Person> person = personRepository.findByIds(List.of(personId1, personId2);
 
 // finding a specific person by ID via an Optional
 Optional<Person> optional = personRepository.findByIdOptional(personId);
@@ -863,7 +873,7 @@ data class Person (
 
 [IMPORTANT]
 ====
-Unlike the @BsonCreator approach, `val` cannot be used here. Properties must be defined as `var`, otherwise, the system creates an object with 
+Unlike the @BsonCreator approach, `val` cannot be used here. Properties must be defined as `var`, otherwise, the system creates an object with
 `null` values for every property.
 ====
 
@@ -934,6 +944,11 @@ Uni<List<ReactivePerson>> allPersons = ReactivePerson.listAll();
 // here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 Uni<ReactivePerson> personById = ReactivePerson.findById(personId);
+
+// finding a specific persons by their ID
+ObjectId personId1 = new ObjectId(id1AsString);
+ObjectId personId2 = new ObjectId(id2AsString);
+Uni<List<Person>> person = ReactivePerson.findByIds(List.of(personId1, personId2);
 
 // finding a specific person by ID via an Optional
 Uni<Optional<ReactivePerson>> optional = ReactivePerson.findByIdOptional(personId);

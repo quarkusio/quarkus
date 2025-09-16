@@ -54,12 +54,12 @@ class TestAnalogs {
         compare(
             map(JavaPanacheMongoRepositoryBase::class),
             map(PanacheMongoRepositoryBase::class),
-            listOf("findByIdOptional"),
+            listOf("findByIdOptional", "findByIds"),
         )
         compare(
             map(ReactiveJavaPanacheMongoRepositoryBase::class),
             map(ReactivePanacheMongoRepositoryBase::class),
-            listOf("findByIdOptional"),
+            listOf("findByIdOptional", "findByIds"),
         )
     }
 
@@ -119,7 +119,9 @@ class TestAnalogs {
                 }
             }
         }
-        javaMethods.removeIf { it.name == "findByIdOptional" || it in implemented }
+        javaMethods.removeIf {
+            it.name == "findByIdOptional" || it.name == "findByIds" || it in implemented
+        }
 
         methods("javaMethods", javaMethods)
         methods("kotlinMethods", kotlinMethods)

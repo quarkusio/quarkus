@@ -748,27 +748,12 @@ public class StockMethodsAdder {
                     ResultHandle entityClass = findAllById.readInstanceField(entityClassFieldDescriptor,
                             findAllById.getThis());
 
-                    ResultHandle list;
-                    AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
-                    FieldInfo idField = getIdField(idAnnotationTarget);
-                    if ((idField != null) &&
-                            (DotNames.LONG.equals(idField.type().name()) || DotNames.INTEGER.equals(idField.type().name())
-                                    || DotNames.STRING.equals(idField.type().name()))) {
-                        MethodDescriptor method = ofMethod(RepositorySupport.class, "findByIds",
-                                List.class, AbstractJpaOperations.class, Class.class, String.class,
-                                Iterable.class);
-                        list = findAllById.invokeStaticMethod(method,
-                                findAllById.readStaticField(operationsField),
-                                entityClass,
-                                findAllById.load(idField.name()), findAllById.getMethodParam(0));
-                    } else {
-                        list = findAllById.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(RepositorySupport.class, "findByIds",
-                                        List.class, AbstractJpaOperations.class, Class.class, Iterable.class),
-                                findAllById.readStaticField(operationsField),
-                                entityClass,
-                                findAllById.getMethodParam(0));
-                    }
+                    ResultHandle list = findAllById.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(RepositorySupport.class, "findByIds",
+                                    List.class, AbstractJpaOperations.class, Class.class, Iterable.class),
+                            findAllById.readStaticField(operationsField),
+                            entityClass,
+                            findAllById.getMethodParam(0));
 
                     findAllById.returnValue(list);
                 }

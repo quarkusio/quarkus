@@ -73,6 +73,29 @@ public interface MicrometerConfig {
         return false;
     }
 
+    default boolean isEnabled(Optional<Boolean> aBoolean) {
+        if (enabled()) {
+            if (this.binder().enableAll()) {
+                return true;
+            } else {
+                return aBoolean.orElse(false);
+            }
+        }
+
+        return false;
+    }
+
+    default boolean isEnabled(CapabilityEnabled config) {
+        if (enabled()) {
+            if (this.binder().enableAll()) {
+                return true;
+            } else {
+                return checkBinderEnabledWithDefault(config);
+            }
+        }
+        return false;
+    }
+
     /** Build / static runtime config for binders */
     @ConfigGroup
     interface BinderConfig {
@@ -117,6 +140,13 @@ public interface MicrometerConfig {
         VertxConfigGroup vertx();
 
         NettyConfigGroup netty();
+
+        /**
+         * Enable all binders.
+         */
+        @WithDefault("false")
+        boolean enableAll();
+
     }
 
     /** Build / static runtime config for exporters */

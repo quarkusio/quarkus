@@ -825,7 +825,17 @@ Consequently, the pre-transaction block must use the passed data source to execu
 Thus, the commands are emitted from that connection.
 These commands must not modify the watched keys.
 
-The transaction is aborted if the pre-transaction block throws an exception (or produces a failure when using the reactive API).
+==== Error handling
+
+If the transaction block returns successfully (or completes with an item in case of the reactive API), the transaction is executed.
+Note that in this case, some transaction commands may succeed and some may fail; this is standard Redis behavior.
+The `TransactionResult.hasErrors()` method indicates whether at least one command failed.
+Results of failed commands in the `TransactionResult` are represented as ``Throwable``s.
+If the transaction block throws an exception (or completes with a failure in case of the reactive API), the transaction is discarded automatically and the exception is rethrown (or the resulting `Uni` completes with the same failure in case of the reactive API).
+
+In case of the optimistic locking API, if the pre-transaction block returns successfully (or completes with an item in case of the reactive API), the transaction is started and execution proceeds to the transaction block.
+If the pre-transaction block throws an exception (or completes with a failure in case of the reactive API), all watched keys are ``UNWATCH``ed automatically and the exception is rethrown (or the resulting `Uni` completes with the same failure in case of the reactive API).
+In this case, the transaction is not started and the transaction block is not executed.
 
 ==== Transactions in Redis Cluster
 

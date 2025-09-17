@@ -1,0 +1,12 @@
+name: tooling-gradle-wrapper
+type: tooling
+output-strategy:
+  "gradlew": "executable"
+language:
+  base:
+    data:
+      gradle:
+        version: 8.14
+    shared-data:
+      buildtool:
+        cli: ./gradlew

@@ -603,7 +603,7 @@ testImplementation("io.quarkus:quarkus-junit5")
 
 The preferred approach for integration testing against Keycloak is xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].
 `Dev Services for Keycloak` will start and initialize a test container.
-Then, it will create a `quarkus` realm and a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
+Then, it will create a `quarkus` realm and a `quarkus-app` client with `secret` as the client secret. It will also add two users: `alice` with both `admin` and `user` roles, and `bob` with the `user` role. All of these properties can be customized.
 
 First, add the following dependency, which provides a utility class `io.quarkus.test.keycloak.client.KeycloakTestClient` that you can use in tests for acquiring the access tokens:
 
@@ -626,7 +626,7 @@ testImplementation("io.quarkus:quarkus-test-keycloak-server")
 Next, prepare your `application.properties` configuration file.
 You can start with an empty `application.properties` file because `Dev Services for Keycloak` registers `quarkus.oidc.auth-server-url` and points it to the running test container, `quarkus.oidc.client-id=quarkus-app`, and `quarkus.oidc.credentials.secret=secret`.
 
-However, if you have already configured the required `quarkus-oidc` properties, then you only need to associate `quarkus.oidc.auth-server-url` with the `prod` profile for `Dev Services for Keycloak`to start a container, as shown in the following example:
+However, if you have already configured the required `quarkus-oidc` properties, then you only need to associate `quarkus.oidc.auth-server-url` with the `prod` profile for `Dev Services for Keycloak` to start a container, as shown in the following example:
 
 [source,properties]
 ----

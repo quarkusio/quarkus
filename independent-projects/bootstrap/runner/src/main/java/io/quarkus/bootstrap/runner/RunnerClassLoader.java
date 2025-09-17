@@ -188,24 +188,33 @@ public final class RunnerClassLoader extends ClassLoader {
     private static final int O_SUPER_FROM_CP_END = 4;
 
     private static final int CONSTANT_Utf8 = 1;
-    private static final int CONSTANT_Integer = 3;
-    private static final int CONSTANT_Float = 4;
-    private static final int CONSTANT_Long = 5;
-    private static final int CONSTANT_Double = 6;
     private static final int CONSTANT_Class = 7;
-    private static final int CONSTANT_String = 8;
-    private static final int CONSTANT_Fieldref = 9;
-    private static final int CONSTANT_Methodref = 10;
-    private static final int CONSTANT_InterfaceMethodref = 11;
-    private static final int CONSTANT_NameAndType = 12;
-    private static final int CONSTANT_MethodHandle = 15;
-    private static final int CONSTANT_MethodType = 16;
-    private static final int CONSTANT_Dynamic = 17;
-    private static final int CONSTANT_InvokeDynamic = 18;
-    private static final int CONSTANT_Module = 19;
-    private static final int CONSTANT_Package = 20;
 
     private static final byte[] javaLangObject = "java/lang/Object".getBytes(StandardCharsets.US_ASCII);
+    private static final int[] sizes = new int[] {
+            0, // unused
+            3, // [1] CONSTANT_Utf8 (special)
+            0, // unused
+            5, // [3] CONSTANT_Integer
+            5, // [4] CONSTANT_Float
+            9, // [5] CONSTANT_Long
+            9, // [6] CONSTANT_Double
+            3, // [7] CONSTANT_Class
+            3, // [8] CONSTANT_String
+            5, // [9] CONSTANT_Fieldref
+            5, // [10] CONSTANT_Methodref
+            5, // [11] CONSTANT_InterfaceMethodref
+            5, // [12] CONSTANT_NameAndType
+            0, // unused
+            0, // unused
+            0, // unused
+            4, // [15] CONSTANT_MethodHandle
+            3, // [16] CONSTANT_MethodType
+            5, // [17] CONSTANT_Dynamic
+            5, // [18] CONSTANT_InvokeDynamic
+            3, // [19] CONSTANT_Module
+            3, // [20] CONSTANT_Package
+    };
 
     private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
         Class<?> loaded = findLoadedClass(name);
@@ -220,20 +229,10 @@ public final class RunnerClassLoader extends ClassLoader {
             for (int i = 1; i < cpCnt; i++) {
                 int tag = u8(data, offs);
                 cpOffs[i] = offs;
-                offs += switch (tag) {
-                    case CONSTANT_Class, CONSTANT_MethodType, CONSTANT_Module, CONSTANT_String, CONSTANT_Package -> 3;
-                    case CONSTANT_MethodHandle -> 4;
-                    case CONSTANT_Integer, CONSTANT_Float, CONSTANT_Fieldref, CONSTANT_Methodref, CONSTANT_InterfaceMethodref,
-                            CONSTANT_NameAndType, CONSTANT_Dynamic, CONSTANT_InvokeDynamic ->
-                        5;
-                    case CONSTANT_Long, CONSTANT_Double -> {
-                        i++;
-                        yield 9;
-                    }
-                    case CONSTANT_Utf8 -> u16(data, offs + 1) + 3;
-                    default -> throw new ClassFormatError(
-                            "Invalid tag: " + tag + " at offset " + offs + " (entry " + i + ") for class " + name);
-                };
+                if (tag == CONSTANT_Utf8) {
+                    offs += u16(data, offs + 1);
+                }
+                offs += sizes[tag];
             }
             int superCp = u16(data, offs + O_SUPER_FROM_CP_END);
             if (superCp != 0 && u8(data, cpOffs[superCp]) == CONSTANT_Class) {

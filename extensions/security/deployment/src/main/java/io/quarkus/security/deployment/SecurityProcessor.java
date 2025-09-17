@@ -107,6 +107,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
+import io.quarkus.security.runtime.PrincipalProducer;
 import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
@@ -1117,6 +1118,7 @@ public class SecurityProcessor {
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityAssociation.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(PrincipalProducer.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(IdentityProviderManagerCreator.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityProxy.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(X509IdentityProvider.class));

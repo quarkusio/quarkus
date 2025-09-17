@@ -17,6 +17,7 @@ import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.ProviderUtil;
 
+import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
@@ -257,13 +258,21 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
 
+            // See if there's an injectable Blocking (ORM) SessionFactory with the same name.
+            // In that case, migration has already been executed so no need to execute it twice
+            InjectableInstance<SessionFactory> instance = Arc.container().select(
+                    org.hibernate.SessionFactory.class,
+                    PersistenceUnitUtil.qualifier(persistenceUnitName));
+            boolean blockingSessionFactoryExists = instance != null && instance.isResolvable()
+                    && instance.getHandle().getBean().isActive();
+
             return new FastBootReactiveEntityManagerFactoryBuilder(
                     persistenceUnit,
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
-                    PersistenceUnitsHolder.getPersistenceUnitDescriptors().size() == 1,
+                    !blockingSessionFactoryExists,
                     recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
                     recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck());
         }

@@ -6,3 +6,4 @@ metadata:
   - "devui"
   status: "stable"
   unlisted: true
+  hide-in-dev-ui: true

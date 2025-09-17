@@ -889,7 +889,6 @@ public class DevUIProcessor {
                     for (PageBuilder pageBuilder : footerPageBuilders) {
                         pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
                         pageBuilder.extension(deploymentOnlyExtension.getName());
-                        pageBuilder.internal();
                         Page page = pageBuilder.build();
                         deploymentOnlyExtension.addFooterPage(page);
                     }
@@ -913,7 +912,6 @@ public class DevUIProcessor {
                     for (PageBuilder pageBuilder : settingPageBuilders) {
                         pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
                         pageBuilder.extension(deploymentOnlyExtension.getName());
-                        pageBuilder.internal();
                         Page page = pageBuilder.build();
                         deploymentOnlyExtension.addSettingPage(page);
                     }
@@ -937,7 +935,6 @@ public class DevUIProcessor {
                     for (PageBuilder pageBuilder : unlistedPageBuilders) {
                         pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
                         pageBuilder.extension(deploymentOnlyExtension.getName());
-                        pageBuilder.internal();
                         Page page = pageBuilder.build();
                         deploymentOnlyExtension.addUnlistedPage(page);
                     }

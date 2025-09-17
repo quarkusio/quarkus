@@ -305,23 +305,25 @@ public class HibernateOrmDevJsonRpcService {
             return true;
         }
 
+        if (ads == null)
+            return false;
+
         AgroalDataSourceConfiguration configuration = ads.getConfiguration();
         String jdbcUrl = configuration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl();
 
+        if (jdbcUrl.startsWith("jdbc:h2:mem:") || jdbcUrl.startsWith("jdbc:h2:file:")
+                || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
+                || (allowedHost != null && !allowedHost.isBlank()
+                        && jdbcUrl.startsWith("jdbc:h2:tcp://" + allowedHost))
+                || jdbcUrl.startsWith("jdbc:derby:memory:")) {
+            return true;
+        }
+
+        String cleanUrl = jdbcUrl.replace("jdbc:", "").replaceFirst(";", "?").replace(";", "&");
+
         try {
-            if (jdbcUrl.startsWith("jdbc:h2:mem:") || jdbcUrl.startsWith("jdbc:h2:file:")
-                    || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
-                    || (allowedHost != null && !allowedHost.isBlank()
-                            && jdbcUrl.startsWith("jdbc:h2:tcp://" + allowedHost))
-                    || jdbcUrl.startsWith("jdbc:derby:memory:")) {
-                return true;
-            }
-
-            String cleanUrl = jdbcUrl.replace("jdbc:", "");
             URI uri = new URI(cleanUrl);
-
             String host = uri.getHost();
-
             return host != null && ((host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1")) ||
                     (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
 

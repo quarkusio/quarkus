@@ -37,7 +37,7 @@
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.11</proposed-maven-version>
-        <maven-wrapper.version>3.3.2</maven-wrapper.version>
+        <maven-wrapper.version>3.3.4</maven-wrapper.version>
         <!-- When updating gradle-wrapper.version, make sure to also update files in
              independent-projects/tools/base-codestarts/src/main/resources/codestarts
              /quarkus/tooling/gradle-wrapper/base/gradle -->
@@ -59,7 +59,7 @@
         <mockito.version>5.19.0</mockito.version>
         <quarkus.version>3.28.999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.4.0</jandex.version>
+        <jandex.version>3.5.0</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>

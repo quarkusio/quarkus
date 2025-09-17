@@ -175,6 +175,7 @@ public class WorkspaceProcessor {
                     .function((t) -> {
                         return workspaceBuildItem.get().getWorkspaceItems();
                     })
+                    .enableMcpFuctionByDefault()
                     .build();
 
             buildItemActions.actionBuilder()
@@ -236,6 +237,7 @@ public class WorkspaceProcessor {
                         }
                         return null;
                     })
+                    .enableMcpFuctionByDefault()
                     .build();
 
             buildItemActions.actionBuilder()
@@ -254,6 +256,7 @@ public class WorkspaceProcessor {
                         }
                         return new SavedResult(null, false, "Invalid input");
                     })
+                    .enableMcpFuctionByDefault()
                     .build();
 
             buildTimeActionProducer.produce(buildItemActions);

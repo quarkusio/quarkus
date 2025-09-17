@@ -9,6 +9,7 @@ import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
@@ -90,6 +91,7 @@ public class SchedulerJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Get information on the scheduler in the system")
+    @DevMCPEnableByDefault
     public JsonObject getData() {
         SchedulerContext c = context.get();
         Scheduler s = scheduler.get();
@@ -157,6 +159,7 @@ public class SchedulerJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Pause a specific job in the scheduler")
+    @DevMCPEnableByDefault
     public JsonObject pauseJob(@JsonRpcDescription("The job identification") String identity) {
         Scheduler s = scheduler.get();
         if (s.isPaused(identity)) {
@@ -169,6 +172,7 @@ public class SchedulerJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Resume a specific job in the scheduler")
+    @DevMCPEnableByDefault
     public JsonObject resumeJob(@JsonRpcDescription("The job identification") String identity) {
         Scheduler s = scheduler.get();
         if (!s.isPaused(identity)) {
@@ -181,6 +185,7 @@ public class SchedulerJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Execute a specific job in the scheduler")
+    @DevMCPEnableByDefault
     public JsonObject executeJob(@JsonRpcDescription("The method description") String methodDescription) {
         SchedulerContext c = context.get();
         for (ScheduledMethod metadata : c.getScheduledMethods()) {

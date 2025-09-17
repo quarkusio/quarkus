@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.mcp.model.tool.Tool;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.runtime.annotations.Usage;
 
@@ -28,44 +29,75 @@ public class McpToolsService {
     JsonRpcRouter jsonRpcRouter;
 
     @Inject
-    McpServerConfiguration mcpServerConfiguration;
+    McpDevUIJsonRpcService mcpDevUIJsonRpcService;
 
-    @JsonRpcDescription("This list all tools available for MCP")
+    @DevMCPEnableByDefault
+    @JsonRpcDescription(value = "This list all tools available for MCP")
     public Map<String, List<Tool>> list() {
-        if (mcpServerConfiguration.isEnabled()) {
+        if (mcpDevUIJsonRpcService.getMcpServerConfiguration().isEnabled()) {
             List<Tool> tools = toToolList(jsonRpcRouter.getRuntimeMethodsMap().values(),
-                    jsonRpcRouter.getDeploymentMethodsMap().values());
+                    jsonRpcRouter.getDeploymentMethodsMap().values(), Filter.enabled);
             // TODO: Add support for subscriptions
             return Map.of("tools", tools);
         }
         return null;
     }
 
+    public Map<String, List<Tool>> listDisabled() {
+        if (mcpDevUIJsonRpcService.getMcpServerConfiguration().isEnabled()) {
+            List<Tool> tools = toToolList(jsonRpcRouter.getRuntimeMethodsMap().values(),
+                    jsonRpcRouter.getDeploymentMethodsMap().values(), Filter.disabled);
+
+            return Map.of("tools", tools);
+        }
+        return null;
+    }
+
+    public boolean disableTool(String name) {
+        mcpDevUIJsonRpcService.disableMethod(name);
+        return true;
+    }
+
+    public boolean enableTool(String name) {
+        mcpDevUIJsonRpcService.enableMethod(name);
+        return true;
+    }
+
     private List<Tool> toToolList(Collection<JsonRpcMethod> runtimeMethods,
-            Collection<JsonRpcMethod> deploymentMethods) {
+            Collection<JsonRpcMethod> deploymentMethods, Filter filter) {
         List<Tool> tools = new ArrayList<>();
         for (JsonRpcMethod runtimeJsonRpcMethod : runtimeMethods) {
-            addTool(tools, runtimeJsonRpcMethod);
+            addTool(tools, runtimeJsonRpcMethod, filter);
         }
         for (JsonRpcMethod deploymentJsonRpcMethod : deploymentMethods) {
-            addTool(tools, deploymentJsonRpcMethod);
+            addTool(tools, deploymentJsonRpcMethod, filter);
         }
         return tools;
     }
 
-    private void addTool(List<Tool> tools, JsonRpcMethod method) {
-        Tool tool = toTool(method);
-        if (tool != null) {
-            tools.add(tool);
+    private void addTool(List<Tool> tools, JsonRpcMethod method, Filter filter) {
+        if (isEnabled(method, filter)) {
+            tools.add(toTool(method));
         }
     }
 
-    private Tool toTool(JsonRpcMethod jsonRpcMethod) {
+    private boolean isEnabled(JsonRpcMethod method, Filter filter) {
 
-        if (!jsonRpcMethod.getUsage().contains(Usage.DEV_MCP)) {
-            return null;
+        if (method.getUsage().contains(Usage.DEV_MCP)) {
+            if (mcpDevUIJsonRpcService.isExplicitlyEnabled(method.getMethodName())) {
+                return filter.equals(Filter.enabled);
+            } else if (mcpDevUIJsonRpcService.isExplicitlyDisabled(method.getMethodName())) {
+                return filter.equals(Filter.disabled);
+            } else if (filter.equals(Filter.enabled)) {
+                return method.isMcpEnabledByDefault();
+            } else if (filter.equals(Filter.disabled)) {
+                return !method.isMcpEnabledByDefault();
+            }
         }
+        return false;
+    }
 
+    private Tool toTool(JsonRpcMethod jsonRpcMethod) {
         Tool tool = new Tool();
         tool.name = jsonRpcMethod.getMethodName();
         if (jsonRpcMethod.getDescription() != null && !jsonRpcMethod.getDescription().isBlank()) {

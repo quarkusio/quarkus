@@ -32,11 +32,11 @@ public final class BuildTimeConstBuildItem extends AbstractDevUIBuildItem {
     }
 
     public void addBuildTimeData(String fieldName, Object fieldData) {
-        this.addBuildTimeData(fieldName, fieldData, null);
+        this.addBuildTimeData(fieldName, fieldData, null, false);
     }
 
-    public void addBuildTimeData(String fieldName, Object fieldData, String description) {
-        this.buildTimeData.put(fieldName, new BuildTimeData(fieldData, description));
+    public void addBuildTimeData(String fieldName, Object fieldData, String description, boolean mcpEnabledAsDefault) {
+        this.buildTimeData.put(fieldName, new BuildTimeData(fieldData, description, mcpEnabledAsDefault));
     }
 
     public void addAllBuildTimeData(Map<String, BuildTimeData> buildTimeData) {

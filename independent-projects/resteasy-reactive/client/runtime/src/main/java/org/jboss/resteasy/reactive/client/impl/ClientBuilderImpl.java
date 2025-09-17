@@ -9,6 +9,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +57,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private String proxyPassword;
     private String proxyUser;
     private String nonProxyHosts;
+    private Duration proxyConnectTimeout;
 
     private boolean followRedirects;
 
@@ -254,6 +256,9 @@ public class ClientBuilderImpl extends ClientBuilder {
                 }
                 if (proxyUser != null && !proxyUser.isBlank()) {
                     proxyOptions.setUsername(proxyUser);
+                }
+                if (proxyConnectTimeout != null) {
+                    proxyOptions.setConnectTimeout(proxyConnectTimeout);
                 }
                 options.setProxyOptions(proxyOptions);
                 configureNonProxyHosts(options, nonProxyHosts);
@@ -489,6 +494,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
         this.nonProxyHosts = nonProxyHosts;
+        return this;
+    }
+
+    public ClientBuilderImpl proxyConnectTimeout(Duration proxyConnectTimeout) {
+        this.proxyConnectTimeout = proxyConnectTimeout;
         return this;
     }
 }

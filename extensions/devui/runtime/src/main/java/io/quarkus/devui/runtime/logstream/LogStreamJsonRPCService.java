@@ -10,6 +10,7 @@ import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
@@ -42,6 +43,7 @@ public class LogStreamJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Get all the available loggers in this Quarkus application")
+    @DevMCPEnableByDefault
     public List<JsonObject> getLoggers() {
         LogContext logContext = LogContext.getLogContext();
         List<JsonObject> values = new ArrayList<>();
@@ -58,6 +60,7 @@ public class LogStreamJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Get a specific logger in this Quarkus application")
+    @DevMCPEnableByDefault
     public JsonObject getLogger(@JsonRpcDescription("The name of the logger") String loggerName) {
         LogContext logContext = LogContext.getLogContext();
         if (loggerName != null && !loggerName.isEmpty()) {
@@ -72,6 +75,7 @@ public class LogStreamJsonRPCService {
 
     @NonBlocking
     @JsonRpcDescription("Update a specific logger's log level in this Quarkus application")
+    @DevMCPEnableByDefault
     public JsonObject updateLogLevel(@JsonRpcDescription("The name of the logger") String loggerName,
             @JsonRpcDescription("The new level of the logger") String levelValue) {
         LogContext logContext = LogContext.getLogContext();

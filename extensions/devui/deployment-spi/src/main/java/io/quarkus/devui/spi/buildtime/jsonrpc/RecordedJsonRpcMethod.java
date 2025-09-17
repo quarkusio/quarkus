@@ -18,8 +18,9 @@ public final class RecordedJsonRpcMethod extends AbstractJsonRpcMethod {
     public RecordedJsonRpcMethod(String methodName,
             String description,
             EnumSet<Usage> usage,
+            boolean mcpEnabledByDefault,
             RuntimeValue runtimeValue) {
-        super(methodName, description, usage);
+        super(methodName, description, usage, mcpEnabledByDefault);
         this.runtimeValue = runtimeValue;
     }
 

@@ -4,15 +4,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -22,6 +21,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.mcp.model.resource.Content;
 import io.quarkus.devui.runtime.mcp.model.resource.Resource;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.quarkus.runtime.annotations.Usage;
 
@@ -46,30 +46,45 @@ public class McpResourcesService {
     DevUIBuildTimeStaticService buildTimeStaticService;
 
     @Inject
-    McpServerConfiguration mcpServerConfiguration;
+    McpDevUIJsonRpcService mcpDevUIJsonRpcService;
 
-    private final List<Resource> resources = new LinkedList<>();
-
-    @PostConstruct
-    public void init() {
-        if (this.resources.isEmpty()) {
-            addBuildTimeData();
-            addRecordedData();
-        }
+    @DevMCPEnableByDefault
+    @JsonRpcDescription(value = "This list all resources available for MCP")
+    public Map<String, List<Resource>> list() {
+        return listAny(Filter.enabled);
     }
 
-    @JsonRpcDescription("This list all resources available for MCP")
-    public Map<String, List<Resource>> list() {
-        if (mcpServerConfiguration.isEnabled()) {
-            return Map.of("resources", this.resources);
+    public Map<String, List<Resource>> listDisabled() {
+        return listAny(Filter.disabled);
+    }
+
+    private Map<String, List<Resource>> listAny(Filter filter) {
+        if (mcpDevUIJsonRpcService.getMcpServerConfiguration().isEnabled()) {
+
+            List<Resource> resources = new ArrayList<>();
+            resources.addAll(getBuildTimeData(filter));
+            resources.addAll(getRecordedData(filter));
+
+            return Map.of("resources", resources);
         }
         return null;
     }
 
+    public boolean disableResource(String name) {
+        mcpDevUIJsonRpcService.disableMethod(name);
+        return true;
+    }
+
+    public boolean enableResource(String name) {
+        mcpDevUIJsonRpcService.enableMethod(name);
+        return true;
+    }
+
+    @DevMCPEnableByDefault
     @JsonRpcDescription("This reads a certain resource given the uri as provided by resources/list")
     public Map<String, List<Content>> read(
             @JsonRpcDescription("The uri of the resources as defined in resources/list") String uri) {
-        if (mcpServerConfiguration.isEnabled()) {
+        if (mcpDevUIJsonRpcService.getMcpServerConfiguration().isEnabled()) {
             String subUri = uri.substring(URI_SCHEME.length());
             if (subUri.startsWith(SUB_SCHEME_BUILD_TIME)) {
                 return readBuildTimeData(uri);
@@ -116,7 +131,8 @@ public class McpResourcesService {
         return Map.of("contents", List.of(content));
     }
 
-    private void addBuildTimeData() {
+    private List<Resource> getBuildTimeData(Filter filter) {
+        List<Resource> r = new ArrayList<>();
         Map<String, String> descriptions = buildTimeStaticService.getDescriptions();
         Map<String, String> contentTypes = buildTimeStaticService.getContentTypes();
 
@@ -130,13 +146,13 @@ public class McpResourcesService {
                         String content = Files.readString(Paths.get(kv.getValue()));
                         Set<String> methodNames = extractBuildTimeDataMethods(key, content);
                         for (String methodName : methodNames) {
-                            if (descriptions.containsKey(methodName)) {
+                            if (descriptions.containsKey(methodName) && isEnabled(methodName, filter)) {
                                 Resource resource = new Resource();
                                 resource.uri = URI_SCHEME + SUB_SCHEME_BUILD_TIME + methodName;
                                 resource.name = methodName;
                                 resource.description = descriptions.get(methodName);
                                 resource.mimeType = contentTypes.get(methodName);
-                                this.resources.add(resource);
+                                r.add(resource);
                             }
                         }
                     }
@@ -146,13 +162,15 @@ public class McpResourcesService {
                 }
             }
         }
+        return r;
     }
 
-    private void addRecordedData() {
+    private List<Resource> getRecordedData(Filter filter) {
+        List<Resource> r = new ArrayList<>();
         Map<String, JsonRpcMethod> recordedMethodsMap = jsonRpcRouter.getRecordedMethodsMap();
 
         for (JsonRpcMethod recordedJsonRpcMethod : recordedMethodsMap.values()) {
-            if (recordedJsonRpcMethod.getUsage().contains(Usage.DEV_MCP)) {
+            if (isEnabled(recordedJsonRpcMethod, filter)) {
                 Resource resource = new Resource();
                 resource.uri = URI_SCHEME + SUB_SCHEME_RECORDED + recordedJsonRpcMethod.getMethodName();
                 resource.name = recordedJsonRpcMethod.getMethodName();
@@ -160,10 +178,42 @@ public class McpResourcesService {
                 if (recordedJsonRpcMethod.getDescription() != null && !recordedJsonRpcMethod.getDescription().isBlank()) {
                     resource.description = recordedJsonRpcMethod.getDescription();
                 }
-                this.resources.add(resource);
+                r.add(resource);
             }
         }
+        return r;
+    }
 
+    private boolean isEnabled(JsonRpcMethod method, Filter filter) {
+
+        if (method.getUsage().contains(Usage.DEV_MCP)) {
+            if (mcpDevUIJsonRpcService.isExplicitlyEnabled(method.getMethodName())) {
+                return filter.equals(Filter.enabled);
+            } else if (mcpDevUIJsonRpcService.isExplicitlyDisabled(method.getMethodName())) {
+                return filter.equals(Filter.disabled);
+            } else if (filter.equals(Filter.enabled)) {
+                return method.isMcpEnabledByDefault();
+            } else if (filter.equals(Filter.disabled)) {
+                return !method.isMcpEnabledByDefault();
+            }
+        }
+        return false;
+    }
+
+    private boolean isEnabled(String method, Filter filter) {
+
+        Map<String, String> mcpDefaultEnabled = buildTimeStaticService.getMcpDefaultEnabled();
+
+        if (mcpDevUIJsonRpcService.isExplicitlyEnabled(method)) {
+            return filter.equals(Filter.enabled);
+        } else if (mcpDevUIJsonRpcService.isExplicitlyDisabled(method)) {
+            return filter.equals(Filter.disabled);
+        } else if (filter.equals(Filter.enabled)) {
+            return (!mcpDefaultEnabled.containsKey(method) || mcpDefaultEnabled.get(method).equals("true"));
+        } else if (filter.equals(Filter.disabled)) {
+            return (mcpDefaultEnabled.containsKey(method) && mcpDefaultEnabled.get(method).equals("false"));
+        }
+        return false;
     }
 
     private Set<String> extractBuildTimeDataMethods(String ns, String jsContent) {

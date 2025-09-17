@@ -22,8 +22,7 @@ class ParameterInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.MethodParam
 
     @Override
     public String name() {
-        String name = jandexDeclaration.name();
-        return name != null ? name : "arg" + jandexDeclaration.position();
+        return jandexDeclaration.nameOrDefault();
     }
 
     @Override

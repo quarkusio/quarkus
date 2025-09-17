@@ -17,6 +17,7 @@ import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaAclInfo;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaInfo;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaMessagePage;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaTopic;
+import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -38,11 +39,13 @@ public class KafkaJsonRPCService {
     }
 
     @JsonRpcDescription("Get all the current Kafka topics")
+    @DevMCPEnableByDefault
     public List<KafkaTopic> getTopics() throws InterruptedException, ExecutionException {
         return kafkaUiUtils.getTopics();
     }
 
     @JsonRpcDescription("Create a new Kafka topic")
+    @DevMCPEnableByDefault
     public List<KafkaTopic> createTopic(@JsonRpcDescription("The Kafka topic name") final String topicName,
             @JsonRpcDescription("The number of partitions, example 1") final int partitions,
             @JsonRpcDescription("The number of replications, example 1") final int replications,
@@ -60,6 +63,7 @@ public class KafkaJsonRPCService {
     }
 
     @JsonRpcDescription("Delete an existing Kafka topic")
+    @DevMCPEnableByDefault
     public List<KafkaTopic> deleteTopic(@JsonRpcDescription("The Kafka topic name") final String topicName)
             throws InterruptedException, ExecutionException {
         boolean deleted = kafkaAdminClient.deleteTopic(topicName);
@@ -71,6 +75,7 @@ public class KafkaJsonRPCService {
     }
 
     @JsonRpcDescription("Get all the current messages for a certain Kafka topics")
+    @DevMCPEnableByDefault
     public KafkaMessagePage topicMessages(@JsonRpcDescription("The Kafka topic name") final String topicName)
             throws ExecutionException, InterruptedException {
         List<Integer> partitions = getPartitions(topicName);
@@ -81,6 +86,7 @@ public class KafkaJsonRPCService {
     }
 
     @JsonRpcDescription("Create a new message on a specific Kafka topic")
+    @DevMCPEnableByDefault
     public KafkaMessagePage createMessage(@JsonRpcDescription("The Kafka topic name") String topicName,
             @JsonRpcDescription("The partition number, example 1") Integer partition,
             @JsonRpcDescription("The message key") String key,
@@ -106,6 +112,7 @@ public class KafkaJsonRPCService {
     }
 
     @JsonRpcDescription("Get all know information on the Kafka instance")
+    @DevMCPEnableByDefault
     public KafkaInfo getInfo() throws ExecutionException, InterruptedException {
         return kafkaUiUtils.getKafkaInfo();
     }

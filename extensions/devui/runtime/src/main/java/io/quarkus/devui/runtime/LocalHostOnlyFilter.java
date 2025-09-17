@@ -34,7 +34,6 @@ public class LocalHostOnlyFilter implements Handler<RoutingContext> {
         if (hostIsValid(event)) {
             event.next();
         } else {
-            LOG.error("Dev UI: Only localhost is allowed");
             response.setStatusCode(403);
             response.setStatusMessage("Dev UI: Only localhost is allowed - Invalid host");
             response.end();
@@ -60,6 +59,7 @@ public class LocalHostOnlyFilter implements Handler<RoutingContext> {
                     }
                 }
             }
+            LOG.errorf("Dev UI: Only localhost is allowed, unexpected host: %s", host);
             return false;
         } catch (MalformedURLException | URISyntaxException e) {
             LOG.error("Error while checking if Dev UI is localhost", e);

@@ -30,7 +30,6 @@ import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
-import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
@@ -50,84 +49,99 @@ import io.vertx.mutiny.redis.client.Response;
 public interface ReactiveRedisDataSource {
 
     /**
-     * Retrieves a {@link ReactiveRedisDataSource} using a single connection with the Redis Server.
-     * The connection is acquired from the pool and released when the {@code Uni} returned by {@code function} produces
-     * a {@code null} item or a failure.
+     * Obtains a {@link ReactiveRedisDataSource} that uses a single connection to the Redis server
+     * and passes it to the given {@code function}. The connection is acquired from the pool
+     * and released when the {@code Uni} returned by {@code function} produces an item or a failure.
      *
-     * @param function the function receiving the single-connection data source and producing {@code null} when the
+     * @param function the function receiving the connection and producing {@code null} when the
      *        connection can be released.
      */
     Uni<Void> withConnection(Function<ReactiveRedisDataSource, Uni<Void>> function);
 
     /**
-     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
-     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
-     * The commands are only executed when the passed block emits the {@code null} item.
+     * Obtains a {@link ReactiveRedisDataSource} that enqueues commands in a Redis Transaction ({@code MULTI})
+     * and passes it to the given {@code tx} block. Note that the transaction acquires a single connection
+     * and all the commands are enqueued on this connection. The commands are only executed when the {@code Uni}
+     * returned by {@code tx} produces an item.
      * <p>
-     * The results of the commands are retrieved using the produced {@link TransactionResult}.
+     * The results of the commands can be obtained from the returned {@link TransactionResult}.
+     * Errors are represented as {@code Throwable}s in the {@code TransactionResult}.
      * <p>
-     * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
-     * In this case, the produced {@link TransactionResult} will be empty.
+     * The user can discard a transaction using the {@link ReactiveTransactionalRedisDataSource#discard()} method.
+     * In this case, the produced {@link TransactionResult} is empty.
+     * If the {@code tx} block completes with a failure, the transaction is discarded automatically and
+     * the resulting {@code Uni} completes with the same failure.
      *
-     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
-     *        at the end of the block.
+     * @param tx the consumer receiving the transactional Redis data source. The enqueued commands are only executed
+     *        when this block completes with an item.
      */
     Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx);
 
     /**
-     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
-     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
-     * The commands are only executed when the passed block emits the {@code null} item.
+     * Obtains a {@link ReactiveRedisDataSource} that enqueues commands in a Redis Transaction ({@code WATCH} & {@code MULTI}),
+     * starts watching the given {@code watchedKeys}, and passes it to the given {@code tx} block.
+     * Note that the transaction acquires a single connection and all the commands are enqueued on this connection.
+     * The commands are only executed when the {@code Uni} returned by {@code tx} produces an item.
      * <p>
-     * The results of the commands are retrieved using the produced {@link TransactionResult}.
+     * The results of the commands can be obtained from the returned {@link TransactionResult}.
+     * Errors are represented as {@code Throwable}s in the {@code TransactionResult}.
      * <p>
-     * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
-     * In this case, the produced {@link TransactionResult} will be empty.
+     * The user can discard a transaction using the {@link ReactiveTransactionalRedisDataSource#discard()} method.
+     * In this case, the produced {@link TransactionResult} is empty.
+     * If the {@code tx} block completes with a failure, the transaction is discarded automatically and
+     * the resulting {@code Uni} completes with the same failure.
      *
-     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
-     *        at the end of the block.
+     * @param tx the consumer receiving the transactional Redis data source. The enqueued commands are only executed
+     *        when this block completes with an item.
      * @param watchedKeys the keys to watch during the execution of the transaction. If one of these key is modified before
      *        the completion of the transaction, the transaction is discarded.
      */
     Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx, String... watchedKeys);
 
     /**
-     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
-     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
-     * The commands are only executed when the passed block emits the {@code null} item.
+     * Obtains a {@link ReactiveRedisDataSource} that enqueues commands in a Redis Transaction ({@code WATCH} & {@code MULTI}),
+     * starts watching the given {@code watchedKeys}, passes it to the given {@code preTx} block and if that
+     * doesn't fail, passes it again to the given {@code tx} block. Note that the transaction acquires a single
+     * connection and all the commands are enqueued on this connection. The commands are only executed when
+     * the {@code Uni} returned by {@code tx} produces an item.
      * <p>
-     * This variant also allows executing code before the transaction gets started but after the key being watched:
+     * This variant also allows executing code before the transaction gets started but after the keys are watched:
      *
      * <pre>
-     *     WATCH key
-     *     // preTxBlock
+     * WATCH key
+     *     // preTx
      *     element = ZRANGE k 0 0
-     *     // TxBlock
-     *     MULTI
-     *        ZREM k element
-     *     EXEC
+     * MULTI
+     *     // tx
+     *     ZREM k element
+     * EXEC
      * </pre>
      * <p>
      * The {@code preTxBlock} returns a {@link Uni Uni&lt;I&gt;}. The produced value is received by the {@code tx} block,
      * which can use that value to execute the appropriate operation in the transaction. The produced value can also be
-     * retrieved from the produced {@link OptimisticLockingTransactionResult}. Commands issued in the {@code preTxBlock }
-     * must used the passed (single-connection) {@link ReactiveRedisDataSource} instance.
+     * obtained from the returned {@link OptimisticLockingTransactionResult}. Commands issued in the {@code preTx}
+     * block must use the passed (single-connection) {@link ReactiveRedisDataSource} instance.
      * <p>
-     * If the {@code preTxBlock} throws an exception or emits a failure, the transaction is not executed, and the returned
-     * {@link OptimisticLockingTransactionResult} is empty.
+     * If the {@code preTx} block completes with a failure, all watched keys are {@code UNWATCH}ed and the returned
+     * {@code Uni} completes with the same failure.
      * <p>
      * This construct allows implementing operation relying on optimistic locking.
-     * The results of the commands are retrieved using the produced {@link OptimisticLockingTransactionResult}.
+     * The results of the commands can be obtained from the returned {@link OptimisticLockingTransactionResult}.
+     * Errors are represented as {@code Throwable}s in the {@code OptimisticLockingTransactionResult}.
      * <p>
-     * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
-     * In this case, the produced {@link OptimisticLockingTransactionResult} will be empty.
+     * The user can discard a transaction using the {@link ReactiveTransactionalRedisDataSource#discard()} method.
+     * In this case, the produced {@link OptimisticLockingTransactionResult} is empty.
+     * If the {@code tx} block completes with a failure, the transaction is discarded automatically and
+     * the resulting {@code Uni} completes with the same failure.
      *
-     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
-     *        at the end of the block.
+     * @param preTx the consumer receiving the Redis data source before the transaction is started but after
+     *        the {@code watchedKeys} are watched.
+     * @param tx the consumer receiving the transactional Redis data source after the transaction is started.
+     *        The enqueued commands are only executed when this block completes with an item.
      * @param watchedKeys the keys to watch during the execution of the transaction. If one of these key is modified before
      *        the completion of the transaction, the transaction is discarded.
      */
-    <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTxBlock,
+    <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTx,
             BiFunction<I, ReactiveTransactionalRedisDataSource, Uni<Void>> tx,
             String... watchedKeys);
 

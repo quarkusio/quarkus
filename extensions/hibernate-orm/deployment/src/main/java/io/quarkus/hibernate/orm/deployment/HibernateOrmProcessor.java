@@ -1038,7 +1038,6 @@ public final class HibernateOrmProcessor {
                 explicitDbMinVersion,
                 dialectConfig,
                 dbKindMetadataBuildItems,
-                persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
                 puPropertiesCollector,
                 storageEngineCollector);

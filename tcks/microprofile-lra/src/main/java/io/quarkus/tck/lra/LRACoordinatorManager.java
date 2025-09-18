@@ -35,6 +35,8 @@ public class LRACoordinatorManager {
             coordinatorContainer.start();
             coordinatorContainer.followOutput(logConsumer);
             System.setProperty("lra.coordinator.url", String.format("http://localhost:%d/lra-coordinator", coordinatorPort));
+            // Can we reuse Dev Services for LRA coordinator here?
+            System.setProperty("quarkus.lra.devservices.enabled", "false");
         }
     }
 
@@ -43,6 +45,10 @@ public class LRACoordinatorManager {
         if (coordinatorContainer != null && coordinatorContainer.isRunning()) {
             coordinatorContainer.stop();
         }
+
+        // clear the system property so that it does not affect other tests
+        System.clearProperty("lra.coordinator.url");
+        System.clearProperty("quarkus.lra.devservices.enabled");
     }
 
     public int getFreePort(int from, int to) {

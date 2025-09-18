@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
+import io.narayana.lra.LRAConstants;
 import io.narayana.lra.client.internal.NarayanaLRAClient;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipant;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipantRegistry;
@@ -25,8 +26,17 @@ public class NarayanaLRARecorder {
     }
 
     public void setConfig() {
-        if (System.getProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY) == null) {
-            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, runtimeConfig.getValue().coordinatorURL());
+        LRAConfiguration lraConfig = runtimeConfig.getValue();
+        // once this is unified in LRA project, we can move this to RelocateConfigSourceInterceptor
+        setValue(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, lraConfig.coordinatorURL());
+        if (lraConfig.baseUri().isPresent()) {
+            setValue(LRAConstants.NARAYANA_LRA_BASE_URI_PROPERTY_NAME, lraConfig.baseUri().get());
+        }
+    }
+
+    private static void setValue(String key, String value) {
+        if (System.getProperty(key) == null) {
+            System.setProperty(key, value);
         }
     }
 

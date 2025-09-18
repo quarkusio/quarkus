@@ -1,0 +1,93 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for LRA
+include::_attributes.adoc[]
+:categories: data
+:summary: Start the Narayana LRA coordinator automatically in dev and test modes.
+:topics: data,lra,narayana
+:extensions: io.quarkus:quarkus-narayana-lra
+
+If the Narayana LRA extension is present (`quarkus-narayana-lra`), the Dev
+Services for Narayana LRA coordinator automatically starts the Narayana LRA
+coordinator in dev mode and when running tests. So, you don't have to start it
+manually. The application is also configured automatically to connect to the
+coordinator and to make possible for the coordinator to call back the
+application.
+
+WARNING: Because the LRA coordinator needs to call back your application from
+the container, we need to expose the application on any host address, not just
+`localhost`. So the Dev Services for LRA coordinator injects
+`quarkus.http.host=0.0.0.0` into your application configuration which means that
+your application is accessible from any machine running in the same network as
+your development machine. *This is a potential security risk*, so use the LRA
+Dev Services only if you are sure that it is safe.
+
+== Enabling / Disabling Dev Services for LRA
+
+Dev Services for LRA is automatically enabled unless:
+
+- `quarkus.lra.devservices.enabled` is set to `false`
+- the `quarkus.lra.coordinator-url` is configured
+
+Dev Services for LRA relies on Docker or Podman to start the coordinator. If
+your environment does not support Docker, you will need to start the coordinator
+manually, or connect to an already running coordinator. You can configure the
+coordinator URL using `quarkus.lra.coordinator-url`.
+
+== Sharing LRA coordinator
+
+Most likely you need to share the LRA coordinator between applications. The Dev
+Services for LRA coordinator implements a _service discovery_ mechanism for your
+multiple Quarkus applications running in _dev_ mode to share a single
+coordinator.
+
+NOTE: Dev Services for LRA starts the container with the
+`quarkus-dev-service-lra-coordinator` label which is used to identify the
+container.
+
+If you need multiple (shared) coordinators, you can configure the
+`quarkus.lra.devservices.service-name` attribute and indicate the coordinator
+name. It looks for a container with the same value, or starts a new one if none
+can be found. The default service name is `lra-coordinator`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.lra.devservices.shared=false`.
+
+== Setting the port
+
+By default, Dev Services for LRA picks a random port on which to run the LRA
+coordinator. You can set the port by configuring the
+`quarkus.lra.devservices.port` property. The connection property
+`quarkus.lra.coordinator-url` is automatically configured with the chosen port.
+
+[[configuring-the-image]]
+== Configuring the image
+
+The default image for the LRA coordinator is `quay.io/jbosstm/lra-coordinator`.
+You can configure the image used by Dev Services for LRA coordinator using the
+`quarkus.lra.devservices.image-name` property. You can browse the available
+images at https://quay.io/repository/jbosstm/lra-coordinator?tab=tags.
+
+[[Compose]]
+== Compose
+
+The LRA Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
+It relies on a `compose-devservices.yml`, such as:
+
+[source,yaml]
+----
+name: <application name>
+services:
+  mongo:
+    image: quay.io/jbosstm/lra-coordinator:7.2.2.Final-3.24.4
+    ports:
+      - "8080"
+----
+
+[[configuration-reference-devservices]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-narayana-lra_quarkus.lra.devservices.adoc[opts=optional, leveloffset=+1]

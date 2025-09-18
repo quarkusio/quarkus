@@ -41,6 +41,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
@@ -194,24 +195,24 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!buildTimeConfig.enableGracefulShutdownInDevAndTestMode()) {
-                List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
-                List<AnnotationInstance> outgoings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING);
-                List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
-                List<AnnotationInstance> annotations = new ArrayList<>();
-                annotations.addAll(incomings);
-                annotations.addAll(outgoings);
-                annotations.addAll(channels);
-                for (AnnotationInstance annotation : annotations) {
-                    String channelName = annotation.value().asString();
-                    if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
-                        continue;
-                    }
-                    String key = getChannelPropertyKey(channelName, "graceful-shutdown", true);
-                    discoveryState.ifNotYetConfigured(key, () -> {
-                        defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, "false"));
-                    });
-                }
+                disableGracefulShutdown(channelsManagedByConnectors, defaultConfigProducer, discoveryState);
             }
+        }
+    }
+
+    void disableGracefulShutdown(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
+            DefaultSerdeDiscoveryState discoveryState) {
+        for (ConnectorManagedChannelBuildItem managed : channelsManagedByConnectors) {
+            String channelName = managed.getName();
+            boolean incoming = managed.getDirection() == ChannelDirection.INCOMING;
+            if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, incoming, channelName)) {
+                continue;
+            }
+            String key = getChannelPropertyKey(channelName, incoming ? "graceful-shutdown" : "close-timeout", incoming);
+            discoveryState.ifNotYetConfigured(key, () -> {
+                defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, incoming ? "false" : "0"));
+            });
         }
     }
 

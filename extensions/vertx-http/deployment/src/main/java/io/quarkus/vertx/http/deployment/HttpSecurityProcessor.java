@@ -45,6 +45,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -105,6 +106,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMecha
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.vertx.http.security.CSRF;
+import io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
@@ -119,10 +121,17 @@ public class HttpSecurityProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void initFormAuth(VertxWebRouterBuildItem vertxWebRouterBuildItem, HttpSecurityRecorder recorder,
-            VertxHttpBuildTimeConfig buildTimeConfig) {
-        if (!buildTimeConfig.auth().proactive()) {
-            var httpRouter = vertxWebRouterBuildItem.getHttpRouter();
-            recorder.formAuthPostHandler(httpRouter);
+            VertxHttpBuildTimeConfig buildTimeConfig, BeanDiscoveryFinishedBuildItem beanDiscoveryResult,
+            Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            if (!buildTimeConfig.auth().proactive()) {
+                var httpRouter = vertxWebRouterBuildItem.getHttpRouter();
+                recorder.formAuthPostHandler(httpRouter);
+            }
+            DotName tokenSenderInterfaceName = DotName.createSimple(OneTimeAuthenticationTokenSender.class);
+            boolean tokenSenderNotFound = beanDiscoveryResult.beanStream().stream()
+                    .noneMatch(bi -> bi.hasType(tokenSenderInterfaceName));
+            recorder.validateOneTimeAuthToken(tokenSenderNotFound);
         }
     }
 
@@ -138,7 +147,8 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void registerFormAuthMechanism(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            VertxHttpBuildTimeConfig buildTimeConfig, HttpSecurityRecorder recorder) {
+            VertxHttpBuildTimeConfig buildTimeConfig, HttpSecurityRecorder recorder,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer) {
         if (buildTimeConfig.auth().form()) {
             syntheticBeanProducer.produce(SyntheticBeanBuildItem
                     .configure(FormAuthenticationMechanism.class)
@@ -148,12 +158,13 @@ public class HttpSecurityProcessor {
                     .unremovable()
                     .supplier(recorder.createFormAuthMechanism())
                     .done());
+            unremovableBeanProducer.produce(UnremovableBeanBuildItem.beanTypes(OneTimeAuthenticationTokenSender.class));
         }
     }
 
     @BuildStep
-    AdditionalBeanBuildItem initMtlsClientAuth(VertxHttpBuildTimeConfig buildTimeConfig) {
-        if (isMtlsClientAuthenticationEnabled(buildTimeConfig)) {
+    AdditionalBeanBuildItem initMtlsClientAuth(VertxHttpBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY) && isMtlsClientAuthenticationEnabled(buildTimeConfig)) {
             return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(MtlsAuthenticationMechanism.class)
                     .setDefaultScope(SINGLETON).build();
         }
@@ -170,13 +181,13 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
-    void detectBasicAuthImplicitlyRequired(
+    void detectBasicAuthImplicitlyRequired(Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
             ApplicationIndexBuildItem applicationIndexBuildItem,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             List<EagerSecurityInterceptorBindingBuildItem> eagerSecurityInterceptorBindings) {
-        if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
+        if (capabilities.isPresent(Capability.SECURITY) && makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
             var appIndex = applicationIndexBuildItem.getIndex();
             boolean noCustomAuthMechanismsDetected = beanRegistrationPhaseBuildItem
                     .getContext()
@@ -209,8 +220,12 @@ public class HttpSecurityProcessor {
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, Capabilities capabilities,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+
+        if (capabilities.isMissing(Capability.SECURITY)) {
+            return null;
+        }
 
         if (httpBuildTimeConfig.auth().basic().isPresent() && httpBuildTimeConfig.auth().basic().get()) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
@@ -262,11 +277,11 @@ public class HttpSecurityProcessor {
             Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-        if (!httpBuildTimeConfig.auth().form() && httpBuildTimeConfig.auth().basic().orElse(false)) {
-            securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
-        }
-
         if (capabilities.isPresent(Capability.SECURITY)) {
+            if (!httpBuildTimeConfig.auth().form() && httpBuildTimeConfig.auth().basic().orElse(false)) {
+                securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
+            }
+
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable()
                             .addBeanClass(VertxBlockingSecurityExecutor.class).setDefaultScope(APPLICATION_SCOPED).build());

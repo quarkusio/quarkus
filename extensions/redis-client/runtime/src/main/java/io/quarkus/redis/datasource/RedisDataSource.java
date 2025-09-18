@@ -48,39 +48,48 @@ import io.vertx.mutiny.redis.client.Response;
 public interface RedisDataSource {
 
     /**
-     * Retrieves a {@link RedisDataSource} using a single connection with the Redis server.
-     * The connection is acquired from the pool, and released then the consumer completes.
+     * Obtains a {@link RedisDataSource} that uses a single connection to the Redis server
+     * and passes it to the given {@code consumer} block. The connection is acquired from the pool
+     * and released when the consumer completes.
      *
      * @param consumer the consumer receiving the connection and returning when the connection can be released.
      */
     void withConnection(Consumer<RedisDataSource> consumer);
 
     /**
-     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
-     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
-     * The commands are only executed when the passed block completes.
+     * Obtains a {@link RedisDataSource} that enqueues commands in a Redis Transaction ({@code MULTI})
+     * and passes it to the given {@code tx} block. Note that the transaction acquires a single connection
+     * and all the commands are enqueued on this connection. The commands are only executed when the passed
+     * {@code tx} block completes.
      * <p>
-     * The results of the commands are retrieved using the returned {@link TransactionResult}.
+     * The results of the commands can be obtained from the returned {@link TransactionResult}.
+     * Errors are represented as {@code Throwable}s in the {@code TransactionResult}.
      * <p>
      * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
-     * In this case, the produced {@link TransactionResult} will be empty.
+     * In this case, the produced {@link TransactionResult} is empty.
+     * If the {@code tx} block throws an exception, the transaction is discarded automatically and
+     * the exception is rethrown.
      *
-     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
+     * @param tx the consumer receiving the transactional Redis data source. The enqueued commands are only executed
      *        at the end of the block.
      */
     TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> tx);
 
     /**
-     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
-     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
-     * The commands are only executed when the passed block completes.
+     * Obtains a {@link RedisDataSource} that enqueues commands in a Redis Transaction ({@code WATCH} & {@code MULTI}),
+     * starts watching the given {@code watchedKeys}, and passes it to the given {@code tx} block.
+     * Note that the transaction acquires a single connection and all the commands are enqueued on this connection.
+     * The commands are only executed when the passed {@code tx} block completes.
      * <p>
-     * The results of the commands are retrieved using the returned {@link TransactionResult}.
+     * The results of the commands can be obtained from the returned {@link TransactionResult}.
+     * Errors are represented as {@code Throwable}s in the {@code TransactionResult}.
      * <p>
      * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
-     * In this case, the produced {@link TransactionResult} will be empty.
+     * In this case, the produced {@link TransactionResult} is empty.
+     * If the {@code tx} block throws an exception, the transaction is discarded automatically and
+     * the exception is rethrown.
      *
-     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
+     * @param tx the consumer receiving the transactional Redis data source. The enqueued commands are only executed
      *        at the end of the block.
      * @param watchedKeys the keys to watch during the execution of the transaction. If one of these key is modified before
      *        the completion of the transaction, the transaction is discarded.
@@ -88,44 +97,49 @@ public interface RedisDataSource {
     TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> tx, String... watchedKeys);
 
     /**
-     * Retrieves a {@link RedisDataSource} enqueuing commands in a Redis Transaction ({@code MULTI}).
-     * Note that transaction acquires a single connection, and all the commands are enqueued in this connection.
-     * The commands are only executed when the passed block emits the {@code null} item.
+     * Obtains a {@link RedisDataSource} that enqueues commands in a Redis Transaction ({@code WATCH} & {@code MULTI}),
+     * starts watching the given {@code watchedKeys}, passes it to the given {@code preTx} block and if that
+     * doesn't fail, passes it again to the given {@code tx} block. Note that the transaction acquires a single
+     * connection and all the commands are enqueued on this connection. The commands are only executed when
+     * the passed {@code tx} block completes.
      * <p>
-     * This variant also allows executing code before the transaction gets started but after the key being watched:
+     * This variant also allows executing code before the transaction gets started but after the keys are watched:
      *
      * <pre>
-     *     WATCH key
-     *     // preTxBlock
+     * WATCH key
+     *     // preTx
      *     element = ZRANGE k 0 0
-     *     // TxBlock
-     *     MULTI
-     *        ZREM k element
-     *     EXEC
+     * MULTI
+     *     // tx
+     *     ZREM k element
+     * EXEC
      * </pre>
      * <p>
-     * The {@code preTxBlock} returns a {@link I}. The produced value is received by the {@code tx} block,
+     * The {@code preTxBlock} returns an {@code I}. The produced value is received by the {@code tx} block,
      * which can use that value to execute the appropriate operation in the transaction. The produced value can also be
-     * retrieved from the produced {@link OptimisticLockingTransactionResult}. Commands issued in the {@code preTxBlock }
-     * must used the passed (single-connection) {@link RedisDataSource} instance.
+     * obtained from the returned {@link OptimisticLockingTransactionResult}. Commands issued in the {@code preTx}
+     * block must use the passed (single-connection) {@link RedisDataSource} instance.
      * <p>
-     * If the {@code preTxBlock} throws an exception, the transaction is not executed, and the returned
-     * {@link OptimisticLockingTransactionResult} is empty.
+     * If the {@code preTx} block throws an exception, all watched keys are {@code UNWATCH}ed and the exception is rethrown.
      * <p>
      * This construct allows implementing operation relying on optimistic locking.
-     * The results of the commands are retrieved using the produced {@link OptimisticLockingTransactionResult}.
+     * The results of the commands can be obtained from the returned {@link OptimisticLockingTransactionResult}.
+     * Errors are represented as {@code Throwable}s in the {@code OptimisticLockingTransactionResult}.
      * <p>
      * The user can discard a transaction using the {@link TransactionalRedisDataSource#discard()} method.
-     * In this case, the produced {@link OptimisticLockingTransactionResult} will be empty.
+     * In this case, the produced {@link OptimisticLockingTransactionResult} is empty.
+     * If the {@code tx} block throws an exception, the transaction is discarded automatically and
+     * the exception is rethrown.
      *
-     * @param tx the consumer receiving the transactional redis data source. The enqueued commands are only executed
-     *        at the end of the block.
+     * @param preTx the consumer receiving the Redis data source before the transaction is started but after
+     *        the {@code watchedKeys} are watched.
+     * @param tx the consumer receiving the transactional Redis data source after the transaction is started.
+     *        The enqueued commands are only executed at the end of the block.
      * @param watchedKeys the keys to watch during the execution of the transaction. If one of these key is modified before
      *        the completion of the transaction, the transaction is discarded.
      */
-    <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTxBlock,
-            BiConsumer<I, TransactionalRedisDataSource> tx,
-            String... watchedKeys);
+    <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTx,
+            BiConsumer<I, TransactionalRedisDataSource> tx, String... watchedKeys);
 
     /**
      * Execute the command <a href="https://redis.io/commands/select">SELECT</a>.

@@ -643,7 +643,7 @@ There are other methods that can be useful to manipulate counters, such as:
 - `set` - to set an initial value if needed
 - `decr` and `decrby` - allows decrementing the stored value
 
-==== Communicate with pub/sub
+=== Communicate with pub/sub
 
 Redis allows sending _messages_ to channels and listening for these messages.
 These features are available from the `pubsub` group.
@@ -710,7 +710,7 @@ public static class MyCache {
 }
 ----
 
-==== Use Redis transactions
+=== Use Redis transactions
 
 Redis transactions are slightly different from relational database transactions.
 Redis transactions are a batch of commands executed altogether.
@@ -741,7 +741,7 @@ TransactionResult result = ds.withTransaction(tx -> {
     });
 ----
 
-The received `tx` object can also be used to _discard_ the transaction, using: `tx.discard();`.
+The received `tx` object can also be used to _discard_ the transaction, using `tx.discard()`.
 The returned `TransactionResult` lets you retrieve the result of each command.
 
 When using the reactive variant of the data source, the passed callback is a `Function<ReactiveTransactionalRedisDataSource, Uni<Void>>`:
@@ -761,7 +761,7 @@ Uni<TransactionResult> result = ds.withTransaction(tx -> {
 
 Transaction execution can be conditioned by _keys_.
 When a passed key gets modified during the execution of a transaction, the transaction is discarded.
-The keys are passed as `String` as a second parameter to the `withTransaction` method:
+The keys are passed as ``String``s to the second, vararg parameter of the `withTransaction` method:
 
 [source,java]
 ----
@@ -776,7 +776,7 @@ IMPORTANT: You cannot use the pub/sub feature from within a transaction.
 
 ==== Implement the optimistic locking pattern
 
-To use optimistic locking, you need to use a variant of the `withTransaction` method, allowing the execution of code before the transaction starts.
+To use optimistic locking, you need to use a variant of the `withTransaction` method allowing execution of code before the transaction starts.
 In other words, it will be executed as follows:
 
 [source]
@@ -784,11 +784,13 @@ In other words, it will be executed as follows:
 WATCH key
 
 // Pre-transaction block
-// ....
+// ...
 // Produce a result
 
 MULTI
-  // In transaction code, receive the result produced by the pre-transaction block.
+
+// In transaction code, receive the result produced by the pre-transaction block.
+
 EXEC
 ----
 
@@ -801,14 +803,16 @@ OptimisticLockingTransactionResult<Boolean> result = blocking.withTransaction(ds
     HashCommands<String, String, String> hashCommands = ds.hash(String.class);
     return hashCommands.hexists(key, "field"); // Produce a result (boolean in this case)
 },
- (exists, tx) -> { // The transactional block, receives the result and the transactional data source
-        if (exists) {
-            tx.hash(String.class).hset(key, "field", "new value");
-        } else {
-            tx.discard();
-        }
- },
-  key); // The watched key
+(exists, tx) -> {
+    // The transactional block, receives the result and the transactional data source
+    if (exists) {
+        tx.hash(String.class).hset(key, "field", "new value");
+    } else {
+        tx.discard();
+    }
+},
+// The watched key
+key);
 ----
 
 If one of the watched keys is touched before or during the execution of the pre-transaction or transactional blocks, the transaction is aborted.
@@ -821,9 +825,35 @@ Consequently, the pre-transaction block must use the passed data source to execu
 Thus, the commands are emitted from that connection.
 These commands must not modify the watched keys.
 
-The transaction is aborted if the pre-transaction block throws an exception (or produces a failure when using the reactive API).
+==== Error handling
 
-==== Execute custom commands
+If the transaction block returns successfully (or completes with an item in case of the reactive API), the transaction is executed.
+Note that in this case, some transaction commands may succeed and some may fail; this is standard Redis behavior.
+The `TransactionResult.hasErrors()` method indicates whether at least one command failed.
+Results of failed commands in the `TransactionResult` are represented as ``Throwable``s.
+If the transaction block throws an exception (or completes with a failure in case of the reactive API), the transaction is discarded automatically and the exception is rethrown (or the resulting `Uni` completes with the same failure in case of the reactive API).
+
+In case of the optimistic locking API, if the pre-transaction block returns successfully (or completes with an item in case of the reactive API), the transaction is started and execution proceeds to the transaction block.
+If the pre-transaction block throws an exception (or completes with a failure in case of the reactive API), all watched keys are ``UNWATCH``ed automatically and the exception is rethrown (or the resulting `Uni` completes with the same failure in case of the reactive API).
+In this case, the transaction is not started and the transaction block is not executed.
+
+==== Transactions in Redis Cluster
+
+In the cluster mode, transaction commands (`MULTI`, `EXEC`, `DISCARD`, `WATCH`, `UNWATCH`) are handled specially.
+
+By default, transactions in cluster are disabled and transaction commands immediately fail.
+
+It is however possible to enable single-node transactions by setting `quarkus.redis.cluster-transactions` to `single-node`.
+Note that this setting only makes sense in the cluster mode and is ignored otherwise.
+
+In this mode, the `MULTI` command is queued and is only issued when the next command is executed.
+This next command binds the connection to the corresponding node of the Redis cluster (so it should have keys, otherwise the target node is random).
+All subsequent commands are targeted to that node.
+If some of the subsequent commands have a key that belongs to another node, the command fails on the server side.
+If `WATCH` is used before `MULTI`, its key(s) determine to which node the connection is bound and the subsequent `MULTI` is not queued.
+If `WATCH` keys belong to multiple nodes, the command fails on the client side.
+
+=== Execute custom commands
 
 To execute a custom command, or a command not supported by the API, use the following approach:
 
@@ -927,8 +957,8 @@ The documentation of the Vert.x Redis Client is available on the https://vertx.i
 
 == Configure Redis hosts programmatically
 
-The `RedisHostsProvider` programmatically provides redis hosts.
-This allows for configuration of properties like redis connection password coming from other sources.
+The `RedisHostsProvider` programmatically provides Redis hosts.
+This allows for configuration of properties like Redis connection password coming from other sources.
 
 [NOTE]
 ====

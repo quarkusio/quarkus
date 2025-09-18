@@ -71,7 +71,7 @@ Module dependencies must follow strict rules:
 * External consumers should rely only on `runtime` or `build` to be tightly-coupled (forcing the target extension to be present at execution). See <<coupling-api-and-spi>>.
 * Public APIs must be explicitly documented, including build items meant for inter-extension use.
 * Public build items must document their intended usage (produced, consumed, or both).
-* Each module should provide an `Automatic-Module-Name` based on the root package
+* Each module should provide an `Automatic-Module-Name` based on the root package.
 Using the `Automatic-Module-Name` allows extensions to be used as JPMS modules in the future, even if we do not fully adopt JPMS yet.
 Also, it avoids split packages, as the `Automatic-Module-Name` must be unique across all modules in the Quarkus ecosystem:
 
@@ -177,11 +177,12 @@ For example: `org.apache.camel.quarkus.component` would use `org.apache.camel.qu
 ==== Root package name
 
 To transform an extension name into a package name, use the following pattern:
+
 * `io.quarkus.<extension-name>` for Quarkus core extensions.
 * `io.quarkiverse.<extension-name>` for Quarkiverse extensions.
-* If the extension name contains a hyphen, replace it with an underscore (e.g., `quarkus-foo-bar` becomes `io.quarkus.foo_bar`). // TODO Definitely not sure.
+* If the extension name contains a hyphen, it is recommended to replace it with an underscore (e.g., `quarkus-foo-bar` becomes `io.quarkus.foo_bar`). 
 
-==== runtime module
+==== `runtime` module
 * `io.<quarkus|quarkiverse>.<extension-name>.runtime.internal|impl`: Internal implementation. Not part of the public API.
 * `io.<quarkus|quarkiverse>.<extension-name>.runtime.graal`: GraalVM substitutions. Not part of the public API.
 * `io.<quarkus|quarkiverse>.<extension-name>`: Public API when requiring tight-coupling. May include subpackages (excluding `api` and `dev` packages). Example: `io.quarkus.cache`. Note that this is discouraged in favor of the `runtime-api` module.
@@ -189,21 +190,21 @@ To transform an extension name into a package name, use the following pattern:
 Non-API packages should be under `.impl` or `internal` like `io.quarkus.<extension-name>.runtime.internal` or `io.quarkus.<extension-name>.runtime.impl`.
 Thus, automated tooling can easily use this information to help generate a `module-info` with the correct exports, as well as excluding those packages from JavaDoc generation.
 
-==== build module
+==== `build` module
 * `io.<quarkus|quarkiverse>.<extension-name>.build`: Internal build logic (processors, build steps, internal build items). Public SPIs must reside in the `build-spi` module. May include subpackages (excluding `spi`).
 
-==== build-spi module
+==== `build-spi` module
 * `io.<quarkus|quarkiverse>.<extension-name>.build.spi`: Public build items and types. Considered public API and subject to compatibility guarantees.
 
 Build items in this module should be documented with their intended use (produced or consumed).
 
-==== runtime-api module
+==== `runtime-api` module
 * `io.<quarkus|quarkiverse>.<extension-name>.api`: Public runtime API. Can be used independently of the full extension. Consumers should not expect the full extension to be available at runtime. To make sure the extension is available, the consumer should use the `runtime` module (which would pull in the `runtime-api` module transitively).
 
-==== dev module
+==== `dev` module
 * `io.<quarkus|quarkiverse>.<extension-name>.dev`: Dev-mode-only runtime classes, e.g., for Dev UI contribution. Not included in production builds.
 
-==== codegen module
+==== `codegen` module
 
 * `io.<quarkus|quarkiverse>.<extension-name>.codegen`: Code generation logic, if applicable. This module is optional and may not be present in all extensions.
 
@@ -237,6 +238,10 @@ Build items in this module should be documented with their intended use (produce
 | codegen
 | Code generation logic (if applicable)
 | Quarkus build system
+
+| cli
+| `quarkus` CLI plugin
+| The Quarkus CLI
 |===
 
 == Consequences
@@ -266,8 +271,9 @@ Rejected due to increasing maintenance costs and risk of regressions. After 7 ye
 Deemed too complex and premature. While structurally compatible with this proposal, full JPMS adoption is deferred to avoid breaking changes and complexity in build tooling.
 
 == Related Discussions
-	* https://github.com/quarkusio/quarkus/discussions/47074[Discussion: Modular Extension Structure]
-	* https://github.com/quarkusio/quarkus/pull/49280[First Implementation (TLS Registry)]
+
+* https://github.com/quarkusio/quarkus/discussions/47074[Discussion: Modular Extension Structure]
+* https://github.com/quarkusio/quarkus/pull/49280[First Implementation (TLS Registry)]
 
 == Notes
 

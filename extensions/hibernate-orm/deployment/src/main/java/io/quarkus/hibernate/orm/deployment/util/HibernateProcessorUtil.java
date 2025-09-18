@@ -26,8 +26,6 @@ import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
 
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.community.dialect.CommunityDatabase;
-import org.hibernate.dialect.Database;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -114,6 +112,9 @@ public final class HibernateProcessorUtil {
             for (DatabaseKindDialectBuildItem item : dbKindDialectBuildItems) {
                 if (dbKind.isPresent() && DatabaseKind.is(dbKind.get(), item.getDbKind())
                         || explicitDialect.isPresent() && item.getMatchingDialects().contains(explicitDialect.get())) {
+                    if (dbKind.isEmpty()) {
+                        dbKind = Optional.ofNullable(item.getDbKind());
+                    }
                     dbProductName = item.getDatabaseProductName();
                     if (dbProductName.isEmpty() && explicitDialect.isEmpty()) {
                         dialect = item.getDialectOptional();
@@ -145,9 +146,6 @@ public final class HibernateProcessorUtil {
         }
 
         Optional<SupportedDatabaseKind> supportedDbKind = dbKind.flatMap(SupportedDatabaseKind::from);
-        if (supportedDbKind.isEmpty()) {
-            supportedDbKind = supportedDatabaseKindFromProductName(dbProductName);
-        }
 
         handleDialectSpecificSettings(
                 persistenceUnitName,
@@ -214,42 +212,6 @@ public final class HibernateProcessorUtil {
                         puPropertiesCollector);
             }
         }
-    }
-
-    private static Optional<SupportedDatabaseKind> supportedDatabaseKindFromProductName(
-            Optional<String> dbProductNameOptional) {
-
-        return dbProductNameOptional
-                .filter(s -> !s.isEmpty())
-                .flatMap(dbProductName -> {
-
-                    if (Database.DB2.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.DB2);
-                    }
-                    if (CommunityDatabase.DERBY.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.DERBY);
-                    }
-                    if (Database.H2.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.H2);
-                    }
-                    if (Database.MARIADB.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.MARIADB);
-                    }
-                    if (Database.MYSQL.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.MYSQL);
-                    }
-                    if (Database.ORACLE.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.ORACLE);
-                    }
-                    if (Database.POSTGRESQL.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.POSTGRESQL);
-                    }
-                    if (Database.SQLSERVER.productNameMatches(dbProductName)) {
-                        return Optional.of(SupportedDatabaseKind.MSSQL);
-                    }
-                    return Optional.empty();
-
-                });
     }
 
     private static void handleStorageEngine(

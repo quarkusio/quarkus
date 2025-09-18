@@ -109,7 +109,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                             continue;
                         }
                         // Handle cookies separately to preserve commas in the header values
-                        if ("set-cookie".equals(name)) {
+                        if ("set-cookie".equalsIgnoreCase(name)) {
                             responseBuilder.setCookies(allForName);
                             continue;
                         }

@@ -50,7 +50,8 @@ public class CredentialsProviderLink implements com.rabbitmq.client.impl.Credent
 
     @Override
     public void refresh() {
-        Map<String, String> credentials = credentialsProvider.getCredentials(credentialsProviderName);
+        Map<String, String> credentials = credentialsProvider.getCredentialsAsync(credentialsProviderName).await()
+                .indefinitely();
         username = credentials.get(USER_PROPERTY_NAME);
         password = credentials.get(PASSWORD_PROPERTY_NAME);
         expiresAt = Instant.parse(credentials.getOrDefault(EXPIRATION_TIMESTAMP_PROPERTY_NAME, getDefaultExpiresAt()));

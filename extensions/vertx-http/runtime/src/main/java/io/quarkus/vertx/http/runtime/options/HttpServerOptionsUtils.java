@@ -136,7 +136,7 @@ public class HttpServerOptionsUtils {
             String beanName = sslConfig.certificate().credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = sslConfig.certificate().credentialsProvider().get();
-            credentials = credentialsProvider.getCredentials(name);
+            credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
         }
 
         final Optional<String> keyStorePassword = getCredential(sslConfig.certificate().keyStorePassword(), credentials,

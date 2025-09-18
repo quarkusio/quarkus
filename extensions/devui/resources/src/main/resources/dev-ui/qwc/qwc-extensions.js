@@ -233,7 +233,7 @@ export class QwcExtensions extends observeState(LitElement) {
             let logoUrl = this._getLogoUrl(extension);
             return html`
                 <qwc-extension 
-                    class="active"
+                    clazz="active"
                     name="${extension.name}" 
                     description="${extension.description}"
                     guide="${extension.guide}"
@@ -290,7 +290,7 @@ export class QwcExtensions extends observeState(LitElement) {
                 let logoUrl = this._getLogoUrl(extension);
 
                 return html`<qwc-extension
-                    class="inactive"
+                    clazz="inactive"
                     name="${extension.name}" 
                     description="${extension.description}" 
                     guide="${extension.guide}"

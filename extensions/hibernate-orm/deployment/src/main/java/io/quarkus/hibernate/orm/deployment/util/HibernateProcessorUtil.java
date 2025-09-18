@@ -103,7 +103,6 @@ public final class HibernateProcessorUtil {
             Optional<String> explicitDbMinVersion,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
-            Optional<String> storageEngine,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector,
             Set<String> storageEngineCollector) {
@@ -145,29 +144,29 @@ public final class HibernateProcessorUtil {
             puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
         }
 
-        Optional<SupportedDatabaseKind> supportedDatabaseKind = handleDialectSpecificSettings(
+        Optional<SupportedDatabaseKind> supportedDbKind = dbKind.flatMap(SupportedDatabaseKind::from);
+        if (supportedDbKind.isEmpty()) {
+            supportedDbKind = supportedDatabaseKindFromProductName(dbProductName);
+        }
+
+        handleDialectSpecificSettings(
                 persistenceUnitName,
                 systemProperties,
                 puPropertiesCollector,
                 storageEngineCollector,
                 dialectConfig,
-                dbKind,
-                dbProductName);
+                supportedDbKind);
 
-        return supportedDatabaseKind;
+        return supportedDbKind;
     }
 
-    private static Optional<SupportedDatabaseKind> handleDialectSpecificSettings(
+    private static void handleDialectSpecificSettings(
             String persistenceUnitName,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector,
             Set<String> storageEngineCollector,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
-            Optional<String> dbKind,
-            Optional<String> dbProductName) {
-
-        final Optional<SupportedDatabaseKind> databaseKind = determineDatabaseKind(dbKind, dbProductName);
-
+            Optional<SupportedDatabaseKind> databaseKind) {
         handleStorageEngine(databaseKind, persistenceUnitName, dialectConfig, storageEngineCollector,
                 systemProperties);
 
@@ -215,17 +214,6 @@ public final class HibernateProcessorUtil {
                         puPropertiesCollector);
             }
         }
-
-        return databaseKind;
-    }
-
-    private static Optional<SupportedDatabaseKind> determineDatabaseKind(
-            Optional<String> dbKindOptional,
-            Optional<String> dbProductNameOptional) {
-
-        Optional<SupportedDatabaseKind> supportedDatabaseKindFromDBKind = dbKindOptional.flatMap(SupportedDatabaseKind::from);
-
-        return supportedDatabaseKindFromDBKind.or(() -> supportedDatabaseKindFromProductName(dbProductNameOptional));
     }
 
     private static Optional<SupportedDatabaseKind> supportedDatabaseKindFromProductName(

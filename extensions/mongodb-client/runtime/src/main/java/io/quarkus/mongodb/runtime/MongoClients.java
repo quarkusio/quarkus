@@ -527,7 +527,7 @@ public class MongoClients {
             String beanName = config.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = config.credentialsProvider().get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             return new UsernamePassword(user, password.toCharArray());

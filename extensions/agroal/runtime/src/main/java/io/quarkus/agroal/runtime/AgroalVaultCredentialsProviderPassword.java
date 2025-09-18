@@ -18,7 +18,7 @@ public class AgroalVaultCredentialsProviderPassword extends SimplePassword {
     @Override
     public Properties asProperties() {
         Properties properties = new Properties();
-        Map<String, String> credentials = credentialsProvider.getCredentials(getWord());
+        Map<String, String> credentials = credentialsProvider.getCredentialsAsync(getWord()).await().indefinitely();
         credentials.forEach((key, value) -> properties.setProperty(key, value));
         return properties;
     }

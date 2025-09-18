@@ -124,20 +124,19 @@ public class MSSQLPoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
-        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(mssqlConnectOptions),
+        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(List.of(mssqlConnectOptions),
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<MSSQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
-            List<MSSQLConnectOptions> mssqlConnectOptionsList,
+    private Supplier<Future<MSSQLConnectOptions>> toDatabasesSupplier(List<MSSQLConnectOptions> mssqlConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<MSSQLConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, mssqlConnectOptionsList,
+            supplier = new ConnectOptionsSupplier<>(credentialsProvider, name, mssqlConnectOptionsList,
                     MSSQLConnectOptions::new);
         } else {
             supplier = Utils.roundRobinSupplier(mssqlConnectOptionsList);
@@ -214,7 +213,7 @@ public class MSSQLPoolRecorder {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             if (user != null) {

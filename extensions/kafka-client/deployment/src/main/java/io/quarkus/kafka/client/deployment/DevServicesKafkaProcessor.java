@@ -109,8 +109,8 @@ public class DevServicesKafkaProcessor {
                     .withSharedServiceLabel(launchMode.getLaunchMode(), config.serviceName());
             case STRIMZI -> {
                 StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.effectiveImageName())
+                        .withNodeId(1)
                         .withBrokerId(1)
-                        .withKraft()
                         .waitForRunning();
                 String hostName = ConfigureUtil.configureNetwork(strimzi,
                         composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");

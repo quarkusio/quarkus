@@ -33,8 +33,7 @@ public class DevServicesContainerSharingTest extends BaseDevServiceTest {
 
     @BeforeAll
     static void beforeAll() {
-        kafka = new StrimziKafkaContainer().withKraft()
-                .withLabel("quarkus-dev-service-kafka", "kafka");
+        kafka = new StrimziKafkaContainer().withLabel("quarkus-dev-service-kafka", "kafka");
         kafka.start();
     }
 

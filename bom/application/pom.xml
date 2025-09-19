@@ -148,7 +148,7 @@
         <scala.version>2.13.16</scala.version>
         <aws-lambda-java.version>1.4.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.16.1</aws-lambda-java-events.version>
-        <aws-xray.version>2.18.3</aws-xray.version>
+        <aws-xray.version>2.19.0</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
         <azure-functions-java-library.version>3.2.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>

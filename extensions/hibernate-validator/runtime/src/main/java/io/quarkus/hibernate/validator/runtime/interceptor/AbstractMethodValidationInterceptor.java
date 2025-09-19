@@ -16,6 +16,8 @@ import jakarta.validation.Path;
 import jakarta.validation.Validator;
 import jakarta.validation.executable.ExecutableValidator;
 
+import org.hibernate.validator.path.RandomAccessPath;
+
 /**
  * NOTE: this is a copy of the interceptor present in hibernate-validator-cdi.
  * For now, I prefer not depending on this artifact but this might change in the
@@ -153,6 +155,9 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
     }
 
     private Path.Node getLeafNode(ConstraintViolation<?> constraintViolation) {
+        if (constraintViolation.getPropertyPath() instanceof RandomAccessPath randomAccessPath) {
+            return randomAccessPath.getLeafNode();
+        }
         Iterator<Path.Node> nodes = constraintViolation.getPropertyPath().iterator();
         Path.Node leafNode = null;
         while (nodes.hasNext()) {

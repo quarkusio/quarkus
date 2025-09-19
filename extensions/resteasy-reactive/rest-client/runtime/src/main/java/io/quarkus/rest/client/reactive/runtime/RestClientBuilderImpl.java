@@ -50,6 +50,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.tls.TlsConfiguration;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.net.KeyCertOptions;
@@ -537,6 +538,24 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().getAsInt());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
+        }
+
+        MemorySize fileThreshold = (MemorySize) getConfiguration()
+                .getProperty(QuarkusRestClientProperties.MULTIPART_FILE_THRESHOLD);
+        if (fileThreshold != null) {
+            property("dev.resteasy.entity.file.threshold", fileThreshold.asLongValue());
+        } else if (restClients.multipart().fileThreshold().isPresent()) {
+            property("dev.resteasy.entity.file.threshold",
+                    restClients.multipart().fileThreshold().get().asLongValue());
+        }
+
+        MemorySize memoryThreshold = (MemorySize) getConfiguration()
+                .getProperty(QuarkusRestClientProperties.MULTIPART_MEMORY_THRESHOLD);
+        if (memoryThreshold != null) {
+            property("dev.resteasy.entity.memory.threshold", memoryThreshold.asLongValue());
+        } else if (restClients.multipart().memoryThreshold().isPresent()) {
+            property("dev.resteasy.entity.memory.threshold",
+                    restClients.multipart().memoryThreshold().get().asLongValue());
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {

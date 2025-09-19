@@ -124,7 +124,8 @@ public class MSSQLPoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
-        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(mssqlConnectOptions),
+        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx,
+                List.of(mssqlConnectOptions),
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier, context);
     }
@@ -145,7 +146,8 @@ public class MSSQLPoolRecorder {
         return supplier;
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount, DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -177,7 +179,8 @@ public class MSSQLPoolRecorder {
         return poolOptions;
     }
 
-    private MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         MSSQLConnectOptions mssqlConnectOptions;

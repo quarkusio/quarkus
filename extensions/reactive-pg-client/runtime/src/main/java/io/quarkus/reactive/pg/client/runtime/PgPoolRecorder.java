@@ -49,6 +49,8 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class PgPoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final TypeLiteral<Instance<PgPoolCreator>> PG_POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
@@ -215,7 +217,8 @@ public class PgPoolRecorder {
                 }
             }
 
-            pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
+            pgConnectOptions.setCachePreparedStatements(
+                    dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
             if (dataSourceReactivePostgreSQLConfig.pipeliningLimit().isPresent()) {
                 pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit().getAsInt());

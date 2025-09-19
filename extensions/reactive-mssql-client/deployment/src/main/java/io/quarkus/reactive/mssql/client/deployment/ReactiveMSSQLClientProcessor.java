@@ -62,6 +62,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.mssqlclient.MSSQLPool;
+import io.vertx.mssqlclient.spi.MSSQLDriver;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveMSSQLClientProcessor {
@@ -152,6 +153,11 @@ class ReactiveMSSQLClientProcessor {
                 seen.put(qualifiersStr, true);
             }
         }
+    }
+
+    @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", MSSQLDriver.class.getName()));
     }
 
     @BuildStep

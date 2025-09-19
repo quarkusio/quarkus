@@ -63,6 +63,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
+import io.vertx.pgclient.spi.PgDriver;
 import io.vertx.sqlclient.Pool;
 
 class ReactivePgClientProcessor {
@@ -184,6 +185,11 @@ class ReactivePgClientProcessor {
                 seen.put(qualifiersStr, true);
             }
         }
+    }
+
+    @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", PgDriver.class.getName()));
     }
 
     @BuildStep

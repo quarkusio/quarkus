@@ -62,6 +62,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.oracleclient.OraclePool;
+import io.vertx.oracleclient.spi.OracleDriver;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveOracleClientProcessor {
@@ -152,6 +153,11 @@ class ReactiveOracleClientProcessor {
                 seen.put(qualifiersStr, true);
             }
         }
+    }
+
+    @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", OracleDriver.class.getName()));
     }
 
     @BuildStep

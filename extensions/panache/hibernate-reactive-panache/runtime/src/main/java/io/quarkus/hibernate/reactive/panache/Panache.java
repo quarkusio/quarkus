@@ -10,6 +10,8 @@ import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
 /**
  * Utility class for Panache.
  *
@@ -26,7 +28,8 @@ public class Panache {
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withSession(Supplier<Uni<T>> uniSupplier) {
-        return SessionOperations.withSession(s -> uniSupplier.get());
+        // TODO Luca not sure about this
+        return SessionOperations.withSession(s -> uniSupplier.get(), DEFAULT_PERSISTENCE_UNIT_NAME);
     }
 
     /**

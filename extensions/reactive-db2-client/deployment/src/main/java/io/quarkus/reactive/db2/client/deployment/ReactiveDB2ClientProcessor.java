@@ -62,6 +62,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.db2client.DB2Pool;
+import io.vertx.db2client.spi.DB2Driver;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
@@ -152,6 +153,11 @@ class ReactiveDB2ClientProcessor {
                 seen.put(qualifiersStr, true);
             }
         }
+    }
+
+    @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", DB2Driver.class.getName()));
     }
 
     @BuildStep

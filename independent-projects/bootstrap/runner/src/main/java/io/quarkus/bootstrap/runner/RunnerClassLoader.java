@@ -4,7 +4,9 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -146,10 +148,119 @@ public final class RunnerClassLoader extends ClassLoader {
         }
     }
 
+    private static int u8(byte[] data, int offset) {
+        return Byte.toUnsignedInt(data[offset]);
+    }
+
+    private static int u16(byte[] data, int offset) {
+        return u8(data, offset) << 8 | u8(data, offset + 1);
+    }
+
+    private static String binaryName(byte[] data, int offset, int length) {
+        // maybe larger than needed
+        char[] ca = new char[length];
+        int j = 0;
+        for (int i = 0; i < length;) {
+            int lb = u8(data, offset + i);
+            if (lb < 0x80) {
+                if (lb == '/') {
+                    lb = '.';
+                }
+                ca[j++] = (char) lb;
+                i++;
+            } else if (lb < 0xC0) {
+                throw new ClassFormatError("Illegal character in class name: " + lb);
+            } else if (lb < 0xE0) {
+                ca[j++] = (char) ((lb & 0x1F) << 6 | u8(data, offset + i + 1) & 0x3F);
+                i += 2;
+            } else if (lb < 0xF0) {
+                ca[j++] = (char) ((lb & 0x0F) << 12 | (u8(data, offset + i + 2) & 0x3F) << 6 | u8(data, offset + i + 2) & 0x3F);
+                i += 3;
+            } else {
+                throw new ClassFormatError("Illegal character in class name: " + lb);
+            }
+        }
+        return new String(ca, 0, j);
+    }
+
+    private static final int O_CP_COUNT = 8;
+    private static final int O_CP_START = 10;
+    private static final int O_SUPER_FROM_CP_END = 4;
+
+    private static final int CONSTANT_Utf8 = 1;
+    private static final int CONSTANT_Class = 7;
+
+    private static final byte[] javaLangObject = "java/lang/Object".getBytes(StandardCharsets.US_ASCII);
+    private static final int[] sizes = new int[] {
+            0, // unused
+            3, // [1] CONSTANT_Utf8 (special)
+            0, // unused
+            5, // [3] CONSTANT_Integer
+            5, // [4] CONSTANT_Float
+            9, // [5] CONSTANT_Long
+            9, // [6] CONSTANT_Double
+            3, // [7] CONSTANT_Class
+            3, // [8] CONSTANT_String
+            5, // [9] CONSTANT_Fieldref
+            5, // [10] CONSTANT_Methodref
+            5, // [11] CONSTANT_InterfaceMethodref
+            5, // [12] CONSTANT_NameAndType
+            0, // unused
+            0, // unused
+            0, // unused
+            4, // [15] CONSTANT_MethodHandle
+            3, // [16] CONSTANT_MethodType
+            5, // [17] CONSTANT_Dynamic
+            5, // [18] CONSTANT_InvokeDynamic
+            3, // [19] CONSTANT_Module
+            3, // [20] CONSTANT_Package
+    };
+
     private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
         Class<?> loaded = findLoadedClass(name);
         if (loaded != null) {
             return loaded;
+        }
+        // scan class bytes and preload supertype(s)
+        try {
+            int cpCnt = u16(data, O_CP_COUNT);
+            int offs = O_CP_START;
+            int[] cpOffs = new int[cpCnt];
+            for (int i = 1; i < cpCnt; i++) {
+                int tag = u8(data, offs);
+                cpOffs[i] = offs;
+                if (tag == CONSTANT_Utf8) {
+                    offs += u16(data, offs + 1);
+                }
+                offs += sizes[tag];
+            }
+            int superCp = u16(data, offs + O_SUPER_FROM_CP_END);
+            if (superCp != 0 && u8(data, cpOffs[superCp]) == CONSTANT_Class) {
+                int superCi = u16(data, cpOffs[superCp] + 1);
+                int superStrOffs = cpOffs[superCi];
+                if (superCi != 0 && u8(data, superStrOffs) == CONSTANT_Utf8) {
+                    int superLen = u16(data, superStrOffs + 1);
+                    // only load the class if it isn't java.lang.Object
+                    int superStrStart = superStrOffs + 3;
+                    if (!Arrays.equals(data, superStrStart, superStrStart + superLen, javaLangObject, 0,
+                            javaLangObject.length)) {
+                        String superName = binaryName(data, superStrStart, superLen);
+                        try {
+                            loadClass(superName);
+                        } catch (ClassNotFoundException e) {
+                            throw new LinkageError("Failed to load super class " + superName + " of class " + name, e);
+                        }
+                        loaded = findLoadedClass(name);
+                        if (loaded != null) {
+                            return loaded;
+                        }
+                    }
+                }
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            ClassFormatError error = new ClassFormatError("Failed to load class " + name);
+            error.initCause(e);
+            throw error;
         }
         try {
             return defineClass(name, data, 0, data.length, resource.getProtectionDomain());

@@ -3,29 +3,37 @@ package io.quarkus.kubernetes.client.spi;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * BuildItem packaging the information of the kind test container created
+ * BuildItem recording information of the started Kubernetes test container
  */
 public final class KubernetesDevServiceInfoBuildItem extends SimpleBuildItem {
-    private final String kubeConfig;
-    private final String containerId;
+    private String kubeConfig;
+    private final ConfigurationSupplier configurationSupplier;
 
-    public KubernetesDevServiceInfoBuildItem(String kubeConfig, String containerId) {
-        this.kubeConfig = kubeConfig;
-        this.containerId = containerId;
+    public KubernetesDevServiceInfoBuildItem(ConfigurationSupplier configurationSupplier) {
+        this.configurationSupplier = configurationSupplier;
     }
 
     /**
      * @return the KubeConfig as YAML string
      */
     public String getKubeConfig() {
+        if (kubeConfig == null) {
+            kubeConfig = configurationSupplier.getKubeConfig();
+        }
         return kubeConfig;
     }
 
     /**
-     * @return the containerId of the running kind test container
+     * @return the containerId of the running test container
      */
+    @SuppressWarnings("unused")
     public String getContainerId() {
-        return containerId;
+        return configurationSupplier.getContainerId();
     }
 
+    public interface ConfigurationSupplier {
+        String getKubeConfig();
+
+        String getContainerId();
+    }
 }

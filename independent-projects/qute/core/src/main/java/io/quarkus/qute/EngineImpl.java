@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.qute.Parser.StringReader;
 import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 
@@ -62,12 +60,13 @@ class EngineImpl implements Engine {
     @Override
     public Template parse(String content, Variant variant, String id) {
         String generatedId = generateId();
-        return newParser(id != null ? id : generatedId, new StringReader(content), Optional.ofNullable(variant), generatedId)
+        StringTemplateLocation location = new StringTemplateLocation(content, Optional.ofNullable(variant));
+        return newParser(id != null ? id : generatedId, location.read(), location, generatedId)
                 .parse();
     }
 
-    private Parser newParser(String id, Reader reader, Optional<Variant> variant, String generatedId) {
-        Parser parser = new Parser(this, reader, id, generatedId, variant);
+    private Parser newParser(String id, Reader reader, TemplateLocation location, String generatedId) {
+        Parser parser = new Parser(this, id, generatedId, reader, location);
         for (ParserHook parserHook : parserHooks) {
             parserHook.beforeParsing(parser);
         }
@@ -213,10 +212,11 @@ class EngineImpl implements Engine {
 
     private Template load(String id) {
         for (TemplateLocator locator : locators) {
-            Optional<TemplateLocation> location = locator.locate(id);
-            if (location.isPresent()) {
-                try (Reader r = location.get().read()) {
-                    return newParser(id, ensureBufferedReader(r), location.get().getVariant(), generateId()).parse();
+            Optional<TemplateLocation> maybeLocation = locator.locate(id);
+            if (maybeLocation.isPresent()) {
+                TemplateLocation location = maybeLocation.get();
+                try (Reader r = location.read()) {
+                    return newParser(id, r, location, generateId()).parse();
                 } catch (IOException e) {
                     LOGGER.warn("Unable to close the reader for " + id, e);
                 }
@@ -230,12 +230,6 @@ class EngineImpl implements Engine {
         // Higher priority wins
         sorted.sort(Comparator.comparingInt(WithPriority::getPriority).reversed());
         return ImmutableList.copyOf(sorted);
-    }
-
-    private Reader ensureBufferedReader(Reader reader) {
-        return reader instanceof BufferedReader ? reader
-                : new BufferedReader(
-                        reader);
     }
 
     @Override

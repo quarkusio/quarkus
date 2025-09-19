@@ -393,6 +393,7 @@ public class OidcCommonUtils {
                     String providerName = provider.name().orElse(null);
                     String keyringName = provider.keyringName().orElse(null);
                     CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(providerName);
+                    // getCredentials invocation may block the event loop
                     return credentialsProvider.getCredentials(keyringName).get(provider.key().get());
                 }
                 return null;

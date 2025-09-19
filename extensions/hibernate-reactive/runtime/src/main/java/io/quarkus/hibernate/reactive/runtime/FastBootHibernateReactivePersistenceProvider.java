@@ -392,6 +392,13 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                     "When using offline mode with `quarkus.hibernate-orm.database.start-offline=true`, the schema management strategy `quarkus.hibernate-orm.schema-management.strategy` must be unset or set to `none`");
         }
 
+        // Pass extraPhysicalTableTypes configuration
+        List<String> extraPhysicalTableTypes = persistenceUnitConfig.schemaManagement().extraPhysicalTableTypes();
+        if (extraPhysicalTableTypes != null && !extraPhysicalTableTypes.isEmpty()) {
+            String extraTableTypesStr = String.join(",", extraPhysicalTableTypes);
+            runtimeSettingsBuilder.put(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES, extraTableTypesStr);
+        }
+
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()

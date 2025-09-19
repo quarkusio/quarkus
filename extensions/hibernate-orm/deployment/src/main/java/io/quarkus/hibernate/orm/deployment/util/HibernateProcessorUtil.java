@@ -43,7 +43,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
-import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
@@ -62,10 +61,6 @@ public final class HibernateProcessorUtil {
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private HibernateProcessorUtil() {
-    }
-
-    public static boolean hasEntities(JpaModelBuildItem jpaModel) {
-        return !jpaModel.getEntityClassNames().isEmpty();
     }
 
     public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {

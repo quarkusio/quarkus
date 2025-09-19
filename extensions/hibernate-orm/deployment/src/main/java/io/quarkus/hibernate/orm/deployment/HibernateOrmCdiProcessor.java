@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.hasEntities;
-
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -188,6 +186,7 @@ public class HibernateOrmCdiProcessor {
                     true, recorder.checkActiveSupplier(
                             persistenceUnitDescriptor.getPersistenceUnitName(),
                             persistenceUnitDescriptor.getConfig().getDataSource(),
+                            persistenceUnitDescriptor.getConfig().getEntityClassNames(),
                             true));
 
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, puRef);
@@ -214,6 +213,7 @@ public class HibernateOrmCdiProcessor {
                     recorder.checkActiveSupplier(
                             persistenceUnitDescriptor.getPersistenceUnitName(),
                             persistenceUnitDescriptor.getConfig().getDataSource(),
+                            persistenceUnitDescriptor.getConfig().getEntityClassNames(),
                             persistenceUnitDescriptor.isFromPersistenceXml()));
 
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, puRef);
@@ -228,8 +228,9 @@ public class HibernateOrmCdiProcessor {
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Capabilities capabilities,
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
+        if (descriptors.isEmpty()) {
             return;
         }
 
@@ -257,8 +258,9 @@ public class HibernateOrmCdiProcessor {
     @BuildStep
     void transformBeans(JpaModelBuildItem jpaModel, JpaModelIndexBuildItem indexBuildItem,
             BeanDiscoveryFinishedBuildItem beans,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (!hasEntities(jpaModel)) {
+        if (persistenceUnitDescriptors.isEmpty()) {
             return;
         }
 

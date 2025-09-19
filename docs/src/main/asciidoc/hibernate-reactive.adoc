@@ -283,7 +283,7 @@ NOTE: Prior to Quarkus 3.0 it was also possible to inject a `@RequestScoped` bea
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
 
-When a persistence unit is configured at build time, the persistence unit is active by default.
+When a persistence unit is configured at build time, and it is assigned entity types or an xref:datasource.adoc#datasource-active[active datasource], the persistence unit is active by default.
 Quarkus starts the corresponding Hibernate Reactive `SessionFactory` when the application starts.
 
 To deactivate a persistence unit at runtime, see xref:hibernate-orm.adoc#persistence-unit-active[the corresponding section of the Hibernate ORM guide].

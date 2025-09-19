@@ -135,12 +135,16 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void recordEntityToPersistenceUnit(List<EntityToPersistenceUnitBuildItem> items, PanacheHibernateOrmRecorder recorder) {
+    void recordEntityToPersistenceUnit(Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            List<EntityToPersistenceUnitBuildItem> items, PanacheHibernateOrmRecorder recorder) {
         Map<String, String> map = new HashMap<>();
         for (EntityToPersistenceUnitBuildItem item : items) {
             map.put(item.getEntityClass(), item.getPersistenceUnitName());
         }
-        recorder.setEntityToPersistenceUnit(map);
+        recorder.setEntityToPersistenceUnit(map,
+                jpaModelPersistenceUnitMapping.map(JpaModelPersistenceUnitMappingBuildItem::isIncomplete)
+                        // This happens if there is no persistence unit, in which case we definitely know this metadata is complete.
+                        .orElse(false));
     }
 
     @BuildStep

@@ -93,13 +93,14 @@ public class ApplicationDeploymentClasspathBuilder {
         final ConfigurationContainer configContainer = project.getConfigurations();
 
         // Custom configuration for dev mode
-        configContainer.register(ToolingUtils.DEV_MODE_CONFIGURATION_NAME, config -> {
-            config.extendsFrom(configContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
-            config.setCanBeConsumed(false);
-            if (!isDisableComponentVariants(project)) {
-                QuarkusComponentVariants.setConditionalAttributes(config, project, LaunchMode.DEVELOPMENT);
-            }
-        });
+        configContainer
+                .register(ToolingUtils.DEV_MODE_CONFIGURATION_NAME, config -> {
+                    config.extendsFrom(configContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+                    config.setCanBeConsumed(false);
+                    if (!isDisableComponentVariants(project)) {
+                        QuarkusComponentVariants.setConditionalAttributes(config, project, LaunchMode.DEVELOPMENT);
+                    }
+                });
 
         // Base runtime configurations for every launch mode
         configContainer
@@ -283,7 +284,8 @@ public class ApplicationDeploymentClasspathBuilder {
             if (disableComponentVariants) {
                 baseConfig = ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode);
             } else {
-                QuarkusComponentVariants.addVariants(project, mode);
+                Configuration enforcedPlatforms = this.getPlatformConfiguration();
+                QuarkusComponentVariants.addVariants(project, mode, enforcedPlatforms);
                 baseConfig = QuarkusComponentVariants.getConditionalConfigurationName(mode);
             }
             project.getConfigurations().register(this.runtimeConfigurationName, configuration -> {
@@ -341,8 +343,9 @@ public class ApplicationDeploymentClasspathBuilder {
                     })));
                 });
             } else {
+                Configuration enforcedPlatforms = this.getPlatformConfiguration();
                 DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode,
-                        deploymentConfigurationName, taskDependencyFactory);
+                        deploymentConfigurationName, taskDependencyFactory, enforcedPlatforms);
             }
         }
     }

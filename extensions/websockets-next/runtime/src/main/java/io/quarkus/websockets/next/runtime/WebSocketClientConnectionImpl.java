@@ -13,6 +13,7 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketBase;
+import io.vertx.core.net.SocketAddress;
 
 class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements WebSocketClientConnection {
 
@@ -26,10 +27,11 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
             Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers,
             TrafficLogger trafficLogger, Map<String, Object> userData, SendingInterceptor sendingInterceptor,
             Consumer<WebSocketClientConnection> cleanup) {
-        super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger,
+        super(Map.copyOf(pathParams), codecs,
+                new ClientHandshakeRequestImpl(serverEndpointUri, Objects.requireNonNull(webSocket), headers), trafficLogger,
                 new UserDataImpl(userData), sendingInterceptor);
         this.clientId = clientId;
-        this.webSocket = Objects.requireNonNull(webSocket);
+        this.webSocket = webSocket;
         this.cleanup = cleanup;
     }
 
@@ -74,10 +76,12 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
     private static class ClientHandshakeRequestImpl implements HandshakeRequest {
 
         private final URI serverEndpointUrl;
+        private final WebSocket webSocket;
         private final Map<String, List<String>> headers;
 
-        ClientHandshakeRequestImpl(URI serverEndpointUrl, Map<String, List<String>> headers) {
+        ClientHandshakeRequestImpl(URI serverEndpointUrl, WebSocket webSocket, Map<String, List<String>> headers) {
             this.serverEndpointUrl = serverEndpointUrl;
+            this.webSocket = webSocket;
             Map<String, List<String>> copy = new HashMap<>();
             for (Entry<String, List<String>> e : headers.entrySet()) {
                 copy.put(e.getKey().toLowerCase(), List.copyOf(e.getValue()));
@@ -124,6 +128,18 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
         @Override
         public String query() {
             return serverEndpointUrl.getQuery();
+        }
+
+        @Override
+        public String localAddress() {
+            SocketAddress localAddress = webSocket.localAddress();
+            return localAddress != null ? localAddress.toString() : null;
+        }
+
+        @Override
+        public String remoteAddress() {
+            SocketAddress remoteAddress = webSocket.remoteAddress();
+            return remoteAddress != null ? remoteAddress.toString() : null;
         }
 
     }

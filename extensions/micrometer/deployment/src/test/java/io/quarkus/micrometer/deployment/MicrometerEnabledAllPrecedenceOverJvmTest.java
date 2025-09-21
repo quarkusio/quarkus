@@ -18,6 +18,7 @@ public class MicrometerEnabledAllPrecedenceOverJvmTest {
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.enable-all", "true")
             .overrideConfigKey("quarkus.micrometer.binder.jvm", "false")
+            .overrideRuntimeConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class));
 

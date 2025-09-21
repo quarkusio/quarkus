@@ -17,6 +17,7 @@ public class MicrometerBinderEnableAllPrecedenceOverBinderEnabledDefaultTest {
             .overrideConfigKey("quarkus.micrometer.binder.enable-all", "true")
             .overrideConfigKey("quarkus.micrometer.binder.jvm", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class));
 

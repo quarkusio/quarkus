@@ -1,11 +1,12 @@
 package io.quarkus.micrometer.runtime.binder;
 
-import io.quarkus.micrometer.runtime.config.MicrometerConfig;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.Optional;
+import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 public class MicrometerConfigurationTest {
 

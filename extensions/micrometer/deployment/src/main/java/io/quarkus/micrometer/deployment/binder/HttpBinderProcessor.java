@@ -39,7 +39,7 @@ public class HttpBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return mConfig.checkBinderEnabledWithDefault(mConfig.binder().vertx())
+            return mConfig.isEnabled(mConfig.binder().vertx())
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpServer());
         }
     }

@@ -1,13 +1,15 @@
 package io.quarkus.micrometer.deployment;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.micrometer.test.Util;
-import io.quarkus.test.QuarkusUnitTest;
 import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkus.micrometer.test.Util;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class MicrometerBinderEnableAllPrecedenceOverBinderEnabledDefaultTest {
 

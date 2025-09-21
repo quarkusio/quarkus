@@ -142,7 +142,9 @@ public interface MicrometerConfig {
         NettyConfigGroup netty();
 
         /**
-         * Enable all binders.
+         * Enable all binders. This property has precedence over all {@link BinderConfig} binders. In other words,
+         * if the <code>quarkus.micrometer.binder.jvm</code> is set to <code>false</code> and
+         * <code>quarkus.micrometer.binder.enabled-all</code> is set to <code>true</code>, all JVM metrics will be enabled.
          */
         @WithDefault("false")
         boolean enableAll();

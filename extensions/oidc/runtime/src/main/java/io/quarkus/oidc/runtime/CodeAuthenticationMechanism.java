@@ -12,6 +12,7 @@ import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -39,6 +40,7 @@ import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CacheControl;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.LogoutMode;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -1108,6 +1110,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             OidcUtils.createSessionCookie(context, configContext.oidcConfig(), sessionName,
                                                     cookieValue, sessionMaxAge);
                                         }
+
+                                        Set<CacheControl> cacheControl = configContext.oidcConfig().authentication()
+                                                .cacheControl()
+                                                .orElse(Set.of());
+                                        if (!cacheControl.isEmpty()) {
+                                            // Only 'no-store' is currently supported
+                                            context.response().putHeader(HttpHeaders.CACHE_CONTROL,
+                                                    cacheControl.iterator().next().directive());
+                                        }
+
                                         fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
                                         return null;
                                     }

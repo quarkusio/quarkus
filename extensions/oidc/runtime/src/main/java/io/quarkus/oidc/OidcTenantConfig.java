@@ -1819,6 +1819,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          */
         public Optional<String> stateSecret = Optional.empty();
 
+        public Optional<Set<CacheControl>> cacheControl = Optional.empty();
+
         public Optional<Duration> getInternalIdTokenLifespan() {
             return internalIdTokenLifespan;
         }
@@ -2061,6 +2063,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.sessionExpiredPath = Optional.of(sessionExpiredPath);
         }
 
+        @Override
+        public Optional<Set<CacheControl>> cacheControl() {
+            return cacheControl;
+        }
+
         private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.Authentication mapping) {
             responseMode = mapping.responseMode().map(Enum::toString).map(ResponseMode::valueOf);
             redirectPath = mapping.redirectPath();
@@ -2094,6 +2101,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             pkceRequired = mapping.pkceRequired();
             pkceSecret = mapping.pkceSecret();
             stateSecret = mapping.stateSecret();
+            cacheControl = mapping.cacheControl();
         }
     }
 

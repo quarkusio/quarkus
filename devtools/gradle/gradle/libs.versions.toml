@@ -5,7 +5,7 @@ kotlin = "2.2.20"
 smallrye-config = "3.13.4"
 
 junit5 = "5.13.4"
-assertj = "3.27.5"
+assertj = "3.27.6"
 
 [plugins]
 plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "plugin-publish" }

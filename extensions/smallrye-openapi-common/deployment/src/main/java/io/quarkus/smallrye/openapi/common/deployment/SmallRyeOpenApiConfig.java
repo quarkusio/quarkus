@@ -236,9 +236,23 @@ public interface SmallRyeOpenApiConfig {
     Optional<String> infoLicenseUrl();
 
     /**
-     * Set the strategy to automatically create an operation Id
+     * Set the strategy to automatically create an operation Id. The strategy may be
+     * one of the predefined values or the name of a fully-qualified class that
+     * implements the {@code io.smallrye.openapi.api.OperationIdGenerator}
+     * interface.
+     *
+     * <p>
+     * Predefined strategies:
+     * <ul>
+     * <li>{@code method}: generate an operationId with the resource method's
+     * name</li>
+     * <li>{@code class-method}: generate an operationId with the resource class's
+     * simple name and the resource method's name</li>
+     * <li>{@code package-class-method}: generate an operationId with the resource
+     * class's fully-qualified name and the resource method's name</li>
+     * </ul>
      */
-    Optional<OperationIdStrategy> operationIdStrategy();
+    Optional<String> operationIdStrategy();
 
     /**
      * Set this boolean value to enable or disable the merging of the deprecated `@Schema`
@@ -256,12 +270,6 @@ public interface SmallRyeOpenApiConfig {
         oauth2,
         oidc,
         oauth2Implicit
-    }
-
-    public enum OperationIdStrategy {
-        METHOD,
-        CLASS_METHOD,
-        PACKAGE_CLASS_METHOD
     }
 
     default Map<String, String> getValidSecuritySchemeExtensions() {

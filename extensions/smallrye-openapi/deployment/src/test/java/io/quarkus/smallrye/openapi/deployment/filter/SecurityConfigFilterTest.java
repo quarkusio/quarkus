@@ -258,7 +258,7 @@ class SecurityConfigFilterTest {
         }
 
         @Override
-        public Optional<OperationIdStrategy> operationIdStrategy() {
+        public Optional<String> operationIdStrategy() {
             return Optional.empty();
         }
 

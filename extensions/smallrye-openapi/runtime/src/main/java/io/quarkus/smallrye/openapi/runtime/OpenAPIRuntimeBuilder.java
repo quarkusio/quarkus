@@ -11,10 +11,10 @@ import io.smallrye.openapi.api.SmallRyeOpenAPI;
  */
 class OpenAPIRuntimeBuilder extends SmallRyeOpenAPI.Builder {
     @Override
-    public <V, A extends V, O extends V, AB, OB> SmallRyeOpenAPI build() {
+    public SmallRyeOpenAPI build(boolean unmodifiable) {
         var ctx = super.getContext();
         buildPrepare(ctx);
         buildStaticModel(ctx);
-        return buildFinalize(ctx);
+        return buildFinalize(ctx, unmodifiable);
     }
 }

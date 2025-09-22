@@ -50,7 +50,7 @@
         <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
-        <assertj.version>3.27.5</assertj.version>
+        <assertj.version>3.27.6</assertj.version>
         <jackson-bom.version>2.20.0</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <junit5.version>5.13.4</junit5.version>

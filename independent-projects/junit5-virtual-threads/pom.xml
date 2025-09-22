@@ -45,7 +45,7 @@
         <smallrye-common.version>2.13.9</smallrye-common.version>
 
         <junit5.version>5.13.4</junit5.version>
-        <assertj.version>3.27.5</assertj.version>
+        <assertj.version>3.27.6</assertj.version>
     </properties>
 
     <dependencyManagement>

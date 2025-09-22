@@ -387,7 +387,7 @@ public final class BuildTimeConfigurationReader {
                 @Override
                 public String getValue(final String propertyName) {
                     // Required because some interceptors call getValue when iterating names
-                    return config.getRawValue(propertyName);
+                    return config.getConfigValue(propertyName).getValue();
                 }
             };
 

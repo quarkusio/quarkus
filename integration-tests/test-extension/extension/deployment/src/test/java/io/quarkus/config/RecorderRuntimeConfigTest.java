@@ -31,9 +31,9 @@ public class RecorderRuntimeConfigTest {
     @Test
     void runtimeConfig() {
         // Make sure we get the recorded property with the highest priority (the profile property with test)
-        assertEquals("from-application", config.getRawValue("recorded.property"));
-        assertEquals("from-application", config.getRawValue("recorded.profiled.property"));
-        assertEquals("from-application", config.getRawValue("quarkus.mapping.rt.record-profiled"));
+        assertEquals("from-application", config.getConfigValue("recorded.property").getValue());
+        assertEquals("from-application", config.getConfigValue("recorded.profiled.property").getValue());
+        assertEquals("from-application", config.getConfigValue("quarkus.mapping.rt.record-profiled").getValue());
         assertTrue(mappingRunTime.recordProfiled().isPresent());
         assertEquals("from-application", mappingRunTime.recordProfiled().get());
 

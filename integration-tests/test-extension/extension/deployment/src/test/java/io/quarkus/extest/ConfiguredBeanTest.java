@@ -112,7 +112,7 @@ public class ConfiguredBeanTest {
         assertEquals("1234", defaultValues.getValue("my.prop"));
         assertEquals("1234", applicationProperties.getValue("my.prop"));
 
-        assertEquals("9999", config.getRawValue("my.prop"));
+        assertEquals("9999", config.getConfigValue("my.prop").getValue());
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ConfiguredBeanTest {
         assertNull(defaultValues.getValue("quarkus.mapping.rt.do-not-record"));
         assertNull(defaultValues.getValue("%prod.quarkus.mapping.rt.do-not-record"));
         assertNull(defaultValues.getValue("%dev.quarkus.mapping.rt.do-not-record"));
-        assertEquals("value", config.getRawValue("quarkus.mapping.rt.do-not-record"));
+        assertEquals("value", config.getConfigValue("quarkus.mapping.rt.do-not-record").getValue());
     }
 
     @Test

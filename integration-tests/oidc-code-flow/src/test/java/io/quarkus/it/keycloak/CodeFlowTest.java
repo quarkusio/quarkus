@@ -35,6 +35,7 @@ import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
 import org.htmlunit.util.Cookie;
+import org.htmlunit.util.NameValuePair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -829,8 +830,13 @@ public class CodeFlowTest {
             page = loginForm.getButtonByName("login").click();
             assertEquals("Tenant Refresh, refreshed: false", page.asNormalizedText());
 
+            // The session cookie is returned after the authorization code flow completed
+            // At this point cache-control must be set to `no-store`
+            assertEquals("no-store", page.getWebResponse().getResponseHeaderValue("cache-control"));
+            assertNotNull(getSessionSetCookieHeader(page.getWebResponse(), "tenant-refresh"));
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-refresh");
             assertNotNull(sessionCookie);
+
             String idToken = getIdToken(sessionCookie);
 
             //wait now so that we reach the ID token timeout
@@ -852,11 +858,22 @@ public class CodeFlowTest {
                         }
                     });
 
+            // The session cookie has been refreshed
+            // At this point cache-control must be set to `no-store`
+            assertEquals("no-store", page.getWebResponse().getResponseHeaderValue("cache-control"));
+            assertNotNull(getSessionSetCookieHeader(page.getWebResponse(), "tenant-refresh"));
+
             // local session refreshed and still valid
             page = webClient.getPage("http://localhost:8081/tenant-refresh");
             assertEquals("Tenant Refresh, refreshed: false", page.asNormalizedText());
+
+            // Set-Cookie header is not returned this time
+            assertNull(getSessionSetCookieHeader(page.getWebResponse(), "tenant-refresh"));
+            // But WebClient cache has the session cookie
             assertNotNull(getSessionCookie(webClient, "tenant-refresh"));
 
+            // cache-control is only expected when the session cookie is returned
+            assertNull(page.getWebResponse().getResponseHeaderValue("cache-control"));
             //wait now so that we reach the refresh timeout
             await().atMost(20, TimeUnit.SECONDS)
                     .pollInterval(Duration.ofSeconds(1))
@@ -1780,6 +1797,17 @@ public class CodeFlowTest {
             assertEquals(1, sessionCookies.size());
             return sessionCookies.get(0);
         }
+    }
+
+    private String getSessionSetCookieHeader(WebResponse response, String tenantId) {
+        String cookieName = "q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId);
+        for (NameValuePair h : response.getResponseHeaders()) {
+            if ("Set-Cookie".equalsIgnoreCase(h.getName())
+                    && h.getValue().startsWith(cookieName)) {
+                return h.getValue();
+            }
+        }
+        return null;
     }
 
     private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {

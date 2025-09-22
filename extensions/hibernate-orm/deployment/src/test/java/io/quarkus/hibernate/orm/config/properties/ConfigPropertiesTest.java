@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
+import org.hibernate.cfg.AvailableSettings;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,9 @@ public class ConfigPropertiesTest {
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".packages", MyEntityForOverridesPU.class.getPackageName())
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".datasource", "<default>")
             // Overrides to test that Quarkus configuration properties are taken into account
-            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".flush.mode", "always");
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".flush.mode", "always")
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".schema-management.extra-physical-table-types",
+                    "MATERIALIZED VIEW,FOREIGN TABLE");
 
     @Inject
     Session sessionForDefaultPU;
@@ -46,6 +49,22 @@ public class ConfigPropertiesTest {
     public void propertiesAffectingSession() {
         assertThat(sessionForDefaultPU.getHibernateFlushMode()).isEqualTo(FlushMode.AUTO);
         assertThat(sessionForOverridesPU.getHibernateFlushMode()).isEqualTo(FlushMode.ALWAYS);
+    }
+
+    @Test
+    @Transactional
+    public void extraPhysicalTableTypes() {
+        // Access the configuration through the SessionFactory properties
+        Object extraPhysicalTableTypes = sessionForOverridesPU.getSessionFactory()
+                .getProperties()
+                .get(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES);
+
+        assertThat(extraPhysicalTableTypes).isNotNull();
+        assertThat(extraPhysicalTableTypes).isInstanceOf(String.class);
+
+        String tableTypesStr = (String) extraPhysicalTableTypes;
+        String[] tableTypes = tableTypesStr.split(",");
+        assertThat(tableTypes).containsExactly("MATERIALIZED VIEW", "FOREIGN TABLE");
     }
 
 }

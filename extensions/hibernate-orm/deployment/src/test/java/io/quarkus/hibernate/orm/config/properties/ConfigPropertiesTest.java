@@ -34,16 +34,8 @@ public class ConfigPropertiesTest {
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".datasource", "<default>")
             // Overrides to test that Quarkus configuration properties are taken into account
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".flush.mode", "always")
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.extra-physical-table-types",
-                    "MATERIALIZED VIEW,FOREIGN TABLE")
-            .overrideConfigKey("quarkus.hibernate-orm.\"*\".schema-management.extra-physical-table-types",
-                    "MATERIALIZED VIEW,FOREIGN TABLE")
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".schema-management.extra-physical-table-types",
-                    "MATERIALIZED VIEW,FOREIGN TABLE")
-            // Disable metrics to avoid requiring metrics deployment artifacts on test classpath
-            .overrideConfigKey("quarkus.smallrye-metrics.enabled", "false")
-            .overrideConfigKey("quarkus.agroal.metrics.enabled", "false")
-            .overrideConfigKey("quarkus.agroal.enabled", "false");
+                    "MATERIALIZED VIEW,FOREIGN TABLE");
 
     @Inject
     Session sessionForDefaultPU;

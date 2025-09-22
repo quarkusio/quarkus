@@ -1,7 +1,6 @@
 package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConfigUtils.emptyConfigBuilder;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,7 +83,7 @@ public class ConfigProfileTestCase {
                     .withSources(new PropertiesConfigSource(maps("%foo.foo", "profile"), "source", 100))
                     .build();
 
-            assertEquals("default", config.getRawValue("foo"));
+            assertEquals("default", config.getConfigValue("foo").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -96,7 +95,7 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = configBuilder("foo", "${noExpansionAvailable}", "%foo.foo", "profile").build();
 
-            assertEquals("profile", config.getRawValue("foo"));
+            assertEquals("profile", config.getConfigValue("foo").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -123,7 +122,7 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "2");
 
-            assertEquals("2", config.getRawValue("my.prop"));
+            assertEquals("2", config.getConfigValue("my.prop").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -135,7 +134,7 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1");
 
-            assertEquals("1", config.getRawValue("my.prop"));
+            assertEquals("1", config.getConfigValue("my.prop").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -148,7 +147,7 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "${my.prop}");
 
-            assertThrows(IllegalArgumentException.class, () -> config.getRawValue("my.prop"));
+            assertThrows(IllegalArgumentException.class, () -> config.getConfigValue("my.prop"));
         } finally {
             System.clearProperty("quarkus.profile");
             System.clearProperty("my.prop");
@@ -164,7 +163,7 @@ public class ConfigProfileTestCase {
                     "%prof.my.prop", "${%prof.my.prop.profile}",
                     "%prof.my.prop.profile", "2");
 
-            assertEquals("2", config.getRawValue("my.prop"));
+            assertEquals("2", config.getConfigValue("my.prop").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
             System.clearProperty("%prof.my.prop.profile");
@@ -196,7 +195,7 @@ public class ConfigProfileTestCase {
                         new ExpressionConfigSourceInterceptor())
                 .build();
 
-        assertEquals("2", config.getRawValue("my.prop"));
+        assertEquals("2", config.getConfigValue("my.prop").getValue());
     }
 
     @Test
@@ -210,7 +209,7 @@ public class ConfigProfileTestCase {
                             100))
                     .build();
 
-            assertEquals("higher-profile", config.getRawValue("my.prop"));
+            assertEquals("higher-profile", config.getConfigValue("my.prop").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -227,7 +226,7 @@ public class ConfigProfileTestCase {
                             100))
                     .build();
 
-            assertEquals("higher", config.getRawValue("my.prop"));
+            assertEquals("higher", config.getConfigValue("my.prop").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -245,7 +244,7 @@ public class ConfigProfileTestCase {
                             100))
                     .build();
 
-            assertEquals("higher-profile", config.getRawValue("my.prop"));
+            assertEquals("higher-profile", config.getConfigValue("my.prop").getValue());
         } finally {
             System.clearProperty("quarkus.profile");
         }
@@ -257,11 +256,10 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "2", "%prof.prof.only", "1");
 
-            assertEquals("2", config.getRawValue("my.prop"));
-            assertEquals("1", config.getRawValue("prof.only"));
+            assertEquals("2", config.getConfigValue("my.prop").getValue());
+            assertEquals("1", config.getConfigValue("prof.only").getValue());
 
-            final List<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                    .collect(toList());
+            final List<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false).toList();
             assertFalse(properties.contains("%prof.my.prop")); // We are removing profile properties in SmallRyeConfig and keep only the main name.
             assertTrue(properties.contains("my.prop"));
             assertTrue(properties.contains("prof.only"));

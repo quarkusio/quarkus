@@ -302,7 +302,7 @@ public class WithSpanInterceptorTest {
         public void spanRestClient() {
             try (Client client = ClientBuilder.newClient()) {
                 WebTarget target = client.target(UriBuilder
-                        .fromUri(config.getRawValue("test.url"))
+                        .fromUri(config.getConfigValue("test.url").getValue())
                         .path("hello"));
                 Response response = target.request().get();
                 assertEquals(HTTP_OK, response.getStatus());

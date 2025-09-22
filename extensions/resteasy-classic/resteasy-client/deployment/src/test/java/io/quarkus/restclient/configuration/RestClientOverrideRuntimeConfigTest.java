@@ -78,7 +78,7 @@ public class RestClientOverrideRuntimeConfigTest {
         Set<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false).collect(toSet());
         // MP/mp-rest/url - This one exists at build time
         assertTrue(properties.contains("BT-MP/mp-rest/url"));
-        assertEquals("from-mp", config.getRawValue("BT-MP/mp-rest/url"));
+        assertEquals("from-mp", config.getConfigValue("BT-MP/mp-rest/url").getValue());
         // quarkus.rest-client.MP.url - Is not set, and it is not recorded
         assertFalse(properties.contains("quarkus.rest-client.BT-MP.url"));
 

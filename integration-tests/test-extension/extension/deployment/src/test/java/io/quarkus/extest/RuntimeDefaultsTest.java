@@ -32,22 +32,22 @@ public class RuntimeDefaultsTest {
         assertTrue(defaultValues.isPresent());
         // Do not record Env values for runtime
         assertNull(defaultValues.get().getValue("quarkus.mapping.rt.do-not-record"));
-        assertEquals("value", config.getRawValue("quarkus.mapping.rt.do-not-record"));
+        assertEquals("value", config.getConfigValue("quarkus.mapping.rt.do-not-record").getValue());
         // Property available in both Env and application.properties, ok to record application.properties value
         assertEquals("from-app", defaultValues.get().getValue("bt.ok.to.record"));
         // You still get the value from Env
-        assertEquals("from-env", config.getRawValue("bt.ok.to.record"));
+        assertEquals("from-env", config.getConfigValue("bt.ok.to.record").getValue());
         // Do not record any of the other properties
         assertNull(defaultValues.get().getValue(("do.not.record")));
         assertNull(defaultValues.get().getValue(("DO_NOT_RECORD")));
-        assertEquals("value", config.getRawValue("do.not.record"));
+        assertEquals("value", config.getConfigValue("do.not.record").getValue());
     }
 
     @Test
     void doNotRecordActiveUnprofiledPropertiesDefaults() {
         Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(defaultValues.isPresent());
-        assertEquals("properties", config.getRawValue("bt.profile.record"));
+        assertEquals("properties", config.getConfigValue("bt.profile.record").getValue());
         // Property needs to be recorded as is, including the profile name
         assertEquals("properties", defaultValues.get().getValue("%test.bt.profile.record"));
         assertNull(defaultValues.get().getValue("bt.profile.record"));
@@ -65,6 +65,6 @@ public class RuntimeDefaultsTest {
     void recordProfile() {
         Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(defaultValues.isPresent());
-        assertEquals("record", config.getRawValue("quarkus.profile"));
+        assertEquals("record", config.getConfigValue("quarkus.profile").getValue());
     }
 }

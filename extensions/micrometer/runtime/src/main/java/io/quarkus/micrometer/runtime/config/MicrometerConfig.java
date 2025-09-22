@@ -64,7 +64,10 @@ public interface MicrometerConfig {
      * For MeterBinder configurations with optional 'enabled' attributes,
      * determine whether the binder is enabled using {@link #binderEnabledDefault}
      * as the default value.
+     *
+     * @deprecated use {@link #isEnabled(CapabilityEnabled)} instead.
      */
+    @Deprecated
     default boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
         if (enabled()) {
             Optional<Boolean> configValue = config.enabled();
@@ -90,7 +93,8 @@ public interface MicrometerConfig {
             if (this.binder().enableAll()) {
                 return true;
             } else {
-                return checkBinderEnabledWithDefault(config);
+                Optional<Boolean> configValue = config.enabled();
+                return configValue.orElseGet(this::binderEnabledDefault);
             }
         }
         return false;

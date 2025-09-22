@@ -21,7 +21,7 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
 
     // Set is here because in nested tests, there are multiple states created before destruction is triggered
     // This field needs to be static because each implemented callback created a new instance of this class
-    private static Set<InjectableContext.ContextState> statesToDestroy = new HashSet<>();
+    private static final Set<InjectableContext.ContextState> statesToDestroy = new HashSet<>();
 
     @Override
     public void afterConstruct(Object testInstance) {

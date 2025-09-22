@@ -45,7 +45,7 @@ public interface KafkaDevServicesBuildTimeConfig {
 
     enum Provider {
         REDPANDA("docker.io/redpandadata/redpanda:v24.1.2"),
-        STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-3.7.0"),
+        STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-4.1.0"),
         KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
 
         private final String defaultImageName;

@@ -347,39 +347,21 @@ Create a `docker-compose.yaml` file at the root of the project with the followin
 
 [source,yaml]
 ----
-version: '2'
-
 services:
 
-  zookeeper:
-    image: quay.io/strimzi/kafka:0.41.0-kafka-3.7.0
-    command: [
-        "sh", "-c",
-        "bin/zookeeper-server-start.sh config/zookeeper.properties"
-    ]
-    ports:
-      - "2181:2181"
-    environment:
-      LOG_DIR: /tmp/logs
-
   kafka:
-    image: quay.io/strimzi/kafka:0.41.0-kafka-3.7.0
+    image: quay.io/strimzi/kafka:latest-kafka-4.1.0
     command: [
-        "sh", "-c",
-        "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
+      "sh", "-c",
+      "./bin/kafka-storage.sh format --standalone -t $$(./bin/kafka-storage.sh random-uuid) -c ./config/server.properties && ./bin/kafka-server-start.sh ./config/server.properties"
     ]
-    depends_on:
-      - zookeeper
     ports:
       - "9092:9092"
     environment:
       LOG_DIR: "/tmp/logs"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
   schema-registry:
-    image: apicurio/apicurio-registry-mem:2.4.2.Final
+    image: apicurio/apicurio-registry-mem:2.6.13.Final
     ports:
       - 8081:8080
     depends_on:
@@ -573,7 +555,7 @@ If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio 
 <dependency>
     <groupId>io.strimzi</groupId>
     <artifactId>strimzi-test-container</artifactId>
-    <version>0.105.0</version>
+    <version>0.112.0</version>
     <scope>test</scope>
     <exclusions>
         <exclusion>
@@ -587,7 +569,7 @@ If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.strimzi:strimzi-test-container:0.105.0") {
+testImplementation("io.strimzi:strimzi-test-container:0.112.0") {
     exclude group: "org.apache.logging.log4j", module: "log4j-core"
 }
 ----

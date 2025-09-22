@@ -28,6 +28,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.JandexReflection;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
@@ -405,7 +406,7 @@ public class InvokerGenerator extends AbstractGenerator {
             bytecode = ifNotInstanceOf.trueBranch();
         }
         // widening conversions
-        for (ClassType possibleSourceType : WIDENING_CONVERSIONS_TO.get(targetType)) {
+        for (ClassType possibleSourceType : WIDENING_CONVERSIONS_TO.get(targetType.primitive())) {
             ResultHandle isInstance = bytecode.instanceOf(value, possibleSourceType.name().toString());
             BranchResult ifNotInstanceOf = bytecode.ifFalse(isInstance);
             BytecodeCreator unbox = ifNotInstanceOf.falseBranch();
@@ -431,18 +432,18 @@ public class InvokerGenerator extends AbstractGenerator {
         bytecode.throwException(exception);
     }
 
-    private static final Map<PrimitiveType, Set<ClassType>> WIDENING_CONVERSIONS_TO = Map.of(
-            PrimitiveType.BOOLEAN, Set.of(),
-            PrimitiveType.BYTE, Set.of(),
-            PrimitiveType.SHORT, Set.of(ClassType.BYTE_CLASS),
-            PrimitiveType.INT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.CHARACTER_CLASS),
-            PrimitiveType.LONG, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
+    private static final Map<Primitive, Set<ClassType>> WIDENING_CONVERSIONS_TO = Map.of(
+            Primitive.BOOLEAN, Set.of(),
+            Primitive.BYTE, Set.of(),
+            Primitive.SHORT, Set.of(ClassType.BYTE_CLASS),
+            Primitive.INT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.CHARACTER_CLASS),
+            Primitive.LONG, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
                     ClassType.CHARACTER_CLASS),
-            PrimitiveType.FLOAT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
+            Primitive.FLOAT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
                     ClassType.LONG_CLASS, ClassType.CHARACTER_CLASS),
-            PrimitiveType.DOUBLE, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
+            Primitive.DOUBLE, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
                     ClassType.LONG_CLASS, ClassType.FLOAT_CLASS, ClassType.CHARACTER_CLASS),
-            PrimitiveType.CHAR, Set.of());
+            Primitive.CHAR, Set.of());
 
     static class FinisherGenerator {
         private final MethodCreator method;

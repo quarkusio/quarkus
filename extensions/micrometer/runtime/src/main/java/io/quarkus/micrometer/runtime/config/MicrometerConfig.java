@@ -81,7 +81,8 @@ public interface MicrometerConfig {
      * <p>
      * <ul>
      * <li>
-     * The {@link MicrometerConfig#enabled()} has precedence over all configurations, it means that if <code>quarkus.micrometer.enabled</code>
+     * The {@link MicrometerConfig#enabled()} has precedence over all configurations, it means that if
+     * <code>quarkus.micrometer.enabled</code>
      * is set to <code>false</code>, all metrics are disabled.
      * </li>
      * <li>
@@ -89,10 +90,13 @@ public interface MicrometerConfig {
      * parameter <code>aBoolean</code> resolve to <code>true</code> or <code>false</code> the metric will be enabled.
      * </li>
      * <li>
-     * If the <code>quarkus.micrometer.binder.enable-all</code> is set to <code>false</code>, the parameter <code>aBoolean</code>
-     * will be used to determine if the metric is enabled or not. If <code>aBoolean</code> is empty, the metric will be disabled.
+     * If the <code>quarkus.micrometer.binder.enable-all</code> is set to <code>false</code>, the parameter
+     * <code>aBoolean</code>
+     * will be used to determine if the metric is enabled or not. If <code>aBoolean</code> is empty, the metric will be
+     * disabled.
      * </li>
      * </ul>
+     *
      * @param aBoolean the optional boolean value to check if the capability is enabled
      * @return <code>true</code> if the capability is enabled, <code>false</code> otherwise.
      */
@@ -113,7 +117,8 @@ public interface MicrometerConfig {
      * <p>
      * <ul>
      * <li>
-     * The {@link MicrometerConfig#enabled()} has precedence over all configurations, it means that if <code>quarkus.micrometer.enabled</code>
+     * The {@link MicrometerConfig#enabled()} has precedence over all configurations, it means that if
+     * <code>quarkus.micrometer.enabled</code>
      * is set to <code>false</code>, all metrics are disabled.
      * </li>
      * <li>
@@ -126,6 +131,7 @@ public interface MicrometerConfig {
      * {@link MicrometerConfig#binderEnabledDefault()} will be used to determine if the metric is enabled or not.
      * </li>
      * </ul>
+     *
      * @param config the {@link CapabilityEnabled} to check if the capability is enabled
      * @return <code>true</code> if the capability is enabled, <code>false</code> otherwise.
      */

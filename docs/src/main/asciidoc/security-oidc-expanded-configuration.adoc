@@ -575,6 +575,7 @@ Session cookie is created after an authorizaion code flow is completed. An expir
 |quarkus.oidc.token.refresh-token-time-skew || Refresh token time skew
 |quarkus.oidc.authentication.session-age-extension |5 minutes| Session age extension
 |quarkus.oidc.authentication.session-expired-path || Session expired path
+|quarkus.oidc.authentication.cache-control || Set of Cache-Control header directives
 |====
 
 `quarkus.oidc.token.refresh-expired` can be used to enable automatic user session renewal when the user session has expired and the refresh token is available. This property is not enabled by default because with the automatic renewal, the user, after authenticating once, may not be asked to re-authenticate for a very long time. Therefore an admin level decision may be required to enable an automatic session renewal.
@@ -591,6 +592,9 @@ The `quarkus.oidc.token.refresh-token` property is automatically enabled if the 
 `quarkus.oidc.authentication.session-expired-path` can be used to present the user whose session has expired with the page explaining that the session has expired and letting user follow a link to re-authenticate. It improves the user experience, since otherwise, the authenticated user, whose session has expired, may get surprised after getting an unexpected OIDC provider's authentication challenge screen, when accessing the Quarkus application, following some delay after successfully authenticating earlier.
 
 See also the <<token-state-manager>> section for more information about managing session cookies.
+
+When a new session cookie is created, either after a successful authorization code flow completion or a token refresh, it may be necessary to control how the session cookie is managed by HTTP cache intermediaries and the browser cache.
+Currently, only a `Cache-Control` `no-store` directive that prohibits caching the session cookie anywhere in the client request chain can be configured.
 
 [[token-state-manager]]
 == Store authorization code flow tokens

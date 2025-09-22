@@ -76,6 +76,26 @@ public interface MicrometerConfig {
         return false;
     }
 
+    /**
+     * Determines if a capability is enabled based on the {@link MicrometerConfig} configurations and the following rules:
+     * <p>
+     * <ul>
+     * <li>
+     * The {@link MicrometerConfig#enabled()} has precedence over all configurations, it means that if <code>quarkus.micrometer.enabled</code>
+     * is set to <code>false</code>, all metrics are disabled.
+     * </li>
+     * <li>
+     * If the <code>quarkus.micrometer.binder.enable-all</code> is set to <code>true</code>, independently if the
+     * parameter <code>aBoolean</code> resolve to <code>true</code> or <code>false</code> the metric will be enabled.
+     * </li>
+     * <li>
+     * If the <code>quarkus.micrometer.binder.enable-all</code> is set to <code>false</code>, the parameter <code>aBoolean</code>
+     * will be used to determine if the metric is enabled or not. If <code>aBoolean</code> is empty, the metric will be disabled.
+     * </li>
+     * </ul>
+     * @param aBoolean the optional boolean value to check if the capability is enabled
+     * @return <code>true</code> if the capability is enabled, <code>false</code> otherwise.
+     */
     default boolean isEnabled(Optional<Boolean> aBoolean) {
         if (enabled()) {
             if (this.binder().enableAll()) {
@@ -88,6 +108,27 @@ public interface MicrometerConfig {
         return false;
     }
 
+    /**
+     * Determines if a capability is enabled based on the {@link MicrometerConfig} configurations and the following rules:
+     * <p>
+     * <ul>
+     * <li>
+     * The {@link MicrometerConfig#enabled()} has precedence over all configurations, it means that if <code>quarkus.micrometer.enabled</code>
+     * is set to <code>false</code>, all metrics are disabled.
+     * </li>
+     * <li>
+     * If the <code>quarkus.micrometer.binder.enable-all</code> is set to <code>true</code>, independently if the
+     * parameter <code>aBoolean</code> resolve to <code>true</code> or <code>false</code> the metric will be enabled.
+     * </li>
+     * <li>
+     * If the <code>quarkus.micrometer.binder.enable-all</code> is set to <code>false</code>, the parameter <code>config</code>
+     * will be used to determine if the metric is enabled or not. If <code>config.enabled()</code> is empty, the
+     * {@link MicrometerConfig#binderEnabledDefault()} will be used to determine if the metric is enabled or not.
+     * </li>
+     * </ul>
+     * @param config the {@link CapabilityEnabled} to check if the capability is enabled
+     * @return <code>true</code> if the capability is enabled, <code>false</code> otherwise.
+     */
     default boolean isEnabled(CapabilityEnabled config) {
         if (enabled()) {
             if (this.binder().enableAll()) {

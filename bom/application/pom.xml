@@ -15,7 +15,7 @@
 
     <properties>
         <angus-activation.version>2.0.3</angus-activation.version>
-        <angus-mail.version>2.0.4</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
+        <angus-mail.version>2.0.5</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
         <bouncycastle.version>1.82</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.22</bouncycastle.tls.fips.version>

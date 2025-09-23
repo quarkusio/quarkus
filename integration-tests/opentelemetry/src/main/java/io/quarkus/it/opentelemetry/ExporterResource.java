@@ -1,5 +1,7 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +24,6 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 @Path("")
 public class ExporterResource {
@@ -89,7 +90,7 @@ public class ExporterResource {
         if (path == null) {
             return true;// any match
         }
-        Object value = attributes.asMap().get(AttributeKey.stringKey(SemanticAttributes.HTTP_ROUTE.getKey()));
+        Object value = attributes.asMap().get(AttributeKey.stringKey(HTTP_ROUTE.getKey()));
         if (value == null) {
             return false;
         }

@@ -1,12 +1,13 @@
-package io.quarkus.hibernate.orm.config;
+package io.quarkus.hibernate.reactive.config.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import jakarta.enterprise.context.control.ActivateRequestContext;
+import java.util.function.Consumer;
+
 import jakarta.inject.Inject;
 
-import org.hibernate.Session;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,39 +16,41 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class NoConfigNoEntitiesTest {
+public class ConfigNoEntitiesDefaultPUDatasourceUrlMissingDynamicInjectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
-            // The config won't really be empty if dev services are enabled
+            .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.datasource.reactive.url", "")
+            // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false");
 
     @Inject
-    InjectableInstance<Session> session;
+    InjectableInstance<Mutiny.SessionFactory> sessionFactory;
 
-    // When having no entities, no configuration, no datasource,
-    // as long as the Hibernate ORM beans are not injected anywhere,
-    // we should still be able to start the application.
     @Test
-    @ActivateRequestContext
-    public void testBootSucceedsButHibernateOrmDeactivated() {
-        // ... and Hibernate ORM's beans should be available, but inactive.
-        var instance = session;
+    public void sessionFactory() {
+        doTest(sessionFactory, Mutiny.SessionFactory::getCriteriaBuilder);
+    }
+
+    private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {
+        // The bean is always available to be injected during static init
+        // since we don't know whether it will be active at runtime.
+        // So the bean proxy cannot be null.
         assertThat(instance.getHandle().getBean())
                 .isNotNull()
                 .returns(false, InjectableBean::isActive);
         var object = instance.get();
         assertThat(object).isNotNull();
-        // and any attempt to use these beans at runtime should fail.
-        assertThatThrownBy(() -> object.createNativeQuery("select 1", Long.class).uniqueResult())
+        // However, any attempt to use it at runtime will fail.
+        assertThatThrownBy(() -> action.accept(object))
                 .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
                         "Persistence unit '<default>' was deactivated automatically because it doesn't include any entity type and its datasource '<default>' was deactivated",
-                        "Datasource '<default>' was deactivated automatically because its URL is not set",
+                        "Datasource '<default>' was deactivated automatically because its URL is not set.",
                         "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                        "To activate the datasource, set configuration property 'quarkus.datasource.jdbc.url'",
+                        "To activate the datasource, set configuration property 'quarkus.datasource.reactive.url'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
-
 }

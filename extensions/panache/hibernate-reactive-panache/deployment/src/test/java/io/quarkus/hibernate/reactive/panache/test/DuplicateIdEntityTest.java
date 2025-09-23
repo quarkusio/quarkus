@@ -15,7 +15,8 @@ public class DuplicateIdEntityTest {
             .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .setExpectedException(BuildException.class)
             .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdEntity.class));
+                    .addClasses(DuplicateIdEntity.class)
+                    .addAsResource("application.properties"));
 
     @Test
     void shouldThrow() {

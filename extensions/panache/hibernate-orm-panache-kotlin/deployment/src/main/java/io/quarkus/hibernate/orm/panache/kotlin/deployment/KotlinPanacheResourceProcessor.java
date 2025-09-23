@@ -141,9 +141,15 @@ public final class KotlinPanacheResourceProcessor {
             }
         }
 
-        Map<String, Set<String>> collectedEntityToPersistenceUnits = new HashMap<>();
+        Map<String, Set<String>> collectedEntityToPersistenceUnits;
+        boolean incomplete;
         if (jpaModelPersistenceUnitMapping.isPresent()) {
             collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get().getEntityToPersistenceUnits();
+            incomplete = jpaModelPersistenceUnitMapping.get().isIncomplete();
+        } else {
+            collectedEntityToPersistenceUnits = new HashMap<>();
+            // This happens if there is no persistence unit, in which case we definitely know this metadata is complete.
+            incomplete = false;
         }
 
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
@@ -159,7 +165,7 @@ public final class KotlinPanacheResourceProcessor {
 
             panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
         }
-        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
+        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit, incomplete);
     }
 
     private void processRepositories(CombinedIndexBuildItem index,

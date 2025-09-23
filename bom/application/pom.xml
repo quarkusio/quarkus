@@ -80,7 +80,7 @@
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.4</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>4.0.5</jaxb-runtime.version>
+        <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
         <asm.version>9.8</asm.version>
         <commons-io.version>2.20.0</commons-io.version>
         <jboss-metadata-web.version>16.1.0.Final</jboss-metadata-web.version>

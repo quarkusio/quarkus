@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.security;
 
+import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
+import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ROLE;
 import static io.quarkus.security.spi.runtime.AuthenticationFailureEvent.AUTHENTICATION_FAILURE_KEY;
 import static io.quarkus.security.spi.runtime.AuthorizationFailureEvent.AUTHORIZATION_FAILURE_KEY;
 
@@ -10,7 +12,6 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.arc.Arc;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
@@ -233,9 +234,9 @@ public final class SecurityEventUtil {
     private static void addEndUserAttribute(SecurityIdentity securityIdentity, Span span) {
         if (securityIdentity != null && !securityIdentity.isAnonymous() && spanIsValidAndRecording(span)) {
             span.setAllAttributes(Attributes.of(
-                    SemanticAttributes.ENDUSER_ID,
+                    ENDUSER_ID,
                     securityIdentity.getPrincipal().getName(),
-                    SemanticAttributes.ENDUSER_ROLE,
+                    ENDUSER_ROLE,
                     getRoles(securityIdentity)));
         }
     }

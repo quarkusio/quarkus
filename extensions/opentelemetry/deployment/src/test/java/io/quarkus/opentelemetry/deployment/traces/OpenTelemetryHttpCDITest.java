@@ -2,8 +2,7 @@ package io.quarkus.opentelemetry.deployment.traces;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
 import static io.quarkus.opentelemetry.deployment.common.TestUtil.assertStringAttribute;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,9 +64,8 @@ public class OpenTelemetryHttpCDITest {
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("GET /hello", server.getName());
         // verify that OpenTelemetryServerFilter took place
-        assertStringAttribute(server, CODE_NAMESPACE,
-                "io.quarkus.opentelemetry.deployment.traces.OpenTelemetryHttpCDITest$HelloResource");
-        assertStringAttribute(server, CODE_FUNCTION, "hello");
+        assertStringAttribute(server, CODE_FUNCTION_NAME,
+                "io.quarkus.opentelemetry.deployment.traces.OpenTelemetryHttpCDITest$HelloResource.hello");
 
         final SpanData internalFromBean = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("HelloBean.hello", internalFromBean.getName());
@@ -89,7 +87,7 @@ public class OpenTelemetryHttpCDITest {
 
         final SpanData withSpan = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("withSpan", withSpan.getName());
-        assertEquals(2, withSpan.getAttributes().size());
+        assertEquals(1, withSpan.getAttributes().size());
 
         final SpanData bean = getSpanByKindAndParentId(spans, INTERNAL, withSpan.getSpanId());
         assertEquals("HelloBean.hello", bean.getName());

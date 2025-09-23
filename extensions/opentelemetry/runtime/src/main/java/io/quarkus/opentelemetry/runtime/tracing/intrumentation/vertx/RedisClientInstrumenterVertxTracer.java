@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
-import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_REDIS_DATABASE_INDEX;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_NAMESPACE;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSystemNameIncubatingValues.REDIS;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.util.Map;
@@ -16,7 +17,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.internal.AttributesExtractorUtil;
-import io.opentelemetry.semconv.incubating.DbIncubatingAttributes;
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
@@ -37,6 +39,7 @@ public class RedisClientInstrumenterVertxTracer implements
 
         this.redisClientInstrumenter = clientInstrumenterBuilder
                 .addAttributesExtractor(DbClientAttributesExtractor.create(RedisClientAttributesGetter.INSTANCE))
+                .addAttributesExtractor(NetworkAttributesExtractor.create(RedisClientAttributesGetter.INSTANCE))
                 .addAttributesExtractor(RedisClientAttributesExtractor.INSTANCE)
                 .buildInstrumenter(SpanKindExtractor.alwaysClient());
     }
@@ -95,12 +98,17 @@ public class RedisClientInstrumenterVertxTracer implements
         return redisClientInstrumenter;
     }
 
-    // From io.vertx.redis.client.impl.CommandReporter
     static class CommandTrace {
+
+        // From io.vertx.redis.client.impl.CommandReporter.Tags
         static final String DB_STATEMENT = "db.statement";
         static final String DB_USER = "db.user";
-        static final String PEER_ADDRESS = "peer.address";
+        static final String NETWORK_PEER_ADDRESS = "network.peer.address";
         static final String DB_INSTANCE = "db.instance";
+        static final String NETWORK_PEER_PORT = "network.peer.port";
+        static final String SERVER_ADDRESS = "server.address";
+        static final String SERVER_PORT = "server.port";
+        static final String ADDRESS_PORT = "peer.address";
 
         private final Map<String, String> attributes;
 
@@ -120,47 +128,100 @@ public class RedisClientInstrumenterVertxTracer implements
             return attributes.get(DB_USER);
         }
 
-        public String peerAddress() {
-            return attributes.get(PEER_ADDRESS);
+        @Deprecated
+        public String serverAddressPort() {
+            return attributes.get(ADDRESS_PORT);
         }
 
-        public Long dbIndex() {
-            String dbInstance = attributes.get(DB_INSTANCE);
-            return dbInstance != null ? Long.valueOf(dbInstance) : null;
+        public String peerAddress() {
+            return attributes.get(NETWORK_PEER_ADDRESS);
+        }
+
+        public Integer peerPort() {
+            return parsePort(attributes.get(NETWORK_PEER_PORT));
+        }
+
+        public String serverAddress() {
+            return attributes.get(SERVER_ADDRESS);
+        }
+
+        public Integer serverPort() {
+            return parsePort(attributes.get(SERVER_PORT));
+        }
+
+        public String dbIndex() {
+            return attributes.get(DB_INSTANCE);
+        }
+
+        static int parsePort(String port) {
+            if (port == null) {
+                return -1;
+            } else {
+                try {
+                    return Integer.parseInt(port);
+                } catch (NumberFormatException e) {
+                    return -1;
+                }
+            }
         }
     }
 
-    enum RedisClientAttributesGetter implements DbClientAttributesGetter<CommandTrace> {
+    enum RedisClientAttributesGetter implements DbClientAttributesGetter<CommandTrace, Object>,
+            NetworkAttributesGetter<CommandTrace, Object> {
         INSTANCE;
 
         @Override
-        public String getStatement(final CommandTrace commandTrace) {
+        public String getDbQueryText(final CommandTrace commandTrace) {
             return null;
         }
 
         @Override
-        public String getOperation(final CommandTrace commandTrace) {
+        public String getDbOperationName(final CommandTrace commandTrace) {
             return commandTrace.operation();
         }
 
         @Override
-        public String getSystem(final CommandTrace commandTrace) {
-            return DbIncubatingAttributes.DbSystemIncubatingValues.REDIS;
+        public String getDbSystem(final CommandTrace commandTrace) {
+            return REDIS;
         }
 
+        // kept for compatibility reasons
+        @Deprecated
         @Override
-        public String getUser(final CommandTrace commandTrace) {
+        public String getUser(CommandTrace commandTrace) {
             return commandTrace.user();
         }
 
         @Override
-        public String getName(final CommandTrace commandTrace) {
-            return null;
+        public String getDbNamespace(CommandTrace commandTrace) {
+            return DbClientAttributesGetter.super.getDbNamespace(commandTrace);
+        }
+
+        // kept for compatibility reasons
+        @Deprecated
+        @Override
+        public String getConnectionString(final CommandTrace commandTrace) {
+            return commandTrace.serverAddressPort();
         }
 
         @Override
-        public String getConnectionString(final CommandTrace commandTrace) {
+        public String getNetworkLocalAddress(CommandTrace commandTrace, Object object) {
+            return commandTrace.serverAddress();
+        }
+
+        @Override
+        public Integer getNetworkLocalPort(CommandTrace commandTrace, Object object) {
+            return commandTrace.serverPort();
+        }
+
+        @Override
+        public String getNetworkPeerAddress(CommandTrace commandTrace, Object object) {
             return commandTrace.peerAddress();
+        }
+
+        @Override
+        public Integer getNetworkPeerPort(CommandTrace commandTrace, Object object) {
+            return commandTrace.peerPort();
         }
     }
 
@@ -170,7 +231,7 @@ public class RedisClientInstrumenterVertxTracer implements
         @Override
         public void onStart(AttributesBuilder attributes, io.opentelemetry.context.Context parentContext,
                 CommandTrace request) {
-            AttributesExtractorUtil.internalSet(attributes, DB_REDIS_DATABASE_INDEX, request.dbIndex());
+            AttributesExtractorUtil.internalSet(attributes, DB_NAMESPACE, request.dbIndex());
         }
 
         @Override

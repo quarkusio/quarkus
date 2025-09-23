@@ -3,6 +3,8 @@ package io.quarkus.it.opentelemetry;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
+import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ROLE;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -42,7 +44,6 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapSetter;
-import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.it.opentelemetry.util.SocketClient;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -740,8 +741,8 @@ public class TracingTest {
         Assertions.assertTrue(spans
                 .stream()
                 .flatMap(m -> m.entrySet().stream())
-                .filter(e -> ("attr_" + SemanticAttributes.ENDUSER_ID.getKey()).equals(e.getKey())
-                        || ("attr_" + SemanticAttributes.ENDUSER_ROLE.getKey()).equals(e.getKey()))
+                .filter(e -> ("attr_" + ENDUSER_ID.getKey()).equals(e.getKey())
+                        || ("attr_" + ENDUSER_ROLE.getKey()).equals(e.getKey()))
                 .findAny().isEmpty());
     }
 

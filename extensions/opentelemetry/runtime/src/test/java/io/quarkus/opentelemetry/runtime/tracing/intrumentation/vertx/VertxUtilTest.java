@@ -45,6 +45,28 @@ class VertxUtilTest {
         assertEquals(1010, VertxUtil.extractRemoteHostPort(createDummyRequest("")));
     }
 
+    @Test
+    void extractHostnameTest() {
+        assertEquals("localhost", VertxUtil.extractHostname("localhost:8080"));
+        assertEquals("127.0.0.1", VertxUtil.extractHostname("127.0.0.1:111"));
+        assertEquals("localhost", VertxUtil.extractHostname("localhost"));
+        assertEquals("localhost", VertxUtil.extractHostname("localhost:"));
+        assertEquals("", VertxUtil.extractHostname(":1111"));
+        assertEquals("", VertxUtil.extractHostname(":"));
+        assertEquals("", VertxUtil.extractHostname(""));
+    }
+
+    @Test
+    void extractPortTest() {
+        assertEquals(8080, VertxUtil.extractPort("localhost:8080"));
+        assertEquals(111, VertxUtil.extractPort("127.0.0.1:111"));
+        assertEquals(-1, VertxUtil.extractPort("localhost"));
+        assertEquals(-1, VertxUtil.extractPort("localhost:"));
+        assertEquals(1111, VertxUtil.extractPort(":1111"));
+        assertEquals(-1, VertxUtil.extractPort(":"));
+        assertEquals(-1, VertxUtil.extractPort(""));
+    }
+
     private HttpServerRequest createDummyRequest(String hostHeader) {
         return new HttpServerRequest() {
             @Override

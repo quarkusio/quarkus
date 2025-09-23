@@ -4,8 +4,7 @@ import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -217,8 +216,7 @@ public class WithSpanInterceptorTest {
     }
 
     private void assertClassMethodNames(SpanData span, Class<?> clazz, String method) {
-        assertEquals(method, span.getAttributes().get((CODE_FUNCTION)));
-        assertEquals(clazz.getName(), span.getAttributes().get((CODE_NAMESPACE)));
+        assertEquals(clazz.getName() + "." + method, span.getAttributes().get((CODE_FUNCTION_NAME)));
     }
 
     @ApplicationScoped

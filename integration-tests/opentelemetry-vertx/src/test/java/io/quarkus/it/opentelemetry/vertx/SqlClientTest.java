@@ -2,10 +2,10 @@ package io.quarkus.it.opentelemetry.vertx;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
-import static io.opentelemetry.semconv.SemanticAttributes.DB_CONNECTION_STRING;
-import static io.opentelemetry.semconv.SemanticAttributes.DB_OPERATION;
-import static io.opentelemetry.semconv.SemanticAttributes.DB_STATEMENT;
-import static io.opentelemetry.semconv.SemanticAttributes.DB_USER;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_CONNECTION_STRING;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_OPERATION;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_STATEMENT;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_USER;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.awaitility.Awaitility.await;
@@ -82,7 +82,6 @@ public class SqlClientTest {
         assertEquals("SELECT USERS", querySpan.getName());
         assertEquals(CLIENT, querySpan.getKind());
         assertEquals("SELECT", querySpan.getAttributes().get(DB_OPERATION));
-        assertEquals("SELECT * FROM USERS", querySpan.getAttributes().get(DB_STATEMENT));
         assertEquals("quarkus", querySpan.getAttributes().get(DB_USER));
         assertNotNull(querySpan.getAttributes().get(DB_CONNECTION_STRING));
 

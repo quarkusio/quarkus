@@ -20,7 +20,6 @@ import org.eclipse.microprofile.config.spi.Converter;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
@@ -48,7 +47,6 @@ public class OpenTelemetryRecorder {
     @StaticInit
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalEventLoggerProvider.resetForTest();
     }
 
     @StaticInit

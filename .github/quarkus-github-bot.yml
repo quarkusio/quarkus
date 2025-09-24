@@ -129,7 +129,7 @@ triage:
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
-      notify: [gsmet]
+      notify: [yrodiere, gsmet]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names

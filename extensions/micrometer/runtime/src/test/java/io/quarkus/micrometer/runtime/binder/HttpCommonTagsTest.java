@@ -33,6 +33,9 @@ public class HttpCommonTagsTest {
         Assertions.assertEquals(HttpCommonTags.URI_ROOT, HttpCommonTags.uri("/", null, 404, false));
         Assertions.assertEquals(Tag.of("uri", "/known/ok"), HttpCommonTags.uri("/known/ok", null, 200, false));
         Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", null, 404, false));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", "/invalid", 404, false));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid/", "/invalid/", 404, false));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", "/invalid/", 404, false));
         Assertions.assertEquals(Tag.of("uri", "/invalid/{id}"),
                 HttpCommonTags.uri("/invalid/{id}", "/invalid/111", 404, false));
         Assertions.assertEquals(Tag.of("uri", "/known/bad/request"),
@@ -49,6 +52,10 @@ public class HttpCommonTagsTest {
         Assertions.assertEquals(HttpCommonTags.URI_ROOT, HttpCommonTags.uri("/", null, 404, true));
         Assertions.assertEquals(Tag.of("uri", "/known/ok"), HttpCommonTags.uri("/known/ok", null, 200, true));
         Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", null, 404, true));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid/", null, 404, true));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", "/invalid", 404, true));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid/", "/invalid/", 404, true));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", "/invalid/", 404, true));
         Assertions.assertEquals(Tag.of("uri", "/invalid/{id}"), HttpCommonTags.uri("/invalid/{id}", "/invalid/111", 404, true));
         Assertions.assertEquals(HttpCommonTags.URI_UNKNOWN, HttpCommonTags.uri("/known/bad/request", null, 400, true));
         Assertions.assertEquals(Tag.of("uri", "/known/bad/{request}"),

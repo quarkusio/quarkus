@@ -355,19 +355,18 @@ public final class HibernateReactiveProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems, boolean enableDefaultPersistenceUnit) {
 
-        Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = HibernateOrmProcessor
-                .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, additionalJpaModelBuildItems, jpaModel,
+        var modelPerPersistencesUnit = HibernateOrmProcessor
+                .getModelPerPersistenceUnit(hibernateOrmConfig, additionalJpaModelBuildItems, jpaModel,
                         index.getIndex(),
                         enableDefaultPersistenceUnit);
 
-        Set<String> modelClassesAndPackages = modelClassesAndPackagesPerPersistencesUnits
-                .getOrDefault(persistenceUnitName, Collections.emptySet());
+        var model = modelPerPersistencesUnit.get(persistenceUnitName);
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
                 new HibernateReactivePersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
-                new ArrayList<>(modelClassesAndPackages),
+                new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassAndPackageNames()),
                 new Properties(),
                 true);
 

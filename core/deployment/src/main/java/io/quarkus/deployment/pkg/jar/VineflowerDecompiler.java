@@ -22,9 +22,9 @@ class VineflowerDecompiler implements Decompiler {
 
     @Override
     public void init(Context context) {
-        this.context = context;
-        this.decompilerJar = context.jarLocation.resolve(String.format("vineflower-%s.jar",
-                context.versionStr != null ? context.versionStr : DEFAULT_VINEFLOWER_VERSION));
+        this.context = context.versionStr != null ? context
+                : new Context(DEFAULT_VINEFLOWER_VERSION, context.jarLocation, context.decompiledOutputDir);
+        this.decompilerJar = this.context.jarLocation.resolve(String.format("vineflower-%s.jar", this.context.versionStr));
     }
 
     @Override

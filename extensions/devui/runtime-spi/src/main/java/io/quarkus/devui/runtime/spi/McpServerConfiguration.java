@@ -1,4 +1,4 @@
-package io.quarkus.devui.runtime.mcp;
+package io.quarkus.devui.runtime.spi;
 
 import java.util.HashMap;
 import java.util.Map;

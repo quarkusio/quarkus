@@ -250,6 +250,11 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public OwnedServiceBuilder<T> feature(String featureName) {
+            this.name = featureName;
+            return this;
+        }
+
         public OwnedServiceBuilder<T> description(String description) {
             this.description = description;
             return this;

@@ -61,7 +61,7 @@ public class MCPProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @io.quarkus.deployment.annotations.Record(ExecutionTime.STATIC_INIT)
-    void registerDevUiHandlers(
+    void registerStreamableHTTPHandlers(
             BuildProducer<RouteBuildItem> routeProducer,
             DevUIRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,

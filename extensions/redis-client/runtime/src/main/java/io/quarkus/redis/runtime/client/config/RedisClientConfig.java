@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.vertx.redis.client.ProtocolVersion;
 import io.vertx.redis.client.RedisClientType;
+import io.vertx.redis.client.RedisClusterTransactions;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
 import io.vertx.redis.client.RedisTopology;
@@ -185,6 +186,25 @@ public interface RedisClientConfig {
      */
     @ConfigDocDefault("discover")
     Optional<RedisTopology> topology();
+
+    /**
+     * How transactions are handled in a cluster. This only makes sense for cluster clients
+     * and is ignored otherwise.
+     * <p>
+     * By default, transactions in cluster are disabled and transaction commands fail.
+     * <p>
+     * When set to {@code single-node}, Redis transactions are supported in the cluster, but only
+     * when they target a single node. The {@code MULTI} command is queued and is only issued when
+     * the next command is executed. This next command binds the connection to the corresponding
+     * node of the Redis cluster (so it should have keys, otherwise the target node is random).
+     * All subsequent commands are targeted to that node. If some of the subsequent commands have
+     * a key that belongs to another node, the command will fail on the server side. If {@code WATCH}
+     * is used before {@code MULTI}, its key(s) determine to which node the connection is bound and
+     * the subsequent {@code MULTI} is not queued. If {@code WATCH} keys belong to multiple nodes,
+     * the command fails on the client side.
+     */
+    @ConfigDocDefault("disabled")
+    Optional<RedisClusterTransactions> clusterTransactions();
 
     /**
      * TCP config.

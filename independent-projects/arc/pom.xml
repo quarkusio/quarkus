@@ -51,7 +51,7 @@
         <version.bridger>1.6.Final</version.bridger>
         <version.smallrye-common>2.13.9</version.smallrye-common>
         <!-- test versions -->
-        <version.assertj>3.27.4</version.assertj>
+        <version.assertj>3.27.6</version.assertj>
         <version.junit5>5.13.4</version.junit5>
         <version.kotlin>2.2.20</version.kotlin>
         <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>

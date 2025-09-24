@@ -16,8 +16,8 @@
     <properties>
         <angus-activation.version>2.0.3</angus-activation.version>
         <angus-mail.version>2.0.4</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.81</bouncycastle.version>
-        <bouncycastle.fips.version>2.1.1</bouncycastle.fips.version>
+        <bouncycastle.version>1.82</bouncycastle.version>
+        <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.20</bouncycastle.tls.fips.version>
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
@@ -58,7 +58,7 @@
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.19.2</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>4.28.0</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>4.29.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
@@ -70,7 +70,7 @@
         <jakarta.interceptor-api.version>2.2.0</jakarta.interceptor-api.version>
         <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
-        <jakarta.mail-api.version>2.1.4</jakarta.mail-api.version>
+        <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <!--jakarta.persistence-api.version is located in the root pom -->
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version>
         <jakarta.resource-api.version>2.1.0</jakarta.resource-api.version>
@@ -79,7 +79,7 @@
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
-        <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
+        <jakarta.xml.bind-api.version>4.0.4</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.5</jaxb-runtime.version>
         <asm.version>9.8</asm.version>
         <commons-io.version>2.20.0</commons-io.version>
@@ -101,7 +101,7 @@
         <narayana-lra.version>1.0.2.Final</narayana-lra.version>
         <agroal.version>2.8</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.1.3</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.1.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -120,7 +120,7 @@
         <quartz.version>2.5.0</quartz.version>
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.7</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.8</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.6</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.2.0.jre11</mssql-jdbc.version>

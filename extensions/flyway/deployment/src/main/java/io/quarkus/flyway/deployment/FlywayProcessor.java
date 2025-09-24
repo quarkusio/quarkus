@@ -28,6 +28,7 @@ import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.extensibility.ConfigurationExtension;
+import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -89,6 +90,9 @@ class FlywayProcessor {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigurationExtension.class)
                 .reason(getClass().getName())
                 .fields().methods().build());
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(index.getIndex().getAllKnownSubclasses(FlywaySqlException.class).stream()
+                        .map(ci -> ci.name().toString()).toArray(String[]::new)).methods().constructors().build());
 
         for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementors(ConfigurationExtension.class)) {
             var extensionName = configurationExtension.name();

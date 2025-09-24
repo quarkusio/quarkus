@@ -37,7 +37,7 @@
         <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.27.4</assertj.version>
+        <assertj.version>3.27.6</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <junit5.version>5.13.4</junit5.version>
@@ -72,8 +72,8 @@
         <plexus-utils.version>3.5.1</plexus-utils.version>
         <smallrye-common.version>2.13.9</smallrye-common.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
-        <gradle-tooling.version>9.0.0</gradle-tooling.version>
-        <quarkus-fs-util.version>1.1.0</quarkus-fs-util.version>
+        <gradle-tooling.version>9.1.0</gradle-tooling.version>
+        <quarkus-fs-util.version>1.2.0</quarkus-fs-util.version>
         <crac.version>1.5.0</crac.version>
     </properties>
     <modules>

@@ -40,12 +40,12 @@
 
         <compiler.plugin.version>3.14.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
-        <surefire.plugin.version>3.5.2</surefire.plugin.version>
+        <surefire.plugin.version>3.5.4</surefire.plugin.version>
         <jandex.version>3.5.0</jandex.version>
         <smallrye-common.version>2.13.9</smallrye-common.version>
 
         <junit5.version>5.13.4</junit5.version>
-        <assertj.version>3.27.4</assertj.version>
+        <assertj.version>3.27.6</assertj.version>
     </properties>
 
     <dependencyManagement>

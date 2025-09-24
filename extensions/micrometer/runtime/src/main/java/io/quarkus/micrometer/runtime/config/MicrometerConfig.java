@@ -34,9 +34,13 @@ public interface MicrometerConfig {
 
     /**
      * Micrometer MeterBinder discovery.
+     * In other words, enables the automatic metrics instrumentation.
      * <p>
      * Micrometer MeterBinder implementations discovered on the classpath
-     * will be enabled automatically by default.
+     * will be enabled automatically by default. In other words, automatic metrics instrumentation will be ON by default.
+     * <p>
+     * <code>quarkus.micrometer.binder.enable-all</code> overrides this property, meaning when this is set to
+     * <code>false</code>, and <code>enable-all</code> is true, discovery of all MeterBinder will still happen.
      */
     @WithDefault("true")
     boolean binderEnabledDefault();
@@ -193,9 +197,15 @@ public interface MicrometerConfig {
         NettyConfigGroup netty();
 
         /**
-         * Enable all binders. This property has precedence over all {@link BinderConfig} binders. In other words,
+         * Enable all binders.
+         * Activates all metrics regardless off their particular default.
+         * <p>
+         * This property has precedence over all {@link BinderConfig} binders. In other words,
          * if the <code>quarkus.micrometer.binder.jvm</code> is set to <code>false</code> and
          * <code>quarkus.micrometer.binder.enabled-all</code> is set to <code>true</code>, all JVM metrics will be enabled.
+         * <p>
+         * Also takes precedence over <code>quarkus.micrometer.binder-enabled-default</code>, if binder discover is disabled,
+         * discovery of all metrics will still happen.
          */
         @WithDefault("false")
         boolean enableAll();

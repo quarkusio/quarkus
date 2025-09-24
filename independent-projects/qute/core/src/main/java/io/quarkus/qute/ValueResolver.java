@@ -1,5 +1,8 @@
 package io.quarkus.qute;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Value resolvers are used when evaluating expressions.
  * <p>
@@ -45,6 +48,73 @@ public interface ValueResolver extends Resolver, WithPriority {
      */
     default ValueResolver getCachedResolver(EvalContext context) {
         return this;
+    }
+
+    /**
+     * Returns the set of property names supported by this value resolver for code completion in the Qute debugger.
+     *
+     * <p>
+     * These properties are suggested when evaluating expressions on a base object. For example, if the user invokes
+     * completion at {@code myList.|}, the evaluation context will be initialized with {@code myList} as the base object,
+     * and {@link #appliesTo(io.quarkus.qute.EvalContext) appliesTo} will be called with that context. Only if it returns
+     * {@code true} will the properties from this set be proposed.
+     *
+     * <p>
+     * Completion examples:
+     * <ul>
+     * <li>{@code "length"} → inserts as-is: <code>myList.length|</code></li>
+     * <li>{@code "size"} → inserts as-is: <code>myList.size|</code></li>
+     * </ul>
+     *
+     * <p>
+     * Example:
+     *
+     * <pre>{@code
+     * @Override
+     * public Set<String> getSupportedProperties() {
+     *     return Set.of("length", "size");
+     * }
+     * }</pre>
+     *
+     * @return a set of supported property names to be shown in the debugger's code completion
+     */
+    default Set<String> getSupportedProperties() {
+        return Collections.emptySet();
+    }
+
+    /**
+     * Returns the set of method signatures supported by this value resolver for code completion in the Qute debugger.
+     *
+     * <p>
+     * These methods are suggested when evaluating expressions on a base object. For example, if the user invokes
+     * completion at {@code myList.|}, the evaluation context will be initialized with {@code myList} as the base object,
+     * and {@link #appliesTo(io.quarkus.qute.EvalContext) appliesTo} will be called with that context. Only if it returns
+     * {@code true} will the methods from this set be proposed.
+     *
+     * <p>
+     * Completion examples:
+     * <ul>
+     * <li>{@code "take(index)"} → inserts as-is: <code>myList.take(index)|</code></li>
+     * <li>{@code "takeLast(${index})"} → inserts with the parameter selected: <code>myList.takeLast(|[index])</code></li>
+     * </ul>
+     *
+     * <p>
+     * The {@code ${param}} syntax indicates that the debugger selects the parameter so the user can type it immediately.
+     *
+     * <p>
+     * Example:
+     *
+     * <pre>{@code
+     * @Override
+     * public Set<String> getSupportedMethods() {
+     *     return Set.of("take(index)", "takeLast(${index})");
+     * }
+     * }</pre>
+     *
+     * @return a set of supported method signatures to be shown in the debugger's code completion
+     */
+    default Set<String> getSupportedMethods() {
+        return Collections.emptySet();
     }
 
     /**

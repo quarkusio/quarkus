@@ -22,6 +22,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-assistant-dev</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-spi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

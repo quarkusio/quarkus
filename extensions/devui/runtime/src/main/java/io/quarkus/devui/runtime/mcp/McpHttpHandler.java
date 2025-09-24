@@ -12,6 +12,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.mcp.model.InitializeResponse;
+import io.quarkus.devui.runtime.spi.McpServerConfiguration;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;

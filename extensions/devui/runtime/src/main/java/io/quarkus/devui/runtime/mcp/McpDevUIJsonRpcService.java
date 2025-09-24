@@ -14,6 +14,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
+import io.quarkus.devui.runtime.spi.McpEvent;
+import io.quarkus.devui.runtime.spi.McpServerConfiguration;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 
@@ -22,10 +24,10 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
  */
 @ApplicationScoped
 public class McpDevUIJsonRpcService {
-
     private final BroadcastProcessor<McpClientInfo> connectedClientStream = BroadcastProcessor.create();
+    private final BroadcastProcessor<McpEvent> mcpEventStream = BroadcastProcessor.create();
 
-    // TODO: We need to be able to deregister a client if the connection drops. Mayby ping it ?
+    // TODO: We need to be able to deregister a client if the connection drops. Maybe ping it ?
 
     private final Set<McpClientInfo> connectedClients = new HashSet<>();
     private McpServerConfiguration mcpServerConfiguration;
@@ -43,7 +45,12 @@ public class McpDevUIJsonRpcService {
     }
 
     public Multi<McpClientInfo> getConnectedClientStream() {
-        return connectedClientStream;
+        return this.connectedClientStream;
+    }
+
+    @Produces
+    public Multi<McpEvent> getEventStream() {
+        return this.mcpEventStream;
     }
 
     public void addClientInfo(McpClientInfo clientInfo) {
@@ -59,12 +66,14 @@ public class McpDevUIJsonRpcService {
     public McpServerConfiguration enable() {
         this.mcpServerConfiguration.enable();
         storeConfiguration(this.mcpServerConfiguration.toProperties());
+        mcpEventStream.onNext(new McpEvent(true));
         return this.mcpServerConfiguration;
     }
 
     public McpServerConfiguration disable() {
         this.mcpServerConfiguration.disable();
         storeConfiguration(this.mcpServerConfiguration.toProperties());
+        mcpEventStream.onNext(new McpEvent(false));
         return this.mcpServerConfiguration;
     }
 

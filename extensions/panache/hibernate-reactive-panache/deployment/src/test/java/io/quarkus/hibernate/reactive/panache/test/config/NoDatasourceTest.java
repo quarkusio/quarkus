@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.config;
+package io.quarkus.hibernate.reactive.panache.test.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.reactive.panache.test.MyEntity;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NoDatasourceTest {

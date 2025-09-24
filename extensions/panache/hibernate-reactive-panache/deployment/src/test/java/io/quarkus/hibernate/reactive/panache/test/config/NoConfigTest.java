@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.deployment.test;
+package io.quarkus.hibernate.reactive.panache.test.config;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -10,8 +10,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addAsResource("application-datasource-only.properties", "application.properties"));
 
     @Test
     public void testNoConfig() {

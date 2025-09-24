@@ -914,8 +914,15 @@ public final class HibernateOrmProcessor {
                 && !defaultJdbcDataSource.isPresent()) {
             String persistenceUnitName = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
             String dataSourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
-            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
+            var cause = DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Persistence unit '%s' defines entities %s, but its datasource '%s' cannot be found: %s"
+                            + " Alternatively, disable Hibernate ORM by setting '%s=false', and the entities will be ignored.",
+                    persistenceUnitName, modelClassesAndPackagesForDefaultPersistenceUnit,
+                    dataSourceName,
+                    cause.getMessage(),
+                    HibernateOrmRuntimeConfig.extensionPropertyKey("enabled")),
+                    cause);
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.namedPersistenceUnits()

@@ -20,10 +20,12 @@ public class NoDatasourceTest {
             .overrideConfigKey("quarkus.datasource.jdbc", "false")
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Unable to find datasource '<default>' for persistence unit '<default>'",
+                            "Persistence unit '<default>' defines entities [" + MyEntity.class.getName()
+                                    + "], but its datasource '<default>' cannot be found",
                             "Datasource '<default>' is not configured.",
                             "To solve this, configure datasource '<default>'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+                            "Refer to https://quarkus.io/guides/datasource for guidance.",
+                            "Alternatively, disable Hibernate ORM by setting 'quarkus.hibernate-orm.enabled=false', and the entities will be ignored"));
 
     @Test
     public void test() {

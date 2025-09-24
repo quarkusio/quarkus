@@ -15,7 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Test that a persistence unit without any entities does get started,
- * and can be used, be it only for native queries.
+ * and can be used, be it only for native queries,
+ * as long as a datasource is present.
  */
 public class NoEntitiesTest {
 

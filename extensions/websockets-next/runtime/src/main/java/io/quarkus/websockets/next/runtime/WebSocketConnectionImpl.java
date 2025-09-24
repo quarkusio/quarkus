@@ -97,7 +97,7 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
         return Objects.equals(identifier, other.identifier);
     }
 
-    private static class HandshakeRequestImpl implements HandshakeRequest {
+    private static class HandshakeRequestImpl extends HandshakeRequestBase implements HandshakeRequest {
 
         private final ServerWebSocket webSocket;
 
@@ -147,6 +147,16 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
         @Override
         public String query() {
             return webSocket.query();
+        }
+
+        @Override
+        public String localAddress() {
+            return formatSocketAddress(webSocket.localAddress());
+        }
+
+        @Override
+        public String remoteAddress() {
+            return formatSocketAddress(webSocket.remoteAddress());
         }
 
         static Map<String, List<String>> initHeaders(RoutingContext ctx) {

@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.test.handshake;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 
@@ -48,6 +49,8 @@ public class HandshakeRequestTest {
         assertEquals(baseUri.getPort(), reply.getInteger("port"));
         assertEquals("/head", reply.getString("path"));
         assertEquals(query, reply.getString("query"));
+        assertEquals("127.0.0.1:8081", reply.getString("localAddress"));
+        assertTrue(reply.getString("remoteAddress").matches("127\\.0\\.0\\.1:\\d+"));
     }
 
     @WebSocket(path = "/head")
@@ -67,7 +70,9 @@ public class HandshakeRequestTest {
                     .put("host", connection.handshakeRequest().host())
                     .put("port", connection.handshakeRequest().port())
                     .put("path", connection.handshakeRequest().path())
-                    .put("query", connection.handshakeRequest().query());
+                    .put("query", connection.handshakeRequest().query())
+                    .put("localAddress", connection.handshakeRequest().localAddress().toString())
+                    .put("remoteAddress", connection.handshakeRequest().remoteAddress().toString());
         }
 
     }

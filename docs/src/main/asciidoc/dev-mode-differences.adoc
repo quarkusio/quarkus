@@ -13,15 +13,17 @@ This document explains how the dev mode in Quarkus differs from a production app
 
 == Intro
 
-Quarkus provides a dev mode (explained in more detail xref:maven-tooling.adoc#dev-mode[here] and link:gradle-tooling#dev-mode[here]) which greatly aids
+Quarkus provides a dev mode which greatly aids
 during development but should *NEVER* be used in production.
+
+These pages have instruction on how to use dev mode with xref:maven-tooling.adoc#dev-mode[Maven], link:gradle-tooling#dev-mode[Gradle] or with the xref:cli-tooling#development-mode[Quarkus CLI].
 
 [[architectural-differences]]
 == Architectural differences
 
 Feature sets aside, the Quarkus application that is run under dev mode differs architecturally from the production application (i.e. the one that is run using `java -jar ...`).
 
-In dev mode, Quarkus uses a ClassLoader hierarchy (explained in detail xref:class-loading-reference.adoc[here]) that enables the live reload of user code
+In dev mode, Quarkus uses a ClassLoader hierarchy (explained in detail in the xref:class-loading-reference.adoc[class loading reference]) that enables the live reload of user code
 without requiring a rebuild and restart of the application.
 
 In a production application, the aforementioned class loading infrastructure is entirely absent - there is a single, purpose built ClassLoader that loads (almost) all classes and dependencies.
@@ -52,28 +54,28 @@ In an effort to make development errors very easy to diagnose, Quarkus provides 
 
 === Database import scripts
 
-The `quarkus-hibernate-orm` extension will run the `import.sql` script in `src/main/resources` when Quarkus is running in dev mode. More details can be found xref:hibernate-orm.adoc#dev-mode[here].
+The `quarkus-hibernate-orm` extension will run the `import.sql` script in `src/main/resources` when Quarkus is running in dev mode. More details can be found in the xref:hibernate-orm.adoc#dev-mode[Hibernate ORM guide].
 
 === Dev Services
 
 When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature we refer to as Dev Services.
-More information can be found xref:datasource.adoc#dev-services[here].
+More information can be found in the xref:datasource.adoc#dev-services[Datasource guide].
 
 === Swagger UI
 
-The `quarkus-smallrye-openapi` extension will expose the Swagger UI when Quarkus is running in dev mode. Additional information can be found xref:openapi-swaggerui.adoc#dev-mode[here].
+The `quarkus-smallrye-openapi` extension will expose the Swagger UI when Quarkus is running in dev mode. Additional information can be found in the xref:openapi-swaggerui.adoc#dev-mode[Swagger UI guide].
 
 === GraphQL UI
 
-The `quarkus-smallrye-graphql` extension will expose the GraphQL UI when Quarkus is running in dev mode. More details can be found xref:smallrye-graphql.adoc#ui[here].
+The `quarkus-smallrye-graphql` extension will expose the GraphQL UI when Quarkus is running in dev mode. More details can be found in the xref:smallrye-graphql.adoc#ui[Graphql guide].
 
 === Health UI
 
-The `quarkus-smallrye-health` extension will expose the Health UI when Quarkus is running in dev mode. xref:smallrye-health.adoc#ui[This] section provides additional information.
+The `quarkus-smallrye-health` extension will expose the Health UI when Quarkus is running in dev mode. The xref:smallrye-health.adoc#ui[Healthcheck] section provides additional information.
 
 === Mock mailer
 
-The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev mode. See xref:mailer-reference.adoc#testing[this] for more details.
+The `quarkus-mailer` extension will enable an in-memory mock mail server when Quarkus is running in dev mode. See the xref:mailer-reference.adoc#testing[Mailer guide] for more details.
 
 
 === gRPC

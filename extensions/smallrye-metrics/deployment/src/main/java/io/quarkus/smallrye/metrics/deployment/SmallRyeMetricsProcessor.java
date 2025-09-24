@@ -53,6 +53,7 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InterceptorInfo;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -97,7 +98,19 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    MetricsCapabilityBuildItem metricsCapabilityBuildItem(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+    MetricsCapabilityBuildItem metricsCapabilityBuildItem(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem)
+            throws BuildException {
+        if (!metrics.deprecatedEnabled()) {
+            throw new BuildException("""
+                    The Quarkus SmallRye Metrics is deprecated and will be removed in the near future. Please \
+                    check our announcement at https://quarkus.io/blog/quarkus-observability-roadmap-2023/. Our \
+                    recommendation is to migrate to Quarkus Micrometer Metrics \
+                    https://quarkus.io/guides/telemetry-micrometer. If you wish to keep using Quarkus SmallRye \
+                    Metrics, please reenable it with the configuration \
+                    "quarkus.smallrye-metrics.deprecated.enabled=true".
+                    """);
+        }
+
         if (metrics.extensionsEnabled()) {
             return new MetricsCapabilityBuildItem(MetricsFactory.MP_METRICS::equals,
                     nonApplicationRootPathBuildItem.resolvePath(metrics.path()));

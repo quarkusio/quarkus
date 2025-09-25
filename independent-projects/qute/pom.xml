@@ -45,6 +45,7 @@
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
         <version.smallrye-common>2.13.9</version.smallrye-common>
         <version.smallrye-mutiny>3.0.0</version.smallrye-mutiny>
+        <version.lsp4j>0.24.0</version.lsp4j>
     </properties>
 
     <modules>
@@ -117,6 +118,11 @@
                 <groupId>io.quarkus.gizmo</groupId>
                 <artifactId>gizmo2</artifactId>
                 <version>${version.gizmo2}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.lsp4j</groupId>
+                <artifactId>org.eclipse.lsp4j.debug</artifactId>
+                <version>${version.lsp4j}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

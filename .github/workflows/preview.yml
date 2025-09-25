@@ -108,14 +108,19 @@ jobs:
 
       - name: Reduce the size of the website to be compatible with surge
         run: |
-          find assets/images/posts/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
-          find newsletter/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
+          rm -rf _site/assets/images/posts/
+          rm -rf _site/assets/images/books/
+          rm -rf _site/assets/images/events/
+          rm -rf _site/assets/images/quarkus2/
+          rm -rf _site/assets/images/quarkus3/
+          rm -rf _site/assets/images/worldtour/
           rm -rf _site/assets/stickers
-          rm -rf _site/assets/images/worldtour/2023
-          rm -rf _site/assets/images/worldtour/2024
           rm -rf _site/assets/images/desktopwallpapers
           rm -rf _site/assets/images/stickers
-
+          rm -rf _site/newsletter/
+          # we only need the images from the main version
+          rm -rf _site/guides/images/
+          rm -rf _site/blog/
       - name: Publishing to surge for preview
         id: deploy
         run: npx surge@0.23.1 ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}

@@ -7,13 +7,16 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -68,6 +71,26 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
         this.removedArtifactKeys = removedArtifactKeys;
+
+        checkConsistency(generatedClasses);
+    }
+
+    private static void checkConsistency(List<GeneratedClassBuildItem> generatedClasses) {
+        Map<String, Long> generatedClassOccurrences = generatedClasses.stream()
+                .sorted(Comparator.comparing(GeneratedClassBuildItem::binaryName))
+                .collect(Collectors.groupingBy(GeneratedClassBuildItem::binaryName, Collectors.counting()));
+        StringBuilder duplicates = new StringBuilder();
+        for (Entry<String, Long> generatedClassOccurrence : generatedClassOccurrences.entrySet()) {
+            if (generatedClassOccurrence.getValue() < 2) {
+                continue;
+            }
+            duplicates.append("- ").append(generatedClassOccurrence.getKey()).append(": ")
+                    .append(generatedClassOccurrence.getValue()).append("\n");
+        }
+        if (!duplicates.isEmpty()) {
+            throw new IllegalStateException(
+                    "Multiple GeneratedClassBuildItem were produced for the same classes:\n\n" + duplicates);
+        }
     }
 
     /**

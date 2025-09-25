@@ -191,9 +191,7 @@ public abstract class MultiplePlatformBomsTestBase {
                 .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
                         d.getVersion()))
                 .collect(Collectors.toList());
-        // TODO the order should be predictable
-        assertThat(actualBoms).containsAll(expectedBoms);
-        assertThat(expectedBoms).containsAll(actualBoms);
+        assertThat(actualBoms).containsExactlyElementsOf(expectedBoms);
         //assertThat(model.getDependencyManagement().getDependencies().size()).isEqualTo(expectedBoms.size());
 
         // TODO the order should be predictable

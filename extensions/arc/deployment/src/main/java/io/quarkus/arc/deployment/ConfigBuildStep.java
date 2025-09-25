@@ -63,6 +63,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -261,6 +262,7 @@ public class ConfigBuildStep {
 
     @BuildStep
     void generateConfigProperties(
+            ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -268,7 +270,7 @@ public class ConfigBuildStep {
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+        processConfigClasses(configItem, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
                 additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
     }
 

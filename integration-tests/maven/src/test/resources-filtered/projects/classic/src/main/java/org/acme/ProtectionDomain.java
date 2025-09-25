@@ -6,7 +6,10 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 import java.nio.charset.StandardCharsets;
@@ -46,8 +49,9 @@ public class ProtectionDomain {
 
     private String assertReadManifestFromJar() {
         final String testType = "manifest-from-jar";
+        URL location = null;
         try {
-            URL location = org.apache.commons.io.Charsets.class.getProtectionDomain().getCodeSource().getLocation();
+            location = org.apache.commons.io.Charsets.class.getProtectionDomain().getCodeSource().getLocation();
             if (location == null) {
                 return errorResult(testType, "location should not be null");
             }
@@ -66,12 +70,19 @@ public class ProtectionDomain {
             }
             return SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
-            return errorResult(testType, "exception during resolution of resource");
+            return errorResult(testType, "Exception during resolution of resource (" + location + "): " + e + "\n" + getStackTraceAsString(e));
         }
     }
 
     private String errorResult(String testType, String message) {
         return testType + " / " + message;
+    }
+
+    private static String getStackTraceAsString(Throwable t) {
+        StringWriter sw = new StringWriter();
+        try (PrintWriter pw = new PrintWriter(sw)) {
+            t.printStackTrace(pw);
+        }
+        return sw.toString();
     }
 }

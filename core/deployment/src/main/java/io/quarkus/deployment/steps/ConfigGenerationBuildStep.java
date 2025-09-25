@@ -204,7 +204,7 @@ public class ConfigGenerationBuildStep {
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigMapping(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+        processConfigMapping(configItem, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
                 additionalConstrainedClasses);
 
         List<ConfigClass> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();

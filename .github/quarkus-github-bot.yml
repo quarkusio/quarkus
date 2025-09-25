@@ -314,7 +314,7 @@ triage:
     - id: spring
       labels: [area/spring]
       title: "spring"
-      notify: [geoand, aureamunoz]
+      notify: [geoand, aureamunoz, edeandrea]
       directories:
         - extensions/spring-
         - integration-tests/spring-
@@ -780,7 +780,16 @@ triage:
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
     - id: podman
-      labels: [env/podman]
+      labels: [env/podman, area/container-image]
       title: "podman"
+      notify: [edeandrea]
+      directories:
+        - extensions/container-image
+    - id: docker
+      labels: [area/container-image]
+      title: "docker"
+      nodify: [edeandrea]
+      directories:
+        - extensions/container-image
   qe:
     notify: [rsvoboda, mjurc]

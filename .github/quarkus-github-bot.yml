@@ -314,7 +314,7 @@ triage:
     - id: spring
       labels: [area/spring]
       title: "spring"
-      notify: [geoand, aureamunoz]
+      notify: [geoand, aureamunoz, edeandrea]
       directories:
         - extensions/spring-
         - integration-tests/spring-
@@ -346,10 +346,17 @@ triage:
       labels: [area/kubernetes]
       titleBody: "knative"
       notify: [geoand, iocanel]
-    - id: jib
+    - id: container-image
       labels: [area/container-image]
-      titleBody: "jib"
-      notify: [geoand]
+      expression: |
+        matches("jib", titleBody)
+        || matches("container-image", titleBody)
+        || matches("docker", titleBody)
+        || matches("podman", titleBody)
+        || matches("buildpack", titleBody)
+      notify: [geoand, edeandrea]
+      directories:
+        - extensions/container-image
     - id: kafka
       labels: [area/kafka]
       notify: [cescoffier, ozangunalp, alesj]
@@ -779,8 +786,5 @@ triage:
       labels: [area/virtual-threads]
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
-    - id: podman
-      labels: [env/podman]
-      title: "podman"
   qe:
     notify: [rsvoboda, mjurc]

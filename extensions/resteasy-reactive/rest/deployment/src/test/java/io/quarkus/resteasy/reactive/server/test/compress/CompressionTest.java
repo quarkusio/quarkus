@@ -1,12 +1,16 @@
 package io.quarkus.resteasy.reactive.server.test.compress;
 
 import static io.restassured.RestAssured.get;
+import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.hamcrest.CoreMatchers;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -50,6 +54,19 @@ public class CompressionTest {
     public void noContent() {
         assertNoContent("/endpoint/no-content");
         assertNoContent("/endpoint/void-no-content");
+    }
+
+    @Test
+    public void testStream() {
+        get("/endpoint/stream-uncompressed")
+                .then()
+                .statusCode(200)
+                .header("Content-Encoding", nullValue());
+
+        get("/endpoint/stream-compressed")
+                .then()
+                .statusCode(200)
+                .header("Content-Encoding", "gzip");
     }
 
     private void assertCompressed(String path) {
@@ -146,6 +163,29 @@ public class CompressionTest {
         @Path("void-no-content")
         public void voidNoContent() {
 
+        }
+
+        @GET
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        @Path("stream-uncompressed")
+        public void uncompressedSseSink(Sse sse, SseEventSink sink) {
+            doSend(sse, sink);
+        }
+
+        @GET
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        @Compressed
+        @Path("stream-compressed")
+        public void compressedSseSink(Sse sse, SseEventSink sink) {
+            doSend(sse, sink);
+        }
+
+        private void doSend(Sse sse, SseEventSink sink) {
+            for (var i = 0; i < 1000; i++) {
+                var event = sse.newEventBuilder().data(String.class, MESSAGE).build();
+                sink.send(event);
+            }
+            sink.close();
         }
     }
 

@@ -27,8 +27,26 @@ public interface Constants {
     String OFFERING = "offering";
 
     /**
-     * An internal metadata key optionally added to extension metadata by a registry client
+     * An internal key optionally added to extension metadata by a registry client
      * to indicate a user configured offering-based support key that should be displayed by extension listing commands
      */
-    String REGISTRY_USER_SELECTED_SUPPORT_KEY = "registry-user-selected-support-key";
+    String REGISTRY_CLIENT_USER_SELECTED_SUPPORT_KEY = "registry-client:user-selected-support-key";
+
+    /**
+     * An internal key added to extension catalog metadata by a registry client
+     * to provide information about the complete list of extension artifacts included in the catalog.
+     * The value associated with this key will be a map of {@link io.quarkus.maven.dependency.ArtifactKey}
+     * to {@link io.quarkus.maven.dependency.ArtifactCoords} of extension artifacts.
+     * <p>
+     * The list of extension artifacts will contain all the extension artifacts before the offering-based
+     * filtered applied.
+     */
+    String REGISTRY_CLIENT_ALL_CATALOG_EXTENSIONS = "registry-client:offering-managed-not-supported-keys";
+
+    /**
+     * An internal key added to an extension catalog metadata by a registry client
+     * to associate a given extension catalog with a preference code that will be used by an algorithm
+     * selecting the latest recommended combination of extension and platform BOM versions.
+     */
+    String REGISTRY_CLIENT_ORIGIN_PREFERENCE = "registry-client:origin-preference";
 }

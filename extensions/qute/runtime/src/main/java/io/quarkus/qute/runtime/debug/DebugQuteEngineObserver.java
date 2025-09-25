@@ -14,7 +14,8 @@ import io.smallrye.common.annotation.Experimental;
  * Observes the creation of Qute engines and attaches the Qute debugger in development mode.
  *
  * <p>
- * When a new {@link io.quarkus.qute.EngineBuilder} is observed and the application is running in
+ * When a new {@link io.quarkus.qute.EngineBuilder} is observed and the application is started with "-DquteDebugPort"
+ * and running in
  * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT development mode} with
  * {@code quarkus.qute.debug.enabled=true}, this observer:
  * <ul>
@@ -38,7 +39,11 @@ public class DebugQuteEngineObserver {
      * @param config the Qute configuration
      */
     void configureEngine(@Observes EngineBuilder builder, QuteConfig config) {
-        if (LaunchMode.current() == LaunchMode.DEVELOPMENT && config.debug().enabled()) {
+        if (LaunchMode.current() == LaunchMode.DEVELOPMENT && config.debug().enabled() && registrar.getPort() != null) {
+            // - in dev mode only
+            // - quarkus.qute.debug.enabled=true
+            // - Quarkus application is started with -DquteDebugPort
+            // --> enable the Qute debugger.
             builder.enableTracing(true);
             builder.addEngineListener(registrar);
         }

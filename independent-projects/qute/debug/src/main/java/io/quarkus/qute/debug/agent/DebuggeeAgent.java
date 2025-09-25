@@ -83,6 +83,14 @@ public class DebuggeeAgent implements Debugger {
     /** The set of Qute engines being tracked for debugging. */
     private final Set<Engine> trackedEngine;
 
+    /**
+     * Qute engines that currently have the {@link DebuggerTraceListener} attached.
+     * <p>
+     * Used to prevent adding the same listener multiple times to the same engine.
+     * </p>
+     */
+    private final Set<Engine> enginesWithDebugListener;
+
     /** Indicates whether the debugging agent is enabled. */
     private boolean enabled;
 
@@ -97,6 +105,7 @@ public class DebuggeeAgent implements Debugger {
         this.variablesRegistry = new VariablesRegistry();
         this.sourceTemplateRegistry = new SourceTemplateRegistry();
         this.trackedEngine = new HashSet<>();
+        this.enginesWithDebugListener = new HashSet<>();
         this.evaluationSupport = new EvaluationSupport(this);
         this.completionSupport = new CompletionSupport(this);
     }
@@ -107,8 +116,14 @@ public class DebuggeeAgent implements Debugger {
      * @param engine the engine to track.
      */
     public void track(Engine engine) {
+        // Only track the engine once
         if (!trackedEngine.contains(engine)) {
-            engine.addTraceListener(debugListener);
+            // If the debugger is currently active (DAP client connected),
+            // attach the debug listener immediately so trace events start flowing.
+            if (isEnabled()) {
+                addDebugListener(engine);
+            }
+            // Mark the engine as tracked so we can manage its listener later
             trackedEngine.add(engine);
         }
     }
@@ -336,13 +351,17 @@ public class DebuggeeAgent implements Debugger {
      * Unlocks and terminates all debuggee threads, then clears all tracked engines.
      */
     public void unlockAllDebuggeeThreads() {
-        for (RemoteThread thread : debuggees.values()) {
-            thread.terminate();
-            fireThreadEvent(new ThreadEvent(thread.getId(), ThreadStatus.EXITED));
+        if (!debuggees.isEmpty()) {
+            for (RemoteThread thread : debuggees.values()) {
+                thread.terminate();
+                fireThreadEvent(new ThreadEvent(thread.getId(), ThreadStatus.EXITED));
+            }
+            debuggees.clear();
         }
-        debuggees.clear();
-        trackedEngine.forEach(engine -> engine.removeTraceListener(debugListener));
-        trackedEngine.clear();
+        if (!trackedEngine.isEmpty()) {
+            trackedEngine.forEach(this::removeDebugListener);
+            trackedEngine.clear();
+        }
     }
 
     @Override
@@ -462,6 +481,29 @@ public class DebuggeeAgent implements Debugger {
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+        if (enabled) {
+            // A DAP client is now connected → attach the debug listener to all tracked engines
+            trackedEngine.forEach(this::addDebugListener);
+        } else {
+            // The DAP client has disconnected → detach the debug listener from all tracked engines
+            trackedEngine.forEach(this::removeDebugListener);
+        }
+    }
+
+    private void addDebugListener(Engine engine) {
+        // Only attach the listener if the engine supports tracing (has a TraceManager)
+        // and if it has not already been added.
+        if (engine.getTraceManager() != null && !enginesWithDebugListener.contains(engine)) {
+            engine.addTraceListener(debugListener);
+            enginesWithDebugListener.add(engine);
+        }
+    }
+
+    private void removeDebugListener(Engine engine) {
+        if (engine.getTraceManager() != null) {
+            engine.removeTraceListener(debugListener);
+            enginesWithDebugListener.remove(engine);
+        }
     }
 
     @Override

@@ -204,19 +204,26 @@ public class ConfigGenerationBuildStep {
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigMapping(configItem, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
-                additionalConstrainedClasses);
+        Map<String, GeneratedClassBuildItem> generatedConfigClasses = new HashMap<>();
+
+        processConfigMapping(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
+                configClasses, additionalConstrainedClasses);
 
         List<ConfigClass> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
         for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
-            processExtensionConfigMapping(buildTimeRunTimeMapping, combinedIndex, generatedClasses, reflectiveClasses,
+            processExtensionConfigMapping(buildTimeRunTimeMapping, combinedIndex, generatedConfigClasses, reflectiveClasses,
                     reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
 
         List<ConfigClass> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
         for (ConfigClass runTimeMapping : runTimeMappings) {
-            processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods,
+            processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedConfigClasses, reflectiveClasses,
+                    reflectiveMethods,
                     configClasses, additionalConstrainedClasses);
+        }
+
+        for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {
+            generatedClasses.produce(generatedConfigClass);
         }
     }
 

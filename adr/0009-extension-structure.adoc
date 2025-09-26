@@ -6,7 +6,7 @@
 
 == Context
 
-The Quarkus ecosystem includes more than 700 extensions, many of which were developed without a consistent structure.
+The Quarkus ecosystem includes more than 800 extensions, many of which were developed without a consistent structure.
 The Quarkus core repository alone contains over 150 extensions.
 
 Most extensions follow the basic runtime/deployment split, but the boundaries between API and internal logic have often blurred.
@@ -37,7 +37,7 @@ Depending on an `runtime-api` module does not transitively include the full exte
 This module may define internal build items.
 * `build-spi`: Contains build-time APIs intended to be reused across multiple extensions for integration purposes.
 Extensions contributing to or using build items from other extensions should depend on `build-spi` modules.
-* `dev`: Contains runtime classes used exclusively in dev mode (e.g., for the Dev UI). This avoids shipping dev-only classes into production artifacts.
+* `runtime-dev`: Contains runtime classes used exclusively in dev mode (e.g., for the Dev UI). This avoids shipping dev-only classes into production artifacts.
 * `codestart`: Contains the _Codestart_ templates for the extension. See https://quarkus.io/guides/extension-codestart[Codestart Guide] for more details.
 * `cli`: Contains CLI commands related to the extension. This is optional and should be used only if the extension provides specific CLI functionality.
 * `codegen`: Contains code generation utilities such as code pre-processors invoked at build time.
@@ -53,7 +53,7 @@ my-extension/
 ├── runtime-api/
 ├── build/
 ├── build-spi/
-├── dev/
+├── runtime-dev/
 ├── codegen/
 ├── cli/
 └── codestart/
@@ -79,7 +79,7 @@ Also, it avoids split packages, as the `Automatic-Module-Name` must be unique ac
 	- Build: `io.<quarkus|quarkiverse>.<extension-name>.build`
 	- Runtime API: `io.<quarkus|quarkiverse>.<extension-name>.api`
 	- Build SPI: `io.<quarkus|quarkiverse>.<extension-name>.build.spi`
-	- Dev: `io.<quarkus|quarkiverse>.<extension-name>.dev`
+	- runtime-Dev: `io.<quarkus|quarkiverse>.<extension-name>.dev`
 	- Codegen: `io.<quarkus|quarkiverse>.<extension-name>.codegen`
 	- CLI: `io.<quarkus|quarkiverse>.<extension-name>.cli`
 
@@ -89,7 +89,7 @@ Also, it avoids split packages, as the `Automatic-Module-Name` must be unique ac
 	- Build: `quarkus-<extension-name>-build`
 	- Runtime API: `quarkus-<extension-name>-api`
 	- Build SPI: `quarkus-<extension-name>-build-spi`
-	- Dev: `quarkus-<extension-name>-dev`
+	- Runtime Dev: `quarkus-<extension-name>-dev`
 	- Codegen: `quarkus-<extension-name>-codegen`
     - Codestart: `quarkus-<extension-name>-codestart`
 	- CLI: `quarkus-<extension-name>-cli`
@@ -106,7 +106,7 @@ There is also a _coupling_ dimension that needs to be taken into account when de
 
 An extension using another extension can be either strongly or loosely coupled, depending on whether it requires the other extension to be present at runtime:
 
-* Strongly coupled: An extension directly depends on another extension's runtime module (and its `build` to the `build` module), requiring it to be present.
+* Strongly coupled: An extension directly depends on another extension's runtime module (and its `build` on the other extension's `build` module), requiring it to be present.
 * Loosely coupled: An extension only depends on the public API or SPI of another extension, allowing it to be used without requiring the full extension.
 
 When an extension depends on another extension, it should clearly indicate whether it is tightly or loosely coupled:
@@ -117,7 +117,7 @@ When an extension depends on another extension, it should clearly indicate wheth
 An extension can also decide to only support _tight-coupling_ and does not provide a `runtime-api` or `build-spi` module.
 However, it is strongly recommended to provide at least a `build-spi` module to allow other extensions to integrate with it and `runtime-api` to allow other extensions to use its public API without forcing the full extension to be present.
 
-NOTE: Because of the integration nature of the build items located into the `build-spi` module, we recommend keeping `build-spi` as name.
+NOTE: Because of the integration nature of the build items located in the `build-spi` module, we recommend keeping `build-spi` as the name.
 
 [#the-place-of-the-public-api]
 ==== The place of the public API
@@ -147,8 +147,8 @@ IMPORTANT: Once an extension has a `runtime-api` module, it should not expose pu
 | Split APIs (annotations, interfaces, utility classes) into `runtime-api`. Keep internal logic in `runtime`.
 
 | Extension contributes dev-mode-only logic (e.g., Dev UI)
-| `runtime` + `dev`
-| Add `dev` to isolate dev-only classes. Avoid shipping to production.
+| `runtime` + `runtime-dev`
+| Add `runtime-dev` to isolate dev-only classes. Avoid shipping to production.
 
 | Extension defines types meant to be implemented by others (e.g., customizers, listeners)
 | `runtime-api` + `runtime`
@@ -201,7 +201,7 @@ Build items in this module should be documented with their intended use (produce
 ==== `runtime-api` module
 * `io.<quarkus|quarkiverse>.<extension-name>.api`: Public runtime API. Can be used independently of the full extension. Consumers should not expect the full extension to be available at runtime. To make sure the extension is available, the consumer should use the `runtime` module (which would pull in the `runtime-api` module transitively).
 
-==== `dev` module
+==== `runtime-dev` module
 * `io.<quarkus|quarkiverse>.<extension-name>.dev`: Dev-mode-only runtime classes, e.g., for Dev UI contribution. Not included in production builds.
 
 ==== `codegen` module
@@ -231,7 +231,7 @@ Build items in this module should be documented with their intended use (produce
 | Shared build-time APIs (build items, metadata)
 | Other extensions
 
-| dev
+| runtime-dev
 | Dev mode–only logic (e.g., Dev UI contributions)
 | Development-time only, not production
 

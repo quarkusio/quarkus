@@ -446,6 +446,11 @@ In addition to the method parameters that can be annotated with the appropriate 
 `jakarta.servlet.http.HttpServletRequest` and `jakarta.servlet.http.HttpServletResponse` are also supported.
 For this to function however, users need to add the `quarkus-undertow` dependency.
 
+⚠️ Important: These types are only available when using the Classic RESTEasy stack (quarkus-resteasy / quarkus-resteasy-jackson) because they rely on the Servlet API provided by Undertow (quarkus-undertow).
+
+If your application uses the Reactive stack (quarkus-rest / quarkus-rest-jackson), then the Servlet API is not supported.
+In this case, adding the quarkus-undertow dependency will not enable servlet injection and will result in runtime errors.
+
 === Exception handler method return types
 
 The following method return types are supported:

@@ -2,6 +2,8 @@ package io.quarkus.spring.web.resteasy.classic.test;
 
 import static io.restassured.RestAssured.when;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.http.HttpStatus;
@@ -46,6 +48,11 @@ public class ResponseStatusAndExceptionHandlerTest {
         @ExceptionHandler(RuntimeException.class)
         public ResponseEntity<Object> handleException(Exception ex) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        @ExceptionHandler(RuntimeException.class)
+        public ResponseEntity<Object> forbidden(Exception ex, HttpServletRequest request) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
     }
 }

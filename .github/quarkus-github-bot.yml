@@ -346,10 +346,12 @@ triage:
       labels: [area/kubernetes]
       titleBody: "knative"
       notify: [geoand, iocanel]
-    - id: jib
+    - id: container-image
       labels: [area/container-image]
-      titleBody: "jib"
-      notify: [geoand]
+      titleBody: "container-image"
+      notify: [geoand, edeandrea]
+      directories:
+        - extensions/container-image
     - id: kafka
       labels: [area/kafka]
       notify: [cescoffier, ozangunalp, alesj]
@@ -779,17 +781,5 @@ triage:
       labels: [area/virtual-threads]
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
-    - id: podman
-      labels: [env/podman, area/container-image]
-      title: "podman"
-      notify: [edeandrea]
-      directories:
-        - extensions/container-image
-    - id: docker
-      labels: [area/container-image]
-      title: "docker"
-      nodify: [edeandrea]
-      directories:
-        - extensions/container-image
   qe:
     notify: [rsvoboda, mjurc]

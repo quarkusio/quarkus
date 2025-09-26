@@ -15,7 +15,7 @@
     <name>Quarkus - Integration Tests - OpenTelemetry SPI</name>
 
     <properties>
-        <opentelemetry-aws-xray-propagator.version>1.43.0-alpha</opentelemetry-aws-xray-propagator.version>
+        <opentelemetry-aws-xray-propagator.version>1.50.0-alpha</opentelemetry-aws-xray-propagator.version>
     </properties>
 
 

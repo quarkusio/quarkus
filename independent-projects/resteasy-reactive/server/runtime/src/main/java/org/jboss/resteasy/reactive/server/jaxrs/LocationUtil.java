@@ -16,29 +16,23 @@ final class LocationUtil {
             // FIXME: this leaks server stuff onto the client
             ResteasyReactiveRequestContext request = CurrentRequestManager.get();
             if (request != null) {
-                ServerHttpRequest req = request.serverRequest();
-                try {
-                    String host = req.getRequestHost();
-                    int port = -1;
-                    int index = host.lastIndexOf(":");
-                    if (index > -1 && (host.charAt(0) != '[' || index > host.lastIndexOf("]"))) {
-                        port = Integer.parseInt(host.substring(index + 1));
-                        host = host.substring(0, index);
-                    }
-                    String prefix = determinePrefix(req, request.getDeployment());
-                    // Spec says relative to request, but TCK tests relative to Base URI, so we do that
-                    String path = location.toString();
-                    if (!path.startsWith("/")) {
-                        path = "/" + path;
-                    }
-                    URI baseUri = new URI(req.getRequestScheme(), null, host, port, null, null, null);
-                    location = baseUri.resolve(prefix + path);
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
+                location = getUri(location.toString(), request, true);
             }
         }
         return location;
+    }
+
+    static URI getUri(String path, ResteasyReactiveRequestContext request, boolean usePrefix) {
+        try {
+            String prefix = usePrefix ? determinePrefix(request.serverRequest(), request.getDeployment()) : "";
+            // Spec says relative to request, but TCK tests relative to Base URI, so we do that
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
+            return new URI(request.getScheme(), request.getAuthority(), null, null, null).resolve(prefix + path);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static String determinePrefix(ServerHttpRequest serverHttpRequest, Deployment deployment) {
@@ -68,24 +62,7 @@ final class LocationUtil {
             ResteasyReactiveRequestContext request = CurrentRequestManager.get();
             if (request != null) {
                 // FIXME: this leaks server stuff onto the client
-                ServerHttpRequest req = request.serverRequest();
-                try {
-                    String host = req.getRequestHost();
-                    int port = -1;
-                    int index = host.lastIndexOf(":");
-                    if (index > -1 && (host.charAt(0) != '[' || index > host.lastIndexOf("]"))) {
-                        port = Integer.parseInt(host.substring(index + 1));
-                        host = host.substring(0, index);
-                    }
-                    String path = location.toString();
-                    if (!path.startsWith("/")) {
-                        path = "/" + path;
-                    }
-                    location = new URI(req.getRequestScheme(), null, host, port, null, null, null)
-                            .resolve(path);
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
+                location = getUri(location.toString(), request, false);
             }
         }
         return location;

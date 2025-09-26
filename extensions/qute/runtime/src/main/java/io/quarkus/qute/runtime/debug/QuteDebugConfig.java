@@ -23,7 +23,7 @@ public interface QuteDebugConfig {
      * </p>
      *
      * <p>
-     * <strong>Default value:</strong> {@code false}
+     * <strong>Default value:</strong> {@code true}
      * </p>
      *
      * <p>
@@ -31,11 +31,11 @@ public interface QuteDebugConfig {
      * </p>
      *
      * <pre>
-     * quarkus.qute.debug.enabled = true
+     * quarkus.qute.debug.enabled = false
      * </pre>
      *
      * @return {@code true} if Qute debug mode is active, {@code false} otherwise.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     boolean enabled();
 }

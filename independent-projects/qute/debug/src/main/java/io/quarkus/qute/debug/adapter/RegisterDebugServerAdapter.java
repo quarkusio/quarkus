@@ -2,6 +2,7 @@ package io.quarkus.qute.debug.adapter;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -99,7 +100,12 @@ public class RegisterDebugServerAdapter implements EngineListener {
         return agent;
     }
 
-    private Integer getPort() {
+    /**
+     * Returns the Qute debugger port defines with "-DquteDebugPort" environment variable and false otherwise.
+     *
+     * @return the Qute debugger port defines with "-DquteDebugPort" environment variable and false otherwise.
+     */
+    public Integer getPort() {
         if (port != null) {
             return port;
         }
@@ -198,7 +204,6 @@ public class RegisterDebugServerAdapter implements EngineListener {
                             log("DAP client connected!");
                             setupLauncher(client, false);
                             trackedEngines.forEach(engine -> agent.track(engine));
-                            agent.setEnabled(true);
                         } catch (IOException e) {
                             if (serverSocket != null && !serverSocket.isClosed()) {
                                 e.printStackTrace();
@@ -218,7 +223,7 @@ public class RegisterDebugServerAdapter implements EngineListener {
     }
 
     public void dispose() {
-        if (launcherFuture != null) {
+        if (launcherFuture != null && !launcherFuture.isDone()) {
             launcherFuture.cancel(true);
         }
         log("Shutdown hook: closing server socket.");
@@ -249,7 +254,11 @@ public class RegisterDebugServerAdapter implements EngineListener {
         agent.reset();
         trackedEngines.clear();
         if (!notInitializedEngines.isEmpty()) {
-            notInitializedEngines.forEach(engine -> engine.removeTraceListener(initializeAgentListener));
+            notInitializedEngines.forEach(engine -> {
+                if (engine.getTraceManager() != null) {
+                    engine.removeTraceListener(initializeAgentListener);
+                }
+            });
             notInitializedEngines.clear();
         }
     }
@@ -262,7 +271,7 @@ public class RegisterDebugServerAdapter implements EngineListener {
      * @param suspend true if suspend mode (used to wait after connection)
      * @throws IOException if socket streams cannot be accessed
      */
-    private void setupLauncher(java.net.Socket client, boolean suspend) throws IOException {
+    private void setupLauncher(Socket client, boolean suspend) throws IOException {
         // Cancel previous launcher if needed
         if (launcherFuture != null && !launcherFuture.isDone()) {
             launcherFuture.cancel(true);
@@ -276,7 +285,11 @@ public class RegisterDebugServerAdapter implements EngineListener {
         launcherFuture = launcher.startListening();
 
         if (!notInitializedEngines.isEmpty()) {
-            notInitializedEngines.forEach(engine -> engine.removeTraceListener(initializeAgentListener));
+            notInitializedEngines.forEach(engine -> {
+                if (engine.getTraceManager() != null) {
+                    engine.removeTraceListener(initializeAgentListener);
+                }
+            });
             notInitializedEngines.clear();
         }
 

@@ -299,7 +299,7 @@ participants:
     timezone: "America/New_York"
     maintenance:
       labels: ["area/spring", "area/container-image"]
-      days: [ "MONDAY" ]
+      days: [ "MONDAY", "THURSDAY" ]
       created:
         maxIssues: 3
       feedback:
@@ -313,7 +313,7 @@ participants:
     timezone: "Europe/Rome"
     maintenance:
       labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/jdbc"]
-      days: [ "MONDAY", "THURSDAY" ]
+      days: [ "MONDAY" ]
       created:
         maxIssues: 3
       feedback:

@@ -6,6 +6,7 @@ import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -48,7 +49,7 @@ public class ConfigMappingUtils {
     public static void processConfigClasses(
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
@@ -74,7 +75,7 @@ public class ConfigMappingUtils {
                 continue;
             }
             Kind configClassKind = getConfigClassType(instance);
-            processConfigClass(configClass, configClassKind, combinedIndex, generatedClasses, reflectiveClasses,
+            processConfigClass(configClass, configClassKind, combinedIndex, generatedConfigClasses, reflectiveClasses,
                     reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
     }
@@ -82,25 +83,25 @@ public class ConfigMappingUtils {
     public static void processConfigMapping(
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
-        processConfigClasses(configItem, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
-                additionalConstrainedClasses, CONFIG_MAPPING_NAME);
+        processConfigClasses(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
+                configClasses, additionalConstrainedClasses, CONFIG_MAPPING_NAME);
     }
 
     public static void processExtensionConfigMapping(
             ConfigClass configClass,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigClass(configClass, Kind.MAPPING, combinedIndex, generatedClasses, reflectiveClasses,
+        processConfigClass(configClass, Kind.MAPPING, combinedIndex, generatedConfigClasses, reflectiveClasses,
                 reflectiveMethods, configClasses, additionalConstrainedClasses);
     }
 
@@ -108,7 +109,7 @@ public class ConfigMappingUtils {
             ConfigClass configClassWithPrefix,
             Kind configClassKind,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
@@ -125,9 +126,9 @@ public class ConfigMappingUtils {
             generatedClassesNames.add(mappingMetadata.getClassName());
             // This is the generated implementation of the mapping by SmallRye Config.
             byte[] classBytes = mappingMetadata.getClassBytes();
-            generatedClasses.produce(new GeneratedClassBuildItem(isApplicationClass(configClass.getName()),
-                    mappingMetadata.getClassName(),
-                    classBytes));
+            generatedConfigClasses.put(mappingMetadata.getClassName(),
+                    new GeneratedClassBuildItem(isApplicationClass(configClass.getName()), mappingMetadata.getClassName(),
+                            classBytes));
             additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
                     classBytes));
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName())

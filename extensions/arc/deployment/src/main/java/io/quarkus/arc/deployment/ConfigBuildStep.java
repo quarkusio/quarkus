@@ -270,8 +270,13 @@ public class ConfigBuildStep {
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigClasses(configItem, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
-                additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
+        Map<String, GeneratedClassBuildItem> generatedConfigClasses = new HashMap<>();
+        processConfigClasses(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
+                configClasses, additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
+
+        for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {
+            generatedClasses.produce(generatedConfigClass);
+        }
     }
 
     @BuildStep

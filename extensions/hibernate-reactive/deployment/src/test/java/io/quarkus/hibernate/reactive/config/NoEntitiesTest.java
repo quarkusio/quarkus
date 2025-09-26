@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive;
+package io.quarkus.hibernate.reactive.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,7 +14,8 @@ import io.quarkus.test.vertx.UniAsserter;
 
 /**
  * Test that a persistence unit without any entities does get started,
- * and can be used, be it only for native queries.
+ * and can be used, be it only for native queries,
+ * as long as a datasource is present.
  */
 public class NoEntitiesTest {
 

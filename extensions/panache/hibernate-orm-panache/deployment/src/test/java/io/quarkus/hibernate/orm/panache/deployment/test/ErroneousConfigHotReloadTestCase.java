@@ -21,6 +21,21 @@ public class ErroneousConfigHotReloadTestCase {
 
     @Test
     public void test() {
+        // Because there is no entity, the fact that there is no datasource will not trigger an error:
+        // the persistence unit will simply be automatically deactivated.
+        // Panache will however raise an exception on first attempt to use a class that is not, in fact, an entity.
+        RestAssured.when().get("/unannotatedEntity").then().statusCode(500).body(containsString("@Entity"))
+                .body(not(containsString("NullPointer")));
+
+        TEST.modifySourceFile(UnAnnotatedEntity.class, new Function<String, String>() {
+            @Override
+            public String apply(String s) {
+                return s.replace("//", "");
+            }
+        });
+
+        // Once we do have entities, the persistence unit will be active,
+        // but will fail to start since there is no datasource.
         RestAssured.when()
                 .get("/unannotatedEntity").then().statusCode(500)
                 // Weirdly, in case of build errors, Quarkus will return the error as HTML, even if we set the content type to JSON...
@@ -33,16 +48,6 @@ public class ErroneousConfigHotReloadTestCase {
             @Override
             public String apply(String s) {
                 return s.replace("#", "");
-            }
-        });
-
-        RestAssured.when().get("/unannotatedEntity").then().statusCode(500).body(containsString("@Entity"))
-                .body(not(containsString("NullPointer")));
-
-        TEST.modifySourceFile(UnAnnotatedEntity.class, new Function<String, String>() {
-            @Override
-            public String apply(String s) {
-                return s.replace("//", "");
             }
         });
 

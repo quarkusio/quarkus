@@ -7,7 +7,7 @@ It works seamlessly with:
 - [VS Code](https://code.visualstudio.com/)
 - [IntelliJ (via LSP4IJ)](https://github.com/redhat-developer/lsp4ij)
 
-You can use it with a simple **Java main class** or directly inside a **Quarkus application**.
+You can use it with a simple [Java main class](#usage-in-a-java-main-class) or directly inside a [Quarkus application](#usage-in-a-quarkus-application).
 
 ![Qute template debugging](./images/QuteDebuggerDemo.gif)
 
@@ -67,7 +67,7 @@ The [Quarkus Tools for IntelliJ](https://plugins.jetbrains.com/plugin/13234-quar
 When you start a Quarkus application in **Dev Mode**, IntelliJ automatically detects the Qute Debugger startup message:
 
 ```
-DebugServerAdapter listening on port 4971
+Qute debugger server listening on port 4971
 ```
 
 It then creates a **Remote Qute Debug** run configuration automatically, which you can launch directly:
@@ -101,10 +101,10 @@ The DAP client (e.g., your IDE) must then connect to port `12345`.
 
 ### 1. Enable Qute Debugger in `application.properties`
 
-The Qute debugger is **disabled by default**. Enable it by adding:
+The Qute debugger is **enabled by default**. Disable it by adding (if you need):
 
 ```properties
-quarkus.qute.debug.enabled=true
+quarkus.qute.debug.enabled=false
 ```
 
 ### 2. Start Quarkus with Debug Ports

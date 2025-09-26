@@ -187,21 +187,21 @@ public class RegisterDebugServerAdapter implements EngineListener {
 
         try {
             serverSocket = new ServerSocket(port);
-            log("DebugServerAdapter listening on port " + serverSocket.getLocalPort());
+            log("Qute debugger server listening on port " + serverSocket.getLocalPort());
             if (suspend) {
                 // Suspend mode: block here until a DAP client connects
-                log("Waiting for DAP client to connect (suspend mode)...");
+                log("Waiting for Qute debugger client to connect (suspend mode)...");
                 var client = serverSocket.accept();
-                log("DAP client connected (suspend mode)!");
+                log("Qute debugger client connected (suspend mode)!");
                 setupLauncher(client, true);
             } else {
                 // Non-suspend mode: accept clients asynchronously in a daemon thread loop
                 executor.execute(() -> {
                     while (serverSocket != null && !serverSocket.isClosed()) {
                         try {
-                            log("Waiting for a new DAP client...");
+                            log("Waiting for a new Qute debugger client...");
                             var client = serverSocket.accept();
-                            log("DAP client connected!");
+                            log("Qute debugger client connected");
                             setupLauncher(client, false);
                             trackedEngines.forEach(engine -> agent.track(engine));
                         } catch (IOException e) {

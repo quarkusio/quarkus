@@ -30,7 +30,7 @@ public class ForwardedPrefixHeaderTest {
                 .get("/test")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo("http|http://localhost:8081/test"));
+                .body(Matchers.equalTo("absolute http|http://localhost:8081/test base http|http://localhost:8081/"));
 
         given()
                 .header("X-Forwarded-Proto", "https")
@@ -40,7 +40,8 @@ public class ForwardedPrefixHeaderTest {
                 .get("/test")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo("https|https://backend:1234/prefix/test"));
+                .body(Matchers
+                        .equalTo("absolute https|https://backend:1234/prefix/test base https|https://backend:1234/prefix/"));
     }
 
     @Test
@@ -73,7 +74,8 @@ public class ForwardedPrefixHeaderTest {
 
         @GET
         public String get(UriInfo uriInfo) {
-            return uriInfo.getAbsolutePath().getScheme() + "|" + uriInfo.getAbsolutePath();
+            return "absolute " + uriInfo.getAbsolutePath().getScheme() + "|" + uriInfo.getAbsolutePath() + " base "
+                    + uriInfo.getBaseUri().getScheme() + "|" + uriInfo.getBaseUri();
         }
 
         @GET

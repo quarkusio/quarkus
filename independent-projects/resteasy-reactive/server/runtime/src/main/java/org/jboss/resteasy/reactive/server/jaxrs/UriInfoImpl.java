@@ -17,7 +17,6 @@ import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
 import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
-import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.UriMatch;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
@@ -49,14 +48,16 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public String getPath(boolean decode) {
-        if (!decode)
+        if (!decode) {
             throw encodedNotSupported();
+        }
         // TCK says normalized
         String path = URIDecoder.decodeURIComponent(currentRequest.getPath(), false);
         // the path must not contain the prefix
         String prefix = currentRequest.getDeployment().getPrefix();
-        if (prefix.isEmpty())
+        if (prefix.isEmpty()) {
             return path;
+        }
         // else skip the prefix
         if (path.length() == prefix.length()) {
             return "/";
@@ -71,8 +72,9 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public List<PathSegment> getPathSegments(boolean decode) {
-        if (!decode)
+        if (!decode) {
             throw encodedNotSupported();
+        }
         return PathSegmentImpl.parseSegments(getPath(), decode);
     }
 
@@ -119,24 +121,7 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public URI getBaseUri() {
-        try {
-            Deployment deployment = currentRequest.getDeployment();
-            // the TCK doesn't tell us, but Stuart and Georgios prefer dressing their base URIs with useless slashes ;)
-            String prefix = "/";
-            if (deployment != null) {
-                // prefix can be empty, but if it's not it will not end with a slash
-                prefix = deployment.getPrefix();
-                if (prefix.isEmpty())
-                    prefix = "/";
-                else
-                    prefix = prefix + "/";
-            }
-            return new URI(currentRequest.getScheme(), currentRequest.getAuthority(),
-                    prefix,
-                    null, null);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        return LocationUtil.getUri("", currentRequest, true);
     }
 
     @Override
@@ -151,8 +136,9 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public MultivaluedMap<String, String> getPathParameters(boolean decode) {
-        if (!decode)
+        if (!decode) {
             throw encodedNotSupported();
+        }
         // pathParams have to be recreated when the target changes.
         // this happens e.g. when the ResteasyReactiveRequestContext#restart is called for sub resources
         // The sub resource, can have additional path params that are not present on the locator
@@ -174,8 +160,9 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public MultivaluedMap<String, String> getQueryParameters(boolean decode) {
-        if (!decode)
+        if (!decode) {
             throw encodedNotSupported();
+        }
         if (queryParams == null) {
             queryParams = new QuarkusMultivaluedHashMap<>();
             Collection<String> entries = currentRequest.serverRequest().queryParamNames();
@@ -193,8 +180,9 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public List<String> getMatchedURIs(boolean decode) {
-        if (!decode)
+        if (!decode) {
             throw encodedNotSupported();
+        }
         if (currentRequest.getTarget() == null) {
             return Collections.emptyList();
         }

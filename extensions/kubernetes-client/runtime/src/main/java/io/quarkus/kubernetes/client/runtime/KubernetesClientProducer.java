@@ -1,6 +1,7 @@
 package io.quarkus.kubernetes.client.runtime;
 
 import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
@@ -16,7 +17,7 @@ public class KubernetesClientProducer {
     private KubernetesClient client;
 
     @DefaultBean
-    @Singleton
+    @ApplicationScoped
     @Produces
     public KubernetesClient kubernetesClient(KubernetesSerialization kubernetesSerialization, Config config) {
         client = new KubernetesClientBuilder()

@@ -376,8 +376,18 @@ public class HttpSecurityRecorder {
             }
 
             if (proactiveAuthentication) {
-                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
-                potentialUser
+                authenticator
+                        .attemptAuthentication(event)
+                        .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<? extends SecurityIdentity> apply(SecurityIdentity identity) {
+                                if (identity != null || event.response().ended()) {
+                                    return Uni.createFrom().item(identity);
+                                }
+                                return authenticator.getIdentityProviderManager()
+                                        .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
+                            }
+                        })
                         .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
                             @Override
                             public void onSubscribe(UniSubscription subscription) {
@@ -389,37 +399,9 @@ public class HttpSecurityRecorder {
                                 if (event.response().ended()) {
                                     return;
                                 }
-                                if (identity == null) {
-                                    Uni<SecurityIdentity> anon = authenticator.getIdentityProviderManager()
-                                            .authenticate(
-                                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
-                                    anon.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-                                        @Override
-                                        public void onSubscribe(UniSubscription subscription) {
-
-                                        }
-
-                                        @Override
-                                        public void onItem(SecurityIdentity item) {
-                                            event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, anon);
-                                            event.setUser(new QuarkusHttpUser(item));
-                                            event.next();
-                                        }
-
-                                        @Override
-                                        public void onFailure(Throwable failure) {
-                                            BiConsumer<RoutingContext, Throwable> handler = event
-                                                    .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-                                            if (handler != null) {
-                                                handler.accept(event, failure);
-                                            }
-                                        }
-                                    });
-                                } else {//when the result is evaluated we set the user, even if it is evaluated lazily
-                                    event.setUser(new QuarkusHttpUser(identity));
-                                    event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, potentialUser);
-                                    event.next();
-                                }
+                                //when the result is evaluated we set the user, even if it is evaluated lazily
+                                QuarkusHttpUser.setIdentity(identity, event);
+                                event.next();
                             }
 
                             @Override

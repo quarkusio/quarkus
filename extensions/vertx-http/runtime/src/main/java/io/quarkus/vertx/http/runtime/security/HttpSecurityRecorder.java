@@ -47,6 +47,7 @@ import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.security.MTLS;
+import io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
@@ -602,4 +603,16 @@ public class HttpSecurityRecorder {
         };
     }
 
+    public void validateOneTimeAuthToken(boolean tokenSenderNotFound) {
+        HttpSecurityConfiguration config = HttpSecurityConfiguration.get();
+        if (config.formAuthEnabled()) {
+            // FIXME: migrate this to the fluent API!
+            if (tokenSenderNotFound && httpConfig.getValue().auth().form().authenticationToken().enabled()) {
+                throw new ConfigurationException(
+                        "One-time authentication token feature is enabled, but no '%s' interface has been found"
+                                .formatted(OneTimeAuthenticationTokenSender.class.getName()),
+                        Set.of("quarkus.http.auth.form.authentication-token.enabled"));
+            }
+        }
+    }
 }

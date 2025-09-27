@@ -1,7 +1,5 @@
 package io.quarkus.security.spi.runtime;
 
-import jakarta.inject.Inject;
-
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -15,8 +13,7 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
     private volatile SecurityIdentity identity;
     private volatile Uni<SecurityIdentity> deferredIdentity;
 
-    @Inject
-    IdentityProviderManager identityProviderManager;
+    protected abstract IdentityProviderManager getIdentityProviderManager();
 
     @Override
     public void setIdentity(SecurityIdentity identity) {
@@ -36,7 +33,7 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
         } else if (identity != null) {
             return Uni.createFrom().item(identity);
         } else {
-            return deferredIdentity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+            return deferredIdentity = getIdentityProviderManager().authenticate(AnonymousAuthenticationRequest.INSTANCE);
         }
     }
 
@@ -56,7 +53,8 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
                 }
             }
             if (identity == null) {
-                identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+                identity = getIdentityProviderManager().authenticate(AnonymousAuthenticationRequest.INSTANCE).await()
+                        .indefinitely();
             }
         }
         return identity;

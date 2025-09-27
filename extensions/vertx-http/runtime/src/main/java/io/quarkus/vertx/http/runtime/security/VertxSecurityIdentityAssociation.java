@@ -2,11 +2,10 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.DEFERRED_IDENTITY_KEY;
 
-import java.security.Principal;
-
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation;
 import io.smallrye.common.vertx.ContextLocals;
@@ -16,15 +15,17 @@ import io.vertx.ext.web.RoutingContext;
 @RequestScoped
 public class VertxSecurityIdentityAssociation extends AbstractSecurityIdentityAssociation {
 
-    @Produces
-    @RequestScoped
-    public Principal principal() {
-        return new Principal() {
-            @Override
-            public String getName() {
-                return getIdentity().getPrincipal().getName();
-            }
-        };
+    private IdentityProviderManager identityProviderManager;
+
+    @Inject
+    public VertxSecurityIdentityAssociation setIdentityProviderManager(IdentityProviderManager identityProviderManager) {
+        this.identityProviderManager = identityProviderManager;
+        return this;
+    }
+
+    @Override
+    protected IdentityProviderManager getIdentityProviderManager() {
+        return identityProviderManager;
     }
 
     @Override

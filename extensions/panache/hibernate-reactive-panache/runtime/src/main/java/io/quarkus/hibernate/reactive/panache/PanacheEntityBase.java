@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.panache;
 
 import static io.quarkus.hibernate.reactive.panache.runtime.JpaOperations.INSTANCE;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -71,7 +72,7 @@ public abstract class PanacheEntityBase {
     @CheckReturnValue
     public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
         return INSTANCE.persist(this)
-                .flatMap(v -> INSTANCE.flush())
+                .flatMap(v -> INSTANCE.flush(this))
                 .map(v -> (T) this);
     }
 
@@ -102,7 +103,8 @@ public abstract class PanacheEntityBase {
     // @JsonIgnore is here to avoid serialization of this property with jackson
     @JsonIgnore
     public boolean isPersistent() {
-        return INSTANCE.isPersistent(this);
+        // TODO Luca :(
+        return INSTANCE.isPersistent(this).await().atMost(Duration.ofSeconds(5));
     }
 
     /**
@@ -112,7 +114,7 @@ public abstract class PanacheEntityBase {
      */
     @CheckReturnValue
     public Uni<Void> flush() {
-        return INSTANCE.flush();
+        return INSTANCE.flush(this);
     }
 
     // Queries

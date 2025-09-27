@@ -49,6 +49,8 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class DB2PoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
     private static final TypeLiteral<Instance<DB2PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
@@ -221,7 +223,8 @@ public class DB2PoolRecorder {
             }
         }
 
-        connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
+        connectOptions.setCachePreparedStatements(
+                dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
         connectOptions.setSsl(dataSourceReactiveDB2Config.ssl());
 

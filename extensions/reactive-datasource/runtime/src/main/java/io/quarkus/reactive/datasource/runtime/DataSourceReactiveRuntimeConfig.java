@@ -23,8 +23,8 @@ public interface DataSourceReactiveRuntimeConfig {
     /**
      * Whether prepared statements should be cached on the client side.
      */
-    @WithDefault("false")
-    boolean cachePreparedStatements();
+    @ConfigDocDefault("true for PostgreSQL/MySQL/MariaDB/DB2, false otherwise")
+    Optional<Boolean> cachePreparedStatements();
 
     /**
      * The datasource URLs.

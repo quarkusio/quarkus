@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -211,6 +212,13 @@ public interface Template {
      * @return the root section node
      */
     SectionNode getRootNode();
+
+    /**
+     * If invoked upon a fragment instance then delegate to the defining template.
+     *
+     * @return the source
+     */
+    Optional<URI> getSource();
 
     /**
      * A fragment represents a part of the template that can be treated as a separate template.

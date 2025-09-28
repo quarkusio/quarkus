@@ -1,8 +1,8 @@
 = Extension Structure Guidelines
 
 * Status: Proposed
-* Date: 2025-07-25
-* Authors: @cescoffier, @gsmet
+* Date: 2025-09-28
+* Authors: @cescoffier
 
 == Context
 
@@ -17,7 +17,6 @@ This situation introduces several issues:
 * There is no clear boundary between what an extension consumer can depend on and what they should not use.
 * Some extensions mix SPI and implementation code, reducing modularity and increasing the chance of unwanted coupling.
 * The need for build item re-use or coordination between extensions leads to ad-hoc patterns.
-* The word _deployment_ is there for historic reasons, but does not make a lot of sense. `build` would be better.
 
 More recently, we introduced dev-only modules, further increasing complexity.
 
@@ -33,16 +32,16 @@ This module also contains the `recorders` and other runtime logic.
 * `runtime-api`: Contains public APIs intended to be consumed by other extensions or application code.
 This module should have minimal dependencies.
 Depending on an `runtime-api` module does not transitively include the full extension (i.e., it avoids pulling in runtime or build logic). See <<coupling-api-and-spi>> for more details.
-* `build`: Contains build-time logic, including `BuildSteps`.
+* `deployment`: Contains build-time logic, including `BuildSteps`.
 This module may define internal build items.
-* `build-spi`: Contains build-time APIs intended to be reused across multiple extensions for integration purposes.
+* `deployment-spi`: Contains build-time APIs intended to be reused across multiple extensions for integration purposes.
 Extensions contributing to or using build items from other extensions should depend on `build-spi` modules.
 * `runtime-dev`: Contains runtime classes used exclusively in dev mode (e.g., for the Dev UI). This avoids shipping dev-only classes into production artifacts.
 * `codestart`: Contains the _Codestart_ templates for the extension. See https://quarkus.io/guides/extension-codestart[Codestart Guide] for more details.
 * `cli`: Contains CLI commands related to the extension. This is optional and should be used only if the extension provides specific CLI functionality.
 * `codegen`: Contains code generation utilities such as code pre-processors invoked at build time.
 
-Only the `runtime` and `build` modules are mandatory; the others are optional based on the extension's needs.
+Only the `runtime` and `deployment` modules are mandatory; the others are optional based on the extension's needs.
 
 
 .New structure for Quarkus extensions
@@ -51,24 +50,24 @@ Only the `runtime` and `build` modules are mandatory; the others are optional ba
 my-extension/
 ├── runtime/
 ├── runtime-api/
-├── build/
-├── build-spi/
+├── deployment/
+├── deployment-spi/
 ├── runtime-dev/
 ├── codegen/
 ├── cli/
 └── codestart/
 ----
 
-NOTE: `deployment` and `deployment-spi` have been renamed to `build` and `build-spi`. This is a big change, but Maven relocation will mitigate the breakage.
+NOTE: We considered renaming `deployment` and `deployment-spi`  to `build` and `build-spi`. We decided to not include that change in this ADR. It will be revisited in another ADR.
 
 === Additional Rules
 
 Module dependencies must follow strict rules:
 
-* `build` depends on `runtime`, and `build-spi` (if defined).
+* `deployment` depends on `runtime`, and `deployment-spi` (if defined).
 * `runtime` depends on `runtime-api` (if defined).
-* External consumers should rely only on `runtime-api` or `build-spi` to be loose-coupled (See <<coupling-api-and-spi>>.).
-* External consumers should rely only on `runtime` or `build` to be tightly-coupled (forcing the target extension to be present at execution). See <<coupling-api-and-spi>>.
+* External consumers should rely only on `runtime-api` or `deployment-spi` to be loose-coupled (See <<coupling-api-and-spi>>.).
+* External consumers should rely only on `runtime` or `deployment` to be tightly-coupled (forcing the target extension to be present at execution). See <<coupling-api-and-spi>>.
 * Public APIs must be explicitly documented, including build items meant for inter-extension use.
 * Public build items must document their intended usage (produced, consumed, or both).
 * Each module should provide an `Automatic-Module-Name` based on the root package.
@@ -76,19 +75,19 @@ Using the `Automatic-Module-Name` allows extensions to be used as JPMS modules i
 Also, it avoids split packages, as the `Automatic-Module-Name` must be unique across all modules in the Quarkus ecosystem:
 
 	- Runtime: `io.<quarkus|quarkiverse>.<extension-name>`
-	- Build: `io.<quarkus|quarkiverse>.<extension-name>.build`
+	- Deployment: `io.<quarkus|quarkiverse>.<extension-name>.deployment`
 	- Runtime API: `io.<quarkus|quarkiverse>.<extension-name>.api`
-	- Build SPI: `io.<quarkus|quarkiverse>.<extension-name>.build.spi`
-	- runtime-Dev: `io.<quarkus|quarkiverse>.<extension-name>.dev`
+	- Deployment SPI: `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`
+	- Runtime-Dev: `io.<quarkus|quarkiverse>.<extension-name>.dev`
 	- Codegen: `io.<quarkus|quarkiverse>.<extension-name>.codegen`
 	- CLI: `io.<quarkus|quarkiverse>.<extension-name>.cli`
 
 * Each module should have artifact idents following the pattern:
 
 	- Runtime: `quarkus-<extension-name>`
-	- Build: `quarkus-<extension-name>-build`
+	- Deployment: `quarkus-<extension-name>-deployment`
 	- Runtime API: `quarkus-<extension-name>-api`
-	- Build SPI: `quarkus-<extension-name>-build-spi`
+	- Deployment SPI: `quarkus-<extension-name>-deployment-spi`
 	- Runtime Dev: `quarkus-<extension-name>-dev`
 	- Codegen: `quarkus-<extension-name>-codegen`
     - Codestart: `quarkus-<extension-name>-codestart`
@@ -106,18 +105,18 @@ There is also a _coupling_ dimension that needs to be taken into account when de
 
 An extension using another extension can be either strongly or loosely coupled, depending on whether it requires the other extension to be present at runtime:
 
-* Strongly coupled: An extension directly depends on another extension's runtime module (and its `build` on the other extension's `build` module), requiring it to be present.
+* Strongly coupled: An extension directly depends on another extension's runtime module (and its `deployment` on the other extension's `deployment` module), requiring it to be present.
 * Loosely coupled: An extension only depends on the public API or SPI of another extension, allowing it to be used without requiring the full extension.
 
 When an extension depends on another extension, it should clearly indicate whether it is tightly or loosely coupled:
 
-* Tightly coupled: The extension depends on the `runtime` or `build` module of another extension, indicating that it requires the full extension to be present.
-* Loosely coupled: The extension depends on the `runtime-api` or `build-spi` module of another extension, indicating that it can work independently of the full extension. Note that this may require conditional logic to handle the absence of the extension at runtime.
+* Tightly coupled: The extension depends on the `runtime` or `deployment` module of another extension, indicating that it requires the full extension to be present.
+* Loosely coupled: The extension depends on the `runtime-api` or `deployment-spi` module of another extension, indicating that it can work independently of the full extension. Note that this may require conditional logic to handle the absence of the extension at runtime.
 
-An extension can also decide to only support _tight-coupling_ and does not provide a `runtime-api` or `build-spi` module.
-However, it is strongly recommended to provide at least a `build-spi` module to allow other extensions to integrate with it and `runtime-api` to allow other extensions to use its public API without forcing the full extension to be present.
+An extension can also decide to only support _tight-coupling_ and does not provide a `runtime-api` or `deployment-spi` module.
+However, it is strongly recommended to provide at least a `deployment-spi` module to allow other extensions to integrate with it and `runtime-api` to allow other extensions to use its public API without forcing the full extension to be present.
 
-NOTE: Because of the integration nature of the build items located in the `build-spi` module, we recommend keeping `build-spi` as the name.
+NOTE: Because of the integration nature of the build items located in the `deployment-spi` module, we recommend keeping `deployment-spi` as the name.
 
 [#the-place-of-the-public-api]
 ==== The place of the public API
@@ -190,11 +189,11 @@ To transform an extension name into a package name, use the following pattern:
 Non-API packages should be under `.impl` or `internal` like `io.quarkus.<extension-name>.runtime.internal` or `io.quarkus.<extension-name>.runtime.impl`.
 Thus, automated tooling can easily use this information to help generate a `module-info` with the correct exports, as well as excluding those packages from JavaDoc generation.
 
-==== `build` module
-* `io.<quarkus|quarkiverse>.<extension-name>.build`: Internal build logic (processors, build steps, internal build items). Public SPIs must reside in the `build-spi` module. May include subpackages (excluding `spi`).
+==== `deployment` module
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment`: Internal build logic (processors, build steps, internal build items). Public SPIs must reside in the `deployment-spi` module. May include subpackages (excluding `spi`).
 
-==== `build-spi` module
-* `io.<quarkus|quarkiverse>.<extension-name>.build.spi`: Public build items and types. Considered public API and subject to compatibility guarantees.
+==== `deployment-spi` module
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`: Public build items and types. Considered public API and subject to compatibility guarantees.
 
 Build items in this module should be documented with their intended use (produced or consumed).
 
@@ -223,11 +222,11 @@ Build items in this module should be documented with their intended use (produce
 | Public runtime APIs and service provider types
 | Other extensions, libraries
 
-| build
+| deployment
 | Build steps, processor logic, internal build items
 | Quarkus build system
 
-| build-spi
+| deployment-spi
 | Shared build-time APIs (build items, metadata)
 | Other extensions
 
@@ -269,6 +268,7 @@ About the last point, extensions can gradually adopt the new structure by first 
 Rejected due to increasing maintenance costs and risk of regressions. After 7 years of evolution, Quarkus needs clearer extension boundaries to remain sustainable.
 * Immediate adoption of JPMS (Java Modules):
 Deemed too complex and premature. While structurally compatible with this proposal, full JPMS adoption is deferred to avoid breaking changes and complexity in build tooling.
+* Renaming `deployment` and `deployment-spi` into `build` and `build-spi`, but it would have been a massive change that need deeper exploration (`build` is the Gradle output directory, it would increase the number of artifacts in the BOM dramatically (leading to Maven performance issues)...)
 
 == Related Discussions
 

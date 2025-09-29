@@ -19,7 +19,7 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.smallrye.common.os.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
-    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.");
+    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.", "gradle.quarkus.");
 
     private final transient QuarkusPluginExtension extension;
     protected final File projectDir;
@@ -54,8 +54,8 @@ public abstract class QuarkusTask extends DefaultTask {
         WorkerExecutor workerExecutor = getWorkerExecutor();
 
         // Use process isolation by default, unless Gradle's started with its debugging system property or the
-        // system property `quarkus.gradle-worker.no-process` is set to `true`.
-        if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("quarkus.gradle-worker.no-process")) {
+        // system property `gradle.quarkus.gradle-worker.no-process` is set to `true`.
+        if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("gradle.quarkus.gradle-worker.no-process")) {
             return workerExecutor.classLoaderIsolation();
         }
 
@@ -74,7 +74,7 @@ public abstract class QuarkusTask extends DefaultTask {
             forkOptions.systemProperty("user.dir", userDir);
         }
 
-        String quarkusWorkerMaxHeap = System.getProperty("quarkus.gradle-worker.max-heap");
+        String quarkusWorkerMaxHeap = System.getProperty("gradle.quarkus.gradle-worker.max-heap");
         if (quarkusWorkerMaxHeap != null && forkOptions.getAllJvmArgs().stream().noneMatch(arg -> arg.startsWith("-Xmx"))) {
             forkOptions.jvmArgs("-Xmx" + quarkusWorkerMaxHeap);
         }

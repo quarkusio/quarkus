@@ -1164,6 +1164,7 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 
 == Mocking
 
+[[mocking_active_record]]
 === Using the active record pattern
 
 If you are using the active record pattern you cannot use Mockito directly as it does not support mocking static methods,

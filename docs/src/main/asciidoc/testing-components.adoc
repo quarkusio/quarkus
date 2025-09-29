@@ -18,7 +18,7 @@ Therefore, Quarkus provides `QuarkusComponentTestExtension` - a JUnit extension 
 Unlike `@QuarkusTest` this extension does not start a full Quarkus application but merely the CDI container and the configuration service.
 You can find more details in the <<lifecycle>> section.
 
-TIP: This extension is available in the `quarkus-junit5-component` dependency.
+TIP: This JUnit extension is available in the `quarkus-junit5-component` dependency.
 
 == Basic example
 
@@ -302,6 +302,101 @@ CDI beans are also automatically registered for all injected https://smallrye.io
 By default, only the config properties from `application.properties` and properties set by the `@TestConfigProperty` annotation or with the `QuarkusComponentTestExtensionBuilder#configProperty(String, String)` method are included in the test config.
 System properties and ENV variables are _not_ included in the test config by default.
 However, you can use `@QuarkusComponentTest#useSystemConfigSources()` or `QuarkusComponentTestExtensionBuilder#useSystemConfigSources()` to configure this behavior.
+
+== Panache entities using the active record pattern
+
+If you are using the active record pattern you cannot easily leverage `Mockito#mockStatic()` to mock static methods declared on `PanacheEntityBase`.
+In a normal Quarkus app, these static methods are automatically overridden in subclasses.
+However, `QuarkusComponentTest` does not start a full Quarkus application.
+Nevertheless, you can use the `quarkus-panache-mock` module which integrates seamlessly with `QuarkusComponentTest`.
+
+Add this dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-panache-mock</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Given this simple entity:
+
+[source,java]
+----
+@Entity
+public class Person extends PanacheEntity {
+
+   public String name;
+   
+   public Person(String name) {
+      this.name = name;
+   }
+
+   public static List<Person> findOrdered() {
+      return find("ORDER BY name").list();
+   }
+}
+----
+
+That is used in a simple bean:
+
+[source,java]
+----
+public class PersonService {
+
+   public List<Person> getPersons(boolen sorted) {
+      if (sorted) {
+         return Person.findOrdered();
+      }
+      return Person.listAll();
+   }
+}
+----
+
+You can write your component test like:
+
+.Nested test
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import io.quarkus.panache.mock.MockPanacheEntities;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+@QuarkusComponentTest <1>
+@MockPanacheEntities(Person.class) <2>
+public class PersonServiceTest {
+
+    @Inject
+    PersonService personService; <3>
+    
+    @Test
+    public void testGetPersons() { 
+        Mockito.when(Person.listAll()).thenReturn(List.of(new Person("Tom")));
+        List<Person> list = personService.getPersons(false);
+        assertEquals(1, list.size());
+        assertEquals("Tom", list.get(0).name);
+        
+        Mockito.when(Person.findOrdered()).thenReturn(List.of(new Person("Tom")));
+        list = personService.getPersons(true);
+        assertEquals(1, list.size());
+        assertEquals("Tom", list.get(0).name);
+    }
+
+}
+----
+<1> The `QuarkusComponentTest` annotation registers the JUnit extension.
+<2> `@MockPanacheEntities` installs mocks for the given entity classes. 
+<3> The test injects the component under the test - `PersonService`.
+
+TIP: See also xref:hibernate-orm-panache.adoc#mocking_active_record[Simplified Hibernate ORM with Panache - Using the active record pattern] for more information.
+
+NOTE: Currently, only the integration with Hibernate ORM is supported. Other variants of the Panache API, such as MongoDB and Hibernate Reactive, are not supported yet.
 
 == Mocking CDI Interceptors
 

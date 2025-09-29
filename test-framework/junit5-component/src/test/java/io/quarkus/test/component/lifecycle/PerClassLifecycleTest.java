@@ -8,10 +8,12 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
@@ -19,6 +21,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTestExtension;
 import io.quarkus.test.component.beans.Charlie;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(Lifecycle.PER_CLASS)
 public class PerClassLifecycleTest {
 

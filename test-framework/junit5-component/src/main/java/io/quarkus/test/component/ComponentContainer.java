@@ -52,6 +52,7 @@ import jakarta.interceptor.InvocationContext;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -76,7 +77,6 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
@@ -100,6 +100,8 @@ import io.quarkus.arc.processor.Types;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.QuarkusComponentTestCallbacks.BeforeBuildContext;
+import io.quarkus.test.component.QuarkusComponentTestCallbacks.BeforeIndexContext;
 import io.smallrye.config.ConfigMapping;
 
 class ComponentContainer {
@@ -112,6 +114,7 @@ class ComponentContainer {
      * @param testClass
      * @param configuration
      * @param buildShouldFail
+     * @param tracedClasses
      * @return the build result
      */
     static BuildResult build(Class<?> testClass, QuarkusComponentTestConfiguration configuration, boolean buildShouldFail,
@@ -135,6 +138,16 @@ class ComponentContainer {
                 // Make sure that component hierarchy and all annotations present are indexed
                 indexComponentClass(indexer, componentClass);
             }
+            if (configuration.hasCallbacks()) {
+                BeforeIndexContextImpl context = new BeforeIndexContextImpl(testClass, configuration.componentClasses);
+                for (QuarkusComponentTestCallbacks callback : configuration.callbacks) {
+                    callback.beforeIndex(context);
+                }
+                for (Class<?> clazz : context.additionalComponentsClasses) {
+                    indexComponentClass(indexer, clazz);
+                }
+            }
+
             indexer.indexClass(ConfigProperty.class);
             index = BeanArchives.buildImmutableBeanArchiveIndex(indexer.complete());
         } catch (IOException e) {
@@ -152,6 +165,20 @@ class ComponentContainer {
         Map<String, Set<String>> configMappings = new HashMap<>();
         Map<String, String[]> interceptorMethods = new HashMap<>();
         Throwable buildFailure = null;
+        List<BytecodeTransformer> bytecodeTransformers = new ArrayList<>();
+        List<AnnotationTransformation> annotationTransformations = new ArrayList<>();
+        for (AnnotationsTransformer transformer : configuration.annotationsTransformers) {
+            annotationTransformations.add(transformer);
+        }
+        List<BeanRegistrar> beanRegistrars = new ArrayList<>();
+
+        if (configuration.hasCallbacks()) {
+            BeforeBuildContext beforeBuildContext = new BeforeBulidContextImpl(testClass, index, computingIndex,
+                    bytecodeTransformers, annotationTransformations, beanRegistrars);
+            for (QuarkusComponentTestCallbacks callback : configuration.callbacks) {
+                callback.beforeBuild(beforeBuildContext);
+            }
+        }
 
         try {
             // These are populated after BeanProcessor.registerCustomContexts() is called
@@ -164,6 +191,7 @@ class ComponentContainer {
             List<Parameter> injectParams = findInjectParams(testClass);
 
             String beanProcessorName = testClass.getName().replace('.', '_');
+            AtomicReference<BeanDeployment> beanDeployment = new AtomicReference<>();
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
                     .setName(beanProcessorName)
@@ -172,7 +200,7 @@ class ComponentContainer {
                         // 1. Annotated with @Unremovable
                         // 2. Injected in the test class or in a test method parameter
                         if (b.getTarget().isPresent()
-                                && b.getTarget().get().hasDeclaredAnnotation(Unremovable.class)) {
+                                && beanDeployment.get().hasAnnotation(b.getTarget().get(), DotNames.UNREMOVABLE)) {
                             return true;
                         }
                         for (Field injectionPoint : injectFields) {
@@ -220,7 +248,7 @@ class ComponentContainer {
                             break;
                         case SERVICE_PROVIDER:
                             if (resource.getName()
-                                    .endsWith(ComponentsProvider.class.getName())) {
+                                    .equals(ComponentsProvider.class.getName())) {
                                 componentsProvider.set(resource.getData());
                             }
                             break;
@@ -234,8 +262,8 @@ class ComponentContainer {
                     .whenContainsNone(DotName.createSimple(Inject.class)).thenTransform(t -> t.add(Inject.class)));
 
             builder.addAnnotationTransformation(new JaxrsSingletonTransformer());
-            for (AnnotationsTransformer transformer : configuration.annotationsTransformers) {
-                builder.addAnnotationTransformation(transformer);
+            for (AnnotationTransformation transformation : annotationTransformations) {
+                builder.addAnnotationTransformation(transformation);
             }
 
             // Register:
@@ -390,11 +418,14 @@ class ComponentContainer {
             for (MockBeanConfiguratorImpl<?> mockConfigurator : configuration.mockConfigurators) {
                 builder.addBeanRegistrar(registrarForMock(testClass, mockConfigurator));
             }
-
-            List<BytecodeTransformer> bytecodeTransformers = new ArrayList<>();
+            // Synthetic beans from callbacks
+            for (BeanRegistrar beanRegistrar : beanRegistrars) {
+                builder.addBeanRegistrar(beanRegistrar);
+            }
 
             // Process the deployment
             BeanProcessor beanProcessor = builder.build();
+            beanDeployment.set(beanProcessor.getBeanDeployment());
             try {
                 Consumer<BytecodeTransformer> bytecodeTransformerConsumer = bytecodeTransformers::add;
                 // Populate the list of qualifiers used to simulate quarkus auto injection
@@ -885,4 +916,76 @@ class ComponentContainer {
             };
         }
     }
+
+    private static class BeforeIndexContextImpl extends QuarkusComponentTestExtension.ComponentTestContextImpl
+            implements BeforeIndexContext {
+
+        private final Set<Class<?>> componentClasses;
+        private final List<Class<?>> additionalComponentsClasses;
+
+        BeforeIndexContextImpl(Class<?> testClass, Set<Class<?>> componentClasses) {
+            super(testClass);
+            this.componentClasses = componentClasses;
+            this.additionalComponentsClasses = new ArrayList<>();
+        }
+
+        @Override
+        public Set<Class<?>> getComponentClasses() {
+            return componentClasses;
+        }
+
+        @Override
+        public void addComponentClass(Class<?> componentClass) {
+            additionalComponentsClasses.add(componentClass);
+        }
+
+    }
+
+    private static class BeforeBulidContextImpl extends QuarkusComponentTestExtension.ComponentTestContextImpl
+            implements BeforeBuildContext {
+
+        private final IndexView immutableBeanArchiveIndex;
+        private final IndexView computingBeanArchiveIndex;
+        private final List<BytecodeTransformer> bytecodeTransformers;
+        private final List<AnnotationTransformation> annotationTransformations;
+        private final List<BeanRegistrar> beanRegistrars;
+
+        private BeforeBulidContextImpl(Class<?> testClass, IndexView immutableBeanArchiveIndex,
+                IndexView computingBeanArchiveIndex, List<BytecodeTransformer> bytecodeTransformers,
+                List<AnnotationTransformation> annotationTransformations, List<BeanRegistrar> beanRegistrars) {
+            super(testClass);
+            this.immutableBeanArchiveIndex = immutableBeanArchiveIndex;
+            this.computingBeanArchiveIndex = computingBeanArchiveIndex;
+            this.bytecodeTransformers = bytecodeTransformers;
+            this.annotationTransformations = annotationTransformations;
+            this.beanRegistrars = beanRegistrars;
+        }
+
+        @Override
+        public IndexView getImmutableBeanArchiveIndex() {
+            return immutableBeanArchiveIndex;
+        }
+
+        @Override
+        public IndexView getComputingBeanArchiveIndex() {
+            return computingBeanArchiveIndex;
+        }
+
+        @Override
+        public void addAnnotationTransformation(AnnotationTransformation transformation) {
+            annotationTransformations.add(transformation);
+        }
+
+        @Override
+        public void addBeanRegistrar(BeanRegistrar beanRegistrar) {
+            beanRegistrars.add(beanRegistrar);
+        }
+
+        @Override
+        public void addBytecodeTransformer(BytecodeTransformer bytecodeTransformer) {
+            bytecodeTransformers.add(bytecodeTransformer);
+        }
+
+    }
+
 }

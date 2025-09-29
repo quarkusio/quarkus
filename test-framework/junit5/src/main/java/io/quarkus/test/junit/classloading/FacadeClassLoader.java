@@ -14,12 +14,14 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -39,6 +41,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.test.common.FacadeClassLoaderProvider;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
@@ -114,6 +117,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private QuarkusClassLoader keyMakerClassLoader;
 
     private final boolean isContinuousTesting;
+
+    private final List<FacadeClassLoaderProvider> facadeClassLoaderProviders;
 
     public FacadeClassLoader(ClassLoader parent) {
         this(parent, false, null, null, null, System.getProperty("java.class.path"));
@@ -253,6 +258,11 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                 throw new RuntimeException(e);
             }
         }
+
+        facadeClassLoaderProviders = new ArrayList<>();
+        ServiceLoader<FacadeClassLoaderProvider> loader = ServiceLoader.load(FacadeClassLoaderProvider.class,
+                FacadeClassLoader.class.getClassLoader());
+        loader.forEach(facadeClassLoaderProviders::add);
     }
 
     @Override
@@ -358,6 +368,13 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 return clazz;
             } else {
+                for (FacadeClassLoaderProvider p : facadeClassLoaderProviders) {
+                    ClassLoader cl = p.getClassLoader(name, getParent());
+                    if (cl != null) {
+                        return cl.loadClass(name);
+                    }
+                }
+
                 return super.loadClass(name);
             }
 

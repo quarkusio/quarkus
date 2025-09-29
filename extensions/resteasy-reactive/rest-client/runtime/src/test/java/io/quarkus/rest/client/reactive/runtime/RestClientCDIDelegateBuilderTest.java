@@ -45,6 +45,7 @@ import io.quarkus.restclient.config.AbstractRestClientConfigBuilder;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.MemorySizeConverter;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
@@ -145,6 +146,10 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).property(KEEP_ALIVE_ENABLED, false);
         verify(restClientBuilderMock).property(MAX_REDIRECTS, 104);
         verify(restClientBuilderMock).property(MAX_CHUNK_SIZE, 1024);
+        verify(restClientBuilderMock).property("dev.resteasy.entity.file.threshold",
+                new MemorySizeConverter().convert("50M").asLongValue());
+        verify(restClientBuilderMock).property("dev.resteasy.entity.memory.threshold",
+                new MemorySizeConverter().convert("100M").asLongValue());
         verify(restClientBuilderMock).followRedirects(true);
         verify(restClientBuilderMock).register(MyResponseFilter1.class);
         verify(restClientBuilderMock).queryParamStyle(COMMA_SEPARATED);
@@ -200,6 +205,10 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).property(KEEP_ALIVE_ENABLED, true);
         verify(restClientBuilderMock).property(MAX_REDIRECTS, 204);
         verify(restClientBuilderMock).property(MAX_CHUNK_SIZE, 1024);
+        verify(restClientBuilderMock).property("dev.resteasy.entity.file.threshold",
+                new MemorySizeConverter().convert("5M").asLongValue());
+        verify(restClientBuilderMock).property("dev.resteasy.entity.memory.threshold",
+                new MemorySizeConverter().convert("10M").asLongValue());
         verify(restClientBuilderMock).followRedirects(true);
         verify(restClientBuilderMock).register(MyResponseFilter2.class);
         verify(restClientBuilderMock).queryParamStyle(MULTI_PAIRS);
@@ -228,6 +237,8 @@ class RestClientCDIDelegateBuilderTest {
         rootConfig.put("quarkus.rest-client.keep-alive-enabled", "true");
         rootConfig.put("quarkus.rest-client.max-redirects", "204");
         rootConfig.put("quarkus.rest-client.multipart-max-chunk-size", "1024");
+        rootConfig.put("quarkus.rest-client.multipart.file-threshold", "5M");
+        rootConfig.put("quarkus.rest-client.multipart.memory-threshold", "10M");
         rootConfig.put("quarkus.rest-client.follow-redirects", "true");
         rootConfig.put("quarkus.rest-client.max-chunk-size", "1024");
         rootConfig.put("quarkus.rest-client.providers",
@@ -265,6 +276,8 @@ class RestClientCDIDelegateBuilderTest {
         clientConfig.put("quarkus.rest-client." + restClientName + ".max-redirects", "104");
         clientConfig.put("quarkus.rest-client." + restClientName + ".follow-redirects", "true");
         clientConfig.put("quarkus.rest-client." + restClientName + ".max-chunk-size", "1024");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".multipart.file-threshold", "50M");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".multipart.memory-threshold", "100M");
         clientConfig.put("quarkus.rest-client." + restClientName + ".providers",
                 "io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");
         clientConfig.put("quarkus.rest-client." + restClientName + ".query-param-style", "comma-separated");

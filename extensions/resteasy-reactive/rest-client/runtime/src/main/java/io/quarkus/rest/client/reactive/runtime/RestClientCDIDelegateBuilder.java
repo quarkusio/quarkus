@@ -148,6 +148,20 @@ public class RestClientCDIDelegateBuilder<T> {
                         : Optional.empty());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
+        Optional<MemorySize> fileThreshold = oneOf(restClientConfig.multipart().fileThreshold(),
+                configRoot.multipart().fileThreshold());
+        if (fileThreshold.isPresent()) {
+            builder.property("dev.resteasy.entity.file.threshold",
+                    fileThreshold.get().asLongValue());
+        }
+
+        Optional<MemorySize> memoryThreshold = oneOf(restClientConfig.multipart().memoryThreshold(),
+                configRoot.multipart().memoryThreshold());
+        if (memoryThreshold.isPresent()) {
+            builder.property("dev.resteasy.entity.memory.threshold",
+                    memoryThreshold.get().asLongValue());
+        }
+
         Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(), configRoot.enableCompression());
         if (enableCompressions.isPresent()) {
             builder.enableCompression(enableCompressions.get());

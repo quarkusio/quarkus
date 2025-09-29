@@ -290,8 +290,10 @@ public class HibernateOrmRecorder {
         String schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit.database().generation().generation()
                 .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
 
-        //if hibernate is already managing the schema we don't do this
-        if (!"none".equals(schemaManagementStrategy)) {
+        boolean startsOffline = hibernateOrmRuntimeConfigPersistenceUnit.database().startOffline();
+
+        //if hibernate is already managing the schema or if we're in offline mode we don't do this
+        if (!"none".equals(schemaManagementStrategy) || startsOffline) {
             return;
         }
         new Thread(new Runnable() {

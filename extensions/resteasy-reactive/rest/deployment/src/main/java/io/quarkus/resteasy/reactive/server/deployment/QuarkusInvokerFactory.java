@@ -5,7 +5,9 @@ import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -32,6 +34,8 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
     final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     final ResteasyReactiveRecorder recorder;
 
+    private final Map<String, Supplier<EndpointInvoker>> generatedInvokers = new HashMap<>();
+
     public QuarkusInvokerFactory(Predicate<String> applicationClassPredicate,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder) {
@@ -51,6 +55,9 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
 
         String baseName = currentClassInfo.name() + "$quarkusrestinvoker$" + method.getName() + "_"
                 + HashUtil.sha1(endpointIdentifier);
+        if (generatedInvokers.containsKey(baseName)) {
+            return generatedInvokers.get(baseName);
+        }
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer, null,
                 applicationClassPredicate.test(currentClassInfo.name().toString()));
         Gizmo g = Gizmo.create(classOutput);
@@ -80,7 +87,9 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
                 });
             });
         });
-        return recorder.invoker(baseName);
+        var result = recorder.invoker(baseName);
+        generatedInvokers.put(baseName, result);
+        return result;
     }
 
 }

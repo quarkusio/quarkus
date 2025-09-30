@@ -4,7 +4,7 @@ plugin-publish = "2.0.0"
 kotlin = "2.2.20"
 smallrye-config = "3.14.0"
 
-junit5 = "5.13.4"
+junit5 = "6.0.0"
 assertj = "3.27.6"
 
 [plugins]

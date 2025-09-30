@@ -45,7 +45,7 @@
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jandex.version>3.5.0</jandex.version>
-        <bytebuddy.version>1.15.11</bytebuddy.version>
+        <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit5.version>5.13.4</junit5.version>
         <maven.version>3.9.11</maven.version>
         <assertj.version>3.27.6</assertj.version>

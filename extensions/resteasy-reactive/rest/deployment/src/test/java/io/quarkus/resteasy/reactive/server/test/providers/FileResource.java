@@ -1,10 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.providers;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.file.Paths;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
@@ -90,5 +93,20 @@ public class FileResource {
                     emitter.fail(result.cause());
             });
         });
+    }
+
+    static final long ONE_GIGA = 1024L * 1024L * 1024L;
+
+    @Path("large-path-rest-response")
+    @GET
+    public RestResponse<java.nio.file.Path> largePathRestResponse() throws IOException {
+        File largeFile = File.createTempFile("rr-large-file-rest-response", ".tmp");
+        largeFile.deleteOnExit();
+        RandomAccessFile f = new RandomAccessFile(largeFile, "rw");
+        f.setLength(ONE_GIGA);
+
+        return RestResponse.ResponseBuilder.ok(largeFile.toPath())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "large-file")
+                .build();
     }
 }

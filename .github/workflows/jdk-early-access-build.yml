@@ -21,7 +21,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dtest-resteasy-reactive-large-files -Dformat.skip"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dtest-resteasy-reactive-large-files -Dquarkus.test.rest-assured.enable-logging-on-failure=false -Dformat.skip"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test

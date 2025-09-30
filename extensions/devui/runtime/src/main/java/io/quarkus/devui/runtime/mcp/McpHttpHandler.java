@@ -110,9 +110,17 @@ public class McpHttpHandler implements Handler<RoutingContext> {
                 // This is a MCP notification
                 this.routeToMCPNotification(jsonRpcRequest, codec, writer);
             } else if (methodName.equalsIgnoreCase(McpBuiltinMethods.TOOLS_LIST) ||
-                    methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_LIST) ||
-                    methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_READ)) {
+                    methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_LIST)) {
                 jsonRpcRequest.setMethod(methodName.replace(SLASH, UNDERSCORE));
+                // Make sure that parameters is empty as expected.
+                jsonRpcRequest.setParams(null);
+                jsonRpcRouter.route(jsonRpcRequest, writer);
+            } else if (methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_READ)) {
+                jsonRpcRequest.setMethod(methodName.replace(SLASH, UNDERSCORE));
+                // Make sure that the only parameter is uri (as expected).
+                String uri = jsonRpcRequest.getParam("uri", String.class);
+                jsonRpcRequest.getParams().clear();
+                jsonRpcRequest.setParams(Map.of("uri", uri));
                 jsonRpcRouter.route(jsonRpcRequest, writer);
             } else {
                 // This is a normal extension method

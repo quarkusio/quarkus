@@ -17,14 +17,14 @@ public final class WebSocketMetricConstants {
     public static final String SERVER_CONNECTION_OPENED = "quarkus.websockets.server.connections.opened";
 
     /**
-     * Counts number of times that opening of a WebSocket server connection resulted in error.
+     * Counts number of times that opening of a WebSocket server connection resulted in error, therefore closing the connection.
      */
     public static final String SERVER_CONNECTION_ON_OPEN_ERROR = "quarkus.websockets.server.connections.onopen.errors";
 
     /**
-     * Counts number of times that opening of a WebSocket client connection resulted in error.
+     * Counts number of times that opening of a WebSocket client connection resulted in error, therefore closing the connection.
      */
-    public static final String CLIENT_CONNECTION_OPENED_ERROR = "quarkus.websockets.client.connections.opened.errors";
+    public static final String CLIENT_CONNECTION_ON_OPEN_ERROR = "quarkus.websockets.client.connections.onopen.errors";
 
     /**
      * Counts all the WebSockets client closed connections.

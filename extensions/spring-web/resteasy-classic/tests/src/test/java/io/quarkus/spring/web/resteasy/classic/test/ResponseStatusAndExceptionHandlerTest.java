@@ -3,6 +3,7 @@ package io.quarkus.spring.web.resteasy.classic.test;
 import static io.restassured.RestAssured.when;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,6 +30,11 @@ public class ResponseStatusAndExceptionHandlerTest {
         when().get("/exception").then().statusCode(400);
     }
 
+    @Test
+    public void testIllegalResource() {
+        when().get("/exception/illegalArgument").then().statusCode(500);
+    }
+
     @RestController
     @RequestMapping("/exception")
     public static class ExceptionController {
@@ -37,6 +43,14 @@ public class ResponseStatusAndExceptionHandlerTest {
         @ResponseStatus(HttpStatus.OK)
         public String throwException() {
             RuntimeException exception = new RuntimeException();
+            exception.setStackTrace(new StackTraceElement[0]);
+            throw exception;
+        }
+
+        @GetMapping("/illegalArgument")
+        @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+        public String throwIllegalException() {
+            IllegalArgumentException exception = new IllegalArgumentException();
             exception.setStackTrace(new StackTraceElement[0]);
             throw exception;
         }
@@ -50,9 +64,11 @@ public class ResponseStatusAndExceptionHandlerTest {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        @ExceptionHandler(RuntimeException.class)
-        public ResponseEntity<Object> forbidden(Exception ex, HttpServletRequest request) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<Object> handleException(Exception ex, HttpServletRequest request, HttpServletResponse response) {
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            request.setAttribute("javax.servlet.error.status_code", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

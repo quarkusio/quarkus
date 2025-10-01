@@ -174,7 +174,7 @@ export class QwcWelcome extends LitElement {
                         <div class="content">
                             <div class="left-column">
                                 <h1>You just made a Quarkus application.</h1>
-                                <p>This page is served by the Quarkus Dev UI (only in dev mode ) until you provide your own Web UI</p>
+                                <p>This page is served by the Quarkus Dev UI (only in dev mode) until you provide your own Web UI</p>
                                 <a href="extensions" class="cta-button">Visit the Dev UI</a>
                                 ${this._renderDynamicWelcomeData()}
                                 <qwc-endpoints filter="Resource Endpoints"></qwc-endpoints>

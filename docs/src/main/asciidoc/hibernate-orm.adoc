@@ -1756,6 +1756,10 @@ you must configure it accordingly in your build tool:
 <plugin>
     <artifactId>maven-compiler-plugin</artifactId>
     <configuration>
+        <!-- This setting is required for the annotation processor dependencies to be managed by Quarkus.
+             More information is available in Maven compiler plugin documentation:
+             https://maven.apache.org/plugins/maven-compiler-plugin/compile-mojo.html#annotationProcessorPathsUseDepMgmt -->
+        <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
         <annotationProcessorPaths>
             <path>
                 <groupId>org.hibernate.orm</groupId>

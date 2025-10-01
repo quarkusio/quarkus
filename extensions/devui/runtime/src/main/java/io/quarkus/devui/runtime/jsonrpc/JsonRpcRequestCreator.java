@@ -55,7 +55,8 @@ public class JsonRpcRequestCreator {
             mapped.setId(jsonRpcRequest.getId());
             mapped.setJsonrpc(jsonRpcRequest.getJsonrpc());
             mapped.setMethod(mappedName);
-            mapped.setParams(mappedParams);
+            if (mappedParams != null && !mappedParams.isEmpty())
+                mapped.setParams(mappedParams);
 
             return mapped;
         }

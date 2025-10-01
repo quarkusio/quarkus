@@ -174,7 +174,7 @@
                         <parentFirstArtifact>org.graalvm.sdk:jniutils</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:word</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:collections</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.sdk:native-bridge</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:nativebridge</parentFirstArtifact>
                         <!-- /support for GraalVM js -->
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>

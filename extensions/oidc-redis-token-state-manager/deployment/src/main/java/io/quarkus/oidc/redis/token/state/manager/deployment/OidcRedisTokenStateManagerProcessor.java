@@ -12,7 +12,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.oidc.redis.token.state.manager.runtime.AuthorizationCodeTokensRecord;
 import io.quarkus.oidc.redis.token.state.manager.runtime.OidcRedisTokenStateManagerRecorder;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
@@ -25,6 +27,12 @@ public class OidcRedisTokenStateManagerProcessor {
     @BuildStep
     RequestedRedisClientBuildItem requestRedisClient(OidcRedisTokenStateManagerBuildConfig buildConfig) {
         return new RequestedRedisClientBuildItem(buildConfig.redisClientName());
+    }
+
+    @BuildStep
+    ReflectiveClassBuildItem registerTokenStateRecordForReflection() {
+        return ReflectiveClassBuildItem.builder(AuthorizationCodeTokensRecord.class)
+                .serialization().fields().methods().constructors().build();
     }
 
     @Record(ExecutionTime.STATIC_INIT)

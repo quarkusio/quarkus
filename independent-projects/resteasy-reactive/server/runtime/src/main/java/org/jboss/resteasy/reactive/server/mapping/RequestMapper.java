@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -48,9 +49,12 @@ public class RequestMapper<T> {
      * @return best RequestMatch, or null if the path has no match
      */
     public RequestMatch<T> map(String path) {
-        var result = mapFromPathMatcher(path, requestPaths.match(path), 0);
-        if (result != null) {
-            return result;
+        List<PathMatcher.PathMatch<ArrayList<RequestPath<T>>>> matches = requestPaths.match(path);
+        for (PathMatcher.PathMatch<ArrayList<RequestPath<T>>> match : matches) {
+            var result = mapFromPathMatcher(path, match, 0);
+            if (result != null) {
+                return result;
+            }
         }
 
         // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
@@ -68,7 +72,7 @@ public class RequestMapper<T> {
             return null;
         }
 
-        var initialMatches = requestPaths.match(path);
+        var initialMatches = requestPaths.match(path).get(0);
         var result = mapFromPathMatcher(path, initialMatches, 0);
         if (result != null) {
             int idx = nextMatchStartingIndex(initialMatches, lastMatch);

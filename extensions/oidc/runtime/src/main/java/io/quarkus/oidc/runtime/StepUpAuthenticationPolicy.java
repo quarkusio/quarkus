@@ -26,7 +26,7 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
     private static volatile boolean enabled = false;
 
     StepUpAuthenticationPolicy(String acrValues, Duration maxAge) {
-        this(acrValues.split(","), maxAge == null ? null : maxAge.toSeconds());
+        this(splitAcrValues(acrValues), maxAge == null ? null : maxAge.toSeconds());
     }
 
     private static final Logger LOG = Logger.getLogger(StepUpAuthenticationPolicy.class);
@@ -63,17 +63,21 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
     }
 
     private void verifyAcr(JsonObject json) {
-        JsonArray acr = json.getJsonArray(OidcConstants.ACR);
-        if (acr != null && !acr.isEmpty()) {
-            boolean acrFound = true;
-            for (String expectedAcrValue : expectedAcrValues) {
-                if (!acr.contains(expectedAcrValue)) {
-                    LOG.debug("Acr value " + expectedAcrValue + " is required but not found in token 'acr' claim: " + acr);
-                    acrFound = false;
-                    break;
+        Object acrObject = json.getValue(OidcConstants.ACR);
+        if (acrObject != null) {
+            if (acrObject instanceof JsonArray acr && !acr.isEmpty()) {
+                boolean acrFound = true;
+                for (String expectedAcrValue : expectedAcrValues) {
+                    if (!acr.contains(expectedAcrValue)) {
+                        LOG.debug("Acr value " + expectedAcrValue + " is required but not found in token 'acr' claim: " + acr);
+                        acrFound = false;
+                        break;
+                    }
                 }
-            }
-            if (acrFound) {
+                if (acrFound) {
+                    return;
+                }
+            } else if (expectedAcrValues.length == 1 && expectedAcrValues[0].equals(acrObject)) {
                 return;
             }
         }
@@ -146,5 +150,13 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
 
     static boolean isEnabled() {
         return enabled;
+    }
+
+    private static String[] splitAcrValues(String acrValues) {
+        String[] acrValuesArr = acrValues.split(",");
+        if (acrValuesArr.length > 1) {
+            return Set.of(acrValuesArr).toArray(String[]::new);
+        }
+        return acrValuesArr;
     }
 }

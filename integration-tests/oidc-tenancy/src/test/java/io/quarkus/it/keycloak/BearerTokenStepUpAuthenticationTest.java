@@ -232,6 +232,15 @@ public class BearerTokenStepUpAuthenticationTest {
                 .body(is("max-age-and-acr-required"));
     }
 
+    @Test
+    public void testSingleAcrStringValueRequired() {
+        // wrong single acr -> fail
+        stepUpMethodLevelRequest(Set.of("3_string"), "no-rbac-annotation-string").statusCode(401);
+        // correct acr -> pass
+        stepUpMethodLevelRequest(Set.of("1_string"), "no-rbac-annotation-string").statusCode(200)
+                .body(is("no-rbac-annotation"));
+    }
+
     private static ValidatableResponse stepUpMethodLevelRequest(Set<String> acrValues, String path) {
         return stepUpMethodLevelRequest(acrValues, path, null);
     }
@@ -347,6 +356,13 @@ public class BearerTokenStepUpAuthenticationTest {
         @AuthenticationContext("1")
         @Path("no-rbac-annotation")
         public String noRbacAnnotationMethodLevel() {
+            return "no-rbac-annotation";
+        }
+
+        @GET
+        @AuthenticationContext("1_string")
+        @Path("no-rbac-annotation-string")
+        public String noRbacAnnotationMethodLevelString() {
             return "no-rbac-annotation";
         }
 

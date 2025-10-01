@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -48,9 +49,12 @@ public class RequestMapper<T> {
      * @return best RequestMatch, or null if the path has no match
      */
     public RequestMatch<T> map(String path) {
-        var result = mapFromPathMatcher(path, requestPaths.match(path), 0);
-        if (result != null) {
-            return result;
+        List<PathMatcher.PathMatch<ArrayList<RequestPath<T>>>> matches = requestPaths.match(path);
+        for (int i = 0; i < matches.size(); i++) {
+            var result = mapFromPathMatcher(path, matches.get(i), 0);
+            if (result != null) {
+                return result;
+            }
         }
 
         // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
@@ -68,16 +72,21 @@ public class RequestMapper<T> {
             return null;
         }
 
-        var initialMatches = requestPaths.match(path);
-        var result = mapFromPathMatcher(path, initialMatches, 0);
-        if (result != null) {
-            int idx = nextMatchStartingIndex(initialMatches, lastMatch);
-            return mapFromPathMatcher(path, initialMatches, idx);
+        var initialMatchesList = requestPaths.match(path);
+        for (int i = 0; i < initialMatchesList.size(); i++) {
+            var result = mapFromPathMatcher(path, initialMatchesList.get(i), 0);
+            if (result != null) {
+                int idx = nextMatchStartingIndex(initialMatchesList.get(i), lastMatch);
+                RequestMatch<T> match = mapFromPathMatcher(path, initialMatchesList.get(i), idx);
+                if (match != null) {
+                    return match;
+                }
+            }
         }
 
         // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
-        initialMatches = requestPaths.defaultMatch(path);
-        result = mapFromPathMatcher(path, initialMatches, 0);
+        var initialMatches = requestPaths.defaultMatch(path);
+        var result = mapFromPathMatcher(path, initialMatches, 0);
         if (result != null) {
             int idx = nextMatchStartingIndex(initialMatches, lastMatch);
             return mapFromPathMatcher(path, initialMatches, idx);

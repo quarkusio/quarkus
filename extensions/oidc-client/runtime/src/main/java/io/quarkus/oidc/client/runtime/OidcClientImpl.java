@@ -240,6 +240,9 @@ public class OidcClientImpl implements OidcClient {
                 body.add(entry.getKey(), entry.getValue());
             }
         }
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("Token endpoint: %s, request params: %s, headers: %s", request.uri(), body, request.headers());
+        }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer)

@@ -724,4 +724,9 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         });
         return this;
     }
+
+    @Override
+    public void reset() {
+        context.response().reset();
+    }
 }

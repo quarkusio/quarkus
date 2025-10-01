@@ -363,6 +363,8 @@ Although the root logger's handlers are usually configured directly via `quarkus
 
 == Logging format
 
+=== Human-readable text
+
 {project-name} uses a pattern-based logging formatter that generates human-readable text logs by default, but you can also configure the format for each log handler by using a dedicated property.
 
 For the console handler, the property is `quarkus.log.console.format`.
@@ -399,14 +401,8 @@ The logging format string supports the following symbols:
 |%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format `{value1.value2}`.
 |===
 
-
-[id="alt-console-format"]
-=== Alternative console logging formats
-
-Changing the console log format is useful, for example, when the console output of the Quarkus application is captured by a service that processes and stores the log information for later analysis.
-
 [id="json-logging"]
-==== JSON logging format
+=== JSON logging format
 
 The `quarkus-logging-json` extension might be employed to add support for the JSON logging format and its related configuration.
 
@@ -441,7 +437,21 @@ This can be achieved using different profiles, as shown in the following configu
 %test.quarkus.log.console.json.enabled=false
 ----
 
-===== Configuration
++
+. Choose the JSON logging format by setting the config property:
+[source, properties]
+----
+quarkus.log.console.json.log-format
+----
+This case will set the format for the console. The config values are:
+
+* *default*: Will generate structured logging based on the `key,values` present in the log record. MDC and NDC data will be also included nested in `mdc` and `ndc` fields.
+* *ecs*: https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Fields]. Some default fields names are modified and some otheres are added to better comply with ECS. Namely: `@timestamp`,`log.logger`, `log.level`, `process.pid`, `process.name`, `process.thread.name`, `process.thread.id`, `host.hostname`, `event.sequence`, `error.message`, `error.stack_trace`, `ecs.version`, `data_stream.type`, `service.name`, `service.version` and `service.environment`.
+* *gcp*: https://cloud.google.com/logging/docs/structured-logging#structured_logging_special_fields[Google Cloud]. Follows the `Default` format and when the xref:opentelemetry-tracing.adoc[OpenTelemetry] is used, tracing data present in the `mdc` field is flattened and copied to `spanId`,  `traceSampled` and `trace`, but this last one with a prefix. GCP requires the `trace` to follow this semantic: `"projects/<my-trace-project>/traces/12345"`. Where `<my-trace-project>` has the same value as the `quarkus.application.name` config property.
++
+
+
+==== Configuration
 
 Configure the JSON logging extension using supported properties to customize its behavior.
 

@@ -338,9 +338,11 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 request.putHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
-
-        LOG.debugf("%s token: %s params: %s headers: %s", (introspect ? "Introspect" : "Get"), metadata.getTokenUri(), formBody,
-                request.headers());
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("%s token: %s params: %s headers: %s", (introspect ? "Introspect" : "Get"), metadata.getTokenUri(),
+                    formBody,
+                    request.headers());
+        }
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
 
         OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;

@@ -212,6 +212,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                                     label="${key}"
                                     helper-text="${prop.inputSchema.properties[key].description}"
                                     placeholder="${prop.inputSchema.properties[key].type}"
+                                    ?required="${(prop.inputSchema.required ?? []).includes(key)}"
                                     @input=${(e) => this._updateSelectedValue(prop.name, key, e)}
                                     @blur=${(e) => this._updateSelectedValue(prop.name, key, e)}
                                   ></vaadin-text-field>

@@ -42,6 +42,24 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
+
+    private enum TokenOperation {
+        GET("Get"),
+        REFRESH("Refresh"),
+        INTROSPECT("Introspect"),
+        REVOKE("Revoke");
+
+        String op;
+
+        TokenOperation(String op) {
+            this.op = op;
+        }
+
+        String operation() {
+            return op;
+        }
+    }
+
     private static final Logger LOG = Logger.getLogger(OidcProviderClientImpl.class);
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
@@ -214,7 +232,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
         final OidcRequestContextProperties requestProps = getRequestProps(null, null);
-        return getHttpResponse(requestProps, metadata.getIntrospectionUri(), introspectionParams, true)
+        return getHttpResponse(requestProps, metadata.getIntrospectionUri(), introspectionParams, TokenOperation.INTROSPECT,
+                OidcEndpoint.Type.INTROSPECTION)
                 .transform(resp -> getTokenIntrospection(requestProps, resp));
     }
 
@@ -234,7 +253,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             codeGrantParams.addAll(oidcConfig.codeGrant().extraParams());
         }
         final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.AUTHORIZATION_CODE);
-        return getHttpResponse(requestProps, metadata.getTokenUri(), codeGrantParams, false)
+        return getHttpResponse(requestProps, metadata.getTokenUri(), codeGrantParams, TokenOperation.GET,
+                OidcEndpoint.Type.TOKEN)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
@@ -243,7 +263,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
         final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
-        return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, false)
+        return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
+                OidcEndpoint.Type.TOKEN)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
@@ -263,7 +284,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, token);
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN_TYPE_HINT, tokenTypeHint);
 
-            return getHttpResponse(requestProps, metadata.getRevocationUri(), tokenRevokeParams, false)
+            return getHttpResponse(requestProps, metadata.getRevocationUri(), tokenRevokeParams, TokenOperation.REVOKE,
+                    OidcEndpoint.Type.TOKEN_REVOCATION)
                     .transform(resp -> toRevokeResponse(requestProps, resp));
         } else {
             LOG.debugf("The %s token can not be revoked because the revocation endpoint URL is not set", tokenTypeHint);
@@ -282,7 +304,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     private UniOnItem<HttpResponse<Buffer>> getHttpResponse(OidcRequestContextProperties requestProps, String uri,
-            MultiMap formBody, boolean introspect) {
+            MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType) {
         HttpRequest<Buffer> request = client.postAbs(uri);
 
         Buffer buffer = null;
@@ -291,7 +313,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             request.putHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
             request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
 
-            if (introspect && introspectionBasicAuthScheme != null) {
+            if (isIntrospection(op) && introspectionBasicAuthScheme != null) {
                 request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
                 if (oidcConfig.clientId().isPresent() && oidcConfig.introspectionCredentials().includeClientId()) {
                     formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
@@ -339,14 +361,12 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             }
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s token: %s params: %s headers: %s", (introspect ? "Introspect" : "Get"), metadata.getTokenUri(),
-                    formBody,
-                    request.headers());
+            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(), request.headers(),
+                    formBody);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
 
-        OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer)
                 .sendBuffer(OidcCommonUtils.getRequestBuffer(requestProps, buffer))
                 .onFailure(SocketException.class)
                 .retry()
@@ -475,4 +495,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     record UserInfoResponse(String contentType, String data) {
     }
 
+    static boolean isIntrospection(TokenOperation op) {
+        return op == TokenOperation.INTROSPECT;
+    }
 }

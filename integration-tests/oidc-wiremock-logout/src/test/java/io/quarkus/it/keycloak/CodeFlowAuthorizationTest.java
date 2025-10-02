@@ -1,19 +1,14 @@
 package io.quarkus.it.keycloak;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.net.URI;
-import java.time.Duration;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
@@ -26,7 +21,6 @@ import org.htmlunit.util.Cookie;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -48,13 +42,12 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
-    public void testBackChannelLogoutForDynamicTenants() throws IOException {
+    public void testBackChannelLogoutForDynamicTenants() throws Exception {
         testCodeFlowFormPostAndBackChannelLogout("dynamic-tenant-one", "back-channel-logout/dynamic-tenant-one");
         testCodeFlowFormPostAndBackChannelLogout("dynamic-tenant-two", "back-channel-logout/dynamic-tenant-two");
     }
 
-    private void testCodeFlowFormPostAndBackChannelLogout(String tenantId, String backChannelPath) throws IOException {
-        defineRevokeTokenStubs();
+    private void testCodeFlowFormPostAndBackChannelLogout(String tenantId, String backChannelPath) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/service/" + tenantId);
@@ -111,42 +104,19 @@ public class CodeFlowAuthorizationTest {
 
             assertNull(getSessionCookie(webClient, tenantId));
 
-            await().atMost(10, TimeUnit.SECONDS)
-                    .pollInterval(Duration.ofSeconds(3))
-                    .until(new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() throws Exception {
-                            try {
-                                wireMockServer.verify(2,
-                                        postRequestedFor(urlPathMatching("/auth/realms/quarkus/revoke")));
-                                return true;
-                            } catch (Throwable t) {
-                                return false;
-                            }
-                        }
-                    });
+            Thread.sleep(3000);
 
-            wireMockServer.verify(2,
-                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/revoke")));
+            wireMockServer.verify(1,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/revoke"))
+                            .withHeader("token-revocation-filter", equalTo("access-token")));
+            wireMockServer.verify(1,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/revoke"))
+                            .withHeader("token-revocation-filter", equalTo("refresh-token")));
+
             wireMockServer.resetRequests();
 
             webClient.getCookieManager().clearCookies();
         }
-    }
-
-    private void defineRevokeTokenStubs() {
-        wireMockServer
-                .stubFor(WireMock.post("/auth/realms/quarkus/revoke")
-                        .withRequestBody(containing("token"))
-                        .withRequestBody(containing("token_type_hint=access_token"))
-                        .willReturn(WireMock.aResponse()
-                                .withStatus(200)));
-        wireMockServer
-                .stubFor(WireMock.post("/auth/realms/quarkus/revoke")
-                        .withRequestBody(containing("token"))
-                        .withRequestBody(containing("token_type_hint=refresh_token"))
-                        .willReturn(WireMock.aResponse()
-                                .withStatus(200)));
     }
 
     private WebClient createWebClient() {

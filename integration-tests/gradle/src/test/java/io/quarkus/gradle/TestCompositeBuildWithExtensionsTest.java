@@ -1,10 +1,10 @@
 package io.quarkus.gradle;
 
+import static io.quarkus.gradle.util.AppModelDeserializer.deserializeAppModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -70,13 +70,5 @@ public class TestCompositeBuildWithExtensionsTest extends QuarkusGradleWrapperTe
             this.testProjectDir = projectDir;
         }
         return testProjectDir;
-    }
-
-    private static ApplicationModel deserializeAppModel(Path path) throws IOException {
-        try (ObjectInputStream out = new ObjectInputStream(Files.newInputStream(path))) {
-            return (ApplicationModel) out.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

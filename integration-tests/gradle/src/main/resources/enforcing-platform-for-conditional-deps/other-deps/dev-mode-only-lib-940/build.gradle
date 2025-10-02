@@ -1,0 +1,32 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroup 'org.enforcing.deps' // for dependencies built in this test
+            includeGroup 'org.enforcing.conditional' // for dependencies built in this test
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.enforcing.deps:simple-dependency:1.0.0'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.enforcing.conditional'
+            artifactId = 'dev-mode-only-lib'
+            version = '9.4.0'
+
+            from components.java
+        }
+    }
+}

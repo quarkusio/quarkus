@@ -60,9 +60,8 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
     private boolean enabled;
 
     public CompletableFuture<Void> connectToServer(int port) {
-
-        TracingMessageConsumer tracing = new TracingMessageConsumer();
-        ServerTrace serverTrace = ServerTrace.verbose;
+        ServerTrace serverTrace = ServerTrace.getDefaultValue();
+        TracingMessageConsumer tracing = serverTrace != ServerTrace.off ? new TracingMessageConsumer() : null;
         UnaryOperator<MessageConsumer> wrapper = consumer -> {
             MessageConsumer result = consumer;
             if (tracing != null) {

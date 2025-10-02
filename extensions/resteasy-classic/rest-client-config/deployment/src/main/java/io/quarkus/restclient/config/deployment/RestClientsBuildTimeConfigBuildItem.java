@@ -20,6 +20,7 @@ import io.quarkus.restclient.config.AbstractRestClientConfigBuilder;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientKeysProvider;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -105,7 +106,8 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
 
         // First config in the rest client service
         restClientsBuildTimeConfig.clients().get(restClientInterface.name().toString()).scope()
-                .ifPresent(s -> discoveredScopes.add(Optional.of(builtinScopeFromName(DotName.createSimple(s)))));
+                .ifPresent(s -> discoveredScopes
+                        .add(builtinScopeFromName(DotName.createSimple(s), restClientInterface.name().toString())));
 
         // Second annotation in the rest client declaration
         Set<DotName> annotations = restClientInterface.annotationsMap().keySet();
@@ -118,7 +120,8 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
 
         // Third global config
         restClientsBuildTimeConfig.scope()
-                .ifPresent(s -> discoveredScopes.add(Optional.of(builtinScopeFromName(DotName.createSimple(s)))));
+                .ifPresent(s -> discoveredScopes
+                        .add(builtinScopeFromName(DotName.createSimple(s), restClientInterface.name().toString())));
 
         Optional<BuiltinScope> scope = discoveredScopes.stream()
                 .filter(Optional::isPresent)
@@ -136,15 +139,18 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
         return Optional.empty();
     }
 
-    private static BuiltinScope builtinScopeFromName(DotName scopeName) {
+    private static Optional<BuiltinScope> builtinScopeFromName(DotName scopeName, String restClientClass) {
         BuiltinScope scope = BuiltinScope.from(scopeName);
-        if (scope == null) {
-            for (BuiltinScope builtinScope : BuiltinScope.values()) {
-                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
-                    scope = builtinScope;
-                }
+        if (scope != null) {
+            return Optional.of(scope);
+        }
+
+        for (BuiltinScope builtinScope : BuiltinScope.values()) {
+            if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
+                return Optional.of(builtinScope);
             }
         }
-        return scope;
+        throw new ConfigurationException(
+                String.format("Not possible to define the scope %s for the REST client %s ", scopeName, restClientClass));
     }
 }

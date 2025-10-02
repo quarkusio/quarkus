@@ -53,7 +53,14 @@ public class SectionNode implements TemplateNode {
                 return r;
             });
         }
-        return helper.resolve(new SectionResolutionContextImpl(context, params, engine));
+        try {
+            return helper.resolve(new SectionResolutionContextImpl(context, params, engine));
+        } catch (Throwable t) {
+            if (t instanceof TemplateException te) {
+                return CompletedStage.failure(te);
+            }
+            return CompletedStage.failure(new TemplateException(t));
+        }
     }
 
     @Override

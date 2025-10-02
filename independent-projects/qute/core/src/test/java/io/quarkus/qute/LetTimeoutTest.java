@@ -27,7 +27,7 @@ public class LetTimeoutTest {
 
         assertThatThrownBy(instance::render)
                 .isInstanceOf(TemplateException.class)
-                .hasRootCauseMessage("Rendering error: Key \"c\" not found in the map with keys [a] in expression {c}");
+                .hasMessage("Rendering error: Key \"c\" not found in the map with keys [a] in expression {c}");
     }
 
     @Test
@@ -42,7 +42,7 @@ public class LetTimeoutTest {
         }
         assertThatThrownBy(instance::render)
                 .isInstanceOf(TemplateException.class)
-                .hasRootCauseMessage(
+                .hasMessage(
                         "Rendering error: Key \"c\" not found in the template data map with keys [a] in expression {c}");
     }
 
@@ -58,7 +58,7 @@ public class LetTimeoutTest {
         }
         assertThatThrownBy(instance::render)
                 .isInstanceOf(TemplateException.class)
-                .hasRootCauseMessage(
+                .hasMessage(
                         "Rendering error: Key \"c\" not found in the template data map with keys [a] in expression {c}");
     }
 
@@ -73,7 +73,7 @@ public class LetTimeoutTest {
         }
         assertThatThrownBy(instance::render)
                 .isInstanceOf(TemplateException.class)
-                .hasRootCauseMessage(
+                .hasMessage(
                         "Rendering error: Key \"c\" not found in the template data map with keys [a] in expression {c}");
     }
 }

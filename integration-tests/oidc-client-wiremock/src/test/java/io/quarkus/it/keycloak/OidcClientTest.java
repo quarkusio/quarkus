@@ -112,7 +112,7 @@ public class OidcClientTest {
     @Test
     public void testEchoAndRefreshTokens() {
         // access_token_1 and refresh_token_1 are acquired using a password grant request.
-        // access_token_1 expires in 4 seconds, refresh_token_1 has no lifespan limit as no `refresh_expires_in` property is returned.
+        // access_token_1 expires in 6 seconds, refresh_token_1 has no lifespan limit as no `refresh_expires_in` property is returned.
         // "Default OidcClient has acquired the tokens" record is added to the log
         RestAssured.when().get("/frontend/echoToken")
                 .then()
@@ -120,7 +120,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_1"));
 
         // Wait until the access_token_1 has expired
-        waitUntillAccessTokenHasExpired(5000);
+        waitUntillAccessTokenHasExpired(7000);
 
         // access_token_1 has expired, refresh_token_1 is assumed to be valid and used to acquire access_token_2 and refresh_token_2.
         // access_token_2 expires in 4 seconds, but refresh_token_2 - in 1 sec - it will expire by the time access_token_2 has expired
@@ -131,7 +131,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_2"));
 
         // Wait until the access_token_2 has expired
-        waitUntillAccessTokenHasExpired(5000);
+        waitUntillAccessTokenHasExpired(7000);
 
         // Both access_token_2 and refresh_token_2 have now expired therefore a password grant request is repeated,
         // as opposed to using a refresh token grant.

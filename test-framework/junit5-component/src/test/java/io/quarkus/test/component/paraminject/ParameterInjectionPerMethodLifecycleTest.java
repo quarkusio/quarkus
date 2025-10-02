@@ -7,13 +7,16 @@ import java.util.UUID;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Singleton;
 
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.component.QuarkusComponentTest;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(Lifecycle.PER_METHOD)
 @QuarkusComponentTest
 public class ParameterInjectionPerMethodLifecycleTest {

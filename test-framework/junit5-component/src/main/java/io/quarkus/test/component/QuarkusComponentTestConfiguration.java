@@ -15,8 +15,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -63,7 +65,7 @@ class QuarkusComponentTestConfiguration {
 
     static final QuarkusComponentTestConfiguration DEFAULT = new QuarkusComponentTestConfiguration(Map.of(), Set.of(),
             List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of(),
-            DEFAULT_CONVERTERS, null, false);
+            DEFAULT_CONVERTERS, null, false, null);
 
     private static final Logger LOG = Logger.getLogger(QuarkusComponentTestConfiguration.class);
 
@@ -77,12 +79,14 @@ class QuarkusComponentTestConfiguration {
     final List<AnnotationsTransformer> annotationsTransformers;
     final List<Converter<?>> configConverters;
     final Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
+    final List<QuarkusComponentTestCallbacks> callbacks;
 
     QuarkusComponentTestConfiguration(Map<String, String> configProperties, Set<Class<?>> componentClasses,
             List<MockBeanConfiguratorImpl<?>> mockConfigurators, boolean useDefaultConfigProperties,
             boolean addNestedClassesAsComponents, int configSourceOrdinal,
             List<AnnotationsTransformer> annotationsTransformers, List<Converter<?>> configConverters,
-            Consumer<SmallRyeConfigBuilder> configBuilderCustomizer, boolean useSystemConfigSources) {
+            Consumer<SmallRyeConfigBuilder> configBuilderCustomizer, boolean useSystemConfigSources,
+            List<QuarkusComponentTestCallbacks> listeners) {
         this.configProperties = configProperties;
         this.componentClasses = componentClasses;
         this.mockConfigurators = mockConfigurators;
@@ -93,6 +97,13 @@ class QuarkusComponentTestConfiguration {
         this.annotationsTransformers = annotationsTransformers;
         this.configConverters = configConverters;
         this.configBuilderCustomizer = configBuilderCustomizer;
+        if (listeners != null) {
+            this.callbacks = listeners;
+        } else {
+            ServiceLoader<QuarkusComponentTestCallbacks> loader = ServiceLoader.load(QuarkusComponentTestCallbacks.class,
+                    ComponentContainer.class.getClassLoader());
+            this.callbacks = StreamSupport.stream(loader.spliterator(), false).toList();
+        }
     }
 
     QuarkusComponentTestConfiguration update(Class<?> testClass) {
@@ -153,7 +164,11 @@ class QuarkusComponentTestConfiguration {
         return new QuarkusComponentTestConfiguration(Map.copyOf(configProperties), Set.copyOf(componentClasses),
                 this.mockConfigurators, useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
                 List.copyOf(annotationsTransformers), List.copyOf(configConverters), configBuilderCustomizer,
-                useSystemConfigSources);
+                useSystemConfigSources, callbacks);
+    }
+
+    boolean hasCallbacks() {
+        return callbacks != null && !callbacks.isEmpty();
     }
 
     private static void collectComponents(Class<?> testClass, boolean addNestedClassesAsComponents,
@@ -225,7 +240,7 @@ class QuarkusComponentTestConfiguration {
         }
         return new QuarkusComponentTestConfiguration(configProperties, componentClasses,
                 mockConfigurators, useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                annotationsTransformers, configConverters, configBuilderCustomizer, useSystemConfigSources);
+                annotationsTransformers, configConverters, configBuilderCustomizer, useSystemConfigSources, callbacks);
     }
 
     private static boolean resolvesToBuiltinBean(Class<?> rawType) {

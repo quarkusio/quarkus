@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,10 @@ import io.quarkus.arc.impl.EventBean;
 import io.quarkus.arc.impl.InstanceImpl;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.QuarkusComponentTestCallbacks.AfterStartContext;
+import io.quarkus.test.component.QuarkusComponentTestCallbacks.AfterStopContext;
+import io.quarkus.test.component.QuarkusComponentTestCallbacks.BeforeStartContext;
+import io.quarkus.test.component.QuarkusComponentTestCallbacks.ComponentTestContext;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -164,7 +169,7 @@ public class QuarkusComponentTestExtension
     public QuarkusComponentTestExtension(Class<?>... additionalComponentClasses) {
         this(new QuarkusComponentTestConfiguration(Map.of(), Set.of(additionalComponentClasses),
                 List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL,
-                List.of(), List.of(), null, false), false);
+                List.of(), List.of(), null, false, null), false);
     }
 
     QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration, boolean startShouldFail) {
@@ -177,7 +182,7 @@ public class QuarkusComponentTestExtension
         return buildShouldFail;
     }
 
-    Throwable getBuildFailure() {
+    public Throwable getBuildFailure() {
         return buildFailure.get();
     }
 
@@ -189,7 +194,7 @@ public class QuarkusComponentTestExtension
             // Therefore we need to discard the existing container here
             cleanup(context);
         }
-        buildContainer(context);
+        initContainer(context);
         startContainer(context, Lifecycle.PER_CLASS);
         LOG.debugf("beforeAll: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
@@ -340,7 +345,7 @@ public class QuarkusComponentTestExtension
         injectedParams.clear();
     }
 
-    private void buildContainer(ExtensionContext context) {
+    private void initContainer(ExtensionContext context) {
         if (getContainerState(context) != ContainerState.UNINITIALIZED) {
             return;
         }
@@ -433,6 +438,15 @@ public class QuarkusComponentTestExtension
                     ConfigProviderResolver.class);
             ConfigProviderResolver.setInstance(oldConfigProviderResolver);
             setContainerState(context, ContainerState.STOPPED);
+
+            QuarkusComponentTestConfiguration configuration = store(context).get(KEY_TEST_CLASS_CONFIG,
+                    QuarkusComponentTestConfiguration.class);
+            if (configuration.hasCallbacks()) {
+                AfterStopContext afterStopContext = new AfterStopContextImpl(context.getRequiredTestClass());
+                for (QuarkusComponentTestCallbacks callbacks : configuration.callbacks) {
+                    callbacks.afterStop(afterStopContext);
+                }
+            }
         }
     }
 
@@ -479,6 +493,18 @@ public class QuarkusComponentTestExtension
             configuration = configuration.update(testMethod.get());
         }
 
+        Map<String, String> configProperties;
+        if (configuration.hasCallbacks()) {
+            BeforeStartContextImpl beforeStartContext = new BeforeStartContextImpl(context.getRequiredTestClass(),
+                    configuration.configProperties);
+            for (QuarkusComponentTestCallbacks callbacks : configuration.callbacks) {
+                callbacks.beforeStart(beforeStartContext);
+            }
+            configProperties = Map.copyOf(beforeStartContext.configProperties);
+        } else {
+            configProperties = configuration.configProperties;
+        }
+
         ConfigProviderResolver oldConfigProviderResolver = ConfigProviderResolver.instance();
         store(context).put(KEY_OLD_CONFIG_PROVIDER_RESOLVER, oldConfigProviderResolver);
 
@@ -494,7 +520,7 @@ public class QuarkusComponentTestExtension
                 // See https://github.com/quarkusio/quarkus/issues/48899 for more details
                 .addPropertiesSources()
                 .withSources(
-                        new QuarkusComponentTestConfigSource(configuration.configProperties,
+                        new QuarkusComponentTestConfigSource(configProperties,
                                 configuration.configSourceOrdinal));
 
         if (configuration.useSystemConfigSources) {
@@ -526,6 +552,13 @@ public class QuarkusComponentTestExtension
         // Injected test method parameters
         store(context).put(KEY_INJECTED_PARAMS, new CopyOnWriteArrayList<>());
         setContainerState(context, ContainerState.STARTED);
+
+        if (configuration.hasCallbacks()) {
+            AfterStartContext afterStartContext = new AfterStartContextImpl(context.getRequiredTestClass());
+            for (QuarkusComponentTestCallbacks callbacks : configuration.callbacks) {
+                callbacks.afterStart(afterStartContext);
+            }
+        }
     }
 
     static Store store(ExtensionContext context) {
@@ -789,6 +822,53 @@ public class QuarkusComponentTestExtension
             return ((ParameterizedType) typeArgument).getRawType().equals(InstanceHandle.class);
         }
         return false;
+    }
+
+    static class ComponentTestContextImpl implements ComponentTestContext {
+
+        private final Class<?> testClass;
+
+        ComponentTestContextImpl(Class<?> testClass) {
+            this.testClass = testClass;
+        }
+
+        @Override
+        public Class<?> getTestClass() {
+            return testClass;
+        }
+
+    }
+
+    private static class BeforeStartContextImpl extends ComponentTestContextImpl implements BeforeStartContext {
+
+        private final Map<String, String> configProperties;
+
+        BeforeStartContextImpl(Class<?> testClass, Map<String, String> existingProperties) {
+            super(testClass);
+            this.configProperties = new HashMap<>(existingProperties);
+        }
+
+        @Override
+        public void setConfigProperty(String key, String value) {
+            configProperties.put(key, value);
+        }
+
+    }
+
+    private static class AfterStartContextImpl extends ComponentTestContextImpl implements AfterStartContext {
+
+        AfterStartContextImpl(Class<?> testClass) {
+            super(testClass);
+        }
+
+    }
+
+    private static class AfterStopContextImpl extends ComponentTestContextImpl implements AfterStopContext {
+
+        AfterStopContextImpl(Class<?> testClass) {
+            super(testClass);
+        }
+
     }
 
 }

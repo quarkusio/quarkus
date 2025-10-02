@@ -863,7 +863,7 @@ public class JunitTestRunner {
                             ClassLoader excl = (ClassLoader) getClassLoader.invoke(ecl, componentTestClass, cl);
                             utClasses.add(excl.loadClass(componentTestClass));
                         } catch (Exception e) {
-                            log.debug(e);
+                            log.debug(e.getMessage(), e);
                             log.warnf("Failed to load component test class %s, it will not be executed this run.",
                                     componentTestClass);
                         }

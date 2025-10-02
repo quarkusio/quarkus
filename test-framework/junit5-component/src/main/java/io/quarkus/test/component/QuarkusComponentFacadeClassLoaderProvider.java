@@ -72,7 +72,7 @@ public class QuarkusComponentFacadeClassLoaderProvider implements FacadeClassLoa
                 return new QuarkusComponentTestClassLoader(parent, name,
                         ComponentContainer.build(inspectionClass, configuration, buildShouldFail, tracedClasses));
             } catch (Exception e) {
-                LOG.errorf("Unable to build container for %s", name);
+                throw new IllegalStateException("Unable to build container for %s".formatted(name), e);
             }
         }
         return null;

@@ -164,7 +164,7 @@ public class QuarkusComponentTestExtensionBuilder {
         return new MockBeanConfiguratorImpl<>(this, beanClass);
     }
 
-    QuarkusComponentTestExtensionBuilder buildShouldFail() {
+    public QuarkusComponentTestExtensionBuilder buildShouldFail() {
         this.buildShouldFail = true;
         return this;
     }
@@ -185,7 +185,7 @@ public class QuarkusComponentTestExtensionBuilder {
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
                 Set.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
                 addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer, useSystemConfigSources),
+                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer, useSystemConfigSources, null),
                 buildShouldFail);
     }
 

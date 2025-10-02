@@ -16,7 +16,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.impl.protocol.Codec27;
+import org.infinispan.client.hotrod.impl.protocol.Codec41;
 import org.infinispan.commons.util.NullValue;
 import org.reactivestreams.FlowAdapters;
 
@@ -288,7 +288,7 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
         Flow.Publisher<Map.Entry> entriesPublisher = FlowAdapters
-                .toFlowPublisher(remoteCache.publishEntries(Codec27.EMPTY_VALUE_CONVERTER, null, null, 512));
+                .toFlowPublisher(remoteCache.publishEntries(Codec41.EMPTY_VALUE_CONVERTER, null, null, 512));
         return Uni.createFrom().multi(Multi.createFrom().publisher(entriesPublisher)
                 .map(e -> ((Map.Entry<Object, Object>) e).getKey())
                 .filter(key -> predicate.test(key))

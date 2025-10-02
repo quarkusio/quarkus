@@ -1,0 +1,3 @@
+tasks.register('publishToMavenLocal', Exec) {
+    commandLine 'mvn', '-q', 'clean', 'install'
+}

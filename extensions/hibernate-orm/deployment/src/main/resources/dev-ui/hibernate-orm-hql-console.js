@@ -286,14 +286,11 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
         const configPromise = this.configJsonRpc.getAllValues();
         const infoPromise = this.jsonRpc.getInfo();
         Promise.all([configPromise, infoPromise]).then(responses => {
-            const configResponse = responses[0];
-            const infoResponse = responses[1];
-            if (configResponse && configResponse.result) {
-                const allowHqlConfig = configResponse.result['quarkus.hibernate-orm.dev-ui.allow-hql'];
-                this._allowHql = allowHqlConfig && allowHqlConfig === 'true';
-            }
-            if (infoResponse && infoResponse.result) {
-                this._persistenceUnits = infoResponse.result.persistenceUnits;
+            const configValues = responses[0].result;
+            this._allowHql = configValues['quarkus.hibernate-orm.dev-ui.allow-hql'] === 'true';
+            const infoResponse = responses[1].result;
+            if (infoResponse) {
+                this._persistenceUnits = infoResponse.persistenceUnits;
                 this._selectPersistenceUnit(this._persistenceUnits[0]);
             }
         }).catch(error => {

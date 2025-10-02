@@ -29,10 +29,7 @@ class AgroalDevUIProcessor {
                 cardPageBuildItem.addPage(Page.webComponentPageBuilder()
                         .icon("font-awesome-solid:database")
                         .title("Database view")
-                        .componentLink("qwc-agroal-datasource.js")
-                        .metadata("allowSql", String.valueOf(config.devui().allowSql()))
-                        .metadata("appendSql", config.devui().appendToDefaultSelect().orElse(""))
-                        .metadata("allowedHost", config.devui().allowedDBHost().orElse(null)));
+                        .componentLink("qwc-agroal-datasource.js"));
             }
         }
 

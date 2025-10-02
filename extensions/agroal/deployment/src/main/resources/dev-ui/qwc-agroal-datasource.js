@@ -1,6 +1,6 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
-import { RouterController } from 'router-controller';
 import { JsonRpc } from 'jsonrpc';
+import { StorageController } from 'storage-controller';
 import '@vaadin/combo-box';
 import '@vaadin/item';
 import '@vaadin/icon';
@@ -10,7 +10,7 @@ import '@qomponent/qui-card';
 import '@vaadin/grid';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
-import { columnBodyRenderer, columnHeaderRenderer } from '@vaadin/grid/lit.js';
+import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import 'qui-themed-code-block';
 import { notifier } from 'notifier';
 import '@vaadin/progress-bar';
@@ -21,7 +21,7 @@ import '@qomponent/qui-dot';
 import 'qui-assistant-button';
 import 'qui-assistant-warning';
 import '@qomponent/qui-badge';
-import { dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { observeState } from 'lit-element-state';
 import { assistantState } from 'assistant-state';
 
@@ -31,9 +31,8 @@ import { assistantState } from 'assistant-state';
 export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
     configJsonRpc = new JsonRpc("devui-configuration");
-    
-    routerController = new RouterController(this);
-    
+    storageControl = new StorageController(this);
+
     static styles = css`
         .dataSources{
             display: flex;
@@ -228,32 +227,31 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         this._showAssistantWarning = false;
         this._showImportSQLDialog = false;
         this._showErDiagramDialog = false;
-        this._englishToSQLEnabled = false;
+        this._englishToSQLEnabled = this.storageControl.get("english-to-sql") === "true";
         this._englishToSQLLoadingMessage = null;
     }
     
     connectedCallback() {
         super.connectedCallback();
-        
-        var page = this.routerController.getCurrentPage();
-        if(page && page.metadata){
-            this._allowSql = (page.metadata.allowSql === "true");
-            this._appendSql = page.metadata.appendSql;
-            this._allowedHost = page.metadata.allowedHost;
-        }else{
-            this._allowSql = false;
-            this._appendSql = "";
-            this._allowedHost = null;
-        }
-        
-        this.jsonRpc.getDataSources().then(jsonRpcResponse => {
-            this._dataSources = jsonRpcResponse.result.reduce((map, obj) => {
+        this.hotReload();
+    }
+
+    hotReload(){
+        const configPromise = this.configJsonRpc.getAllValues();
+        const dbPromise = this.jsonRpc.getDataSources();
+        Promise.all([configPromise, dbPromise]).then(values => {
+            const configValues = values[0].result;
+            this._allowSql = configValues['quarkus.datasource.dev-ui.allow-sql'] === 'true';
+            this._appendSql = configValues['quarkus.datasource.dev-ui.append-to-default-select'] || "";
+            this._allowedHost = configValues['quarkus.datasource.dev-ui.allowed-db-host'] || null;
+            const dsResponse = values[1].result;
+            if (dsResponse) {
+                this._dataSources = dsResponse.reduce((map, obj) => {
                     map[obj.name] = obj;
                     return map;
-              }, {});
+                }, {});
+            }
         });
-        
-        this._englishToSQLEnabled = false; // TODO: Load from storage
     }
     
     disconnectedCallback() {
@@ -663,7 +661,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                     ${this._renderInputTextField()}
                     <vaadin-button class="no-margin" theme="icon tertiary small" aria-label="Clear">
                         <vaadin-tooltip .hoverDelay=${500} slot="tooltip" text="Clear"></vaadin-tooltip>
-                        <vaadin-icon class="small-icon" @click=${this._clearInput}
+                        <vaadin-icon class="small-icon" @click=${() => this._clearInput(this._englishToSQLEnabled)}
                                      icon="font-awesome-solid:broom"></vaadin-icon>
                     </vaadin-button>
                     <vaadin-button class="no-margin" theme="icon tertiary small" aria-label="Run">
@@ -700,11 +698,8 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     }
     
     _switchEnglishToSQL(){
-        if(this._englishToSQLEnabled){
-            this._englishToSQLEnabled = false;
-        }else{
-            this._englishToSQLEnabled = true;
-        }
+        this._englishToSQLEnabled = !this._englishToSQLEnabled;
+        this.storageControl.set("english-to-sql", this._englishToSQLEnabled);
     }
     
     _englishKeyDown(e){
@@ -823,7 +818,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         this._fetchTableDefinitions();
         this._selectedTableIndex = event.detail.value;
         this._selectedTable = this._tables[this._selectedTableIndex];
-        this._clearInput();
+        this._clearInput(false);
     }
     
     _previousPage(){
@@ -862,7 +857,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                     notifier.showErrorMessage(jsonRpcResponse.result.error);
                 } else if (jsonRpcResponse.result.message){
                     notifier.showInfoMessage(jsonRpcResponse.result.message);
-                    this._clearInput();
+                    this._clearInput(false);
                 } else {
                     this._currentDataSet = jsonRpcResponse.result;
                     this._currentNumberOfPages = this._getNumberOfPages();
@@ -934,13 +929,13 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                                         this._executeSQL(sql);
                                     }
                                 });
-        
-        
+
+
         
     }
     
-    _clearInput(){
-        if(assistantState.current.isConfigured && this._englishToSQLEnabled){
+    _clearInput(englishToSql){
+        if(englishToSql && assistantState.current.isConfigured){
             this._currentEnglish = null;
             this.shadowRoot.getElementById('assistantInput').value = '';
         }else{
@@ -966,10 +961,6 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     
     _startsWithIgnoreCaseAndSpaces(str, searchString) {
         return str.trim().toLowerCase().startsWith(searchString.toLowerCase());
-    }
-    
-    hotReload(){
-        this._fetchTableDefinitions();
     }
     
     _isAllowedHostDatabase() {

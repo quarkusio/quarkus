@@ -132,8 +132,17 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             return parameter(name, String.class, description);
         }
 
+        public ActionBuilder parameter(String name, String description, boolean required) {
+            return parameter(name, String.class, description, required);
+        }
+
         public ActionBuilder parameter(String name, Class<?> type, String description) {
-            this.parameters.put(name, new AbstractJsonRpcMethod.Parameter(type, description));
+            this.parameters.put(name, new AbstractJsonRpcMethod.Parameter(type, description, true));
+            return this;
+        }
+
+        public ActionBuilder parameter(String name, Class<?> type, String description, boolean required) {
+            this.parameters.put(name, new AbstractJsonRpcMethod.Parameter(type, description, required));
             return this;
         }
 
@@ -217,8 +226,17 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
             return parameter(name, String.class, description);
         }
 
+        public SubscriptionBuilder parameter(String name, String description, boolean required) {
+            return parameter(name, String.class, description, required);
+        }
+
         public SubscriptionBuilder parameter(String name, Class<?> type, String description) {
-            this.parameters.put(name, new AbstractJsonRpcMethod.Parameter(type, description));
+            this.parameters.put(name, new AbstractJsonRpcMethod.Parameter(type, description, true));
+            return this;
+        }
+
+        public SubscriptionBuilder parameter(String name, Class<?> type, String description, boolean required) {
+            this.parameters.put(name, new AbstractJsonRpcMethod.Parameter(type, description, required));
             return this;
         }
 

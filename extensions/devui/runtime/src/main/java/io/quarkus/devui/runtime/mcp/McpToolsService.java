@@ -115,7 +115,9 @@ public class McpToolsService {
                 if (p.getDescription() != null && !p.getDescription().isBlank()) {
                     prop.put("description", p.getDescription());
                 }
-                required.add(parameter.getKey()); // TODO: Check for optional here
+                if (p.isRequired()) {
+                    required.add(parameter.getKey());
+                }
                 props.put(parameter.getKey(), prop);
 
             }

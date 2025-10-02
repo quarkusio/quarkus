@@ -44,6 +44,7 @@ import org.yaml.snakeyaml.Yaml;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -388,7 +389,12 @@ public class DevUIProcessor {
                         Map<String, AbstractJsonRpcMethod.Parameter> parameters = new LinkedHashMap<>(); // Keep the order
                         for (int i = 0; i < method.parametersCount(); i++) {
                             String description = null;
+                            boolean required = true;
                             Type parameterType = method.parameterType(i);
+                            if (DotNames.OPTIONAL.equals(parameterType.name())) {
+                                required = false;
+                                parameterType = parameterType.asParameterizedType().arguments().get(0);
+                            }
                             AnnotationInstance jsonRpcDescriptionAnnotation = method.parameters().get(i)
                                     .annotation(descriptionAnnotation);
                             if (jsonRpcDescriptionAnnotation != null) {
@@ -399,7 +405,8 @@ public class DevUIProcessor {
                             }
                             Class<?> parameterClass = toClass(parameterType);
                             String parameterName = method.parameterName(i);
-                            parameters.put(parameterName, new AbstractJsonRpcMethod.Parameter(parameterClass, description));
+                            parameters.put(parameterName,
+                                    new AbstractJsonRpcMethod.Parameter(parameterClass, description, required));
                         }
 
                         // Look for @JsonRpcUsage annotation
@@ -548,7 +555,8 @@ public class DevUIProcessor {
         o.setMcpEnabledByDefault(i.isMcpEnabledByDefault());
         if (i.hasParameters()) {
             for (Map.Entry<String, AbstractJsonRpcMethod.Parameter> ip : i.getParameters().entrySet()) {
-                o.addParameter(ip.getKey(), ip.getValue().getType(), ip.getValue().getDescription());
+                o.addParameter(ip.getKey(), ip.getValue().getType(), ip.getValue().getDescription(),
+                        ip.getValue().isRequired());
             }
         }
 

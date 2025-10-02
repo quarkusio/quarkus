@@ -64,13 +64,25 @@ public abstract class AbstractJsonRpcMethod {
     public void addParameter(String name, String description) {
         if (this.parameters == null)
             this.parameters = new LinkedHashMap<>();
-        this.parameters.put(name, new Parameter(String.class, description));
+        this.parameters.put(name, new Parameter(String.class, description, true));
+    }
+
+    public void addParameter(String name, String description, boolean required) {
+        if (this.parameters == null)
+            this.parameters = new LinkedHashMap<>();
+        this.parameters.put(name, new Parameter(String.class, description, required));
     }
 
     public void addParameter(String name, Class<?> type, String description) {
         if (this.parameters == null)
             this.parameters = new LinkedHashMap<>();
-        this.parameters.put(name, new Parameter(type, description));
+        this.parameters.put(name, new Parameter(type, description, true));
+    }
+
+    public void addParameter(String name, Class<?> type, String description, boolean required) {
+        if (this.parameters == null)
+            this.parameters = new LinkedHashMap<>();
+        this.parameters.put(name, new Parameter(type, description, required));
     }
 
     public boolean hasParameters() {
@@ -96,14 +108,24 @@ public abstract class AbstractJsonRpcMethod {
     public static class Parameter {
         private Class<?> type;
         private String description;
+        private boolean required;
 
         public Parameter() {
 
         }
 
-        public Parameter(Class<?> type, String description) {
+        public Parameter(Class<?> type, String description, boolean required) {
             this.type = type;
             this.description = description;
+            this.required = required;
+        }
+
+        public boolean isRequired() {
+            return required;
+        }
+
+        public void setRequired(boolean required) {
+            this.required = required;
         }
 
         public Class<?> getType() {

@@ -22,6 +22,7 @@ public enum ServerTrace {
     verbose; // show message with detail
 
     public static ServerTrace getDefaultValue() {
+        // Return verbose here to enable DAP trace output in the console.
         return off;
     }
 

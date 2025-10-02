@@ -1,18 +1,23 @@
 package io.quarkus.qute.runtime;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class QuteRecorder {
 
-    public Supplier<Object> createContext(List<String> templatePaths, List<String> tags, Map<String, List<String>> variants,
-            Set<String> templateRoots, Map<String, String> templateContents, List<String> excludePatterns) {
+    public Supplier<Object> createContext(Map<String, List<String>> variants,
+            Set<String> templateRoots, List<String> excludePatterns,
+            Map<String, TemplateInfo> templates) {
         return new Supplier<Object>() {
 
             @Override
@@ -23,13 +28,8 @@ public class QuteRecorder {
                     volatile List<String> templateGlobalProviderClasses;
 
                     @Override
-                    public List<String> getTemplatePaths() {
-                        return templatePaths;
-                    }
-
-                    @Override
-                    public List<String> getTags() {
-                        return tags;
+                    public Map<String, TemplateInfo> getTemplates() {
+                        return templates;
                     }
 
                     @Override
@@ -56,11 +56,6 @@ public class QuteRecorder {
                     @Override
                     public Set<String> getTemplateRoots() {
                         return templateRoots;
-                    }
-
-                    @Override
-                    public Map<String, String> getTemplateContents() {
-                        return templateContents;
                     }
 
                     @Override
@@ -92,17 +87,13 @@ public class QuteRecorder {
 
         List<String> getResolverClasses();
 
-        List<String> getTemplatePaths();
-
-        List<String> getTags();
+        Map<String, TemplateInfo> getTemplates();
 
         Map<String, List<String>> getVariants();
 
         List<String> getTemplateGlobalProviderClasses();
 
         Set<String> getTemplateRoots();
-
-        Map<String, String> getTemplateContents();
 
         List<String> getExcludePatterns();
 
@@ -114,6 +105,55 @@ public class QuteRecorder {
          * @param templateGlobalProviderClasses
          */
         void setGeneratedClasses(List<String> resolverClasses, List<String> templateGlobalProviderClasses);
+
+        default List<String> getTags() {
+            List<String> ret = new ArrayList<>();
+            for (TemplateInfo template : getTemplates().values()) {
+                if (template.isTag()) {
+                    ret.add(template.path.substring(EngineProducer.TAGS.length(), template.path.length()));
+                }
+            }
+            return ret;
+        }
+
+    }
+
+    public static class TemplateInfo {
+
+        public final String path;
+        public final String source;
+        public final String content;
+
+        @RecordableConstructor
+        public TemplateInfo(String path, String source, String content) {
+            this.path = path;
+            this.source = source;
+            this.content = content;
+        }
+
+        public boolean isTag() {
+            return path.startsWith(EngineProducer.TAGS);
+        }
+
+        public boolean hasContent() {
+            return content != null;
+        }
+
+        public URI parseSource() {
+            if (source != null) {
+                try {
+                    return new URI(source);
+                } catch (URISyntaxException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return "TemplateInfo [path=" + path + ", source=" + source + "]";
+        }
 
     }
 

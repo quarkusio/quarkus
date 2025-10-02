@@ -1,9 +1,11 @@
 package io.quarkus.qute.deployment;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
 
 /**
@@ -44,8 +46,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
         return new Builder();
     }
 
-    static final String TAGS = "tags/";
-
     private final String path;
     private final String content;
     private final Path fullPath;
@@ -53,25 +53,16 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     private final int priority;
 
-    /**
-     *
-     * @param path
-     * @param fullPath
-     * @param content
-     * @deprecated Use the {@link #builder()} instead
-     */
-    @Deprecated(forRemoval = true, since = "3.13")
-    public TemplatePathBuildItem(String path, Path fullPath, String content) {
-        this(Objects.requireNonNull(path), Objects.requireNonNull(content), Objects.requireNonNull(fullPath), null,
-                BUILD_ITEM_PRIORITY);
-    }
+    private final URI source;
 
-    private TemplatePathBuildItem(String path, String content, Path fullPath, String extensionInfo, int priority) {
+    private TemplatePathBuildItem(String path, String content, Path fullPath, String extensionInfo, int priority,
+            URI source) {
         this.path = path;
         this.content = content;
         this.fullPath = fullPath;
         this.extensionInfo = extensionInfo;
         this.priority = priority;
+        this.source = source;
     }
 
     /**
@@ -93,6 +84,14 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
      */
     public Path getFullPath() {
         return fullPath;
+    }
+
+    /**
+     *
+     * @return the source, or {@code null} if not available
+     */
+    public URI getSource() {
+        return source;
     }
 
     /**
@@ -125,7 +124,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
     public boolean isTag() {
-        return path.startsWith(TAGS);
+        return path.startsWith(EngineProducer.TAGS);
     }
 
     /**
@@ -153,6 +152,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
         private String path;
         private String content;
         private Path fullPath;
+        private URI source;
         private String extensionInfo;
         private int priority = BUILD_ITEM_PRIORITY;
 
@@ -193,6 +193,17 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
         }
 
         /**
+         * Set the source path of the template.
+         *
+         * @param source
+         * @return self
+         */
+        public Builder source(URI source) {
+            this.source = source;
+            return this;
+        }
+
+        /**
          * Set the extension info for templates that are not backed by a file.
          *
          * @param info
@@ -219,7 +230,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
             if (fullPath == null && extensionInfo == null) {
                 throw new IllegalStateException("Templates that are not backed by a file must provide extension info");
             }
-            return new TemplatePathBuildItem(path, content, fullPath, extensionInfo, priority);
+            return new TemplatePathBuildItem(path, content, fullPath, extensionInfo, priority, source);
         }
 
     }

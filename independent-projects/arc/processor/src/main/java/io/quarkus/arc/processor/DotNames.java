@@ -31,6 +31,7 @@ import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Intercepted;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.Specializes;
 import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.inject.TransientReference;
@@ -112,6 +113,7 @@ public final class DotNames {
     public static final DotName EVENT = create(Event.class);
     public static final DotName EVENT_METADATA = create(EventMetadata.class);
     public static final DotName ALTERNATIVE = create(Alternative.class);
+    public static final DotName RESERVE = create(Reserve.class);
     public static final DotName DEFAULT_BEAN = create(DefaultBean.class);
     public static final DotName SCOPE = create(Scope.class);
     public static final DotName NORMAL_SCOPE = create(NormalScope.class);

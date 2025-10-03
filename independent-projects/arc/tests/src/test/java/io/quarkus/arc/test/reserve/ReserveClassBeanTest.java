@@ -1,13 +1,15 @@
-package io.quarkus.arc.test.defaultbean;
+package io.quarkus.arc.test.reserve;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -17,11 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
-@Deprecated
-public class DefaultClassBeanTest {
+public class ReserveClassBeanTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Producer.class,
@@ -75,7 +75,8 @@ public class DefaultClassBeanTest {
         }
     }
 
-    @DefaultBean // This one is overriden by Producer.greetingBean()
+    @Reserve // This one is overriden by Producer.greetingBean()
+    @Priority(1)
     @Singleton
     static class GreetingBean {
 
@@ -84,7 +85,8 @@ public class DefaultClassBeanTest {
         }
     }
 
-    @DefaultBean
+    @Reserve
+    @Priority(1)
     @Singleton
     static class PingBean {
 
@@ -133,7 +135,8 @@ public class DefaultClassBeanTest {
     }
 
     @Singleton
-    @DefaultBean
+    @Reserve
+    @Priority(1)
     static class Detective implements Author {
 
         @Override

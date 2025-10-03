@@ -54,11 +54,12 @@ public interface InjectableInstance<T> extends Instance<T> {
      * In general, if multiple beans are eligible then the container eliminates all beans that are:
      * <ul>
      * <li>not alternatives, except for producer methods and fields of beans that are alternatives,</li>
-     * <li>default beans.</li>
+     * <li>reserve beans.</li>
      * </ul>
      *
      * @return an iterator over the contextual references of the disambiguated beans
-     * @see DefaultBean
+     * @see jakarta.enterprise.inject.Alternative
+     * @see jakarta.enterprise.inject.Reserve
      */
     @Override
     Iterator<T> iterator();

@@ -105,6 +105,11 @@ class BeanInfoImpl implements BeanInfo {
     }
 
     @Override
+    public boolean isReserve() {
+        return arcBeanInfo.isReserve();
+    }
+
+    @Override
     public Integer priority() {
         return arcBeanInfo.getPriority();
     }

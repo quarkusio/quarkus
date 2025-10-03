@@ -234,4 +234,22 @@ public class ConsoleProcessor {
             return CommandResult.SUCCESS;
         }
     }
+
+    @CommandDefinition(name = "alias", description = "Display alias usage", aliases = { "a" })
+    public static class AliasCommand implements Command {
+
+        @Override
+        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            commandInvocation.getShell().writeln("The following commands are available for alias:\n");
+            commandInvocation.getShell().writeln("Usage: alias [name[=value] ... ]\n");
+            commandInvocation.getShell().writeln("Commands:");
+            commandInvocation.getShell().writeln("  alias                 List all aliases");
+            commandInvocation.getShell().writeln("  alias name           Show the command for 'name' alias");
+            commandInvocation.getShell().writeln("  alias name=value     Create/update an alias");
+            commandInvocation.getShell().writeln("  alias name='value'   Create/update an alias with spaces");
+            commandInvocation.getShell().writeln("  alias --help         Show this help message\n");
+
+            return CommandResult.SUCCESS;
+        }
+    }
 }

@@ -237,7 +237,18 @@ public class QuarkusProjectHelper {
                         .setWorkspaceDiscovery(false)
                         .build();
             } catch (BootstrapMavenException e) {
-                throw new IllegalStateException("Failed to initialize the Maven artifact resolver", e);
+                StringBuilder messages = new StringBuilder("Failed to initialize the Maven artifact resolver");
+                Throwable current = e;
+                while (null != current) {
+                    if (null != current.getMessage() && !current.getMessage().isBlank()) {
+                        messages
+                                .append("\n")
+                                .append(current.getMessage());
+                    }
+
+                    current = current.getCause();
+                }
+                throw new IllegalStateException(messages.toString().trim(), e);
             }
         }
         return artifactResolver;

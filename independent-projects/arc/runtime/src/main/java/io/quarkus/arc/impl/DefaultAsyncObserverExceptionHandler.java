@@ -1,5 +1,7 @@
 package io.quarkus.arc.impl;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.inject.Singleton;
@@ -7,9 +9,9 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.AsyncObserverExceptionHandler;
-import io.quarkus.arc.DefaultBean;
 
-@DefaultBean
+@Reserve
+@Priority(0)
 @Singleton
 public class DefaultAsyncObserverExceptionHandler implements AsyncObserverExceptionHandler {
 

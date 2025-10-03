@@ -7,6 +7,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import jakarta.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
@@ -68,9 +70,14 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 alternative = Beans.initStereotypeAlternative(stereotypes, beanDeployment);
             }
 
+            Boolean reserve = this.reserve;
+            if (reserve == null) {
+                reserve = Beans.initStereotypeReserve(stereotypes, beanDeployment);
+            }
+
             Integer priority = this.priority;
             if (priority == null) {
-                priority = Beans.initStereotypeAlternativePriority(stereotypes, implClass, beanDeployment);
+                priority = Beans.initStereotypePriority(stereotypes, implClass, beanDeployment);
             }
 
             InterceptionProxyInfo interceptionProxy = this.interceptionProxy;
@@ -93,6 +100,12 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
             // restrict resulting bean types if needed
             this.types.removeAll(typesToRemove);
 
+            if (alternative && reserve) {
+                throw new DefinitionException("Synthetic bean of " + implClass
+                        + (identifier != null ? (" (identifier " + identifier + ")") : "")
+                        + " is both @Alternative and @Reserve");
+            }
+
             BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
                     .identifier(identifier)
@@ -108,7 +121,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .creator(creatorConsumer)
                     .destroyer(destroyerConsumer)
                     .params(params)
-                    .defaultBean(defaultBean)
+                    .reserve(reserve)
                     .removable(removable)
                     .forceApplicationClass(forceApplicationClass)
                     .targetPackageName(targetPackageName)

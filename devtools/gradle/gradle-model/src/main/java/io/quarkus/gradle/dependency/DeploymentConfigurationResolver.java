@@ -45,24 +45,27 @@ public class DeploymentConfigurationResolver {
      * @param taskDependencyFactory task dependency factory
      */
     public static void registerDeploymentConfiguration(Project project, LaunchMode mode, String configurationName,
-            TaskDependencyFactory taskDependencyFactory) {
+            TaskDependencyFactory taskDependencyFactory, Configuration enforcedPlatforms) {
         project.getConfigurations().register(configurationName,
-                config -> new DeploymentConfigurationResolver(project, config, mode, taskDependencyFactory));
+                config -> new DeploymentConfigurationResolver(project, config, mode, taskDependencyFactory, enforcedPlatforms));
     }
 
     private final Project project;
+    private final Configuration enforcedPlatforms;
     private final TaskDependencyFactory taskDependencyFactory;
     private byte walkingFlags;
 
     private DeploymentConfigurationResolver(Project project, Configuration deploymentConfig, LaunchMode mode,
-            TaskDependencyFactory taskDependencyFactory) {
+            TaskDependencyFactory taskDependencyFactory, Configuration enforcedPlatforms) {
         this.project = project;
         this.taskDependencyFactory = taskDependencyFactory;
+        this.enforcedPlatforms = enforcedPlatforms;
 
         final Configuration baseRuntimeConfig = project.getConfigurations()
                 .getByName(ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(mode));
         deploymentConfig.setCanBeConsumed(false);
         deploymentConfig.extendsFrom(baseRuntimeConfig);
+        deploymentConfig.extendsFrom(enforcedPlatforms);
         deploymentConfig.shouldResolveConsistentlyWith(baseRuntimeConfig);
 
         ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);

@@ -12,7 +12,15 @@
         "name": "JVM Tests - JDK 21",
         "category": "Runtime",
         "java-version": 21,
-        "java-version-gradle": 17,
+        "maven_args": "$JVM_TEST_MAVEN_ARGS",
+        "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
+        "os-name": "ubuntu-latest",
+        "modules": "-pl\n!docs\n-Dno-test-modules"
+    },
+    {
+        "name": "JVM Tests - JDK 25",
+        "category": "Runtime",
+        "java-version": 25,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
         "os-name": "ubuntu-latest",
@@ -40,7 +48,15 @@
         "name": "JVM Integration Tests - JDK 21",
         "category": "Integration",
         "java-version": 21,
-        "java-version-gradle": 20,
+        "maven_args": "$JVM_TEST_MAVEN_ARGS",
+        "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
+        "os-name": "ubuntu-latest",
+        "modules": "-f\nintegration-tests\n-pl\n!gradle\n-pl\n!maven\n-pl\n!devmode\n-pl\n!devtools"
+    },
+    {
+        "name": "JVM Integration Tests - JDK 25",
+        "category": "Integration",
+        "java-version": 25,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
         "os-name": "ubuntu-latest",

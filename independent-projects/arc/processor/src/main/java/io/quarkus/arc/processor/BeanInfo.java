@@ -84,7 +84,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String name;
 
-    private final boolean defaultBean;
+    private final boolean reserve;
 
     private final List<MethodInfo> aroundInvokes;
 
@@ -116,16 +116,16 @@ public class BeanInfo implements InjectionTargetInfo {
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
-            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
+            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve, String targetPackageName,
             Integer priority, Set<Type> unrestrictedTypes, InterceptionProxyInfo interceptionProxy) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
-                alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
+                alternative, stereotypes, name, isReserve, null, null, Collections.emptyMap(), true, false,
                 targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
             Set<Type> types, Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean,
-            DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean,
+            DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve,
             Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer,
             Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer,
             Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass, String targetPackageName,
@@ -162,7 +162,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.priority = priority;
         this.stereotypes = Unique.stereotypes(stereotypes);
         this.name = name;
-        this.defaultBean = isDefaultBean;
+        this.reserve = isReserve;
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.removable = isRemovable;
@@ -594,8 +594,16 @@ public class BeanInfo implements InjectionTargetInfo {
         return name;
     }
 
+    public boolean isReserve() {
+        return reserve;
+    }
+
+    /**
+     * @deprecated use {@link #isReserve()}
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     public boolean isDefaultBean() {
-        return defaultBean;
+        return reserve;
     }
 
     public OptionalInt getStartupPriority() {
@@ -1182,7 +1190,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private String name;
 
-        private boolean isDefaultBean;
+        private boolean reserve;
 
         private Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer;
 
@@ -1284,9 +1292,17 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
-        Builder defaultBean(boolean isDefaultBean) {
-            this.isDefaultBean = isDefaultBean;
+        Builder reserve(boolean value) {
+            this.reserve = value;
             return this;
+        }
+
+        /**
+         * @deprecated use {@link #reserve(boolean)}
+         */
+        @Deprecated(forRemoval = true, since = "4.0")
+        Builder defaultBean(boolean isDefaultBean) {
+            return reserve(isDefaultBean);
         }
 
         Builder startupPriority(Integer value) {
@@ -1331,7 +1347,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
-                    declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
+                    declaringBean, disposer, alternative, stereotypes, name, reserve, creatorConsumer,
                     destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
                     identifier, null, startupPriority, interceptionProxy, checkActiveConsumer);
         }

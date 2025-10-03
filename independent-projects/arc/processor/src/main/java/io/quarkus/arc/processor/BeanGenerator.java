@@ -313,6 +313,7 @@ public class BeanGenerator extends AbstractGenerator {
                 generateGetQualifiers(cc, qualifiersField);
             }
             generateIsAlternative(cc, bean);
+            generateIsReserve(cc, bean);
             generateGetPriority(cc, bean);
             if (bean.isProducer()) {
                 generateGetDeclaringBean(cc, declaringProviderSupplierField);
@@ -325,9 +326,6 @@ public class BeanGenerator extends AbstractGenerator {
                 generateGetImplementationClass(cc, bean);
             }
             generateGetName(cc, bean);
-            if (bean.isDefaultBean()) {
-                generateIsDefaultBean(cc, bean);
-            }
             generateGetKind(cc, bean);
             generateIsSuppressed(cc, bean);
             generateGetInjectionPoints(cc, bean);
@@ -1821,6 +1819,18 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     /**
+     * @see InjectableBean#isReserve()
+     */
+    protected void generateIsReserve(ClassCreator cc, BeanInfo bean) {
+        if (bean.isReserve()) {
+            cc.method("isReserve", mc -> {
+                mc.returning(boolean.class);
+                mc.body(BlockCreator::returnTrue);
+            });
+        }
+    }
+
+    /**
      * @see InjectableBean#getPriority()
      */
     protected void generateGetPriority(ClassCreator cc, BeanInfo bean) {
@@ -1902,18 +1912,6 @@ public class BeanGenerator extends AbstractGenerator {
                 });
             });
         }
-    }
-
-    /**
-     * @see InjectableBean#isDefaultBean()
-     */
-    protected void generateIsDefaultBean(ClassCreator cc, BeanInfo bean) {
-        cc.method("isDefaultBean", mc -> {
-            mc.returning(boolean.class);
-            mc.body(bc -> {
-                bc.return_(bean.isDefaultBean());
-            });
-        });
     }
 
     /**

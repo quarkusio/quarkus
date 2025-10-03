@@ -1,7 +1,8 @@
-package io.quarkus.arc.test.defaultbean;
+package io.quarkus.arc.test.reserve;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -11,11 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
-@Deprecated
-public class DefaultBeanPriorityTest {
+public class ReserveBeanPriorityTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(MyBean.class, FooInterface.class, FooImpl1.class, FooImpl2.class,
@@ -60,7 +59,7 @@ public class DefaultBeanPriorityTest {
     }
 
     @ApplicationScoped
-    @DefaultBean
+    @Reserve
     @Priority(10)
     static class FooImpl1 implements FooInterface {
 
@@ -71,7 +70,7 @@ public class DefaultBeanPriorityTest {
     }
 
     @ApplicationScoped
-    @DefaultBean
+    @Reserve
     @Priority(20)
     static class FooImpl2 implements FooInterface {
 
@@ -86,7 +85,7 @@ public class DefaultBeanPriorityTest {
     }
 
     @ApplicationScoped
-    @DefaultBean
+    @Reserve
     // no priority annotation
     static class BarImpl1 implements BarInterface {
 
@@ -97,7 +96,7 @@ public class DefaultBeanPriorityTest {
     }
 
     @ApplicationScoped
-    @DefaultBean
+    @Reserve
     @Priority(1)
     static class BarImpl2 implements BarInterface {
 

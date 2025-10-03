@@ -313,6 +313,7 @@ public class BeanGenerator extends AbstractGenerator {
                 generateGetQualifiers(cc, qualifiersField);
             }
             generateIsAlternative(cc, bean);
+            generateIsReserve(cc, bean);
             generateGetPriority(cc, bean);
             if (bean.isProducer()) {
                 generateGetDeclaringBean(cc, declaringProviderSupplierField);
@@ -325,9 +326,6 @@ public class BeanGenerator extends AbstractGenerator {
                 generateGetImplementationClass(cc, bean);
             }
             generateGetName(cc, bean);
-            if (bean.isDefaultBean()) {
-                generateIsDefaultBean(cc, bean);
-            }
             generateGetKind(cc, bean);
             generateIsSuppressed(cc, bean);
             generateGetInjectionPoints(cc, bean);
@@ -1814,6 +1812,18 @@ public class BeanGenerator extends AbstractGenerator {
     protected void generateIsAlternative(ClassCreator cc, BeanInfo bean) {
         if (bean.isAlternative()) {
             cc.method("isAlternative", mc -> {
+                mc.returning(boolean.class);
+                mc.body(BlockCreator::returnTrue);
+            });
+        }
+    }
+
+    /**
+     * @see InjectableBean#isReserve()
+     */
+    protected void generateIsReserve(ClassCreator cc, BeanInfo bean) {
+        if (bean.isReserve()) {
+            cc.method("isReserve", mc -> {
                 mc.returning(boolean.class);
                 mc.body(BlockCreator::returnTrue);
             });

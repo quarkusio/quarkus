@@ -1,9 +1,11 @@
-package io.quarkus.arc.test.defaultbean;
+package io.quarkus.arc.test.reserve;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Singleton;
 
@@ -11,11 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
-@Deprecated
-public class DefaultProducerMethodTest {
+public class ReserveProducerMethodTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Producer1.class, Producer2.class, Producer3.class,
@@ -37,7 +37,8 @@ public class DefaultProducerMethodTest {
     @Singleton
     static class Producer1 {
 
-        @DefaultBean
+        @Reserve
+        @Priority(1)
         @Produces
         GreetingBean greetingBean() {
             return new GreetingBean("hello");
@@ -53,7 +54,8 @@ public class DefaultProducerMethodTest {
     @Singleton
     static class Producer2 {
 
-        @DefaultBean
+        @Reserve
+        @Priority(2)
         @Produces
         GreetingBean greetingBean() {
             return new GreetingBean("hola");

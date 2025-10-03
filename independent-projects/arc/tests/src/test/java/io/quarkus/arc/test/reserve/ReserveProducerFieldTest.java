@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.defaultbean;
+package io.quarkus.arc.test.reserve;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -17,11 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
-@Deprecated
-public class DefaultProducerFieldTest {
+public class ReserveProducerFieldTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Producer.class,
@@ -39,7 +39,9 @@ public class DefaultProducerFieldTest {
 
     @Test
     public void testInstanceIterator() {
-        List<Author> authors = Arc.container().instance(Hello.class).get().instance().stream().collect(Collectors.toList());
+        Arc.container().select(Author.class).stream().toList();
+
+        List<Author> authors = Arc.container().instance(Hello.class).get().instance().stream().toList();
         assertEquals(2, authors.size());
         String result = authors.stream().map(Author::get).collect(Collectors.joining());
         assertTrue(result.contains("SciFi"));
@@ -76,7 +78,8 @@ public class DefaultProducerFieldTest {
     @Singleton
     static class Producer {
 
-        @DefaultBean
+        @Reserve
+        @Priority(1)
         @Produces
         GreetingBean greetingBean = new GreetingBean() {
 
@@ -89,7 +92,8 @@ public class DefaultProducerFieldTest {
 
         @Produces
         @Singleton
-        @DefaultBean
+        @Reserve
+        @Priority(1)
         Author sciFi = new Author() {
 
             @Override
@@ -105,7 +109,8 @@ public class DefaultProducerFieldTest {
     }
 
     @Singleton
-    @DefaultBean
+    @Reserve
+    @Priority(1)
     static class Fantasy implements Author {
 
         @Override

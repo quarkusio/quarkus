@@ -689,34 +689,34 @@ public class ArcContainerImpl implements ArcContainer {
         }
         // Try to resolve the ambiguity and return the set of disambiguated beans
 
-        // First remove the default beans
-        List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
-        for (Iterator<InjectableBean<?>> iterator = nonDefault.iterator(); iterator.hasNext();) {
-            if (iterator.next().isDefaultBean()) {
+        // First remove the reserve beans
+        List<InjectableBean<?>> nonReserves = new ArrayList<>(matching);
+        for (Iterator<InjectableBean<?>> iterator = nonReserves.iterator(); iterator.hasNext();) {
+            if (iterator.next().isReserve()) {
                 iterator.remove();
             }
         }
-        if (nonDefault.isEmpty()) {
-            // All the matching beans were default
+        if (nonReserves.isEmpty()) {
+            // All the matching beans were reserves
             // Sort them by priority, uses 0 when no priority was defined
-            List<InjectableBean<?>> priorityDefaultBeans = new ArrayList<>(matching);
-            priorityDefaultBeans.sort(ArcContainerImpl::compareDefaultBeans);
-            Integer highest = priorityDefaultBeans.get(0).getPriority();
-            for (Iterator<InjectableBean<?>> iterator = priorityDefaultBeans.iterator(); iterator.hasNext();) {
+            List<InjectableBean<?>> priorityReserveBeans = new ArrayList<>(matching);
+            priorityReserveBeans.sort(ArcContainerImpl::compareReserveBeans);
+            Integer highest = priorityReserveBeans.get(0).getPriority();
+            for (Iterator<InjectableBean<?>> iterator = priorityReserveBeans.iterator(); iterator.hasNext();) {
                 if (!highest.equals(iterator.next().getPriority())) {
                     iterator.remove();
                 }
             }
-            if (priorityDefaultBeans.size() == 1) {
-                return Set.of(priorityDefaultBeans.get(0));
+            if (priorityReserveBeans.size() == 1) {
+                return Set.of(priorityReserveBeans.get(0));
             }
-            return Set.copyOf(priorityDefaultBeans);
-        } else if (nonDefault.size() == 1) {
-            return Set.of(nonDefault.get(0));
+            return Set.copyOf(priorityReserveBeans);
+        } else if (nonReserves.size() == 1) {
+            return Set.of(nonReserves.get(0));
         }
 
-        // More than one non-default bean remains - eliminate beans that don't have a priority
-        List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonDefault);
+        // More than one non-reserve bean remains - eliminate beans that don't have a priority
+        List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonReserves);
         for (Iterator<InjectableBean<?>> iterator = priorityBeans.iterator(); iterator.hasNext();) {
             if (!isAlternativeOrDeclaredOnAlternative(iterator.next())) {
                 iterator.remove();
@@ -724,7 +724,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         if (priorityBeans.isEmpty()) {
             // No alternative/priority beans are present
-            return Set.copyOf(nonDefault);
+            return Set.copyOf(nonReserves);
         } else if (priorityBeans.size() == 1) {
             return Set.of(priorityBeans.get(0));
         } else {
@@ -861,8 +861,8 @@ public class ArcContainerImpl implements ArcContainer {
         return priority2.compareTo(priority1);
     }
 
-    // Used to compare default beans; disregards alternative, only looks at priority value
-    private static int compareDefaultBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
+    // Used to compare reserve beans; unlike alternatives, only looks at priority value
+    private static int compareReserveBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
         // The highest priority wins
         Integer priority2 = bean2.getPriority();
         Integer priority1 = bean1.getPriority();

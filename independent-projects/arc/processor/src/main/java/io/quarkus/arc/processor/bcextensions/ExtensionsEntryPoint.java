@@ -381,6 +381,9 @@ public class ExtensionsEntryPoint {
             if (syntheticBean.isAlternative) {
                 bean.alternative(true);
             }
+            if (syntheticBean.isReserve) {
+                bean.reserve(true);
+            }
             if (syntheticBean.priority != null) {
                 bean.priority(syntheticBean.priority);
             }

@@ -23,6 +23,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
     Set<org.jboss.jandex.AnnotationInstance> qualifiers = new HashSet<>();
     Class<? extends Annotation> scope;
     boolean isAlternative;
+    boolean isReserve;
     Integer priority;
     String name;
     Set<DotName> stereotypes = new HashSet<>();
@@ -85,6 +86,12 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
     @Override
     public SyntheticBeanBuilder<T> alternative(boolean isAlternative) {
         this.isAlternative = isAlternative;
+        return this;
+    }
+
+    @Override
+    public SyntheticBeanBuilder<T> reserve(boolean isReserve) {
+        this.isReserve = isReserve;
         return this;
     }
 

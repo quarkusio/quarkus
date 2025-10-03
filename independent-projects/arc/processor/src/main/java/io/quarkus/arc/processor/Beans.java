@@ -91,7 +91,7 @@ public final class Beans {
         List<ScopeInfo> scopes = new ArrayList<>();
         Integer priority = null;
         boolean isAlternative = false;
-        boolean isDefaultBean = false;
+        boolean isReserve = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
@@ -133,8 +133,15 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
+            if (DotNames.RESERVE.equals(annotationName)) {
+                isReserve = true;
+                continue;
+            }
             if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
-                isDefaultBean = true;
+                isReserve = true;
+                if (priority == null) {
+                    priority = 0;
+                }
                 continue;
             }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotationName);
@@ -168,6 +175,9 @@ public final class Beans {
         if (!isAlternative) {
             isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
         }
+        if (!isReserve) {
+            isReserve = initStereotypeReserve(stereotypes, beanDeployment);
+        }
         if (name == null) {
             name = initStereotypeName(stereotypes, producerMethod, beanDeployment);
         }
@@ -184,6 +194,31 @@ public final class Beans {
                         declaringBean.getTarget().get().asClass().name() + "#" + producerMethod.name());
                 return null;
             }
+        }
+        if (isReserve) {
+            // reserve producers do _not_ inherit priority from declaring beans, unlike alternatives
+            if (priority == null) {
+                priority = initStereotypePriority(stereotypes, producerMethod, beanDeployment);
+            }
+            if (priority == null) {
+                // after all attempts, priority is still null, bean will be ignored
+                LOGGER.debugf(
+                        "Ignoring producer method %s - declared as a @Reserve but not selected by @Priority",
+                        declaringBean.getTarget().get().asClass().name() + "#" + producerMethod.name());
+                return null;
+            }
+        }
+
+        if (isAlternative && isReserve) {
+            throw new DefinitionException("Producer method " + producerMethod + " is both @Alternative and @Reserve");
+        }
+        if (declaringBean.isAlternative() && isReserve) {
+            throw new DefinitionException("Declaring bean " + declaringBean
+                    + " is @Alternative, cannot declare @Reserve producer " + producerMethod);
+        }
+        if (declaringBean.isReserve() && isAlternative) {
+            throw new DefinitionException("Declaring bean " + declaringBean
+                    + " is @Reserve, cannot declare @Alternative producer " + producerMethod);
         }
 
         if (scope != null // `null` is just like `@Dependent`
@@ -222,7 +257,7 @@ public final class Beans {
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer,
                 Injection.BeanType.PRODUCER_METHOD);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, typeClosure.types(), qualifiers, injections,
-                declaringBean, disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority,
+                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, null, priority,
                 typeClosure.unrestrictedTypes(), interceptionProxy);
         for (Injection injection : injections) {
             injection.init(bean);
@@ -237,7 +272,7 @@ public final class Beans {
         TypeClosure typeClosure = Types.getProducerFieldTypeClosure(producerField, beanDeployment);
         Integer priority = null;
         boolean isAlternative = false;
-        boolean isDefaultBean = false;
+        boolean isReserve = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
@@ -284,8 +319,15 @@ public final class Beans {
                 stereotypes.add(stereotype);
                 continue;
             }
+            if (DotNames.RESERVE.equals(annotationName)) {
+                isReserve = true;
+                continue;
+            }
             if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
-                isDefaultBean = true;
+                isReserve = true;
+                if (priority == null) {
+                    priority = 0;
+                }
                 continue;
             }
         }
@@ -308,6 +350,9 @@ public final class Beans {
         if (!isAlternative) {
             isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
         }
+        if (!isReserve) {
+            isReserve = initStereotypeReserve(stereotypes, beanDeployment);
+        }
         if (name == null) {
             name = initStereotypeName(stereotypes, producerField, beanDeployment);
         }
@@ -325,6 +370,31 @@ public final class Beans {
                 return null;
             }
         }
+        if (isReserve) {
+            // reserve producers do _not_ inherit priority from declaring beans, unlike alternatives
+            if (priority == null) {
+                priority = initStereotypePriority(stereotypes, producerField, beanDeployment);
+            }
+            if (priority == null) {
+                // after all attempts, priority is still null, bean will be ignored
+                LOGGER.debugf(
+                        "Ignoring producer field %s - declared as a @Reserve but not selected by @Priority",
+                        producerField);
+                return null;
+            }
+        }
+
+        if (isAlternative && isReserve) {
+            throw new DefinitionException("Producer field " + producerField + " is both @Alternative and @Reserve");
+        }
+        if (declaringBean.isAlternative() && isReserve) {
+            throw new DefinitionException("Declaring bean " + declaringBean
+                    + " is @Alternative, cannot declare @Reserve producer " + producerField);
+        }
+        if (declaringBean.isReserve() && isAlternative) {
+            throw new DefinitionException("Declaring bean " + declaringBean
+                    + " is @Reserve, cannot declare @Alternative producer " + producerField);
+        }
 
         if (scope != null // `null` is just like `@Dependent`
                 && !BuiltinScope.DEPENDENT.is(scope)
@@ -336,7 +406,7 @@ public final class Beans {
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, typeClosure.types(), qualifiers,
                 Collections.emptyList(),
-                declaringBean, disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority,
+                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, null, priority,
                 typeClosure.unrestrictedTypes(), null);
         return bean;
     }
@@ -390,9 +460,23 @@ public final class Beans {
         return false;
     }
 
+    static boolean initStereotypeReserve(List<StereotypeInfo> stereotypes, BeanDeployment beanDeployment) {
+        if (stereotypes.isEmpty()) {
+            return false;
+        }
+
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
+            if (stereotype.isReserve()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // called when we know the bean does not declare priority on its own
     // therefore, we can just throw when multiple priorities are inherited from stereotypes
-    static Integer initStereotypeAlternativePriority(List<StereotypeInfo> stereotypes, AnnotationTarget target,
+    static Integer initStereotypePriority(List<StereotypeInfo> stereotypes, AnnotationTarget target,
             BeanDeployment beanDeployment) {
         if (stereotypes.isEmpty()) {
             return null;
@@ -400,8 +484,8 @@ public final class Beans {
 
         Set<Integer> priorities = new HashSet<>();
         for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
-            if (stereotype.getAlternativePriority() != null) {
-                priorities.add(stereotype.getAlternativePriority());
+            if (stereotype.getPriority() != null) {
+                priorities.add(stereotype.getPriority());
             }
         }
 
@@ -581,22 +665,22 @@ public final class Beans {
     static BeanInfo resolveAmbiguity(Collection<BeanInfo> resolved) {
         List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
         BeanInfo selected = null;
-        // First eliminate default beans
+        // First eliminate reserve beans
         for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
             BeanInfo beanInfo = iterator.next();
-            if (beanInfo.isDefaultBean()) {
+            if (beanInfo.isReserve()) {
                 iterator.remove();
             }
         }
         if (resolvedAmbiguity.size() == 1) {
             return resolvedAmbiguity.get(0);
         } else if (resolvedAmbiguity.isEmpty()) {
-            // all beans were default beans, we attempt to sort them based on priority
+            // all beans were reserve beans, we attempt to sort them based on priority
             resolvedAmbiguity = new ArrayList<>(resolved);
-            resolvedAmbiguity.sort(Beans::compareDefaultBeans);
-            Integer highest = getDefaultBeanPriority(resolvedAmbiguity.get(0));
+            resolvedAmbiguity.sort(Beans::compareReserveBeans);
+            Integer highest = getReserveBeanPriority(resolvedAmbiguity.get(0));
             for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
-                if (!highest.equals(getDefaultBeanPriority(iterator.next()))) {
+                if (!highest.equals(getReserveBeanPriority(iterator.next()))) {
                     iterator.remove();
                 }
             }
@@ -609,8 +693,8 @@ public final class Beans {
         for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
             BeanInfo beanInfo = iterator.next();
             // Eliminate beans that are not alternatives, except for producer methods and fields of beans that are alternatives
-            if (!beanInfo.isAlternative() && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean()
-                    .isAlternative())) {
+            if (!beanInfo.isAlternative()
+                    && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean().isAlternative())) {
                 iterator.remove();
             }
         }
@@ -665,7 +749,7 @@ public final class Beans {
     }
 
     // gets bean priority or fall back to using default value of 0 for ordering purposes
-    private static Integer getDefaultBeanPriority(BeanInfo bean) {
+    private static Integer getReserveBeanPriority(BeanInfo bean) {
         Integer beanPriority = bean.getPriority();
         if (beanPriority == null) {
             beanPriority = 0;
@@ -673,7 +757,7 @@ public final class Beans {
         return beanPriority;
     }
 
-    private static int compareDefaultBeans(BeanInfo bean1, BeanInfo bean2) {
+    private static int compareReserveBeans(BeanInfo bean1, BeanInfo bean2) {
         // The highest priority wins
         Integer priority1, priority2;
         priority2 = bean2.getPriority() == null ? 0 : bean2.getPriority();
@@ -1186,8 +1270,8 @@ public final class Beans {
     private static Integer initAlternativePriority(AnnotationTarget target, Integer alternativePriority,
             List<StereotypeInfo> stereotypes, BeanDeployment deployment) {
         if (alternativePriority == null) {
-            // No @Priority or @AlernativePriority used - try stereotypes
-            alternativePriority = initStereotypeAlternativePriority(stereotypes, target, deployment);
+            // No @Priority used - try stereotypes
+            alternativePriority = initStereotypePriority(stereotypes, target, deployment);
         }
         Integer computedPriority = deployment.computeAlternativePriority(target, stereotypes);
         if (computedPriority != null) {
@@ -1274,7 +1358,7 @@ public final class Beans {
         private String name;
         private Integer priority;
         private boolean isAlternative;
-        private boolean isDefaultBean;
+        private boolean isReserve;
 
         ClassBeanFactory(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
             this.beanClass = beanClass;
@@ -1282,7 +1366,7 @@ public final class Beans {
             this.transformer = transformer;
             this.priority = null;
             this.isAlternative = false;
-            this.isDefaultBean = false;
+            this.isReserve = false;
             this.name = null;
         }
 
@@ -1340,8 +1424,15 @@ public final class Beans {
                 isAlternative = true;
                 return;
             }
+            if (DotNames.RESERVE.equals(annotationName)) {
+                isReserve = true;
+                return;
+            }
             if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
-                isDefaultBean = true;
+                isReserve = true;
+                if (priority == null) {
+                    priority = 0;
+                }
                 return;
             }
             if (DotNames.PRIORITY.equals(annotationName)) {
@@ -1404,6 +1495,9 @@ public final class Beans {
             if (!isAlternative) {
                 isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
             }
+            if (!isReserve) {
+                isReserve = initStereotypeReserve(stereotypes, beanDeployment);
+            }
             if (name == null) {
                 name = initStereotypeName(stereotypes, beanClass, beanDeployment);
             }
@@ -1418,11 +1512,27 @@ public final class Beans {
                     return null;
                 }
             }
+            if (isReserve) {
+                if (priority == null) {
+                    priority = initStereotypePriority(stereotypes, beanClass, beanDeployment);
+                }
+                if (priority == null) {
+                    // after all attempts, priority is still null, bean will be ignored
+                    LOGGER.debugf(
+                            "Ignoring bean defined via %s - declared as a @Reserve but not selected by @Priority",
+                            beanClass.name());
+                    return null;
+                }
+            }
+
+            if (isAlternative && isReserve) {
+                throw new DefinitionException("Bean " + beanClass + " is both @Alternative and @Reserve");
+            }
 
             List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer,
                     Injection.BeanType.MANAGED_BEAN);
             BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, typeClosure.types(), qualifiers,
-                    injections, null, null, isAlternative, stereotypes, name, isDefaultBean, null, priority,
+                    injections, null, null, isAlternative, stereotypes, name, isReserve, null, priority,
                     typeClosure.unrestrictedTypes(), null);
             for (Injection injection : injections) {
                 injection.init(bean);

@@ -34,6 +34,9 @@ public class ImplicitBasicAuthAndCodeFlowAuthCombinationTest {
                     .addClasses(BasicCodeFlowResource.class)
                     .addAsResource(
                             new StringAsset("""
+                                    # Disable Dev Services, we use a test resource manager
+                                    quarkus.keycloak.devservices.enabled=false
+
                                     quarkus.security.users.embedded.enabled=true
                                     quarkus.security.users.embedded.plain-text=true
                                     quarkus.security.users.embedded.users.alice=alice
@@ -76,7 +79,7 @@ public class ImplicitBasicAuthAndCodeFlowAuthCombinationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
 

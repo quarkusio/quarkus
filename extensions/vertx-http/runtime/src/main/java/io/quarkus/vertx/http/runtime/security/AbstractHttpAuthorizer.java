@@ -27,6 +27,9 @@ import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -73,6 +76,11 @@ abstract class AbstractHttpAuthorizer {
             SecurityIdentity augmentedIdentity,
             List<HttpSecurityPolicy> permissionCheckers) {
         if (index == permissionCheckers.size()) {
+            if (index == 0) {
+                // no HTTP permission checks
+                routingContext.next();
+                return;
+            }
             QuarkusHttpUser currentUser = (QuarkusHttpUser) routingContext.user();
             if (augmentedIdentity != null) {
                 if (!augmentedIdentity.isAnonymous()
@@ -89,7 +97,18 @@ abstract class AbstractHttpAuthorizer {
                         new AuthorizationSuccessEvent(currentUser == null ? null : currentUser.getSecurityIdentity(),
                                 Map.of(RoutingContext.class.getName(), routingContext)));
             }
-            routingContext.next();
+            Context context = Vertx.currentContext();
+            if (context != null) {
+                // let subscriber callbacks to finish before continuing
+                context.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void unused) {
+                        routingContext.next();
+                    }
+                });
+            } else {
+                routingContext.next();
+            }
             return;
         }
         //get the current checker

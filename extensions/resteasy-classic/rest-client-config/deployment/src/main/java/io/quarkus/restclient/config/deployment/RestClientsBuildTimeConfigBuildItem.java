@@ -105,7 +105,7 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
 
         // First config in the rest client service
         restClientsBuildTimeConfig.clients().get(restClientInterface.name().toString()).scope()
-                .ifPresent(s -> discoveredScopes.add(Optional.of(builtinScopeFromName(DotName.createSimple(s)))));
+                .ifPresent(s -> discoveredScopes.add(builtinScopeFromName(DotName.createSimple(s))));
 
         // Second annotation in the rest client declaration
         Set<DotName> annotations = restClientInterface.annotationsMap().keySet();
@@ -118,7 +118,7 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
 
         // Third global config
         restClientsBuildTimeConfig.scope()
-                .ifPresent(s -> discoveredScopes.add(Optional.of(builtinScopeFromName(DotName.createSimple(s)))));
+                .ifPresent(s -> discoveredScopes.add(builtinScopeFromName(DotName.createSimple(s))));
 
         Optional<BuiltinScope> scope = discoveredScopes.stream()
                 .filter(Optional::isPresent)
@@ -136,15 +136,17 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
         return Optional.empty();
     }
 
-    private static BuiltinScope builtinScopeFromName(DotName scopeName) {
+    private static Optional<BuiltinScope> builtinScopeFromName(DotName scopeName) {
         BuiltinScope scope = BuiltinScope.from(scopeName);
-        if (scope == null) {
-            for (BuiltinScope builtinScope : BuiltinScope.values()) {
-                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
-                    scope = builtinScope;
-                }
+        if (scope != null) {
+            return Optional.of(scope);
+        }
+
+        for (BuiltinScope builtinScope : BuiltinScope.values()) {
+            if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
+                return Optional.of(builtinScope);
             }
         }
-        return scope;
+        return Optional.empty();
     }
 }

@@ -278,7 +278,12 @@ class RestClientProcessor {
             configurator.addQualifier(REST_CLIENT);
             List<String> clientProviders = checkRestClientProviders(restClient.getClassInfo(), restClientProviders);
             configurator.scope(restClientBuildTimeConfig.getScope(capabilities, restClient.getClassInfo())
-                    .orElse(BuiltinScope.DEPENDENT).getInfo());
+                    .orElseGet(() -> {
+                        final BuiltinScope defaultScope = BuiltinScope.DEPENDENT;
+                        log.warnf("Not possible to map scope for REST client %s. Defaulting to %s",
+                                restClient.getClassInfo().name(), defaultScope.name());
+                        return defaultScope;
+                    }).getInfo());
             configurator.creator(m -> {
                 // return new RestClientBase(proxyType, baseUri).create();
                 ResultHandle interfaceHandle = m.loadClassFromTCCL(restClient.getClassInfo().name().toString());

@@ -543,7 +543,12 @@ class RestClientReactiveProcessor {
                         key -> configKeys.put(jaxrsInterface.name().toString(), key));
 
                 final ScopeInfo scope = restClientsBuildTimeConfig.getScope(capabilities, jaxrsInterface)
-                        .orElse(BuiltinScope.APPLICATION).getInfo();
+                        .orElseGet(() -> {
+                            final BuiltinScope defaultScope = BuiltinScope.APPLICATION;
+                            log.warnf("Not possible to map scope for REST client %s. Defaulting to %s", jaxrsInterface.name(),
+                                    defaultScope.name());
+                            return defaultScope;
+                        }).getInfo();
                 // add a scope annotation, e.g. @Singleton
                 classCreator.addAnnotation(scope.getDotName().toString());
                 classCreator.addAnnotation(RestClient.class);

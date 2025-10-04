@@ -106,7 +106,10 @@ It adds the following extensions to your build file:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-oidc,rest-client-oidc-filter,rest-client-oidc-token-propagation,rest")
+implementation("io.quarkus:quarkus-oidc")
+implementation("io.quarkus:quarkus-oidc-rest-client-oidc-filter")
+implementation("io.quarkus:quarkus-oidc-rest-client-oidc-token-propagation")
+implementation("io.quarkus:quarkus-rest")
 ----
 
 == Writing the application

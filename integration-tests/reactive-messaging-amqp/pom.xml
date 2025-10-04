@@ -137,5 +137,19 @@
         </plugins>
     </build>
 
-
+    <profiles>
+        <!--
+        Artemis requires the SecurityManager and it is not available anymore in Java 25
+        See https://issues.apache.org/jira/browse/ARTEMIS-4975
+        -->
+        <profile>
+            <id>skip-artemis-on-java25</id>
+            <activation>
+                <jdk>[25,)</jdk>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </profile>
+    </profiles>
 </project>

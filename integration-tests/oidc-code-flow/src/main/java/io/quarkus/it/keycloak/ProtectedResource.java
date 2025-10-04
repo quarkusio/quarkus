@@ -24,8 +24,8 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/web-app")
@@ -36,7 +36,7 @@ public class ProtectedResource {
     SecurityIdentity identity;
 
     @Inject
-    SecurityIdentityAssociation securityIdentityAssociation;
+    CurrentIdentityAssociation securityIdentityAssociation;
 
     @Inject
     Principal principal;

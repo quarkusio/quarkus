@@ -135,4 +135,48 @@ public interface FormAuthConfig {
      */
     @WithDefault("/j_security_check")
     String postLocation();
+
+    /**
+     * One-time authentication token configuration.
+     */
+    AuthenticationToken authenticationToken();
+
+    /**
+     * One-time authentication token configuration.
+     */
+    interface AuthenticationToken {
+
+        /**
+         * If one-time authentication token feature is enabled.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Quarkus will redirect to this path once the one-time authentication token has been successfully generated.
+         * When this configuration property is not set, Quarkus will respond to successful
+         * one-time authentication token requests with the HTTP status `204 No Content`.
+         */
+        @WithDefault("/authentication-token.html")
+        Optional<String> requestRedirectPath();
+
+        /**
+         * The one-time authentication token form field name.
+         */
+        @WithDefault("j_token")
+        String formParameterName();
+
+        /**
+         * The one-time authentication token expiration time.
+         * By default, the one-time authentication token expires in 5 minutes.
+         */
+        @WithDefault("PT5M")
+        Duration expiresIn();
+
+        /**
+         * The cookie used to store requested authentication token.
+         */
+        @WithDefault("quarkus-token-request")
+        String cookieName();
+    }
 }

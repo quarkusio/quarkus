@@ -29,6 +29,7 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.internal.tasks.TaskDependencyFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.PlatformImports;
@@ -93,13 +94,14 @@ public class ApplicationDeploymentClasspathBuilder {
         final ConfigurationContainer configContainer = project.getConfigurations();
 
         // Custom configuration for dev mode
-        configContainer.register(ToolingUtils.DEV_MODE_CONFIGURATION_NAME, config -> {
-            config.extendsFrom(configContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
-            config.setCanBeConsumed(false);
-            if (!isDisableComponentVariants(project)) {
-                QuarkusComponentVariants.setConditionalAttributes(config, project, LaunchMode.DEVELOPMENT);
-            }
-        });
+        configContainer
+                .register(ToolingUtils.DEV_MODE_CONFIGURATION_NAME, config -> {
+                    config.extendsFrom(configContainer.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+                    config.setCanBeConsumed(false);
+                    if (!isDisableComponentVariants(project)) {
+                        QuarkusComponentVariants.setConditionalAttributes(config, project, LaunchMode.DEVELOPMENT);
+                    }
+                });
 
         // Base runtime configurations for every launch mode
         configContainer
@@ -178,6 +180,7 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String platformImportName;
 
     private final List<Dependency> platformDataDeps = new ArrayList<>();
+    private final Set<ManualPlatformSpec.Constraint> platformConstraints = new HashSet<>();
 
     public ApplicationDeploymentClasspathBuilder(Project project, LaunchMode mode,
             TaskDependencyFactory taskDependencyFactory) {
@@ -239,6 +242,9 @@ public class ApplicationDeploymentClasspathBuilder {
                                 break;
                             }
                         }
+                    } else {
+                        platformConstraints.add(new ManualPlatformSpec.Constraint(d.getTarget().getGroup(), name,
+                                d.getTarget().getVersion()));
                     }
                 });
             });
@@ -276,6 +282,11 @@ public class ApplicationDeploymentClasspathBuilder {
         return platformDataDeps;
     }
 
+    private ManualPlatformSpec resolvePlatformSpec() {
+        getPlatformConfiguration().resolve();
+        return new ManualPlatformSpec(platformConstraints, getPlatformConfiguration().getExcludeRules());
+    }
+
     private void setUpRuntimeConfiguration() {
         if (!project.getConfigurations().getNames().contains(this.runtimeConfigurationName)) {
             final String baseConfig;
@@ -283,7 +294,10 @@ public class ApplicationDeploymentClasspathBuilder {
             if (disableComponentVariants) {
                 baseConfig = ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode);
             } else {
-                QuarkusComponentVariants.addVariants(project, mode);
+                Property<ManualPlatformSpec> platformSpecProperty = project.getObjects()
+                        .property(ManualPlatformSpec.class);
+                QuarkusComponentVariants.addVariants(project, mode,
+                        platformSpecProperty.value(project.provider(this::resolvePlatformSpec)));
                 baseConfig = QuarkusComponentVariants.getConditionalConfigurationName(mode);
             }
             project.getConfigurations().register(this.runtimeConfigurationName, configuration -> {

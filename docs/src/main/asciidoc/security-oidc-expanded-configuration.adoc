@@ -852,7 +852,7 @@ In this case, Quarkus attempts to refresh the verification key set, but blocks a
 |Property | Default |Description
 
 |quarkus.oidc.token.allow-jwt-introspection |true| Allow JWT introspection
-|quarkus.oidc.token.require-jwt-introspection-only |true| Require JWT introspection only
+|quarkus.oidc.token.require-jwt-introspection-only |false| Require JWT introspection only
 |quarkus.oidc.token.allow-opaque-token-introspection |false| Allow JWT introspection
 |====
 

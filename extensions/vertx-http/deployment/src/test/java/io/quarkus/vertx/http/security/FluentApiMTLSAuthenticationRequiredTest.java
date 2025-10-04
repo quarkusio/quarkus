@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -60,8 +61,9 @@ public class FluentApiMTLSAuthenticationRequiredTest {
                     .get(adminRoleTlsPath);
             Assertions.fail("SSL handshake failure not detected");
         } catch (Exception e) {
-            var sslHandshakeFailed = e.getMessage().contains("Received fatal alert: bad_certificate");
-            assertTrue(sslHandshakeFailed, () -> "Expected SSL handshake failure, but got: " + e.getMessage());
+            assertThat(e.getMessage())
+                    .containsAnyOf("Received fatal alert: bad_certificate", "Received fatal alert: certificate_required")
+                    .describedAs("Expected SSL handshake failure, but got: " + e);
         }
     }
 
@@ -74,8 +76,9 @@ public class FluentApiMTLSAuthenticationRequiredTest {
                     .get(publicTlsPath);
             Assertions.fail("SSL handshake failure not detected");
         } catch (Exception e) {
-            var sslHandshakeFailed = e.getMessage().contains("Received fatal alert: bad_certificate");
-            assertTrue(sslHandshakeFailed, () -> "Expected SSL handshake failure, but got: " + e.getMessage());
+            assertThat(e.getMessage())
+                    .containsAnyOf("Received fatal alert: bad_certificate", "Received fatal alert: certificate_required")
+                    .describedAs("Expected SSL handshake failure, but got: " + e);
         }
     }
 

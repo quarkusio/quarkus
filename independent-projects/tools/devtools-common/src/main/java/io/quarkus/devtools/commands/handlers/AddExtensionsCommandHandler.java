@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -33,6 +34,8 @@ import io.quarkus.registry.catalog.ExtensionOrigin;
  * {@link QuarkusCommandInvocation}.
  */
 public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
+
+    private static final Pattern VALID_IDENTIFIER = Pattern.compile("[A-Za-z0-9_.-]+");
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
@@ -65,11 +68,21 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                                 .info(MessageIcons.NOOP_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " was already installed"));
                 return QuarkusCommandOutcome.success().setValue(AddExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
-            } else if (!extensionInstallPlan.getUnmatchedKeywords().isEmpty()) {
-                invocation.log()
-                        .info(ERROR_ICON + " Nothing installed because keyword(s) '"
-                                + String.join("', '", extensionInstallPlan.getUnmatchedKeywords())
-                                + "' were not matched in the catalog.");
+            } else if (!extensionInstallPlan.getUnmatchedKeywords().isEmpty()
+                    || !extensionInstallPlan.getInvalidKeywords().isEmpty()) {
+                if (!extensionInstallPlan.getUnmatchedKeywords().isEmpty()) {
+                    invocation.log()
+                            .info(ERROR_ICON + " Nothing installed because keyword(s) '"
+                                    + String.join("', '", extensionInstallPlan.getUnmatchedKeywords())
+                                    + "' were not matched in the catalog.");
+                }
+
+                if (!extensionInstallPlan.getInvalidKeywords().isEmpty()) {
+                    invocation.log()
+                            .info(FAILURE_ICON + " Nothing installed because keyword(s) '"
+                                    + String.join("', '", extensionInstallPlan.getInvalidKeywords())
+                                    + "' were invalid.");
+                }
             } else {
                 invocation.log()
                         .info(FAILURE_ICON + " The provided keyword(s) did not match any extension from the catalog.");
@@ -107,7 +120,13 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             int countColons = StringUtils.countMatches(keyword, ":");
             if (countColons > 1) {
                 // it's a gav
-                builder.addIndependentExtension(ArtifactCoords.fromString(keyword));
+                ArtifactCoords coords = ArtifactCoords.fromString(keyword);
+                if (VALID_IDENTIFIER.matcher(coords.getGroupId()).matches()
+                        && VALID_IDENTIFIER.matcher(coords.getArtifactId()).matches()) {
+                    builder.addIndependentExtension(coords);
+                } else {
+                    builder.addInvalidKeyword(keyword);
+                }
                 continue;
             }
             List<Extension> listed = List.of();

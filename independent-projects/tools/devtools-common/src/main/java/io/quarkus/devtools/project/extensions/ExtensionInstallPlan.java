@@ -14,21 +14,25 @@ public class ExtensionInstallPlan {
             Collections.emptySet(),
             Collections.emptySet(),
             Collections.emptySet(),
+            Collections.emptySet(),
             Collections.emptySet());
 
     private final Set<ArtifactCoords> platforms;
     private final Set<ArtifactCoords> managedExtensions;
     private final Set<ArtifactCoords> independentExtensions;
     private final Collection<String> unmatchedKeywords;
+    private final Collection<String> invalidKeywords;
 
     private ExtensionInstallPlan(Set<ArtifactCoords> platforms,
             Set<ArtifactCoords> managedExtensions,
             Set<ArtifactCoords> independentExtensions,
-            Collection<String> unmatchedKeywords) {
+            Collection<String> unmatchedKeywords,
+            Collection<String> invalidKeywords) {
         this.platforms = platforms;
         this.managedExtensions = managedExtensions;
         this.independentExtensions = independentExtensions;
         this.unmatchedKeywords = unmatchedKeywords;
+        this.invalidKeywords = invalidKeywords;
     }
 
     public boolean isNotEmpty() {
@@ -77,6 +81,10 @@ public class ExtensionInstallPlan {
         return unmatchedKeywords;
     }
 
+    public Collection<String> getInvalidKeywords() {
+        return invalidKeywords;
+    }
+
     @Override
     public String toString() {
         return "InstallRequest{" +
@@ -84,6 +92,7 @@ public class ExtensionInstallPlan {
                 ", managedExtensions=" + managedExtensions +
                 ", independentExtensions=" + independentExtensions +
                 ", unmatchedKeywords=" + unmatchedKeywords +
+                ", invalidKeywords=" + invalidKeywords +
                 '}';
     }
 
@@ -97,9 +106,11 @@ public class ExtensionInstallPlan {
         private final Set<ArtifactCoords> extensionsInPlatforms = new LinkedHashSet<>();
         private final Set<ArtifactCoords> independentExtensions = new LinkedHashSet<>();
         private final Collection<String> unmatchedKeywords = new ArrayList<>();
+        private final Collection<String> invalidKeywords = new ArrayList<>();
 
         public ExtensionInstallPlan build() {
-            return new ExtensionInstallPlan(platforms, extensionsInPlatforms, independentExtensions, unmatchedKeywords);
+            return new ExtensionInstallPlan(platforms, extensionsInPlatforms, independentExtensions, unmatchedKeywords,
+                    invalidKeywords);
         }
 
         public Builder addIndependentExtension(ArtifactCoords artifactCoords) {
@@ -119,6 +130,11 @@ public class ExtensionInstallPlan {
 
         public Builder addUnmatchedKeyword(String unmatchedKeyword) {
             this.unmatchedKeywords.add(unmatchedKeyword);
+            return this;
+        }
+
+        public Builder addInvalidKeyword(String invalidKeyword) {
+            this.invalidKeywords.add(invalidKeyword);
             return this;
         }
 

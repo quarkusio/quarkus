@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -159,6 +160,11 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
+        public Class<?> getRequiredTestClass() {
+            return ExtensionContext.super.getRequiredTestClass();
+        }
+
+        @Override
         public Optional<TestInstance.Lifecycle> getTestInstanceLifecycle() {
             return Optional.empty();
         }
@@ -169,8 +175,18 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
+        public Object getRequiredTestInstance() {
+            return ExtensionContext.super.getRequiredTestInstance();
+        }
+
+        @Override
         public Optional<TestInstances> getTestInstances() {
             return Optional.empty();
+        }
+
+        @Override
+        public TestInstances getRequiredTestInstances() {
+            return ExtensionContext.super.getRequiredTestInstances();
         }
 
         public void setMethod(Method method) {
@@ -180,6 +196,11 @@ class VirtualThreadExtensionTest {
         @Override
         public Optional<Method> getTestMethod() {
             return Optional.ofNullable(method);
+        }
+
+        @Override
+        public Method getRequiredTestMethod() {
+            return ExtensionContext.super.getRequiredTestMethod();
         }
 
         @Override
@@ -193,12 +214,28 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
-        public <T> Optional<T> getConfigurationParameter(String s, Function<String, T> function) {
+        public <T> Optional<T> getConfigurationParameter(String key,
+                Function<? super String, ? extends @Nullable T> transformer) {
             return Optional.empty();
         }
 
         @Override
         public void publishReportEntry(Map<String, String> map) {
+
+        }
+
+        @Override
+        public void publishReportEntry(String key, String value) {
+            ExtensionContext.super.publishReportEntry(key, value);
+        }
+
+        @Override
+        public void publishReportEntry(String value) {
+            ExtensionContext.super.publishReportEntry(value);
+        }
+
+        @Override
+        public void publishFile(String name, org.junit.jupiter.api.MediaType mediaType, ThrowingConsumer<Path> action) {
 
         }
 
@@ -250,6 +287,7 @@ class VirtualThreadExtensionTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static class TestStore implements ExtensionContext.Store {
 
         private final Map<Object, Object> store = new ConcurrentHashMap<>();
@@ -274,15 +312,34 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <K, V> Object getOrComputeIfAbsent(K key, Function<K, V> function) {
-            return store.computeIfAbsent(key, o -> function.apply((K) o));
+        public <V> V getOrDefault(Object key, Class<V> requiredType, V defaultValue) {
+            return ExtensionContext.Store.super.getOrDefault(key, requiredType, defaultValue);
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <K, V> V getOrComputeIfAbsent(K key, Function<K, V> function, Class<V> aClass) {
-            return aClass.cast(store.computeIfAbsent(key, o -> function.apply((K) o)));
+        public <V> V computeIfAbsent(Class<V> type) {
+            return ExtensionContext.Store.super.computeIfAbsent(type);
+        }
+
+        @Override
+        public @Nullable <K, V> Object getOrComputeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator) {
+            return store.computeIfAbsent(key, (Function<? super Object, ?>) defaultCreator);
+        }
+
+        @Override
+        public <K, V> Object computeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator) {
+            return store.computeIfAbsent(key, (Function<? super Object, ?>) defaultCreator);
+        }
+
+        @Override
+        public <K, V> @Nullable V getOrComputeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator,
+                Class<V> requiredType) {
+            return requiredType.cast(store.computeIfAbsent(key, (Function<? super Object, ?>) defaultCreator));
+        }
+
+        @Override
+        public <K, V> V computeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator, Class<V> requiredType) {
+            return requiredType.cast(store.computeIfAbsent(key, (Function<? super Object, ?>) defaultCreator));
         }
 
         @Override

@@ -5,14 +5,17 @@ import static java.util.stream.Collectors.toMap;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.Extension;
@@ -144,6 +147,56 @@ public final class ExtensionProcessor {
         if (getMetadataValue(extension, "status").isEmpty()) {
             extendedMetadata.put("status", "stable");
         }
+
+        // existing support metadata
+        @SuppressWarnings("unchecked")
+        final Collection<Map<String, Object>> supportList = (Collection<Map<String, Object>>) extendedMetadata
+                .getOrDefault("support", new ArrayList<>());
+
+        /*
+         * map legacy style
+         *
+         * x-support: stable
+         * y-support:
+         * - stable
+         *
+         * to
+         *
+         * support:
+         * - id: x
+         * status: [stable]
+         * - id: y
+         * status: [stable]
+         */
+        final List<Map<String, Object>> supportStatuses = extendedMetadata.entrySet().stream()
+                .filter(entry -> entry.getKey().endsWith("-support"))
+                .map((entry) -> {
+                    final Map<String, Object> supporter = new LinkedHashMap<>();
+
+                    supporter.put("id", entry.getKey().replace("-support", ""));
+
+                    if (entry.getValue() instanceof List) {
+                        supporter.put("status", entry.getValue());
+                    } else {
+                        supporter.put("status", Arrays.asList(entry.getValue()));
+                    }
+
+                    return supporter;
+                })
+                .collect(Collectors.toList());
+
+        // merge them together - do we need to worry about duplicates?
+        supportList.addAll(supportStatuses);
+
+        // make sure we have a default status for each supporter
+        supportList.stream()
+                .filter((map) -> !map.containsKey("status"))
+                .forEach((map) -> {
+                    map.put("status", Arrays.asList("stable"));
+                });
+
+        extendedMetadata.put("support", supportList);
+
         return extendedMetadata.entrySet().stream()
                 .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), (new MetadataValue(e.getValue()).asStringList())))
                 .filter(e -> !e.getValue().isEmpty())

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.kotlin.runtime
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.CommonPanacheQueryImpl
+import io.quarkus.hibernate.reactive.panache.common.runtime.CommonManagedPanacheQueryImpl
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
@@ -9,7 +9,7 @@ import jakarta.persistence.LockModeType
 import org.hibernate.reactive.mutiny.Mutiny
 
 class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
-    private var delegate: CommonPanacheQueryImpl<Entity>
+    private var delegate: CommonManagedPanacheQueryImpl<Entity>
 
     internal constructor(
         em: Uni<Mutiny.Session>,
@@ -18,10 +18,11 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
         orderBy: String?,
         paramsArrayOrMap: Any?,
     ) {
-        delegate = CommonPanacheQueryImpl(em, query, originalQuery, orderBy, paramsArrayOrMap)
+        delegate =
+            CommonManagedPanacheQueryImpl(em, query, originalQuery, orderBy, paramsArrayOrMap)
     }
 
-    private constructor(delegate: CommonPanacheQueryImpl<Entity>) {
+    private constructor(delegate: CommonManagedPanacheQueryImpl<Entity>) {
         this.delegate = delegate
     }
 

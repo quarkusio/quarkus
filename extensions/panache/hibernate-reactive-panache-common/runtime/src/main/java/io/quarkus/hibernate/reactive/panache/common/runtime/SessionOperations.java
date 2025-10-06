@@ -15,6 +15,7 @@ import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
@@ -29,6 +30,8 @@ import io.vertx.core.Vertx;
  * Static util methods for {@link Mutiny.Session}.
  */
 public final class SessionOperations {
+
+    private static final Logger LOG = Logger.getLogger(SessionOperations.class);
 
     private static final String ERROR_MSG = "Hibernate Reactive Panache requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
 
@@ -203,6 +206,7 @@ public final class SessionOperations {
             // reactive session does not exist - open a new one and close it when the returned Uni completes
             return SESSION_FACTORY_MAP.getValue(persistenceUnitName)
                     .openSession()
+                    .invoke(() -> LOG.debugf("Opening lazy managed session for Persistence Unit '%s'", persistenceUnitName))
                     .invoke(s -> context.putLocal(key, s))
                     .chain(work::apply)
                     .eventually(() -> closeSession(persistenceUnitName));
@@ -256,6 +260,7 @@ public final class SessionOperations {
             // reactive session does not exist - open a new one and close it when the returned Uni completes
             return SESSION_FACTORY_MAP.getValue(persistenceUnitName)
                     .openStatelessSession()
+                    .invoke(() -> LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName))
                     .invoke(s -> context.putLocal(key, s))
                     .chain(work::apply)
                     .eventually(() -> closeSession(persistenceUnitName));
@@ -332,6 +337,7 @@ public final class SessionOperations {
                     // the context was marked as "lazy" which means that the session will be eventually closed
                     onDemandSessionsCreated.add(persistenceUnitName);
                     return SESSION_FACTORY_MAP.getValue(persistenceUnitName).openSession()
+                            .invoke(() -> LOG.debugf("Opening lazy session for Persistence Unit '%s'", persistenceUnitName))
                             .invoke(s -> context.putLocal(key, s));
                 }
             } else {
@@ -394,6 +400,8 @@ public final class SessionOperations {
                     // the context was marked as "lazy" which means that the session will be eventually closed
                     onDemandSessionsCreated.add(persistenceUnitName);
                     return SESSION_FACTORY_MAP.getValue(persistenceUnitName).openStatelessSession()
+                            .invoke(() -> LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'",
+                                    persistenceUnitName))
                             .invoke(s -> context.putLocal(key, s));
                 }
             } else {
@@ -449,15 +457,18 @@ public final class SessionOperations {
      * Close any session open for that persistence unit (stateless or managed, there can be only one opened at a time)
      */
     static Uni<Void> closeSession(String persistenceUnitName) {
+        LOG.debugf("Closing session for Persistence Unit '%s'", persistenceUnitName);
         Context context = vertxContext();
         Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
         Mutiny.Session current = context.getLocal(key);
         if (current != null && current.isOpen()) {
+            LOG.debugf("Closing opened managed session for Persistence Unit '%s'", persistenceUnitName);
             return current.close().eventually(() -> context.removeLocal(key));
         }
         Key<Mutiny.StatelessSession> statelessKey = STATELESS_SESSION_KEY_MAP.getValue(persistenceUnitName);
-        Mutiny.StatelessSession currentStateless = context.getLocal(key);
+        Mutiny.StatelessSession currentStateless = context.getLocal(statelessKey);
         if (currentStateless != null && currentStateless.isOpen()) {
+            LOG.debugf("Closing opened stateless session for Persistence Unit '%s'", persistenceUnitName);
             return currentStateless.close().eventually(() -> context.removeLocal(statelessKey));
         }
         return Uni.createFrom().voidItem();

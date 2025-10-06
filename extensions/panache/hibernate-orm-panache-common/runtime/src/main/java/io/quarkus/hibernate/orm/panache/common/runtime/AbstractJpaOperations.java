@@ -6,12 +6,11 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.TransactionManager;
 
 import org.hibernate.Session;
+import org.hibernate.SharedSessionContract;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.MutationQuery;
 import org.hibernate.query.SelectionQuery;
@@ -24,7 +23,11 @@ import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
-public abstract class AbstractJpaOperations<PanacheQueryType> {
+public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extends SharedSessionContract> {
+
+    //
+    // Static
+
     private static final Map<String, String> entityToPersistenceUnit = new HashMap<>();
     private static volatile Boolean entityToPersistenceUnitIsIncomplete = null;
 
@@ -43,7 +46,34 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         }
     }
 
-    protected abstract PanacheQueryType createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
+    private static volatile Map<Class<?>, Class<?>> repositoryClassToEntityClass = Collections.emptyMap();
+
+    public static void setRepositoryClassesToEntityClasses(Map<Class<?>, Class<?>> map) {
+        repositoryClassToEntityClass = Collections.unmodifiableMap(map);
+    }
+
+    public static <Entity> Class<? extends Entity> getRepositoryEntityClass(
+            // FIXME: if we move this to JpaOperations we can add a type constraint on the repo class
+            Class<?> repositoryImplementationClass) {
+        Class<?> ret = repositoryClassToEntityClass.get(repositoryImplementationClass);
+        if (ret == null) {
+            throw new RuntimeException("Your repository class " + repositoryImplementationClass
+                    + " was not properly detected and assigned an entity type");
+        }
+        return (Class<? extends Entity>) ret;
+    }
+
+    //
+    // Instance
+
+    private Class<SessionType> sessionType;
+
+    protected AbstractJpaOperations(Class<SessionType> sessionType) {
+        this.sessionType = sessionType;
+    }
+
+    protected abstract PanacheQueryType createPanacheQuery(SessionType session, String query, String originalQuery,
+            String orderBy,
             Object paramsArrayOrMap);
 
     public abstract List<?> list(PanacheQueryType query);
@@ -51,20 +81,11 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public abstract Stream<?> stream(PanacheQueryType query);
 
     /**
-     * Returns the {@link EntityManager} for the given {@link Class<?> entity}
-     *
-     * @return {@link EntityManager}
-     */
-    public EntityManager getEntityManager(Class<?> clazz) {
-        return getSession(clazz);
-    }
-
-    /**
      * Returns the {@link Session} for the given {@link Class<?> entity}
      *
      * @return {@link Session}
      */
-    public Session getSession(Class<?> clazz) {
+    public SessionType getSession(Class<?> clazz) {
         String clazzName = clazz.getName();
         String persistentUnitName = entityToPersistenceUnit.get(clazzName);
         if (persistentUnitName == null) {
@@ -73,7 +94,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 // so we'll just return the default PU and hope for the best.
                 // The error will be thrown later by Hibernate ORM if necessary;
                 // it will be a bit less clear, but this is an edge case.
-                Session session = getSession(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+                SessionType session = getSession(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
                 if (session != null) {
                     return session;
                 }
@@ -86,71 +107,23 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return getSession(persistentUnitName);
     }
 
-    public Session getSession(String persistentUnitName) {
+    public SessionType getSession(String persistentUnitName) {
         ArcContainer arcContainer = Arc.container();
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
-            return arcContainer.instance(Session.class).get();
+            return arcContainer.instance(sessionType).get();
         } else {
-            return arcContainer.instance(Session.class,
+            return arcContainer.instance(sessionType,
                     new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName))
                     .get();
         }
     }
 
-    public Session getSession() {
+    public SessionType getSession() {
         return getSession(DEFAULT_PERSISTENCE_UNIT_NAME);
     }
     //
     // Instance methods
 
-    public void persist(Object entity) {
-        Session session = getSession(entity.getClass());
-        persist(session, entity);
-    }
-
-    public void persist(Session session, Object entity) {
-        if (!session.contains(entity)) {
-            session.persist(entity);
-        }
-    }
-
-    public void persist(Iterable<?> entities) {
-        for (Object entity : entities) {
-            persist(getSession(entity.getClass()), entity);
-        }
-    }
-
-    public void persist(Object firstEntity, Object... entities) {
-        persist(firstEntity);
-        for (Object entity : entities) {
-            persist(entity);
-        }
-    }
-
-    public void persist(Stream<?> entities) {
-        entities.forEach(entity -> persist(entity));
-    }
-
-    public void delete(Object entity) {
-        Session session = getSession(entity.getClass());
-        session.remove(session.contains(entity) ? entity : session.getReference(entity));
-    }
-
-    public boolean isPersistent(Object entity) {
-        return getSession(entity.getClass()).contains(entity);
-    }
-
-    public void flush() {
-        getSession().flush();
-    }
-
-    public void flush(Object entity) {
-        getSession(entity.getClass()).flush();
-    }
-
-    public void flush(Class<?> clazz) {
-        getSession(clazz).flush();
-    }
     //
     // Private stuff
 
@@ -187,32 +160,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     //
     // Queries
 
-    public Object findById(Class<?> entityClass, Object id) {
-        return getSession(entityClass).find(entityClass, id);
-    }
-
-    public Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
-        return getSession(entityClass).find(entityClass, id, lockModeType);
-    }
-
-    public Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
-        return Optional.ofNullable(findById(entityClass, id));
-    }
-
-    public Optional<?> findByIdOptional(Class<?> entityClass, Object id, LockModeType lockModeType) {
-        return Optional.ofNullable(findById(entityClass, id, lockModeType));
-    }
-
-    public List<?> findByIds(Class<?> entityClass, List<?> ids) {
-        return getSession(entityClass).findMultiple(entityClass, ids);
-    }
-
     public PanacheQueryType find(Class<?> entityClass, String query, Object... params) {
         return find(entityClass, query, null, params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Object... params) {
-        Session session = getSession(entityClass);
+        SessionType session = getSession(entityClass);
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
             String namedQuery = panacheQuery.substring(1);
             if (sort != null) {
@@ -233,7 +186,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Map<String, Object> params) {
-        Session session = getSession(entityClass);
+        SessionType session = getSession(entityClass);
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
             String namedQuery = panacheQuery.substring(1);
             if (sort != null) {
@@ -307,13 +260,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public PanacheQueryType findAll(Class<?> entityClass) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
-        Session session = getSession(entityClass);
+        SessionType session = getSession(entityClass);
         return createPanacheQuery(session, query, null, null, null);
     }
 
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
-        Session session = getSession(entityClass);
+        SessionType session = getSession(entityClass);
         return createPanacheQuery(session, query, null, PanacheJpaUtil.toOrderBy(sort), null);
     }
 
@@ -410,17 +363,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public long deleteAll(Class<?> entityClass) {
         return getSession(entityClass).createMutationQuery("DELETE FROM " + PanacheJpaUtil.getEntityName(entityClass))
                 .executeUpdate();
-    }
-
-    public boolean deleteById(Class<?> entityClass, Object id) {
-        // Impl note : we load the entity then delete it because it's the only implementation generic enough for any model,
-        // and correct in all cases (composite key, graph of entities, ...). HQL cannot be directly used for these reasons.
-        Object entity = findById(entityClass, id);
-        if (entity == null) {
-            return false;
-        }
-        getSession(entityClass).remove(entity);
-        return true;
     }
 
     public long delete(Class<?> entityClass, String panacheQuery, Object... params) {

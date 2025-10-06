@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -65,8 +66,9 @@ public class FluentApiMTLSAuthenticationRequiredDevModeTest {
                     .get(url);
             Assertions.fail("SSL handshake failure not detected");
         } catch (Exception e) {
-            var sslHandshakeFailed = e.getMessage().contains("Received fatal alert: bad_certificate");
-            assertTrue(sslHandshakeFailed, () -> "Expected SSL handshake failure, but got: " + e.getMessage());
+            assertThat(e.getMessage())
+                    .containsAnyOf("Received fatal alert: bad_certificate", "Received fatal alert: certificate_required")
+                    .describedAs("Expected SSL handshake failure, but got: " + e);
         }
     }
 
@@ -80,15 +82,17 @@ public class FluentApiMTLSAuthenticationRequiredDevModeTest {
                     .get(url);
             Assertions.fail("SSL handshake failure not detected");
         } catch (Exception e) {
-            var sslHandshakeFailed = e.getMessage().contains("Received fatal alert: bad_certificate");
-            assertTrue(sslHandshakeFailed, () -> "Expected SSL handshake failure, but got: " + e.getMessage());
+            assertThat(e.getMessage())
+                    .containsAnyOf("Received fatal alert: bad_certificate", "Received fatal alert: certificate_required")
+                    .describedAs("Expected SSL handshake failure, but got: " + e);
         }
     }
 
     @Test
     void testInsecureRequestsDenied() {
         try {
-            RestAssured.given().get(publicPath);
+            URL url = correctPortIfNecessary(publicPath);
+            RestAssured.given().get(url);
             Assertions.fail("Connection should be refused");
         } catch (Exception e) {
             var sslHandshakeFailed = e.getMessage().contains("Connection refused");

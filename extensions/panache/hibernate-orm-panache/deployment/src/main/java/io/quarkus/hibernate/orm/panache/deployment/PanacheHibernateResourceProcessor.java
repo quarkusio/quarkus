@@ -164,5 +164,4 @@ public final class PanacheHibernateResourceProcessor {
         }
         return null;
     }
-
 }

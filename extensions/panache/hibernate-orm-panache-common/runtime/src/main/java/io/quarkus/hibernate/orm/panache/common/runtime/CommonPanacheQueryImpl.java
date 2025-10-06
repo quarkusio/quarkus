@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
-import org.hibernate.Session;
+import org.hibernate.SharedSessionContract;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.spi.SqmQuery;
 
@@ -57,7 +57,7 @@ public class CommonPanacheQueryImpl<Entity> {
      */
     protected String customCountQueryForSpring;
     private String orderBy;
-    private Session session;
+    private SharedSessionContract session;
 
     private Page page;
     private Long count;
@@ -70,7 +70,7 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Map<String, Object>> filters;
     private Class<?> projectionType;
 
-    public CommonPanacheQueryImpl(Session session, String query, String originalQuery, String orderBy,
+    public CommonPanacheQueryImpl(SharedSessionContract session, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
         this.session = session;
         this.query = query;

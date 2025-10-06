@@ -246,14 +246,6 @@ public class NativeImageBuildStep {
         checkGraalVMVersion(graalVMVersion);
 
         try {
-            if (nativeConfig.cleanupServer()) {
-                log.warn(
-                        "Your application is setting the deprecated 'quarkus.native.cleanup-server' configuration key"
-                                + " to true. Please consider removing this configuration key as it is ignored"
-                                + " (The Native image build server is always disabled) and it will be removed in a"
-                                + " future Quarkus version.");
-            }
-
             NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()
                     .setNativeConfig(nativeConfig)
                     .setLocalesBuildTimeConfig(localesBuildTimeConfig)
@@ -717,7 +709,6 @@ public class NativeImageBuildStep {
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
-                boolean inlineBeforeAnalysis = nativeConfig.inlineBeforeAnalysis();
                 boolean addAllCharsets = nativeConfig.addAllCharsets();
                 boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler();
                 for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
@@ -735,8 +726,6 @@ public class NativeImageBuildStep {
                                         + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
-                    } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
-                        inlineBeforeAnalysis = Boolean.parseBoolean(prop.getValue());
                     } else {
                         // todo maybe just -D is better than -J-D in this case
                         if (prop.getValue() == null) {
@@ -922,28 +911,12 @@ public class NativeImageBuildStep {
                 if (!protocols.isEmpty()) {
                     nativeImageArgs.add("--enable-url-protocols=" + String.join(",", protocols));
                 }
-                if (!inlineBeforeAnalysis) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:-InlineBeforeAnalysis");
-                }
                 if (!pie.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + pie);
                 }
 
                 if (!nativeConfig.enableIsolates()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:-SpawnIsolates");
-                }
-                if (!nativeConfig.enableJni()) {
-                    log.warn(
-                            "Your application is setting the deprecated 'quarkus.native.enable-jni' configuration key to false."
-                                    + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
-                                    + " will be removed in a future Quarkus version.");
-                }
-                if (nativeConfig.enableServer()) {
-                    log.warn(
-                            "Your application is setting the deprecated 'quarkus.native.enable-server' configuration key to true."
-                                    + " Please consider removing this configuration key as it is ignored"
-                                    + " (The Native image build server is always disabled) and it"
-                                    + " will be removed in a future Quarkus version.");
                 }
                 if (nativeConfig.enableVmInspection()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
@@ -999,14 +972,6 @@ public class NativeImageBuildStep {
                     }
                 } else {
                     addExperimentalVMOption(nativeImageArgs, "-H:-UseServiceLoaderFeature");
-                }
-                // This option has no effect on GraalVM 23.1+
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
-                    if (nativeConfig.fullStackTraces()) {
-                        nativeImageArgs.add("-H:+StackTrace");
-                    } else {
-                        nativeImageArgs.add("-H:-StackTrace");
-                    }
                 }
 
                 if (nativeConfig.enableDashboardDump()) {

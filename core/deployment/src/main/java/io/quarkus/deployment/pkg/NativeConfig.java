@@ -65,31 +65,6 @@ public interface NativeConfig {
     boolean enableHttpsUrlHandler();
 
     /**
-     * If all security services should be added to the native image
-     *
-     * @deprecated {@code --enable-all-security-services} was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
-     */
-    @WithDefault("false")
-    @Deprecated
-    boolean enableAllSecurityServices();
-
-    /**
-     * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
-     *
-     * @deprecated inlineBeforeAnalysis is always enabled starting from GraalVM 21.3.
-     */
-    @Deprecated
-    @WithDefault("true")
-    boolean inlineBeforeAnalysis();
-
-    /**
-     * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
-     */
-    @Deprecated
-    @WithDefault("true")
-    boolean enableJni();
-
-    /**
      * The default value for java.awt.headless JVM option.
      * Switching this option affects linking of awt libraries.
      */
@@ -174,16 +149,6 @@ public interface NativeConfig {
     boolean publishDebugBuildProcessPort();
 
     /**
-     * If the native image server should be restarted.
-     *
-     * @deprecated Since GraalVM 20.2.0 the native image server has become an experimental feature and is disabled by
-     *             default.
-     */
-    @Deprecated
-    @WithDefault("false")
-    boolean cleanupServer();
-
-    /**
      * If isolates should be enabled
      */
     @WithDefault("true")
@@ -195,18 +160,6 @@ public interface NativeConfig {
      */
     @WithDefault("false")
     boolean enableFallbackImages();
-
-    /**
-     * If the native image server should be used. This can speed up compilation but can result in changes not always
-     * being picked up due to cache invalidation not working 100%
-     *
-     * @deprecated This used to be the default prior to GraalVM 20.2.0 and this configuration item was used to disable
-     *             it as it was not stable. Since GraalVM 20.2.0 the native image server has become an experimental
-     *             feature.
-     */
-    @Deprecated
-    @WithDefault("false")
-    boolean enableServer();
 
     /**
      * If all META-INF/services entries should be automatically registered
@@ -338,15 +291,6 @@ public interface NativeConfig {
      * </ul>
      */
     Optional<List<MonitoringOption>> monitoring();
-
-    /**
-     * If full stack traces are enabled in the resulting image
-     *
-     * @deprecated GraalVM 23.1+ will always build with full stack traces.
-     */
-    @WithDefault("true")
-    @Deprecated
-    boolean fullStackTraces();
 
     /**
      * If the reports on call paths and included packages/classes/methods should be generated

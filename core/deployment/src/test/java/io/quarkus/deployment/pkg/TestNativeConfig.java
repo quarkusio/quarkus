@@ -51,21 +51,6 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public boolean enableAllSecurityServices() {
-        return false;
-    }
-
-    @Override
-    public boolean inlineBeforeAnalysis() {
-        return false;
-    }
-
-    @Override
-    public boolean enableJni() {
-        return false;
-    }
-
-    @Override
     public boolean headless() {
         return false;
     }
@@ -116,22 +101,12 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public boolean cleanupServer() {
-        return false;
-    }
-
-    @Override
     public boolean enableIsolates() {
         return false;
     }
 
     @Override
     public boolean enableFallbackImages() {
-        return false;
-    }
-
-    @Override
-    public boolean enableServer() {
         return false;
     }
 
@@ -188,11 +163,6 @@ public class TestNativeConfig implements NativeConfig {
     @Override
     public Optional<List<MonitoringOption>> monitoring() {
         return Optional.empty();
-    }
-
-    @Override
-    public boolean fullStackTraces() {
-        return false;
     }
 
     @Override

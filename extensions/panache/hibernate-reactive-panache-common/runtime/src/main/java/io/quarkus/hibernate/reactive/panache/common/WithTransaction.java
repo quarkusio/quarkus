@@ -38,4 +38,10 @@ public @interface WithTransaction {
     @Nonbinding
     String value() default DEFAULT_PERSISTENCE_UNIT_NAME;
 
+    /**
+     * WARNING: this is temporary, it will be removed in the future.
+     * Requests a stateless session transaction, as opposed to a managed session transaction.
+     */
+    @Nonbinding
+    boolean stateless() default false;
 }

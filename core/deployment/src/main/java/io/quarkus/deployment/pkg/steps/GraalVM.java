@@ -172,7 +172,6 @@ public final class GraalVM {
         // Get access to GRAAL_MAPPING without making it public
         private static final Map<String, String> GRAAL_MAPPING = io.quarkus.runtime.graal.GraalVM.Version.GRAAL_MAPPING;
 
-        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
         public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
@@ -187,7 +186,7 @@ public final class GraalVM {
          * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM} instead.
          */
         @Deprecated
-        public static final Version MINIMUM = VERSION_23_0_0;
+        public static final Version MINIMUM = VERSION_23_1_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.

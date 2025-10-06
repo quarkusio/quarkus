@@ -20,7 +20,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -51,11 +50,6 @@ public class NativeImageFeatureStep {
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, String[].class);
-    public static final String RUNTIME_CLASS_INITIALIZATION_SUPPORT = "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport";
-    private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
-            RUNTIME_CLASS_INITIALIZATION_SUPPORT,
-            "rerunInitialization", void.class, Class.class, String.class);
-
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
 
     @BuildStep
@@ -198,29 +192,7 @@ public class NativeImageFeatureStep {
             runtimeReinitializedClasses.returnValue(classesArray);
 
             ResultHandle classes = overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
-
-            ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
-            BranchResult graalVm23_1Test = overallCatch
-                    .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
-                            overallCatch.marshalAsArray(int.class, overallCatch.load(23), overallCatch.load(1))));
-            /* GraalVM >= 23.1 */
-            try (BytecodeCreator greaterEqual23_1 = graalVm23_1Test.trueBranch()) {
-                greaterEqual23_1.invokeStaticMethod(INITIALIZE_CLASSES_AT_RUN_TIME, classes);
-            }
-            /* GraalVM < 23.1 */
-            try (BytecodeCreator less23_1 = graalVm23_1Test.falseBranch()) {
-                ResultHandle quarkus = less23_1.load("Quarkus");
-                ResultHandle imageSingleton = less23_1.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                        less23_1.loadClassFromTCCL(RUNTIME_CLASS_INITIALIZATION_SUPPORT));
-                ResultHandle arraySize = less23_1.arrayLength(classes);
-                AssignableResultHandle index = less23_1.createVariable(int.class);
-                less23_1.assign(index, less23_1.load(0));
-                try (BytecodeCreator loop = less23_1.whileLoop(c -> c.ifIntegerLessThan(index, arraySize)).block()) {
-                    loop.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton, loop.readArrayValue(classes, index),
-                            quarkus);
-                    loop.assign(index, loop.increment(index));
-                }
-            }
+            overallCatch.invokeStaticMethod(INITIALIZE_CLASSES_AT_RUN_TIME, classes);
         }
 
         // Ensure registration of fields being accessed through unsafe is done last to ensure that the class

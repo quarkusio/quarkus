@@ -28,7 +28,7 @@ import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public class CommonPanacheQueryImpl<Entity> {
+public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends Mutiny.QueryProducer> {
 
     private Object paramsArrayOrMap;
     /**
@@ -46,7 +46,6 @@ public class CommonPanacheQueryImpl<Entity> {
      */
     protected String customCountQueryForSpring;
     private String orderBy;
-    private Uni<Mutiny.Session> em;
 
     private Page page;
     private Uni<Long> count;
@@ -59,7 +58,9 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Map<String, Object>> filters;
     private Class<?> projectionType;
 
-    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
+    protected Uni<SessionType> em;
+
+    public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
@@ -68,7 +69,8 @@ public class CommonPanacheQueryImpl<Entity> {
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
-    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString,
+    protected CommonAbstractPanacheQueryImpl(CommonAbstractPanacheQueryImpl<?, SessionType> previousQuery,
+            String newQueryString,
             String customCountQueryForSpring,
             Class<?> projectionType) {
         this.em = previousQuery.em;
@@ -85,9 +87,16 @@ public class CommonPanacheQueryImpl<Entity> {
         this.projectionType = projectionType;
     }
 
+    protected abstract <T> CommonAbstractPanacheQueryImpl<T, SessionType> newQuery(String query,
+            String customCountQueryForSpring, Class<T> type);
+
+    protected abstract Filter enableFilter(SessionType session, String filter);
+
+    protected abstract void disableFilter(SessionType session, String filter);
+
     // Builder
 
-    public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+    public <T> CommonAbstractPanacheQueryImpl<T, SessionType> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
@@ -102,7 +111,7 @@ public class CommonPanacheQueryImpl<Entity> {
         // If the query starts with a select clause, we pass it on to ORM which can handle that via a projection type
         if (lowerCasedTrimmedQuery.startsWith("select ")) {
             // I think projections do not change the result count, so we can keep the custom count query
-            return new CommonPanacheQueryImpl<>(this, query, customCountQueryForSpring, type);
+            return newQuery(query, customCountQueryForSpring, type);
         }
 
         // FIXME: this assumes the query starts with "FROM " probably?
@@ -110,7 +119,7 @@ public class CommonPanacheQueryImpl<Entity> {
         // build select clause with a constructor expression
         String selectClause = "SELECT " + getParametersFromClass(type, null);
         // I think projections do not change the result count, so we can keep the custom count query
-        return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery, customCountQueryForSpring, null);
+        return newQuery(selectClause + selectQuery, customCountQueryForSpring, null);
     }
 
     private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
@@ -353,7 +362,7 @@ public class CommonPanacheQueryImpl<Entity> {
         });
     }
 
-    private Mutiny.SelectionQuery<?> createQuery(Mutiny.Session em) {
+    private Mutiny.SelectionQuery<?> createQuery(SessionType em) {
         Mutiny.SelectionQuery<?> jpaQuery = createBaseQuery(em);
 
         if (range != null) {
@@ -379,7 +388,7 @@ public class CommonPanacheQueryImpl<Entity> {
         return jpaQuery;
     }
 
-    private Mutiny.SelectionQuery<?> createQuery(Mutiny.Session em, int maxResults) {
+    private Mutiny.SelectionQuery<?> createQuery(SessionType em, int maxResults) {
         Mutiny.SelectionQuery<?> jpaQuery = createBaseQuery(em);
 
         if (range != null) {
@@ -400,7 +409,7 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     @SuppressWarnings("unchecked")
-    private Mutiny.SelectionQuery<?> createBaseQuery(Mutiny.Session em) {
+    private Mutiny.SelectionQuery<?> createBaseQuery(SessionType em) {
         Mutiny.SelectionQuery<?> hibernateQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
@@ -433,11 +442,11 @@ public class CommonPanacheQueryImpl<Entity> {
         return hibernateQuery;
     }
 
-    private <T> Uni<T> applyFilters(Mutiny.Session em, Supplier<Uni<T>> uni) {
+    private <T> Uni<T> applyFilters(SessionType em, Supplier<Uni<T>> uni) {
         if (filters == null)
             return uni.get();
         for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
-            Filter filter = em.enableFilter(entry.getKey());
+            Filter filter = enableFilter(em, entry.getKey());
             for (Entry<String, Object> paramEntry : entry.getValue().entrySet()) {
                 filter.setParameter(paramEntry.getKey(), paramEntry.getValue());
             }
@@ -445,7 +454,7 @@ public class CommonPanacheQueryImpl<Entity> {
         }
         return uni.get().onTermination().invoke(() -> {
             for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
-                em.disableFilter(entry.getKey());
+                disableFilter(em, entry.getKey());
             }
         });
     }

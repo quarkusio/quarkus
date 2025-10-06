@@ -115,7 +115,7 @@ public final class PanacheHibernateResourceProcessor {
                 ReactiveJavaJpaTypeBundle.BUNDLE);
         Set<String> daoClasses = new HashSet<>();
         Set<String> panacheEntities = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
@@ -126,7 +126,7 @@ public final class PanacheHibernateResourceProcessor {
             panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY)) {
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());

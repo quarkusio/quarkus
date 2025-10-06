@@ -6,6 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.util.Nonbinding;
 import jakarta.interceptor.InterceptorBinding;
 
 /**
@@ -26,5 +27,10 @@ import jakarta.interceptor.InterceptorBinding;
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface WithTransaction {
-
+    /**
+     * WARNING: this is temporary, it will be removed in the future.
+     * Requests a stateless session transaction, as opposed to a managed session transaction.
+     */
+    @Nonbinding
+    boolean stateless() default false;
 }

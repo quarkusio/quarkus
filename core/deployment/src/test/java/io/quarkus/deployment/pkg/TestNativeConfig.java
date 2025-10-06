@@ -56,16 +56,6 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public Optional<String> userLanguage() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<String> userCountry() {
-        return Optional.empty();
-    }
-
-    @Override
     public String fileEncoding() {
         return null;
     }

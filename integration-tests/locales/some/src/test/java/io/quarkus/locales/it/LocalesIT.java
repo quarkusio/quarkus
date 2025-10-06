@@ -93,7 +93,7 @@ public class LocalesIT {
                 /*
                  * Prior to GraalVM 24.2, the locale could not be changed at runtime.
                  * "Švýcarsko" is the correct name for Switzerland in Czech language.
-                 * Czech is the default language as per quarkus.native.user-language=cs.
+                 * Czech is the default language as per quarkus.default-locale=cs.
                  */
                 .body(is("Švýcarsko"))
                 .log().all();

@@ -72,30 +72,6 @@ public interface NativeConfig {
     boolean headless();
 
     /**
-     * Defines the user language used for building the native executable.
-     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale language for the native executable
-     * application runtime.
-     * e.g. en or cs as defined by IETF BCP 47 language tags.
-     * <p>
-     *
-     * @deprecated Use the global quarkus.default-locale.
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> userLanguage();
-
-    /**
-     * Defines the user country used for building the native executable.
-     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale country for the native executable
-     * application runtime.
-     * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
-     * <p>
-     *
-     * @deprecated Use the global quarkus.default-locale.
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> userCountry();
-
-    /**
      * Defines the file encoding as in {@code -Dfile.encoding=...}.
      * <p>
      * Native image runtime uses the host's (i.e. build time) value of {@code file.encoding}

@@ -111,7 +111,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.docker.image>${keycloak.docker.legacy.image}</keycloak.docker.image>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
                                 <keycloak.use.https>false</keycloak.use.https>
                             </systemPropertyVariables>
                         </configuration>

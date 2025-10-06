@@ -38,6 +38,9 @@ public class UserInfoRequiredDetectionTest {
                     .addAsResource(
                             new StringAsset(
                                     """
+                                            # Disable Dev Services, we use a test resource manager
+                                            quarkus.keycloak.devservices.enabled=false
+
                                             quarkus.oidc.tenant-paths=/user-info/default-tenant-random
                                             quarkus.oidc.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
                                             quarkus.oidc.named-2.auth-server-url=${quarkus.oidc.auth-server-url}

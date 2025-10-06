@@ -69,6 +69,7 @@ public class KeycloakRealmUserPasswordCustomFilterManager implements QuarkusTest
         realm.setRevokeRefreshToken(true);
         realm.setRefreshTokenMaxReuse(0);
         realm.setDefaultRoles(Arrays.asList("user"));
+        realm.setRequiredActions(List.of());
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
@@ -101,6 +102,8 @@ public class KeycloakRealmUserPasswordCustomFilterManager implements QuarkusTest
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(Arrays.asList(realmRoles));
+        user.setEmailVerified(true);
+        user.setRequiredActions(List.of());
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

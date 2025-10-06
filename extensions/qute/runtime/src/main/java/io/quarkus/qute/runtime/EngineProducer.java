@@ -37,6 +37,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.EngineBuilder.ParserConfigurator;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.FragmentNamespaceResolver;
@@ -45,6 +46,7 @@ import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.JsonEscaper;
 import io.quarkus.qute.NamedArgument;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.ParserConfig;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.Qute;
 import io.quarkus.qute.ReflectionValueResolver;
@@ -279,9 +281,28 @@ public class EngineProducer {
         builder.timeout(runtimeConfig.timeout());
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
+        Map<ParserConfig, Set<String>> nonDefaultParserConfigs = context.getNonDefaultParserConfigs();
+        if (!nonDefaultParserConfigs.isEmpty()) {
+            Map<String, ParserConfig> parserConfigs = new HashMap<>();
+            for (Map.Entry<ParserConfig, Set<String>> e : nonDefaultParserConfigs.entrySet()) {
+                for (String templateId : e.getValue()) {
+                    parserConfigs.put(templateId, e.getKey());
+                }
+            }
+            builder.configureParser(new ParserConfigurator() {
+                @Override
+                public ParserConfig getConfig(String templateId, Optional<Variant> variant) {
+                    ParserConfig config = parserConfigs.get(templateId);
+                    return config != null ? config : ParserConfig.DEFAULT;
+                }
+            });
+        }
+
         engine = builder.build();
 
-        // Load discovered template files
+        // Load all discovered template files
+        // pathNoSuffix -> [paths with suffix]
+        // foo -> [foo.html, foo.txt]
         Map<String, List<Template>> discovered = new HashMap<>();
         for (String path : context.getTemplatePaths()) {
             Template template = engine.getTemplate(path);
@@ -302,7 +323,7 @@ public class EngineProducer {
             }
         }
         // If it's a default suffix then register a path without suffix as well
-        // hello.html -> hello, hello.html
+        // For example, for "hello.html" load also "hello"
         for (Entry<String, List<Template>> e : discovered.entrySet()) {
             processDefaultTemplate(e.getKey(), e.getValue(), config, engine);
         }

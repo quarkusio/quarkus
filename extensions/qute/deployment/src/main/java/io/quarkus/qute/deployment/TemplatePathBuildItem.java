@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.qute.ParserConfig;
 import io.quarkus.qute.runtime.QuteConfig;
 
 /**
@@ -37,6 +38,13 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     public static final int APP_ARCHIVE_PRIORITY = 10;
 
     /**
+     * The alternative syntax for output expressions.
+     *
+     * @see QuteConfig#altExprSyntax()
+     */
+    public static final ParserConfig ALT_PARSER_CONFIG = new ParserConfig('=');
+
+    /**
      *
      * @return a new builder instance
      */
@@ -50,6 +58,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     private final String content;
     private final Path fullPath;
     private final String extensionInfo;
+    private final ParserConfig parserConfig;
 
     private final int priority;
 
@@ -63,15 +72,17 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     @Deprecated(forRemoval = true, since = "3.13")
     public TemplatePathBuildItem(String path, Path fullPath, String content) {
         this(Objects.requireNonNull(path), Objects.requireNonNull(content), Objects.requireNonNull(fullPath), null,
-                BUILD_ITEM_PRIORITY);
+                BUILD_ITEM_PRIORITY, null);
     }
 
-    private TemplatePathBuildItem(String path, String content, Path fullPath, String extensionInfo, int priority) {
+    private TemplatePathBuildItem(String path, String content, Path fullPath, String extensionInfo, int priority,
+            ParserConfig parserConfig) {
         this.path = path;
         this.content = content;
         this.fullPath = fullPath;
         this.extensionInfo = extensionInfo;
         this.priority = priority;
+        this.parserConfig = parserConfig;
     }
 
     /**
@@ -121,6 +132,13 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
+     * @return the config or {@code null}
+     */
+    public ParserConfig getParserConfig() {
+        return parserConfig;
+    }
+
+    /**
      *
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
@@ -144,6 +162,16 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
         return fullPath != null;
     }
 
+    /**
+     *
+     * @return {@code true} if a non-default parser config is set
+     */
+    public boolean hasNonDefaultParserConfig() {
+        return parserConfig != null
+                && parserConfig != ParserConfig.DEFAULT
+                && !ParserConfig.DEFAULT.equals(parserConfig);
+    }
+
     public String getSourceInfo() {
         return (isFileBased() ? getFullPath().toString() : extensionInfo) + " [" + getPriority() + "]";
     }
@@ -155,6 +183,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
         private Path fullPath;
         private String extensionInfo;
         private int priority = BUILD_ITEM_PRIORITY;
+        private ParserConfig parserConfig;
 
         /**
          * Set the path relative to the template root. The {@code /} is used as a path separator.
@@ -215,11 +244,22 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * Set the parser config for the template.
+         *
+         * @param parserConfig
+         * @return self
+         */
+        public Builder parserConfig(ParserConfig parserConfig) {
+            this.parserConfig = parserConfig;
+            return this;
+        }
+
         public TemplatePathBuildItem build() {
             if (fullPath == null && extensionInfo == null) {
                 throw new IllegalStateException("Templates that are not backed by a file must provide extension info");
             }
-            return new TemplatePathBuildItem(path, content, fullPath, extensionInfo, priority);
+            return new TemplatePathBuildItem(path, content, fullPath, extensionInfo, priority, parserConfig);
         }
 
     }

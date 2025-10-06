@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.qute.EngineBuilder.ParserConfigurator;
 import io.quarkus.qute.Parser.StringReader;
 import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
@@ -40,6 +41,7 @@ class EngineImpl implements Engine {
     private final long timeout;
     private final boolean useAsyncTimeout;
     final TraceManagerImpl traceManager;
+    final ParserConfigurator parserConfigurator;
 
     EngineImpl(EngineBuilder builder) {
         this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
@@ -57,6 +59,7 @@ class EngineImpl implements Engine {
         this.timeout = builder.timeout;
         this.useAsyncTimeout = builder.useAsyncTimeout;
         this.traceManager = builder.enableTracing ? new TraceManagerImpl() : null;
+        this.parserConfigurator = builder.parserConfigurator;
     }
 
     @Override

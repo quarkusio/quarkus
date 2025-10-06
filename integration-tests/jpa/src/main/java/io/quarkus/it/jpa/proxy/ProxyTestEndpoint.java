@@ -12,6 +12,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.hibernate.proxy.HibernateProxy;
+
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
@@ -75,6 +77,18 @@ public class ProxyTestEndpoint {
         if (list.size() != 1) {
             throw new RuntimeException("Expected 1 result, got " + list.size());
         }
+        return "OK";
+    }
+
+    @GET
+    @Path("abstract")
+    @Transactional
+    public String testAbstract() {
+        var result = entityManager.getReference(AbstractEntity.class, "1");
+        expectTrue(result != null);
+        expectTrue(result instanceof HibernateProxy);
+        // Make sure we don't get fooled by some kind of "fallback" eager loading
+        expectFalse(result instanceof ConcreteEntity);
         return "OK";
     }
 

@@ -823,12 +823,9 @@ public class NativeImageBuildStep {
                 // Generate a file with the list of built artifacts
                 addExperimentalVMOption(nativeImageArgs, "-H:+GenerateBuildArtifactsFile");
 
-                // only available in GraalVM 23.1.0+
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
-                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
-                        // Enabled by default in GraalVM 24.0.0.
-                        nativeImageArgs.add("--strict-image-heap");
-                    }
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
+                    // Enabled by default in GraalVM 24.0.0.
+                    nativeImageArgs.add("--strict-image-heap");
                 }
 
                 /*
@@ -993,20 +990,8 @@ public class NativeImageBuildStep {
 
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");
-                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
-                        // When enabling, at least print what exactly is being added. Only possible in <23.1.0
-                        nativeImageArgs.add("-H:+TraceServiceLoaderFeature");
-                    }
                 } else {
                     addExperimentalVMOption(nativeImageArgs, "-H:-UseServiceLoaderFeature");
-                }
-                // This option has no effect on GraalVM 23.1+
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
-                    if (nativeConfig.fullStackTraces()) {
-                        nativeImageArgs.add("-H:+StackTrace");
-                    } else {
-                        nativeImageArgs.add("-H:-StackTrace");
-                    }
                 }
 
                 if (nativeConfig.enableDashboardDump()) {
@@ -1113,13 +1098,9 @@ public class NativeImageBuildStep {
             }
 
             private void addExperimentalVMOption(List<String> nativeImageArgs, String option) {
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
-                    nativeImageArgs.add("-H:+UnlockExperimentalVMOptions");
-                }
+                nativeImageArgs.add("-H:+UnlockExperimentalVMOptions");
                 nativeImageArgs.add(option);
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
-                    nativeImageArgs.add("-H:-UnlockExperimentalVMOptions");
-                }
+                nativeImageArgs.add("-H:-UnlockExperimentalVMOptions");
             }
         }
     }

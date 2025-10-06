@@ -69,9 +69,6 @@ public final class QuarkusProxyFactory implements ProxyFactory {
             else if (Modifier.isFinal(persistentClass.getModifiers())) {
                 reason = "this class is final. Your application might perform better if this class was non-final.";
             }
-            if (Modifier.isAbstract(persistentClass.getModifiers())) {
-                reason = "this class is abstract. Your application might perform better if this class was non-abstract.";
-            }
             if (reason != null) {
                 // This is caught and logged as a warning by Hibernate ORM.
                 throw new HibernateException(String.format(Locale.ROOT,

@@ -20,8 +20,16 @@ public class GrpcCommonProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         // we force the usage of the reflection invoker.
-        Collection<ClassInfo> messages = combinedIndex.getIndex()
+        Collection<ClassInfo> messagesV3 = combinedIndex.getIndex()
                 .getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE_V3);
+        for (ClassInfo message : messagesV3) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(message.name().toString()).methods()
+                    .fields().build());
+        }
+
+        // we force the usage of the reflection invoker.
+        Collection<ClassInfo> messages = combinedIndex.getIndex()
+                .getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE);
         for (ClassInfo message : messages) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(message.name().toString()).methods()
                     .fields().build());
@@ -32,6 +40,12 @@ public class GrpcCommonProcessor {
                 .getAllKnownImplementations(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
         for (ClassInfo en : enums) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(en.name().toString()).methods()
+                    .fields().build());
+        }
+
+        Collection<ClassInfo> buildersV3 = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.MESSAGE_BUILDER_V3);
+        for (ClassInfo builder : buildersV3) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builder.name().toString()).methods()
                     .fields().build());
         }
 

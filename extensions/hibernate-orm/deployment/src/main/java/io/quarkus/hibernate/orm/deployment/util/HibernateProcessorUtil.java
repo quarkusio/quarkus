@@ -333,6 +333,21 @@ public final class HibernateProcessorUtil {
                 config.mapping().id().optimizer().idOptimizerDefault()
                         .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);
 
+        // Duration
+        config.mapping().duration().preferredJdbcType().ifPresent( duration ->
+                desc.getProperties().setProperty(
+                        AvailableSettings.PREFERRED_DURATION_JDBC_TYPE,
+                        duration
+                )
+        );
+
+        config.mapping().duration().preferredInstantJdbcType().ifPresent( instant ->
+                desc.getProperties().setProperty(
+                        AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE,
+                        instant
+                )
+        );
+
         //charset
         desc.getProperties()
                 .setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, config.database().charset().name());
@@ -377,6 +392,8 @@ public final class HibernateProcessorUtil {
         config.jdbc().statementBatchSize().ifPresent(
                 fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
                         String.valueOf(fetchSize)));
+
+
 
         // Statistics
         if (hibernateOrmConfig.metrics().enabled()

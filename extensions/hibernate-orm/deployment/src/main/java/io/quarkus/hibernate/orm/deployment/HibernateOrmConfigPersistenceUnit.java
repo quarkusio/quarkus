@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import org.hibernate.type.descriptor.jdbc.NumericJdbcType;
 
 @ConfigGroup
 public interface HibernateOrmConfigPersistenceUnit {
@@ -357,6 +359,8 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         Id id();
 
+        Duration duration();
+
         @ConfigGroup
         interface Timezone {
             /**
@@ -436,9 +440,22 @@ public interface HibernateOrmConfigPersistenceUnit {
             }
         }
 
+        @ConfigGroup
+        interface Duration {
+            @WithName("preferred_jdbc_type")
+            @ConfigDocDefault("INTERVAL_SECOND")
+            Optional<@WithConverter(TrimmedStringConverter.class) String> preferredJdbcType();
+
+            @WithName("preferred_instant_jdbc_type")
+            @ConfigDocDefault("TIMESTAMP")
+            Optional<@WithConverter(TrimmedStringConverter.class) String> preferredInstantJdbcType();
+        }
+
         default boolean isAnyPropertySet() {
-            return timezone().timeZoneDefaultStorage().isPresent()
-                    || id().optimizer().idOptimizerDefault().isPresent();
+            return timezone().timeZoneDefaultStorage().isPresent() ||
+                    id().optimizer().idOptimizerDefault().isPresent() ||
+                    duration().preferredJdbcType().isPresent() ||
+                    duration().preferredInstantJdbcType().isPresent();
         }
 
     }

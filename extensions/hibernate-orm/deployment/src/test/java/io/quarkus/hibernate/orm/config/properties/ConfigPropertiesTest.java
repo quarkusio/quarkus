@@ -66,5 +66,4 @@ public class ConfigPropertiesTest {
         String[] tableTypes = tableTypesStr.split(",");
         assertThat(tableTypes).containsExactly("MATERIALIZED VIEW", "FOREIGN TABLE");
     }
-
 }

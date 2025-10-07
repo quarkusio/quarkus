@@ -14,7 +14,7 @@ public class JPAIntegratorTest {
     public void testInjection() {
         when().get("/jpa-test/integrator").then()
                 .statusCode(200)
-                .body(is("1"));
+                .body(is("2")); // Once per persistence unit
     }
 
 }

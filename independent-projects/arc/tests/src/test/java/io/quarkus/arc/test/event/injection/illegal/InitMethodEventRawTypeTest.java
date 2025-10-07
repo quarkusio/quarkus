@@ -1,18 +1,20 @@
-package io.quarkus.arc.test.event.injection.invalid;
+package io.quarkus.arc.test.event.injection.illegal;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class ConstructorEventRawTypeTest {
+public class InitMethodEventRawTypeTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(InvalidBean.class).shouldFail()
@@ -22,14 +24,16 @@ public class ConstructorEventRawTypeTest {
     public void testExceptionIsThrown() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains("An injection point of raw type jakarta.enterprise.event.Event is defined"));
     }
 
     @Dependent
     public static class InvalidBean {
 
         // raw event type
-        public InvalidBean(Event event) {
+        @Inject
+        public void initMethod(Event event) {
         }
 
     }

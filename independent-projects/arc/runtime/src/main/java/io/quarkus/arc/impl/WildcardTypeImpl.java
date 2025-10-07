@@ -70,4 +70,15 @@ public class WildcardTypeImpl implements WildcardType {
         // We deliberately use the logic from JDK/guava
         return Arrays.hashCode(lowerBound) ^ Arrays.hashCode(upperBound);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder("?");
+        if (upperBound.length > 0 && !upperBound[0].equals(Object.class)) {
+            result.append(" extends ").append(upperBound[0]);
+        } else if (lowerBound.length > 0) {
+            result.append(" super ").append(lowerBound[0]);
+        }
+        return result.toString();
+    }
 }

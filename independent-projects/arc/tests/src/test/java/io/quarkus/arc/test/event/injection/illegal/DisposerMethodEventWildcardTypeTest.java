@@ -1,5 +1,6 @@
-package io.quarkus.arc.test.event.injection.invalid;
+package io.quarkus.arc.test.event.injection.illegal;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class DisposerMethodEventRawTypeTest {
+public class DisposerMethodEventWildcardTypeTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(DisposerMethodInjectionBean.class).shouldFail()
@@ -24,7 +25,9 @@ public class DisposerMethodEventRawTypeTest {
     public void testExceptionIsThrown() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage()
+                .contains("Wildcard without lower bound is not a legal type argument for jakarta.enterprise.event.Event"));
     }
 
     @Dependent
@@ -35,8 +38,8 @@ public class DisposerMethodEventRawTypeTest {
             return new Foo();
         }
 
-        // rawtype Event
-        public void disposeFoo(@Disposes Foo foo, Event event) {
+        // wildcard event type
+        public void disposeFoo(@Disposes Foo foo, Event<? extends Number> event) {
         }
 
     }

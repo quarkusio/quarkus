@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class TypeVariableInstanceInjectionPointTest {
+public class InstanceOfWildcardWithLowerBoundInjectionPointTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Head.class).shouldFail().build();;
@@ -25,14 +25,14 @@ public class TypeVariableInstanceInjectionPointTest {
         assertNotNull(failure);
         assertInstanceOf(DefinitionException.class, failure);
         assertTrue(failure.getMessage()
-                .contains("Type variable is not a legal type argument for jakarta.enterprise.inject.Instance"));
+                .contains("Wildcard with lower bound is not a legal type argument for jakarta.enterprise.inject.Instance"));
     }
 
     @Dependent
-    static class Head<T> {
+    static class Head {
 
         @Inject
-        Instance<T> instance;
+        Instance<? super Number> instance;
 
     }
 

@@ -1,0 +1,12 @@
+name: lgtm-codestart
+ref: lgtm
+tags: extension-codestart
+type: code
+metadata:
+  title: LGTM Observability
+  description: Create your first LGTM Observability application
+  related-guide-section: https://quarkus.io/guides/observability-devservices-lgtm
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-observability-devservices-lgtm

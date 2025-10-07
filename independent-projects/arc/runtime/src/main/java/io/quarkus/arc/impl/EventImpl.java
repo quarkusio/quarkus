@@ -1,12 +1,15 @@
 package io.quarkus.arc.impl;
 
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asWildcardType;
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isWildcardType;
 import static jakarta.transaction.Status.STATUS_COMMITTED;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -195,7 +198,17 @@ class EventImpl<T> implements Event<T> {
         if (isParameterizedType(type)) {
             ParameterizedType parameterizedType = asParameterizedType(type);
             if (Event.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
-                return parameterizedType.getActualTypeArguments()[0];
+                Type typeArg = parameterizedType.getActualTypeArguments()[0];
+                if (isWildcardType(typeArg)) {
+                    WildcardType wt = asWildcardType(typeArg);
+                    Type[] lowerBounds = wt.getLowerBounds();
+                    if (lowerBounds.length != 0) {
+                        return lowerBounds[0];
+                    }
+                    throw new IllegalArgumentException(
+                            "Wildcard without lower bound is an invalid specified type: " + type);
+                }
+                return typeArg;
             }
         }
         return type;

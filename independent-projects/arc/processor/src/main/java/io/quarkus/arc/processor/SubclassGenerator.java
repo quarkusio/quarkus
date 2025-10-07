@@ -318,7 +318,6 @@ public class SubclassGenerator extends AbstractGenerator {
             }
 
             MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
-            MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
             InterceptionInfo interception = bean.getInterceptedMethods().get(method);
             DecorationInfo decoration = bean.getDecoratedMethods().get(method);
             MethodDescriptor forwardDescriptor = forwardingMethods.get(methodDescriptor);
@@ -392,20 +391,10 @@ public class SubclassGenerator extends AbstractGenerator {
                 if (decoratorMethod != null) {
                     AssignableResultHandle funDecoratorInstance = funcBytecode.createVariable(Object.class);
                     funcBytecode.assign(funDecoratorInstance, decoratorHandle);
-                    String declaringClass = decoratorMethod.decorator.getBeanClass().toString();
-                    if (decoratorMethod.decorator.isAbstract()) {
-                        String baseName = DecoratorGenerator
-                                .createBaseName(decoratorMethod.decorator.getTarget().get().asClass());
-                        String targetPackage = DotNames.packageName(decoratorMethod.decorator.getProviderType().name());
-                        declaringClass = generatedNameFromTarget(targetPackage, baseName,
-                                DecoratorGenerator.ABSTRACT_IMPL_SUFFIX);
-                    }
-                    // We need to use the decorator method in order to support generic decorators
+                    // We need to use the decorator method in order to support not visible or generic decorators
                     MethodDescriptor decoratorMethodDescriptor = MethodDescriptor.of(decoratorMethod.method);
-                    MethodDescriptor virtualMethodDescriptor = MethodDescriptor.ofMethod(declaringClass,
-                            originalMethodDescriptor.getName(),
-                            decoratorMethodDescriptor.getReturnType(), decoratorMethodDescriptor.getParameterTypes());
-                    ResultHandle superResult = funcBytecode.invokeVirtualMethod(virtualMethodDescriptor, funDecoratorInstance,
+                    ResultHandle superResult = funcBytecode.invokeInterfaceMethod(decoratorMethodDescriptor,
+                            funDecoratorInstance,
                             superParamHandles);
                     funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
                 } else {
@@ -474,19 +463,11 @@ public class SubclassGenerator extends AbstractGenerator {
                 ResultHandle decoratorInstance = decoratedMethod.readInstanceField(FieldDescriptor.of(subclass.getClassName(),
                         firstDecorator.getIdentifier(), Object.class.getName()), decoratedMethod.getThis());
 
-                String declaringClass = firstDecorator.getBeanClass().toString();
-                if (firstDecorator.isAbstract()) {
-                    String baseName = DecoratorGenerator.createBaseName(firstDecorator.getTarget().get().asClass());
-                    String targetPackage = DotNames.packageName(firstDecorator.getProviderType().name());
-                    declaringClass = generatedNameFromTarget(targetPackage, baseName, DecoratorGenerator.ABSTRACT_IMPL_SUFFIX);
-                }
-                // We need to use the decorator method in order to support generic decorators
+                // We need to use the decorator method in order to support not visible or generic decorators
                 MethodDescriptor decoratorMethodDescriptor = MethodDescriptor.of(decoratorMethod.method);
-                MethodDescriptor virtualMethodDescriptor = MethodDescriptor.ofMethod(
-                        declaringClass, methodDescriptor.getName(),
-                        decoratorMethodDescriptor.getReturnType(), decoratorMethodDescriptor.getParameterTypes());
                 decoratedMethod
-                        .returnValue(decoratedMethod.invokeVirtualMethod(virtualMethodDescriptor, decoratorInstance, params));
+                        .returnValue(
+                                decoratedMethod.invokeInterfaceMethod(decoratorMethodDescriptor, decoratorInstance, params));
             }
         }
 
@@ -610,7 +591,7 @@ public class SubclassGenerator extends AbstractGenerator {
             int paramIndex, Map<String, ResultHandle> decoratorToResultHandle,
             ResultHandle creationalContextHandle, Map<MethodDescriptor, MethodDescriptor> forwardingMethods) {
 
-        // First genetare the delegate subclass
+        // First generate the delegate subclass
         // An instance of this subclass is injected in the delegate injection point of a decorator instance
         ClassInfo decoratorClass = decorator.getTarget().get().asClass();
         String baseName;
@@ -657,9 +638,9 @@ public class SubclassGenerator extends AbstractGenerator {
         Map<DecoratorInfo, FieldDescriptor> nextDecoratorToField = new HashMap<>();
         for (DecoratorInfo nextDecorator : decoratorParameters) {
             FieldCreator nextDecoratorField = delegateSubclass
-                    .getFieldCreator(nextDecorator.getIdentifier(), nextDecorator.getBeanClass().toString())
+                    .getFieldCreator(nextDecorator.getIdentifier(), Object.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
-            constructorParameterTypes.add(nextDecorator.getBeanClass().toString());
+            constructorParameterTypes.add(Object.class.getName());
             nextDecoratorToField.put(nextDecorator, nextDecoratorField.getFieldDescriptor());
         }
 
@@ -764,15 +745,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 // This method is decorated by this decorator and there is a next decorator in the chain
                 // Just delegate to the next decorator
                 delegateTo = forward.readInstanceField(nextDecoratorToField.get(nextDecorator.decorator), forward.getThis());
-                if (delegateTypeIsInterface) {
-                    ret = forward.invokeInterfaceMethod(methodDescriptor, delegateTo, params);
-                } else {
-                    MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName,
-                            methodDescriptor.getName(),
-                            nextDecorator.method.returnType(),
-                            nextDecorator.method.parameterTypes());
-                    ret = forward.invokeVirtualMethod(virtualMethod, delegateTo, params);
-                }
+                ret = forward.invokeInterfaceMethod(MethodDescriptor.of(nextDecorator.method), delegateTo, params);
 
             } else {
                 // This method is not decorated or no next decorator was found in the chain

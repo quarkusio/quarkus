@@ -17,5 +17,10 @@ metadata:
   config:
     - "quarkus.observability."
   status: "experimental"
+  codestart:
+    name: "lgtm"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   guide: "https://quarkus.io/guides/observability-devservices-lgtm"
   icon-url: "https://upload.wikimedia.org/wikipedia/commons/3/3b/Grafana_icon.svg"

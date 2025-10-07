@@ -72,16 +72,21 @@ public class RequestMapper<T> {
             return null;
         }
 
-        var initialMatches = requestPaths.match(path).get(0);
-        var result = mapFromPathMatcher(path, initialMatches, 0);
-        if (result != null) {
-            int idx = nextMatchStartingIndex(initialMatches, lastMatch);
-            return mapFromPathMatcher(path, initialMatches, idx);
+        var initialMatchesList = requestPaths.match(path);
+        for (var initialMatches : initialMatchesList) {
+            var result = mapFromPathMatcher(path, initialMatches, 0);
+            if (result != null) {
+                int idx = nextMatchStartingIndex(initialMatches, lastMatch);
+                RequestMatch<T> match = mapFromPathMatcher(path, initialMatches, idx);
+                if (match != null) {
+                    return match;
+                }
+            }
         }
 
         // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
-        initialMatches = requestPaths.defaultMatch(path);
-        result = mapFromPathMatcher(path, initialMatches, 0);
+        var initialMatches = requestPaths.defaultMatch(path);
+        var result = mapFromPathMatcher(path, initialMatches, 0);
         if (result != null) {
             int idx = nextMatchStartingIndex(initialMatches, lastMatch);
             return mapFromPathMatcher(path, initialMatches, idx);
@@ -105,7 +110,7 @@ public class RequestMapper<T> {
             }
         }
 
-        return -1;
+        return 0;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

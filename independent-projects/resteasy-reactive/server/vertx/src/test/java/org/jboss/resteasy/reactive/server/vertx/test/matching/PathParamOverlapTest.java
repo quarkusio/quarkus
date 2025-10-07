@@ -25,7 +25,7 @@ public class PathParamOverlapTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class);
+                            .addClasses(TestResource.class, AnotherResource.class);
                 }
             });
 
@@ -82,15 +82,11 @@ public class PathParamOverlapTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("Foo bar_value"));
-    }
 
-    // TODO: remove this test before commit
-    @Test
-    public void test2() {
-        get("/hello/foo/bar_value")
+        get("/hello/foo/bar/foo/bar")
                 .then()
                 .statusCode(200)
-                .body(equalTo("Foo bar_value"));
+                .body(equalTo("FooBarFooBar"));
     }
 
     @Path("/hello")
@@ -121,5 +117,17 @@ public class PathParamOverlapTest {
             return "FooBar " + param;
         }
 
+    }
+
+    /**
+     * This is to also test paths spread over multiple resource classes.
+     */
+    @Path("/hello/foo/bar")
+    public static class AnotherResource {
+        @GET
+        @Path("/foo/bar")
+        public String fooBarFooBar() {
+            return "FooBarFooBar";
+        }
     }
 }

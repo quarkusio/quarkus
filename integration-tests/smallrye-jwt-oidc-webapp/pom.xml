@@ -34,6 +34,11 @@
         </dependency>
         <!-- test dependencies -->
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-client-common-synced</artifactId>
             <scope>test</scope>
@@ -224,34 +229,6 @@
                         <artifactId>docker-maven-plugin</artifactId>
                         <configuration>
                             <images>
-                                <image>
-                                    <name>${keycloak.docker.image}</name>
-                                    <alias>quarkus-test-keycloak</alias>
-                                    <run>
-                                        <ports>
-                                            <port>8180:8080</port>
-                                        </ports>
-                                        <env>
-                                            <KC_BOOTSTRAP_ADMIN_USERNAME>admin</KC_BOOTSTRAP_ADMIN_USERNAME>
-                                            <KC_BOOTSTRAP_ADMIN_PASSWORD>admin</KC_BOOTSTRAP_ADMIN_PASSWORD>
-                                        </env>
-                                        <cmd>
-                                            <arg>start-dev</arg>
-                                        </cmd>
-                                        <log>
-                                            <prefix>Keycloak:</prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
-                                            <http>
-                                                <url>http://localhost:8180</url>
-                                            </http>
-                                            <time>100000</time>
-                                        </wait>
-                                    </run>
-                                </image>
                                 <image>
                                     <name>${postgres.image}</name>
                                     <alias>postgresql-db</alias>

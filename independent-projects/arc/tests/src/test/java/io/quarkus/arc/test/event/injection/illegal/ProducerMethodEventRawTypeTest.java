@@ -1,5 +1,6 @@
-package io.quarkus.arc.test.event.injection.invalid;
+package io.quarkus.arc.test.event.injection.illegal;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,14 +24,16 @@ public class ProducerMethodEventRawTypeTest {
     public void testExceptionIsThrown() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains("An injection point of raw type jakarta.enterprise.event.Event is defined"));
     }
 
     @Dependent
     public static class ProducerMethodInjectionBean {
 
+        // raw event type
         @Produces
-        public Foo produceFoo(Event event) { // rawtype event injection point
+        public Foo produceFoo(Event event) {
             return new Foo();
         }
     }

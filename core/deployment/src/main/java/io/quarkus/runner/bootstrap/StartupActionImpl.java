@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -486,8 +485,7 @@ public class StartupActionImpl implements StartupAction {
                             }
                             File sourceFile = new File(debugPath, i.internalName() + ".zig");
                             sourceFile.getParentFile().mkdirs();
-                            Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
-                                    StandardOpenOption.CREATE);
+                            Files.writeString(sourceFile.toPath(), i.getSource(), StandardOpenOption.CREATE);
                             log.infof("Wrote source %s", sourceFile.getAbsolutePath());
                         } else {
                             log.infof("Source not available: %s", i.binaryName());

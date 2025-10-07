@@ -13,6 +13,7 @@ import jakarta.persistence.TransactionRequiredException;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -166,5 +167,23 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown entity type");
+    }
+
+    @Test
+    public void injectedEntityManagersAndSessionFactoriesAreProperlyQualified() {
+        Assertions.assertNotNull(usersEntityManager,
+                "@PersistenceUnit(\"users\") EntityManager should be injected and non-null");
+        Assertions.assertNotNull(inventoryEntityManager,
+                "@PersistenceUnit(\"inventory\") EntityManager should be injected and non-null");
+
+        Assertions.assertNotNull(usersFactory, "@Named(\"users\") SessionFactory should be injected and non-null");
+        Assertions.assertNotNull(inventoryFactory, "@Named(\"inventory\") SessionFactory should be injected and non-null");
+    }
+
+    @Test
+    public void injectedDefaultEntityManagerAndSessionFactoryAreNonNull() {
+
+        Assertions.assertNotNull(defaultEntityManager, "Default EntityManager should be injected and non-null");
+        Assertions.assertNotNull(defaultSessionFactory, "Default SessionFactory should be injected and non-null");
     }
 }

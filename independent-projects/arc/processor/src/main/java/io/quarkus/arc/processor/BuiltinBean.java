@@ -69,9 +69,8 @@ public enum BuiltinBean {
             BuiltinBean::validateDecoratedBean, DotNames.BEAN),
     BEAN_MANAGER(BuiltinBean::generateBeanManagerBytecode,
             DotNames.BEAN_MANAGER, DotNames.BEAN_CONTAINER),
-    EVENT(BuiltinBean::generateEventBytecode, DotNames.EVENT),
-    RESOURCE(BuiltinBean::generateResourceBytecode,
-            (ip, names) -> ip.getKind() == InjectionPointKind.RESOURCE,
+    EVENT(BuiltinBean::generateEventBytecode, BuiltinBean::cdiAndRawTypeMatches, BuiltinBean::validateEvent, DotNames.EVENT),
+    RESOURCE(BuiltinBean::generateResourceBytecode, (ip, names) -> ip.getKind() == InjectionPointKind.RESOURCE,
             DotNames.OBJECT),
     EVENT_METADATA(Generator.NOOP, BuiltinBean::cdiAndRawTypeMatches,
             BuiltinBean::validateEventMetadata, DotNames.EVENT_METADATA),
@@ -426,14 +425,33 @@ public enum BuiltinBean {
             ctx.errors.accept(new DefinitionException(
                     "An injection point of raw type jakarta.enterprise.inject.Instance is defined: "
                             + ctx.injectionPoint.getTargetInfo()));
-        } else if (ctx.injectionPoint.getRequiredType().kind() == Kind.WILDCARD_TYPE) {
+        } else if (ctx.injectionPoint.getRequiredType().kind() == Kind.WILDCARD_TYPE
+                && ctx.injectionPoint.getRequiredType().asWildcardType().superBound() != null) {
             ctx.errors.accept(new DefinitionException(
-                    "Wildcard is not a legal type argument for jakarta.enterprise.inject.Instance: "
+                    "Wildcard with lower bound is not a legal type argument for jakarta.enterprise.inject.Instance: "
                             + ctx.injectionPoint.getTargetInfo()));
         } else if (ctx.injectionPoint.getRequiredType().kind() == Kind.TYPE_VARIABLE) {
             ctx.errors.accept(new DefinitionException(
                     "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: "
                             + ctx.injectionPoint.getTargetInfo()));
+        } else if (ctx.injectionPoint.getRequiredType().name().equals(DotNames.EVENT)) {
+            Type requiredType = ctx.injectionPoint.getRequiredType();
+            if (requiredType.kind() == Kind.WILDCARD_TYPE) {
+                requiredType = requiredType.asWildcardType().extendsBound();
+            }
+
+            if (requiredType.kind() != Kind.PARAMETERIZED_TYPE) {
+                ctx.errors.accept(new DefinitionException(
+                        "Raw jakarta.enterprise.event.Event is not a legal type argument for jakarta.enterprise.inject.Instance: "
+                                + ctx.injectionPoint.getTargetInfo()));
+            } else {
+                Type typeArg = requiredType.asParameterizedType().arguments().get(0);
+                if (typeArg.kind() == Kind.WILDCARD_TYPE && typeArg.asWildcardType().superBound() == null) {
+                    ctx.errors.accept(new DefinitionException(
+                            "Wildcard jakarta.enterprise.event.Event without lower bound is not a legal type argument for jakarta.enterprise.inject.Instance: "
+                                    + ctx.injectionPoint.getTargetInfo()));
+                }
+            }
         }
     }
 
@@ -501,6 +519,20 @@ public enum BuiltinBean {
         if (ctx.injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN
                 || !ctx.injectionTarget.asBean().isDecorator()) {
             ctx.errors.accept(new DefinitionException("Only decorators can access decorated bean metadata"));
+        }
+    }
+
+    private static void validateEvent(ValidatorContext ctx) {
+        if (ctx.injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
+            ctx.errors.accept(new DefinitionException(
+                    "An injection point of raw type jakarta.enterprise.event.Event is defined: "
+                            + ctx.injectionPoint.getTargetInfo()));
+        } else if (ctx.injectionPoint.getType().asParameterizedType().arguments().get(0).kind() == Kind.WILDCARD_TYPE
+                && ctx.injectionPoint.getType().asParameterizedType().arguments().get(0).asWildcardType()
+                        .superBound() == null) {
+            ctx.errors.accept(new DefinitionException(
+                    "Wildcard without lower bound is not a legal type argument for jakarta.enterprise.event.Event: "
+                            + ctx.injectionPoint.getTargetInfo()));
         }
     }
 

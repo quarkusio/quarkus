@@ -1,5 +1,6 @@
-package io.quarkus.arc.test.event.injection.invalid;
+package io.quarkus.arc.test.event.injection.illegal;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,13 +25,15 @@ public class EventRawTypeInjectionTest {
     public void testExceptionIsThrown() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains("An injection point of raw type jakarta.enterprise.event.Event is defined"));
     }
 
     @Singleton
     @Unremovable
     static class WrongBean {
 
+        // raw event type
         @Inject
         Event rawEvent;
 

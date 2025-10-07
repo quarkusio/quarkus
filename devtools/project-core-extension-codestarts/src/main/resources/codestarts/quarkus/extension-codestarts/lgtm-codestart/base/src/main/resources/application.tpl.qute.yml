@@ -1,0 +1,8 @@
+quarkus:
+  micrometer:
+    export:
+      otlp:
+        enabled: true
+        publish: true
+        step: "PT1S"
+        default-registry: true

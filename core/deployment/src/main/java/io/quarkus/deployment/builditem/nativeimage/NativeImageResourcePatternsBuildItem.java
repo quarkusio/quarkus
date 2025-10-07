@@ -30,6 +30,7 @@ import io.quarkus.util.GlobUtil;
  */
 public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
 
+    @Deprecated(since = "3.29", forRemoval = true)
     private final List<String> excludePatterns;
 
     private final List<String> includePatterns;
@@ -39,6 +40,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         this.excludePatterns = excludePatterns;
     }
 
+    /**
+     * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+     *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1 for
+     *             JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
+     */
+    @Deprecated(since = "3.29", forRemoval = true)
     public List<String> getExcludePatterns() {
         return excludePatterns;
     }
@@ -52,6 +59,7 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
     }
 
     public static class Builder {
+        @Deprecated(since = "3.29", forRemoval = true)
         private List<String> excludePatterns = new ArrayList<>();
         private List<String> includePatterns = new ArrayList<>();
 
@@ -72,7 +80,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param glob the glob pattern to add to the list of patterns to exclude
          * @return this {@link Builder}
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlob(String glob) {
             excludePatterns.add(GlobUtil.toRegexPattern(glob));
             return this;
@@ -87,7 +100,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param globs the glob patterns to add to the list of patterns to exclude
          * @return this {@link Builder}
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlobs(Collection<String> globs) {
             globs.stream().map(GlobUtil::toRegexPattern).forEach(excludePatterns::add);
             return this;
@@ -102,7 +120,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param globs the glob patterns to add to the list of patterns to exclude
          * @return this {@link Builder}
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludeGlobs(String... globs) {
             Stream.of(globs).map(GlobUtil::toRegexPattern).forEach(excludePatterns::add);
             return this;
@@ -116,7 +139,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param pattern the regular expression to add to the list of patterns to exclude
          * @return this {@link Builder}
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePattern(String pattern) {
             excludePatterns.add(pattern);
             return this;
@@ -130,7 +158,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param patterns the regular expressions to add to the list of patterns to exclude
          * @return this {@link Builder}
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePatterns(Collection<String> patterns) {
             excludePatterns.addAll(patterns);
             return this;
@@ -144,7 +177,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param patterns the regular expressions to add to the list of patterns to exclude
          * @return this {@link Builder}
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder excludePatterns(String... patterns) {
             Stream.of(patterns).forEach(excludePatterns::add);
             return this;
@@ -187,8 +225,8 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * @param globs the glob patterns to add
          * @return this {@link Builder}
          */
-        public Builder includeGlobs(String... patterns) {
-            Stream.of(patterns).map(GlobUtil::toRegexPattern).forEach(includePatterns::add);
+        public Builder includeGlobs(String... globs) {
+            Stream.of(globs).map(GlobUtil::toRegexPattern).forEach(includePatterns::add);
             return this;
         }
 
@@ -199,7 +237,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param pattern the regular expression to add
          * @return this {@link Builder}
+         *
+         * @deprecated Including resources using patterns is not supported in the new reachability-metadata.json file used with
+         *             Mandrel/GraalVM 25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for
+         *             Mandrel/GraalVM 23.1 for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder includePattern(String pattern) {
             includePatterns.add(pattern);
             return this;
@@ -212,7 +255,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param patterns the regular expressions to add
          * @return this {@link Builder}
+         *
+         * @deprecated Including resources using patterns is not supported in the new reachability-metadata.json file used with
+         *             Mandrel/GraalVM 25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for
+         *             Mandrel/GraalVM 23.1 for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder includePatterns(Collection<String> patterns) {
             includePatterns.addAll(patterns);
             return this;
@@ -225,7 +273,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          *
          * @param patterns the regular expressions to add
          * @return this {@link Builder}
+         *
+         * @deprecated Including resources using patterns is not supported in the new reachability-metadata.json file used with
+         *             Mandrel/GraalVM 25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for
+         *             Mandrel/GraalVM 23.1 for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         public Builder includePatterns(String... patterns) {
             Stream.of(patterns).forEach(includePatterns::add);
             return this;

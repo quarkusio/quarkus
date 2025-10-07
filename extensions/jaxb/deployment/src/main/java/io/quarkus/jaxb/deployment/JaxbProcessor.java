@@ -548,6 +548,6 @@ public class JaxbProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void jaxbIndex(final BuildProducer<NativeImageResourcePatternsBuildItem> resource) {
         LOG.debug("adding jaxb.index to native image resources");
-        resource.produce(NativeImageResourcePatternsBuildItem.builder().includePattern(".*/jaxb.index$").build());
+        resource.produce(NativeImageResourcePatternsBuildItem.builder().includeGlob("**/jaxb.index").build());
     }
 }

@@ -31,8 +31,7 @@ public class LogCleanupFilter implements Filter {
         //we also use this filter to add a warning about errors generated after shutdown
         if (record.getLevel().intValue() >= org.jboss.logmanager.Level.ERROR.intValue() && shutdownNotifier.shutdown) {
             if (!record.getMessage().endsWith(SHUTDOWN_MESSAGE)) {
-                if (record instanceof ExtLogRecord) {
-                    ExtLogRecord elr = (ExtLogRecord) record;
+                if (record instanceof ExtLogRecord elr) {
                     elr.setMessage(record.getMessage() + SHUTDOWN_MESSAGE, elr.getFormatStyle());
                 } else {
                     record.setMessage(record.getMessage() + SHUTDOWN_MESSAGE);

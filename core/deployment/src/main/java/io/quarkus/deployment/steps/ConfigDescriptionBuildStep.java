@@ -57,8 +57,7 @@ public class ConfigDescriptionBuildStep {
                 Method method = property.getMethod();
 
                 String defaultValue = null;
-                if (property instanceof PrimitiveProperty) {
-                    PrimitiveProperty primitiveProperty = (PrimitiveProperty) property;
+                if (property instanceof PrimitiveProperty primitiveProperty) {
                     if (primitiveProperty.hasDefaultValue()) {
                         defaultValue = primitiveProperty.getDefaultValue();
                     } else if (primitiveProperty.getPrimitiveType() == boolean.class) {
@@ -66,8 +65,7 @@ public class ConfigDescriptionBuildStep {
                     } else if (primitiveProperty.getPrimitiveType() != char.class) {
                         defaultValue = "0";
                     }
-                } else if (property instanceof LeafProperty) {
-                    LeafProperty leafProperty = (LeafProperty) property;
+                } else if (property instanceof LeafProperty leafProperty) {
                     if (leafProperty.hasDefaultValue()) {
                         defaultValue = leafProperty.getDefaultValue();
                     }

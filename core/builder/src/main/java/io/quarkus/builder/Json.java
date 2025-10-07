@@ -364,8 +364,7 @@ public final class Json {
 
         @Override
         void add(JsonValue element) {
-            if (element instanceof JsonMember) {
-                final JsonMember member = (JsonMember) element;
+            if (element instanceof JsonMember member) {
                 final String attribute = member.attribute().value();
                 final JsonValue value = member.value();
                 if (value instanceof JsonString) {

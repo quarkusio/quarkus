@@ -66,9 +66,8 @@ public class JobParameter {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof JobParameter))
+        if (!(o instanceof JobParameter that))
             return false;
-        JobParameter that = (JobParameter) o;
         return Objects.equals(className, that.className)
                 && Objects.equals(actualClassName, that.actualClassName)
                 && Objects.equals(object, that.object);

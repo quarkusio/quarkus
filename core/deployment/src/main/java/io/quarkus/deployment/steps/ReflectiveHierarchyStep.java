@@ -160,7 +160,7 @@ public class ReflectiveHierarchyStep {
                     type.asArrayType().constituent(),
                     processedReflectiveHierarchies,
                     unindexedClasses, reflectiveClass, visits));
-        } else if (type instanceof ParameterizedType) {
+        } else if (type instanceof ParameterizedType parameterizedType) {
             if (!reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
                 addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource,
                         type.name(),
@@ -168,7 +168,6 @@ public class ReflectiveHierarchyStep {
                         processedReflectiveHierarchies,
                         unindexedClasses, reflectiveClass, visits);
             }
-            final ParameterizedType parameterizedType = (ParameterizedType) type;
             for (Type typeArgument : parameterizedType.arguments()) {
                 visits.addLast(
                         () -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,

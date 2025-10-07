@@ -15,8 +15,8 @@ public final class HashUtil {
     }
 
     private static void toHex(byte[] digest, StringBuilder sb) {
-        for (int i = 0; i < digest.length; ++i) {
-            sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100), 1, 3);
+        for (byte b : digest) {
+            sb.append(Integer.toHexString((b & 0xFF) | 0x100), 1, 3);
         }
     }
 

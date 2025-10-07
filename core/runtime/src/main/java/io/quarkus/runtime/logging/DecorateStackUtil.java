@@ -22,8 +22,7 @@ public class DecorateStackUtil {
     public static String getDecoratedString(final Throwable throwable, Path srcMainJava, List<String> knowClasses) {
         if (knowClasses != null && !knowClasses.isEmpty() && throwable != null) {
             StackTraceElement[] stackTrace = throwable.getStackTrace();
-            for (int i = 0; i < stackTrace.length; ++i) {
-                StackTraceElement elem = stackTrace[i];
+            for (StackTraceElement elem : stackTrace) {
                 if (knowClasses.contains(elem.getClassName())) {
                     String decoratedString = DecorateStackUtil.getDecoratedString(srcMainJava, elem);
                     if (decoratedString != null) {

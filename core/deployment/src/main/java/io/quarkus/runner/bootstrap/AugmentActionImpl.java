@@ -230,7 +230,7 @@ public class AugmentActionImpl implements AugmentAction {
                         }
                         File sourceFile = new File(debugPath, i.getName() + ".zig");
                         sourceFile.getParentFile().mkdirs();
-                        Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
+                        Files.writeString(sourceFile.toPath(), i.getSource(),
                                 StandardOpenOption.CREATE);
                         log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
                     } else {

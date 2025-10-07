@@ -42,6 +42,7 @@ import jakarta.inject.Qualifier;
 import jakarta.interceptor.InterceptorBinding;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
 
 /**
@@ -365,6 +366,11 @@ public class BeanManagerImpl implements BeanManager {
             return false;
         }
         return ArcContainerImpl.instance().registeredQualifiers.isSubset(observedEventQualifiers, eventQualifiers);
+    }
+
+    @Override
+    public <T> T unwrapClientProxy(T reference) {
+        return ClientProxy.unwrap(reference);
     }
 
     private static void illegalNull(Object obj, String name) {

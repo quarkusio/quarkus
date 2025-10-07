@@ -26,7 +26,7 @@ public interface ArcContainer {
      *
      * @param scopeType
      * @return the active context or null
-     * @throws IllegalArgumentException if there is more than one active context for the given scope
+     * @throws IllegalStateException if there is more than one active context for the given scope
      */
     InjectableContext getActiveContext(Class<? extends Annotation> scopeType);
 

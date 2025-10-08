@@ -56,6 +56,24 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Named("inventory")
     SessionFactory inventoryFactory;
 
+    @Inject
+    @PersistenceUnit("<default>")
+    EntityManager defaultEntityManagerWithQualifier;
+
+    @Inject
+    @PersistenceUnit("<default>")
+    SessionFactory defaultSessionFactoryWithQualifier;
+
+    @Inject
+    @Named("<default>")
+    @PersistenceUnit("<default>")
+    EntityManager defaultEntityManagerWithBothQualifiers;
+
+    @Inject
+    @Named("<default>")
+    @PersistenceUnit("<default>")
+    SessionFactory defaultSessionFactoryWithBothQualifiers;
+
     @Test
     @Transactional
     public void defaultEntityManagerInTransaction() {
@@ -170,20 +188,18 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     }
 
     @Test
-    public void injectedEntityManagersAndSessionFactoriesAreProperlyQualified() {
-        Assertions.assertNotNull(usersEntityManager,
-                "@PersistenceUnit(\"users\") EntityManager should be injected and non-null");
-        Assertions.assertNotNull(inventoryEntityManager,
-                "@PersistenceUnit(\"inventory\") EntityManager should be injected and non-null");
-
-        Assertions.assertNotNull(usersFactory, "@Named(\"users\") SessionFactory should be injected and non-null");
-        Assertions.assertNotNull(inventoryFactory, "@Named(\"inventory\") SessionFactory should be injected and non-null");
+    public void defaultQualifiedEntityManagerAndSessionFactoryAreInjected() {
+        Assertions.assertNotNull(defaultEntityManagerWithQualifier,
+                "@PersistenceUnit(\"<default>\") EntityManager should be injected and non-null");
+        Assertions.assertNotNull(defaultSessionFactoryWithQualifier,
+                "@PersistenceUnit(\"<default>\") SessionFactory should be injected and non-null");
     }
 
     @Test
-    public void injectedDefaultEntityManagerAndSessionFactoryAreNonNull() {
-
-        Assertions.assertNotNull(defaultEntityManager, "Default EntityManager should be injected and non-null");
-        Assertions.assertNotNull(defaultSessionFactory, "Default SessionFactory should be injected and non-null");
+    public void defaultEntityManagerAndSessionFactoryWithBothQualifiersAreInjected() {
+        Assertions.assertNotNull(defaultEntityManagerWithBothQualifiers,
+                "EntityManager should be injectable with both @Named and @PersistenceUnit qualifiers for <default>");
+        Assertions.assertNotNull(defaultSessionFactoryWithBothQualifiers,
+                "SessionFactory should be injectable with both @Named and @PersistenceUnit qualifiers for <default>");
     }
 }

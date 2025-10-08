@@ -89,15 +89,7 @@ public class NativeImageFeatureStep {
                 overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
 
         // Set the user.language and user.country system properties to the default locale
-        // The deprecated option takes precedence for users who are already using it.
-        if (nativeConfig.userLanguage().isPresent()) {
-            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                    overallCatch.load("user.language"), overallCatch.load(nativeConfig.userLanguage().get()));
-            if (nativeConfig.userCountry().isPresent()) {
-                overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                        overallCatch.load("user.country"), overallCatch.load(nativeConfig.userCountry().get()));
-            }
-        } else if (localesBuildTimeConfig.defaultLocale().isPresent()) {
+        if (localesBuildTimeConfig.defaultLocale().isPresent()) {
             overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
                     overallCatch.load("user.language"),
                     overallCatch.load(localesBuildTimeConfig.defaultLocale().get().getLanguage()));

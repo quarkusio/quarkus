@@ -12,14 +12,14 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonFactory;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import io.quarkus.test.config.TestConfigProviderResolver;
 import io.vertx.core.Vertx;
@@ -155,11 +155,11 @@ public class DevUIJsonRPCTest {
         return getJsonRPCResponse(classType, id, loopCount + 1);
     }
 
-    private JsonNode objectResultFromJsonRPC(int id) throws InterruptedException, JsonProcessingException {
+    private JsonNode objectResultFromJsonRPC(int id) throws InterruptedException, JacksonException {
         return objectResultFromJsonRPC(id, 0);
     }
 
-    private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JsonProcessingException {
+    private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JacksonException {
         if (RESPONSES.containsKey(id)) {
             WebSocketResponse response = RESPONSES.remove(id);
             if (response != null) {

@@ -4,12 +4,12 @@ import java.io.IOException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.type.TypeFactory;
 
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingStateCodec;
@@ -60,7 +60,7 @@ public class DatabindProcessingStateCodec implements ProcessingStateCodec {
     public byte[] encode(ProcessingState<?> object) {
         try {
             return writer.writeValueAsBytes(object);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

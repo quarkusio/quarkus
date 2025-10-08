@@ -2,11 +2,11 @@ package io.quarkus.vertx.runtime.jackson;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDelegatingDeserializer;
-import com.fasterxml.jackson.databind.util.Converter;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.deser.std.StdDelegatingDeserializer;
+import tools.jackson.databind.util.Converter;
+import tools.jackson.databind.util.StdConverter;
 
 import io.vertx.core.json.JsonArray;
 
@@ -24,7 +24,7 @@ public class JsonArrayDeserializer extends StdDelegatingDeserializer<JsonArray> 
     @Override
     protected StdDelegatingDeserializer<JsonArray> withDelegate(Converter<Object, JsonArray> converter,
             JavaType delegateType,
-            JsonDeserializer<?> delegateDeserializer) {
+            ValueDeserializer<?> delegateDeserializer) {
         return new StdDelegatingDeserializer<>(converter, delegateType, delegateDeserializer);
     }
 }

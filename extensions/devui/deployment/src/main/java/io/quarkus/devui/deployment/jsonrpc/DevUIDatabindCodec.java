@@ -9,17 +9,16 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.module.SimpleModule;
 
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
@@ -142,7 +141,6 @@ public class DevUIDatabindCodec implements JsonMapper {
             module.addSerializer(ByteArrayInputStream.class, new ByteArrayInputStreamSerializer());
             module.addDeserializer(ByteArrayInputStream.class, new ByteArrayInputStreamDeserializer());
             mapper.registerModule(module);
-            mapper.registerModule(new Jdk8Module());
 
             SimpleModule runtimeModule = new SimpleModule("vertx-module-runtime");
             addAdapterToObject(runtimeModule, jsonObjectAdapter);
@@ -154,22 +152,22 @@ public class DevUIDatabindCodec implements JsonMapper {
         }
 
         private static <T, S> void addAdapterToObject(SimpleModule module, JsonTypeAdapter<T, S> adapter) {
-            module.addSerializer(adapter.type, new JsonSerializer<>() {
+            module.addSerializer(adapter.type, new ValueSerializer<>() {
                 @Override
-                public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+                public void serialize(T value, JsonGenerator jgen, SerializationContext provider) throws IOException {
                     jgen.writeObject(adapter.serializer.apply(value));
                 }
             });
         }
 
         private static <T> void addAdapterToString(SimpleModule module, JsonTypeAdapter<T, String> adapter) {
-            module.addSerializer(adapter.type, new JsonSerializer<>() {
+            module.addSerializer(adapter.type, new ValueSerializer<>() {
                 @Override
-                public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+                public void serialize(T value, JsonGenerator jgen, SerializationContext provider) throws IOException {
                     jgen.writeString(adapter.serializer.apply(value));
                 }
             });
-            module.addDeserializer(adapter.type, new JsonDeserializer<T>() {
+            module.addDeserializer(adapter.type, new ValueDeserializer<T>() {
                 @Override
                 public T deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
                     return adapter.deserializer.apply(parser.getText());

@@ -7,7 +7,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 

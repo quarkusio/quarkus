@@ -2,7 +2,7 @@ package io.quarkus.it.jackson.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
 
 @JsonTypeIdResolver(CustomTypeResolver.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, property = "type")

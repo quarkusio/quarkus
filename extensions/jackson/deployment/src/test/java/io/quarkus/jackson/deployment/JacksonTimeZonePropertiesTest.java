@@ -12,8 +12,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -27,7 +27,7 @@ public class JacksonTimeZonePropertiesTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void testTimezone() throws JsonProcessingException {
+    public void testTimezone() throws JacksonException {
         Assertions.assertThat(objectMapper.writeValueAsString(new Pojo(Date.from(
                 ZonedDateTime.of(LocalDateTime.of(2021, Month.MARCH, 3, 11, 5), ZoneId.of("GMT")).toInstant()))))
                 .contains("+07");

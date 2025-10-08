@@ -28,11 +28,11 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
@@ -490,7 +490,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
                     try {
                         input = reader.readValue((InputStream) in);
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         log.error("Failed to unmarshal input", e);
                         routingContext.fail(400);
                         return;
@@ -524,7 +524,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                             .get(DATA_OBJECT_WRITER);
                                     httpResponse.putHeader("Content-Type", "application/json");
                                     httpResponse.end(writer.writeValueAsString(obj));
-                                } catch (JsonProcessingException jpe) {
+                                } catch (JacksonException jpe) {
                                     log.error("Failed to unmarshal input", jpe);
                                     routingContext.fail(400);
                                 } catch (Throwable e) {

@@ -6,8 +6,8 @@ import java.util.function.BiFunction;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

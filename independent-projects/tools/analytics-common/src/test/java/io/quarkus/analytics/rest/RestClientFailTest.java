@@ -28,11 +28,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.quarkus.analytics.dto.config.AnalyticsRemoteConfig;
 import io.quarkus.analytics.dto.config.Identity;
+import tools.jackson.core.JacksonException;
 
 class RestClientFailTest {
 
@@ -41,7 +41,7 @@ class RestClientFailTest {
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
     @BeforeAll
-    static void start() throws JsonProcessingException {
+    static void start() throws JacksonException {
         System.setProperty("quarkus.analytics.timeout", "200");
         wireMockServer.start();
         wireMockServer.stubFor(post(urlEqualTo("/" + IDENTITY_ENDPOINT))
@@ -67,7 +67,7 @@ class RestClientFailTest {
     }
 
     @Test
-    void postIdentityServerTTLExceeded() throws URISyntaxException, JsonProcessingException {
+    void postIdentityServerTTLExceeded() throws URISyntaxException, JacksonException {
         RestClient restClient = new RestClient();
         Identity identity = createIdentity();
         CompletableFuture<HttpResponse<String>> post = restClient.post(

@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.FunctionError;

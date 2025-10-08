@@ -8,9 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import tools.jackson.databind.ObjectMapper;
 
 public class FileUtils {
 

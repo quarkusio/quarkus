@@ -10,8 +10,8 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigValidationException;
@@ -35,7 +35,7 @@ public class JacksonErroneousTimeZonePropertiesTest {
         @Inject
         ObjectMapper objectMapper;
 
-        public String write(Pojo pojo) throws JsonProcessingException {
+        public String write(Pojo pojo) throws JacksonException {
             return objectMapper.writeValueAsString(pojo);
         }
 

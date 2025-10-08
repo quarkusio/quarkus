@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.test.QuarkusUnitTest;
@@ -23,7 +23,7 @@ public class JacksonMixinsWithoutCustomizerTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void test() throws JsonProcessingException {
+    public void test() throws JacksonException {
         assertThat(objectMapper.writeValueAsString(new Fruit("test"))).isEqualTo("{\"nm\":\"test\"}");
         assertThat(objectMapper.writeValueAsString(new Fruit2("test"))).isEqualTo("{\"nm\":\"test\"}");
     }

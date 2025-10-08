@@ -19,8 +19,8 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.spi.ResteasyClientProvider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
 import io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer;

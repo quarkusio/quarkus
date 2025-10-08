@@ -5,25 +5,25 @@ import java.util.List;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("unused")
 public class BuiltinMismatchedInputExceptionMapper
-        implements ExceptionMapper<com.fasterxml.jackson.databind.exc.MismatchedInputException> {
+        implements ExceptionMapper<tools.jackson.databind.exc.MismatchedInputException> {
 
     @Override
-    public Response toResponse(com.fasterxml.jackson.databind.exc.MismatchedInputException exception) {
+    public Response toResponse(tools.jackson.databind.exc.MismatchedInputException exception) {
         var responseBuilder = Response.status(Response.Status.BAD_REQUEST);
         if (LaunchMode.current().isDevOrTest()) {
-            List<JsonMappingException.Reference> path = exception.getPath();
+            List<DatabindException.Reference> path = exception.getPath();
             if (path != null && !path.isEmpty()) {
                 var errorBuilder = new MismatchedJsonInputError.Builder((path.get(0)).getFrom().getClass().getSimpleName());
                 StringBuilder attributeNameBuilder = new StringBuilder();
 
-                for (JsonMappingException.Reference pathReference : path) {
+                for (DatabindException.Reference pathReference : path) {
                     if (pathReference.getFieldName() != null) {
                         if (!attributeNameBuilder.isEmpty()) {
                             attributeNameBuilder.append(".");

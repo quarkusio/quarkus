@@ -7,11 +7,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.SerializationContext;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -124,7 +124,7 @@ public class JacksonMapperUtil {
         NON_ABSENT,
         NON_EMPTY;
 
-        public static SerializationInclude decode(Object object, SerializerProvider serializerProvider) {
+        public static SerializationInclude decode(Object object, SerializationContext serializerProvider) {
             JsonInclude.Include include = serializerProvider.getDefaultPropertyInclusion(object.getClass()).getValueInclusion();
             return switch (include) {
                 case NON_EMPTY -> NON_EMPTY;

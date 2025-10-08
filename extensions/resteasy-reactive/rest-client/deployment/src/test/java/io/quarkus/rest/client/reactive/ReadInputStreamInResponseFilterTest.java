@@ -26,7 +26,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -82,7 +82,7 @@ public class ReadInputStreamInResponseFilterTest {
     public static class BodyReadingInterceptor implements ClientRequestFilter, ClientResponseFilter {
 
         @Override
-        public void filter(ClientRequestContext requestContext) throws JsonProcessingException {
+        public void filter(ClientRequestContext requestContext) throws JacksonException {
         }
 
         @Override

@@ -2,7 +2,7 @@ package io.quarkus.amazon.lambda.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;

@@ -5,8 +5,8 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @JsonTypeInfo(use = NAME, include = PROPERTY)
 @JsonSubTypes({

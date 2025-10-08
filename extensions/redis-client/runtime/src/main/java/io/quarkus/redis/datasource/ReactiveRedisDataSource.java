@@ -5,7 +5,7 @@ import static io.quarkus.redis.runtime.datasource.Marshaller.STRING_TYPE_REFEREN
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;

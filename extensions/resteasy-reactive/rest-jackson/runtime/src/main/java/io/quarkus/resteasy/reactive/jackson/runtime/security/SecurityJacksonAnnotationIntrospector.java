@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.security;
 
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
 
 public class SecurityJacksonAnnotationIntrospector extends JacksonAnnotationIntrospector {
 

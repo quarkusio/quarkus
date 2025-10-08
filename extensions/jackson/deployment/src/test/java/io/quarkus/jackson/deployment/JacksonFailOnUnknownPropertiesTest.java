@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -23,7 +23,7 @@ public class JacksonFailOnUnknownPropertiesTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void testFailOnUnknownProperties() throws JsonMappingException, JsonProcessingException {
+    public void testFailOnUnknownProperties() throws DatabindException, JacksonException {
         Assertions.assertThrows(UnrecognizedPropertyException.class,
                 () -> objectMapper.readValue("{\"property\": \"name\", \"unknownProperty\": \"unknown\"}", Pojo.class));
     }

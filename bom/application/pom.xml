@@ -90,7 +90,7 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.9.0</gizmo.version>
         <gizmo2.version>2.0.0.Beta6</gizmo2.version>
-        <jackson-bom.version>2.20.0</jackson-bom.version>
+        <jackson-bom.version>3.0.0</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.19.0</commons-lang3.version>
         <commons-codec.version>1.19.0</commons-codec.version>
@@ -366,7 +366,7 @@
 
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
+                <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson-bom.version}</version>
                 <scope>import</scope>
@@ -5763,7 +5763,7 @@
                 <version>${smallrye-mutiny-vertx-binding.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <groupId>tools.jackson.core</groupId>
                         <artifactId>jackson-databind</artifactId>
                     </exclusion>
                 </exclusions>
@@ -5791,7 +5791,7 @@
                 <version>${smallrye-reactive-messaging.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <groupId>tools.jackson.core</groupId>
                         <artifactId>jackson-core</artifactId>
                     </exclusion>
                     <exclusion>
@@ -5872,7 +5872,7 @@
                 <version>${smallrye-reactive-messaging.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <groupId>tools.jackson.core</groupId>
                         <artifactId>jackson-core</artifactId>
                     </exclusion>
                     <exclusion>

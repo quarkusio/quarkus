@@ -12,12 +12,12 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.module.SimpleModule;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.test.QuarkusUnitTest;
@@ -31,7 +31,7 @@ public class OverrideZonedDateTimeSerializerTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void test() throws JsonProcessingException {
+    public void test() throws JacksonException {
         assertThat(new ArrayList<>(objectMapper.getRegisteredModuleIds())).asList()
                 .contains("jackson-datatype-jsr310");
         assertThat(objectMapper.writeValueAsString(ZonedDateTime.now())).isEqualTo("\"dummy\"");
@@ -48,9 +48,9 @@ public class OverrideZonedDateTimeSerializerTest {
         @Override
         public void customize(ObjectMapper objectMapper) {
             SimpleModule module = new SimpleModule();
-            module.addSerializer(ZonedDateTime.class, new JsonSerializer<ZonedDateTime>() {
+            module.addSerializer(ZonedDateTime.class, new ValueSerializer<ZonedDateTime>() {
                 @Override
-                public void serialize(ZonedDateTime t, JsonGenerator jg, SerializerProvider sp) throws IOException {
+                public void serialize(ZonedDateTime t, JsonGenerator jg, SerializationContext sp) throws IOException {
                     jg.writeString("dummy");
                 }
 

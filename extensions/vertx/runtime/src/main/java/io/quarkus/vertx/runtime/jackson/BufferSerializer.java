@@ -14,19 +14,19 @@ import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_ENCODER;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import io.vertx.core.buffer.Buffer;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.BufferSerializer} as that class is package private
  */
-public class BufferSerializer extends JsonSerializer<Buffer> {
+public class BufferSerializer extends ValueSerializer<Buffer> {
 
     @Override
-    public void serialize(Buffer value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(Buffer value, JsonGenerator jgen, SerializationContext provider) throws IOException {
         jgen.writeString(BASE64_ENCODER.encodeToString(value.getBytes()));
     }
 }

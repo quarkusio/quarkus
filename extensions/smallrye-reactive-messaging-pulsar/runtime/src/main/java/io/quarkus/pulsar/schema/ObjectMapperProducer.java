@@ -1,6 +1,6 @@
 package io.quarkus.pulsar.schema;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

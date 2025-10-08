@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;

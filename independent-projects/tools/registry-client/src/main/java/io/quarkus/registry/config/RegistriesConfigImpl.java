@@ -9,20 +9,20 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import io.quarkus.registry.json.JsonBuilder;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.TokenStreamContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.dataformat.yaml.YAMLGenerator;
 
 /**
  * Top of the config hierarchy. Holder of the rest of the things.
@@ -229,9 +229,9 @@ public class RegistriesConfigImpl implements RegistriesConfig {
         config.persist(targetFile);
     }
 
-    static class Serializer extends JsonSerializer<RegistriesConfigImpl> {
+    static class Serializer extends ValueSerializer<RegistriesConfigImpl> {
         @Override
-        public void serialize(RegistriesConfigImpl value, JsonGenerator gen, SerializerProvider serializers)
+        public void serialize(RegistriesConfigImpl value, JsonGenerator gen, SerializationContext serializers)
                 throws IOException {
             boolean isDefaultDebug = !value.debug;
             boolean isDefaultList = RegistryConfigImpl.isDefaultList(value.registries);
@@ -259,13 +259,13 @@ public class RegistriesConfigImpl implements RegistriesConfig {
         }
     }
 
-    static class Deserializer extends JsonDeserializer<RegistriesConfigImpl.Builder> {
+    static class Deserializer extends ValueDeserializer<RegistriesConfigImpl.Builder> {
         final static RegistryConfigImpl.BuilderDeserializer DESERIALIZER = new RegistryConfigImpl.BuilderDeserializer();
 
         @Override
         public RegistriesConfigImpl.Builder deserialize(JsonParser p, DeserializationContext ctxt)
-                throws IOException, JsonProcessingException {
-            JsonStreamContext ctx = p.getParsingContext();
+                throws IOException, JacksonException {
+            TokenStreamContext ctx = p.getParsingContext();
             final RegistriesConfigImpl.Builder builder = new Builder();
 
             while (p.nextValue() != null) {

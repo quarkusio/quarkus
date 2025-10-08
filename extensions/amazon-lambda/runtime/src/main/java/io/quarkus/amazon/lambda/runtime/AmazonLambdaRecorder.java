@@ -13,7 +13,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;

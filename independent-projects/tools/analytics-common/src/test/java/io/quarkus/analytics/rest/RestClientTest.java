@@ -30,7 +30,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.quarkus.analytics.dto.config.AnalyticsRemoteConfig;
@@ -39,6 +38,7 @@ import io.quarkus.analytics.dto.config.RemoteConfig;
 import io.quarkus.analytics.dto.segment.Track;
 import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.analytics.dto.segment.TrackProperties;
+import tools.jackson.core.JacksonException;
 
 class RestClientTest {
 
@@ -47,7 +47,7 @@ class RestClientTest {
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
     @BeforeAll
-    static void start() throws JsonProcessingException {
+    static void start() throws JacksonException {
         wireMockServer.start();
         wireMockServer.stubFor(post(urlEqualTo("/" + IDENTITY_ENDPOINT))
                 .willReturn(aResponse()
@@ -94,7 +94,7 @@ class RestClientTest {
 
     @Test
     void postIdentity()
-            throws URISyntaxException, JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
+            throws URISyntaxException, JacksonException, ExecutionException, InterruptedException, TimeoutException {
         RestClient restClient = new RestClient();
         Identity identity = createIdentity();
         CompletableFuture<HttpResponse<String>> post = restClient.post(identity,
@@ -110,7 +110,7 @@ class RestClientTest {
 
     @Test
     void postTrace()
-            throws URISyntaxException, JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
+            throws URISyntaxException, JacksonException, ExecutionException, InterruptedException, TimeoutException {
         RestClient restClient = new RestClient();
         Track track = createTrack();
         CompletableFuture<HttpResponse<String>> post = restClient.post(track,

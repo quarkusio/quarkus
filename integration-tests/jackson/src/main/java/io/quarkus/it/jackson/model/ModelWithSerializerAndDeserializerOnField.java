@@ -3,15 +3,15 @@ package io.quarkus.it.jackson.model;
 import java.io.IOException;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
@@ -69,17 +69,17 @@ public class ModelWithSerializerAndDeserializerOnField {
         }
     }
 
-    public static class InnerDeserializer extends JsonDeserializer<Inner> {
+    public static class InnerDeserializer extends ValueDeserializer<Inner> {
 
         @Override
-        public Inner deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        public Inner deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
             return new Inner("immutable");
         }
     }
 
-    public static class InnerSerializer extends JsonSerializer<Inner> {
+    public static class InnerSerializer extends ValueSerializer<Inner> {
         @Override
-        public void serialize(Inner value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(Inner value, JsonGenerator gen, SerializationContext serializers) throws IOException {
             gen.writeStartObject();
             gen.writeStringField("someValue", "unchangeable");
             gen.writeEndObject();

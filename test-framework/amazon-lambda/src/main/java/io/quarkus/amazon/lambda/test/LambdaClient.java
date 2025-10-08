@@ -10,8 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -142,14 +142,14 @@ public class LambdaClient {
         REQUESTS.put(id, result);
         try {
             requestBody = mapper.writeValueAsString(input);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
         REQUEST_QUEUE.add(new AbstractMap.SimpleImmutableEntry(id, requestBody));
         return result.thenApply(s -> {
             try {
                 return mapper.readerFor(returnType).readValue(s);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw new RuntimeException(e);
             }
         });

@@ -2,6 +2,8 @@ package io.quarkus.it.opentelemetry.vertx;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_CONNECTION_STRING;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_OPERATION;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_STATEMENT;
@@ -84,6 +86,8 @@ public class SqlClientTest {
         assertEquals("SELECT", querySpan.getAttributes().get(DB_OPERATION));
         assertEquals("quarkus", querySpan.getAttributes().get(DB_USER));
         assertNotNull(querySpan.getAttributes().get(DB_CONNECTION_STRING));
+        assertNotNull(querySpan.getAttributes().get(NETWORK_PEER_ADDRESS));
+        assertNotNull(querySpan.getAttributes().get(NETWORK_PEER_PORT));
 
         assertEquals("CREATE TABLE IF NOT EXISTS USERS (id INT, name VARCHAR(?));",
                 tableCreation.getAttributes().get(DB_STATEMENT));

@@ -988,7 +988,7 @@ public class DevUIProcessor {
                         (existing, replacement) -> existing // keep the first one
                 ));
 
-        if (cardPageBuildItem != null) {
+        if (cardPageBuildItem != null && cardPageBuildItem.hasLibraryVersions()) {
             for (LibraryLink lib : cardPageBuildItem.getLibraryVersions()) {
                 String key = lib.getGroupId() + ":" + lib.getArtifactId();
                 String version = versionMap.get(key);

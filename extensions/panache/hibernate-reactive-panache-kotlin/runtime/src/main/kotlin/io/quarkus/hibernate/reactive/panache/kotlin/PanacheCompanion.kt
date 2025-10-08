@@ -2,7 +2,6 @@ package io.quarkus.hibernate.reactive.panache.kotlin
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations.implementationInjectionMissing
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
@@ -25,7 +24,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      *
      * @return the current [Mutiny.Session]
      */
-    fun getSession() = JpaOperations.INSTANCE.getSession()
+    @GenerateBridge fun getSession(): Uni<Mutiny.Session> = throw implementationInjectionMissing()
 
     /**
      * Find an entity of this type by ID.

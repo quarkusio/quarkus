@@ -3,7 +3,6 @@ package io.quarkus.grpc.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 /**
  * A processor used for both client and server
@@ -20,10 +19,5 @@ public class GrpcCommonProcessor {
     @BuildStep
     void indexGrpcStub(BuildProducer<IndexDependencyBuildItem> index) {
         index.produce(new IndexDependencyBuildItem("io.quarkus", "quarkus-grpc-stubs"));
-    }
-
-    @BuildStep
-    void runtimeInitialize(BuildProducer<RuntimeInitializedClassBuildItem> producer) {
-        producer.produce(new RuntimeInitializedClassBuildItem("com.google.protobuf.JavaFeaturesProto"));
     }
 }

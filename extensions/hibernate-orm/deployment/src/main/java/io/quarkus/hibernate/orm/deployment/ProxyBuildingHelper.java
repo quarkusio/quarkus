@@ -44,7 +44,6 @@ final class ProxyBuildingHelper implements AutoCloseable {
     public boolean isProxiable(ClassInfo classInfo) {
         return classInfo != null
                 && !classInfo.isInterface()
-                && !classInfo.isAbstract()
                 && !classInfo.isFinal()
                 && classInfo.hasNoArgsConstructor();
     }

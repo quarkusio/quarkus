@@ -25,7 +25,7 @@ public class LogCollectingTestResource implements QuarkusTestResourceLifecycleMa
     public static final String EXCLUDE = "exclude";
     public static final String INCLUDE = "include";
 
-    private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
+    private static final Formatter LOG_FORMATTER = new PatternFormatter("%m");
 
     public static String format(LogRecord record) {
         return LOG_FORMATTER.format(record);

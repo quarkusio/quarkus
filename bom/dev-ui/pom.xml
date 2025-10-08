@@ -26,7 +26,7 @@
         <shadycss.version>1.11.2</shadycss.version>
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <style-observer.version>0.0.8</style-observer.version>
-        <marked.version>15.0.12</marked.version>
+        <marked.version>16.4.0</marked.version>
         <dompurify.version>3.2.7</dompurify.version>
         <vaadin-router.version>2.0.0</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>

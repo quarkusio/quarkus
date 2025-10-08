@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -21,6 +22,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.ClientProxy;
@@ -28,7 +30,6 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanGenerator.ProviderType;
-import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -345,22 +346,22 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
     Collection<MethodInfo> getDelegatingMethods(BeanInfo bean, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
-        Map<Methods.MethodKey, MethodInfo> methods = new HashMap<>();
+        Map<MethodSignatureKey, MethodInfo> methods = new HashMap<>();
         IndexView index = bean.getDeployment().getBeanArchiveIndex();
 
         if (bean.isClassBean()) {
-            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
             addDelegatesAndTransformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, classInfo);
         } else if (bean.isProducerMethod()) {
-            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             ClassInfo returnTypeClass = getClassByName(index, producerMethod.returnType());
             addDelegatesAndTransformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, returnTypeClass);
         } else if (bean.isProducerField()) {
-            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             FieldInfo producerField = bean.getTarget().get().asField();
             ClassInfo fieldClass = getClassByName(index, producerField.type());
             addDelegatesAndTransformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
@@ -375,15 +376,14 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
     private void addDelegatesAndTransformIfNecessary(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses,
-            Map<Methods.MethodKey, MethodInfo> methods, IndexView index,
-            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal,
+            Map<MethodSignatureKey, MethodInfo> methods, IndexView index,
+            Map<String, Set<MethodDescriptor>> methodsFromWhichToRemoveFinal,
             ClassInfo fieldClass) {
         Methods.addDelegatingMethods(index, fieldClass, methods, methodsFromWhichToRemoveFinal,
                 transformUnproxyableClasses);
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
-            for (Map.Entry<String, Set<MethodKey>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
-                String className = entry.getKey();
-                bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
+            for (Entry<String, Set<MethodDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+                bytecodeTransformerConsumer.accept(new BytecodeTransformer(entry.getKey(),
                         new Methods.RemoveFinalFromMethod(entry.getValue())));
             }
         }

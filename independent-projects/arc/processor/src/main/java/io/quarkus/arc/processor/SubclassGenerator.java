@@ -33,6 +33,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -47,7 +48,6 @@ import io.quarkus.arc.processor.BeanInfo.DecorationInfo;
 import io.quarkus.arc.processor.BeanInfo.DecoratorMethod;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
-import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -688,7 +688,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // Identify the set of methods that should be delegated
         // Note that the delegate subclass must override ALL methods from the delegate type
         // This is not enough if the delegate type is parameterized
-        Set<MethodKey> methods = new HashSet<>();
+        Map<MethodSignatureKey, MethodInfo> methods = new HashMap<>();
         Methods.addDelegateTypeMethods(index, delegateTypeClass, methods);
 
         // The delegate type can declare type parameters
@@ -707,8 +707,8 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         }
 
-        for (MethodKey m : methods) {
-            MethodInfo method = m.method;
+        for (Entry<MethodSignatureKey, MethodInfo> methodEntry : methods.entrySet()) {
+            MethodInfo method = methodEntry.getValue();
             MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
             MethodCreator forward = delegateSubclass.getMethodCreator(methodDescriptor);
             // Exceptions
@@ -777,7 +777,7 @@ public class SubclassGenerator extends AbstractGenerator {
             } else {
                 // This method is not decorated or no next decorator was found in the chain
                 MethodDescriptor forwardingMethod = null;
-                MethodInfo decoratedMethod = bean.getDecoratedMethod(m.method, decorator);
+                MethodInfo decoratedMethod = bean.getDecoratedMethod(methodEntry.getValue(), decorator);
                 MethodDescriptor decoratedMethodDescriptor = decoratedMethod != null ? MethodDescriptor.of(decoratedMethod)
                         : null;
                 for (Entry<MethodDescriptor, MethodDescriptor> entry : forwardingMethods.entrySet()) {

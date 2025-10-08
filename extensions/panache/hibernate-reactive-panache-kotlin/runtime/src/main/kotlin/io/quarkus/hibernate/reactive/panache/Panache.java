@@ -14,14 +14,14 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * @deprecated
- * This class is a copy of the original {@code io.quarkus.hibernate.reactive.panache.Panache} class
- * from the Java hibernate-orm-panache module.
+ *             This class is a copy of the original {@code io.quarkus.hibernate.reactive.panache.Panache} class
+ *             from the Java hibernate-orm-panache module.
  *
- * Since this Kotlin module no longer depends on the Java module, there are now two copies of this class:
- * one under {@code io.quarkus.hibernate.reactive.panache.kotlin.Panache}, which you should use,
- * and this one, which is provided only to maintain backward compatibility.
+ *             Since this Kotlin module no longer depends on the Java module, there are now two copies of this class:
+ *             one under {@code io.quarkus.hibernate.reactive.panache.kotlin.Panache}, which you should use,
+ *             and this one, which is provided only to maintain backward compatibility.
  *
- * This class will be removed in the future.
+ *             This class will be removed in the future.
  */
 @Deprecated
 public class Panache {

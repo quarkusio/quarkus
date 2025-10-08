@@ -38,9 +38,9 @@ public class OpenApiRecorder {
         return null;
     }
 
-    public Handler<RoutingContext> handler(String documentName) {
+    public Handler<RoutingContext> handler(String documentName, boolean alwaysRunFilter) {
         if (openApiConfig.getValue().enable().orElse(openApiConfig.getValue().enabled())) {
-            return new OpenApiHandler(documentName);
+            return new OpenApiHandler(documentName, alwaysRunFilter);
         } else {
             return new OpenApiNotFoundHandler();
         }

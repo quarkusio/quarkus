@@ -118,7 +118,7 @@ For example,
 
 [source,java]
 ----
-@BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public DevServicesResultBuildItem createContainer(MyConfig config) {}
 ----
 

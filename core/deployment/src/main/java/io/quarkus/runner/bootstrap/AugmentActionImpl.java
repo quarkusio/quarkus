@@ -3,7 +3,6 @@ package io.quarkus.runner.bootstrap;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -230,7 +229,7 @@ public class AugmentActionImpl implements AugmentAction {
                         }
                         File sourceFile = new File(debugPath, i.getName() + ".zig");
                         sourceFile.getParentFile().mkdirs();
-                        Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
+                        Files.writeString(sourceFile.toPath(), i.getSource(),
                                 StandardOpenOption.CREATE);
                         log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
                     } else {

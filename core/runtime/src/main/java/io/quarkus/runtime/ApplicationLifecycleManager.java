@@ -272,8 +272,7 @@ public class ApplicationLifecycleManager {
      */
     private static void longLivedPostBootCleanup() {
         final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        if (cl instanceof RunnerClassLoader) {
-            RunnerClassLoader rcl = (RunnerClassLoader) cl;
+        if (cl instanceof RunnerClassLoader rcl) {
             rcl.resetInternalCaches();
         }
     }

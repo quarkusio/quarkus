@@ -621,8 +621,7 @@ public final class ExtensionLoader {
                                 for (var type : ctor.getGenericParameterTypes()) {
                                     Class<?> theType;
                                     boolean isRuntimeValue = false;
-                                    if (type instanceof ParameterizedType) {
-                                        ParameterizedType pt = (ParameterizedType) type;
+                                    if (type instanceof ParameterizedType pt) {
                                         if (pt.getRawType().equals(RuntimeValue.class)) {
                                             theType = (Class<?>) pt.getActualTypeArguments()[0];
                                             isRuntimeValue = true;
@@ -853,8 +852,7 @@ public final class ExtensionLoader {
                                                         return runTimeProxies.get(s);
                                                     }
                                                     // TODO - Remove once we disallow the injection of runtime objects in build steps
-                                                    if (s instanceof ParameterizedType) {
-                                                        ParameterizedType p = (ParameterizedType) s;
+                                                    if (s instanceof ParameterizedType p) {
                                                         if (p.getRawType() == RuntimeValue.class) {
                                                             Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
                                                             if (object == null) {

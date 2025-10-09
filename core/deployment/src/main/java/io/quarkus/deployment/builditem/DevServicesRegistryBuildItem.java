@@ -36,10 +36,10 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
     private final DevServicesConfig globalConfig;
     private final LaunchMode launchMode;
 
-    public DevServicesRegistryBuildItem(UUID uuid, DevServicesConfig globalDevServicesConfig, LaunchMode launchMode) {
+    public DevServicesRegistryBuildItem(UUID uuid, DevServicesConfig devServicesConfig, LaunchMode launchMode) {
         this.launchMode = launchMode;
         this.uuid = uuid;
-        this.globalConfig = globalDevServicesConfig;
+        this.globalConfig = devServicesConfig;
     }
 
     public RunningService getRunningServices(String featureName, String configName, Object identifyingConfig) {

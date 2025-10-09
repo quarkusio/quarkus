@@ -92,7 +92,7 @@ public class DevServicesProcessor {
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     @Produce(ServiceStartBuildItem.class)
     public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchModeBuildItem,
-            DevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
         return new DevServicesCustomizerBuildItem((devService, startable) -> {
             LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
             if (startable instanceof StartableContainer startableContainer) {
@@ -101,10 +101,10 @@ public class DevServicesProcessor {
                 if (shouldConfigureSharedServiceLabel(launchMode)) {
                     container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
                 }
-                globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
+                devServicesConfig.timeout().ifPresent(container::withStartupTimeout);
             } else if (startable instanceof GenericContainer container) {
                 configureLabels(container, launchMode);
-                globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
+                devServicesConfig.timeout().ifPresent(container::withStartupTimeout);
                 if (shouldConfigureSharedServiceLabel(launchMode)) {
                     container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
                 }
@@ -144,10 +144,10 @@ public class DevServicesProcessor {
     @Produce(ServiceStartBuildItem.class)
     DevServicesRegistryBuildItem devServicesRegistry(LaunchModeBuildItem launchMode,
             ApplicationInstanceIdBuildItem applicationId,
-            DevServicesConfig globalDevServicesConfig,
+            DevServicesConfig devServicesConfig,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         DevServicesRegistryBuildItem registryBuildItem = new DevServicesRegistryBuildItem(applicationId.getUUID(),
-                globalDevServicesConfig, launchMode.getLaunchMode());
+                devServicesConfig, launchMode.getLaunchMode());
         shutdownBuildItem.addCloseTask(registryBuildItem::closeAllRunningServices, true);
         return registryBuildItem;
     }

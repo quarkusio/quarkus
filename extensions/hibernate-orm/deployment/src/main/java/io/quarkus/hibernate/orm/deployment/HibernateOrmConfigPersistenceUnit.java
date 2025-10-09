@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +22,6 @@ import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
-import org.hibernate.type.descriptor.jdbc.NumericJdbcType;
 
 @ConfigGroup
 public interface HibernateOrmConfigPersistenceUnit {
@@ -361,6 +359,8 @@ public interface HibernateOrmConfigPersistenceUnit {
 
         Duration duration();
 
+        Preferred preferred();
+
         @ConfigGroup
         interface Timezone {
             /**
@@ -451,11 +451,24 @@ public interface HibernateOrmConfigPersistenceUnit {
             Optional<@WithConverter(TrimmedStringConverter.class) String> preferredInstantJdbcType();
         }
 
+        @ConfigGroup
+        interface Preferred {
+            @WithName("boolean_jdbc_type")
+            @ConfigDocDefault("BIT")
+            Optional<@WithConverter(TrimmedStringConverter.class) String> preferredBooleanJdbcType();
+
+            @WithName("uuid_jdbc_type")
+            @ConfigDocDefault("CHAR")
+            Optional<@WithConverter(TrimmedStringConverter.class) String> preferredUUIDJdbcType();
+        }
+
         default boolean isAnyPropertySet() {
             return timezone().timeZoneDefaultStorage().isPresent() ||
                     id().optimizer().idOptimizerDefault().isPresent() ||
                     duration().preferredJdbcType().isPresent() ||
-                    duration().preferredInstantJdbcType().isPresent();
+                    duration().preferredInstantJdbcType().isPresent() ||
+                    preferred().preferredBooleanJdbcType().isPresent() ||
+                    preferred().preferredUUIDJdbcType().isPresent();
         }
 
     }

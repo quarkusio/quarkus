@@ -348,6 +348,21 @@ public final class HibernateProcessorUtil {
                 )
         );
 
+        // Preferred types mapping
+        config.mapping().preferred().preferredBooleanJdbcType().ifPresent(
+                bool -> desc.getProperties().setProperty(
+                        AvailableSettings.PREFERRED_BOOLEAN_JDBC_TYPE,
+                        bool
+                )
+        );
+
+        config.mapping().preferred().preferredUUIDJdbcType().ifPresent(
+                uuid -> desc.getProperties().setProperty(
+                        AvailableSettings.PREFERRED_UUID_JDBC_TYPE,
+                        uuid
+                )
+        );
+
         //charset
         desc.getProperties()
                 .setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, config.database().charset().name());

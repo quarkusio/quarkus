@@ -42,6 +42,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsProduction;
@@ -359,9 +360,12 @@ public class ConfigGenerationBuildStep {
 
         // So it only reports during the build, because it is very likely that the property is available in runtime
         // and, it will be caught by the RuntimeConfig and log double warnings
-        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
-            ConfigDiagnostic.unknownProperties(configItem.getReadResult().getUnknownBuildProperties());
-        }
+
+        String configValue = BootstrapDebug.failOnMissingProperties();
+        boolean failOnMissingProperties = Boolean.parseBoolean(configValue);
+
+        ConfigDiagnostic.unknownProperties(configItem.getReadResult().getUnknownBuildProperties(),
+                failOnMissingProperties);
 
         // TODO - Test live reload with ConfigSource
         if (liveReloadBuildItem.isLiveReload()) {

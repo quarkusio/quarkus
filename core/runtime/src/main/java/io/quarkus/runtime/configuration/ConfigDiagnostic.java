@@ -85,14 +85,17 @@ public final class ConfigDiagnostic {
         }
     }
 
-    public static void unknown(String name) {
+    public static void unknown(String name, boolean failOnMissingProperties) {
+        if (failOnMissingProperties) {
+            throw new IllegalArgumentException("Build failed due to unrecognized configuration properties: " + name);
+        }
         log.warnf(
                 "Unrecognized configuration key \"%s\" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo",
                 name);
     }
 
     public static void unknown(NameIterator name) {
-        unknown(name.getName());
+        unknown(name.getName(), false);
     }
 
     /**
@@ -107,8 +110,9 @@ public final class ConfigDiagnostic {
      * format.
      *
      * @param properties the set of possible unused properties
+     * @param failOnMissingProperties whether Quarkus should log a missing property or fail if it was mispelled
      */
-    public static void unknownProperties(Set<String> properties) {
+    public static void unknownProperties(Set<String> properties, boolean failOnMissingProperties) {
         if (properties.isEmpty()) {
             return;
         }
@@ -154,7 +158,7 @@ public final class ConfigDiagnostic {
             if (!found) {
                 ConfigValue configValue = config.getConfigValue(property);
                 if (property.equals(configValue.getName())) {
-                    unknown(property);
+                    unknown(property, failOnMissingProperties);
                 }
             }
         }
@@ -162,12 +166,12 @@ public final class ConfigDiagnostic {
 
     public static void reportUnknown(Set<String> properties) {
         if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
-            unknownProperties(properties);
+            unknownProperties(properties, false);
         }
     }
 
     public static void reportUnknownRuntime(Set<String> properties) {
-        unknownProperties(properties);
+        unknownProperties(properties, false);
     }
 
     /**

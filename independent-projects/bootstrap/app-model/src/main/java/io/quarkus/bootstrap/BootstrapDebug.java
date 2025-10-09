@@ -35,6 +35,12 @@ public final class BootstrapDebug {
         return System.getProperty("quarkus.debug.generated-sources-dir");
     }
 
+    public static final String FAIL_ON_MISSING_PROPERTY_KEY = "quarkus.debug.fail-on-missing-properties";
+
+    public static String failOnMissingProperties() {
+        return System.getProperty(FAIL_ON_MISSING_PROPERTY_KEY);
+    }
+
     private BootstrapDebug() {
     }
 

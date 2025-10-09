@@ -47,4 +47,10 @@ public interface DebugConfig {
      */
     @WithDefault("false")
     boolean dumpBuildMetrics();
+
+    /**
+     * If set to true, the application will fail when an unknown configuration property is detected.
+     */
+    @WithDefault("false")
+    boolean failOnMissingProperties();
 }

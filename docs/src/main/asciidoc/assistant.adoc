@@ -145,16 +145,24 @@ You can add an assistant function to a workspace item using the same approach as
                     .systemMessage(JOKE_SYSTEM_MESSAGE) // <2>
                     .userMessage(JOKE_USER_MESSAGE) // <3>
                     .variables(params)
+                    .responseType(ExpectedResponse.class) // <4>   
                     .assist();
 
         })
         .display(Display.split)
         .displayType(DisplayType.markdown)
         .filter(Patterns.JAVA_SRC));
+
+
+        //...
+
+        final record ExpectedResponse(String result, String markdown) {
+        }
 ----
 <1> Use `assistantFunction` to receive the `Assistant` instance and xref:dev-ui.adoc#input[input] parameters.  
 <2> Provide an optional *system message* to guide the assistant's behavior.  
 <3> Provide a *user message* as the primary prompt.
+<4> Provide a class defining your expected response structure.
 
 === Assistant pages
 
@@ -203,11 +211,16 @@ You can now use this assistant in any JsonRPC method, example:
         if (assistant.isPresent()) {
             return assistant.get().assistBuilder()
                     .userMessage("Tell me a funny joke")
+                    .responseType(JokeResponse.class) // <1>
                     .assist();
         }
         return CompletableFuture.failedStage(new RuntimeException("Assistant is not available"));
     }
+
+    //...
+    final record JokeResponse(String joke) {}
 ----
+<1> Provide a class defining your expected response structure.
 
 ==== JsonRPC against the Deployment classpath
 
@@ -235,11 +248,16 @@ Then use the `BuildTimeActionBuildItem` and register assistant actions via `.add
                 return assistant.assistBuilder()
                         .userMessage(USER_MESSAGE)
                         .variables(p)
+                        .responseType(JokeResponse.class) // <2>
                         .assist();
             }).build());
         buildTimeActionProducer.produce(bta);
+
+        //...
+        final record JokeResponse(String joke) {}
 ----
 <1> Use `assistantFunction` instead of `function` to access the assistant context.
+<2> Provide a class defining your expected response structure.
 
 === Assistant State in the UI
 
@@ -312,13 +330,18 @@ AssistantConsoleBuildItem createCliAssistantEntry() {
             .function((a) -> {
                 return a.assistBuilder()
                         .userMessage("Tell a funny joke")
+                        .responseType(JokeResponse.class) // <3>
                         .assist();
             })
             .build();
 }
+//...
+final record JokeResponse(String joke) {}
+
 ----
 <1> This is the description that appears in the Assistant section of the log menu.  
 <2> This is the keyboard shortcut that triggers the assistant function.
+<3> Provide a class defining your expected response structure.
 
 When added, this will result in a new entry under the `Assistant` heading in the log shortcut menu:
 

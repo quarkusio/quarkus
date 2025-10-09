@@ -365,6 +365,7 @@ public final class DatabaseInspector {
             if (matchingTable.isPresent()) {
                 return assistant.get().assistBuilder()
                         .userMessage(generateInsertPrompt(matchingTable.get(), rowCount))
+                        .responseType(InsertStatementResponse.class)
                         .assist();
             }
         }
@@ -377,6 +378,7 @@ public final class DatabaseInspector {
 
             return assistant.get().assistBuilder()
                     .userMessage(englishToSqlPrompt(tables, schema, name, english))
+                    .responseType(EnglishToSQLResponse.class)
                     .assist();
 
         }
@@ -509,7 +511,7 @@ public final class DatabaseInspector {
 
     private String englishToSqlPrompt(List<Table> tables, String schema, String name, String english) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Generate valid SQL given the following english statement: ")
+        sb.append("Generate valid SQL given the following english statement: \n")
                 .append(english)
                 .append("\n\nAnd this is the known tables in the database:\n");
 
@@ -605,5 +607,11 @@ public final class DatabaseInspector {
 
     private static record DataSet(List<String> cols, List<Map<String, String>> data, String error, String message,
             int totalNumberOfElements) {
+    }
+
+    final record EnglishToSQLResponse(String sql, String error) {
+    }
+
+    final record InsertStatementResponse(String script) {
     }
 }

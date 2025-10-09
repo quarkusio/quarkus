@@ -119,11 +119,8 @@ export class QwcSchedulerCronBuilder extends LitElement {
             this._createCronLoading = false;
             document.body.style.cursor = 'default';
             this._cron = jsonResponse.result.cron;
-            this._example = jsonResponse.result.example;
+            this._example = jsonResponse.result.markdown;
         });
     }
-    
-    
-    
 }
 customElements.define('qwc-scheduler-cron-builder', QwcSchedulerCronBuilder);

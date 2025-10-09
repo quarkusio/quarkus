@@ -512,6 +512,15 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             }
             this._showActionProgress = false;
             document.body.style.cursor = 'default';
+        }).catch((err) => {
+            console.error(err);
+            this._showActionProgress = false;
+            document.body.style.cursor = 'default';
+            if(err.error.message){
+                notifier.showErrorMessage(err.message + ". Please check your logs.");
+            }else {
+                notifier.showErrorMessage("An error occured. Please check your logs.");
+            }
         });
     }
     

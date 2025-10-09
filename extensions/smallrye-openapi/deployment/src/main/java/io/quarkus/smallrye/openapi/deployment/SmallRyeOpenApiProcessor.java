@@ -289,7 +289,7 @@ public class SmallRyeOpenApiProcessor {
             recorder.setupClDevMode(shutdownContext);
         }
 
-        Handler<RoutingContext> handler = recorder.handler();
+        Handler<RoutingContext> handler = recorder.handler(openApiConfig.alwaysRunFilter());
 
         Consumer<Route> corsFilter = null;
         // Add CORS filter if the path is not attached to main root

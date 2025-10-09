@@ -92,7 +92,9 @@ public class ExecutorRecorder {
                             intervalRemaining, interruptRemaining);
                     try {
                         if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
-                            long elapsed = System.nanoTime() - start;
+                            long end = System.nanoTime();
+                            long elapsed = Math.max(0, end - start);
+                            start = end;
                             intervalRemaining -= elapsed;
                             remaining -= elapsed;
                             interruptRemaining -= elapsed;

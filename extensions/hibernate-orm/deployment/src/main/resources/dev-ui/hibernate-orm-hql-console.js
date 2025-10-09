@@ -1,5 +1,4 @@
 import {css, html, QwcHotReloadElement} from 'qwc-hot-reload-element';
-import {RouterController} from 'router-controller';
 import {JsonRpc} from 'jsonrpc';
 import {StorageController} from 'storage-controller';
 import '@vaadin/icon';
@@ -10,7 +9,6 @@ import '@vaadin/text-area';
 import '@vaadin/progress-bar';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
-import {notifier} from 'notifier';
 import {assistantState} from 'assistant-state';
 import 'qui-assistant-warning';
 import {observeState} from 'lit-element-state';
@@ -18,7 +16,6 @@ import {observeState} from 'lit-element-state';
 export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
     configJsonRpc = new JsonRpc("devui-configuration");
-    routerController = new RouterController(this);
     storageControl = new StorageController(this);
 
     static styles = css`
@@ -281,28 +278,26 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     connectedCallback() {
         super.connectedCallback();
-
-        const page = this.routerController.getCurrentPage();
-        if (page && page.metadata) {
-            this._allowHql = (page.metadata.allowHql === "true");
-        } else {
-            this._allowHql = false;
-        }
-
         this.hotReload();
     }
 
     hotReload() {
         this._loading = true;
-        this.jsonRpc.getInfo().then(response => {
-            this._persistenceUnits = response.result.persistenceUnits;
-            this._selectPersistenceUnit(this._persistenceUnits[0]);
-            this._loading = false;
+        const configPromise = this.configJsonRpc.getAllValues();
+        const infoPromise = this.jsonRpc.getInfo();
+        Promise.all([configPromise, infoPromise]).then(responses => {
+            const configValues = responses[0].result;
+            this._allowHql = configValues['quarkus.hibernate-orm.dev-ui.allow-hql'] === 'true';
+            const infoResponse = responses[1].result;
+            if (infoResponse) {
+                this._persistenceUnits = infoResponse.persistenceUnits;
+                this._selectPersistenceUnit(this._persistenceUnits[0]);
+            }
         }).catch(error => {
-            console.error("Failed to fetch persistence units:", error);
-            this._persistenceUnits = [];
+            console.error("Failed to fetch configuration or persistence units:", error);
+            this._addErrorMessage("Failed to fetch configuration or persistence units: " + error);
+        }).finally(() => {
             this._loading = false;
-            notifier.showErrorMessage("Failed to fetch persistence units: " + error, "bottom-start", 30);
         });
     }
 
@@ -735,7 +730,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     }
 
     _handleKeyDown(event) {
-        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        if (event.key === 'Enter') {
             event.preventDefault();
             this._sendQuery();
         }

@@ -190,7 +190,8 @@ public class SubclassGenerator extends AbstractGenerator {
         Map<MethodDescriptor, MethodDescriptor> forwardingMethods = new HashMap<>();
         List<MethodInfo> interceptedOrDecoratedMethods = bean.getInterceptedOrDecoratedMethods();
         for (MethodInfo method : interceptedOrDecoratedMethods) {
-            forwardingMethods.put(MethodDescriptor.of(method), createForwardingMethod(subclass, providerTypeName, method));
+            forwardingMethods.put(MethodDescriptor.of(method),
+                    createForwardingMethod(subclass, providerTypeName, method, false));
         }
 
         // If a decorator is associated:
@@ -862,7 +863,8 @@ public class SubclassGenerator extends AbstractGenerator {
         return false;
     }
 
-    static MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method) {
+    static MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method,
+            boolean isInterface) {
         MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
         String forwardMethodName = method.name() + "$$superforward";
         MethodDescriptor forwardDescriptor = MethodDescriptor.ofMethod(subclass.getClassName(), forwardMethodName,
@@ -876,7 +878,9 @@ public class SubclassGenerator extends AbstractGenerator {
         }
         MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName, methodDescriptor.getName(),
                 methodDescriptor.getReturnType(), methodDescriptor.getParameterTypes());
-        forward.returnValue(forward.invokeSpecialMethod(virtualMethod, forward.getThis(), params));
+        forward.returnValue(isInterface
+                ? forward.invokeSpecialInterfaceMethod(virtualMethod, forward.getThis(), params)
+                : forward.invokeSpecialMethod(virtualMethod, forward.getThis(), params));
         return forwardDescriptor;
     }
 
@@ -908,8 +912,8 @@ public class SubclassGenerator extends AbstractGenerator {
         for (int i = 0; i < parameters.size(); ++i) {
             params[i] = notConstructed.getMethodParam(i);
         }
-        if (Modifier.isAbstract(method.flags())) {
-            notConstructed.throwException(IllegalStateException.class, "Cannot delegate to an abstract method");
+        if (method.isAbstract()) {
+            notConstructed.throwException(IllegalStateException.class, "Cannot invoke abstract method");
         } else {
             notConstructed.returnValue(notConstructed.invokeVirtualMethod(forwardMethod, notConstructed.getThis(), params));
         }

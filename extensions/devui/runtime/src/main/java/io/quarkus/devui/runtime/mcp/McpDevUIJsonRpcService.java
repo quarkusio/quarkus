@@ -14,6 +14,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.devui.runtime.spi.McpEvent;
 import io.quarkus.devui.runtime.spi.McpServerConfiguration;
 import io.smallrye.mutiny.Multi;
@@ -24,6 +26,8 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
  */
 @ApplicationScoped
 public class McpDevUIJsonRpcService {
+    private static final Logger LOG = Logger.getLogger(McpDevUIJsonRpcService.class.getName());
+
     private final BroadcastProcessor<McpClientInfo> connectedClientStream = BroadcastProcessor.create();
     private final BroadcastProcessor<McpEvent> mcpEventStream = BroadcastProcessor.create();
 
@@ -112,11 +116,17 @@ public class McpDevUIJsonRpcService {
     }
 
     private boolean storeConfiguration(Properties p) {
-        try (OutputStream out = Files.newOutputStream(configFile)) {
-            p.store(out, "Dev MCP Configuration");
-            return true;
+        try {
+            Files.createDirectories(configDir);
+            try (OutputStream out = Files.newOutputStream(configFile)) {
+                p.store(out, "Dev MCP Configuration");
+                return true;
+            } catch (IOException ex) {
+                LOG.error("Could not create config file for Dev MCP [" + configFile + "]", ex);
+                return false;
+            }
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LOG.error("Could not create config directory for Dev MCP [" + configDir + "]", ex);
             return false;
         }
     }

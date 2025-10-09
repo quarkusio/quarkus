@@ -290,8 +290,8 @@ public class IfSectionHelper implements SectionHelper {
         @Override
         public CompletionStage<Object> evaluate(SectionResolutionContext context) {
             CompletionStage<Object> ret = condition1.evaluate(context);
-            if (ret instanceof CompletedStage completed) {
-                ret = evaluateSecond(context, completed.get());
+            if (ret instanceof CompletedStage<Object> completed) {
+                ret = completed.isFailure() ? completed : evaluateSecond(context, completed.get());
             } else {
                 ret = ret.thenCompose(first -> evaluateSecond(context, first));
             }
@@ -323,8 +323,8 @@ public class IfSectionHelper implements SectionHelper {
                 return CompletedStage.of(shortResult);
             }
             CompletionStage<Object> second = condition2.evaluate(context);
-            if (second instanceof CompletedStage completed) {
-                return processValues(operator, firstVal, completed.get());
+            if (second instanceof CompletedStage<Object> completed) {
+                return completed.isFailure() ? completed : processValues(operator, firstVal, completed.get());
             } else {
                 return second.thenCompose(c2 -> processValues(operator, firstVal, c2));
             }
@@ -395,9 +395,10 @@ public class IfSectionHelper implements SectionHelper {
                     return processConditionValue(context, operator, previousValue, literalVal, iter);
                 } else {
                     CompletionStage<Object> ret = next.evaluate(context);
-                    if (ret instanceof CompletedStage completed) {
-                        return processConditionValue(context, operator, previousValue, completed.get(),
-                                iter);
+                    if (ret instanceof CompletedStage<Object> completed) {
+                        return completed.isFailure() ? completed
+                                : processConditionValue(context, operator, previousValue, completed.get(),
+                                        iter);
                     } else {
                         return ret.thenCompose(r -> processConditionValue(context, operator, previousValue, r, iter));
                     }

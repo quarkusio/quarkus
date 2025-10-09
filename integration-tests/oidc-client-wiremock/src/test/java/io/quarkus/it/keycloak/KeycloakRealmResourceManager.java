@@ -41,7 +41,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
-                                "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+                                "{\"access_token\":\"access_token_1\", \"expires_in\":6, \"refresh_token\":\"refresh_token_1\"}")));
         server.stubFor(WireMock.post("/tokens-exchange")
                 .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange"))
                 .withRequestBody(containing("subject_token=token_to_be_exchanged"))
@@ -122,7 +122,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
-                                "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")));
+                                "{\"access_token\":\"access_token_2\", \"expires_in\":6, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")));
 
         server.stubFor(WireMock.post("/tokens-without-expires-in")
                 .withRequestBody(matching("grant_type=client_credentials&client_id=quarkus-app&client_secret=secret"))

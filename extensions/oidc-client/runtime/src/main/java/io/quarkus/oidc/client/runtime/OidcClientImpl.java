@@ -40,6 +40,22 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcClientImpl implements OidcClient {
 
+    private enum Operation {
+        GET("Get"),
+        REFRESH("Refresh"),
+        REVOKE("Revoke");
+
+        String op;
+
+        Operation(String op) {
+            this.op = op;
+        }
+
+        String operation() {
+            return op;
+        }
+    }
+
     private static final Logger LOG = Logger.getLogger(OidcClientImpl.class);
     private static final String CLIENT_ID_ATTRIBUTE = "client-id";
     private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
@@ -95,7 +111,7 @@ public class OidcClientImpl implements OidcClient {
             throw new OidcClientException(
                     "Only 'refresh_token' grant is supported, please call OidcClient#refreshTokens method instead");
         }
-        return getJsonResponse(OidcEndpoint.Type.TOKEN, tokenGrantParams, additionalGrantParameters, false);
+        return getJsonResponse(OidcEndpoint.Type.TOKEN, tokenGrantParams, additionalGrantParameters, Operation.GET);
     }
 
     @Override
@@ -106,7 +122,7 @@ public class OidcClientImpl implements OidcClient {
         }
         MultiMap refreshGrantParams = copyMultiMap(commonRefreshGrantParams);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        return getJsonResponse(OidcEndpoint.Type.TOKEN, refreshGrantParams, additionalGrantParameters, true);
+        return getJsonResponse(OidcEndpoint.Type.TOKEN, refreshGrantParams, additionalGrantParameters, Operation.REFRESH);
     }
 
     @Override
@@ -122,7 +138,7 @@ public class OidcClientImpl implements OidcClient {
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
             return postRequest(requestProps, OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri),
                     tokenRevokeParams,
-                    additionalParameters, false)
+                    additionalParameters, Operation.REVOKE)
                     .transform(resp -> toRevokeResponse(requestProps, resp));
         } else {
             LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");
@@ -155,18 +171,18 @@ public class OidcClientImpl implements OidcClient {
     private Uni<Tokens> getJsonResponse(
             OidcEndpoint.Type endpointType, MultiMap formBody,
             Map<String, String> additionalGrantParameters,
-            boolean refresh) {
+            Operation op) {
         //Uni needs to be lazy by default, we don't send the request unless
         //something has subscribed to it. This is important for the CAS state
         //management in TokensHelper
-        String currentGrantType = refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType;
+        String currentGrantType = isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType;
         final OidcRequestContextProperties requestProps = getRequestProps(currentGrantType);
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
             @Override
             public Uni<Tokens> get() {
                 return postRequest(requestProps, endpointType, client.postAbs(tokenRequestUri), formBody,
-                        additionalGrantParameters, refresh)
-                        .transform(resp -> emitGrantTokens(requestProps, resp, refresh));
+                        additionalGrantParameters, op)
+                        .transform(resp -> emitGrantTokens(requestProps, resp, op));
             }
         });
     }
@@ -176,7 +192,7 @@ public class OidcClientImpl implements OidcClient {
             OidcEndpoint.Type endpointType, HttpRequest<Buffer> request,
             MultiMap formBody,
             Map<String, String> additionalGrantParameters,
-            boolean refresh) {
+            Operation op) {
         MultiMap body = formBody;
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
                 HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
@@ -199,14 +215,14 @@ public class OidcClientImpl implements OidcClient {
             if (clientAssertion == null) {
                 String errorMessage = String.format(
                         "%s OidcClient can not complete the %s grant request because a JWT bearer client_assertion is missing",
-                        oidcConfig.id().get(), (refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType));
+                        oidcConfig.id().get(), (isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType));
                 LOG.error(errorMessage);
                 throw new OidcClientException(errorMessage);
             }
             body.set(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
         } else if (clientJwtKey != null) {
             // if it is a refresh then a map has already been copied
-            body = !refresh ? copyMultiMap(body) : body;
+            body = !isRefresh(op) ? copyMultiMap(body) : body;
             String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, tokenRequestUri, clientJwtKey);
 
             if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials())) {
@@ -227,11 +243,11 @@ public class OidcClientImpl implements OidcClient {
                 body.add(OidcConstants.CLIENT_ASSERTION, jwt);
             }
         } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials())) {
-            body = !refresh ? copyMultiMap(body) : body;
+            body = !isRefresh(op) ? copyMultiMap(body) : body;
             body.set(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
             body.set(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials()));
         } else {
-            body = !refresh ? copyMultiMap(body) : body;
+            body = !isRefresh(op) ? copyMultiMap(body) : body;
             body = copyMultiMap(body).set(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
         }
         if (!additionalGrantParameters.isEmpty()) {
@@ -239,6 +255,10 @@ public class OidcClientImpl implements OidcClient {
             for (Map.Entry<String, String> entry : additionalGrantParameters.entrySet()) {
                 body.add(entry.getKey(), entry.getValue());
             }
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("%s token: url : %s, headers: %s, request params: %s", op.operation(), request.uri(), request.headers(),
+                    body);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);
@@ -255,10 +275,10 @@ public class OidcClientImpl implements OidcClient {
         return response.onItem();
     }
 
-    private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, boolean refresh) {
+    private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, Operation op) {
         Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters, OidcEndpoint.Type.TOKEN);
         if (resp.statusCode() == 200) {
-            LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.id().get(), (refresh ? "refreshed" : "acquired"));
+            LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.id().get(), (isRefresh(op) ? "refreshed" : "acquired"));
             JsonObject json = buffer.toJsonObject();
             // access token
             final String accessToken = json.getString(oidcConfig.grant().accessTokenProperty());
@@ -274,7 +294,7 @@ public class OidcClientImpl implements OidcClient {
         } else {
             String errorMessage = buffer.toString();
             LOG.debugf("%s OidcClient has failed to complete the %s grant request:  status: %d, error message: %s",
-                    oidcConfig.id().get(), (refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType), resp.statusCode(),
+                    oidcConfig.id().get(), (isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType), resp.statusCode(),
                     errorMessage);
             throw new OidcClientException(errorMessage);
         }
@@ -368,5 +388,9 @@ public class OidcClientImpl implements OidcClient {
 
     OidcClientConfig getConfig() {
         return oidcConfig;
+    }
+
+    static boolean isRefresh(Operation op) {
+        return op == Operation.REFRESH;
     }
 }

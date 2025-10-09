@@ -5,12 +5,15 @@ import static io.quarkus.registry.Constants.OFFERING;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.Platform;
@@ -72,7 +75,7 @@ class RegistryExtensionResolver {
 
         final String offering = getConfiguredOfferingOrNull(config);
         if (offering != null) {
-            log.info("Registry " + config.getId() + " is limited to offerings " + offering);
+            log.debug("Registry %s is limited to offerings %s", config.getId(), offering);
             this.offeringSupportKey = offering + DASH_SUPPORT;
         } else {
             offeringSupportKey = null;
@@ -125,14 +128,14 @@ class RegistryExtensionResolver {
     }
 
     ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusCoreVersion) throws RegistryResolutionException {
-        return extensionResolver.resolveNonPlatformExtensions(quarkusCoreVersion);
+        return applyOfferingFilter(extensionResolver.resolveNonPlatformExtensions(quarkusCoreVersion));
     }
 
     /**
      * Resolves a platform extension catalog using a given JSON artifact.
-     *
-     * If a user did not configure an offering the the original catalog is returned.
-     *
+     * <p>
+     * If a user did not configure an offering the original catalog is returned.
+     * <p>
      * If an offering was configured, we filter out extensions that are not part of the selected offering
      * {@link Constants#DEFAULT_REGISTRY_ARTIFACT_VERSION} to the metadata with the corresponding {@code <name>-support}
      * as its value that will be used by the extension list commands later to display the relevant support scope.
@@ -142,23 +145,33 @@ class RegistryExtensionResolver {
      * @throws RegistryResolutionException in case of a failure
      */
     ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platform) throws RegistryResolutionException {
-        ExtensionCatalog.Mutable catalog = extensionResolver.resolvePlatformExtensions(platform);
-        // if a user didn't select an offering, return the original catalog
-        if (offeringSupportKey == null) {
-            return catalog;
+        return applyOfferingFilter(extensionResolver.resolvePlatformExtensions(platform));
+    }
+
+    private ExtensionCatalog.Mutable applyOfferingFilter(ExtensionCatalog.Mutable catalog) {
+        if (catalog == null) {
+            return null;
         }
         final Collection<Extension> originalCollection = catalog.getExtensions();
-        List<Extension> filteredCollection = new ArrayList<>(originalCollection.size());
+        final List<Extension> offeringCollection = offeringSupportKey == null ? null
+                : new ArrayList<>(originalCollection.size());
+        final Map<ArtifactKey, ArtifactCoords> allCatalogExtensions = new HashMap<>(originalCollection.size());
         for (Extension ext : originalCollection) {
-            if (ext.getMetadata().containsKey(offeringSupportKey)) {
-                ext.getMetadata().put(Constants.REGISTRY_USER_SELECTED_SUPPORT_KEY, offeringSupportKey);
-                filteredCollection.add(ext);
-            } else if (ext.getArtifact().getArtifactId().equals("quarkus-core")) {
-                // we need quarkus-core for proper quarkus-bom to become the primary platform when creating projects
-                filteredCollection.add(ext);
+            allCatalogExtensions.put(ext.getArtifact().getKey(), ext.getArtifact());
+            if (offeringCollection != null) {
+                if (ext.getMetadata().containsKey(offeringSupportKey)) {
+                    ext.getMetadata().put(Constants.REGISTRY_CLIENT_USER_SELECTED_SUPPORT_KEY, offeringSupportKey);
+                    offeringCollection.add(ext);
+                } else if (ext.getArtifact().getArtifactId().equals("quarkus-core")) {
+                    // we need quarkus-core for proper quarkus-bom to become the primary platform when creating projects
+                    offeringCollection.add(ext);
+                }
             }
         }
-        catalog.setExtensions(filteredCollection);
+        catalog.getMetadata().put(Constants.REGISTRY_CLIENT_ALL_CATALOG_EXTENSIONS, allCatalogExtensions);
+        if (offeringCollection != null) {
+            catalog.setExtensions(offeringCollection);
+        }
         return catalog;
     }
 

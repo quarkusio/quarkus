@@ -46,8 +46,7 @@ public class HibernateOrmDevUIProcessor {
         card.addPage(Page.webComponentPageBuilder()
                 .title("HQL Console")
                 .componentLink("hibernate-orm-hql-console.js")
-                .icon("font-awesome-solid:play")
-                .metadata("allowHql", String.valueOf(config.devui().allowHql())));
+                .icon("font-awesome-solid:play"));
         return card;
     }
 

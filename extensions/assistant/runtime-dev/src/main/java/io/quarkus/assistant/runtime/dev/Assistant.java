@@ -45,7 +45,7 @@ public interface Assistant {
      */
     <T> CompletionStage<T> assist(Optional<String> systemMessageTemplate,
             String userMessageTemplate,
-            Map<String, String> variables, List<Path> paths);
+            Map<String, String> variables, List<Path> paths, Class<?> responseType);
 
     default ExceptionBuilder exceptionBuilder() {
         return new ExceptionBuilder(this);
@@ -62,6 +62,7 @@ public interface Assistant {
         private String userMessage;
         private final Map<String, String> variables = new LinkedHashMap<>();
         private final List<Path> paths = new ArrayList<>();
+        private Class<?> responseType = null;
 
         AssistBuilder(Assistant assistant) {
             this.assistant = assistant;
@@ -105,12 +106,19 @@ public interface Assistant {
             return this;
         }
 
+        public AssistBuilder responseType(Class<?> responseType) {
+            if (responseType != null) {
+                this.responseType = responseType;
+            }
+            return this;
+        }
+
         @SuppressWarnings("unchecked")
         public <T> CompletionStage<T> assist() {
-            if (userMessage == null || userMessage.isBlank()) {
+            if (null == userMessage || userMessage.isBlank()) {
                 throw new IllegalStateException("User message is required");
             }
-            return (CompletionStage<T>) assistant.assist(systemMessage, userMessage, variables, paths);
+            return (CompletionStage<T>) assistant.assist(systemMessage, userMessage, variables, paths, responseType);
         }
     }
 

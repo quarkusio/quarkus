@@ -54,6 +54,7 @@ public class SchedulerDevUIProcessor {
                     return assistant.assistBuilder()
                             .userMessage(INTERPRET_CRON)
                             .variables(p)
+                            .responseType(InterpretResponse.class)
                             .assist();
                 }).build();
 
@@ -65,6 +66,7 @@ public class SchedulerDevUIProcessor {
                     return assistant.assistBuilder()
                             .userMessage(CREATE_CRON)
                             .variables(p)
+                            .responseType(CronResponse.class)
                             .assist();
                 }).build();
 
@@ -77,7 +79,7 @@ public class SchedulerDevUIProcessor {
     }
 
     private static final String INTERPRET_CRON = """
-            Can you please interpret this cron and describe it in plain English. Reply in markdown format in a field called markdown.
+            Can you please interpret this cron and describe it in plain English. Reply in markdown format in the markdown field.
 
             Here is the cron: {{cron}}
             """;
@@ -85,7 +87,12 @@ public class SchedulerDevUIProcessor {
     private static final String CREATE_CRON = """
             Can you create a valid cron expression for the following description: {{description}}
 
-            Reply with the valid cron in a field called cron. Add an example on how to use this with the quarkus-scheduler extenion in a field called example. For the example please use markdown.
+            Reply with the valid cron in the cron field. Add an example in markdown format on how to use this with the quarkus-scheduler extension in the markdown field.
             """;
 
+    final record InterpretResponse(String markdown) {
+    }
+
+    final record CronResponse(String cron, String markdown) {
+    }
 }

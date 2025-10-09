@@ -1550,6 +1550,28 @@ public class CodeFlowTest {
         }
     }
 
+    @Test
+    public void testRestoreQueryKeepRedirectParams() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage(
+                            "http://localhost:8081/web-app/refresh/tenant-restore-query-keep-redirect-params?context=contextValue");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+
+            assertEquals("RT injected;context=contextValue",
+                    page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
     private void doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(WebClient webClient)
             throws IOException, InterruptedException {
         HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-listener");

@@ -77,6 +77,7 @@ public class ContinuousTestingProcessor {
         registerToggleBrokenOnlyMethod(launchModeBuildItem, actions);
         registerToggleInstrumentationMethod(launchModeBuildItem, actions);
         registerGetResultsMethod(launchModeBuildItem, actions);
+        registerGetResultsMCPMethod(launchModeBuildItem, actions);
         registerGetStatusMethod(launchModeBuildItem, actions);
         buildTimeActionProducer.produce(actions);
     }
@@ -268,7 +269,7 @@ public class ContinuousTestingProcessor {
     private void registerGetResultsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
                 .methodName("getResults")
-                .description("Get the results of a Continuous testing test run")
+                .description("Get the full results of a Continuous testing test run")
                 .function(ignored -> {
                     try {
                         Optional<TestSupport> ts = TestSupport.instance();
@@ -283,6 +284,37 @@ public class ContinuousTestingProcessor {
                         }
 
                         return testRunResults;
+
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * Duplicate of getResults but using a MCP friendly version of TestRunResults.
+     * TODO to consolidate with getResults after we evaluate other usage
+     */
+    private void registerGetResultsMCPMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
+        actions.actionBuilder()
+                .methodName("getResultsMCP")
+                .description("Get the results of a Continuous testing test run")
+                .enableMcpFuctionByDefault()
+                .function(ignored -> {
+                    try {
+                        Optional<TestSupport> ts = TestSupport.instance();
+                        if (testsDisabled(launchModeBuildItem, ts)) {
+                            return null;
+                        }
+                        TestSupport testSupport = ts.get();
+                        TestRunResults testRunResults = testSupport.getResults();
+
+                        if (testRunResults == null) {
+                            return null;
+                        }
+
+                        return new TrimmedTestRunResult(testRunResults);
 
                     } catch (Exception e) {
                         throw new RuntimeException(e);

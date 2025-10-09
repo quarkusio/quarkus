@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.junit.platform.engine.UniqueId;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -21,6 +24,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
+import io.quarkus.deployment.dev.testing.TestResult;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
 import io.quarkus.vertx.runtime.jackson.ByteArrayDeserializer;
@@ -134,6 +138,7 @@ public class DevUIDatabindCodec implements JsonMapper {
             mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
+            mapper.addMixIn(TestResult.class, TestResultMixIn.class);
             SimpleModule module = new SimpleModule("vertx-module-common");
             module.addSerializer(Instant.class, new InstantSerializer());
             module.addDeserializer(Instant.class, new InstantDeserializer());
@@ -178,4 +183,8 @@ public class DevUIDatabindCodec implements JsonMapper {
         }
     }
 
+    private interface TestResultMixIn {
+        @JsonIgnore
+        UniqueId getUniqueId();
+    }
 }

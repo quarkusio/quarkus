@@ -375,6 +375,19 @@ public interface RestClientsConfig {
          */
         @Deprecated
         OptionalInt maxChunkSize();
+
+        /**
+         * The threshold to use for the amount of data to store in memory for entities, up to {@code Long.MAX_VALUE}. See
+         * {@code dev.resteasy.entity.memory.threshold} in RESTEasy documentation.
+         */
+        Optional<MemorySize> memoryThreshold();
+
+        /**
+         * The threshold to use for the amount of data that can be stored in a file for entities. If the threshold is reached an
+         * IllegalStateException will be thrown. A value of -1 means no limit, up to {@code Long.MAX_VALUE}. See
+         * {@code dev.resteasy.entity.file.threshold	} in RESTEasy documentation.
+         */
+        Optional<MemorySize> fileThreshold();
     }
 
     interface RestClientConfig {

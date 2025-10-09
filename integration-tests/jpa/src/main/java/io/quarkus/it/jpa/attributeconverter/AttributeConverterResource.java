@@ -19,12 +19,12 @@ public class AttributeConverterResource {
     EntityManager em;
 
     @GET
-    @Path("/with-cdi")
+    @Path("/with-cdi-explicit-scope")
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
-    public String withCdi(@RestQuery String theData) {
+    public String withCdiExplicitScope(@RestQuery String theData) {
         EntityWithAttributeConverters entity = new EntityWithAttributeConverters();
-        entity.setMyDataRequiringCDI(new MyDataRequiringCDI(theData));
+        entity.setMyDataRequiringCDIExplicitScope(new MyDataRequiringCDI(theData));
         em.persist(entity);
 
         em.flush();
@@ -32,7 +32,24 @@ public class AttributeConverterResource {
 
         // This can only return `theData` if Hibernate ORM correctly instantiates MyDataConverter through CDI
         // so that MyDataConversionService is injected.
-        return em.find(EntityWithAttributeConverters.class, entity.getId()).getMyDataRequiringCDI().getContent();
+        return em.find(EntityWithAttributeConverters.class, entity.getId()).getMyDataRequiringCDIExplicitScope().getContent();
+    }
+
+    @GET
+    @Path("/with-cdi-implicit-scope")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    public String withCdiImplicitScope(@RestQuery String theData) {
+        EntityWithAttributeConverters entity = new EntityWithAttributeConverters();
+        entity.setMyDataRequiringCDIImplicitScope(new MyDataRequiringCDI(theData));
+        em.persist(entity);
+
+        em.flush();
+        em.clear();
+
+        // This can only return `theData` if Hibernate ORM correctly instantiates MyDataConverter through CDI
+        // so that MyDataConversionService is injected.
+        return em.find(EntityWithAttributeConverters.class, entity.getId()).getMyDataRequiringCDIImplicitScope().getContent();
     }
 
     @GET

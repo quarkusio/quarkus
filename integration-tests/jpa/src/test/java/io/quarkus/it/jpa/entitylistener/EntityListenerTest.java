@@ -11,8 +11,15 @@ import io.quarkus.test.junit.QuarkusTest;
 public class EntityListenerTest {
 
     @Test
-    public void entityListenersAnnotation() {
-        when().get("/jpa-test/entity-listener/entity-listeners-annotation").then()
+    public void entityListenersAnnotationCdiExplicitScope() {
+        when().get("/jpa-test/entity-listener/entity-listeners-annotation-cdi-explicit-scope").then()
+                .body(is("OK"))
+                .statusCode(200);
+    }
+
+    @Test
+    public void entityListenersAnnotationCdiImplicitScope() {
+        when().get("/jpa-test/entity-listener/entity-listeners-annotation-cdi-implicit-scope").then()
                 .body(is("OK"))
                 .statusCode(200);
     }

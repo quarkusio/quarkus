@@ -35,14 +35,25 @@ public class EntityListenerResource {
     UserTransaction transaction;
 
     @GET
-    @Path("/entity-listeners-annotation")
+    @Path("/entity-listeners-annotation-cdi-explicit-scope")
     @Produces(MediaType.TEXT_PLAIN)
-    public String entityListenersAnnotation() throws Exception {
-        return doTest(EntityWithListenerThroughEntityListenersAnnotation.class,
-                entityId -> ReceivedEvent.objectRef(MyListenerRequiringCdi.class, 0),
-                EntityWithListenerThroughEntityListenersAnnotation::new,
-                EntityWithListenerThroughEntityListenersAnnotation::setId,
-                EntityWithListenerThroughEntityListenersAnnotation::setText);
+    public String entityListenersAnnotationCdiExplicitScope() throws Exception {
+        return doTest(EntityWithListenerThroughEntityListenersAnnotationExplicitScope.class,
+                entityId -> ReceivedEvent.objectRef(MyListenerRequiringCdiExplicitScope.class, 0),
+                EntityWithListenerThroughEntityListenersAnnotationExplicitScope::new,
+                EntityWithListenerThroughEntityListenersAnnotationExplicitScope::setId,
+                EntityWithListenerThroughEntityListenersAnnotationExplicitScope::setText);
+    }
+
+    @GET
+    @Path("/entity-listeners-annotation-cdi-implicit-scope")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String entityListenersAnnotationCdiImplicitScope() throws Exception {
+        return doTest(EntityWithListenerThroughEntityListenersAnnotationImplicitScope.class,
+                entityId -> ReceivedEvent.objectRef(MyListenerRequiringCdiImplicitScope.class, 0),
+                EntityWithListenerThroughEntityListenersAnnotationImplicitScope::new,
+                EntityWithListenerThroughEntityListenersAnnotationImplicitScope::setId,
+                EntityWithListenerThroughEntityListenersAnnotationImplicitScope::setText);
     }
 
     @GET

@@ -7,19 +7,25 @@ import jakarta.persistence.Converter;
 
 @Converter
 @ApplicationScoped
-public class MyDataRequiringCDIConverter implements AttributeConverter<MyDataRequiringCDI, String> {
+public class MyDataRequiringCDIExplicitScopeConverter implements AttributeConverter<MyDataRequiringCDI, String> {
     @Inject
     MyCdiContext cdiContext;
 
     @Override
     public String convertToDatabaseColumn(MyDataRequiringCDI attribute) {
+        if (attribute == null) {
+            return null;
+        }
         MyCdiContext.checkAvailable(cdiContext);
-        return attribute == null ? null : attribute.getContent();
+        return attribute.getContent();
     }
 
     @Override
     public MyDataRequiringCDI convertToEntityAttribute(String dbData) {
+        if (dbData == null) {
+            return null;
+        }
         MyCdiContext.checkAvailable(cdiContext);
-        return dbData == null ? null : new MyDataRequiringCDI(dbData);
+        return new MyDataRequiringCDI(dbData);
     }
 }

@@ -16,7 +16,7 @@ import jakarta.persistence.PreUpdate;
 import io.quarkus.arc.ClientProxy;
 
 @ApplicationScoped
-public class MyListenerRequiringCdi {
+public class MyListenerRequiringCdiExplicitScope {
     private static final AtomicInteger instanceOrdinalSource = new AtomicInteger(0);
 
     @Inject
@@ -24,14 +24,14 @@ public class MyListenerRequiringCdi {
 
     private final String ref;
 
-    public MyListenerRequiringCdi() {
+    public MyListenerRequiringCdiExplicitScope() {
         int ordinal;
         if (!ClientProxy.class.isAssignableFrom(getClass())) { // Disregard CDI proxies extending this class
             ordinal = instanceOrdinalSource.getAndIncrement();
         } else {
             ordinal = -1;
         }
-        this.ref = ReceivedEvent.objectRef(MyListenerRequiringCdi.class, ordinal);
+        this.ref = ReceivedEvent.objectRef(MyListenerRequiringCdiExplicitScope.class, ordinal);
     }
 
     @PreUpdate

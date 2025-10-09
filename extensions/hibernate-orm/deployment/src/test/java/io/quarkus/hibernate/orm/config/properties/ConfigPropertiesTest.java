@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;
@@ -65,5 +66,39 @@ public class ConfigPropertiesTest {
         String tableTypesStr = (String) extraPhysicalTableTypes;
         String[] tableTypes = tableTypesStr.split(",");
         assertThat(tableTypes).containsExactly("MATERIALIZED VIEW", "FOREIGN TABLE");
+    }
+
+    @Test
+    @Transactional
+    void shouldMapHibernateOrmConfigPersistenceUnitMappingDurationProperties() {
+        // given
+        var preferredJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_duration_jdbc_type");
+
+        var preferredInstantJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_instant_jdbc_type");
+
+        // when - then
+        assertThat(preferredJdbcType).isEqualTo("INTERVAL_SECOND");
+        assertThat(preferredInstantJdbcType).isEqualTo("INSTANT");
+    }
+
+    @Test
+    @Transactional
+    void shouldMapHibernateOrmConfigPersistenceUnitMappingPreferredProperties() {
+        // given
+        var preferredBooleanJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_boolean_jdbc_type");
+
+        var preferredUUIDJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_uuid_jdbc_type");
+
+        // when - then
+        assertThat(preferredBooleanJdbcType).isEqualTo("BIT");
+        assertThat(preferredUUIDJdbcType).isEqualTo("CHAR");
     }
 }

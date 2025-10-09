@@ -43,12 +43,12 @@ public final class WebSocketMetricsInterceptorProducerImpl implements WebSocketM
                 .builder(WebSocketMetricConstants.SERVER_CONNECTION_OPENED)
                 .description("Number of opened server connections.")
                 .withRegistry(meterRegistry);
-        final Meter.MeterProvider<Counter> connectionOpeningFailedCounter = Counter
+        final Meter.MeterProvider<Counter> connectionOnOpenErrorsCounter = Counter
                 .builder(WebSocketMetricConstants.SERVER_CONNECTION_ON_OPEN_ERROR)
                 .description("Number of failures occurred when opening server connection failed.")
                 .withRegistry(meterRegistry);
         return new WebSocketMetricsInterceptorImpl(messagesCounter, bytesCounter, closedConnectionCounter, serverErrorsCounter,
-                connectionOpenCounter, connectionOpeningFailedCounter);
+                connectionOpenCounter, connectionOnOpenErrorsCounter);
     }
 
     @Override
@@ -73,12 +73,12 @@ public final class WebSocketMetricsInterceptorProducerImpl implements WebSocketM
                 .builder(WebSocketMetricConstants.CLIENT_CONNECTION_OPENED)
                 .description("Number of opened client connections.")
                 .withRegistry(meterRegistry);
-        final Meter.MeterProvider<Counter> connectionOpeningFailedCounter = Counter
-                .builder(WebSocketMetricConstants.CLIENT_CONNECTION_OPENED_ERROR)
+        final Meter.MeterProvider<Counter> connectionOnOpenErrorsCounter = Counter
+                .builder(WebSocketMetricConstants.CLIENT_CONNECTION_ON_OPEN_ERROR)
                 .description("Number of failures occurred when opening client connection failed.")
                 .withRegistry(meterRegistry);
         return new WebSocketMetricsInterceptorImpl(messagesCounter, bytesCounter, closedConnectionCounter, clientErrorsCounter,
-                connectionOpenCounter, connectionOpeningFailedCounter);
+                connectionOpenCounter, connectionOnOpenErrorsCounter);
     }
 
     private static final class WebSocketMetricsInterceptorImpl implements WebSocketMetricsInterceptor {
@@ -88,18 +88,18 @@ public final class WebSocketMetricsInterceptorProducerImpl implements WebSocketM
         private final Meter.MeterProvider<Counter> closedConnectionCounter;
         private final Meter.MeterProvider<Counter> errorsCounter;
         private final Meter.MeterProvider<Counter> connectionOpenCounter;
-        private final Meter.MeterProvider<Counter> connectionOpeningFailedCounter;
+        private final Meter.MeterProvider<Counter> connectionOnOpenErrorsCounter;
 
         private WebSocketMetricsInterceptorImpl(Meter.MeterProvider<Counter> messagesCounter,
                 Meter.MeterProvider<Counter> bytesCounter, Meter.MeterProvider<Counter> closedConnectionCounter,
                 Meter.MeterProvider<Counter> errorsCounter, Meter.MeterProvider<Counter> connectionOpenCounter,
-                Meter.MeterProvider<Counter> connectionOpeningFailedCounter) {
+                Meter.MeterProvider<Counter> connectionOnOpenErrorsCounter) {
             this.messagesCounter = messagesCounter;
             this.bytesCounter = bytesCounter;
             this.closedConnectionCounter = closedConnectionCounter;
             this.errorsCounter = errorsCounter;
             this.connectionOpenCounter = connectionOpenCounter;
-            this.connectionOpeningFailedCounter = connectionOpeningFailedCounter;
+            this.connectionOnOpenErrorsCounter = connectionOnOpenErrorsCounter;
         }
 
         @Override
@@ -126,7 +126,7 @@ public final class WebSocketMetricsInterceptorProducerImpl implements WebSocketM
 
         @Override
         public void onConnectionOpeningFailed(String route) {
-            connectionOpeningFailedCounter.withTag(URI_TAG_KEY, route).increment();
+            connectionOnOpenErrorsCounter.withTag(URI_TAG_KEY, route).increment();
         }
 
         @Override

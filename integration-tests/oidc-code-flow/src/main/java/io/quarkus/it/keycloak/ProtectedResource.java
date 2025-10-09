@@ -310,6 +310,18 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("refresh/tenant-restore-query-keep-redirect-params")
+    public String getTenantRestoreQueryKeepRedirectParams(@QueryParam("context") String context) {
+        return getRefreshToken() + ";context=" + context;
+    }
+
+    @GET
+    @Path("refresh/tenant-restore-query-keep-redirect-params/callback")
+    public String getTenantRestoreQueryKeepRedirectParamsCallback() {
+        throw new InternalServerErrorException("This method must not be invoked");
+    }
+
+    @GET
     @Path("refresh-query")
     public String getRefreshTokenQuery(@QueryParam("a") String aValue) {
         return getRefreshToken() + ":" + aValue;

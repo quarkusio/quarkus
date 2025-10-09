@@ -442,10 +442,32 @@ public interface HibernateOrmConfigPersistenceUnit {
 
         @ConfigGroup
         interface Duration {
+
+            /**
+             * The preferred JDBC type to use for storing {@link java.time.Duration} values.
+             * <p>
+             * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+             * <p>
+             * Can also specify the name of the SqlTypes constant field,
+             * for example, `quarkus.hibernate-orm.mapping.type.preferred_jdbc_type=INTERVAL_SECOND`.
+             *
+             * @asciidoclet
+             */
             @WithName("preferred_jdbc_type")
             @ConfigDocDefault("INTERVAL_SECOND")
             Optional<@WithConverter(TrimmedStringConverter.class) String> preferredJdbcType();
 
+            /**
+             * The preferred JDBC type to use for storing {@link java.time.Instant} values.
+             * <p>
+             * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+             * <p>
+             * Can also specify the name of the SqlTypes constant field,
+             * for example, `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=TIMESTAMP`
+             * or `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=INSTANT`.
+             *
+             * @asciidoclet
+             */
             @WithName("preferred_instant_jdbc_type")
             @ConfigDocDefault("TIMESTAMP")
             Optional<@WithConverter(TrimmedStringConverter.class) String> preferredInstantJdbcType();
@@ -453,12 +475,32 @@ public interface HibernateOrmConfigPersistenceUnit {
 
         @ConfigGroup
         interface Preferred {
+            /**
+             * The preferred JDBC type to use for storing boolean values.
+             * <p>
+             * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+             * <p>
+             * Can also specify the name of the SqlTypes constant field,
+             * for example, `quarkus.hibernate-orm.mapping.type.boolean_jdbc_type=BIT`.
+             *
+             * @asciidoclet
+             */
             @WithName("boolean_jdbc_type")
-            @ConfigDocDefault("BIT")
+            @ConfigDocDefault("BOOLEAN")
             Optional<@WithConverter(TrimmedStringConverter.class) String> preferredBooleanJdbcType();
 
+            /**
+             * The preferred JDBC type to use for storing {@link java.util.UUID} values.
+             * <p>
+             * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+             * <p>
+             * Can also specify the name of the SqlTypes constant field,
+             * for example, `quarkus.hibernate-orm.mapping.type.uuid_jdbc_type=CHAR`.
+             *
+             * @asciidoclet
+             */
             @WithName("uuid_jdbc_type")
-            @ConfigDocDefault("CHAR")
+            @ConfigDocDefault("UUID")
             Optional<@WithConverter(TrimmedStringConverter.class) String> preferredUUIDJdbcType();
         }
 

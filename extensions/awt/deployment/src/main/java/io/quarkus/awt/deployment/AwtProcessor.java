@@ -80,8 +80,8 @@ class AwtProcessor {
             BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
         resourcePatternsBuildItemBuildProducer
                 .produce(NativeImageResourcePatternsBuildItem.builder()
-                        .includePattern(".*/iio-plugin.*properties$") // Texts for e.g. exceptions strings
-                        .includePattern(".*/.*pf$") // Default colour profiles
+                        .includeGlobs("**/iio-plugin*.properties", // Texts for e.g. exceptions strings
+                                "**/*.pf") // Default colour profiles
                         .build());
     }
 

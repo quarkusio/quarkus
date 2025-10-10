@@ -64,6 +64,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BuildExclusionsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -223,8 +224,10 @@ public class SmallRyeOpenApiProcessor {
                     .orElse(null);
         }
 
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
-                .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(AutoSecurityFilter.class)
+                .setRuntimeInit()
+                .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter))
+                .done());
     }
 
     static boolean autoSecurityRuntimeEnabled(AutoSecurityFilter autoSecurityFilter,
@@ -235,8 +238,10 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void registerAnnotatedUserDefinedRuntimeFilters(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    void registerAnnotatedUserDefinedRuntimeFilters(
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             OpenApiRecorder recorder) {
         Config config = ConfigProvider.getConfig();
@@ -248,8 +253,13 @@ public class SmallRyeOpenApiProcessor {
                 .supplier(recorder.createUserDefinedRuntimeFilters(userDefinedRuntimeFilters))
                 .done());
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(userDefinedRuntimeFilters.toArray(new String[] {}))
+        String[] runtimeFilterClassNames = userDefinedRuntimeFilters.toArray(new String[] {});
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(runtimeFilterClassNames)
                 .reason(getClass().getName()).build());
+
+        // Make sure the filter beans are kept so they may be loaded programmatically at runtime
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(runtimeFilterClassNames));
     }
 
     @BuildStep

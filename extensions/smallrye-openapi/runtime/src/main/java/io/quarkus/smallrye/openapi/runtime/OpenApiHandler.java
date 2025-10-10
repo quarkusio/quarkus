@@ -3,6 +3,7 @@ package io.quarkus.smallrye.openapi.runtime;
 import java.util.List;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.smallrye.openapi.runtime.io.Format;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -14,7 +15,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Handler that serve the OpenAPI document in either json or yaml format
  */
-public class OpenApiHandler implements Handler<RoutingContext> {
+public class OpenApiHandler extends RouteHandler implements Handler<RoutingContext> {
 
     private volatile OpenApiDocumentService openApiDocumentService;
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
@@ -24,7 +25,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     }
 
     @Override
-    public void handle(RoutingContext event) {
+    public void invoke(RoutingContext event) {
         HttpServerRequest req = event.request();
         HttpServerResponse resp = event.response();
 

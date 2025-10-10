@@ -119,6 +119,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     static properties = {
         _workspaceItems: {state: true},
+        _fileSeparator: {state: false},
         _workspaceTreeNames: {state: true},
         _workspaceActions: {state: true},
         _filteredActions: {state: true},
@@ -134,6 +135,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         super();
         this.md = new MarkdownIt();
         this._workspaceItems = null;
+        this._fileSeparator = '/';
         this._workspaceTreeNames = null;
         this._workspaceActions = [];
         this._filteredActions = this._workspaceActions;
@@ -192,8 +194,9 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                 directoryTree.selectFile(this._selectedWorkspaceItem.name);
                 this._selectWorkspaceItem(this._selectedWorkspaceItem);
             } else {
-                directoryTree.selectFile([...this._workspaceItems.values()][0].name);
-                this._selectWorkspaceItem([...this._workspaceItems.values()][0]);
+                const selectedItem = QwcWorkspace.getFirstJavaFile([...this._workspaceItems.values()]);
+                directoryTree.selectFile(selectedItem.name);
+                this._selectWorkspaceItem(selectedItem);
             }
         }
     }
@@ -217,6 +220,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _renderWorkspaceTree(){
         return html`<qui-directory-tree id="directoryTree" class="files"
                         .directory="${this._workspaceTreeNames}"
+                        .fileSeparator="${this._fileSeparator}"
                         header="Source Code"
                         @file-select="${this._onFileSelect}"
                     ></qui-directory-tree>`;
@@ -252,7 +256,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                 </div>
 
                 <div class="mainMenuBarTitle" @dblclick="${this._toggleSplit}">
-                    ${this._selectedWorkspaceItem?.name?.split('/').pop()}
+                    ${this._selectedWorkspaceItem?.name?.split(this._fileSeparator).pop()}
                 </div>
 
                 <div class="mainMenuBarActions">
@@ -688,8 +692,10 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _loadWorkspaceItems(){
         this.jsonRpc.getWorkspaceItems().then(jsonRpcResponse => {
-            if (Array.isArray(jsonRpcResponse.result)) {
-                this._workspaceItems = new Map(jsonRpcResponse.result.map(obj => [obj.name, obj]));                
+            const items = jsonRpcResponse.result?.items;
+            if (Array.isArray(items)) {
+                this._fileSeparator = jsonRpcResponse.result.fileSeparator;
+                this._workspaceItems = new Map(items.map(obj => [obj.name, obj]));
             } else {
                 console.error("Expected an array but got:", jsonRpcResponse.result);
             }
@@ -747,7 +753,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _convertDirectoryStructureToTree() {
         const root = [];
         this._workspaceItems.forEach((value, key) => {
-            const parts = value.name.split('/');
+            const parts = value.name.split(this._fileSeparator);
             let currentLevel = root;
 
             parts.forEach((part, index) => {
@@ -770,7 +776,21 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             });
         });
 
+        // folder goes first so that we have same deterministic behavior on Windows and Linux
+        root.sort((a, b) => {
+            const aIsFolder = a.type === 'folder' ? 0 : 1;
+            const bIsFolder = b.type === 'folder' ? 0 : 1;
+            return aIsFolder - bIsFolder;
+        });
+
         return root;
+    }
+
+    static getFirstJavaFile(workspaceItems) {
+        const javaFileNode = workspaceItems.find(node => {
+            return node.name && node.name.endsWith('.java');
+        });
+        return javaFileNode || workspaceItems[0];
     }
 }
 customElements.define('qwc-workspace', QwcWorkspace);

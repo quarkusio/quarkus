@@ -1312,6 +1312,10 @@ According to the https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Reso
 
 If it is configured as a relative path then it is added to the current request URL's host and port to build a resource identifier URL. If it is not configured at all then, unless it is a default tenant id, the tenand id is added to the current request URL's host and port to build a resource identifier URL.
 
+By default, when no `quarkus.oidc.resource-metadata.resource` is configured, a protected resource metadata route is available at a `/.well-known/oauth-protected-resource` relative address.
+
+Setting `quarkus.oidc.resource-metadata.resource` to a relative value impacts the protected resource metadata route's address. For example, setting `quarkus.oidc.resource-metadata.resource=resource` for a default OIDC tenant makes its protected resource metadata route available at `/.well-known/oauth-protected-resource/resource`.
+
 The resource identifier URL scheme is set to `HTTPS` by default. You can enable an `HTTP` URL scheme with `quarkus.oidc.resource-metadata.force-https-scheme=false`, it can be particularly useful in simple demos and tests.
 
 `quarkus.oidc.resource-metadata.authorization-server` allows to customize an authorization server URL that will be included in the resource metadata. The `quarkus.oidc.auth-server-url` URL is included by default, however, for some cases where an OIDC proxy interposes over the actual OIDC provider, returning the OIDC proxy's URL is required instead.

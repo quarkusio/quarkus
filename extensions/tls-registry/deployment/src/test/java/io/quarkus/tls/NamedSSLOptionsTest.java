@@ -23,6 +23,7 @@ import io.vertx.core.net.SSLOptions;
 })
 public class NamedSSLOptionsTest {
 
+    // TODO Luca does this property exist?  quarkus.tls.session-timeout=20s
     private static final String configuration = """
             quarkus.tls.foo.alpn=true
 

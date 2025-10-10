@@ -17,6 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class TransactionJdbcObjectStoreValidationFailureTest {
 
+    // TODO Luca quarkus.datasource.test.jdbc.url
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar

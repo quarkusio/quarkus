@@ -22,6 +22,7 @@ import io.smallrye.certs.junit5.Certificates;
 })
 public class DefaultSSLOptionsTest {
 
+    // TODO Luca does this property exist?  quarkus.tls.session-timeout=20s
     private static final String configuration = """
             quarkus.tls.alpn=true
 

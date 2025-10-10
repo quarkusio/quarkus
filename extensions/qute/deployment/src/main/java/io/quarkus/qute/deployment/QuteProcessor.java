@@ -13,6 +13,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,6 +78,9 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.QualifierRegistrar;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
@@ -91,12 +95,14 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -148,6 +154,7 @@ import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.quarkus.qute.runtime.QuteRecorder.TemplateInfo;
 import io.quarkus.qute.runtime.TemplateProducer;
 import io.quarkus.qute.runtime.debug.DebugQuteEngineObserver;
 import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
@@ -653,7 +660,7 @@ public class QuteProcessor {
         for (TemplatePathBuildItem path : effectiveTemplatePaths.getTemplatePaths()) {
             if (path.isTag()) {
                 String tagPath = path.getPath();
-                String tagName = tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length());
+                String tagName = tagPath.substring(EngineProducer.TAGS.length(), tagPath.length());
                 if (tagName.contains(".")) {
                     tagName = tagName.substring(0, tagName.indexOf('.'));
                 }
@@ -764,7 +771,7 @@ public class QuteProcessor {
                         }
                     }
 
-                    if (templateId.startsWith(TemplatePathBuildItem.TAGS)) {
+                    if (templateId.startsWith(EngineProducer.TAGS)) {
                         parserHelper.addParameter(UserTagSectionHelper.Factory.ARGS,
                                 UserTagSectionHelper.Arguments.class.getName());
                     }
@@ -2222,7 +2229,8 @@ public class QuteProcessor {
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config,
-            TemplateRootsBuildItem templateRoots)
+            TemplateRootsBuildItem templateRoots,
+            LaunchModeBuildItem launchMode)
             throws IOException {
 
         // Make sure the new templates are watched as well
@@ -2249,22 +2257,29 @@ public class QuteProcessor {
         for (var archive : allApplicationArchives) {
             appArtifactKeys.add(archive.getKey());
         }
-        for (ResolvedDependency artifact : curateOutcome.getApplicationModel()
-                .getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
+        ApplicationModel applicationModel = curateOutcome.getApplicationModel();
+        for (ResolvedDependency artifact : applicationModel.getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
             // Skip extension archives that are also application archives
             if (!appArtifactKeys.contains(artifact.getKey())) {
                 scanPathTree(artifact.getContentTree(), templateRoots, watchedPaths, templatePaths, nativeImageResources,
-                        config, excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY);
+                        config, excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null);
             }
         }
         for (ApplicationArchive archive : applicationArchives.getApplicationArchives()) {
             archive.accept(
                     tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config,
-                            excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY));
+                            excludePatterns, TemplatePathBuildItem.APP_ARCHIVE_PRIORITY, null));
+        }
+        WorkspaceModule appModule;
+        if (launchMode.getLaunchMode().isDev()
+                && DevModeType.LOCAL == launchMode.getDevModeType().orElse(null)) {
+            appModule = applicationModel.getApplicationModule();
+        } else {
+            appModule = null;
         }
         applicationArchives.getRootArchive().accept(
                 tree -> scanPathTree(tree, templateRoots, watchedPaths, templatePaths, nativeImageResources, config,
-                        excludePatterns, TemplatePathBuildItem.ROOT_ARCHIVE_PRIORITY));
+                        excludePatterns, TemplatePathBuildItem.ROOT_ARCHIVE_PRIORITY, appModule));
     }
 
     private void scanPathTree(PathTree pathTree, TemplateRootsBuildItem templateRoots,
@@ -2272,27 +2287,39 @@ public class QuteProcessor {
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config, List<Pattern> excludePatterns,
-            int templatePriority) {
+            int templatePriority, WorkspaceModule module) {
         for (String templateRoot : templateRoots) {
             if (PathTreeUtils.containsCaseSensitivePath(pathTree, templateRoot)) {
                 pathTree.walkIfContains(templateRoot, visit -> {
-                    if (Files.isRegularFile(visit.getPath())) {
-                        if (!Identifiers.isValid(visit.getPath().getFileName().toString())) {
+                    Path path = visit.getPath();
+                    if (Files.isRegularFile(path)) {
+                        if (!Identifiers.isValid(path.getFileName().toString())) {
                             LOGGER.warnf("Invalid file name detected [%s] - template is ignored", visit.getPath());
                             return;
                         }
-                        LOGGER.debugf("Found template: %s", visit.getPath());
+                        LOGGER.debugf("Found template: %s", path);
                         // remove templateRoot + /
                         final String relativePath = visit.getRelativePath();
                         String templatePath = relativePath.substring(templateRoot.length() + 1);
                         for (Pattern p : excludePatterns) {
                             if (p.matcher(templatePath).matches()) {
-                                LOGGER.debugf("Template file excluded: %s", visit.getPath());
+                                LOGGER.debugf("Template file excluded: %s", path);
                                 return;
                             }
                         }
+                        // Try to find source
+                        URI source = null;
+                        if (module != null) {
+                            for (SourceDir resources : module.getMainSources().getResourceDirs()) {
+                                Path sourcePath = resources.getDir().resolve(visit.getRelativePath());
+                                if (Files.isRegularFile(sourcePath)) {
+                                    LOGGER.debugf("Source file found for template %s: %s", templatePath, sourcePath);
+                                    source = sourcePath.toUri();
+                                }
+                            }
+                        }
                         produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
-                                relativePath, templatePath, visit.getPath(), config, templatePriority);
+                                relativePath, templatePath, path, config, templatePriority, source);
                     }
                 });
             }
@@ -2621,20 +2648,12 @@ public class QuteProcessor {
             EffectiveTemplatePathsBuildItem effectiveTemplatePaths, Optional<TemplateVariantsBuildItem> templateVariants,
             TemplateRootsBuildItem templateRoots, List<TemplatePathExcludeBuildItem> templatePathExcludes) {
 
-        List<String> templates = new ArrayList<>();
-        List<String> tags = new ArrayList<>();
-        Map<String, String> templateContents = new HashMap<>();
-        for (TemplatePathBuildItem templatePath : effectiveTemplatePaths.getTemplatePaths()) {
-            if (templatePath.isTag()) {
-                // tags/myTag.html -> myTag.html
-                String tagPath = templatePath.getPath();
-                tags.add(tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length()));
-            } else {
-                templates.add(templatePath.getPath());
-            }
-            if (!templatePath.isFileBased()) {
-                templateContents.put(templatePath.getPath(), templatePath.getContent());
-            }
+        Map<String, TemplateInfo> templates = new HashMap<>();
+        for (TemplatePathBuildItem template : effectiveTemplatePaths.getTemplatePaths()) {
+            templates.put(template.getPath(),
+                    new TemplateInfo(template.getPath(),
+                            template.getSource() != null ? template.getSource().toString() : null,
+                            template.isFileBased() ? null : template.getContent()));
         }
         Map<String, List<String>> variants;
         if (templateVariants.isPresent()) {
@@ -2650,10 +2669,9 @@ public class QuteProcessor {
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
                 .scope(BuiltinScope.SINGLETON.getInfo())
-                .supplier(recorder.createContext(templates,
-                        tags, variants,
-                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()), templateContents,
-                        excludePatterns))
+                .supplier(recorder.createContext(variants,
+                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()),
+                        excludePatterns, templates))
                 .done());
     }
 
@@ -3635,7 +3653,7 @@ public class QuteProcessor {
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String resourcePath,
-            String templatePath, Path originalPath, QuteConfig config, int templatePriority) {
+            String templatePath, Path originalPath, QuteConfig config, int templatePriority, URI source) {
         if (templatePath.isEmpty()) {
             return;
         }
@@ -3652,6 +3670,7 @@ public class QuteProcessor {
         templatePaths.produce(TemplatePathBuildItem.builder()
                 .path(templatePath)
                 .fullPath(originalPath)
+                .source(source)
                 .priority(templatePriority)
                 .content(readTemplateContent(originalPath, config.defaultCharset()))
                 .build());

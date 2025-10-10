@@ -37,6 +37,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.PanacheJpaEntityOperationsEnhancer;
+import io.quarkus.panache.hibernate.common.deployment.PanacheJpaRepositoryEnhancer;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -99,9 +100,10 @@ public final class PanacheHibernateResourceProcessor {
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
-        PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
+        PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex(),
+                ReactiveJavaJpaTypeBundle.BUNDLE);
         Set<String> daoClasses = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
@@ -109,7 +111,7 @@ public final class PanacheHibernateResourceProcessor {
                 continue;
             daoClasses.add(classInfo.name().toString());
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY)) {
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());

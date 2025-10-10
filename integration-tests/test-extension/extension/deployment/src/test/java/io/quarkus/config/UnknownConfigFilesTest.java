@@ -21,6 +21,7 @@ class UnknownConfigFilesTest {
                     .addAsResource(EmptyAsset.INSTANCE, "application-prod.properties")
                     .addAsResource(EmptyAsset.INSTANCE, "application.yaml")
                     .addAsResource(EmptyAsset.INSTANCE, "application-test.toml"))
+            .failOnUnknownProperties(false) // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
                 List<LogRecord> unknownConfigFiles = logRecords.stream()

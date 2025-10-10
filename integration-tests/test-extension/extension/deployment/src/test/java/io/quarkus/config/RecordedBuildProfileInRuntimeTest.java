@@ -21,7 +21,8 @@ public class RecordedBuildProfileInRuntimeTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application.properties")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     SmallRyeConfig config;

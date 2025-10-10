@@ -21,7 +21,8 @@ public class RuntimeDefaultsTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsServiceProvider(ConfigSource.class, EnvBuildTimeConfigSource.class)
-                    .addAsResource("application.properties"));
+                    .addAsResource("application.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     SmallRyeConfig config;

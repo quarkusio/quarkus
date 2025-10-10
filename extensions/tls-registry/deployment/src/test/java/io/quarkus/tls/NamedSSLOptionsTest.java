@@ -43,7 +43,8 @@ public class NamedSSLOptionsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+                    .add(new StringAsset(configuration), "application.properties"))
+            .failOnUnknownProperties(false); // quarkus.tls.foo.session-timeout
 
     @Inject
     TlsConfigurationRegistry certificates;

@@ -22,7 +22,8 @@ public class AsyncFileHandlerTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncFileHandlerTest.log");
+            .setLogFileName("AsyncFileHandlerTest.log")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void asyncFileHandlerConfigurationTest() {

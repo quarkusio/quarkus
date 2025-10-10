@@ -21,7 +21,8 @@ public class ConsoleHandlerTest {
             .withConfigurationResource("application-console-output.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void consoleOutputTest() {

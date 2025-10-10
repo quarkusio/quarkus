@@ -37,7 +37,8 @@ public class ConfiguredBeanTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsServiceProvider(ConfigSource.class, DoNotRecordEnvConfigSource.class)
-                    .addAsResource("application.properties"));
+                    .addAsResource("application.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     SmallRyeConfig config;

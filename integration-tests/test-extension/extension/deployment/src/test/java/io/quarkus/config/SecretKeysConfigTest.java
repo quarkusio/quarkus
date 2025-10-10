@@ -20,7 +20,8 @@ public class SecretKeysConfigTest {
                     .addClass(SecretKeysConfigInterceptorFactory.class)
                     .addAsServiceProvider("io.smallrye.config.ConfigSourceInterceptorFactory",
                             SecretKeysConfigInterceptorFactory.class.getName()))
-            .overrideConfigKey("secrets.my.secret", "secret");
+            .overrideConfigKey("secrets.my.secret", "secret")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     SmallRyeConfig config;

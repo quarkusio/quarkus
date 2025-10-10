@@ -22,7 +22,8 @@ public class AsyncSyslogHandlerTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncSyslogHandlerTest.log");
+            .setLogFileName("AsyncSyslogHandlerTest.log")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void asyncSyslogHandlerConfigurationTest() throws NullPointerException {

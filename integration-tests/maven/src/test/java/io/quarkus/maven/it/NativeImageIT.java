@@ -38,8 +38,8 @@ public class NativeImageIT extends MojoTestBase {
         final RunningInvoker running = new RunningInvoker(testDir, false);
 
         // trigger mvn package -Dnative -Dquarkus.ssl.native=true
-        final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Dnative", "-Dquarkus.ssl.native=true" };
-        final MavenProcessInvocationResult result = running.execute(Arrays.asList(mvnArgs), Collections.emptyMap());
+        final List<String> mvnArgs = nativeArguments("package", "-DskipTests", "-Dnative", "-Dquarkus.ssl.native=true");
+        final MavenProcessInvocationResult result = running.execute(mvnArgs, Collections.emptyMap());
         await().atMost(10, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         final String processLog = running.log();
         try {
@@ -80,5 +80,23 @@ public class NativeImageIT extends MojoTestBase {
         final ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
         processBuilder.inheritIO();
         return processBuilder.start();
+    }
+
+    private List<String> nativeArguments(String... initialArguments) {
+        final List<String> result = new ArrayList<>(Arrays.asList(initialArguments));
+        appendArgumentIfSet("quarkus.native.container-build", result);
+        appendArgumentIfSet("quarkus.native.builder-image", result);
+        return result;
+    }
+
+    private static void appendArgumentIfSet(String property, List<String> result) {
+        final String value = System.getProperty(property);
+        if (value != null) {
+            if (value.isEmpty()) {
+                result.add("-D" + property);
+            } else {
+                result.add(String.format("-D%s=%s", property, value));
+            }
+        }
     }
 }

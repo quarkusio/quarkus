@@ -173,7 +173,7 @@
         <hibernate-quarkus-local-cache.version>0.3.1</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.21.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
+        <quarkus-spring-data-api.version>3.4.SP1</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
         <mockito.version>5.20.0</mockito.version>

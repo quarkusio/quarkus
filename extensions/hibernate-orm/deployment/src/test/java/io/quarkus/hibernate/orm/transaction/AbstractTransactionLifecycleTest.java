@@ -103,6 +103,8 @@ public abstract class AbstractTransactionLifecycleTest {
         ValueAndExecutionMetadata<String> calledStoredProcedure = crud.callStoredProcedure(id);
         checkPostConditions(calledStoredProcedure,
                 // Strangely, calling a stored procedure isn't considered as a statement for Hibernate ORM listeners
+                LifecycleOperation.FLUSH,
+                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
                 LifecycleOperation.TRANSACTION_COMPLETION);
         assertThat(calledStoredProcedure.value).isEqualTo(MyStoredProcedure.execute(id));
 
@@ -110,12 +112,14 @@ public abstract class AbstractTransactionLifecycleTest {
         checkPostConditions(deleted,
                 LifecycleOperation.STATEMENT, // select
                 LifecycleOperation.FLUSH, LifecycleOperation.STATEMENT, // delete
-                // No double flush here, since there's nothing in the session after the first flush.
+                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
                 LifecycleOperation.TRANSACTION_COMPLETION);
 
         retrieved = crud.retrieve(id);
         checkPostConditions(retrieved,
                 LifecycleOperation.STATEMENT, // select
+                LifecycleOperation.FLUSH,
+                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
                 LifecycleOperation.TRANSACTION_COMPLETION);
         assertThat(retrieved.value).isNull();
     }

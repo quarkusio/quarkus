@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.persistence.EntityGraph;
@@ -14,6 +16,8 @@ import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
+import org.hibernate.SharedSessionBuilder;
+import org.hibernate.SharedStatelessSessionBuilder;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
 import org.hibernate.graph.GraphSemantic;
@@ -461,6 +465,26 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
         return delegate.get().getEntityGraphs(entityClass);
+    }
+
+    @Override
+    public SharedSessionBuilder sessionWithOptions() {
+        return delegate.get().sessionWithOptions();
+    }
+
+    @Override
+    public SharedStatelessSessionBuilder statelessWithOptions() {
+        return delegate.get().statelessWithOptions();
+    }
+
+    @Override
+    public void inTransaction(Consumer<? super Transaction> action) {
+        delegate.get().inTransaction(action);
+    }
+
+    @Override
+    public <R> R fromTransaction(Function<? super Transaction, R> action) {
+        return delegate.get().fromTransaction(action);
     }
 
     @Override

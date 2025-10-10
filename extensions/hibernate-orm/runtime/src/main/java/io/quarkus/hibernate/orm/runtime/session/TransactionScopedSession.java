@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.runtime.session;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
@@ -46,6 +48,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionEventListener;
 import org.hibernate.SessionFactory;
 import org.hibernate.SharedSessionBuilder;
+import org.hibernate.SharedStatelessSessionBuilder;
 import org.hibernate.SimpleNaturalIdLoadAccess;
 import org.hibernate.Transaction;
 import org.hibernate.UnknownProfileException;
@@ -677,6 +680,36 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.sessionWithOptions();
+        }
+    }
+
+    @Override
+    public SharedStatelessSessionBuilder statelessWithOptions() {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.statelessWithOptions();
+        }
+    }
+
+    @Override
+    public void inTransaction(Consumer<? super Transaction> action) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            if (!emr.allowModification) {
+                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+            }
+            emr.session.inTransaction(action);
+        }
+    }
+
+    @Override
+    public <R> R fromTransaction(Function<? super Transaction, R> action) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            if (!emr.allowModification) {
+                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+            }
+            return emr.session.fromTransaction(action);
         }
     }
 

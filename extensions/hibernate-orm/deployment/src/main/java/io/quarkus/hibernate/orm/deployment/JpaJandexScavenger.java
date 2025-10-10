@@ -142,6 +142,12 @@ public final class JpaJandexScavenger {
             }
         }
 
+        // Hibernate ORM will fall back to instantiating these types using reflection if they are not CDI beans,
+        // so we need to enable that.
+        for (DotName javaType : collector.potentialCdiBeanTypes) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType.toString()).constructors().build());
+        }
+
         return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
                 collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);
     }

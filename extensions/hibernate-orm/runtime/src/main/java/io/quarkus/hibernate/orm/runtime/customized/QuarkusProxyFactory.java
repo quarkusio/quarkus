@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
-import static org.hibernate.internal.CoreLogging.messageLogger;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,7 +26,7 @@ import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
  */
 public final class QuarkusProxyFactory implements ProxyFactory {
 
-    private static final CoreMessageLogger LOG = messageLogger(QuarkusProxyFactory.class);
+    private static final CoreMessageLogger LOG = CoreMessageLogger.CORE_LOGGER;
 
     private final ProxyDefinitions proxyClassDefinitions;
 

@@ -39,6 +39,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -226,6 +227,7 @@ public class HibernateOrmCdiProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<AutoAddScopeBuildItem> autoAddScope,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Capabilities capabilities,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
@@ -250,9 +252,26 @@ public class HibernateOrmCdiProcessor {
                 .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
                 .build());
 
-        // Some user-injectable beans are retrieved programmatically and shouldn't be removed
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
+        // For AttributeConverters and EntityListeners (which are all listed in getPotentialCdiBeanClassNames),
+        // we want to achieve the behavior described in the javadoc of QuarkusArcBeanContainer.
+        // In particular:
+        // 1. They may be retrieved dynamically by Hibernate ORM, so if they are CDI beans, they should not be removed.
+        // NOTE: We don't use .unremovable on AutoAddScopeBuildItem, because that would only make beans unremovable
+        //       when we automatically add a scope.
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(jpaModel.getPotentialCdiBeanClassNames()));
+        // TODO: Remove, this is there for backwards compatibility.
+        //  It should only have an effect in edge cases where an attribute converter was imported from
+        //  a library not indexed in Jandex, but it's doubtful the attribute converter would work in that case.
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
+        // 2. Per spec, they may be handled as CDI beans even if they don't have a user-declared scope,
+        //    so we need them to default to @Dependent-scoped beans.
+        //    See https://github.com/quarkusio/quarkus/issues/50470
+        autoAddScope.produce(AutoAddScopeBuildItem.builder()
+                .match((clazz, annotations, index) -> jpaModel.getPotentialCdiBeanClassNames().contains(clazz.name()))
+                .defaultScope(BuiltinScope.DEPENDENT)
+                // ... but if they don't use CDI, we can safely default to instantiating in Hibernate ORM through reflection.
+                .requiresContainerServices()
+                .build());
     }
 
     @BuildStep

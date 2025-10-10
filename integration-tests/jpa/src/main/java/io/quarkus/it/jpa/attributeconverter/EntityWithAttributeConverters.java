@@ -11,11 +11,17 @@ public class EntityWithAttributeConverters {
     @GeneratedValue
     private Long id;
 
-    @Convert(converter = MyDataRequiringCDIConverter.class)
-    private MyDataRequiringCDI myDataRequiringCDI;
+    @Convert(converter = MyDataRequiringCDIExplicitScopeConverter.class)
+    private MyDataRequiringCDI myDataRequiringCDIExplicitScope;
 
-    @Convert(converter = MyDataNotRequiringCDIConverter.class)
-    private MyDataNotRequiringCDI myDataNotRequiringCDI;
+    @Convert(converter = MyDataRequiringCDIImplicitScopeConverter.class)
+    private MyDataRequiringCDI myDataRequiringCDIImplicitScope;
+
+    @Convert(converter = MyDataNotRequiringCDINoInjectionConverter.class)
+    private MyDataNotRequiringCDI myDataNotRequiringCDINoInjection;
+
+    @Convert(converter = MyDataNotRequiringCDIVetoedConverter.class)
+    private MyDataNotRequiringCDI myDataNotRequiringCDIVetoed;
 
     public Long getId() {
         return id;
@@ -25,19 +31,35 @@ public class EntityWithAttributeConverters {
         this.id = id;
     }
 
-    public MyDataRequiringCDI getMyDataRequiringCDI() {
-        return myDataRequiringCDI;
+    public MyDataRequiringCDI getMyDataRequiringCDIExplicitScope() {
+        return myDataRequiringCDIExplicitScope;
     }
 
-    public void setMyDataRequiringCDI(MyDataRequiringCDI myDataRequiringCDI) {
-        this.myDataRequiringCDI = myDataRequiringCDI;
+    public void setMyDataRequiringCDIExplicitScope(MyDataRequiringCDI myDataRequiringCDI) {
+        this.myDataRequiringCDIExplicitScope = myDataRequiringCDI;
     }
 
-    public MyDataNotRequiringCDI getMyDataNotRequiringCDI() {
-        return myDataNotRequiringCDI;
+    public MyDataRequiringCDI getMyDataRequiringCDIImplicitScope() {
+        return myDataRequiringCDIImplicitScope;
     }
 
-    public void setMyDataNotRequiringCDI(MyDataNotRequiringCDI myDataNotRequiringCDI) {
-        this.myDataNotRequiringCDI = myDataNotRequiringCDI;
+    public void setMyDataRequiringCDIImplicitScope(MyDataRequiringCDI myDataRequiringCDI) {
+        this.myDataRequiringCDIImplicitScope = myDataRequiringCDI;
+    }
+
+    public MyDataNotRequiringCDI getMyDataNotRequiringCDINoInjection() {
+        return myDataNotRequiringCDINoInjection;
+    }
+
+    public void setMyDataNotRequiringCDINoInjection(MyDataNotRequiringCDI myDataNotRequiringCDINoInjection) {
+        this.myDataNotRequiringCDINoInjection = myDataNotRequiringCDINoInjection;
+    }
+
+    public MyDataNotRequiringCDI getMyDataNotRequiringCDIVetoed() {
+        return myDataNotRequiringCDIVetoed;
+    }
+
+    public void setMyDataNotRequiringCDIVetoed(MyDataNotRequiringCDI myDataNotRequiringCDIVetoed) {
+        this.myDataNotRequiringCDIVetoed = myDataNotRequiringCDIVetoed;
     }
 }

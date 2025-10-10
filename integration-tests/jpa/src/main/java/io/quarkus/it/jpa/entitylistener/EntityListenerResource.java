@@ -35,14 +35,47 @@ public class EntityListenerResource {
     UserTransaction transaction;
 
     @GET
-    @Path("/entity-listeners-annotation")
+    @Path("/entity-listeners-annotation-with-cdi-explicit-scope")
     @Produces(MediaType.TEXT_PLAIN)
-    public String entityListenersAnnotation() throws Exception {
-        return doTest(EntityWithListenerThroughEntityListenersAnnotation.class,
-                entityId -> ReceivedEvent.objectRef(MyListenerRequiringCdi.class, 0),
-                EntityWithListenerThroughEntityListenersAnnotation::new,
-                EntityWithListenerThroughEntityListenersAnnotation::setId,
-                EntityWithListenerThroughEntityListenersAnnotation::setText);
+    public String entityListenersAnnotationWithCdiExplicitScope() throws Exception {
+        return doTest(EntityWithListenerThroughEntityListenersAnnotationWithCDIExplicitScope.class,
+                entityId -> ReceivedEvent.objectRef(MyListenerRequiringCdiExplicitScope.class, 0),
+                EntityWithListenerThroughEntityListenersAnnotationWithCDIExplicitScope::new,
+                EntityWithListenerThroughEntityListenersAnnotationWithCDIExplicitScope::setId,
+                EntityWithListenerThroughEntityListenersAnnotationWithCDIExplicitScope::setText);
+    }
+
+    @GET
+    @Path("/entity-listeners-annotation-with-cdi-implicit-scope")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String entityListenersAnnotationWithCdiImplicitScope() throws Exception {
+        return doTest(EntityWithListenerThroughEntityListenersAnnotationWithCDIImplicitScope.class,
+                entityId -> ReceivedEvent.objectRef(MyListenerRequiringCdiImplicitScope.class, 0),
+                EntityWithListenerThroughEntityListenersAnnotationWithCDIImplicitScope::new,
+                EntityWithListenerThroughEntityListenersAnnotationWithCDIImplicitScope::setId,
+                EntityWithListenerThroughEntityListenersAnnotationWithCDIImplicitScope::setText);
+    }
+
+    @GET
+    @Path("/entity-listeners-annotation-without-cdi-no-injection")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String entityListenersAnnotationWithoutCdiNoInjection() throws Exception {
+        return doTest(EntityWithListenerThroughEntityListenersAnnotationWithoutCDINoInjection.class,
+                entityId -> ReceivedEvent.objectRef(MyListenerNotRequiringCdiNoInjection.class, 0),
+                EntityWithListenerThroughEntityListenersAnnotationWithoutCDINoInjection::new,
+                EntityWithListenerThroughEntityListenersAnnotationWithoutCDINoInjection::setId,
+                EntityWithListenerThroughEntityListenersAnnotationWithoutCDINoInjection::setText);
+    }
+
+    @GET
+    @Path("/entity-listeners-annotation-without-cdi-vetoed")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String entityListenersAnnotationWithoutCdiVetoed() throws Exception {
+        return doTest(EntityWithListenerThroughEntityListenersAnnotationWithoutCDIVetoed.class,
+                entityId -> ReceivedEvent.objectRef(MyListenerNotRequiringCdiVetoed.class, 0),
+                EntityWithListenerThroughEntityListenersAnnotationWithoutCDIVetoed::new,
+                EntityWithListenerThroughEntityListenersAnnotationWithoutCDIVetoed::setId,
+                EntityWithListenerThroughEntityListenersAnnotationWithoutCDIVetoed::setText);
     }
 
     @GET

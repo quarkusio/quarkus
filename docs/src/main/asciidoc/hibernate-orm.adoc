@@ -464,7 +464,10 @@ using the `@PersistenceUnit` annotation at the class level is not supported in t
 
 Note that, similarly to what we do with the configuration property, we take into account the annotated package but also all its subpackages.
 
-==== CDI integration
+=== CDI integration
+
+[[injecting-entry-points]]
+==== Injecting entry points
 
 If you are familiar with using Hibernate ORM in Quarkus, you probably already have injected the `EntityManager` using CDI:
 
@@ -539,6 +542,40 @@ These components can also be injected with a specific persistence unit qualifier
 @PersistenceUnit("users")
 CriteriaBuilder criteriaBuilder;
 ----
+
+[[plugging-in-converters-entity-listeners]]
+==== Plugging in converters and entity listeners
+
+The Quarkus extension for Hibernate ORM supports injecting link:{hibernate-orm-docs-url}#basic-jpa-convert[attribute converters] and link:{hibernate-orm-docs-url}#events-jpa-callbacks[entity listeners] into Hibernate ORM.
+
+Just use them as you would in vanilla Hibernate ORM (see documentation linked above), and rely on CDI features (`@Inject`, `@PostConstruct`, `@PreDestroy`, ...) in the converter/listener implementation as needed.
+
+When no CDI scope is specified, the converter/listener will behave as if it was `@Dependent` and will be instantiated once per persistence unit it's used in.
+
+You can force a CDI scope by annotating the converter/listener class with for example `@ApplicationScoped`.
+
+In very exotic scenarios, if you need to prevent usage of CDI in a converter/listener even though it uses CDI annotations (`@Inject`, ...), annotate it with `@Vetoed`. The class will then be instantiated by Hibernate ORM through its default constructor.
+
+[[plugging-in-other-custom-components]]
+==== Plugging in other custom components
+
+The Quarkus extension for Hibernate ORM will automatically
+inject components annotated with `@PersistenceUnitExtension` into Hibernate Search.
+
+The annotation can optionally target a specific persistence unit with `@PersistenceUnitExtension(name = "nameOfYourPU")`.
+
+This feature is available for the following component types:
+
+`org.hibernate.Interceptor`::
+See <<interceptors>>.
+`org.hibernate.resource.jdbc.spi.StatementInspector`::
+See <<statement_inspectors>>.
+`org.hibernate.type.format.FormatMapper`::
+See <<json_xml_serialization_deserialization>>.
+`io.quarkus.hibernate.orm.runtime.tenant.TenantResolver`::
+See <<multitenancy>>.
+`io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver`::
+See <<programmatically-resolving-tenants-connections>>.
 
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
@@ -1473,6 +1510,7 @@ quarkus.datasource.db-kind=postgresql <2>
 <1> Enable discriminator multi-tenancy.
 <2> xref:datasource.adoc[Configure the datasource].
 
+[[programmatically-resolving-tenants-connections]]
 === Programmatically Resolving Tenants Connections
 
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file,

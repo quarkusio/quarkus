@@ -3,8 +3,6 @@ package io.quarkus.it.jpa.entitylistener;
 import java.lang.annotation.Annotation;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;
@@ -14,24 +12,27 @@ import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 
 import io.quarkus.arc.ClientProxy;
+import io.quarkus.it.jpa.util.BeanInstantiator;
+import io.quarkus.it.jpa.util.MyCdiContext;
 
-@ApplicationScoped
-public class MyListenerRequiringCdi {
+// We don't add a CDI scope here, and don't use CDI at all in the class.
+// This should result in Hibernate ORM being used for instantiation.
+public class MyListenerNotRequiringCdiNoInjection {
     private static final AtomicInteger instanceOrdinalSource = new AtomicInteger(0);
-
-    @Inject
-    MyCdiContext cdiContext;
 
     private final String ref;
 
-    public MyListenerRequiringCdi() {
+    private final BeanInstantiator beanInstantiator;
+
+    public MyListenerNotRequiringCdiNoInjection() {
+        this.beanInstantiator = BeanInstantiator.fromCaller();
         int ordinal;
         if (!ClientProxy.class.isAssignableFrom(getClass())) { // Disregard CDI proxies extending this class
             ordinal = instanceOrdinalSource.getAndIncrement();
         } else {
             ordinal = -1;
         }
-        this.ref = ReceivedEvent.objectRef(MyListenerRequiringCdi.class, ordinal);
+        this.ref = ReceivedEvent.objectRef(MyListenerNotRequiringCdiNoInjection.class, ordinal);
     }
 
     @PreUpdate
@@ -70,7 +71,7 @@ public class MyListenerRequiringCdi {
     }
 
     private void receiveEvent(Class<? extends Annotation> eventType, Object entity) {
-        MyCdiContext.checkAvailable(cdiContext);
+        MyCdiContext.checkNotAvailable(null, beanInstantiator);
         ReceivedEvent.add(ref, new ReceivedEvent(eventType, entity.toString()));
     }
 }

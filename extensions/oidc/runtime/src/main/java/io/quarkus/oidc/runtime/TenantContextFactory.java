@@ -16,9 +16,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Instance;
-
-import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.oidc.OIDCException;
@@ -32,7 +29,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
-import io.quarkus.oidc.runtime.trace.ObservabilityRequestResponseFilter;
+import io.quarkus.oidc.runtime.trace.OidcTracingFilter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -51,14 +48,14 @@ final class TenantContextFactory {
     private final Set<String> tenantsExpectingServerAvailableEvents;
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
-    private final Instance<Tracer> tracer;
+    private final boolean otelEnabled;
     final boolean securityEventsEnabled;
 
-    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, Instance<Tracer> tracer,
+    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean otelEnabled,
             boolean securityEventsEnabled) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
-        this.tracer = tracer;
+        this.otelEnabled = otelEnabled;
         this.securityEventsEnabled = securityEventsEnabled;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
     }
@@ -521,7 +518,8 @@ final class TenantContextFactory {
                                     "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
-                        ObservabilityRequestResponseFilter tracerFilter = new ObservabilityRequestResponseFilter(tracer);
+                        OidcTracingFilter tracerFilter = otelEnabled ? new OidcTracingFilter()
+                                : null;
                         return Uni.createFrom()
                                 .item(new OidcProviderClientImpl(client, vertx, metadata, oidcConfig, oidcRequestFilters,
                                         oidcResponseFilters, tracerFilter));

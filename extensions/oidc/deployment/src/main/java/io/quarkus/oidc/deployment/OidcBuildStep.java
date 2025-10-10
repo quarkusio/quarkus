@@ -106,6 +106,7 @@ import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
@@ -352,22 +353,21 @@ public class OidcBuildStep {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(BeanContainerBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    @Consume(OpenTelemetrySdkBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initTenantConfigBean(OidcRecorder recorder) {
+    void initTenantConfigBean(OidcRecorder recorder, Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem) {
         recorder.initTenantConfigBean();
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     SyntheticBeanBuildItem setup(OidcRecorder recorder, CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem,
+            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .addInjectionPoint(ParameterizedType.create(DotNames.INSTANCE,
-                        new Type[] { ClassType.create(TRACER) }, null))
-                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry()))
+                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
+                        isOtelSdkEnabled(openTelemetrySdkBuildItem)))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
@@ -566,5 +566,10 @@ public class OidcBuildStep {
         public boolean getAsBoolean() {
             return config.enabled() && config.defaultTokenCacheEnabled();
         }
+    }
+
+    public static Optional<RuntimeValue<Boolean>> isOtelSdkEnabled(Optional<OpenTelemetrySdkBuildItem> buildItem) {
+        // optional is empty if the extension is disabled at build time
+        return buildItem.isPresent() ? Optional.of(buildItem.get().isRuntimeEnabled()) : Optional.empty();
     }
 }

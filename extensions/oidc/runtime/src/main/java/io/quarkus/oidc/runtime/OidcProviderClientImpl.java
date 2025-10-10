@@ -30,7 +30,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
-import io.quarkus.oidc.runtime.trace.ObservabilityRequestResponseFilter;
+import io.quarkus.oidc.runtime.trace.OidcTracingFilter;
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
@@ -98,7 +98,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             OidcTenantConfig oidcConfig,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
-            ObservabilityRequestResponseFilter tracerFilter) {
+            OidcTracingFilter tracerFilter) {
         this.client = client;
         this.vertx = vertx;
         this.metadata = metadata;
@@ -111,13 +111,13 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
 
         this.requestFilters = prepateRequestFilters(requestFilters, tracerFilter);
-        this.responseFilters = prepateResponseFilters(responseFilters, tracerFilter);
+        this.responseFilters = responseFilters;
 
         this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
     }
 
     private static Map<Type, List<OidcRequestFilter>> prepateRequestFilters(Map<Type, List<OidcRequestFilter>> requestFilters,
-            ObservabilityRequestResponseFilter tracerFilter) {
+            OidcTracingFilter tracerFilter) {
         if (tracerFilter == null) {
             return requestFilters;
         }
@@ -131,24 +131,6 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             allFilters.add(0, tracerFilter);
         }
         return requestFilters;
-    }
-
-    private static Map<Type, List<OidcResponseFilter>> prepateResponseFilters(
-            Map<Type, List<OidcResponseFilter>> responseFilters,
-            ObservabilityRequestResponseFilter tracerFilter) {
-        if (tracerFilter == null) {
-            return responseFilters;
-        }
-        if (responseFilters == null || responseFilters.isEmpty()) {
-            return Map.of(OidcEndpoint.Type.ALL, List.of(tracerFilter));
-        }
-        List<OidcResponseFilter> allFilters = responseFilters.get(OidcEndpoint.Type.ALL);
-        if (allFilters == null) {
-            responseFilters.put(OidcEndpoint.Type.ALL, List.of(tracerFilter));
-        } else {
-            allFilters.add(0, tracerFilter);
-        }
-        return responseFilters;
     }
 
     private static ClientAssertionProvider createClientAssertionProvider(Vertx vertx, OidcTenantConfig oidcConfig) {

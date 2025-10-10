@@ -7,11 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
-import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -27,9 +25,9 @@ public final class TenantConfigBean {
     private final TenantConfigContext defaultTenant;
     private final TenantContextFactory tenantContextFactory;
 
-    TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc, Instance<Tracer> tracer,
-            boolean securityEventsEnabled) {
-        this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, tracer,
+    TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
+            boolean otelEnabled, boolean securityEventsEnabled) {
+        this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, otelEnabled,
                 securityEventsEnabled);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 

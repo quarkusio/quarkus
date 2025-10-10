@@ -3,18 +3,17 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.CreationException;
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
-import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -37,9 +36,6 @@ public class OidcRecorder {
     public static final String ACR_VALUES_TO_MAX_AGE_SEPARATOR = "@#$%@";
 
     static final Logger LOG = Logger.getLogger(OidcRecorder.class);
-
-    private static final TypeLiteral<Instance<Tracer>> TRACER_TYPE_LITERAL = new TypeLiteral<>() {
-    };
 
     private final RuntimeValue<OidcConfig> oidcConfig;
     private final RuntimeValue<SecurityConfig> securityConfig;
@@ -65,7 +61,8 @@ public class OidcRecorder {
 
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
-            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry) {
+            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
+            Optional<RuntimeValue<Boolean>> otelEnabled) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
@@ -75,10 +72,15 @@ public class OidcRecorder {
                 return new TenantConfigBean(vertx.get(),
                         registry.get(),
                         oidc,
-                        ctx.getInjectedReference(TRACER_TYPE_LITERAL),
+                        isOtelSdkEnabled(otelEnabled),
                         securityConfig.getValue().events().enabled());
             }
+
         };
+    }
+
+    private static boolean isOtelSdkEnabled(Optional<RuntimeValue<Boolean>> otelEnabled) {
+        return otelEnabled.isPresent() ? otelEnabled.get().getValue() : false;
     }
 
     public void initTenantConfigBean() {

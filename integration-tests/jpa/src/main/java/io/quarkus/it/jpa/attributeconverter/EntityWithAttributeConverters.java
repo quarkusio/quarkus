@@ -17,8 +17,11 @@ public class EntityWithAttributeConverters {
     @Convert(converter = MyDataRequiringCDIImplicitScopeConverter.class)
     private MyDataRequiringCDI myDataRequiringCDIImplicitScope;
 
-    @Convert(converter = MyDataNotRequiringCDIConverter.class)
-    private MyDataNotRequiringCDI myDataNotRequiringCDI;
+    @Convert(converter = MyDataNotRequiringCDINoInjectionConverter.class)
+    private MyDataNotRequiringCDI myDataNotRequiringCDINoInjection;
+
+    @Convert(converter = MyDataNotRequiringCDIVetoedConverter.class)
+    private MyDataNotRequiringCDI myDataNotRequiringCDIVetoed;
 
     public Long getId() {
         return id;
@@ -44,11 +47,19 @@ public class EntityWithAttributeConverters {
         this.myDataRequiringCDIImplicitScope = myDataRequiringCDI;
     }
 
-    public MyDataNotRequiringCDI getMyDataNotRequiringCDI() {
-        return myDataNotRequiringCDI;
+    public MyDataNotRequiringCDI getMyDataNotRequiringCDINoInjection() {
+        return myDataNotRequiringCDINoInjection;
     }
 
-    public void setMyDataNotRequiringCDI(MyDataNotRequiringCDI myDataNotRequiringCDI) {
-        this.myDataNotRequiringCDI = myDataNotRequiringCDI;
+    public void setMyDataNotRequiringCDINoInjection(MyDataNotRequiringCDI myDataNotRequiringCDINoInjection) {
+        this.myDataNotRequiringCDINoInjection = myDataNotRequiringCDINoInjection;
+    }
+
+    public MyDataNotRequiringCDI getMyDataNotRequiringCDIVetoed() {
+        return myDataNotRequiringCDIVetoed;
+    }
+
+    public void setMyDataNotRequiringCDIVetoed(MyDataNotRequiringCDI myDataNotRequiringCDIVetoed) {
+        this.myDataNotRequiringCDIVetoed = myDataNotRequiringCDIVetoed;
     }
 }

@@ -27,9 +27,17 @@ public class AttributeConverterTest {
     }
 
     @Test
-    public void withoutCdi() {
+    public void withoutCdiNoInjection() {
         given().queryParam("theData", "MyExpectedReturnedData")
-                .when().get("/jpa-test/attribute-converter/without-cdi").then()
+                .when().get("/jpa-test/attribute-converter/without-cdi-no-injection").then()
+                .body(is("MyExpectedReturnedData"))
+                .statusCode(200);
+    }
+
+    @Test
+    public void withoutCdiVetoed() {
+        given().queryParam("theData", "MyExpectedReturnedData")
+                .when().get("/jpa-test/attribute-converter/without-cdi-vetoed").then()
                 .body(is("MyExpectedReturnedData"))
                 .statusCode(200);
     }

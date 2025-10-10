@@ -6,7 +6,7 @@ import jakarta.persistence.Id;
 
 @Entity
 @EntityListeners(MyListenerRequiringCdiImplicitScope.class)
-public class EntityWithListenerThroughEntityListenersAnnotationImplicitScope {
+public class EntityWithListenerThroughEntityListenersAnnotationWithCDIImplicitScope {
     @Id
     private Integer id;
 
@@ -14,7 +14,7 @@ public class EntityWithListenerThroughEntityListenersAnnotationImplicitScope {
 
     @Override
     public String toString() {
-        return ReceivedEvent.objectRef(EntityWithListenerThroughEntityListenersAnnotationImplicitScope.class, id);
+        return ReceivedEvent.objectRef(EntityWithListenerThroughEntityListenersAnnotationWithCDIImplicitScope.class, id);
     }
 
     public Integer getId() {

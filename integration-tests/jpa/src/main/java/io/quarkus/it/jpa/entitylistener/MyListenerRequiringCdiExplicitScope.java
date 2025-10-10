@@ -14,6 +14,8 @@ import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 
 import io.quarkus.arc.ClientProxy;
+import io.quarkus.it.jpa.util.BeanInstantiator;
+import io.quarkus.it.jpa.util.MyCdiContext;
 
 @ApplicationScoped
 public class MyListenerRequiringCdiExplicitScope {
@@ -24,7 +26,10 @@ public class MyListenerRequiringCdiExplicitScope {
 
     private final String ref;
 
+    private final BeanInstantiator beanInstantiator;
+
     public MyListenerRequiringCdiExplicitScope() {
+        this.beanInstantiator = BeanInstantiator.fromCaller();
         int ordinal;
         if (!ClientProxy.class.isAssignableFrom(getClass())) { // Disregard CDI proxies extending this class
             ordinal = instanceOrdinalSource.getAndIncrement();
@@ -70,7 +75,7 @@ public class MyListenerRequiringCdiExplicitScope {
     }
 
     private void receiveEvent(Class<? extends Annotation> eventType, Object entity) {
-        MyCdiContext.checkAvailable(cdiContext);
+        MyCdiContext.checkAvailable(cdiContext, beanInstantiator);
         ReceivedEvent.add(ref, new ReceivedEvent(eventType, entity.toString()));
     }
 }

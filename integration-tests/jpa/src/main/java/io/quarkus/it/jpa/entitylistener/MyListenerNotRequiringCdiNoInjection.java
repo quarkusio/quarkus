@@ -3,7 +3,6 @@ package io.quarkus.it.jpa.entitylistener;
 import java.lang.annotation.Annotation;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.inject.Inject;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;
@@ -16,21 +15,16 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.it.jpa.util.BeanInstantiator;
 import io.quarkus.it.jpa.util.MyCdiContext;
 
-// No CDI scope here: it's implicit, which is allowed by the JPA spec
-public class MyListenerRequiringCdiImplicitScope {
+// We don't add a CDI scope here, and don't use CDI at all in the class.
+// This should result in Hibernate ORM being used for instantiation.
+public class MyListenerNotRequiringCdiNoInjection {
     private static final AtomicInteger instanceOrdinalSource = new AtomicInteger(0);
-
-    // This will always be null.
-    // It's only here to check that this class is instantiated without relying on CDI
-    // (because we want to test non-CDI attribute converters too).
-    @Inject
-    MyCdiContext cdiContext;
 
     private final String ref;
 
     private final BeanInstantiator beanInstantiator;
 
-    public MyListenerRequiringCdiImplicitScope() {
+    public MyListenerNotRequiringCdiNoInjection() {
         this.beanInstantiator = BeanInstantiator.fromCaller();
         int ordinal;
         if (!ClientProxy.class.isAssignableFrom(getClass())) { // Disregard CDI proxies extending this class
@@ -38,7 +32,7 @@ public class MyListenerRequiringCdiImplicitScope {
         } else {
             ordinal = -1;
         }
-        this.ref = ReceivedEvent.objectRef(MyListenerRequiringCdiImplicitScope.class, ordinal);
+        this.ref = ReceivedEvent.objectRef(MyListenerNotRequiringCdiNoInjection.class, ordinal);
     }
 
     @PreUpdate
@@ -77,7 +71,7 @@ public class MyListenerRequiringCdiImplicitScope {
     }
 
     private void receiveEvent(Class<? extends Annotation> eventType, Object entity) {
-        MyCdiContext.checkAvailable(cdiContext, beanInstantiator);
+        MyCdiContext.checkNotAvailable(null, beanInstantiator);
         ReceivedEvent.add(ref, new ReceivedEvent(eventType, entity.toString()));
     }
 }

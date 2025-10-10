@@ -11,15 +11,29 @@ import io.quarkus.test.junit.QuarkusTest;
 public class EntityListenerTest {
 
     @Test
-    public void entityListenersAnnotationCdiExplicitScope() {
-        when().get("/jpa-test/entity-listener/entity-listeners-annotation-cdi-explicit-scope").then()
+    public void entityListenersAnnotationWithCdiExplicitScope() {
+        when().get("/jpa-test/entity-listener/entity-listeners-annotation-with-cdi-explicit-scope").then()
                 .body(is("OK"))
                 .statusCode(200);
     }
 
     @Test
-    public void entityListenersAnnotationCdiImplicitScope() {
-        when().get("/jpa-test/entity-listener/entity-listeners-annotation-cdi-implicit-scope").then()
+    public void entityListenersAnnotationWithCdiImplicitScope() {
+        when().get("/jpa-test/entity-listener/entity-listeners-annotation-with-cdi-implicit-scope").then()
+                .body(is("OK"))
+                .statusCode(200);
+    }
+
+    @Test
+    public void entityListenersAnnotationWithoutCdiNoInjection() {
+        when().get("/jpa-test/entity-listener/entity-listeners-annotation-without-cdi-no-injection").then()
+                .body(is("OK"))
+                .statusCode(200);
+    }
+
+    @Test
+    public void entityListenersAnnotationWithoutCdiVetoed() {
+        when().get("/jpa-test/entity-listener/entity-listeners-annotation-without-cdi-vetoed").then()
                 .body(is("OK"))
                 .statusCode(200);
     }

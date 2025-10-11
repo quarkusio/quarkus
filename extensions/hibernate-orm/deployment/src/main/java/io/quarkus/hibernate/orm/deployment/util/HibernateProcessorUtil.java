@@ -357,6 +357,7 @@ public final class HibernateProcessorUtil {
                 )
         );
 
+        // UUID
         config.mapping().UUIDPreferredJdbcType().ifPresent(
                 uuid -> desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_UUID_JDBC_TYPE,

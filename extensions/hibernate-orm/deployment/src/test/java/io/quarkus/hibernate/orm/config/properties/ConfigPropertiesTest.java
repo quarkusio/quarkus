@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;

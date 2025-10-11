@@ -17,7 +17,8 @@ public class ConfigMappingTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application.properties"));
+                    .addAsResource("application.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     TestMappingBuildTimeRunTime mappingBuildTimeRunTime;

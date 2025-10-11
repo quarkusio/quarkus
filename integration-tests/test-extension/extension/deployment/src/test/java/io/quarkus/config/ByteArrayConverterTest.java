@@ -16,7 +16,8 @@ public class ByteArrayConverterTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
-            .overrideConfigKey("someapp.bytearray", "XyZ*123");
+            .overrideConfigKey("someapp.bytearray", "XyZ*123")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @ConfigProperty(name = "someapp.bytearray")
     protected byte[] bytearray;

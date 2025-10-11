@@ -15,7 +15,8 @@ public class SyslogCountingFramingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-syslog-output.properties")
             .overrideConfigKey("quarkus.log.syslog.protocol", "UDP")
-            .withApplicationRoot((jar) -> jar.addClass(LoggingTestsHelper.class));
+            .withApplicationRoot((jar) -> jar.addClass(LoggingTestsHelper.class))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void syslogOutputTest() {

@@ -18,7 +18,8 @@ public class StaticInitConfigMappingInvalidTest {
                     .addAsServiceProvider("io.smallrye.config.ConfigSourceFactory",
                             StaticInitConfigSourceFactory.class.getName()))
             .assertException(throwable -> {
-            });
+            })
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     StaticInitConfigMapping mapping;

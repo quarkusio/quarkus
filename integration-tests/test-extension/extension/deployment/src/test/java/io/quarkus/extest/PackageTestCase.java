@@ -20,7 +20,7 @@ public class PackageTestCase {
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class).addClasses(PackageTestCase.class);
         }
-    });
+    }).failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void testVersionInPackage() {

@@ -19,7 +19,8 @@ public class StaticInitSourcesTest {
                     .addAsServiceProvider("io.smallrye.config.SmallRyeConfigBuilderCustomizer",
                             StaticInitSafeConfigBuilderCustomizer.class.getName(),
                             StaticInitNotSafeConfigBuilderCustomizer.class.getName())
-                    .addAsResource("application.properties"));
+                    .addAsResource("application.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     void staticInitSources() {

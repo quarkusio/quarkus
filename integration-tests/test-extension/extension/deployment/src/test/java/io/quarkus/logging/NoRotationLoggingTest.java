@@ -22,7 +22,8 @@ public class NoRotationLoggingTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("NoRotationLoggingTest.log");
+            .setLogFileName("NoRotationLoggingTest.log")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void sizeRotatingConfigurationTest() {

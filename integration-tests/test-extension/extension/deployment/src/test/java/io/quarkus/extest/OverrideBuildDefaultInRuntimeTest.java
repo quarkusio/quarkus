@@ -15,6 +15,7 @@ public class OverrideBuildDefaultInRuntimeTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withEmptyApplication()
+            .failOnUnknownProperties(false) // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
                     @Override

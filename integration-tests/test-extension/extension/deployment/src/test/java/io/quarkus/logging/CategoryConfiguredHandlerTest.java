@@ -25,7 +25,8 @@ public class CategoryConfiguredHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-category-configured-handlers-output.properties")
             .withApplicationRoot((jar) -> jar
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void consoleOutputTest() {

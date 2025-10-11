@@ -14,7 +14,8 @@ public class CategoryConfiguredHandlerInvalidDueToMultipleHandlersTest {
             .setExpectedException(RuntimeException.class)
             .withConfigurationResource("application-category-invalid-configured-handlers-output.properties")
             .withApplicationRoot((jar) -> jar
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void consoleOutputTest() {

@@ -23,6 +23,7 @@ import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 public class UnknownConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .failOnUnknownProperties(false)
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
@@ -31,6 +32,7 @@ public class UnknownConfigTest {
                         logRecord -> Stream.of(Optional.ofNullable(logRecord.getParameters()).orElse(new Object[0])))
                         .map(Object::toString).collect(Collectors.toSet());
                 assertTrue(properties.contains("quarkus.unknown.prop"));
+                // TODO Luca not sure why quarkus.build.unknown.prop shouldn't be in the log
                 assertFalse(properties.contains("quarkus.build.unknown.prop"));
                 assertFalse(properties.contains("proprietary.should.not.report.unknown"));
             });

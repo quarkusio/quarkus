@@ -7,10 +7,10 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.type.CollectionLikeType;
-import com.fasterxml.jackson.databind.type.SimpleType;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.exc.InvalidDefinitionException;
+import tools.jackson.databind.type.CollectionLikeType;
+import tools.jackson.databind.type.SimpleType;
 
 import io.quarkus.bootstrap.graal.ImageInfo;
 

@@ -15,8 +15,8 @@ import jakarta.xml.bind.Marshaller;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
@@ -114,7 +114,7 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnIntegrationTest
     @Test
-    public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
+    public void jacksonDeserializationIgnoresPersistentAttribute() throws JacksonException {
         // set Up
         Person person = new Person();
         person.name = "max";
@@ -135,7 +135,7 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnIntegrationTest
     @Test
-    public void jaxbDeserializationHasAllFields() throws JsonProcessingException, JAXBException {
+    public void jaxbDeserializationHasAllFields() throws JacksonException, JAXBException {
         // set Up
         Person person = new Person();
         person.name = "max";
@@ -155,7 +155,7 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnIntegrationTest
     @Test
-    public void jsonbDeserializationHasAllFields() throws JsonProcessingException {
+    public void jsonbDeserializationHasAllFields() throws JacksonException {
         // set Up
         Person person = new Person();
         person.name = "max";

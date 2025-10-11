@@ -20,15 +20,15 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.VoidType;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.SerializableString;
-import com.fasterxml.jackson.core.io.SerializedString;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.databind.type.SimpleType;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.SerializableString;
+import tools.jackson.core.io.SerializedString;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.exc.InvalidDefinitionException;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.databind.type.SimpleType;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -83,7 +83,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *         super(Person.class);
  *     }
  *
- *     public void serialize(Object var1, JsonGenerator var2, SerializerProvider var3) throws IOException {
+ *     public void serialize(Object var1, JsonGenerator var2, SerializationContext var3) throws IOException {
  *         Person var4 = (Person) var1;
  *         var2.writeStartObject();
  *         var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.age);
@@ -183,7 +183,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     @Override
     protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
         MethodCreator serialize = classCreator.getMethodCreator("serialize", "void", "java.lang.Object", JSON_GEN_CLASS_NAME,
-                "com.fasterxml.jackson.databind.SerializerProvider")
+                "tools.jackson.databind.SerializationContext")
                 .setModifiers(ACC_PUBLIC)
                 .addException(IOException.class);
 
@@ -423,7 +423,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         String serializationFeatureClassName = SerializationFeature.class.getName();
 
         ResultHandle serializerProvider = serialize.getMethodParam(2);
-        MethodDescriptor isEnabled = MethodDescriptor.ofMethod(SerializerProvider.class.getName(), "isEnabled", "boolean",
+        MethodDescriptor isEnabled = MethodDescriptor.ofMethod(SerializationContext.class.getName(), "isEnabled", "boolean",
                 serializationFeatureClassName);
 
         // if (serializerProvider.isEnabled(SerializationFeature.FAIL_ON_EMPTY_BEANS))
@@ -462,7 +462,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
         private static ResultHandle includeHandle(MethodCreator serialize) {
             MethodDescriptor decodeInclude = MethodDescriptor.ofMethod(JacksonMapperUtil.SerializationInclude.class, "decode",
-                    JacksonMapperUtil.SerializationInclude.class, Object.class, SerializerProvider.class);
+                    JacksonMapperUtil.SerializationInclude.class, Object.class, SerializationContext.class);
             return serialize.invokeStaticMethod(decodeInclude, serialize.getMethodParam(0), serialize.getMethodParam(2));
         }
     }

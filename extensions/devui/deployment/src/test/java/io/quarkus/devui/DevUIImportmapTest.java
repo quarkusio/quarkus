@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
@@ -46,7 +46,7 @@ public class DevUIImportmapTest {
                     importMap.containsKey("@qomponent/qui-badge"), is(true));
             assertThat("Relocated mapping (qui-badge) not present in the importmap",
                     importMap.containsKey("qui-badge"), is(true));
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RuntimeException(ex);
         }
 

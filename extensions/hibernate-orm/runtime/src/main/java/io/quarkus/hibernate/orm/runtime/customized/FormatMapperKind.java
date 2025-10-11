@@ -9,7 +9,7 @@ import org.hibernate.type.format.jackson.JacksonJsonFormatMapper;
 import org.hibernate.type.format.jakartajson.JsonBJsonFormatMapper;
 import org.hibernate.type.format.jaxb.JaxbXmlFormatMapper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
 
@@ -25,7 +25,7 @@ public enum FormatMapperKind {
 
         @Override
         public Optional<String> requiredBeanType() {
-            return Optional.of("com.fasterxml.jackson.databind.ObjectMapper");
+            return Optional.of("tools.jackson.databind.ObjectMapper");
         }
     },
     JSONB {

@@ -11,7 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.DotName;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;

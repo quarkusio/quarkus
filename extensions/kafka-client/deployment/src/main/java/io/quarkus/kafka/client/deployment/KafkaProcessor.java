@@ -144,7 +144,7 @@ public class KafkaProcessor {
             BufferDeserializer.class
     };
 
-    static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+    static final DotName OBJECT_MAPPER = DotName.createSimple("tools.jackson.databind.ObjectMapper");
     private static final Set<String> SASL_PROVIDERS = Arrays.stream(new String[] {
             "com.sun.security.sasl.Provider",
             "org.apache.kafka.common.security.scram.internals.ScramSaslClientProvider",
@@ -494,7 +494,7 @@ public class KafkaProcessor {
     UnremovableBeanBuildItem ensureJsonParserAvailable() {
         return UnremovableBeanBuildItem.beanClassNames(
                 "io.quarkus.jackson.ObjectMapperProducer",
-                "com.fasterxml.jackson.databind.ObjectMapper",
+                "tools.jackson.databind.ObjectMapper",
                 "io.quarkus.jsonb.JsonbProducer",
                 "jakarta.json.bind.Jsonb");
     }

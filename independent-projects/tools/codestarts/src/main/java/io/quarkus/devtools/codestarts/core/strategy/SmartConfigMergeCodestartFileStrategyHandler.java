@@ -9,15 +9,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.core.CodestartData;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLGenerator;
 
 final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFileStrategyHandler {
 

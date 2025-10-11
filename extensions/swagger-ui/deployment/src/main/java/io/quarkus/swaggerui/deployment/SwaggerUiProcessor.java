@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.Feature;

@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
+import static tools.jackson.databind.SerializationFeature.WRITE_ENUMS_USING_INDEX;
 import static io.restassured.RestAssured.with;
 import static org.hamcrest.CoreMatchers.equalTo;
 
@@ -16,7 +16,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.http.ContentType;

@@ -42,7 +42,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
@@ -380,7 +380,7 @@ public class BuildTimeContentProcessor {
                             contentTypes.put(fullName, contentType);
                         }
                         data.put(key, value);
-                    } catch (JsonProcessingException ex) {
+                    } catch (JacksonException ex) {
                         log.error("Could not create Json Data for Dev UI page", ex);
                     }
                 }

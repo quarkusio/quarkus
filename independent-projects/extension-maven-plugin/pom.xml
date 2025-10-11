@@ -37,7 +37,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <maven-core.version>3.9.11</maven-core.version>
-        <jackson-bom.version>2.20.0</jackson-bom.version>
+        <jackson-bom.version>3.0.0</jackson-bom.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <junit5.version>5.13.4</junit5.version>
         <mockito.version>5.20.0</mockito.version>
@@ -217,7 +217,7 @@
             </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
+                <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson-bom.version}</version>
                 <scope>import</scope>
@@ -338,11 +338,11 @@
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
         <dependency>

@@ -14,17 +14,17 @@ import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_ENCODER;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.ByteArraySerializer} as that class is package private
  */
-public class ByteArraySerializer extends JsonSerializer<byte[]> {
+public class ByteArraySerializer extends ValueSerializer<byte[]> {
 
     @Override
-    public void serialize(byte[] value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(byte[] value, JsonGenerator jgen, SerializationContext provider) throws IOException {
         jgen.writeString(BASE64_ENCODER.encodeToString(value));
     }
 }

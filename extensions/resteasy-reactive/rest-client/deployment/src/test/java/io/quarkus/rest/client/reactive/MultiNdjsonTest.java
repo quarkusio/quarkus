@@ -25,9 +25,9 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -258,7 +258,7 @@ public class MultiNdjsonTest {
         @Path("/single-pojo")
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
-        public String getPojosAsString() throws JsonProcessingException {
+        public String getPojosAsString() throws JacksonException {
             StringBuilder result = new StringBuilder();
             for (var msg : List.of(Message.of("zero", "0"),
                     Message.of("one", "1"),
@@ -274,7 +274,7 @@ public class MultiNdjsonTest {
         @Path("/single-message-no-delimiter")
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
-        public String singleMessageNoDelimiter() throws JsonProcessingException {
+        public String singleMessageNoDelimiter() throws JacksonException {
             return messageWriter.writeValueAsString(Message.of("foo", "bar"));
         }
 
@@ -282,13 +282,13 @@ public class MultiNdjsonTest {
         @Path("/multiple-messages-no-ending-delimiter")
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
-        public String multipleMessagesNoEndingDelimiter() throws JsonProcessingException {
+        public String multipleMessagesNoEndingDelimiter() throws JacksonException {
             return IntStream.range(0, 100)
                     .mapToObj(i -> Message.of("foo", "bar"))
                     .map(m -> {
                         try {
                             return messageWriter.writeValueAsString(m);
-                        } catch (JsonProcessingException e) {
+                        } catch (JacksonException e) {
                             throw new RuntimeException(e);
                         }
                     }).collect(Collectors.joining("\n"));

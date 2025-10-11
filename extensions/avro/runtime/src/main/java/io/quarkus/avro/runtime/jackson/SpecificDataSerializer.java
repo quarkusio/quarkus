@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import org.apache.avro.specific.SpecificData;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class SpecificDataSerializer extends StdSerializer<SpecificData> {
     public SpecificDataSerializer() {
@@ -14,7 +14,7 @@ public class SpecificDataSerializer extends StdSerializer<SpecificData> {
     }
 
     @Override
-    public void serialize(SpecificData data, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+    public void serialize(SpecificData data, JsonGenerator jsonGenerator, SerializationContext serializerProvider)
             throws IOException {
         System.out.println("here! ");
         // Skip the specific data instance

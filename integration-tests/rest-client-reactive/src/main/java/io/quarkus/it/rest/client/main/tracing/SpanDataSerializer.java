@@ -2,9 +2,9 @@ package io.quarkus.it.rest.client.main.tracing;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
 
@@ -18,7 +18,7 @@ public class SpanDataSerializer extends StdSerializer<SpanData> {
     }
 
     @Override
-    public void serialize(SpanData spanData, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+    public void serialize(SpanData spanData, JsonGenerator jsonGenerator, SerializationContext serializerProvider)
             throws IOException {
         jsonGenerator.writeStartObject();
 

@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import org.bson.types.ObjectId;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class ObjectIdSerializer extends StdSerializer<ObjectId> {
 
@@ -15,7 +15,7 @@ public class ObjectIdSerializer extends StdSerializer<ObjectId> {
     }
 
     @Override
-    public void serialize(ObjectId objectId, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+    public void serialize(ObjectId objectId, JsonGenerator jsonGenerator, SerializationContext serializerProvider)
             throws IOException {
         if (objectId != null) {
             jsonGenerator.writeString(objectId.toString());

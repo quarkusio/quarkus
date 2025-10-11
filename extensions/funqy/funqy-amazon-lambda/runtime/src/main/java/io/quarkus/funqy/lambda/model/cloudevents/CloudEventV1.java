@@ -9,7 +9,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventData;

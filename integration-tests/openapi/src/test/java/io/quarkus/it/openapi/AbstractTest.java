@@ -10,8 +10,8 @@ import jakarta.inject.Inject;
 import org.hamcrest.Matchers;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.restassured.RestAssured;
 
@@ -74,7 +74,7 @@ public abstract class AbstractTest {
         try {
             Greeting g = new Greeting(0, message);
             return om.writeValueAsString(g);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RuntimeException(ex);
         }
     }
@@ -84,7 +84,7 @@ public abstract class AbstractTest {
             List<Greeting> l = new ArrayList<>();
             l.add(new Greeting(0, message));
             return om.writeValueAsString(l);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RuntimeException(ex);
         }
     }
@@ -94,7 +94,7 @@ public abstract class AbstractTest {
             Map<String, Greeting> m = new HashMap<>();
             m.put(message, new Greeting(0, message));
             return om.writeValueAsString(m);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RuntimeException(ex);
         }
     }

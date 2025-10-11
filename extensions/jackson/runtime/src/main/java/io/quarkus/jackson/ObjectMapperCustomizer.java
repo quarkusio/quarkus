@@ -1,6 +1,6 @@
 package io.quarkus.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 

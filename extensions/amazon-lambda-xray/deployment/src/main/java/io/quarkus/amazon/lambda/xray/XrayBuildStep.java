@@ -39,7 +39,7 @@ public class XrayBuildStep {
                 "com.amazonaws.xray.entities.TraceID",
                 "com.amazonaws.xray.entities.Cause",
                 "com.amazonaws.xray.entities.SegmentImpl",
-                "com.fasterxml.jackson.databind.ser.std.ToStringSerializer").methods().fields()
+                "tools.jackson.databind.ser.std.ToStringSerializer").methods().fields()
                 .build());
 
         resource.produce(new NativeImageResourceBuildItem(

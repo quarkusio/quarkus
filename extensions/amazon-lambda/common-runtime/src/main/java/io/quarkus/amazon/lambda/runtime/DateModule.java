@@ -5,14 +5,14 @@ package io.quarkus.amazon.lambda.runtime;
 import java.io.IOException;
 import java.util.Date;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.json.PackageVersion;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.json.PackageVersion;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Copied from: <a href=
@@ -29,16 +29,16 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 class DateModule extends SimpleModule {
     private static final long serialVersionUID = 1L;
 
-    public static final class Serializer extends JsonSerializer<Date> {
+    public static final class Serializer extends ValueSerializer<Date> {
         @Override
-        public void serialize(Date date, JsonGenerator generator, SerializerProvider serializers) throws IOException {
+        public void serialize(Date date, JsonGenerator generator, SerializationContext serializers) throws IOException {
             if (date != null) {
                 generator.writeNumber(millisToSeconds(date.getTime()));
             }
         }
     }
 
-    public static final class Deserializer extends JsonDeserializer<Date> {
+    public static final class Deserializer extends ValueDeserializer<Date> {
         @Override
         public Date deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             double dateSeconds = parser.getValueAsDouble();

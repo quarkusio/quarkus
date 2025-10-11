@@ -23,12 +23,12 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
@@ -243,7 +243,7 @@ public class KafkaUiUtils {
         String res;
         try {
             res = objectMapper.writeValueAsString(o);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             res = "";
         }
         return res;

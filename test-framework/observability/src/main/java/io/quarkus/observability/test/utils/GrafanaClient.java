@@ -13,8 +13,8 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class GrafanaClient {
     private static final Logger LOG = Logger.getLogger(GrafanaClient.class.getName());
@@ -87,7 +87,7 @@ public class GrafanaClient {
                     try {
                         User user = MAPPER.readValue(b, User.class);
                         ref.set(user);
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         throw new UncheckedIOException(e);
                     }
                 });
@@ -106,7 +106,7 @@ public class GrafanaClient {
                     try {
                         QueryResult result = MAPPER.readValue(b, QueryResult.class);
                         ref.set(result);
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         throw new UncheckedIOException(e);
                     }
                 });
@@ -127,7 +127,7 @@ public class GrafanaClient {
                     try {
                         TempoResult result = MAPPER.readValue(b, TempoResult.class);
                         ref.set(result);
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         throw new UncheckedIOException(e);
                     }
                 });

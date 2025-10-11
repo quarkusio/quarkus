@@ -3,7 +3,7 @@ package io.quarkus.jackson.runtime;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.PropertyNamingStrategies;
 
 import io.quarkus.runtime.annotations.Recorder;
 

@@ -112,7 +112,7 @@ public final class ResteasyDotNames {
             "jakarta.json.",
             "jakarta.json.",
             // Jackson
-            "com.fasterxml.jackson.databind.",
+            "tools.jackson.databind.",
             // JAX-RS
             "jakarta.ws.rs.",
             // RESTEasy

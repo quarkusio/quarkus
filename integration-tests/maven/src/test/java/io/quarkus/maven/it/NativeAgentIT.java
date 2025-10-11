@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +29,25 @@ public class NativeAgentIT extends MojoTestBase {
         assertThat(runJvmITsWithAgent.getProcess().waitFor()).isZero();
 
         MavenProcessInvocationResult runNativeITs = running
-                .execute(List.of("verify", "-Dnative", "-Dquarkus.native.agent-configuration-apply"), Map.of());
+                .execute(nativeArguments("verify", "-Dnative", "-Dquarkus.native.agent-configuration-apply"), Map.of());
         assertThat(runNativeITs.getProcess().waitFor()).isZero();
+    }
+
+    private List<String> nativeArguments(String... initialArguments) {
+        final List<String> result = new ArrayList<>(Arrays.asList(initialArguments));
+        appendArgumentIfSet("quarkus.native.container-build", result);
+        appendArgumentIfSet("quarkus.native.builder-image", result);
+        return result;
+    }
+
+    private static void appendArgumentIfSet(String property, List<String> result) {
+        final String value = System.getProperty(property);
+        if (value != null) {
+            if (value.isEmpty()) {
+                result.add("-D" + property);
+            } else {
+                result.add(String.format("-D%s=%s", property, value));
+            }
+        }
     }
 }

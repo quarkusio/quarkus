@@ -1,2 +1,0 @@
-io.quarkus.extest.runtime.config.rename.RenameConfigRelocateInterceptor
-io.quarkus.extest.runtime.config.rename.RenameConfigFallbackInterceptor

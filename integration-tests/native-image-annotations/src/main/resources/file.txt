@@ -1,1 +1,0 @@
-Quarkus: Supersonic Subatomic Java.

@@ -1,9 +1,0 @@
-name: config-properties
-type: config
-fallback: true
-language:
-  base:
-    shared-data:
-      config:
-        guide: https://quarkus.io/guides/config
-        file-name: application.properties

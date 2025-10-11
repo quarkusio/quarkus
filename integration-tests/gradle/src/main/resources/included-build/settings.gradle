@@ -1,5 +1,0 @@
-rootProject.name = 'include-quarkus-build'
-
-includeBuild 'included'
-
-include ':depend-on-included-build'

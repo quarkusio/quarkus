@@ -1,8 +1,0 @@
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: openshift-with-custom-route-resource
-spec:
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect

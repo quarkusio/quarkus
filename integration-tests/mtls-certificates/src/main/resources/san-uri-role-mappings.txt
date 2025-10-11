@@ -1,2 +1,0 @@
-https\://www\.quarkus\.io/=admin,user
-https\://www\.vertx\.io/=user

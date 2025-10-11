@@ -1,5 +1,0 @@
-name: jbang-wrapper
-type: tooling
-output-strategy:
-  "jbang": "executable"
-  "jbang.cmd": "executable"

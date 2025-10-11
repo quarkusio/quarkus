@@ -1,7 +1,0 @@
----
-debug: true
-registries:
-- test.registry.quarkus.io:
-    maven:
-        repository:
-            url: file://${project.build.outputDirectory}/test-registry-repo

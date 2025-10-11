@@ -1,7 +1,0 @@
-{
-  "default-platform" : "$quarkusPlatformGroupId:$quarkusPlatformArtifactId::pom:$version",
-  "platforms" : [ {
-    "bom": "$quarkusPlatformGroupId:$quarkusPlatformArtifactId::pom:$version",
-    "quarkus-core-version": "$version"
-  } ]
-}

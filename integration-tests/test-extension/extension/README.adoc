@@ -1,7 +1,0 @@
-= Quarkus - Test Extension
-
-This is a non-released test extension that is used to validate the extension
-configuration and SPIs. As the extension SPI is expanded, this test
-extension should be updated to validate it.
-
-TODO: Need to get the configuration phase testing setup properly.

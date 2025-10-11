@@ -67,4 +67,37 @@ public class ConfigPropertiesTest {
         assertThat(tableTypes).containsExactly("MATERIALIZED VIEW", "FOREIGN TABLE");
     }
 
+    @Test
+    @Transactional
+    void shouldMapHibernateOrmConfigPersistenceUnitMappingDurationProperties() {
+        // given
+        var preferredJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_duration_jdbc_type");
+
+        // when - then
+        assertThat(preferredJdbcType).isEqualTo("INTERVAL_SECOND");
+    }
+
+    @Test
+    @Transactional
+    void shouldMapHibernateOrmConfigPersistenceUnitMappingPreferredTypesProperties() {
+        // given
+        var instantPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_instant_jdbc_type");
+
+        var booleanPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_boolean_jdbc_type");
+
+        var UUIDPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_uuid_jdbc_type");
+
+        // when - then
+        assertThat(instantPreferredJdbcType).isEqualTo("INSTANT");
+        assertThat(booleanPreferredJdbcType).isEqualTo("BIT");
+        assertThat(UUIDPreferredJdbcType).isEqualTo("CHAR");
+    }
 }

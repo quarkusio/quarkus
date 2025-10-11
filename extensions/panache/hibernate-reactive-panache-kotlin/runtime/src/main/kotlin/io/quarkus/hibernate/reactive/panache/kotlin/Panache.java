@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.panache;
+package io.quarkus.hibernate.reactive.panache.kotlin;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
+import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
@@ -92,7 +92,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Object... params) {
-        return JpaOperations.INSTANCE.executeUpdate(query, params);
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params);
     }
 
     /**
@@ -103,7 +103,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
-        return JpaOperations.INSTANCE.executeUpdate(query, params);
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params);
     }
 
     /**
@@ -114,7 +114,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
-        return JpaOperations.INSTANCE.executeUpdate(query, params.map());
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params.map());
     }
 
     /**

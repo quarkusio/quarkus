@@ -772,7 +772,10 @@ If no annotations are found.
 
 == Multiple Persistence Units
 
-Hibernate Reactive in Quarkus currently does not support multiple persistence units.
+Hibernate Reactive with Panache supports multiple persistence units. 
+When using multiple persistence units, Panache automatically uses the correct persistence unit based on the entity's configuration.
+
+For configuration details on setting up multiple persistence units, refer to the xref:hibernate-orm.adoc#multiple-persistence-units[Multiple Persistence Units] section in the Hibernate ORM guide.
 
 [[transactions]]
 == Sessions and Transactions

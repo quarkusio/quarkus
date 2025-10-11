@@ -341,22 +341,23 @@ public final class HibernateProcessorUtil {
                 )
         );
 
-        config.mapping().duration().preferredInstantJdbcType().ifPresent( instant ->
+        // Instant
+        config.mapping().instantPreferredJdbcType().ifPresent(instant ->
                 desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE,
                         instant
                 )
         );
 
-        // Preferred types mapping
-        config.mapping().preferred().preferredBooleanJdbcType().ifPresent(
+        // Boolean
+        config.mapping().booleanPreferredJdbcType().ifPresent(
                 bool -> desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_BOOLEAN_JDBC_TYPE,
                         bool
                 )
         );
 
-        config.mapping().preferred().preferredUUIDJdbcType().ifPresent(
+        config.mapping().UUIDPreferredJdbcType().ifPresent(
                 uuid -> desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_UUID_JDBC_TYPE,
                         uuid

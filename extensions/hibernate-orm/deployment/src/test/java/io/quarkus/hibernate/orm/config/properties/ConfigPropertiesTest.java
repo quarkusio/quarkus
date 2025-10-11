@@ -76,29 +76,29 @@ public class ConfigPropertiesTest {
                 .getProperties()
                 .get("hibernate.type.preferred_duration_jdbc_type");
 
-        var preferredInstantJdbcType = sessionForDefaultPU.getSessionFactory()
-                .getProperties()
-                .get("hibernate.type.preferred_instant_jdbc_type");
-
         // when - then
         assertThat(preferredJdbcType).isEqualTo("INTERVAL_SECOND");
-        assertThat(preferredInstantJdbcType).isEqualTo("INSTANT");
     }
 
     @Test
     @Transactional
-    void shouldMapHibernateOrmConfigPersistenceUnitMappingPreferredProperties() {
+    void shouldMapHibernateOrmConfigPersistenceUnitMappingPreferredTypesProperties() {
         // given
-        var preferredBooleanJdbcType = sessionForDefaultPU.getSessionFactory()
+        var instantPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get("hibernate.type.preferred_instant_jdbc_type");
+
+        var booleanPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
                 .getProperties()
                 .get("hibernate.type.preferred_boolean_jdbc_type");
 
-        var preferredUUIDJdbcType = sessionForDefaultPU.getSessionFactory()
+        var UUIDPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
                 .getProperties()
                 .get("hibernate.type.preferred_uuid_jdbc_type");
 
         // when - then
-        assertThat(preferredBooleanJdbcType).isEqualTo("BIT");
-        assertThat(preferredUUIDJdbcType).isEqualTo("CHAR");
+        assertThat(instantPreferredJdbcType).isEqualTo("INSTANT");
+        assertThat(booleanPreferredJdbcType).isEqualTo("BIT");
+        assertThat(UUIDPreferredJdbcType).isEqualTo("CHAR");
     }
 }

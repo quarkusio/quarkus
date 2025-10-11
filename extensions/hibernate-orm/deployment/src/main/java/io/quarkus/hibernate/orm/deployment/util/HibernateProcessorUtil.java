@@ -334,7 +334,7 @@ public final class HibernateProcessorUtil {
                         .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);
 
         // Duration
-        config.mapping().duration().preferredJdbcType().ifPresent( duration ->
+        config.mapping().duration().durationPreferredJdbcType().ifPresent(duration ->
                 desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_DURATION_JDBC_TYPE,
                         duration

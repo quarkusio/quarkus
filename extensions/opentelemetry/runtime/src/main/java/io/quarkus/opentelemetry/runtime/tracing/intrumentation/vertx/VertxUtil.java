@@ -88,6 +88,28 @@ public final class VertxUtil {
         return null;
     }
 
+    public static String extractHostname(String address) {
+        if (address == null) {
+            return "";
+        }
+        return beforeDelimiter(address, COLON_SPLITTER);
+    }
+
+    public static Integer extractPort(String address) {
+        if (address == null) {
+            return -1;
+        }
+        String portString = afterDelimiter(address, COLON_SPLITTER);
+        if (portString != null) {
+            try {
+                return Integer.parseInt(portString);
+            } catch (NumberFormatException e) {
+                //ignore
+            }
+        }
+        return -1;
+    }
+
     private static String beforeDelimiter(String str, char delimiter) {
         if (str == null || str.isEmpty()) {
             return "";

@@ -1,7 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.lang.annotation.Annotation;
@@ -172,8 +171,9 @@ public class WithSpanInterceptor {
 
         @Override
         public void onStart(AttributesBuilder attributesBuilder, Context context, MethodRequest methodRequest) {
-            attributesBuilder.put(CODE_NAMESPACE, methodRequest.getMethod().getDeclaringClass().getName());
-            attributesBuilder.put(CODE_FUNCTION, methodRequest.getMethod().getName());
+            attributesBuilder.put(CODE_FUNCTION_NAME,
+                    methodRequest.getMethod().getDeclaringClass().getName() + "." +
+                            methodRequest.getMethod().getName());
         }
 
         @Override

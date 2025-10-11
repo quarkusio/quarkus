@@ -2,6 +2,9 @@ package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -10,6 +13,8 @@ import io.opentelemetry.instrumentation.api.incubator.semconv.db.DbClientSpanNam
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
@@ -31,6 +36,7 @@ public class SqlClientInstrumenterVertxTracer implements
 
         this.sqlClientInstrumenter = serverBuilder
                 .addAttributesExtractor(SqlClientAttributesExtractor.create(sqlClientAttributesGetter))
+                .addAttributesExtractor(NetworkAttributesExtractor.create(sqlClientAttributesGetter))
                 .buildClientInstrumenter((queryTrace, key, value) -> {
                 });
     }
@@ -90,8 +96,9 @@ public class SqlClientInstrumenterVertxTracer implements
         return sqlClientInstrumenter;
     }
 
-    // From io.vertx.sqlclient.impl.tracing.QueryReporter
     static class QueryTrace {
+
+        // From io.vertx.sqlclient.impl.tracing.QueryReporter.TAGS
         private final Map<String, String> attributes;
 
         QueryTrace(final Map<String, String> attributes) {
@@ -110,41 +117,72 @@ public class SqlClientInstrumenterVertxTracer implements
             return attributes.get("db.instance");
         }
 
+        @Deprecated
         public String user() {
             return attributes.get("db.user");
         }
 
+        public String instance() {
+            return attributes.get("db.instance");
+        }
+
+        @Deprecated
         public String connectionString() {
             return attributes.get("peer.address");
+        }
+
+        public String peerAddress() {
+            return VertxUtil.extractHostname(attributes.get("peer.address"));
+        }
+
+        public Integer peerPort() {
+            return VertxUtil.extractPort(attributes.get("peer.address"));
         }
     }
 
     static class SqlClientAttributesGetter implements
-            io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesGetter<QueryTrace> {
+            io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesGetter<QueryTrace, Object>,
+            NetworkAttributesGetter<QueryTrace, Object> {
 
         @Override
-        public String getRawStatement(final QueryTrace queryTrace) {
-            return queryTrace.rawStatement();
+        public Collection<String> getRawQueryTexts(final QueryTrace queryTrace) {
+            return queryTrace.rawStatement() != null && !queryTrace.rawStatement().isBlank()
+                    ? List.of(queryTrace.rawStatement())
+                    : Collections.emptyList();
         }
 
         @Override
-        public String getSystem(final QueryTrace queryTrace) {
+        public String getDbSystem(final QueryTrace queryTrace) {
             return queryTrace.system();
         }
 
+        // kept for compatibility reasons
+        @Deprecated
         @Override
         public String getUser(final QueryTrace queryTrace) {
             return queryTrace.user();
         }
 
         @Override
-        public String getName(final QueryTrace queryTrace) {
+        public String getDbNamespace(final QueryTrace queryTrace) {
             return null;
         }
 
+        // kept for compatibility reasons
+        @Deprecated
         @Override
         public String getConnectionString(final QueryTrace queryTrace) {
             return queryTrace.connectionString();
+        }
+
+        @Override
+        public String getNetworkPeerAddress(QueryTrace queryTrace, Object object) {
+            return queryTrace.peerAddress();
+        }
+
+        @Override
+        public Integer getNetworkPeerPort(QueryTrace queryTrace, Object object) {
+            return queryTrace.peerPort();
         }
     }
 }

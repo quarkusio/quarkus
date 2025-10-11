@@ -1,5 +1,0 @@
----
-registries:
-- registry.acme.org:
-    platforms:
-      disabled: true

@@ -1,4 +1,0 @@
-release:
-  current-version: "0"
-  next-version: "{version}"
-

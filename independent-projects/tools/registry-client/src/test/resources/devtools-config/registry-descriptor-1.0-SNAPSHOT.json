@@ -1,8 +1,0 @@
-{
-  "descriptor" : {
-    "artifact" : "org.foo.registry:quarkus-registry-descriptor::json:1.0-SNAPSHOT"
-  },
-  "platforms" : {
-    "artifact" : "org.foo.registry:quarkus-registry-platforms::json:1.0-SNAPSHOT"
-  }
-}

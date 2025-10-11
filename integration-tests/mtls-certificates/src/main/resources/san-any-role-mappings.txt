@@ -1,2 +1,0 @@
-redhat=admin,user
-quarkus=user

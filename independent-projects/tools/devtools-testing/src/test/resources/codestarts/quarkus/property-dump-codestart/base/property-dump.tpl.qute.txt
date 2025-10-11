@@ -1,3 +1,0 @@
-property.source.codestart={property.source.codestart}
-property.source.quarkus-platform={property.source.quarkus-platform}
-property.source.acme-platform={property.source.acme-platform}

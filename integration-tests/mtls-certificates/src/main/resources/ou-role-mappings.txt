@@ -1,2 +1,0 @@
-cert=user,admin
-quarkus=user

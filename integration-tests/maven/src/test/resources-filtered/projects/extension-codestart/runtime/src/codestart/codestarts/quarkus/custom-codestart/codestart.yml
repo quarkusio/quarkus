@@ -1,7 +1,0 @@
-name: acme-codestart
-ref: acme-code
-type: code
-tags: extension-codestart
-metadata:
-  title: Acme Code
-  description: This is an example.

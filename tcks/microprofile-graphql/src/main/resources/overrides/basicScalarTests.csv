@@ -1,3 +1,0 @@
-# Basic Scalar Types
-23| type ScalarHolder       |   charArray: [String!]                                                                                                     |   Expecting a String Array Scalar (for Java Char[]) Type in type ScalarHolder
-47| type Query              |   testCharArray: [String!]                                                                                                 |   Expecting a non null Stirng Array (for Java Char[]) Scalar Type in type Query

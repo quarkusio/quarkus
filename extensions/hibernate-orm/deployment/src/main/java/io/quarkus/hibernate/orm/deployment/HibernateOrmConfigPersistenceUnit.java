@@ -496,13 +496,13 @@ public interface HibernateOrmConfigPersistenceUnit {
              */
             @WithName("preferred-jdbc-type")
             @ConfigDocDefault("INTERVAL_SECOND")
-            Optional<@WithConverter(TrimmedStringConverter.class) String> preferredJdbcType();
+            Optional<@WithConverter(TrimmedStringConverter.class) String> durationPreferredJdbcType();
         }
 
         default boolean isAnyPropertySet() {
             return timezone().timeZoneDefaultStorage().isPresent() ||
                     id().optimizer().idOptimizerDefault().isPresent() ||
-                    duration().preferredJdbcType().isPresent() ||
+                    duration().durationPreferredJdbcType().isPresent() ||
                     instantPreferredJdbcType().isPresent() ||
                     booleanPreferredJdbcType().isPresent() ||
                     UUIDPreferredJdbcType().isPresent();

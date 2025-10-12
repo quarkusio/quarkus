@@ -107,6 +107,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
+import io.quarkus.security.runtime.PrincipalProducer;
 import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
@@ -129,6 +130,7 @@ import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem.ClassStorageBuilder;
+import io.quarkus.security.spi.CurrentIdentityAssociationClassBuildItem;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
@@ -1116,10 +1118,19 @@ public class SecurityProcessor {
 
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityAssociation.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(PrincipalProducer.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(IdentityProviderManagerCreator.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityProxy.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(X509IdentityProvider.class));
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerCurrentIdentityAssociationBean(
+            Optional<CurrentIdentityAssociationClassBuildItem> currentIdentityAssociationClassBuildItem) {
+        return currentIdentityAssociationClassBuildItem
+                .map(CurrentIdentityAssociationClassBuildItem::getCurrentIdentityAssociationClass)
+                .map(AdditionalBeanBuildItem::unremovableOf)
+                .orElseGet(() -> AdditionalBeanBuildItem.unremovableOf(SecurityIdentityAssociation.class));
     }
 
     @BuildStep

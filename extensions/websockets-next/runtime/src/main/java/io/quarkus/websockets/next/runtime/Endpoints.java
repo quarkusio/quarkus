@@ -142,7 +142,6 @@ class Endpoints {
         } else {
             textMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                 contextSupport.start();
-                securitySupport.start();
                 try {
                     if (trafficLogger != null) {
                         trafficLogger.textMessageReceived(connection, m);
@@ -179,7 +178,6 @@ class Endpoints {
         } else {
             binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                 contextSupport.start();
-                securitySupport.start();
                 try {
                     if (trafficLogger != null) {
                         trafficLogger.binaryMessageReceived(connection, m);

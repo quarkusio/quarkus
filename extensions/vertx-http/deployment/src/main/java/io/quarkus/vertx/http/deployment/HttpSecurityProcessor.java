@@ -8,7 +8,6 @@ import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_P
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
 import static java.util.stream.Collectors.toMap;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -79,6 +78,7 @@ import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.CurrentIdentityAssociationClassBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
@@ -88,6 +88,7 @@ import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.DuplicatedContextSecurityIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -98,7 +99,6 @@ import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
-import io.quarkus.vertx.http.runtime.security.VertxSecurityIdentityAssociation;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
@@ -678,8 +678,8 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
-    AdditionalBeanBuildItem createSecurityIdentityAssociation() {
-        return AdditionalBeanBuildItem.unremovableOf(VertxSecurityIdentityAssociation.class);
+    CurrentIdentityAssociationClassBuildItem createCurrentIdentityAssociation() {
+        return new CurrentIdentityAssociationClassBuildItem(DuplicatedContextSecurityIdentityAssociation.class);
     }
 
     @Record(ExecutionTime.STATIC_INIT)

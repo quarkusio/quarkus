@@ -16,22 +16,9 @@ public interface Assistant {
     /**
      * Check if the assistant is available
      *
-     * @return true id there is an implementation that is configured and connected
+     * @return true if there is an implementation that is configured and connected
      */
     public boolean isAvailable();
-
-    /**
-     * Explain and suggest a fix for an exception in the user code
-     *
-     * @param <T>
-     * @param systemMessage System wide context
-     * @param userMessage User specific context
-     * @param stacktrace The exception stacktrace
-     * @param path The path to the effective class causing this exception
-     * @return
-     */
-    <T> CompletionStage<T> exception(Optional<String> systemMessage, String userMessage, String stacktrace,
-            Path path);
 
     /**
      * Assist the developer with something
@@ -46,10 +33,6 @@ public interface Assistant {
     <T> CompletionStage<T> assist(Optional<String> systemMessageTemplate,
             String userMessageTemplate,
             Map<String, String> variables, List<Path> paths, Class<?> responseType);
-
-    default ExceptionBuilder exceptionBuilder() {
-        return new ExceptionBuilder(this);
-    }
 
     default AssistBuilder assistBuilder() {
         return new AssistBuilder(this);
@@ -119,47 +102,6 @@ public interface Assistant {
                 throw new IllegalStateException("User message is required");
             }
             return (CompletionStage<T>) assistant.assist(systemMessage, userMessage, variables, paths, responseType);
-        }
-    }
-
-    class ExceptionBuilder {
-        private final Assistant assistant;
-
-        private Optional<String> systemMessage = Optional.empty();
-        private String userMessage;
-        private String stacktrace;
-        private Path path;
-
-        ExceptionBuilder(Assistant assistant) {
-            this.assistant = assistant;
-        }
-
-        public ExceptionBuilder systemMessage(String systemMessage) {
-            this.systemMessage = Optional.ofNullable(systemMessage);
-            return this;
-        }
-
-        public ExceptionBuilder userMessage(String userMessage) {
-            this.userMessage = userMessage;
-            return this;
-        }
-
-        public ExceptionBuilder stacktrace(String stacktrace) {
-            this.stacktrace = stacktrace;
-            return this;
-        }
-
-        public ExceptionBuilder path(Path path) {
-            this.path = path;
-            return this;
-        }
-
-        @SuppressWarnings("unchecked")
-        public <T> CompletionStage<T> explain() {
-            if (userMessage == null || stacktrace == null || path == null) {
-                throw new IllegalStateException("userMessage, stacktrace, and path must be provided");
-            }
-            return (CompletionStage<T>) assistant.exception(systemMessage, userMessage, stacktrace, path);
         }
     }
 

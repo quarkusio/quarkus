@@ -35,7 +35,11 @@ public class ConfigPropertiesTest {
             // Overrides to test that Quarkus configuration properties are taken into account
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".flush.mode", "always")
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".schema-management.extra-physical-table-types",
-                    "MATERIALIZED VIEW,FOREIGN TABLE");
+                    "MATERIALIZED VIEW,FOREIGN TABLE")
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.duration.preferred-jdbc-type", "INTERVAL_SECOND")
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.instant.preferred-jdbc-type", "INSTANT")
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.boolean.preferred-jdbc-type", "BIT")
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.uuid.preferred-jdbc-type", "CHAR");
 
     @Inject
     Session sessionForDefaultPU;
@@ -71,9 +75,9 @@ public class ConfigPropertiesTest {
     @Transactional
     void shouldMapHibernateOrmConfigPersistenceUnitMappingDurationProperties() {
         // given
-        var preferredJdbcType = sessionForDefaultPU.getSessionFactory()
+        var preferredJdbcType = sessionForOverridesPU.getSessionFactory()
                 .getProperties()
-                .get("hibernate.type.preferred_duration_jdbc_type");
+                .get(AvailableSettings.PREFERRED_DURATION_JDBC_TYPE);
 
         // when - then
         assertThat(preferredJdbcType).isEqualTo("INTERVAL_SECOND");
@@ -83,17 +87,17 @@ public class ConfigPropertiesTest {
     @Transactional
     void shouldMapHibernateOrmConfigPersistenceUnitMappingPreferredTypesProperties() {
         // given
-        var instantPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+        var instantPreferredJdbcType = sessionForOverridesPU.getSessionFactory()
                 .getProperties()
-                .get("hibernate.type.preferred_instant_jdbc_type");
+                .get(AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE);
 
-        var booleanPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+        var booleanPreferredJdbcType = sessionForOverridesPU.getSessionFactory()
                 .getProperties()
-                .get("hibernate.type.preferred_boolean_jdbc_type");
+                .get(AvailableSettings.PREFERRED_BOOLEAN_JDBC_TYPE);
 
-        var UUIDPreferredJdbcType = sessionForDefaultPU.getSessionFactory()
+        var UUIDPreferredJdbcType = sessionForOverridesPU.getSessionFactory()
                 .getProperties()
-                .get("hibernate.type.preferred_uuid_jdbc_type");
+                .get(AvailableSettings.PREFERRED_UUID_JDBC_TYPE);
 
         // when - then
         assertThat(instantPreferredJdbcType).isEqualTo("INSTANT");

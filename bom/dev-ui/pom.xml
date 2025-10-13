@@ -49,7 +49,7 @@
         <yargs-parser.version>21.1.1</yargs-parser.version>
         <strip-ansi.version>6.0.1</strip-ansi.version>
         <wrap-ansi.version>7.0.0</wrap-ansi.version>
-        <emoji-regex>8.0.0</emoji-regex>
+        <emoji-regex>10.6.0</emoji-regex>
         <is-fullwidth-code-point.version>3.0.0</is-fullwidth-code-point.version>
         <ansi-regex.version>5.0.1</ansi-regex.version>
         <ansi-styles.version>4.3.0</ansi-styles.version>

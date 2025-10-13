@@ -312,20 +312,6 @@ quarkus.hibernate-orm.persistence-xml.ignore=true
 ----
 ====
 
-[TIP]
-====
-Want to start a PostgreSQL server on the side with Docker?
-
-[source,bash]
-----
-docker run --rm=true --name postgres-quarkus-hibernate -e POSTGRES_USER=hibernate \
-           -e POSTGRES_PASSWORD=hibernate -e POSTGRES_DB=hibernate_db \
-           -p 5432:5432 postgres:14.1
-----
-
-This will start a non-durable empty database: ideal for a quick experiment!
-====
-
 [[multiple-persistence-units]]
 === Multiple persistence units
 

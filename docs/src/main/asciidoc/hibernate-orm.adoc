@@ -100,7 +100,7 @@ They will often map to Hibernate ORM configuration properties but could have dif
 
 Also, Quarkus will set many Hibernate ORM configuration settings automatically, and will often use more modern defaults.
 
-For a list of the items that you can set in `{config-file}`, see <<hibernate-configuration-properties,Hibernate ORM configuration properties>>.
+For a list of the items that you can set in `{config-file}`, see <<configuration-reference>>.
 
 An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
 
@@ -295,9 +295,7 @@ There are no required properties, as long as a default datasource is configured.
 When no property is set, Quarkus can typically infer everything it needs to set up Hibernate ORM
 and will have it use the default datasource.
 
-The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
-
-include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
+The configuration properties listed in <<configuration-reference>> allow you to override such defaults, and customize and tune various aspects.
 
 [NOTE]
 ====
@@ -312,20 +310,6 @@ set the following configuration property:
 ----
 quarkus.hibernate-orm.persistence-xml.ignore=true
 ----
-====
-
-[TIP]
-====
-Want to start a PostgreSQL server on the side with Docker?
-
-[source,bash]
-----
-docker run --rm=true --name postgres-quarkus-hibernate -e POSTGRES_USER=hibernate \
-           -e POSTGRES_PASSWORD=hibernate -e POSTGRES_DB=hibernate_db \
-           -p 5432:5432 postgres:14.1
-----
-
-This will start a non-durable empty database: ideal for a quick experiment!
 ====
 
 [[multiple-persistence-units]]
@@ -961,7 +945,7 @@ quarkus.hibernate-orm."offline".dialect.mariadb.bytes-per-character=1
 quarkus.hibernate-orm."offline".dialect.mariadb.no-backslash-escapes=true
 ----
 
-Refer to the <<hibernate-configuration-properties,Hibernate ORM configuration properties>> section for more details on the available properties.
+Refer to the <<configuration-reference>> section for more details on the available properties.
 
 
 [[caching]]
@@ -1949,3 +1933,8 @@ to learn more about the `dataStore` attribute.
 Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
 and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
 guides to learn what else they have to offer.
+
+[[configuration-reference]]
+== Configuration Reference for Hibernate ORM
+
+include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]

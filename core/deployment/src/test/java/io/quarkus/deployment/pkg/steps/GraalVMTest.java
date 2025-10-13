@@ -201,6 +201,45 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVM25_0CommunityVersion() {
+        final Version version = Version.of(Stream.of(("native-image 25 2025-09-16\n"
+                + "GraalVM Runtime Environment GraalVM CE 25+37.1 (build 25+37-jvmci-b01)\n"
+                + "Substrate VM GraalVM CE 25+37.1 (build 25+37, serial gc)").split("\\n")));
+        assertThat(version.toString().contains(GRAALVM.name()));
+        assertThat(version.getVersionAsString()).isEqualTo("25.0.0");
+        assertThat(version.javaVersion.toString()).isEqualTo("25+37-jvmci-b01");
+        assertThat(version.javaVersion.feature()).isEqualTo(25);
+        assertThat(version.javaVersion.interim()).isEqualTo(0);
+        assertThat(version.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
+    public void testGraalVM25_0_1CommunityVersion() {
+        final Version version = Version.of(Stream.of(("native-image 25.0.1 2025-10-21\n"
+                + "GraalVM Runtime Environment GraalVM CE 25.0.1+99.1 (build 25.0.1+99-jvmci-b01)\n"
+                + "Substrate VM GraalVM CE 25.0.1+99.1 (build 25.0.1+99, serial gc)").split("\\n")));
+        assertThat(version.toString().contains(GRAALVM.name()));
+        assertThat(version.getVersionAsString()).isEqualTo("25.0.1");
+        assertThat(version.javaVersion.toString()).isEqualTo("25.0.1+99-jvmci-b01");
+        assertThat(version.javaVersion.feature()).isEqualTo(25);
+        assertThat(version.javaVersion.interim()).isEqualTo(0);
+        assertThat(version.javaVersion.update()).isEqualTo(1);
+    }
+
+    @Test
+    public void testGraalVM25_1CommunityVersionParser() {
+        final Version version = Version.of(Stream.of(("native-image 25 2025-09-16\n"
+                + "GraalVM Runtime Environment GraalVM CE 25.1.0-dev+37.1 (build 25+37-jvmci-b06)\n"
+                + "Substrate VM GraalVM CE 25.1.0-dev+37.1 (build 25+37, serial gc)").split("\\n")));
+        assertThat(version.toString().contains(GRAALVM.name()));
+        assertThat(version.getVersionAsString()).isEqualTo("25.1.0-dev");
+        assertThat(version.javaVersion.toString()).isEqualTo("25+37-jvmci-b06");
+        assertThat(version.javaVersion.feature()).isEqualTo(25);
+        assertThat(version.javaVersion.interim()).isEqualTo(0);
+        assertThat(version.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("native-image 21 2023-09-19\n" +
                 "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +

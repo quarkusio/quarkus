@@ -196,20 +196,6 @@ The configuration properties listed here allow you to override such defaults, an
 Hibernate Reactive uses the same properties you would use for Hibernate ORM: see <<configuration-reference>>. You will notice that some properties
 contain `jdbc` in the name but there is no JDBC in Hibernate Reactive, these are simply legacy property names.
 
-[TIP]
-====
-Want to start a PostgreSQL server on the side with Docker?
-
-[source,bash]
-----
-docker run --rm --name postgres-quarkus-hibernate -e POSTGRES_USER=quarkus_test \
-           -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test \
-           -p 5432:5432 postgres:14.1
-----
-
-This will start a non-durable empty database: ideal for a quick experiment!
-====
-
 [[orm-and-reactive-extension-simultaneously]]
 === Hibernate ORM and Reactive extensions simultaneously
 

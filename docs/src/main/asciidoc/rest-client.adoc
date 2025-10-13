@@ -1334,7 +1334,7 @@ Alternatively, you can implement the `ResteasyReactiveClientRequestFilter` inter
 public class TestClientRequestFilter implements ResteasyReactiveClientRequestFilter {
 
     @Override
-    public void filter(ResteasyReactiveClientRequestFilter requestContext) {
+    public void filter(ResteasyReactiveClientRequestContext requestContext) {
         Providers providers = requestContext.getProviders();
         // ...
     }

@@ -669,6 +669,10 @@ public interface RestClientsConfig {
         /**
          * If set to {@code true}, then this REST Client will not the default exception mapper which
          * always throws an exception if HTTP response code >= 400.
+         * <p>
+         * This property is only taken into account if the REST Client returns {@code jakarta.ws.rs.core.Response} or
+         * {@code org.jboss.resteasy.reactive.RestResponse}
+         * <p>
          * This property is not applicable to the RESTEasy Client.
          */
         @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")

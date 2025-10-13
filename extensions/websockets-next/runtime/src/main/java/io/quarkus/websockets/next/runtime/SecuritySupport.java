@@ -2,68 +2,45 @@ package io.quarkus.websockets.next.runtime;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
 
-import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.enterprise.inject.Instance;
-
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
-import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest;
-import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 public final class SecuritySupport {
 
     public static final String QUARKUS_IDENTITY_EXPIRE_TIME = "quarkus.identity.expire-time";
     private static final Logger LOG = Logger.getLogger(SecuritySupport.class);
-    static final SecuritySupport NOOP = new SecuritySupport(null, null, null, null);
+    static final SecuritySupport NOOP = new SecuritySupport(null, null, null);
 
-    private final Instance<CurrentIdentityAssociation> currentIdentity;
-    private final ManagedContext requestContext;
     private final RoutingContext routingContext;
     private volatile SecurityIdentity identity;
     private volatile Runnable onClose;
 
-    SecuritySupport(Instance<CurrentIdentityAssociation> currentIdentity, SecurityIdentity identity,
-            WebSocketConnectionImpl connection, RoutingContext routingContext) {
-        this.currentIdentity = currentIdentity;
-        if (this.currentIdentity != null) {
-            this.identity = Objects.requireNonNull(identity);
-            this.onClose = closeConnectionWhenIdentityExpired(routingContext.vertx(), connection, this.identity);
-        } else {
-            this.identity = null;
-            this.onClose = null;
-        }
-        this.requestContext = Arc.container().requestContext();
+    SecuritySupport(SecurityIdentity identity, WebSocketConnectionImpl connection, RoutingContext routingContext) {
+        this.identity = identity;
+        this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, this.identity);
         this.routingContext = routingContext;
-    }
-
-    /**
-     * This method is called before an endpoint callback is invoked.
-     */
-    void start() {
-        if (currentIdentity != null && requestContext.isActive()) {
-            // If the request context is active then set the current identity
-            CurrentIdentityAssociation current = currentIdentity.get();
-            current.setIdentity(identity);
-        }
     }
 
     void onClose() {
         if (onClose != null) {
             onClose.run();
         }
+    }
+
+    SecurityIdentity getIdentity() {
+        return identity;
     }
 
     CompletionStage<SecurityIdentity> updateSecurityIdentity(String accessToken, WebSocketConnectionImpl connection,
@@ -104,20 +81,20 @@ public final class SecuritySupport {
         }
         onClose(); // cancel previous timer that closes connection when identity expired
         this.identity = updatedIdentity;
-        this.onClose = closeConnectionWhenIdentityExpired(routingContext.vertx(), connection, updatedIdentity);
+        // this shouldn't be necessary (and probably isn't) but updating ctx it just to stay on the safe side
+        this.routingContext.setUser(new QuarkusHttpUser(updatedIdentity));
+        this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, updatedIdentity);
         if (connection.isClosed()) {
             // it could be that while we were updating identity, connection has been closed
             // in that case, cancel timer we created few lines above (done this way to avoid race)
             onClose();
-        } else {
-            // SecurityIdentity CDI bean is proxy, so this should switch identity even in already injected beans
-            start();
         }
     }
 
-    private static Runnable closeConnectionWhenIdentityExpired(Vertx vertx, WebSocketConnectionImpl connection,
-            SecurityIdentity identity) {
-        if (identity.getAttribute(QUARKUS_IDENTITY_EXPIRE_TIME) instanceof Long expireAt) {
+    private static Runnable closeConnectionWhenIdentityExpired(RoutingContext routingContext,
+            WebSocketConnectionImpl connection, SecurityIdentity identity) {
+        if (identity != null && identity.getAttribute(QUARKUS_IDENTITY_EXPIRE_TIME) instanceof Long expireAt) {
+            var vertx = routingContext.vertx();
             long timerId = vertx.setTimer(TimeUnit.SECONDS.toMillis(expireAt) - System.currentTimeMillis(),
                     ignored -> connection
                             .close(new CloseReason(1008, "Authentication expired"))

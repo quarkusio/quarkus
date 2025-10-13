@@ -31,6 +31,7 @@ import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
  */
 public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> {
 
+    public static final String DEFAULT_OIDC_REQUEST_FILTER_NAME = "default-oidc-request-filter";
     private final Map<String, String> clientNameToGeneratedClass = new HashMap<>();
     private final Class<T> baseClass;
     private final ClassOutput classOutput;
@@ -74,12 +75,14 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
                     creator.addAnnotation(DotNames.SINGLETON.toString());
                     creator.addAnnotation(DotNames.UNREMOVABLE.toString());
 
-                    try (MethodCreator clientIdMethod = creator.getMethodCreator("clientId", Optional.class)) {
-                        clientIdMethod.setModifiers(Modifier.PROTECTED);
+                    if (!DEFAULT_OIDC_REQUEST_FILTER_NAME.equals(oidcClientName)) {
+                        try (MethodCreator clientIdMethod = creator.getMethodCreator("clientId", Optional.class)) {
+                            clientIdMethod.setModifiers(Modifier.PROTECTED);
 
-                        clientIdMethod.returnValue(clientIdMethod.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
-                                clientIdMethod.load(oidcClientName)));
+                            clientIdMethod.returnValue(clientIdMethod.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                                    clientIdMethod.load(oidcClientName)));
+                        }
                     }
 
                     if (refreshOnUnauthorized) {

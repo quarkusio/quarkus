@@ -1,5 +1,6 @@
 package io.quarkus.oidc.client.reactive.filter.deployment;
 
+import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.DEFAULT_OIDC_REQUEST_FILTER_NAME;
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.detectCustomFiltersThatRequireResponseFilter;
 
 import java.util.Collection;
@@ -35,13 +36,10 @@ import io.quarkus.rest.client.reactive.deployment.RegisterProviderAnnotationInst
 public class OidcClientReactiveFilterBuildStep {
 
     private static final DotName OIDC_CLIENT_FILTER = DotName.createSimple(OidcClientFilter.class.getName());
-    private static final DotName OIDC_CLIENT_REQUEST_REACTIVE_FILTER = DotName
-            .createSimple(OidcClientRequestReactiveFilter.class.getName());
     OidcClientReactiveFilterConfig oidcClientReactiveFilterConfig;
     private static final DotName DETECT_401_RESPONSE_FILTER = DotName
             .createSimple(DetectUnauthorizedClientResponseFilter.class.getName());
 
-    // we simply pretend that @OidcClientFilter means @RegisterProvider(OidcClientRequestReactiveFilter.class)
     @BuildStep
     void oidcClientFilterSupport(CombinedIndexBuildItem indexBuildItem, BuildProducer<GeneratedBeanBuildItem> generatedBean,
             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer) {
@@ -52,16 +50,13 @@ public class OidcClientReactiveFilterBuildStep {
         for (AnnotationInstance instance : instances) {
 
             // get client name from annotation @OidcClientFilter("clientName")
-            final String clientName = OidcClientFilterDeploymentHelper.getClientName(instance);
-            final AnnotationValue valueAttr;
-            if (clientName != null && !clientName.equals(oidcClientReactiveFilterConfig.clientName().orElse(null))) {
-                // create and use custom filter for named OidcClient
-                // we generate exactly one custom filter for each named client specified through annotation
-                valueAttr = createClassValue(helper.getOrCreateFilter(clientName));
-            } else {
-                // use default filter for either default OidcClient or the client configured with config properties
-                valueAttr = createClassValue(OIDC_CLIENT_REQUEST_REACTIVE_FILTER);
+            String clientName = OidcClientFilterDeploymentHelper.getClientName(instance);
+            if (clientName == null) {
+                clientName = oidcClientReactiveFilterConfig.clientName().orElse(DEFAULT_OIDC_REQUEST_FILTER_NAME);
             }
+
+            // we generate exactly one custom filter for each named client specified through annotation
+            final AnnotationValue valueAttr = createClassValue(helper.getOrCreateFilter(clientName));
 
             final AnnotationValue priorityAttr = AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION);
             String targetClass = instance.target().asClass().name().toString();

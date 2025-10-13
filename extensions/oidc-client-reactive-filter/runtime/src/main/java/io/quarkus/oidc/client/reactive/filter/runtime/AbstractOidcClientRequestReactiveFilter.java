@@ -13,7 +13,7 @@ import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 
-public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProducer
+public abstract class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProducer
         implements ResteasyReactiveClientRequestFilter {
     private static final Logger LOG = Logger.getLogger(AbstractOidcClientRequestReactiveFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = OidcConstants.BEARER_SCHEME + " ";

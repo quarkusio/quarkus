@@ -497,7 +497,7 @@ Log file rotation ensures efficient log management by preserving a specified num
 +
 [source, properties]
 ----
-quarkus.log.file.enable=true
+quarkus.log.file.enabled=true
 quarkus.log.file.path=application.log
 quarkus.log.file.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
 ----
@@ -506,7 +506,7 @@ quarkus.log.file.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
 +
 [source, properties]
 ----
-quarkus.log.handler.file.my-file-handler.enable=true
+quarkus.log.handler.file.my-file-handler.enabled=true
 quarkus.log.handler.file.my-file-handler.path=application.log
 quarkus.log.handler.file.my-file-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
 
@@ -529,7 +529,7 @@ When enabled, it sends all log events to a syslog server, typically the local sy
 +
 [source, properties]
 ----
-quarkus.log.syslog.enable=true
+quarkus.log.syslog.enabled=true
 quarkus.log.syslog.app-name=my-application
 quarkus.log.syslog.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
 ----
@@ -538,7 +538,7 @@ quarkus.log.syslog.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
 +
 [source, properties]
 ----
-quarkus.log.handler.syslog.my-syslog-handler.enable=true
+quarkus.log.handler.syslog.my-syslog-handler.enabled=true
 quarkus.log.handler.syslog.my-syslog-handler.app-name=my-application
 quarkus.log.handler.syslog.my-syslog-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
 
@@ -559,7 +559,7 @@ When enabled, it sends all log events to a socket, such as a Logstash server.
 +
 [source, properties]
 ----
-quarkus.log.socket.enable=true
+quarkus.log.socket.enabled=true
 quarkus.log.socket.endpoint=localhost:4560
 ----
 
@@ -641,7 +641,7 @@ For example, `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
 .File TRACE logging configuration
 [source, properties]
 ----
-quarkus.log.file.enable=true
+quarkus.log.file.enabled=true
 # Send output to a trace.log file under the /tmp directory
 quarkus.log.file.path=/tmp/trace.log
 quarkus.log.file.level=TRACE
@@ -664,7 +664,7 @@ quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Configure a named handler that logs to console
 quarkus.log.handler.console."STRUCTURED_LOGGING".format=%e%n
 # Configure a named handler that logs to file
-quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".enable=true
+quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".enabled=true
 quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".format=%e%n
 # Configure the category and link the two named handlers to it
 quarkus.log.category."io.quarkus.category".level=INFO
@@ -676,7 +676,7 @@ quarkus.log.category."io.quarkus.category".handlers=STRUCTURED_LOGGING,STRUCTURE
 [source, properties]
 ----
 # configure a named file handler that sends the output to 'quarkus.log'
-quarkus.log.handler.file.CONSOLE_MIRROR.enable=true
+quarkus.log.handler.file.CONSOLE_MIRROR.enabled=true
 quarkus.log.handler.file.CONSOLE_MIRROR.path=quarkus.log
 # attach the handler to the root logger
 quarkus.log.handlers=CONSOLE_MIRROR

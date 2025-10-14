@@ -334,36 +334,26 @@ public final class HibernateProcessorUtil {
                         .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);
 
         // Duration
-        config.mapping().duration().durationPreferredJdbcType().ifPresent(duration ->
-                desc.getProperties().setProperty(
-                        AvailableSettings.PREFERRED_DURATION_JDBC_TYPE,
-                        duration
-                )
-        );
+        config.mapping().duration().durationPreferredJdbcType().ifPresent(duration -> desc.getProperties().setProperty(
+                AvailableSettings.PREFERRED_DURATION_JDBC_TYPE,
+                duration));
 
         // Instant
-        config.mapping().instantPreferredJdbcType().ifPresent(instant ->
-                desc.getProperties().setProperty(
-                        AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE,
-                        instant
-                )
-        );
+        config.mapping().instantPreferredJdbcType().ifPresent(instant -> desc.getProperties().setProperty(
+                AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE,
+                instant));
 
         // Boolean
         config.mapping().booleanPreferredJdbcType().ifPresent(
                 bool -> desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_BOOLEAN_JDBC_TYPE,
-                        bool
-                )
-        );
+                        bool));
 
         // UUID
         config.mapping().UUIDPreferredJdbcType().ifPresent(
                 uuid -> desc.getProperties().setProperty(
                         AvailableSettings.PREFERRED_UUID_JDBC_TYPE,
-                        uuid
-                )
-        );
+                        uuid));
 
         //charset
         desc.getProperties()

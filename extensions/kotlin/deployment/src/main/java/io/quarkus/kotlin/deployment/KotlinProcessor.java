@@ -62,10 +62,10 @@ public class KotlinProcessor {
                         .builder("kotlin.collections.EmptyList", "kotlin.collections.EmptyMap", "kotlin.collections.EmptySet")
                         .build());
 
-        nativeResourcePatterns.produce(builder().includePatterns(
-                "META-INF/.*.kotlin_module$",
+        nativeResourcePatterns.produce(builder().includeGlobs(
+                "META-INF/**/*.kotlin_module",
                 "META-INF/services/kotlin.reflect.*",
-                ".*.kotlin_builtins")
+                "**/*.kotlin_builtins")
                 .build());
 
         reflectiveHierarchyIgnoreWarning.produce(

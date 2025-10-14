@@ -443,8 +443,9 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         .setPath(targetPath)
                         .setResolvedDependency(appDep);
                 if (removedFromThisArchive.isEmpty()) {
-                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING,
-                            StandardCopyOption.COPY_ATTRIBUTES);
+                    // let's not use COPY_ATTRIBUTES to make sure we respect the system umask
+                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    Files.setLastModifiedTime(targetPath, Files.getLastModifiedTime(resolvedDep));
                 } else {
                     // we copy jars for which we remove entries to the same directory
                     // which seems a bit odd to me

@@ -148,7 +148,8 @@ public class RestClientCDIDelegateBuilder<T> {
                         : Optional.empty());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
-        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(), configRoot.enableCompression());
+        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableResponseDecompression(),
+                configRoot.enableCompression());
         if (enableCompressions.isPresent()) {
             builder.enableCompression(enableCompressions.get());
         }

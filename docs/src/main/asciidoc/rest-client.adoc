@@ -157,7 +157,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Map;
 import java.util.Set;
-import java util.Optional;
+import java.util.Optional;
 
 @Path("/extensions")
 @RegisterRestClient(configKey = "extensions-api")
@@ -466,7 +466,7 @@ The name of the property needs to follow a certain convention which is best disp
 [source,properties]
 ----
 # Your configuration properties
-quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api # // <1>
+quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api // <1>
 ----
 
 <1> Having this configuration means that all requests performed using `org.acme.rest.client.ExtensionsService` will use `https://stage.code.quarkus.io/api` as the base URL.

@@ -17,7 +17,7 @@ import io.quarkus.oidc.client.filter.runtime.OidcClientFilterConfig;
 public class OidcClientRequestFilter extends AbstractOidcClientRequestFilter {
 
     @Inject
-    OidcClientFilterConfig oidcClientFilterConfig;
+    public OidcClientFilterConfig oidcClientFilterConfig;
 
     protected Optional<String> clientId() {
         return oidcClientFilterConfig.clientName();

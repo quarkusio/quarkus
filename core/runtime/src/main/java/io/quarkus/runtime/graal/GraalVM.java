@@ -53,7 +53,7 @@ public final class GraalVM {
                     String tokens[] = version.split("\\.", 3);
                     String jdkFeature = tokens[0];
                     String jdkVers = jdkFeature;
-                    if (tokens.length == 3) {
+                    if (tokens.length == 3 && !graalVMFutureVers(tokens)) {
                         String interim = tokens[1];
                         String update = tokens[2].split("\\+")[0];
                         jdkVers = String.format("%s.%s.%s", jdkFeature, interim, update);
@@ -71,6 +71,17 @@ public final class GraalVM {
             log.warnf("Failed to parse GraalVM version from: %s. Defaulting to currently supported version %s ", value,
                     Version.CURRENT);
             return Version.CURRENT;
+        }
+
+        // Anything beyond 25.0 is a future GraalVM version not suitable for Runtime.Version.parse()
+        private static boolean graalVMFutureVers(String[] tokens) {
+            try {
+                int feature = Integer.valueOf(tokens[0]);
+                int interim = Integer.valueOf(tokens[1]);
+                return feature > 25 || (feature == 25 && interim > 0);
+            } catch (NumberFormatException e) {
+                return false;
+            }
         }
 
     }

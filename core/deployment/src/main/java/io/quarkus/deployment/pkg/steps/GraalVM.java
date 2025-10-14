@@ -18,6 +18,7 @@ public final class GraalVM {
         private static final String EA_BUILD_PREFIX = "-ea";
         private static final String JVMCI_BUILD_PREFIX = "jvmci-";
         private static final String MANDREL_VERS_PREFIX = "Mandrel-";
+        private static final String GRAALVM_VERS_PREFIX = "GraalVM CE ";
 
         private static final String LIBERICA_NIK_VERS_PREFIX = "Liberica-NIK-";
 
@@ -66,7 +67,7 @@ public final class GraalVM {
 
                 String vendorVersion = secondMatcher.group(VENDOR_VERSION_GROUP);
 
-                String graalVersion = graalVersion(javaVersion, v);
+                String graalVersion = graalVersion(javaVersion, v, vendorVersion);
                 if (vendorVersion.contains("-dev")) {
                     graalVersion = graalVersion + "-dev";
                 }
@@ -136,7 +137,26 @@ public final class GraalVM {
             return null;
         }
 
-        private static String graalVersion(String buildInfo, Runtime.Version v) {
+        private static String graalVersion(String buildInfo, Runtime.Version v, String vendorVersion) {
+            if (v.feature() >= 25 && vendorVersion != null && !vendorVersion.isBlank()) {
+                if (vendorVersion.startsWith(GRAALVM_VERS_PREFIX)) {
+                    String versFromVendor = vendorVersion.substring(GRAALVM_VERS_PREFIX.length());
+                    versFromVendor = versFromVendor.substring(0, versFromVendor.indexOf("+")); // strip build number
+                    if (String.valueOf(v.feature()).equals(versFromVendor)) {
+                        // GA version
+                        versFromVendor = String.format("%d.0.0", v.feature());
+                    }
+                    // Strip potential -dev suffix
+                    if (versFromVendor.endsWith("-dev")) {
+                        versFromVendor = versFromVendor.substring(0, versFromVendor.length() - 4);
+                    }
+                    Matcher versMatcher = VERSION_PATTERN.matcher(versFromVendor);
+                    if (versMatcher.find()) {
+                        return matchVersion(versFromVendor);
+                    }
+                    // fall through to other logic
+                }
+            }
             if (buildInfo == null) {
                 return null;
             }

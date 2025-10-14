@@ -13,7 +13,7 @@ import static org.hamcrest.core.Is.is;
 
 @QuarkusTest
 @TestProfile(OverriddenPreferredTypesResourceIT.OverriddenPreferredTypesSchemaTestProfile.class)
-public class OverriddenPreferredTypesResourceIT {
+class OverriddenPreferredTypesResourceIT {
     public static class OverriddenPreferredTypesSchemaTestProfile implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {

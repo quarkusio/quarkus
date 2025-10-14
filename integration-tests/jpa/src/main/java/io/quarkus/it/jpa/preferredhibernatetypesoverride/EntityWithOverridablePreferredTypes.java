@@ -3,7 +3,6 @@ package io.quarkus.it.jpa.preferredhibernatetypesoverride;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Duration;
 import java.time.Instant;

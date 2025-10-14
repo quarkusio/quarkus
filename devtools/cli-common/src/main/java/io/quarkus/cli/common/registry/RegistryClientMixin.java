@@ -24,7 +24,7 @@ import picocli.CommandLine;
 public class RegistryClientMixin {
     static final boolean VALIDATE = !Boolean.parseBoolean(System.getenv("REGISTRY_CLIENT_TEST"));
 
-    /** @see io.quarkus.cli.registry.ToggleRegistryClientMixin#setRegistryClient */
+    /** @see io.quarkus.cli.common.registry.ToggleRegistryClientMixin#setRegistryClient */
     public final String getRegistryClientProperty() {
         return "-DquarkusRegistryClient=" + enabled();
     }

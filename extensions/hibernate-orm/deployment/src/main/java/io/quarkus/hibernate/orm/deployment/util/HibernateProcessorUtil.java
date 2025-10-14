@@ -410,8 +410,6 @@ public final class HibernateProcessorUtil {
                 fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
                         String.valueOf(fetchSize)));
 
-
-
         // Statistics
         if (hibernateOrmConfig.metrics().enabled()
                 || (hibernateOrmConfig.statistics().isPresent() && hibernateOrmConfig.statistics().get())) {

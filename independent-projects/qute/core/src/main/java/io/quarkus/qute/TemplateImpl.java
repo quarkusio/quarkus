@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,16 +38,19 @@ class TemplateImpl implements Template {
     final SectionNode root;
     private final List<ParameterDeclaration> parameterDeclarations;
     private final LazyValue<Map<String, Fragment>> fragments;
+    private final Optional<URI> source;
 
     // The initial capacity of the StringBuilder used to render the template
     final Capacity capacity;
 
-    TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant) {
+    TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant,
+            Optional<URI> source) {
         this.engine = engine;
         this.root = root;
         this.templateId = templateId;
         this.generatedId = generatedId;
         this.variant = variant;
+        this.source = source;
         // Note that param declarations can be removed if placed on a standalone line
         this.parameterDeclarations = ImmutableList.copyOf(root.getParameterDeclarations());
         // Use a lazily initialized map to avoid unnecessary performance costs during parsing
@@ -125,6 +129,11 @@ class TemplateImpl implements Template {
         return root;
     }
 
+    @Override
+    public Optional<URI> getSource() {
+        return source;
+    }
+
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
         if (section.name.equals(Parser.ROOT_HELPER_NAME)) {
             // Initialize the lazy map for root sections only
@@ -150,7 +159,7 @@ class TemplateImpl implements Template {
                         for (TemplateNode fragmentNode : fragmentNodes) {
                             FragmentSectionHelper helper = (FragmentSectionHelper) ((SectionNode) fragmentNode).helper;
                             Fragment fragment = new FragmentImpl(engine, (SectionNode) fragmentNode, helper.getIdentifier(),
-                                    engine.generateId(), variant);
+                                    engine.generateId(), variant, source);
                             fragments.put(helper.getIdentifier(), fragment);
                         }
                         return fragments;
@@ -385,8 +394,8 @@ class TemplateImpl implements Template {
     class FragmentImpl extends TemplateImpl implements Fragment {
 
         FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
-                Optional<Variant> variant) {
-            super(engine, root, fragmentId, generatedId, variant);
+                Optional<Variant> variant, Optional<URI> sourcePath) {
+            super(engine, root, fragmentId, generatedId, variant, sourcePath);
         }
 
         @Override

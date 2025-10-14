@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>junit</groupId>

@@ -25,7 +25,9 @@ import org.eclipse.lsp4j.debug.SetBreakpointsResponse;
 import org.eclipse.lsp4j.debug.SetExceptionBreakpointsArguments;
 import org.eclipse.lsp4j.debug.SetExceptionBreakpointsResponse;
 import org.eclipse.lsp4j.debug.Source;
+import org.eclipse.lsp4j.debug.SourceArguments;
 import org.eclipse.lsp4j.debug.SourceBreakpoint;
+import org.eclipse.lsp4j.debug.SourceResponse;
 import org.eclipse.lsp4j.debug.StackTraceArguments;
 import org.eclipse.lsp4j.debug.StackTraceResponse;
 import org.eclipse.lsp4j.debug.StepInArguments;
@@ -323,6 +325,15 @@ public class DebugServerAdapter implements IDebugProtocolServer {
     @Override
     public CompletableFuture<CompletionsResponse> completions(CompletionsArguments args) {
         return agent.completions(args);
+    }
+
+    @Override
+    public CompletableFuture<SourceResponse> source(SourceArguments args) {
+        return CompletableFuture.supplyAsync(() -> {
+            var source = args.getSource();
+            return agent.getSourceReference(source != null && source.getSourceReference() != null ? source.getSourceReference()
+                    : args.getSourceReference());
+        });
     }
 
     /**

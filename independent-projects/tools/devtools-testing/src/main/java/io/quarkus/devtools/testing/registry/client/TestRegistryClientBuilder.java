@@ -982,7 +982,7 @@ public class TestRegistryClientBuilder {
         }
 
         private void persist(Path nonPlatformDir) {
-            codestarts.forEach(c -> c.persist());
+            codestarts.forEach(TestCodestartBuilder::persist);
             final Path json = getNonPlatformCatalogPath(nonPlatformDir, extensions.getQuarkusCoreVersion());
             try {
                 extensions.persist(json);

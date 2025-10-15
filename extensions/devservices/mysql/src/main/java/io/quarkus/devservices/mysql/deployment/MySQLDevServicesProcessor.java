@@ -3,7 +3,7 @@ package io.quarkus.devservices.mysql.deployment;
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
-import static org.testcontainers.containers.MySQLContainer.MYSQL_PORT;
+import static org.testcontainers.mysql.MySQLContainer.MYSQL_PORT;
 
 import java.time.Duration;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;

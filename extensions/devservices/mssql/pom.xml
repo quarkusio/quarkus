@@ -18,13 +18,7 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mssqlserver</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>testcontainers-mssqlserver</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

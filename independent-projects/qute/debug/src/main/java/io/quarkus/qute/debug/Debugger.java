@@ -9,6 +9,7 @@ import org.eclipse.lsp4j.debug.EvaluateResponse;
 import org.eclipse.lsp4j.debug.Scope;
 import org.eclipse.lsp4j.debug.Source;
 import org.eclipse.lsp4j.debug.SourceBreakpoint;
+import org.eclipse.lsp4j.debug.SourceResponse;
 import org.eclipse.lsp4j.debug.StackFrame;
 import org.eclipse.lsp4j.debug.StackTraceResponse;
 import org.eclipse.lsp4j.debug.Thread;
@@ -143,6 +144,15 @@ public interface Debugger {
     CompletableFuture<CompletionsResponse> completions(CompletionsArguments args);
 
     /**
+     * Returns the source code template for a given source reference.
+     *
+     * @param sourceReference the source reference
+     *
+     * @return the source code template for a given source reference
+     */
+    SourceResponse getSourceReference(int sourceReference);
+
+    /**
      * Registers a debugger listener to receive debug events.
      *
      * @param listener the listener to register
@@ -169,4 +179,5 @@ public interface Debugger {
      * @return {@code true} if enabled, {@code false} otherwise
      */
     boolean isEnabled();
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.qute.debug.agent;
 
+import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -13,6 +14,7 @@ import io.quarkus.qute.debug.StoppedEvent;
 import io.quarkus.qute.debug.StoppedEvent.StoppedReason;
 import io.quarkus.qute.debug.ThreadEvent;
 import io.quarkus.qute.debug.ThreadEvent.ThreadStatus;
+import io.quarkus.qute.debug.agent.breakpoints.RemoteBreakpoint;
 import io.quarkus.qute.trace.ResolveEvent;
 
 /**
@@ -163,10 +165,12 @@ public class RemoteThread extends Thread {
             return;
         }
 
-        RemoteStackFrame frame = new RemoteStackFrame(event, getCurrentFrame(), agent.getSourceTemplateRegistry(),
+        var engine = event.getEngine();
+        RemoteStackFrame frame = new RemoteStackFrame(event, getCurrentFrame(), agent.getSourceTemplateRegistry(engine),
                 agent.getVariablesRegistry());
         this.frames.addFirst(frame);
         String templateId = frame.getTemplateId();
+        URI sourceUri = frame.getTemplateUri();
         RemoteStackFrame previous = frame.getPrevious();
 
         if (this.stopCondition != null && this.stopCondition.test(event.getTemplateNode())) {
@@ -174,7 +178,7 @@ public class RemoteThread extends Thread {
             this.suspendAndWait(StoppedReason.STEP);
         } else {
             int lineNumber = frame.getLine();
-            RemoteBreakpoint breakpoint = agent.getBreakpoint(templateId, lineNumber);
+            RemoteBreakpoint breakpoint = agent.getBreakpoint(sourceUri, templateId, lineNumber, engine);
             if (breakpoint != null // a breakpoint matches the frame line number
                     && (previous == null || !previous.getTemplateId().equals(templateId) || previous.getLine() != lineNumber
                             || event.getTemplateNode().isExpression())

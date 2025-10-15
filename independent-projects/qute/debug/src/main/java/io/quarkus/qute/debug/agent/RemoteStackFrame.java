@@ -1,5 +1,6 @@
 package io.quarkus.qute.debug.agent;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -17,15 +18,18 @@ import io.quarkus.qute.debug.agent.scopes.GlobalsScope;
 import io.quarkus.qute.debug.agent.scopes.LocalsScope;
 import io.quarkus.qute.debug.agent.scopes.NamespaceResolversScope;
 import io.quarkus.qute.debug.agent.scopes.RemoteScope;
+import io.quarkus.qute.debug.agent.source.RemoteSource;
+import io.quarkus.qute.debug.agent.source.SourceTemplateRegistry;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
 import io.quarkus.qute.trace.ResolveEvent;
 
 /**
  * Represents a single stack frame in the Qute debugging process.
  * <p>
- * A {@link RemoteStackFrame} corresponds to the evaluation of a {@link TemplateNode}
- * at runtime. It stores contextual information such as the variables in scope,
- * the template being executed, and the current execution state.
+ * A {@link RemoteStackFrame} corresponds to the evaluation of a
+ * {@link TemplateNode} at runtime. It stores contextual information such as the
+ * variables in scope, the template being executed, and the current execution
+ * state.
  * </p>
  *
  * <p>
@@ -46,7 +50,8 @@ public class RemoteStackFrame extends StackFrame {
     private static final AtomicInteger frameIdCounter = new AtomicInteger();
 
     /**
-     * The previous frame in the call stack, or {@code null} if this is the first frame.
+     * The previous frame in the call stack, or {@code null} if this is the first
+     * frame.
      */
     private final transient RemoteStackFrame previousFrame;
 
@@ -73,7 +78,8 @@ public class RemoteStackFrame extends StackFrame {
     /**
      * Creates a new {@link RemoteStackFrame}.
      *
-     * @param event the resolve event describing the current execution
+     * @param event the resolve event describing the current
+     *        execution
      * @param previousFrame the previous stack frame, may be {@code null}
      * @param sourceTemplateRegistry registry for mapping templates to debug sources
      * @param variablesRegistry the registry for managing variables
@@ -90,7 +96,8 @@ public class RemoteStackFrame extends StackFrame {
         super.setLine(line);
         this.templateId = event.getTemplateNode().getOrigin().getTemplateId();
         super.setSource(
-                sourceTemplateRegistry.getSource(templateId, previousFrame != null ? previousFrame.getSource() : null));
+                sourceTemplateRegistry.getSource(templateId,
+                        previousFrame != null ? previousFrame.getSource() : null));
     }
 
     /**
@@ -100,6 +107,21 @@ public class RemoteStackFrame extends StackFrame {
      */
     public String getTemplateId() {
         return templateId;
+    }
+
+    /**
+     * Returns the template Uri associated with this frame and null otherwise.
+     *
+     * @return the template Uri associated with this frame and null otherwise.
+     */
+    public URI getTemplateUri() {
+        var source = getSource();
+        return source != null ? source.getUri() : null;
+    }
+
+    @Override
+    public RemoteSource getSource() {
+        return (RemoteSource) super.getSource();
     }
 
     /**
@@ -151,7 +173,8 @@ public class RemoteStackFrame extends StackFrame {
      * Evaluates an expression in the current frame context.
      * <p>
      * If the expression contains conditional operators, it is parsed and evaluated
-     * as a conditional expression. Otherwise, it is treated as a simple Qute expression.
+     * as a conditional expression. Otherwise, it is treated as a simple Qute
+     * expression.
      * </p>
      *
      * @param expression the expression to evaluate
@@ -173,10 +196,12 @@ public class RemoteStackFrame extends StackFrame {
     }
 
     /**
-     * Determines if a given expression should be treated as a conditional expression.
+     * Determines if a given expression should be treated as a conditional
+     * expression.
      *
      * @param expression the expression to test
-     * @return {@code true} if the expression contains conditional operators, {@code false} otherwise
+     * @return {@code true} if the expression contains conditional operators,
+     *         {@code false} otherwise
      */
     private static boolean isConditionExpression(String expression) {
         return expression.contains("!") || expression.contains(">") || expression.contains("gt")
@@ -191,7 +216,8 @@ public class RemoteStackFrame extends StackFrame {
      * Evaluates a parsed conditional expression.
      *
      * @param ifNode the parsed {@link TemplateNode} representing the condition
-     * @param ignoreError whether to ignore evaluation errors and return {@code false}
+     * @param ignoreError whether to ignore evaluation errors and return
+     *        {@code false}
      * @return a {@link CompletableFuture} containing {@code true} or {@code false}
      */
     public CompletableFuture<Object> evaluateCondition(TemplateNode ifNode, boolean ignoreError) {

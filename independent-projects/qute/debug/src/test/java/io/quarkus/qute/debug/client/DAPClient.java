@@ -30,6 +30,7 @@ import org.eclipse.lsp4j.debug.ScopesArguments;
 import org.eclipse.lsp4j.debug.SetBreakpointsArguments;
 import org.eclipse.lsp4j.debug.Source;
 import org.eclipse.lsp4j.debug.SourceBreakpoint;
+import org.eclipse.lsp4j.debug.SourceResponse;
 import org.eclipse.lsp4j.debug.StackFrame;
 import org.eclipse.lsp4j.debug.StackTraceArguments;
 import org.eclipse.lsp4j.debug.StackTraceResponse;
@@ -230,13 +231,13 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
         getDebugProtocolServer().continue_(args);
     }
 
-    public void setBreakpoint(String templateId, int line) {
-        setBreakpoint(templateId, line, null);
+    public void setBreakpoint(String templatePath, int line) {
+        setBreakpoint(templatePath, line, null);
     }
 
-    public void setBreakpoint(String templateId, int line, String condition) {
+    public void setBreakpoint(String templatePath, int line, String condition) {
         Source source = new Source();
-        source.setPath(templateId);
+        source.setPath(templatePath);
         SourceBreakpoint sourceBreakpoint = new SourceBreakpoint();
         sourceBreakpoint.setLine(line);
         sourceBreakpoint.setCondition(condition);
@@ -320,6 +321,11 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
         args.setFrameId(frameId);
         var response = getResult(completions(args));
         return response != null ? response.getTargets() : EMPTY_COMPLETION_ITEMS;
+    }
+
+    @Override
+    public SourceResponse getSourceReference(int sourceReference) {
+        return null;
     }
 
     @Override

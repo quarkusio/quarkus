@@ -3,9 +3,9 @@ package io.quarkus.qute.debug.agent;
 import static io.quarkus.qute.debug.agent.RemoteStackFrame.EMPTY_STACK_FRAMES;
 import static io.quarkus.qute.debug.agent.scopes.RemoteScope.EMPTY_SCOPES;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +21,7 @@ import org.eclipse.lsp4j.debug.OutputEventArgumentsCategory;
 import org.eclipse.lsp4j.debug.Scope;
 import org.eclipse.lsp4j.debug.Source;
 import org.eclipse.lsp4j.debug.SourceBreakpoint;
+import org.eclipse.lsp4j.debug.SourceResponse;
 import org.eclipse.lsp4j.debug.StackTraceResponse;
 import org.eclipse.lsp4j.debug.Thread;
 import org.eclipse.lsp4j.debug.Variable;
@@ -32,8 +33,12 @@ import io.quarkus.qute.debug.DebuggerState;
 import io.quarkus.qute.debug.StoppedEvent;
 import io.quarkus.qute.debug.ThreadEvent;
 import io.quarkus.qute.debug.ThreadEvent.ThreadStatus;
+import io.quarkus.qute.debug.agent.breakpoints.BreakpointsRegistry;
+import io.quarkus.qute.debug.agent.breakpoints.RemoteBreakpoint;
 import io.quarkus.qute.debug.agent.completions.CompletionSupport;
 import io.quarkus.qute.debug.agent.evaluations.EvaluationSupport;
+import io.quarkus.qute.debug.agent.source.SourceReferenceRegistry;
+import io.quarkus.qute.debug.agent.source.SourceTemplateRegistry;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
 import io.quarkus.qute.trace.ResolveEvent;
 import io.quarkus.qute.trace.TemplateEvent;
@@ -59,8 +64,8 @@ public class DebuggeeAgent implements Debugger {
      */
     private final DebuggerTraceListener debugListener;
 
-    /** Breakpoints mapped by template ID and line number. */
-    private final Map<String, Map<Integer, RemoteBreakpoint>> breakpoints;
+    /** Breakpoints registry */
+    private final BreakpointsRegistry breakpointsRegistry;
 
     /** Currently active debuggee threads mapped by thread ID. */
     private final Map<Integer, RemoteThread> debuggees;
@@ -78,7 +83,10 @@ public class DebuggeeAgent implements Debugger {
     private final VariablesRegistry variablesRegistry;
 
     /** Registry mapping Qute templates to DAP {@link Source} objects. */
-    private final SourceTemplateRegistry sourceTemplateRegistry;
+    private final Map<Engine, SourceTemplateRegistry> sourceTemplateRegistry;
+
+    /** Source reference registry (used to retrieve template content from JAR) */
+    private final SourceReferenceRegistry sourceReferenceRegistry;
 
     /** The set of Qute engines being tracked for debugging. */
     private final Set<Engine> trackedEngine;
@@ -99,11 +107,12 @@ public class DebuggeeAgent implements Debugger {
      */
     public DebuggeeAgent() {
         this.debugListener = new DebuggerTraceListener(this);
-        this.breakpoints = new ConcurrentHashMap<>();
         this.debuggees = new ConcurrentHashMap<>();
         this.listeners = new ArrayList<>();
         this.variablesRegistry = new VariablesRegistry();
-        this.sourceTemplateRegistry = new SourceTemplateRegistry();
+        this.breakpointsRegistry = new BreakpointsRegistry();
+        this.sourceTemplateRegistry = new ConcurrentHashMap<>();
+        this.sourceReferenceRegistry = new SourceReferenceRegistry();
         this.trackedEngine = new HashSet<>();
         this.enginesWithDebugListener = new HashSet<>();
         this.evaluationSupport = new EvaluationSupport(this);
@@ -221,30 +230,7 @@ public class DebuggeeAgent implements Debugger {
 
     @Override
     public Breakpoint[] setBreakpoints(SourceBreakpoint[] sourceBreakpoints, Source source) {
-        sourceTemplateRegistry.registerSource(source);
-        String templateId = sourceTemplateRegistry.getTemplateId(source);
-        Map<Integer, RemoteBreakpoint> templateBreakpoints = templateId != null
-                ? this.breakpoints.computeIfAbsent(templateId, k -> new HashMap<>())
-                : null;
-        if (templateBreakpoints != null) {
-            templateBreakpoints.clear();
-        }
-
-        Breakpoint[] result = new Breakpoint[sourceBreakpoints.length];
-        for (int i = 0; i < sourceBreakpoints.length; i++) {
-            SourceBreakpoint sourceBreakpoint = sourceBreakpoints[i];
-            int line = sourceBreakpoint.getLine();
-            String condition = sourceBreakpoint.getCondition();
-            RemoteBreakpoint breakpoint = new RemoteBreakpoint(source, line, condition);
-            if (templateBreakpoints != null) {
-                templateBreakpoints.put(line, breakpoint);
-                breakpoint.setVerified(true);
-            } else {
-                breakpoint.setVerified(false);
-            }
-            result[i] = breakpoint;
-        }
-        return result;
+        return breakpointsRegistry.setBreakpoints(sourceBreakpoints, source);
     }
 
     @Override
@@ -260,21 +246,15 @@ public class DebuggeeAgent implements Debugger {
     /**
      * Retrieves a breakpoint for the given template and line number.
      *
+     * @param sourceUri
+     *
      * @param templateId the template identifier.
      * @param line the line number.
+     * @param engine
      * @return the matching breakpoint, or {@code null} if none exists.
      */
-    RemoteBreakpoint getBreakpoint(String templateId, int line) {
-        Map<Integer, RemoteBreakpoint> templateBreakpoints = this.breakpoints.get(templateId);
-        if (templateBreakpoints == null) {
-            for (var fileExtension : sourceTemplateRegistry.getFileExtensions()) {
-                templateBreakpoints = this.breakpoints.get(templateId + fileExtension);
-                if (templateBreakpoints != null) {
-                    break;
-                }
-            }
-        }
-        return templateBreakpoints != null ? templateBreakpoints.get(line) : null;
+    RemoteBreakpoint getBreakpoint(URI sourceUri, String templateId, int line, Engine engine) {
+        return breakpointsRegistry.resolveBreakpoint(sourceUri, templateId, line, getSourceTemplateRegistry(engine));
     }
 
     @Override
@@ -368,7 +348,9 @@ public class DebuggeeAgent implements Debugger {
     public void terminate() {
         try {
             unlockAllDebuggeeThreads();
-            this.breakpoints.clear();
+            this.sourceTemplateRegistry.clear();
+            this.sourceReferenceRegistry.reset();
+            this.breakpointsRegistry.reset();
         } finally {
             fireTerminateEvent();
         }
@@ -409,6 +391,11 @@ public class DebuggeeAgent implements Debugger {
     @Override
     public CompletableFuture<CompletionsResponse> completions(CompletionsArguments args) {
         return completionSupport.completions(args);
+    }
+
+    @Override
+    public SourceResponse getSourceReference(int sourceReference) {
+        return sourceReferenceRegistry.getSourceReference(sourceReference);
     }
 
     @Override
@@ -474,8 +461,9 @@ public class DebuggeeAgent implements Debugger {
         return variablesRegistry;
     }
 
-    public SourceTemplateRegistry getSourceTemplateRegistry() {
-        return sourceTemplateRegistry;
+    public SourceTemplateRegistry getSourceTemplateRegistry(Engine engine) {
+        return this.sourceTemplateRegistry.computeIfAbsent(engine,
+                k -> new SourceTemplateRegistry(breakpointsRegistry, sourceReferenceRegistry, engine));
     }
 
     @Override
@@ -516,5 +504,7 @@ public class DebuggeeAgent implements Debugger {
      */
     public void reset() {
         unlockAllDebuggeeThreads();
+        this.sourceTemplateRegistry.clear();
+        this.sourceReferenceRegistry.reset();
     }
 }

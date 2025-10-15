@@ -3,6 +3,8 @@ package io.quarkus.qute.debug.agent;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
 import org.eclipse.lsp4j.debug.Thread;
@@ -72,6 +74,10 @@ public class RemoteThread extends Thread {
      * Condition that determines when the thread should stop execution.
      */
     private transient Predicate<TemplateNode> stopCondition;
+
+    // Pending task to be executed during suspension
+    private transient Callable<CompletableFuture<Object>> pendingTask;
+    private transient CompletableFuture<Object> taskResult;
 
     /**
      * Creates a new {@link RemoteThread} instance.
@@ -167,7 +173,7 @@ public class RemoteThread extends Thread {
 
         var engine = event.getEngine();
         RemoteStackFrame frame = new RemoteStackFrame(event, getCurrentFrame(), agent.getSourceTemplateRegistry(engine),
-                agent.getVariablesRegistry());
+                agent.getVariablesRegistry(), this);
         this.frames.addFirst(frame);
         String templateId = frame.getTemplateId();
         URI sourceUri = frame.getTemplateUri();
@@ -190,30 +196,132 @@ public class RemoteThread extends Thread {
     }
 
     /**
-     * Suspends execution and waits for user interaction (e.g., step or resume).
+     * Suspends execution of the render thread and waits for debugger interaction,
+     * such as "step", "resume", or expression evaluation.
+     * <p>
+     * When the render thread reaches a breakpoint or step condition, it enters this
+     * method and waits until the debugger instructs it to resume. While suspended,
+     * the debugger may schedule a task (see {@link #evaluateInRenderThread(Callable)})
+     * to be executed <b>within the render thread context</b>.
+     * </p>
      *
-     * @param reason the reason for stopping (step, breakpoint, etc.)
+     * <p>
+     * This is essential for Qute expression evaluation — for example, evaluating
+     * {@code uri:Todos.index} requires the active HTTP request context
+     * ({@code @RequestScoped} beans). Evaluating outside this thread (e.g. from
+     * the debugger thread) would cause a
+     * {@code javax.enterprise.context.ContextNotActiveException: RequestScoped was not active}.
+     * </p>
+     *
+     * @param reason the reason for suspension (e.g. breakpoint, step)
      */
     private void suspendAndWait(StoppedReason reason) {
         try {
             synchronized (this.lock) {
+                // Mark thread as suspended and notify the debugger
                 this.state = DebuggerState.SUSPENDED;
                 this.lock.notifyAll();
                 this.stopCondition = null;
 
+                // Notify the debugger client that the thread has stopped
                 StoppedEvent e = new StoppedEvent(getId(), reason);
                 agent.fireStoppedEvent(e);
 
+                // Loop until the debugger resumes or stops the thread
                 while (this.state == DebuggerState.SUSPENDED) {
-                    this.lock.wait();
+
+                    // If a pending task (e.g., expression evaluation) was scheduled by the debugger:
+                    if (pendingTask != null) {
+                        try {
+                            // Execute the task directly in this render thread context.
+                            // This ensures access to the active HTTP request context,
+                            // avoiding "RequestScoped was not active" errors.
+                            taskResult = pendingTask.call();
+                        } catch (Exception e1) {
+                            // Should never happen — failures are handled by the caller
+                        } finally {
+                            // Clear the pending task and notify the waiting debugger
+                            pendingTask = null;
+                            lock.notifyAll();
+                        }
+                    }
+
+                    // Continue waiting until resume/step or another evaluation task is scheduled
+                    this.lock.wait(50); // small timeout to periodically recheck
                 }
 
-                if (this.state == DebuggerState.STOPPED) {
-                    // throw new DebuggerStoppedException();
-                }
+                // If resumed or stopped, the method exits, letting template rendering continue
             }
         } catch (InterruptedException e) {
-            // throw new DebuggerStoppedException();
+            java.lang.Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Schedules a task to be executed within the render thread (the thread currently rendering the template)
+     * while it is suspended during debugging.
+     * <p>
+     * This method is typically used by the debugger to evaluate Qute expressions or inspect the current
+     * template state. Since certain Qute features — such as expressions like {@code uri:Todos.index} —
+     * rely on contextual data bound to the HTTP request thread (e.g. {@code @RequestScoped} beans),
+     * these evaluations must occur in the same thread that is rendering the template.
+     * Executing such expressions in any other thread would lead to context-related errors such as:
+     *
+     * <pre>
+     *   javax.enterprise.context.ContextNotActiveException: RequestScoped was not active
+     * </pre>
+     * </p>
+     *
+     * <p>
+     * The render thread periodically checks for scheduled evaluation tasks while suspended (see
+     * {@link #suspendAndWait(io.quarkus.qute.debug.StoppedEvent.StoppedReason)}). When a task is detected,
+     * it is executed directly within that render thread to ensure full access to the active request
+     * and template context.
+     * </p>
+     *
+     * <p>
+     * <b>Threading model:</b><br>
+     * This method must be called from the debugger control thread (not the render thread itself).
+     * The provided callable will be executed synchronously within the render thread context, ensuring
+     * compatibility with request-bound state.
+     * </p>
+     *
+     * @param action the task to execute within the render thread context.
+     *        It should return a {@link CompletableFuture} representing the computation result.
+     * @return a {@link CompletableFuture} containing the result of the executed task
+     * @throws IllegalStateException if the thread is not currently suspended or if another
+     *         evaluation task is already pending
+     */
+    public CompletableFuture<Object> evaluateInRenderThread(Callable<CompletableFuture<Object>> action) {
+        synchronized (lock) {
+            // Ensure the render thread is suspended before executing any task
+            if (this.state != DebuggerState.SUSPENDED) {
+                throw new IllegalStateException("Thread not suspended");
+            }
+
+            // Prevent concurrent evaluation tasks from overlapping
+            if (pendingTask != null) {
+                throw new IllegalStateException("A task is already pending");
+            }
+
+            // Schedule the evaluation task to be executed by the render thread
+            pendingTask = action;
+            taskResult = null;
+
+            // Wake up the suspended render thread so it can pick up and execute the task
+            lock.notifyAll();
+
+            // Wait for the render thread to process and complete the pending task
+            while (pendingTask != null) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    java.lang.Thread.currentThread().interrupt();
+                }
+            }
+
+            // Return the computed result back to the debugger control thread
+            return taskResult;
         }
     }
 
@@ -310,4 +418,5 @@ public class RemoteThread extends Thread {
     public void exit() {
         this.agent.fireThreadEvent(new ThreadEvent(getId(), ThreadStatus.EXITED));
     }
+
 }

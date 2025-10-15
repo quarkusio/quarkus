@@ -24,10 +24,6 @@ public class WorkspaceModulePom {
         this.effectiveModel = effectiveModel;
     }
 
-    Path getPom() {
-        return pom;
-    }
-
     Path getModuleDir() {
         var moduleDir = pom.getParent();
         return moduleDir == null ? WorkspaceLoader.getFsRootDir() : moduleDir;

@@ -272,7 +272,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         ApplicationModel appModel = resolveAppModelForBuild();
         Map<String, String> quarkusProperties = effectiveProvider()
                 .buildEffectiveConfiguration(appModel, getAdditionalForcedProperties().get().getProperties())
-                .getOnlyQuarkusValues();
+                .getQuarkusValues();
 
         if (nativeEnabled()) {
             if (nativeSourcesOnly()) {

@@ -24,6 +24,10 @@ public class WorkspaceModulePom {
         this.effectiveModel = effectiveModel;
     }
 
+    Path getPom() {
+        return pom;
+    }
+
     Path getModuleDir() {
         var moduleDir = pom.getParent();
         return moduleDir == null ? WorkspaceLoader.getFsRootDir() : moduleDir;
@@ -50,7 +54,7 @@ public class WorkspaceModulePom {
                 parentPom = parentDir.resolve(WorkspaceLoader.POM_XML);
             }
         }
-        return parentPom != null && Files.exists(parentPom) ? parentPom : null;
+        return parentPom != null && Files.exists(parentPom) ? parentPom.normalize().toAbsolutePath() : null;
     }
 
     void process(Consumer<WorkspaceModulePom> consumer) {

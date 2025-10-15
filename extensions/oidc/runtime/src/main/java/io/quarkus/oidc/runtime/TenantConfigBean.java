@@ -26,8 +26,9 @@ public final class TenantConfigBean {
     private final TenantContextFactory tenantContextFactory;
 
     TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
-            boolean securityEventsEnabled) {
-        this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled);
+            boolean otelEnabled, boolean securityEventsEnabled) {
+        this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, otelEnabled,
+                securityEventsEnabled);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 
         this.staticTenantsConfig = tenantContextFactory.createStaticTenantConfigs(oidc.getStaticTenantConfigs(),

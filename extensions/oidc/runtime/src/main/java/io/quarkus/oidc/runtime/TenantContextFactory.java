@@ -29,6 +29,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.oidc.runtime.trace.OidcTracingFilter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -47,11 +48,14 @@ final class TenantContextFactory {
     private final Set<String> tenantsExpectingServerAvailableEvents;
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
-    private final boolean securityEventsEnabled;
+    private final boolean otelEnabled;
+    final boolean securityEventsEnabled;
 
-    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled) {
+    TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean otelEnabled,
+            boolean securityEventsEnabled) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
+        this.otelEnabled = otelEnabled;
         this.securityEventsEnabled = securityEventsEnabled;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
     }
@@ -157,7 +161,6 @@ final class TenantContextFactory {
         return t;
     }
 
-    @SuppressWarnings("resource")
     private Uni<TenantConfigContext> createTenantContext(OidcTenantConfig oidcTenantConfig,
             boolean checkNamedTenants, String tenantId) {
         final OidcTenantConfig oidcConfig = OidcUtils.resolveProviderConfig(oidcTenantConfig);
@@ -515,9 +518,11 @@ final class TenantContextFactory {
                                     "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
+                        OidcTracingFilter tracerFilter = otelEnabled ? new OidcTracingFilter()
+                                : null;
                         return Uni.createFrom()
                                 .item(new OidcProviderClientImpl(client, vertx, metadata, oidcConfig, oidcRequestFilters,
-                                        oidcResponseFilters));
+                                        oidcResponseFilters, tracerFilter));
                     }
 
                 });

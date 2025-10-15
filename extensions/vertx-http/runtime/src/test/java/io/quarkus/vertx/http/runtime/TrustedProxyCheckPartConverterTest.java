@@ -100,7 +100,7 @@ public class TrustedProxyCheckPartConverterTest {
         var part = CONVERTER.convert("quarkus.io:8085");
         Assertions.assertNull(part.proxyCheck);
         Assertions.assertNotNull(part.hostName);
-        Assertions.assertEquals(part.port, 8085);
+        Assertions.assertEquals(8085, part.port);
     }
 
 }

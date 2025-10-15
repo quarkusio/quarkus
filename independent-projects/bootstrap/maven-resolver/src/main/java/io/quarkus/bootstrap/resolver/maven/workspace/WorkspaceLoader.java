@@ -77,6 +77,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private final Deque<WorkspaceModulePom> moduleQueue = new ConcurrentLinkedDeque<>();
+    // Map key is the normalized absolute Path to the POM file
     private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
     private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
     private final Consumer<WorkspaceModulePom> modelProcessor;
@@ -194,19 +195,23 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 currentProject = project;
             }
             for (var module : project.getEffectiveModel().getModules()) {
-                addModulePom(project.getDir().resolve(module).resolve(POM_XML));
+                Path modulePath = project.getDir().resolve(module);
+                if (Files.isDirectory(modulePath)) {
+                    addModulePom(modulePath.resolve(POM_XML));
+                } else {
+                    addModulePom(modulePath);
+                }
             }
         };
     }
 
     private void loadModule(WorkspaceModulePom rawModule, Collection<WorkspaceModulePom> newModules) {
-        final Path moduleDir = rawModule.getModuleDir();
-        if (loadedPoms.containsKey(moduleDir)) {
+        if (loadedPoms.containsKey(rawModule.getPom())) {
             return;
         }
 
         final Model model = rawModule.getModel();
-        loadedPoms.put(moduleDir, model);
+        loadedPoms.put(rawModule.getPom(), model);
         if (model == MISSING_MODEL) {
             return;
         }
@@ -238,11 +243,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         if (rawModule.parent == null) {
             final Path parentPom = rawModule.getParentPom();
             if (parentPom != null) {
-                var parentDir = parentPom.getParent();
-                if (parentDir == null) {
-                    parentDir = getFsRootDir();
-                }
-                if (!loadedPoms.containsKey(parentDir)) {
+                if (!loadedPoms.containsKey(parentPom)) {
                     rawModule.parent = new WorkspaceModulePom(parentPom);
                     moduleQueue.push(rawModule.parent);
                 }
@@ -250,9 +251,14 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         }
     }
 
-    private void queueModule(Path dir) {
-        if (!loadedPoms.containsKey(dir)) {
-            moduleQueue.push(new WorkspaceModulePom(dir.resolve(POM_XML)));
+    private void queueModule(Path module) {
+        Path pom = module.normalize().toAbsolutePath();
+        if (Files.isDirectory(pom)) {
+            pom = pom.resolve(POM_XML);
+        }
+
+        if (!loadedPoms.containsKey(pom)) {
+            moduleQueue.push(new WorkspaceModulePom(pom));
         }
     }
 

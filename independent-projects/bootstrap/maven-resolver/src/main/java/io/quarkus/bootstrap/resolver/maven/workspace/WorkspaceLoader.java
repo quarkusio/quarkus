@@ -77,7 +77,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private final Deque<WorkspaceModulePom> moduleQueue = new ConcurrentLinkedDeque<>();
-    // Map key is the normalized absolute Path to the POM file
+    // Map key is the normalized absolute Path to the module directory
     private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
     private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
     private final Consumer<WorkspaceModulePom> modelProcessor;
@@ -206,12 +206,13 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private void loadModule(WorkspaceModulePom rawModule, Collection<WorkspaceModulePom> newModules) {
-        if (loadedPoms.containsKey(rawModule.getPom())) {
+        final Path moduleDir = rawModule.getModuleDir();
+        if (loadedPoms.containsKey(moduleDir)) {
             return;
         }
 
         final Model model = rawModule.getModel();
-        loadedPoms.put(rawModule.getPom(), model);
+        loadedPoms.put(moduleDir, model);
         if (model == MISSING_MODEL) {
             return;
         }
@@ -243,7 +244,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         if (rawModule.parent == null) {
             final Path parentPom = rawModule.getParentPom();
             if (parentPom != null) {
-                if (!loadedPoms.containsKey(parentPom)) {
+                var parentDir = parentPom.getParent();
+                if (parentDir == null) {
+                    parentDir = getFsRootDir();
+                }
+                if (!loadedPoms.containsKey(parentDir)) {
                     rawModule.parent = new WorkspaceModulePom(parentPom);
                     moduleQueue.push(rawModule.parent);
                 }
@@ -252,12 +257,17 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private void queueModule(Path module) {
-        Path pom = module.normalize().toAbsolutePath();
-        if (Files.isDirectory(pom)) {
-            pom = pom.resolve(POM_XML);
+        Path normalizedModuleDir = module.normalize().toAbsolutePath();
+        final Path pom;
+        if (Files.isDirectory(normalizedModuleDir)) {
+            pom = normalizedModuleDir.resolve(POM_XML);
+        } else {
+            // it is valid in Maven to point directly to the POM file in the <module> so we need to take that case into account
+            pom = normalizedModuleDir;
+            normalizedModuleDir = normalizedModuleDir.getParent() != null ? normalizedModuleDir.getParent() : getFsRootDir();
         }
 
-        if (!loadedPoms.containsKey(pom)) {
+        if (!loadedPoms.containsKey(normalizedModuleDir)) {
             moduleQueue.push(new WorkspaceModulePom(pom));
         }
     }

@@ -464,7 +464,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public void removeResponseHeader(String name) {
         // Servlet API does not support this functionality
-        throw new UnsupportedOperationException();
+        log.debugf("Cannot remove header '%s' because the Servlet API does not support removing HTTP response headers");
     }
 
     @Override

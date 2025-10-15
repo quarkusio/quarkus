@@ -14,6 +14,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -115,6 +116,13 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                             Path serializedTestAppModelPath = BootstrapUtils
                                     .getSerializedTestAppModelPath(Path.of(mavenProject().getBuild().getDirectory()));
                             ApplicationModelSerializer.serialize(appModel, serializedTestAppModelPath);
+
+                            //Pass the application model to the Surefire/Failsafe test process as a system property,
+                            //so it doesn't have to do a workspace search to find it. Same as we do for Gradle.
+                            Properties properties = mavenProject().getProperties();
+                            String argLine = properties.getProperty("argLine", "");
+                            properties.setProperty("argLine", argLine +
+                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestAppModelPath);
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }

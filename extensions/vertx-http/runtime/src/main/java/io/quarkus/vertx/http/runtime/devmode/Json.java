@@ -3,10 +3,8 @@ package io.quarkus.vertx.http.runtime.devmode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -199,8 +197,7 @@ public final class Json {
             StringBuilder builder = new StringBuilder();
             builder.append(ARRAY_START);
             int idx = 0;
-            for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
-                Object value = iterator.next();
+            for (Object value : values) {
                 if (isIgnored(value)) {
                     continue;
                 }
@@ -284,8 +281,7 @@ public final class Json {
             StringBuilder builder = new StringBuilder();
             builder.append(OBJECT_START);
             int idx = 0;
-            for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {
-                Entry<String, Object> entry = iterator.next();
+            for (Entry<String, Object> entry : properties.entrySet()) {
                 if (isIgnored(entry.getValue())) {
                     continue;
                 }

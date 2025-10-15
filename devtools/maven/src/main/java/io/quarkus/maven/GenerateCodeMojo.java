@@ -1,12 +1,15 @@
 package io.quarkus.maven;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -115,6 +118,12 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                             Path serializedTestAppModelPath = BootstrapUtils
                                     .getSerializedTestAppModelPath(Path.of(mavenProject().getBuild().getDirectory()));
                             ApplicationModelSerializer.serialize(appModel, serializedTestAppModelPath);
+
+                            String deployClasspath = appModel.getDependencies().stream()
+                                    .flatMap(dep -> dep.getResolvedPaths().stream())
+                                    .map(Path::toString)
+                                    .collect(Collectors.joining(File.pathSeparator));
+                            mavenProject().getProperties().setProperty("quarkus.test.deploy.classpath", deployClasspath);
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }

@@ -650,7 +650,7 @@ public interface RestClientsConfig {
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
-        Optional<Boolean> enableCompression();
+        Optional<Boolean> enableResponseDecompression();
 
         /**
          * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the

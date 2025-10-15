@@ -20,6 +20,7 @@ import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
+import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -163,6 +164,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                 return new Relocates(relocates);
             }
         });
+        builder.withInterceptors(new RenameConfigFallbackInterceptor(), new RenameConfigRelocateInterceptor());
         return builder;
     }
 
@@ -415,5 +417,39 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             return 20;
         }
         return -1;
+    }
+
+    private static class RenameConfigFallbackInterceptor extends FallbackConfigSourceInterceptor {
+        private static final Function<String, String> COMPRESSION_FALLBACK = name -> {
+            if (name.startsWith("quarkus.rest-client")) {
+                int index = name.indexOf(".enable-response-decompression");
+                if (index == -1) { // not the property we care about
+                    return name;
+                }
+                return name.substring(0, index) + ".enable-compression";
+            }
+            return name;
+        };
+
+        public RenameConfigFallbackInterceptor() {
+            super(COMPRESSION_FALLBACK);
+        }
+    }
+
+    private static class RenameConfigRelocateInterceptor extends RelocateConfigSourceInterceptor {
+        private static final Function<String, String> COMPRESSION_RELOCATION = name -> {
+            if (name.startsWith("quarkus.rest-client")) {
+                int index = name.indexOf(".enable-compression");
+                if (index == -1) { // not the property we care about
+                    return name;
+                }
+                return name.substring(0, index) + ".enable-response-decompression";
+            }
+            return name;
+        };
+
+        public RenameConfigRelocateInterceptor() {
+            super(COMPRESSION_RELOCATION);
+        }
     }
 }

@@ -66,6 +66,12 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     @Parameter(property = "bomVersion", required = false)
     String bomVersion;
 
+    /**
+     * Whether to refresh the local extension catalog cache before searching for the recommended Quarkus extension versions
+     */
+    @Parameter(property = "refresh", defaultValue = "false")
+    boolean refresh;
+
     @Component
     QuarkusWorkspaceProvider workspaceProvider;
 
@@ -136,14 +142,21 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     protected ExtensionCatalogResolver getExtensionCatalogResolver() throws MojoExecutionException {
-        if (catalogResolver == null) {
-            try {
-                catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                        ? QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver(), getMessageWriter())
-                        : ExtensionCatalogResolver.empty();
-            } catch (RegistryResolutionException e) {
-                throw new MojoExecutionException("Failed to initialize Quarkus extension resolver", e);
+        return catalogResolver == null ? catalogResolver = initExtensionCatalogResolver() : catalogResolver;
+    }
+
+    private ExtensionCatalogResolver initExtensionCatalogResolver() throws MojoExecutionException {
+        if (!QuarkusProjectHelper.isRegistryClientEnabled()) {
+            return ExtensionCatalogResolver.empty();
+        }
+        final ExtensionCatalogResolver catalogResolver;
+        try {
+            catalogResolver = QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver(), getMessageWriter());
+            if (refresh) {
+                catalogResolver.clearRegistryCache();
             }
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException("Failed to initialize Quarkus extension resolver", e);
         }
         return catalogResolver;
     }

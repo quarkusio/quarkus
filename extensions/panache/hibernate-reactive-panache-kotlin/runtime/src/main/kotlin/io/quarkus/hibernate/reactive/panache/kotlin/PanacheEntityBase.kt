@@ -28,7 +28,7 @@ interface PanacheEntityBase {
      */
     @CheckReturnValue
     fun flush(): Uni<Void> {
-        return INSTANCE.flush()
+        return INSTANCE.flush(this)
     }
 
     /**
@@ -42,7 +42,7 @@ interface PanacheEntityBase {
     @Suppress("UNCHECKED_CAST")
     @CheckReturnValue
     fun <T : PanacheEntityBase> persistAndFlush(): Uni<T> {
-        return INSTANCE.persist(this).flatMap { INSTANCE.flush() }.map { this as T }
+        return INSTANCE.persist(this).flatMap { INSTANCE.flush(this) }.map { this as T }
     }
 
     /**

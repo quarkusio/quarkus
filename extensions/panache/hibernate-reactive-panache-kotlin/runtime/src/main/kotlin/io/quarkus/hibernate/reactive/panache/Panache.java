@@ -8,15 +8,22 @@ import java.util.function.Supplier;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
+import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Utility class for Panache.
+ * @deprecated
+ *             This class is a copy of the original {@code io.quarkus.hibernate.reactive.panache.Panache} class
+ *             from the Java hibernate-orm-panache module.
  *
- * @author Stéphane Épardaud
+ *             Since this Kotlin module no longer depends on the Java module, there are now two copies of this class:
+ *             one under {@code io.quarkus.hibernate.reactive.panache.kotlin.Panache}, which you should use,
+ *             and this one, which is provided only to maintain backward compatibility.
+ *
+ *             This class will be removed in the future.
  */
+@Deprecated(since = "3.30.0")
 public class Panache {
 
     /**
@@ -92,7 +99,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Object... params) {
-        return JpaOperations.INSTANCE.executeUpdate(query, params);
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params);
     }
 
     /**
@@ -103,7 +110,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
-        return JpaOperations.INSTANCE.executeUpdate(query, params);
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params);
     }
 
     /**
@@ -114,7 +121,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
-        return JpaOperations.INSTANCE.executeUpdate(query, params.map());
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params.map());
     }
 
     /**

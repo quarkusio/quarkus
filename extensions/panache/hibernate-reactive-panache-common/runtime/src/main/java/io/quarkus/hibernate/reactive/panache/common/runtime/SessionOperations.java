@@ -1,5 +1,11 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -13,7 +19,8 @@ import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.impl.LazyValue;
+import io.quarkus.arc.impl.ComputingCache;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -26,31 +33,38 @@ public final class SessionOperations {
 
     private static final String ERROR_MSG = "Hibernate Reactive Panache requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
 
-    private static final LazyValue<Mutiny.SessionFactory> SESSION_FACTORY = new LazyValue<>(
-            new Supplier<Mutiny.SessionFactory>() {
-                @Override
-                public SessionFactory get() {
-                    // Note that Mutiny.SessionFactory is @ApplicationScoped bean - it's safe to use the cached client proxy
-                    Mutiny.SessionFactory sessionFactory = Arc.container().instance(Mutiny.SessionFactory.class).get();
-                    if (sessionFactory == null) {
-                        throw new IllegalStateException("Mutiny.SessionFactory bean not found");
-                    }
-                    return sessionFactory;
-                }
-            });
+    private static final ComputingCache<String, Key<Mutiny.Session>> SESSION_KEY_MAP = new ComputingCache<>(
+            k -> createSessionKey(k));
+    private static final ComputingCache<String, Mutiny.SessionFactory> SESSION_FACTORY_MAP = new ComputingCache<>(
+            k -> createSessionFactory(k));
 
-    private static final LazyValue<Key<Mutiny.Session>> SESSION_KEY = new LazyValue<>(
-            new Supplier<Key<Mutiny.Session>>() {
+    private static SessionFactory createSessionFactory(String persistenceunitname) {
+        SessionFactory sessionFactory;
 
-                @Override
-                public Key<Session> get() {
-                    Implementor implementor = (Implementor) ClientProxy.unwrap(SESSION_FACTORY.get());
-                    return new BaseKey<>(Mutiny.Session.class, implementor.getUuid());
-                }
-            });
+        // Note that Mutiny.SessionFactory is @ApplicationScoped bean - it's safe to use the cached client proxy
+        if (DEFAULT_PERSISTENCE_UNIT_NAME.equals(persistenceunitname)) {
+            sessionFactory = Arc.container().instance(SessionFactory.class).get();
+        } else {
+            sessionFactory = Arc.container().instance(SessionFactory.class,
+                    new PersistenceUnit.PersistenceUnitLiteral(persistenceunitname)).get();
+        }
 
-    // This key is used to indicate that a reactive session should be opened lazily (when needed) in the current vertx context
+        if (sessionFactory == null) {
+            throw new IllegalStateException("Mutiny.SessionFactory bean not found");
+        }
+        return sessionFactory;
+    }
+
+    private static Key<Session> createSessionKey(String persistenceUnitName) {
+        Implementor implementor = (Implementor) ClientProxy
+                .unwrap(SESSION_FACTORY_MAP.getValue(persistenceUnitName));
+        return new BaseKey<>(Session.class, implementor.getUuid());
+    }
+
+    // This key is used to indicate that reactive sessions should be opened lazily/on-demand (when needed) in the current vertx context
     private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
+
+    // This key is used to keep track of the Set<String> sessions created on demand
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
 
     /**
@@ -60,7 +74,7 @@ public final class SessionOperations {
      * @param <T>
      * @param work
      * @return a new {@link Uni}
-     * @see #getSession()
+     * @see #getSession(String)
      */
     static <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();
@@ -73,8 +87,19 @@ public final class SessionOperations {
             // perform the work and eventually close the session and remove the key
             return work.get().eventually(() -> {
                 context.removeLocal(SESSION_ON_DEMAND_KEY);
-                context.removeLocal(SESSION_ON_DEMAND_OPENED_KEY);
-                return closeSession();
+                Set<String> onDemandSessionCreated = context.getLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                // Close only the sessions that have been created lazily (onDemand) in withSession
+                // See this.getSession(String persistenceUnitName)
+                if (onDemandSessionCreated != null) {
+                    List<Uni<Void>> closedSessions = new ArrayList<>();
+                    for (String s : onDemandSessionCreated) {
+                        closedSessions.add(closeSession(s));
+                    }
+                    context.removeLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                    return Uni.combine().all().unis(closedSessions).discardItems();
+                } else {
+                    return Uni.createFrom().voidItem();
+                }
             });
         }
     }
@@ -87,7 +112,18 @@ public final class SessionOperations {
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return withSession(s -> s.withTransaction(t -> work.get()));
+        return withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> s.withTransaction(t -> work.get()));
+    }
+
+    /**
+     * Performs the work in the scope of a reactive transaction. An existing session is reused if possible.
+     *
+     * @param <T>
+     * @param work
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
+        return withSession(persistenceUnitName, s -> s.withTransaction(t -> work.get()));
     }
 
     /**
@@ -98,31 +134,45 @@ public final class SessionOperations {
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work) {
-        return withSession(s -> s.withTransaction(work));
+        return withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> s.withTransaction(work));
     }
 
     /**
-     * Performs the work in the scope of a reactive session. An existing session is reused if possible.
+     * Performs the work in the scope of a named reactive session.
+     * An existing session is reused if possible.
      *
      * @param <T>
+     * @param persistenceUnitName
      * @param work
      * @return a new {@link Uni}
      */
-    public static <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
+    public static <T> Uni<T> withSession(String persistenceUnitName, Function<Session, Uni<T>> work) {
         Context context = vertxContext();
-        Key<Mutiny.Session> key = getSessionKey();
+        Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
         Mutiny.Session current = context.getLocal(key);
         if (current != null && current.isOpen()) {
             // reactive session exists - reuse this session
             return work.apply(current);
         } else {
             // reactive session does not exist - open a new one and close it when the returned Uni completes
-            return getSessionFactory()
+            return SESSION_FACTORY_MAP.getValue(persistenceUnitName)
                     .openSession()
                     .invoke(s -> context.putLocal(key, s))
                     .chain(work::apply)
-                    .eventually(SessionOperations::closeSession);
+                    .eventually(() -> closeSession(persistenceUnitName));
         }
+    }
+
+    /**
+     * Performs the work in the scope of the default reactive session.
+     * An existing session is reused if possible.
+     *
+     * @param <T>
+     * @param work
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withSession(Function<Session, Uni<T>> work) {
+        return withSession(DEFAULT_PERSISTENCE_UNIT_NAME, work);
     }
 
     /**
@@ -140,22 +190,34 @@ public final class SessionOperations {
      * @return the {@link Mutiny.Session}
      */
     public static Uni<Mutiny.Session> getSession() {
+        return getSession(DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
+
+    public static Uni<Mutiny.Session> getSession(String persistenceUnitName) {
         Context context = vertxContext();
-        Key<Mutiny.Session> key = getSessionKey();
+        Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
         Mutiny.Session current = context.getLocal(key);
         if (current != null && current.isOpen()) {
             // reuse the existing reactive session
             return Uni.createFrom().item(current);
         } else {
             if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
-                if (context.getLocal(SESSION_ON_DEMAND_OPENED_KEY) != null) {
-                    // a new reactive session is opened in a previous stage
-                    return Uni.createFrom().item(SessionOperations::getCurrentSession);
+                // This will keep track of all on-demand opened sessions
+                Set<String> onDemandSessionsCreated = context.getLocal(SESSION_ON_DEMAND_OPENED_KEY);
+                if (onDemandSessionsCreated == null) {
+                    onDemandSessionsCreated = new HashSet<>();
+                    context.putLocal(SESSION_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
+                }
+
+                if (onDemandSessionsCreated.contains(persistenceUnitName)) {
+                    // a new reactive session is opened in a previous stage, reuse it
+                    return Uni.createFrom().item(() -> getCurrentSession(persistenceUnitName));
                 } else {
                     // open a new reactive session and store it in the vertx duplicated context
                     // the context was marked as "lazy" which means that the session will be eventually closed
-                    context.putLocal(SESSION_ON_DEMAND_OPENED_KEY, true);
-                    return getSessionFactory().openSession().invoke(s -> context.putLocal(key, s));
+                    onDemandSessionsCreated.add(persistenceUnitName);
+                    return SESSION_FACTORY_MAP.getValue(persistenceUnitName).openSession()
+                            .invoke(s -> context.putLocal(key, s));
                 }
             } else {
                 throw new IllegalStateException("No current Mutiny.Session found"
@@ -169,9 +231,9 @@ public final class SessionOperations {
     /**
      * @return the current reactive session stored in the context, or {@code null} if no session exists
      */
-    public static Mutiny.Session getCurrentSession() {
+    public static Mutiny.Session getCurrentSession(String persistenceUnitName) {
         Context context = vertxContext();
-        Mutiny.Session current = context.getLocal(getSessionKey());
+        Mutiny.Session current = context.getLocal(SESSION_KEY_MAP.getValue(persistenceUnitName));
         if (current != null && current.isOpen()) {
             return current;
         }
@@ -194,9 +256,9 @@ public final class SessionOperations {
         }
     }
 
-    static Uni<Void> closeSession() {
+    static Uni<Void> closeSession(String persistenceUnitName) {
         Context context = vertxContext();
-        Key<Mutiny.Session> key = getSessionKey();
+        Key<Mutiny.Session> key = SESSION_KEY_MAP.getValue(persistenceUnitName);
         Mutiny.Session current = context.getLocal(key);
         if (current != null && current.isOpen()) {
             return current.close().eventually(() -> context.removeLocal(key));
@@ -204,16 +266,8 @@ public final class SessionOperations {
         return Uni.createFrom().voidItem();
     }
 
-    static Key<Mutiny.Session> getSessionKey() {
-        return SESSION_KEY.get();
-    }
-
-    static Mutiny.SessionFactory getSessionFactory() {
-        return SESSION_FACTORY.get();
-    }
-
     static void clear() {
-        SESSION_FACTORY.clear();
-        SESSION_KEY.clear();
+        SESSION_FACTORY_MAP.clear();
+        SESSION_KEY_MAP.clear();
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.kotlin
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
+import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations.implementationInjectionMissing
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
@@ -24,7 +24,7 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
      *
      * @return the current [Mutiny.Session]
      */
-    fun getSession() = AbstractJpaOperations.getSession()
+    @GenerateBridge fun getSession(): Uni<Mutiny.Session> = throw implementationInjectionMissing()
 
     /**
      * Find an entity of this type by ID.
@@ -400,5 +400,5 @@ interface PanacheCompanionBase<Entity : PanacheEntityBase, Id : Any> {
     @GenerateBridge
     fun update(query: String, params: Parameters): Uni<Int> = injectionMissing()
 
-    private fun injectionMissing(): Nothing = throw INSTANCE.implementationInjectionMissing()
+    private fun injectionMissing(): Nothing = throw implementationInjectionMissing()
 }

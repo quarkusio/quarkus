@@ -126,19 +126,19 @@ public class DB2PoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config);
-        Supplier<Future<DB2ConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(db2ConnectOptions),
+        Supplier<Future<DB2ConnectOptions>> databasesSupplier = toDatabasesSupplier(List.of(db2ConnectOptions),
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(Vertx vertx, List<DB2ConnectOptions> db2ConnectOptionsList,
+    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(List<DB2ConnectOptions> db2ConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<DB2ConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, db2ConnectOptionsList,
+            supplier = new ConnectOptionsSupplier<>(credentialsProvider, name, db2ConnectOptionsList,
                     DB2ConnectOptions::new);
         } else {
             supplier = Utils.roundRobinSupplier(db2ConnectOptionsList);
@@ -212,7 +212,7 @@ public class DB2PoolRecorder {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             if (user != null) {

@@ -21,7 +21,7 @@ public class CredentialProviders {
         }
         if (config.name().isPresent()) {
             CredentialsProvider provider = lookup(config.beanName().orElse(null));
-            Map<String, String> credentials = provider.getCredentials(config.name().get());
+            Map<String, String> credentials = provider.getCredentialsAsync(config.name().get()).await().indefinitely();
             return Optional.ofNullable(credentials.get(config.passwordKey()));
         }
         return Optional.empty();
@@ -34,7 +34,7 @@ public class CredentialProviders {
         }
         if (config.name().isPresent()) {
             CredentialsProvider provider = lookup(config.beanName().orElse(null));
-            Map<String, String> credentials = provider.getCredentials(config.name().get());
+            Map<String, String> credentials = provider.getCredentialsAsync(config.name().get()).await().indefinitely();
             return Optional.ofNullable(credentials.get(config.aliasPasswordKey()));
         }
         return Optional.empty();
@@ -47,7 +47,7 @@ public class CredentialProviders {
         }
         if (config.name().isPresent()) {
             CredentialsProvider provider = lookup(config.beanName().orElse(null));
-            Map<String, String> credentials = provider.getCredentials(config.name().get());
+            Map<String, String> credentials = provider.getCredentialsAsync(config.name().get()).await().indefinitely();
             return Optional.ofNullable(credentials.get(config.passwordKey()));
         }
         return Optional.empty();

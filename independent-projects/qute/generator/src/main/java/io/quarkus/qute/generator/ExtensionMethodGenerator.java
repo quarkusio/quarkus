@@ -13,6 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.creator.ClassCreator;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.MethodSignatureBuilder;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
@@ -240,6 +242,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
 
             implementGetNamespace(cc, namespace);
             implementGetPriority(cc, priority);
+            implementGetSupportedMethods(cc, extensionMethods);
 
             cc.method("resolve", mc -> {
                 mc.returning(CompletionStage.class);
@@ -430,6 +433,38 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
             mc.returning(int.class);
             mc.body(bc -> bc.return_(priority));
         });
+    }
+
+    private void implementGetSupportedMethods(ClassCreator resolver, final List<ExtensionMethodInfo> extensionMethods) {
+        resolver.method("getSupportedMethods", mc -> {
+            mc.returning(Set.class);
+            mc.body(bc -> {
+                LocalVar set = bc.localVar("set", bc.new_(HashSet.class));
+                for (ExtensionMethodInfo extensionMethod : extensionMethods) {
+                    var method = extensionMethod.method();
+                    if (!extensionMethod.matchName().isEmpty()) {
+                        addSupportedMethod(extensionMethod.matchName(), method, set, bc);
+                    } else if (!extensionMethod.matchNames().isEmpty()) {
+                        for (String name : extensionMethod.matchNames()) {
+                            addSupportedMethod(name, method, set, bc);
+                        }
+                    } else if (!extensionMethod.matchRegex().isEmpty()) {
+                        addSupportedMethod(extensionMethod.matchRegex(), method, set, bc);
+                    } else {
+                        addSupportedMethod(method.name(), method, set, bc);
+                    }
+                }
+                bc.return_(set);
+            });
+        });
+    }
+
+    private void addSupportedMethod(String name, MethodInfo methodInfo, LocalVar set, BlockCreator bc) {
+        MethodSignatureBuilder signature = new MethodSignatureBuilder(name, methodInfo.parametersCount(), true);
+        for (int i = 0; i < methodInfo.parametersCount(); i++) {
+            signature.addParam(methodInfo.parameterName(i));
+        }
+        bc.invokeVirtual(Descriptors.SET_ADD, set, Const.of(signature.toString()));
     }
 
     private void implementResolve(ClassCreator valueResolver, ClassInfo declaringClass, MethodInfo method, String matchName,

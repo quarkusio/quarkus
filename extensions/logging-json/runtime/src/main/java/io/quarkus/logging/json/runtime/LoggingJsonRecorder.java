@@ -1,5 +1,14 @@
 package io.quarkus.logging.json.runtime;
 
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.DATA_STREAM_TYPE;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.ECS_VERSION;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SERVICE_ENVIRONMENT;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SERVICE_NAME;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SERVICE_VERSION;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SPAN_ID;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE_SAMPLED;
+
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -17,15 +26,19 @@ import org.jboss.logmanager.formatters.StructuredFormatter.Key;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig.Type;
 import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig;
+import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class LoggingJsonRecorder {
     private final RuntimeValue<JsonLogConfig> runtimeConfig;
+    private final RuntimeValue<ApplicationConfig> applicationConfig;
 
-    public LoggingJsonRecorder(final RuntimeValue<JsonLogConfig> runtimeConfig) {
+    public LoggingJsonRecorder(final RuntimeValue<JsonLogConfig> runtimeConfig,
+            final RuntimeValue<ApplicationConfig> applicationConfig) {
         this.runtimeConfig = runtimeConfig;
+        this.applicationConfig = applicationConfig;
     }
 
     public RuntimeValue<Optional<Formatter>> initializeConsoleJsonLogging() {
@@ -55,6 +68,8 @@ public class LoggingJsonRecorder {
 
         if (config.logFormat() == JsonConfig.LogFormat.ECS) {
             overridableJsonConfig = addEcsFieldOverrides(overridableJsonConfig);
+        } else if (config.logFormat() == JsonConfig.LogFormat.GCP) {
+            overridableJsonConfig = addGCPFieldOverrides(overridableJsonConfig);
         }
 
         return getDefaultFormatter(config, overridableJsonConfig);
@@ -71,6 +86,10 @@ public class LoggingJsonRecorder {
             formatter = new JsonFormatter();
         } else {
             formatter = new JsonFormatter(overridableJsonConfig.keyOverrides());
+        }
+        formatter.setLogFormat(config.logFormat());
+        if (JsonConfig.LogFormat.GCP == config.logFormat()) {
+            formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
         }
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
@@ -108,16 +127,30 @@ public class LoggingJsonRecorder {
         excludedKeys.add(Key.RECORD.getKey());
 
         Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());
-        additionalFields.computeIfAbsent("ecs.version", k -> new AdditionalField("1.12.2", Type.STRING));
-        additionalFields.computeIfAbsent("data_stream.type", k -> new AdditionalField("logs", Type.STRING));
+        additionalFields.computeIfAbsent(ECS_VERSION.getKey(), k -> new AdditionalField("1.12.2", Type.STRING));
+        additionalFields.computeIfAbsent(DATA_STREAM_TYPE.getKey(), k -> new AdditionalField("logs", Type.STRING));
 
         Config quarkusConfig = ConfigProvider.getConfig();
         quarkusConfig.getOptionalValue("quarkus.application.name", String.class).ifPresent(
-                s -> additionalFields.computeIfAbsent("service.name", k -> new AdditionalField(s, Type.STRING)));
+                s -> additionalFields.computeIfAbsent(SERVICE_NAME.getKey(), k -> new AdditionalField(s, Type.STRING)));
         quarkusConfig.getOptionalValue("quarkus.application.version", String.class).ifPresent(
-                s -> additionalFields.computeIfAbsent("service.version", k -> new AdditionalField(s, Type.STRING)));
+                s -> additionalFields.computeIfAbsent(SERVICE_VERSION.getKey(), k -> new AdditionalField(s, Type.STRING)));
         quarkusConfig.getOptionalValue("quarkus.profile", String.class).ifPresent(
-                s -> additionalFields.computeIfAbsent("service.environment", k -> new AdditionalField(s, Type.STRING)));
+                s -> additionalFields.computeIfAbsent(SERVICE_ENVIRONMENT.getKey(), k -> new AdditionalField(s, Type.STRING)));
+
+        return new OverridableJsonConfig(PropertyValues.mapToString(keyOverrides), excludedKeys, additionalFields);
+    }
+
+    private OverridableJsonConfig addGCPFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
+        EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
+        keyOverrides.putIfAbsent(Key.LEVEL, "severity");
+
+        Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
+        Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());
+        // data comes from the MDC context and is only available in the JsonFormater
+        additionalFields.computeIfAbsent(TRACE.getKey(), k -> new AdditionalField("", Type.STRING));
+        additionalFields.computeIfAbsent(SPAN_ID.getKey(), k -> new AdditionalField("", Type.STRING));
+        additionalFields.computeIfAbsent(TRACE_SAMPLED.getKey(), k -> new AdditionalField("", Type.STRING));
 
         return new OverridableJsonConfig(PropertyValues.mapToString(keyOverrides), excludedKeys, additionalFields);
     }

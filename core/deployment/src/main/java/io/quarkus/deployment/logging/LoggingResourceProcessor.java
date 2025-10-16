@@ -91,7 +91,7 @@ import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.QuarkusCommand;
@@ -232,12 +232,12 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     void miscSetup(
-            Consumer<RuntimeReinitializedClassBuildItem> runtimeInit,
+            Consumer<RuntimeInitializedClassBuildItem> runtimeInit,
             Consumer<NativeImageSystemPropertyBuildItem> systemProp,
             Consumer<ServiceProviderBuildItem> provider) {
-        runtimeInit.accept(new RuntimeReinitializedClassBuildItem(ConsoleHandler.class.getName()));
-        runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.ref.References$ReaperThread"));
-        runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.os.Process"));
+        runtimeInit.accept(new RuntimeInitializedClassBuildItem(ConsoleHandler.class.getName()));
+        runtimeInit.accept(new RuntimeInitializedClassBuildItem("io.smallrye.common.ref.References$ReaperThread"));
+        runtimeInit.accept(new RuntimeInitializedClassBuildItem("io.smallrye.common.os.Process"));
         systemProp
                 .accept(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
         provider.accept(

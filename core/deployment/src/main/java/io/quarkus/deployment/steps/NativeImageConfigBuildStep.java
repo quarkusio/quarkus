@@ -23,7 +23,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
@@ -100,13 +99,13 @@ class NativeImageConfigBuildStep {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void reinitHostNameUtil(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitClass) {
+    void reinitHostNameUtil(BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitClass) {
         // certain libraries like JBoss logging internally use this class to determine the hostname
         // of the system. This HostName class computes and stores the hostname as a static field in a class,
         // so we reinitialize this to re-compute the field (and other related fields) during native application's
         // runtime
-        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
-        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("io.smallrye.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeInitializedClassBuildItem("org.wildfly.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeInitializedClassBuildItem("io.smallrye.common.net.HostName"));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

@@ -22,7 +22,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.opentelemetry.runtime.graal.UnsignedFeature;
 import io.quarkus.opentelemetry.runtime.metrics.cdi.MetricsProducer;
@@ -103,9 +103,9 @@ public class MetricProcessor {
     }
 
     @BuildStep
-    void runtimeInit(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) {
+    void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeReinitialized) {
         runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem(
+                new RuntimeInitializedClassBuildItem(
                         "io.opentelemetry.instrumentation.runtimemetrics.java8.internal.CpuMethods"));
     }
 }

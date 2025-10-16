@@ -8,7 +8,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
 public class FlywayAlwaysEnabledProcessor {
@@ -22,8 +22,8 @@ public class FlywayAlwaysEnabledProcessor {
      * Reinitialize {@code InsertRowLock} to avoid using a cached seed when invoking {@code getNextRandomString}
      */
     @BuildStep
-    public RuntimeReinitializedClassBuildItem reinitInsertRowLock() {
-        return new RuntimeReinitializedClassBuildItem(
+    public RuntimeInitializedClassBuildItem reinitInsertRowLock() {
+        return new RuntimeInitializedClassBuildItem(
                 "org.flywaydb.core.internal.database.InsertRowLock");
     }
 

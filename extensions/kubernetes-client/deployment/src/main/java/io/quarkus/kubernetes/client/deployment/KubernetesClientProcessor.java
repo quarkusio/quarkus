@@ -43,7 +43,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
@@ -85,9 +85,9 @@ public class KubernetesClientProcessor {
     }
 
     @BuildStep
-    public void nativeImageSupport(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeInitializedClassProducer) {
+    public void nativeImageSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
         runtimeInitializedClassProducer
-                .produce(new RuntimeReinitializedClassBuildItem(io.fabric8.kubernetes.client.utils.Utils.class.getName()));
+                .produce(new RuntimeInitializedClassBuildItem(io.fabric8.kubernetes.client.utils.Utils.class.getName()));
     }
 
     @BuildStep

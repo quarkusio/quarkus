@@ -89,7 +89,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -200,7 +200,7 @@ public class SecurityProcessor {
     @BuildStep
     void prepareBouncyCastleProviders(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflection,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitialized,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) throws Exception {
         Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
@@ -212,7 +212,7 @@ public class SecurityProcessor {
                     ReflectiveClassBuildItem.builder("org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers")
                             .methods().fields().build());
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem(
+                    .produce(new RuntimeInitializedClassBuildItem(
                             "org.bouncycastle.jsse.provider.DefaultSSLContextSpi$LazyManagers"));
             prepareBouncyCastleProvider(curateOutcomeBuildItem, reflection, runtimeReInitialized,
                     bouncyCastleJsseProvider.get().isInFipsMode());
@@ -227,7 +227,7 @@ public class SecurityProcessor {
 
     private static void prepareBouncyCastleProvider(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflection,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized, boolean isFipsMode) {
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitialized, boolean isFipsMode) {
         reflection
                 .produce(
                         ReflectiveClassBuildItem
@@ -253,56 +253,56 @@ public class SecurityProcessor {
                     .build());
         }
         runtimeReInitialized
-                .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
+                .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
         if (!isFipsMode) {
             reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.jcajce.provider.drbg.DRBG$Default")
                     .methods().fields().build());
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
             // URLSeededEntropySourceProvider.seedStream may contain a reference to a 'FileInputStream' which includes
             // references to FileDescriptors which aren't allowed in the image heap
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem(
+                    .produce(new RuntimeInitializedClassBuildItem(
                             "org.bouncycastle.jcajce.provider.drbg.DRBG$URLSeededEntropySourceProvider"));
         } else {
             reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.crypto.general.AES")
                     .methods().fields().build());
-            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
+            runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.general.AES"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem(
+                    .produce(new RuntimeInitializedClassBuildItem(
                             "org.bouncycastle.crypto.asymmetric.NamedECDomainParameters"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.asymmetric.CustomNamedCurves"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.asymmetric.CustomNamedCurves"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.ua.DSTU4145NamedCurves"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.ua.DSTU4145NamedCurves"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.sec.SECNamedCurves"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.sec.SECNamedCurves"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.cryptopro.ECGOST3410NamedCurves"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.cryptopro.ECGOST3410NamedCurves"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.x9.X962NamedCurves"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.x9.X962NamedCurves"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.x9.ECNamedCurveTable"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.x9.ECNamedCurveTable"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.anssi.ANSSINamedCurves"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.anssi.ANSSINamedCurves"));
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.asn1.teletrust.TeleTrusTNamedCurves"));
-            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.spec.ECUtil"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.asn1.teletrust.TeleTrusTNamedCurves"));
+            runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.jcajce.spec.ECUtil"));
             // start of BCFIPS 2.0
             // started thread during initialization
             runtimeReInitialized
-                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.util.dispose.DisposalDaemon"));
+                    .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.util.dispose.DisposalDaemon"));
             // secure randoms
-            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.fips.FipsDRBG"));
-            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.fips.Utils"));
+            runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.FipsDRBG"));
+            runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.Utils"));
             // re-detect JNI library availability
-            runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.fips.NativeLoader"));
+            runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.fips.NativeLoader"));
         }
 
         // Reinitialize class because it embeds a java.lang.ref.Cleaner instance in the image heap
-        runtimeReInitialized.produce(new RuntimeReinitializedClassBuildItem("sun.security.pkcs11.P11Util"));
+        runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("sun.security.pkcs11.P11Util"));
     }
 
     @BuildStep

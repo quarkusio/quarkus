@@ -9,7 +9,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  * @deprecated Starting with Mandrel/GraalVM 23.1 for JDK 21 this is functionally the same with
  *             {@link RuntimeInitializedClassBuildItem}.
  */
-@Deprecated(since = "3.18")
+@Deprecated(since = "3.18", forRemoval = true)
 public final class RuntimeReinitializedClassBuildItem extends MultiBuildItem {
 
     private final String className;

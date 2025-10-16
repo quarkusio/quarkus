@@ -77,6 +77,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private final Deque<WorkspaceModulePom> moduleQueue = new ConcurrentLinkedDeque<>();
+    // Map key is the normalized absolute Path to the module directory
     private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
     private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
     private final Consumer<WorkspaceModulePom> modelProcessor;
@@ -194,7 +195,12 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 currentProject = project;
             }
             for (var module : project.getEffectiveModel().getModules()) {
-                addModulePom(project.getDir().resolve(module).resolve(POM_XML));
+                Path modulePath = project.getDir().resolve(module);
+                if (Files.isDirectory(modulePath)) {
+                    addModulePom(modulePath.resolve(POM_XML));
+                } else {
+                    addModulePom(modulePath);
+                }
             }
         };
     }
@@ -250,9 +256,19 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         }
     }
 
-    private void queueModule(Path dir) {
-        if (!loadedPoms.containsKey(dir)) {
-            moduleQueue.push(new WorkspaceModulePom(dir.resolve(POM_XML)));
+    private void queueModule(Path module) {
+        Path normalizedModuleDir = module.normalize().toAbsolutePath();
+        final Path pom;
+        if (Files.isDirectory(normalizedModuleDir)) {
+            pom = normalizedModuleDir.resolve(POM_XML);
+        } else {
+            // it is valid in Maven to point directly to the POM file in the <module> so we need to take that case into account
+            pom = normalizedModuleDir;
+            normalizedModuleDir = normalizedModuleDir.getParent() != null ? normalizedModuleDir.getParent() : getFsRootDir();
+        }
+
+        if (!loadedPoms.containsKey(normalizedModuleDir)) {
+            moduleQueue.push(new WorkspaceModulePom(pom));
         }
     }
 

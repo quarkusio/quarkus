@@ -249,6 +249,15 @@ class BuildIT extends MojoTestBase {
         build();
     }
 
+    @Test
+    void testPomReference() throws Exception {
+        testDir = initProject("projects/multimodule-pom-reference", "projects/project-with-pom-reference");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running
+                .execute(List.of("clean", "package", "-Dquarkus.analytics.disabled=true"), Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+    }
+
     private void launch() throws IOException {
         launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
     }

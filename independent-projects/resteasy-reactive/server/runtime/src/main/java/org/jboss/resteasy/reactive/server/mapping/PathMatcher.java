@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.mapping;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -34,24 +35,28 @@ class PathMatcher<T> implements Dumpable {
      * @param path The relative path to match
      * @return The match match. This will never be null, however if none matched its value field will be
      */
-    PathMatch<T> match(String path) {
+    List<PathMatch<T>> match(String path) {
         int length = path.length();
         final int[] lengths = this.lengths;
+        ArrayList<PathMatch<T>> matches = new ArrayList<>(1);
         for (int i = 0; i < lengths.length; ++i) {
             int pathLength = lengths[i];
             if (pathLength == length) {
                 SubstringMap.SubstringMatch<T> next = paths.get(path, length);
                 if (next != null) {
-                    return new PathMatch<>(path, "", next.getValue());
+                    matches.add(new PathMatch<>(path, "", next.getValue()));
                 }
             } else if (pathLength < length) {
                 SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
                 if (next != null) {
-                    return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
+                    matches.add(new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue()));
                 }
             }
         }
-        return defaultMatch(path);
+        if (matches.isEmpty()) {
+            matches.add(defaultMatch(path));
+        }
+        return matches;
     }
 
     PathMatch<T> defaultMatch(String path) {

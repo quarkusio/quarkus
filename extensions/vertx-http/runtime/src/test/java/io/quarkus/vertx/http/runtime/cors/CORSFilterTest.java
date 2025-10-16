@@ -38,12 +38,11 @@ public class CORSFilterTest {
     @Test
     public void isOriginAllowedByRegexTest() {
         Assertions.assertFalse(isOriginAllowedByRegex(Collections.emptyList(), "http://locahost:8080"));
-        Assertions.assertEquals(
-                parseAllowedOriginsRegex(Optional.of(Collections.singletonList("http://localhost:8080"))).size(),
-                0);
+        Assertions.assertEquals(0,
+                parseAllowedOriginsRegex(Optional.of(Collections.singletonList("http://localhost:8080"))).size());
         List<Pattern> regexList = parseAllowedOriginsRegex(
                 Optional.of(Collections.singletonList("/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/")));
-        Assertions.assertEquals(regexList.size(), 1);
+        Assertions.assertEquals(1, regexList.size());
         Assertions.assertTrue(isOriginAllowedByRegex(regexList, "https://abc-123.app.mydomain.com"));
         Assertions.assertFalse(isOriginAllowedByRegex(regexList, "https://abc-123app.mydomain.com"));
     }

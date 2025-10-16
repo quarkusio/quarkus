@@ -46,7 +46,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
     }
 
     public ConfigDescriptionsManager(final List<ConfigDescription> configDescriptions, Set<String> devServicesProperties) {
-        this.configDescriptions = Collections.unmodifiableList(new ArrayList<>(configDescriptions));
+        this.configDescriptions = List.copyOf(configDescriptions);
         this.devServicesProperties = devServicesProperties;
         currentCl = Thread.currentThread().getContextClassLoader();
     }

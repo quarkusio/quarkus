@@ -8,6 +8,7 @@ import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -314,9 +315,7 @@ public final class QuarkusHttpHeaders extends HttpHeaders implements MultiMap {
 
     @Override
     public QuarkusHttpHeaders clear() {
-        for (int i = 0; i < entries.length; i++) {
-            entries[i] = null;
-        }
+        Arrays.fill(entries, null);
         head.before = head.after = head;
         return this;
     }

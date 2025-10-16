@@ -36,7 +36,7 @@ public class QuotingExchangeAttribute implements ExchangeAttribute {
                 buffer.append(svalue.substring(i));
                 i = svalue.length();
             } else {
-                buffer.append(svalue.substring(i, j + 1));
+                buffer.append(svalue, i, j + 1);
                 buffer.append('"');
                 i = j + 2;
             }

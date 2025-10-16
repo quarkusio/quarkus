@@ -62,6 +62,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.mysqlclient.MySQLPool;
+import io.vertx.mysqlclient.spi.MySQLDriver;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveMySQLClientProcessor {
@@ -153,6 +154,11 @@ class ReactiveMySQLClientProcessor {
                 seen.put(qualifiersStr, true);
             }
         }
+    }
+
+    @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", MySQLDriver.class.getName()));
     }
 
     @BuildStep

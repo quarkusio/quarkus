@@ -468,9 +468,13 @@ public class DevServicesKubernetesProcessor {
                 return true;
             if (!(obj instanceof KubernetesDevServiceCfg other))
                 return false;
-            return devServicesEnabled == other.devServicesEnabled && flavor == other.flavor
-                    && Objects.equals(apiVersion, other.apiVersion) && overrideKubeconfig == other.overrideKubeconfig
-                    && shared == other.shared && Objects.equals(serviceName, other.serviceName)
+            return devServicesEnabled == other.devServicesEnabled
+                    && Objects.equals(imageName, other.imageName)
+                    && Objects.equals(flavor, other.flavor)
+                    && Objects.equals(apiVersion, other.apiVersion)
+                    && overrideKubeconfig == other.overrideKubeconfig
+                    && shared == other.shared
+                    && Objects.equals(serviceName, other.serviceName)
                     && Objects.equals(containerEnv, other.containerEnv);
         }
     }

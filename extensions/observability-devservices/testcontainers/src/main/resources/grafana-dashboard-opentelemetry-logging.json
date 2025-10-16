@@ -228,7 +228,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{service_name=~\"$service_name\"} | severity_text=~\"$log_level\" |~ \"(?i)$searchable_pattern\" | line_format \"{{date \\\"2006-01-02 15:04:05.000\\\" .__time__ | alignLeft 24}} {{alignLeft 30 .service_name}} {{upper .detected_level | alignLeft 9}} {{__line__}}\"",
+          "expr": "{service_name=~\"$service_name\"} | severity_text=~\"$log_level\" |~ \"(?i)$searchable_pattern\" | line_format \"{{date \\\"2006-01-02 15:04:05.000\\\" .__timestamp__ | alignLeft 24}} {{alignLeft 30 .service_name}} {{upper .detected_level | alignLeft 9}} {{__line__}}\"",
           "hide": false,
           "queryType": "range",
           "refId": "A"

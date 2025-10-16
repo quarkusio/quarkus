@@ -385,7 +385,6 @@ public final class HibernateReactiveProcessor {
                 explicitDbMinVersion,
                 dialectConfig,
                 dbKindDialectBuildItems,
-                persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
                 descriptor.getProperties()::setProperty,
                 storageEngineCollector);

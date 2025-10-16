@@ -112,7 +112,7 @@ public class NativeImageFeatureStep {
             }
         }
 
-        if (!runtimeInitializedClassBuildItems.isEmpty()) {
+        if (!runtimeInitializedClassBuildItems.isEmpty() || !runtimeReinitializedClassBuildItems.isEmpty()) {
             //  Class[] runtimeInitializedClasses()
             MethodCreator runtimeInitializedClasses = file
                     .getMethodCreator("runtimeInitializedClasses", Class[].class)
@@ -123,12 +123,22 @@ public class NativeImageFeatureStep {
                     ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
             ResultHandle classesArray = runtimeInitializedClasses.newArray(Class.class,
-                    runtimeInitializedClasses.load(runtimeInitializedClassBuildItems.size()));
+                    runtimeInitializedClasses
+                            .load(runtimeInitializedClassBuildItems.size() + runtimeReinitializedClassBuildItems.size()));
             for (int i = 0; i < runtimeInitializedClassBuildItems.size(); i++) {
                 TryBlock tc = runtimeInitializedClasses.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
                         tc.load(runtimeInitializedClassBuildItems.get(i).getClassName()), tc.load(false), cl);
+                tc.writeArrayValue(classesArray, i, clazz);
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            }
+            for (int i = 0; i < runtimeReinitializedClassBuildItems.size(); i++) {
+                TryBlock tc = runtimeInitializedClasses.tryBlock();
+                ResultHandle clazz = tc.invokeStaticMethod(
+                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                        tc.load(runtimeReinitializedClassBuildItems.get(i).getClassName()), tc.load(false), cl);
                 tc.writeArrayValue(classesArray, i, clazz);
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
@@ -158,33 +168,6 @@ public class NativeImageFeatureStep {
 
             ResultHandle packages = overallCatch.invokeStaticMethod(runtimeInitializedPackages.getMethodDescriptor());
             overallCatch.invokeStaticMethod(INITIALIZE_PACKAGES_AT_RUN_TIME, packages);
-        }
-
-        // hack in reinitialization of process info classes
-        if (!runtimeReinitializedClassBuildItems.isEmpty()) {
-            MethodCreator runtimeReinitializedClasses = file
-                    .getMethodCreator("runtimeReinitializedClasses", Class[].class)
-                    .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-
-            ResultHandle thisClass = runtimeReinitializedClasses.loadClassFromTCCL(GRAAL_FEATURE);
-            ResultHandle cl = runtimeReinitializedClasses.invokeVirtualMethod(
-                    ofMethod(Class.class, "getClassLoader", ClassLoader.class),
-                    thisClass);
-            ResultHandle classesArray = runtimeReinitializedClasses.newArray(Class.class,
-                    runtimeReinitializedClasses.load(runtimeReinitializedClassBuildItems.size()));
-            for (int i = 0; i < runtimeReinitializedClassBuildItems.size(); i++) {
-                TryBlock tc = runtimeReinitializedClasses.tryBlock();
-                ResultHandle clazz = tc.invokeStaticMethod(
-                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                        tc.load(runtimeReinitializedClassBuildItems.get(i).getClassName()), tc.load(false), cl);
-                tc.writeArrayValue(classesArray, i, clazz);
-                CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-            }
-            runtimeReinitializedClasses.returnValue(classesArray);
-
-            ResultHandle classes = overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
-            overallCatch.invokeStaticMethod(INITIALIZE_CLASSES_AT_RUN_TIME, classes);
         }
 
         // Ensure registration of fields being accessed through unsafe is done last to ensure that the class

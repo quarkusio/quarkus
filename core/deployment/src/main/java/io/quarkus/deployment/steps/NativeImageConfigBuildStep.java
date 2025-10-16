@@ -10,7 +10,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
@@ -42,7 +41,6 @@ class NativeImageConfigBuildStep {
             List<JniBuildItem> jniBuildItems,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
-            List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
             List<InlineBeforeAnalysisBuildItem> inlineBeforeAnalysisBuildItems,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
@@ -75,10 +73,6 @@ class NativeImageConfigBuildStep {
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
-
-        if (!enableAllSecurityServicesBuildItems.isEmpty()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
-        }
 
         if (!inlineBeforeAnalysisBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));

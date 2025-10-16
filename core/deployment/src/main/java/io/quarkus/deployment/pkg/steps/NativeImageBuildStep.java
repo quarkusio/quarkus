@@ -715,15 +715,6 @@ public class NativeImageBuildStep {
                     //todo: this should be specific build items
                     if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
                         enableSslNative = Boolean.parseBoolean(prop.getValue());
-                    } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue().equals("false")) {
-                        log.warn("Your application is setting the deprecated 'quarkus.jni.enable' configuration key to false."
-                                + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
-                                + " will be removed in a future Quarkus version.");
-                    } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
-                        log.warn(
-                                "Your application is setting the deprecated 'quarkus.native.enable-all-security-services' configuration key."
-                                        + " Please consider removing this configuration key as it is ignored and it"
-                                        + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
                     } else {

@@ -418,7 +418,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         int catalogContainingCoreIndex = -1;
         for (int i = 0; i < catalogs.size(); ++i) {
             ExtensionCatalog catalog = catalogs.get(i);
-            if (catalog.getMetadata()
+            if (catalog.isPlatform() && catalog.getMetadata()
                     .get(Constants.REGISTRY_CLIENT_ALL_CATALOG_EXTENSIONS) instanceof Map<?, ?> allCatalogExtensions) {
                 final ArtifactCoords managedQuarkusCore = (ArtifactCoords) allCatalogExtensions
                         .get(quarkusCore.getArtifact().getKey());

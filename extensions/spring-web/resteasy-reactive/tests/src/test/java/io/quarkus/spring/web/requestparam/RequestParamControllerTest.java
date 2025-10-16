@@ -26,7 +26,7 @@ public class RequestParamControllerTest {
         // In Spring, method parameters annotated with @RequestParam are required by default.
         when().get("/api/foos")
                 .then()
-                .statusCode(400);
+                .statusCode(400).body(containsString("Missing required param in method"));
     }
 
     @Test
@@ -121,6 +121,14 @@ public class RequestParamControllerTest {
         when().post("/api/foos/multiMap")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    public void shouldFailWithBadRequestWhenMissingMandatoryParam() throws Exception {
+        // In Spring, method parameters annotated with @RequestParam are required by default.
+        when().get("/api/foos/paramRequired")
+                .then()
+                .statusCode(400).body(containsString("Missing required param in method"));
     }
 
 }

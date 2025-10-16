@@ -116,7 +116,7 @@ Blocking (non-reactive) and reactive configuration xref:orm-and-reactive-extensi
 
 WARNING: Configuring Hibernate Reactive using the standard `persistence.xml` configuration file is not supported.
 
-See section <<hr-configuration-properties,Hibernate Reactive configuration properties>> for the list of properties you can set in `{config-file}`.
+See section <<configuration-reference>> for the list of properties you can set in `{config-file}`.
 
 A `Mutiny.SessionFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate Reactive extension is listed among your project dependencies.
 
@@ -193,24 +193,7 @@ and will have it use the default datasource.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
-Hibernate Reactive uses the same properties you would use for Hibernate ORM. You will notice that some properties
-contain `jdbc` in the name but there is no JDBC in Hibernate Reactive, these are simply legacy property names.
-
-include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
-
-[TIP]
-====
-Want to start a PostgreSQL server on the side with Docker?
-
-[source,bash]
-----
-docker run --rm --name postgres-quarkus-hibernate -e POSTGRES_USER=quarkus_test \
-           -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test \
-           -p 5432:5432 postgres:14.1
-----
-
-This will start a non-durable empty database: ideal for a quick experiment!
-====
+Hibernate Reactive uses the same properties you would use for Hibernate ORM: see <<configuration-reference>>.
 
 [[orm-and-reactive-extension-simultaneously]]
 === Hibernate ORM and Reactive extensions simultaneously
@@ -428,3 +411,16 @@ by providing active record style entities (and repositories) and focuses on maki
 To find out more on how the <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>>.
 influence your Hibernate Reactive application see the xref:hibernate-orm.adoc#validator_integration[corresponding Hibernate ORM guide],
 as these modes work the same in both cases.
+
+[[configuration-reference]]
+== Configuration Reference for Hibernate Reactive
+
+[TIP]
+====
+You will notice that some properties
+contain "jdbc" in their name: this is because Hibernate ORM refers to its "data access" layer as "JDBC" for historical reasons. Hibernate Reactive uses Vert.x Reactive SQL clients for its data access layer rather than JDBC.
+
+Regardless of their name, these properties still make sense for Hibernate Reactive.
+====
+
+include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]

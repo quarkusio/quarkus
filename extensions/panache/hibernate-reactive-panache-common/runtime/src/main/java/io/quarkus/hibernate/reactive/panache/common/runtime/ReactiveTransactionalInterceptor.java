@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.proceedUni;
+
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -8,7 +10,7 @@ import jakarta.interceptor.InvocationContext;
 @ReactiveTransactional
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class ReactiveTransactionalInterceptor extends AbstractUniInterceptor {
+public class ReactiveTransactionalInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {

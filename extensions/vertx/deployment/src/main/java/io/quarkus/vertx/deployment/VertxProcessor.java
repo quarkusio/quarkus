@@ -261,11 +261,11 @@ class VertxProcessor {
     NativeImageConfigBuildItem reinitializeClassesForNetty() {
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
 
-        builder.addRuntimeReinitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
-                .addRuntimeReinitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
+        builder.addRuntimeInitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
+                .addRuntimeInitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
-            builder.addRuntimeReinitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
+            builder.addRuntimeInitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
         }
 
         return builder.build();

@@ -508,7 +508,7 @@ public class KafkaProcessor {
                         "org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin")
                 // VerificationKeyResolver is value on static map in OAuthBearerValidatorCallbackHandler
                 .addRuntimeInitializedClass("org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler")
-                .addRuntimeReinitializedClass("org.apache.kafka.shaded.com.google.protobuf.UnsafeUtil");
+                .addRuntimeInitializedClass("org.apache.kafka.shaded.com.google.protobuf.UnsafeUtil");
         return builder.build();
     }
 

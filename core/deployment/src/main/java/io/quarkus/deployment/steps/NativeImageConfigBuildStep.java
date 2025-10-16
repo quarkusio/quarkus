@@ -47,16 +47,12 @@ class NativeImageConfigBuildStep {
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath) {
         for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
             for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
-            }
-            for (String i : nativeImageConfigBuildItem.getRuntimeReinitializedClasses()) {
-                runtimeReinit.produce(new RuntimeReinitializedClassBuildItem(i));
             }
             for (Map.Entry<String, String> e : nativeImageConfigBuildItem.getNativeImageSystemProperties().entrySet()) {
                 nativeImage.produce(new NativeImageSystemPropertyBuildItem(e.getKey(), e.getValue()));

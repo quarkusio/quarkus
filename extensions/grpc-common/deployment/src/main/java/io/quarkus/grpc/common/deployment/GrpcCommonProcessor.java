@@ -90,7 +90,7 @@ public class GrpcCommonProcessor {
                 .addRuntimeInitializedClass("io.grpc.netty.NettyServerBuilder")
                 .addRuntimeInitializedClass("io.grpc.netty.NettyChannelBuilder")
                 .addRuntimeInitializedClass("io.grpc.internal.RetriableStream")
-                .addRuntimeReinitializedClass("com.google.protobuf.UnsafeUtil");
+                .addRuntimeInitializedClass("com.google.protobuf.UnsafeUtil");
         return builder.build();
     }
 

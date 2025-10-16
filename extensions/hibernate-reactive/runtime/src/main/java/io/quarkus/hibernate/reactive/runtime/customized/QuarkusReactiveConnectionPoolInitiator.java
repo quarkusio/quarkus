@@ -31,7 +31,7 @@ public final class QuarkusReactiveConnectionPoolInitiator
             // nothing to do, but given the separate hierarchies have to handle this here.
             return null;
         }
-        return new QuarkusSqlClientPool(pool);
+        return new QuarkusSqlClientPool(new TransactionalContextPool(pool));
     }
 
 }

@@ -14,7 +14,6 @@ import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATE
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
-import static org.hibernate.internal.CoreLogging.messageLogger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -98,7 +97,7 @@ public class FastBootMetadataBuilder {
     @Deprecated
     private static final String ALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
 
-    private static final CoreMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
+    private static final CoreMessageLogger LOG = CoreMessageLogger.CORE_LOGGER; // TODO Luca review this
 
     private final PersistenceUnitDescriptor persistenceUnit;
     private final BuildTimeSettings buildTimeSettings;
@@ -268,7 +267,8 @@ public class FastBootMetadataBuilder {
 
         if (readBooleanConfigurationValue(cfg, AvailableSettings.FLUSH_BEFORE_COMPLETION)) {
             cfg.put(AvailableSettings.FLUSH_BEFORE_COMPLETION, "false");
-            LOG.definingFlushBeforeCompletionIgnoredInHem(AvailableSettings.FLUSH_BEFORE_COMPLETION);
+            // TODO Luca review this
+            //            LOG.definingFlushBeforeCompletionIgnoredInHem(AvailableSettings.FLUSH_BEFORE_COMPLETION);
         }
 
         // Quarkus specific
@@ -607,7 +607,8 @@ public class FastBootMetadataBuilder {
         }
         boolean hasTransactionStrategy = configurationValues.containsKey(TRANSACTION_COORDINATOR_STRATEGY);
         if (hasTransactionStrategy) {
-            LOG.overridingTransactionStrategyDangerous(TRANSACTION_COORDINATOR_STRATEGY);
+            // TODO Luca review this
+            //            LOG.overridingTransactionStrategyDangerous(TRANSACTION_COORDINATOR_STRATEGY);
         } else {
             if (transactionType == PersistenceUnitTransactionType.JTA) {
                 configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY,

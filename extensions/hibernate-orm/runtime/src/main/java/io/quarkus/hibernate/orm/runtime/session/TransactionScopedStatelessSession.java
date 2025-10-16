@@ -19,6 +19,8 @@ import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
+import org.hibernate.SharedSessionBuilder;
+import org.hibernate.SharedStatelessSessionBuilder;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
 import org.hibernate.graph.GraphSemantic;
@@ -518,6 +520,20 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.statelessSession.disableFilter(filterName);
+        }
+    }
+
+    @Override
+    public SharedStatelessSessionBuilder statelessWithOptions() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.statelessWithOptions();
+        }
+    }
+
+    @Override
+    public SharedSessionBuilder sessionWithOptions() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.sessionWithOptions();
         }
     }
 

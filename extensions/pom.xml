@@ -100,6 +100,7 @@
         <module>hibernate-orm</module>
         <module>hibernate-envers</module>
         <module>hibernate-reactive</module>
+        <module>hibernate-reactive-transactions</module>
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-backend-elasticsearch-common</module>

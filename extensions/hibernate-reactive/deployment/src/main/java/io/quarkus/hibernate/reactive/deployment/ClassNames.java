@@ -17,6 +17,9 @@ public final class ClassNames {
         return result;
     }
 
+    public static final DotName MUTINY_SESSION = createConstant("org.hibernate.reactive.mutiny.Mutiny$Session");
+    public static final DotName MUTINY_STATELESS_SESSION = createConstant(
+            "org.hibernate.reactive.mutiny.Mutiny$StatelessSession");
     public static final DotName MUTINY_SESSION_FACTORY = createConstant("org.hibernate.reactive.mutiny.Mutiny$SessionFactory");
     public static final DotName IMPLEMENTOR = createConstant("org.hibernate.reactive.common.spi.Implementor");
 }

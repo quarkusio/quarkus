@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.runtime.service;
 
-import static org.hibernate.internal.CoreLogging.messageLogger;
-
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +24,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  * @see QuarkusStaticInitDialectFactory
  */
 public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
-    private static final CoreMessageLogger LOG = messageLogger(QuarkusRuntimeInitDialectFactory.class);
+    private static final CoreMessageLogger LOG = CoreMessageLogger.CORE_LOGGER; // TODO Luca review this
     private final String persistenceUnitName;
     private final boolean isFromPersistenceXml;
     private final Dialect dialect;

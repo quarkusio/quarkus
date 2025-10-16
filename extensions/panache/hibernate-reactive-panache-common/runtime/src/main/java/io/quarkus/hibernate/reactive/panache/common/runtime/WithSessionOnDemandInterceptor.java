@@ -17,6 +17,7 @@ public class WithSessionOnDemandInterceptor extends AbstractUniInterceptor {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
+
             return SessionOperations.withSessionOnDemand(() -> proceedUni(context));
         }
         return context.proceed();

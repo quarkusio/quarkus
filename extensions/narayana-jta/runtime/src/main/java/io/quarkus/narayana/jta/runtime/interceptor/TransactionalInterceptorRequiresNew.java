@@ -1,5 +1,6 @@
 package io.quarkus.narayana.jta.runtime.interceptor;
 
+import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -26,6 +27,10 @@ public class TransactionalInterceptorRequiresNew extends TransactionalIntercepto
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
+        if (disableInterceptorOnUniMethods(ic)) {
+            return ic.proceed();
+        }
+
         if (!BlockingOperationControl.isBlockingAllowed()) {
             throw new BlockingOperationNotAllowedException("Cannot start a JTA transaction from the IO thread.");
         }

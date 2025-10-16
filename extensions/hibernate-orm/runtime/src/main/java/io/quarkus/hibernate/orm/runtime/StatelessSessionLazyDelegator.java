@@ -14,6 +14,8 @@ import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
+import org.hibernate.SharedSessionBuilder;
+import org.hibernate.SharedStatelessSessionBuilder;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
 import org.hibernate.graph.GraphSemantic;
@@ -182,6 +184,16 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public Object getIdentifier(Object entity) {
         return delegate.get().getIdentifier(entity);
+    }
+
+    @Override
+    public SharedStatelessSessionBuilder statelessWithOptions() {
+        return delegate.get().statelessWithOptions();
+    }
+
+    @Override
+    public SharedSessionBuilder sessionWithOptions() {
+        return delegate.get().sessionWithOptions();
     }
 
     @Override

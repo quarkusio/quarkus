@@ -14,7 +14,6 @@ import java.util.ServiceLoader;
 import org.hibernate.AssertionFailure;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.classloading.spi.ClassLoadingException;
-import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 
 /**
@@ -22,7 +21,7 @@ import org.hibernate.internal.CoreMessageLogger;
  */
 public class FlatClassLoaderService implements ClassLoaderService {
 
-    private static final CoreMessageLogger log = CoreLogging.messageLogger(FlatClassLoaderService.class);
+    private static final CoreMessageLogger log = CoreMessageLogger.CORE_LOGGER; // TODO Luca review this
     public static final ClassLoaderService INSTANCE = new FlatClassLoaderService();
 
     private FlatClassLoaderService() {
@@ -103,7 +102,8 @@ public class FlatClassLoaderService implements ClassLoaderService {
             Class<?> aClass = Class.forName(packageName + ".package-info", false, getClassLoader());
             return aClass == null ? null : aClass.getPackage();
         } catch (ClassNotFoundException e) {
-            log.packageNotFound(packageName);
+            // TODO Luca review this
+            //            log.packageNotFound(packageName);
             return null;
         } catch (LinkageError e) {
             log.warn("LinkageError while attempting to load Package named " + packageName, e);

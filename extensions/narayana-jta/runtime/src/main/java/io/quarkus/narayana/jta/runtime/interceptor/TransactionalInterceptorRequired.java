@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import io.smallrye.mutiny.Uni;
 
 /**
  * @author paul.robinson@redhat.com 25/05/2013
@@ -26,6 +27,10 @@ public class TransactionalInterceptorRequired extends TransactionalInterceptorBa
     @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
+        if (disableInterceptorOnUniMethods(ic)) {
+            return ic.proceed();
+        }
+
         if (!BlockingOperationControl.isBlockingAllowed()) {
             throw new BlockingOperationNotAllowedException("Cannot start a JTA transaction from the IO thread.");
         }

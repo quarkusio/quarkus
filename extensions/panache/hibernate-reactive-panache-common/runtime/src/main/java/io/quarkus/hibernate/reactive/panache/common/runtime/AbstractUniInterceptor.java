@@ -4,7 +4,7 @@ import jakarta.interceptor.InvocationContext;
 
 import io.smallrye.mutiny.Uni;
 
-abstract class AbstractUniInterceptor {
+public abstract class AbstractUniInterceptor {
 
     @SuppressWarnings("unchecked")
     protected <T> Uni<T> proceedUni(InvocationContext context) {

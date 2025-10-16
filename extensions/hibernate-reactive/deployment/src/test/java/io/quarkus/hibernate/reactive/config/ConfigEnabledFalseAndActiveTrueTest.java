@@ -12,7 +12,7 @@ public class ConfigEnabledFalseAndActiveTrueTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
+            .withApplicationRoot(jar -> jar.addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.enabled", "false")
             .overrideConfigKey("quarkus.hibernate-orm.active", "true")

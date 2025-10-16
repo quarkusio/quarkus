@@ -16,6 +16,7 @@ import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.smallrye.common.os.OS;
 
 @QuarkusIntegrationTest
 public class AwtJaxbTestIT extends AwtJaxbTest {
@@ -24,7 +25,7 @@ public class AwtJaxbTestIT extends AwtJaxbTest {
      * Test is native image only, we need all artifacts to be packaged
      * already, e.g. function.zip
      * </br>
-     * Tests that the same set of .so files that was copied over
+     * Tests that the same set of dynamic lib files that was copied over
      * from the remote build container is also packaged into the
      * zip file that will be deployed to AWS Lambda.
      *
@@ -32,9 +33,14 @@ public class AwtJaxbTestIT extends AwtJaxbTest {
      */
     @Test
     public void testPackaging() throws IOException {
+        String dynamicLibExt = switch (OS.current()) {
+            case WINDOWS -> "dll";
+            case MAC -> "dylib";
+            default -> "so";
+        };
         final Path targetPath = Paths.get(".", "target").toAbsolutePath();
         final Set<String> localLibs = new HashSet<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(targetPath, "*.so")) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(targetPath, "*.%s".formatted(dynamicLibExt))) {
             for (Path entry : stream) {
                 localLibs.add(entry.getFileName().toString());
             }
@@ -46,14 +52,14 @@ public class AwtJaxbTestIT extends AwtJaxbTest {
         try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(zipPath))) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (entry.getName().endsWith(".so")) {
+                if (entry.getName().endsWith(".%s".formatted(dynamicLibExt))) {
                     awsLambdaLibs.add(entry.getName());
                 }
                 zipInputStream.closeEntry();
             }
         }
         assertEquals(localLibs, awsLambdaLibs,
-                "The sets of .so libs produced by the build and the set in .zip file MUST be the same. It was: "
-                        + localLibs + " vs. " + awsLambdaLibs);
+                "The sets of dynamic libs produced by the build and the set in .zip file MUST be the same. " +
+                        "It was: " + localLibs + " vs. " + awsLambdaLibs);
     }
 }

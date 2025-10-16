@@ -149,6 +149,12 @@
             "timeout": 40,
             "test-modules": "awt, no-awt, awt-packaging",
             "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "AWT, ImageIO and Java2D, Packaging .dll files (Windows)",
+            "timeout": 40,
+            "test-modules": "awt, no-awt, awt-packaging",
+            "os-name": "windows-latest"
         }
     ]
 }

@@ -1,11 +1,9 @@
 package io.quarkus.gradle;
 
+import static io.quarkus.gradle.util.AppModelDeserializer.deserializeAppModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,20 +43,5 @@ public class TestFixtureMultiModuleTest extends QuarkusGradleWrapperTestBase {
                 "direct, runtime-cp, deployment-cp, workspace-module, reloadable",
                 ArtifactKey.fromString("my-groupId:static-init-library::jar"),
                 "runtime-cp, deployment-cp, workspace-module, reloadable"));
-    }
-
-    /**
-     * Copied from ToolingUtils
-     *
-     * @param path application model dat file
-     * @return deserialized ApplicationModel
-     * @throws IOException in case of a failure to read the model
-     */
-    private static ApplicationModel deserializeAppModel(Path path) throws IOException {
-        try (ObjectInputStream out = new ObjectInputStream(Files.newInputStream(path))) {
-            return (ApplicationModel) out.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

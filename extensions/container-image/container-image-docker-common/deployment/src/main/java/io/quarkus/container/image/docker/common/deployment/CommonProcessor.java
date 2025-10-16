@@ -167,6 +167,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             ProcessBuilder.newBuilder(executableName)
                     .arguments("login", registry, "-u", containerImageConfig.username().get(), "-p",
                             containerImageConfig.password().get())
+                    .error().logOnSuccess(false).inherited()
                     .run();
         }
     }
@@ -200,7 +201,9 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 .map(additionalTag -> new String[] { "tag", image, additionalTag })
                 .forEach(tagArgs -> {
                     LOGGER.infof("Running '%s %s'", executableName, String.join(" ", tagArgs));
-                    ProcessBuilder.exec(executableName, tagArgs);
+                    ProcessBuilder.newBuilder(executableName).arguments(tagArgs)
+                            .error().logOnSuccess(false).inherited()
+                            .run();
                 });
     }
 
@@ -214,7 +217,9 @@ public abstract class CommonProcessor<C extends CommonConfig> {
     }
 
     protected void pushImage(String image, String executableName, C config) {
-        ProcessBuilder.exec(executableName, createPushArgs(image, config));
+        ProcessBuilder.newBuilder(executableName).arguments(createPushArgs(image, config))
+                .error().logOnSuccess(false).inherited()
+                .run();
         LOGGER.infof("Successfully pushed %s image %s", getProcessorImplementation(), image);
     }
 
@@ -233,6 +238,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         ProcessBuilder.newBuilder(executableName)
                 .directory(out.getOutputDirectory())
                 .arguments(args)
+                .error().logOnSuccess(false).inherited()
                 .run();
 
         if (createAdditionalTags && !containerImageInfo.getAdditionalImageTags().isEmpty()) {

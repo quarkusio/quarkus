@@ -27,7 +27,6 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.stream.Stream;
-
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -55,6 +54,7 @@ import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -128,6 +128,7 @@ public class QuarkusDevModeTest
     private boolean allowFailedStart = false;
 
     private static final List<CompilationProvider> compilationProviders;
+    private List<JavaArchive> additionalDependencies = new ArrayList<>();
 
     static {
         List<CompilationProvider> providers = new ArrayList<>();
@@ -195,6 +196,31 @@ public class QuarkusDevModeTest
         });
     }
 
+    /**
+     * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
+     * would not otherwise be one.
+     *
+     * @param dependencyConsumer
+     * @return self
+     */
+    public QuarkusDevModeTest withAdditionalDependency(Consumer<JavaArchive> dependencyConsumer) {
+        JavaArchive dependency = ShrinkWrap.create(JavaArchive.class);
+        Objects.requireNonNull(dependencyConsumer).accept(dependency);
+        return addAdditionalDependency(dependency);
+    }
+
+    /**
+     * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
+     * would not otherwise be one.
+     *
+     * @param archive
+     * @return self
+     */
+    public QuarkusDevModeTest addAdditionalDependency(JavaArchive archive) {
+        this.additionalDependencies.add(Objects.requireNonNull(archive));
+        return this;
+    }
+
     public QuarkusDevModeTest setCodeGenSources(String... codeGenSources) {
         this.codeGenSources = Arrays.asList(codeGenSources);
         return this;
@@ -254,7 +280,7 @@ public class QuarkusDevModeTest
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             testResourceManager.init(null);
-            Map<String, String> properties = testResourceManager.start();
+            testResourceManager.start();
             TestResourceManager tm = testResourceManager;
 
             store.put(TestResourceManager.class.getName(), testResourceManager);
@@ -375,6 +401,28 @@ public class QuarkusDevModeTest
                     .setSourceParents(PathList.of(deploymentSourceParentPath.toAbsolutePath()))
                     .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                     .setTargetDir(targetDir.toAbsolutePath().toString());
+
+            for (JavaArchive dependency : additionalDependencies) {
+                Path dependencyDir = deploymentDir.resolve(dependency.getName());
+                Path dependencyClasses = dependencyDir.resolve("target/classes");
+                Path dependencySourcePath = dependencyDir.resolve("src/main/java");
+                Path dependencyResourcePath = dependencyDir.resolve("src/main/resources");
+                
+                Files.createDirectories(dependencyClasses);
+                Files.createDirectories(dependencySourcePath);
+                Files.createDirectories(dependencyResourcePath);
+                
+                dependency.as(ExplodedExporter.class).exportExplodedInto(dependencyClasses.toFile());
+                
+                DevModeContext.ModuleInfo.Builder depModuleBuilder = new DevModeContext.ModuleInfo.Builder()
+                    .setArtifactKey(ArtifactKey.ga("test", dependency.getName()))
+                    .setProjectDirectory(dependencyDir.toAbsolutePath().toString())
+                    .setSourcePaths(PathList.of(dependencySourcePath.toAbsolutePath()))
+                    .setClassesPath(dependencyClasses.toAbsolutePath().toString())
+                    .setResourcePaths(PathList.of(dependencyResourcePath.toAbsolutePath()))
+                    .setResourcesOutputPath(dependencyClasses.toAbsolutePath().toString());
+                context.getAdditionalModules().add(depModuleBuilder.build());
+            }
 
             final WorkspaceModule.Mutable testModuleBuilder = WorkspaceModule.builder()
                     .addArtifactSources(ArtifactSources.main(

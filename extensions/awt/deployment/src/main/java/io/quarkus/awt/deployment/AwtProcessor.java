@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.runtime.graal.GraalVM;
@@ -50,9 +51,6 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        unsupported.produce(new UnsupportedOSBuildItem(OS.WINDOWS,
-                "Windows AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: no awt in java.library.path."));
         unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
                 "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
@@ -144,6 +142,159 @@ class AwtProcessor {
         jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.X11.XErrorHandlerUtil", "init", "long"));
         jc.produce(new JniRuntimeAccessBuildItem(false, false, true, "sun.awt.X11.XToolkit"));
         jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.Thread", "yield"));
+
+        if (OS.WINDOWS.isCurrent()) {
+            // Needed by the native method sun.awt.Win32FontManager#populateFontFileNameMap0
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.HashMap", "put", "java.lang.Object", "java.lang.Object"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.HashMap", "containsKey", "java.lang.Object"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "<init>", "int"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "add", "java.lang.Object"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.String", "toLowerCase", "java.util.Locale"));
+
+            // Needed by the native method java.awt.Toolkit#initIDs
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Toolkit", "getDefaultToolkit"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Toolkit", "getFontMetrics", "java.awt.Font"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Insets", "<init>", "int", "int", "int", "int"));
+
+            // Needed by the native method java.awt.Insets#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Insets", "left"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Insets", "right"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Insets", "top"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Insets", "bottom"));
+
+            // Needed by the native method sun.awt.windows.WToolkit#initIDs
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "windowsSettingChange"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "displayChanged"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.image.SunVolatileImage", "volSurfaceManager"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.image.VolatileSurfaceManager", "sdCurrent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.SurfaceData", "pData"));
+            jc.produce(new JniRuntimeAccessBuildItem(false, false, false, "java.awt.Component"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "UNSPECIFIED"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "CONSOLE"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "REMOTE"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "LOCK"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WDesktopPeer", "systemSleepCallback", "boolean"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WDesktopPeer", "userSessionCallback", "boolean",
+                    "java.awt.desktop.UserSessionEvent$Reason"));
+
+            // Needed by the native method java.awt.Component#initIDs
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.event.InputEvent", "getButtonDownMasks"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "peer"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "x"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "y"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "height"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "width"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "visible"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "background"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "foreground"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "enabled"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "parent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "graphicsConfig"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "focusable"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "appContext"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Component", "cursor"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Component", "getFont_NoClientCode"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Component", "getToolkitImpl"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Component", "isEnabledImpl"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Component", "getLocationOnScreen_NoTreeLock"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WComponentPeer", "winGraphicsConfig"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WComponentPeer", "hwnd"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WComponentPeer", "replaceSurfaceData"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WComponentPeer", "replaceSurfaceDataLater"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WComponentPeer", "disposeLater"));
+
+            // Needed by the native method java.awt.AWTEvent#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "bdata"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "id"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "consumed"));
+
+            // Needed by the native method java.awt.event.InputEvent#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.event.InputEvent", "modifiers"));
+
+            // Needed by the native method sun.awt.windows.WObjectPeer#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WObjectPeer", "pData"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WObjectPeer", "destroyed"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WObjectPeer", "target"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WObjectPeer", "createError"));
+            jm.produce(
+                    new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WObjectPeer", "getPeerForTarget", "java.lang.Object"));
+
+            // Needed by the native method java.awt.Font#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Font", "pData"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Font", "name"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Font", "size"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Font", "style"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Font", "getFontPeer"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Font", "getFont", "java.lang.String"));
+
+            // Needed by the native method sun.java2d.windows.WindowsFlags#initNativeFlags
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "d3dEnabled"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "d3dSet"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "setHighDPIAware"));
+
+            // Needed by the native method sun.awt.Win32GraphicsEnvironment#initDisplay
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.Win32GraphicsEnvironment", "dwmCompositionChanged",
+                    "boolean"));
+
+            // Needed by the native method java.awt.Dimension#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Dimension", "width"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.Dimension", "height"));
+
+            // Needed by the native method java.awt.FontMetrics#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.FontMetrics", "font"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.FontMetrics", "getHeight"));
+
+            // Needed by the native method sun.awt.FontDescriptor#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.FontDescriptor", "nativeName"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.FontDescriptor", "useUnicode"));
+
+            // Needed by the native method sun.awt.PlatformFont#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.PlatformFont", "fontConfig"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.PlatformFont", "componentFonts"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.PlatformFont", "makeConvertedMultiFontString",
+                    "java.lang.String"));
+
+            // Needed by the native method sun.awt.windows.WFontPeer#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontPeer", "textComponentFontName"));
+
+            // Needed by the native method sun.awt.windows.WDefaultFontCharset#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WDefaultFontCharset", "fontName"));
+
+            // Needed by the native method sun.awt.windows.WFontMetrics#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "widths"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "ascent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "descent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "leading"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "height"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "maxAscent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "maxDescent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "maxHeight"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.windows.WFontMetrics", "maxAdvance"));
+
+            // Needed by the native method sun.awt.Win32GraphicsDevice#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.Win32GraphicsDevice", "dynamicColorModel"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.image.IndexColorModel", "rgb"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.image.IndexColorModel", "lookupcache"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "paletteChanged"));
+
+            // Needed by the native method sun.awt.windows.WToolkit#init
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "isTouchKeyboardAutoShowEnabled"));
+
+            // Needed by the native method sun.awt.Win32GraphicsConfig#initIDs
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.Win32GraphicsConfig", "visual"));
+
+            // Needed by the native method sun.awt.windows.WToolkit#eventLoop
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.AWTAutoShutdown", "notifyToolkitThreadBusy"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.AWTAutoShutdown", "notifyToolkitThreadFree"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.java2d.d3d.D3DGraphicsDevice$1", "run"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.java2d.d3d.D3DRenderQueue$1", "run"));
+
+            // Needed by the native method sun.java2d.windows.WindowsFlags#initNativeFlags
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "d3dEnabled"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "d3dSet"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "setHighDPIAware"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.windows.WindowsFlags", "offscreenSharingEnabled"));
+        }
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -290,7 +441,7 @@ class AwtProcessor {
      * A better detection and DarwinAwtFeature handling might be in order.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitilizedPackages) {
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitializedPackages) {
         /*
          * Note that this initialization is not enough if user wants to deserialize actual images
          * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
@@ -305,7 +456,18 @@ class AwtProcessor {
                 "sun.font",
                 "sun.java2d")
                 .map(RuntimeInitializedPackageBuildItem::new)
-                .forEach(runtimeInitilizedPackages::produce);
+                .forEach(runtimeInitializedPackages::produce);
         //@formatter:on
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.CompleteReflectionTypes.class)
+    RuntimeInitializedPackageBuildItem runtimeInitializedClassesForCompleteReflectionTypes() {
+        return new RuntimeInitializedPackageBuildItem("sun.datatransfer");
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    public void registerNativeImageResources(BuildProducer<NativeImageResourcePatternsBuildItem> resource) {
+        resource.produce(
+                NativeImageResourcePatternsBuildItem.builder().includeGlobs("/windows-fontconfig.properties").build());
     }
 }

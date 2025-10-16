@@ -61,6 +61,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.impl.RestClientClosingTask;
 import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -157,9 +158,11 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    ServiceProviderBuildItem nativeSpiSupport() {
-        return ServiceProviderBuildItem
-                .allProvidersFromClassPath(MissingMessageBodyReaderErrorMessageContextualizer.class.getName());
+    void nativeSpiSupport(BuildProducer<ServiceProviderBuildItem> producer) {
+        producer.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(MissingMessageBodyReaderErrorMessageContextualizer.class.getName()));
+        producer.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(RestClientClosingTask.class.getName()));
     }
 
     @BuildStep
@@ -353,7 +356,7 @@ class RestClientReactiveProcessor {
 
             }
 
-            addGeneratedProviders(index, constructor, annotationsByClassName, generatedProviders);
+            addGeneratedProviders(index, classCreator, constructor, annotationsByClassName, generatedProviders);
 
             constructor.returnValue(null);
         }
@@ -774,11 +777,13 @@ class RestClientReactiveProcessor {
         return result;
     }
 
-    private void addGeneratedProviders(IndexView index, MethodCreator constructor,
+    private void addGeneratedProviders(IndexView index, ClassCreator classCreator, MethodCreator constructor,
             Map<String, List<AnnotationInstance>> annotationsByClassName,
             Map<String, List<GeneratedClassResult>> generatedProviders) {
+        int i = 1;
         for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
-            ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            MethodCreator mc = classCreator.getMethodCreator("addGeneratedProviders" + i, void.class);
+            ResultHandle map = mc.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
             for (AnnotationInstance value : annotationsForClass.getValue()) {
                 String className = value.value().asString();
                 AnnotationValue priorityAnnotationValue = value.value("priority");
@@ -789,8 +794,8 @@ class RestClientReactiveProcessor {
                     priority = priorityAnnotationValue.asInt();
                 }
 
-                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClassFromTCCL(className),
-                        constructor.load(priority));
+                mc.invokeInterfaceMethod(MAP_PUT, map, mc.loadClassFromTCCL(className),
+                        mc.load(priority));
             }
             String ifaceName = annotationsForClass.getKey();
             if (generatedProviders.containsKey(ifaceName)) {
@@ -798,12 +803,17 @@ class RestClientReactiveProcessor {
                 // the remaining entries will be handled later
                 List<GeneratedClassResult> providers = generatedProviders.remove(ifaceName);
                 for (GeneratedClassResult classResult : providers) {
-                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(classResult.generatedClassName),
-                            constructor.load(classResult.priority));
+                    mc.invokeInterfaceMethod(MAP_PUT, map, mc.loadClass(classResult.generatedClassName),
+                            mc.load(classResult.priority));
                 }
 
             }
-            addProviders(constructor, ifaceName, map);
+            addProviders(mc, ifaceName, map);
+            mc.returnVoid();
+
+            constructor.invokeVirtualMethod(mc.getMethodDescriptor(), constructor.getThis());
+
+            i++;
         }
 
         for (Map.Entry<String, List<GeneratedClassResult>> entry : generatedProviders.entrySet()) {
@@ -817,11 +827,11 @@ class RestClientReactiveProcessor {
         }
     }
 
-    private void addProviders(MethodCreator constructor, String providerClass, ResultHandle map) {
-        constructor.invokeVirtualMethod(
+    private void addProviders(MethodCreator mc, String providerClass, ResultHandle map) {
+        mc.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
                         Map.class),
-                constructor.getThis(), constructor.load(providerClass), map);
+                mc.getThis(), mc.load(providerClass), map);
     }
 
     private int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {

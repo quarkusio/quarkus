@@ -161,6 +161,11 @@ public class SmallRyeOpenApiProcessor {
     private static final String MANAGEMENT_ENABLED = "quarkus.smallrye-openapi.management.enabled";
 
     @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.SMALLRYE_OPENAPI);
+    }
+
+    @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
         // contribute additional JDK classes to the index, because SmallRye OpenAPI will check if some
         // app types implement Map and Collection and will go through super classes until Object is reached,
@@ -861,8 +866,7 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
+    public void build(BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<OpenApiDocumentBuildItem> openApiDocumentProducer,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
@@ -876,8 +880,6 @@ public class SmallRyeOpenApiProcessor {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
         Config config = ConfigProvider.getConfig();
-
-        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
 
         List<Pattern> urlIgnorePatterns = ignoreStaticDocumentBuildItems.stream()
                 .map(IgnoreStaticDocumentBuildItem::getUrlIgnorePattern)

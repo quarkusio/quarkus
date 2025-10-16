@@ -1,5 +1,8 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.isUniReturnType;
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.proceedUni;
+
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -10,13 +13,14 @@ import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
 @WithSessionOnDemand
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class WithSessionOnDemandInterceptor extends AbstractUniInterceptor {
+public class WithSessionOnDemandInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
         // Bindings are validated at build time - method-level binding declared on a method that does not return Uni results in a build failure
         // However, a class-level binding implies that methods that do not return Uni are just a no-op
         if (isUniReturnType(context)) {
+
             return SessionOperations.withSessionOnDemand(() -> proceedUni(context));
         }
         return context.proceed();

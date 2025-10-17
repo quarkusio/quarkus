@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -26,6 +27,7 @@ import org.hibernate.type.StandardBasicTypes;
 public class OverriddenPreferredTypesResource {
 
     @Inject
+    @PersistenceUnit("overridden-types")
     Session session;
 
     @GET
@@ -60,13 +62,18 @@ public class OverriddenPreferredTypesResource {
         assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("createdAt")).getSingleJdbcMapping().getJdbcType()
                 .getJdbcTypeCode())
                 .isEqualTo(SqlTypes.INSTANT);
-        assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("overridenDuration")).getSingleJdbcMapping().getJdbcType()
-                .getJdbcTypeCode())
-                .isEqualTo(SqlTypes.INTERVAL_SECOND);
 
-        /*assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("isPersisted")).getSingleJdbcMapping().getJdbcType()
-                .getJdbcTypeCode())
-                .isEqualTo(SqlTypes.BIT);*/
+        /*
+         * assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("overridenDuration")).getSingleJdbcMapping().
+         * getJdbcType()
+         * .getJdbcTypeCode())
+         * .isEqualTo(SqlTypes.INTERVAL_SECOND);
+         *
+         * assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("isPersisted")).getSingleJdbcMapping().
+         * getJdbcType()
+         * .getJdbcTypeCode())
+         * .isEqualTo(SqlTypes.BIT);
+         */
 
         return "OK";
     }

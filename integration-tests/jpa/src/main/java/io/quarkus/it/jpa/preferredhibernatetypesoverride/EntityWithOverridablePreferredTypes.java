@@ -1,12 +1,12 @@
 package io.quarkus.it.jpa.preferredhibernatetypesoverride;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 @Entity(name = EntityWithOverridablePreferredTypes.NAME)
 public class EntityWithOverridablePreferredTypes {

@@ -3,15 +3,14 @@ package org.jboss.resteasy.reactive.server.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.server.ExceptionUnwrapStrategy;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 @SuppressWarnings({ "unchecked", "unused" })
@@ -39,7 +38,7 @@ public class ExceptionMapping {
      */
     final List<Predicate<Throwable>> blockingProblemPredicates = new ArrayList<>();
     final List<Predicate<Throwable>> nonBlockingProblemPredicate = new ArrayList<>();
-    final Set<String> unwrappedExceptions = new HashSet<>();
+    final Map<String, ExceptionUnwrapStrategy> unwrappedExceptions = new HashMap<>();
 
     public void addBlockingProblem(Class<? extends Throwable> throwable) {
         blockingProblemPredicates.add(new ExceptionTypePredicate(throwable));
@@ -57,11 +56,11 @@ public class ExceptionMapping {
         nonBlockingProblemPredicate.add(predicate);
     }
 
-    public void addUnwrappedException(String className) {
-        unwrappedExceptions.add(className);
+    public void addUnwrappedException(String className, ExceptionUnwrapStrategy strategy) {
+        unwrappedExceptions.put(className, strategy);
     }
 
-    public Set<String> getUnwrappedExceptions() {
+    public Map<String, ExceptionUnwrapStrategy> getUnwrappedExceptions() {
         return unwrappedExceptions;
     }
 

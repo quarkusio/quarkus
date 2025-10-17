@@ -96,7 +96,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -645,8 +645,8 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
-    public RuntimeReinitializedClassBuildItem reinitClockProviderSystemTimezone() {
-        return new RuntimeReinitializedClassBuildItem(
+    public RuntimeInitializedClassBuildItem reinitClockProviderSystemTimezone() {
+        return new RuntimeInitializedClassBuildItem(
                 "io.quarkus.hibernate.validator.runtime.clockprovider.HibernateValidatorClockProviderSystemZoneIdHolder");
     }
 

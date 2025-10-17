@@ -62,7 +62,7 @@ import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -177,7 +177,7 @@ public class OpenTelemetryProcessor {
     void handleServices(OTelBuildConfig config,
             BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<RemovedResourceBuildItem> removedResources,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) throws IOException {
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeReinitialized) throws IOException {
 
         final List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
                 Thread.currentThread().getContextClassLoader(),
@@ -230,13 +230,13 @@ public class OpenTelemetryProcessor {
         }
 
         runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
+                new RuntimeInitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
         runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
+                new RuntimeInitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
         runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
+                new RuntimeInitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
         runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
+                new RuntimeInitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));

@@ -27,6 +27,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -66,8 +69,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.spi.DeploymentException;
 
 class CacheProcessor {
 
@@ -271,6 +272,7 @@ class CacheProcessor {
                 .scope(ApplicationScoped.class)
                 .supplier(cacheManagerSupplier)
                 .setRuntimeInit()
+                .startup()
                 .done();
     }
 

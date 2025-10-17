@@ -123,7 +123,7 @@
         <postgresql-jdbc.version>42.7.8</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.6</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
-        <mssql-jdbc.version>13.2.0.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.6.0.24.10</oracle-jdbc.version>
         <derby-jdbc.version>10.16.1.1</derby-jdbc.version>

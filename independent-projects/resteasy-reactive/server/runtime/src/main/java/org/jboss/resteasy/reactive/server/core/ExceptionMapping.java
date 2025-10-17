@@ -3,10 +3,8 @@ package org.jboss.resteasy.reactive.server.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -39,7 +37,7 @@ public class ExceptionMapping {
      */
     final List<Predicate<Throwable>> blockingProblemPredicates = new ArrayList<>();
     final List<Predicate<Throwable>> nonBlockingProblemPredicate = new ArrayList<>();
-    final Set<String> unwrappedExceptions = new HashSet<>();
+    final Map<String, Boolean> unwrappedExceptions = new HashMap<>();
 
     public void addBlockingProblem(Class<? extends Throwable> throwable) {
         blockingProblemPredicates.add(new ExceptionTypePredicate(throwable));
@@ -57,11 +55,11 @@ public class ExceptionMapping {
         nonBlockingProblemPredicate.add(predicate);
     }
 
-    public void addUnwrappedException(String className) {
-        unwrappedExceptions.add(className);
+    public void addUnwrappedException(String className, boolean always) {
+        unwrappedExceptions.put(className, always);
     }
 
-    public Set<String> getUnwrappedExceptions() {
+    public Map<String, Boolean> getUnwrappedExceptions() {
         return unwrappedExceptions;
     }
 

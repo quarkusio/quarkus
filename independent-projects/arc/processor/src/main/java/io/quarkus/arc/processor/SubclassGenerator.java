@@ -637,6 +637,10 @@ public class SubclassGenerator extends AbstractGenerator {
         constructorParameterTypes.add(subclass.getClassName());
         Map<DecoratorInfo, FieldDescriptor> nextDecoratorToField = new HashMap<>();
         for (DecoratorInfo nextDecorator : decoratorParameters) {
+            // this can be always of type `Object`, because decorated types are always interfaces
+            // and their methods are always invoked via `invokeinterface` (see `SubclassGenerator`)
+            // and the JVM verifier doesn't care about the receiver type of interface method calls
+            // (see e.g. https://wiki.openjdk.org/display/HotSpot/InterfaceCalls)
             FieldCreator nextDecoratorField = delegateSubclass
                     .getFieldCreator(nextDecorator.getIdentifier(), Object.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);

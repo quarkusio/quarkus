@@ -156,37 +156,20 @@ public class CliDriver {
 
         Result result = new Result();
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        PrintStream outPs = new PrintStream(out);
-        System.setOut(outPs);
+        io.smallrye.common.process.ProcessBuilder.newBuilder(Path.of(args[0]))
+                .arguments(Arrays.copyOfRange(args, 1, args.length))
+                .exitCodeChecker(ec -> {
+                    result.exitCode = ec;
+                    return true;
+                })
+                .directory(startingDir)
+                // since there is no I/O, we need an explicit timeout
+                .softExitTimeout(Duration.ofMinutes(5))
+                .hardExitTimeout(Duration.ofMinutes(5))
+                .output().inherited()
+                .error().logOnSuccess(false).gatherOnFail(false).inherited()
+                .run();
 
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        PrintStream errPs = new PrintStream(err);
-        System.setErr(errPs);
-
-        try {
-            io.smallrye.common.process.ProcessBuilder.newBuilder(Path.of(args[0]))
-                    .arguments(Arrays.copyOfRange(args, 1, args.length))
-                    .exitCodeChecker(ec -> {
-                        result.exitCode = ec;
-                        return true;
-                    })
-                    .directory(startingDir)
-                    // since there is no I/O, we need an explicit timeout
-                    .softExitTimeout(Duration.ofMinutes(5))
-                    .hardExitTimeout(Duration.ofMinutes(5))
-                    .output().inherited()
-                    .error().logOnSuccess(false).gatherOnFail(false).inherited()
-                    .run();
-        } finally {
-            outPs.flush();
-            errPs.flush();
-            System.setOut(stdout);
-            System.setErr(stderr);
-        }
-
-        result.stdout = out.toString();
-        result.stderr = err.toString();
         return result;
     }
 

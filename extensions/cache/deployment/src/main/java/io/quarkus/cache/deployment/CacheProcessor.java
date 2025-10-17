@@ -27,9 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.spi.DeploymentException;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -69,6 +66,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 class CacheProcessor {
 
@@ -103,7 +102,6 @@ class CacheProcessor {
     @BuildStep
     void validateCacheAnnotationsAndProduceCacheNames(CombinedIndexBuildItem combinedIndex,
             List<AdditionalCacheNameBuildItem> additionalCacheNames,
-            List<io.quarkus.cache.deployment.AdditionalCacheNameBuildItem> additionalCacheNamesDeprecated,
             BuildProducer<ValidationErrorBuildItem> validationErrors,
             BuildProducer<CacheNamesBuildItem> cacheNames, BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
 
@@ -171,9 +169,6 @@ class CacheProcessor {
 
         // Finally, additional cache names provided by other extensions must be added to the cache names collection.
         for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
-            names.add(additionalCacheName.getName());
-        }
-        for (io.quarkus.cache.deployment.AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNamesDeprecated) {
             names.add(additionalCacheName.getName());
         }
         cacheNames.produce(new CacheNamesBuildItem(names));

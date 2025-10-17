@@ -1,7 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Arch.AMD64;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,6 +56,7 @@ import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
+import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.AbnormalExitException;
 import io.smallrye.common.process.ProcessBuilder;
@@ -837,7 +836,7 @@ public class NativeImageBuildStep {
                  */
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0
                         && graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0
-                        && AMD64.active) {
+                        && (CPU.host() == CPU.x64)) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
                 }
 

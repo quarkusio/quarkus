@@ -54,7 +54,6 @@ import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
-import io.quarkus.cache.deployment.spi.CacheManagerInfoBuildItem;
 import io.quarkus.cache.deployment.spi.CacheTypeBuildItem;
 import io.quarkus.cache.runtime.CacheBuildConfig;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;

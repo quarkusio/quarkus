@@ -1,4 +1,4 @@
-package io.quarkus.cache.deployment.spi;
+package io.quarkus.cache.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.cache.CacheManagerInfo;

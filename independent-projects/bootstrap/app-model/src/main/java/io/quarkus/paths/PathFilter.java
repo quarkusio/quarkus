@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.quarkus.util.GlobUtil;
 
 public class PathFilter implements Serializable {
@@ -33,6 +35,10 @@ public class PathFilter implements Serializable {
 
     private List<Pattern> includes;
     private List<Pattern> excludes;
+
+    @JsonCreator
+    private PathFilter() {
+    }
 
     public PathFilter(Collection<String> includes, Collection<String> excludes) {
         this.includes = compile(includes);

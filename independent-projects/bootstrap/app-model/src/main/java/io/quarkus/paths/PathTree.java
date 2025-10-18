@@ -8,6 +8,15 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "treeType", defaultImpl = Void.class)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = DirectoryPathTree.class, name = "dir"),
+        @JsonSubTypes.Type(value = FilePathTree.class, name = "file"),
+        @JsonSubTypes.Type(value = ArchivePathTree.class, name = "archive")
+})
 public interface PathTree {
 
     static PathTree ofDirectoryOrFile(Path p) {

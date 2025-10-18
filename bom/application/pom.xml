@@ -197,7 +197,7 @@
         <avro.version>1.12.0</avro.version>
         <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <testcontainers.version>1.21.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <testcontainers.version>2.0.1</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.4.2</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.2</opensearch-testcontainers.version>

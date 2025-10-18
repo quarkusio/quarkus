@@ -83,7 +83,7 @@ public class ResteasyCommonProcessor {
 
     private static final DotName QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusObjectMapperContextResolver");
-    private static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+    private static final DotName OBJECT_MAPPER = DotName.createSimple("tools.jackson.databind.ObjectMapper");
     private static final DotName QUARKUS_JACKSON_SERIALIZER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer");
 

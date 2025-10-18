@@ -2,7 +2,7 @@ package io.quarkus.kubernetes.client;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.utils.KubernetesSerialization;

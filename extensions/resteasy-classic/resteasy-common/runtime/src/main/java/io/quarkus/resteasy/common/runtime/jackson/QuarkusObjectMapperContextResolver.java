@@ -6,7 +6,7 @@ import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @Provider
 @ApplicationScoped

@@ -3,7 +3,7 @@ package io.quarkus.jackson.runtime;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.runtime.annotations.Recorder;

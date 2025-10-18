@@ -300,7 +300,7 @@ public final class ResteasyReactiveDotNames {
             DotName.createSimple("jakarta.json.JsonValue"),
 
             // Jackson
-            DotName.createSimple("com.fasterxml.jackson.databind.JsonNode"),
+            DotName.createSimple("tools.jackson.databind.JsonNode"),
 
             // JAX-RS
             DotName.createSimple("jakarta.ws.rs.core.Response"),

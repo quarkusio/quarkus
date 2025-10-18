@@ -16,7 +16,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectReader;
 
 import io.quarkus.funqy.lambda.FunqyResponseImpl;
 import io.quarkus.funqy.lambda.config.FunqyAmazonBuildTimeConfig;

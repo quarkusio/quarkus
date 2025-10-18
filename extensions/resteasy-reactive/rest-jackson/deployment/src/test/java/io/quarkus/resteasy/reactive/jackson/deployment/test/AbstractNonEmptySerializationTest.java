@@ -6,8 +6,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.restassured.RestAssured;

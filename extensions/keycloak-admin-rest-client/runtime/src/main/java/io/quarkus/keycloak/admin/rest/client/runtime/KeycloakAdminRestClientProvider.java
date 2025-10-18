@@ -19,8 +19,8 @@ import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.keycloak.admin.client.spi.ResteasyClientProvider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

@@ -3,7 +3,7 @@ package com.example.reactivejackson;
 import jakarta.inject.Singleton;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 

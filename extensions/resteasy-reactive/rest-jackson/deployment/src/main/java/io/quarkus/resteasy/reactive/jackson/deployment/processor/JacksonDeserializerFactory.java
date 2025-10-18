@@ -25,20 +25,20 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.VoidType;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectCodec;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.deser.ContextualDeserializer;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.type.CollectionType;
+import tools.jackson.databind.type.MapType;
+import tools.jackson.databind.type.TypeFactory;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -180,11 +180,11 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *         return dataItem;
  *     }
  *
- *     public JsonDeserializer createContextual(DeserializationContext context, BeanProperty beanProperty) {
+ *     public ValueDeserializer createContextual(DeserializationContext context, BeanProperty beanProperty) {
  *         JavaType[] valueTypes = JacksonMapperUtil.getGenericsJavaTypes(context, beanProperty);
  *         DataItem$quarkusjacksondeserializer deserializer = new DataItem$quarkusjacksondeserializer();
  *         deserializer.valueTypes = valueTypes;
- *         return (JsonDeserializer) deserializer;
+ *         return (ValueDeserializer) deserializer;
  *     }
  * }
  * }</pre>
@@ -314,7 +314,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         classCreator.getFieldCreator(valueTypesField);
 
         MethodCreator createContextual = classCreator
-                .getMethodCreator("createContextual", JsonDeserializer.class, DeserializationContext.class, BeanProperty.class)
+                .getMethodCreator("createContextual", ValueDeserializer.class, DeserializationContext.class, BeanProperty.class)
                 .setModifiers(ACC_PUBLIC);
 
         ResultHandle deserializationContext = createContextual.getMethodParam(0);

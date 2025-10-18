@@ -21,8 +21,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.it.oidc.dev.services.SecurityIdentityUpdateWebSocket.ResponseDto;
@@ -133,7 +133,7 @@ public class WebSocketOidcTest {
                                     var responseDto = objectMapper.readValue(msg,
                                             SecurityIdentityUpdateWebSocket.ResponseDto.class);
                                     messages.add(responseDto);
-                                } catch (JsonProcessingException e) {
+                                } catch (JacksonException e) {
                                     throw new RuntimeException(e);
                                 }
                             });
@@ -312,7 +312,7 @@ public class WebSocketOidcTest {
         var requestDto = new SecurityIdentityUpdateWebSocket.RequestDto(message, metadata);
         try {
             return objectMapper.writeValueAsString(requestDto);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

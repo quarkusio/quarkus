@@ -3,7 +3,7 @@ package io.quarkus.it.rest.client.main;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class NonDefaultCtorTestFilter implements ClientRequestFilter {
 

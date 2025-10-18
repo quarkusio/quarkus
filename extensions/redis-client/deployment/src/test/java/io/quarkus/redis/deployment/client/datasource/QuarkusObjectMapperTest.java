@@ -14,16 +14,16 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -106,7 +106,7 @@ public class QuarkusObjectMapperTest {
         }
 
         @Override
-        public void serialize(Person person, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+        public void serialize(Person person, JsonGenerator jsonGenerator, SerializationContext serializerProvider)
                 throws IOException {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField("nAmE", person.getName());

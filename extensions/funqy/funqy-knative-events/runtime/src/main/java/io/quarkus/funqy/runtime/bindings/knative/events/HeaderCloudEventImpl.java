@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 import io.quarkus.funqy.knative.events.AbstractCloudEvent;
 import io.quarkus.funqy.knative.events.CloudEvent;

@@ -14,21 +14,21 @@ import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_DECODER;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import io.vertx.core.buffer.Buffer;
 
 /**
  * Copied from {@code io.vertx.core.json.jackson.BufferDeserializer} as that class is package private
  */
-public class BufferDeserializer extends JsonDeserializer<Buffer> {
+public class BufferDeserializer extends ValueDeserializer<Buffer> {
 
     @Override
-    public Buffer deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public Buffer deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
         String text = p.getText();
         try {
             return Buffer.buffer(BASE64_DECODER.decode(text));

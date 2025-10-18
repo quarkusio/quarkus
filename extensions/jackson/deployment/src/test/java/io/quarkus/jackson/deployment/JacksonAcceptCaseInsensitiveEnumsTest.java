@@ -7,8 +7,8 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -22,7 +22,7 @@ public class JacksonAcceptCaseInsensitiveEnumsTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void testAcceptCaseInsensitiveEnums() throws JsonProcessingException {
+    public void testAcceptCaseInsensitiveEnums() throws JacksonException {
         // Test upper case
         TestObject uppercase = objectMapper.readValue("{ \"testEnum\": \"ONE\" }", TestObject.class);
         assertThat(uppercase.testEnum).isEqualTo(TestEnum.ONE);

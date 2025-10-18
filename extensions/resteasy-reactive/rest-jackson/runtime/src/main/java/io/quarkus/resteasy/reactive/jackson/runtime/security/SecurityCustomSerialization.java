@@ -3,9 +3,9 @@ package io.quarkus.resteasy.reactive.jackson.runtime.security;
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.ser.impl.SimpleFilterProvider;
 
 public class SecurityCustomSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 

@@ -1,6 +1,6 @@
 package io.quarkus.amazon.lambda.runtime.handlers;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 public class JacksonUtil {
     public static String getText(String name, JsonNode node) {

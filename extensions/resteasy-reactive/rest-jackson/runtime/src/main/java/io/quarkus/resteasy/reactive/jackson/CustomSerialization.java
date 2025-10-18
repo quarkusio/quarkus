@@ -7,8 +7,8 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Type;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 import io.smallrye.common.annotation.Experimental;
 

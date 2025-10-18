@@ -174,7 +174,7 @@ public class KubernetesClientProcessor {
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
         final String[] deserializerClasses = fullIndex
-                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
+                .getAllKnownSubclasses(DotName.createSimple("tools.jackson.databind.ValueDeserializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
@@ -184,7 +184,7 @@ public class KubernetesClientProcessor {
                 .methods().build());
 
         final String[] serializerClasses = fullIndex
-                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
+                .getAllKnownSubclasses(DotName.createSimple("tools.jackson.databind.ValueSerializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))

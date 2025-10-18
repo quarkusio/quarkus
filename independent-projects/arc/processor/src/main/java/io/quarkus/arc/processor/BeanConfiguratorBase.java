@@ -345,6 +345,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     /**
      * Initialize the bean eagerly at application startup.
      * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
      * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
      * any always active bean, eager initialization is skipped to prevent needless failures.
      *
@@ -353,11 +355,13 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      */
     public THIS startup(int priority) {
         this.startupPriority = priority;
-        return self();
+        return unremovable();
     }
 
     /**
      * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
      * <p>
      * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
      * any always active bean, eager initialization is skipped to prevent needless failures.

@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
@@ -83,6 +84,7 @@ class NettyProcessor {
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
 
         reflectiveMethods.produce(
@@ -96,6 +98,13 @@ class NettyProcessor {
         reflectiveMethods.produce(
                 new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
                         "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), int.class.getName() }));
+
+        reflectiveFields.produce(
+                new ReflectiveFieldBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "java.nio.Bits", "UNALIGNED"));
+        reflectiveFields.produce(
+                new ReflectiveFieldBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "java.nio.Bits", "MAX_MEMORY"));
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
                 .build());

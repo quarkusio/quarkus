@@ -5,9 +5,9 @@ import java.util.stream.Stream;
 
 import org.hibernate.Session;
 
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
 
-public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
+public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl<?>> {
     /**
      * Provides the default implementations for quarkus to wire up. Should not be used by third party developers.
      */

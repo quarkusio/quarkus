@@ -1,0 +1,968 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Simplified Hibernate with Panache
+include::_attributes.adoc[]
+:categories: data
+:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
+:config-file: application.properties
+:topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
+:extensions: io.quarkus:quarkus-hibernate-panache,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
+
+Hibernate with Panache is the perfect solution if you want to get started using Hibernate in Quarkus.
+
+== Walk-through
+
+Let's take a progressive approach to learning how to use Hibernate with Panache, and start with a simple entity.
+
+This guide is not going to go into the specifics of using either Hibernate, or its underlying specification JPA,
+because both already have great documentation that you can and should use for more in-depth knowledge.
+
+== Importing the extension, and configuration
+
+```xml
+<!-- Import the Hibernate with Panache extension -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-panache</artifactId>
+</dependency>
+<!-- Pick your database driver -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+```
+
+Make sure you configure your datasource in your `application.properties` (although you don't have to in DEV
+mode: if you don't, a dev service will be provided for you):
+
+```properties
+# FIXME
+```
+
+== Our first entity
+
+What this guide will focus on is the basics of how to use Hibernate with Panache, so let's start with how to
+create an entity:
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import jakarta.persistence.Entity;
+
+import java.time.LocalDate;
+
+@Entity
+public class Cat extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+}
+```
+
+In order to map a Java class to a Database table, just:
+
+- Write a class
+- Annotate it with `@Entity`
+- Make it extend `PanacheEntity`
+- Make its fields `public`
+
+And that's it, now you can start creating instances of your entity, persist it to your database, after which point
+all changes to its fields will be automatically sent to the database (no need for any explicit `update` instruction),
+and even remove it from the database:
+
+```java
+import jakarta.transaction.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public class Code {
+
+    @Transactional <1>
+    public void method() {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Persist the cat
+        cat.persist();
+
+        // Make a change, no need to update it
+        cat.name = "Luckynou";
+
+        // Delete our cat
+        cat.delete();
+    }
+}
+```
+<1> This is required on any method which interacts with the database, in order to run the operations in a transaction.
+
+== Our first repository
+
+Now that we know how to create, update and delete our entities, let's see how we can query our database to find them,
+or even run delete queries.
+
+Because query operations do not belong on instances of our entities, we will place these operations on another type
+called a `Repository`, and because those queries are intimately tied with the entities they operate on, we recommend
+placing them on an interface nested in the entity:
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.hibernate.panache.PanacheRepository;
+import jakarta.persistence.Entity;
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Entity
+public class Cat extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+
+    public interface Repo extends PanacheRepository<Cat> {
+        @Find
+        Cat findByName(String name);
+
+        @HQL("where breed = CUTE")
+        List<Cat> findCute();
+
+        @HQL("delete from Cat where name = :name")
+        long deleteByName(String name);
+
+        @HQL("delete from Cat where breed = HAIRLESS")
+        long deleteHairless();
+    }
+}
+```
+
+A Hibernate with Panache repository is:
+
+- An interface nested in the entity (though it could be a toplevel interface if you prefer)
+- Which extends the `PanacheRepository` interface, with the entity in question as type parameter
+- And contains query methods, annotated with either `@Find` or `@HQL` or even `@SQL` (for native queries), or
+  `default` methods with implementation of queries
+
+You can use `@Find` methods to find single instances, or collections of entities, by using the parameters of the
+method to build a query. The Hibernate documentation has
+https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-finder-methods[all the information you need about this].
+
+TODO: common examples
+
+Alternately, you can use `@HQL` or `@SQL` queries, which support HQL and SQL queries. Once again
+the Hibernate documentation has https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-query-methods[all the information you need].
+
+TODO: common examples.
+
+The beauty of generated finder and query methods is that they are type-checked at build time: they will be validated
+and guarantee that you did not make any typo in the entity names, their fields, the HQL/SQL syntax, or the name of
+their parameters.
+
+=== Using the repository
+
+Using the repository can be done by simply injecting it where you intend to use it:
+
+```java
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @Transactional
+    public void method() {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Persist the cat
+        cat.persist();
+
+        // Make a change, no need to update it
+        cat.name = "Luckynou";
+
+        // Find our cat
+        cat = repo.findByName("Luckynou");
+
+        // Find cute cats
+        List<Cat> cuteCats = repo.findCute();
+
+        // Delete our cat
+        cat.delete();
+
+        // Delete queries
+        repo.deleteByName("Lucky");
+        repo.deleteHairless();
+    }
+}
+```
+
+Now, as an added benefit, you can also access the repository using a handy shortcut generated static method on the
+https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#static-metamodel[generated Metamodel]
+of your entity, which is super useful for discovery of operations (just type `Cat_.repo().` and see all your methods)
+and to avoid making a detour outside of your method to add an injected field, such as in this startup code that
+will delete all your cats (don't do this in production!!):
+
+```java
+import io.quarkus.runtime.Startup;
+import jakarta.transaction.Transactional;
+
+public class OnStart {
+    @Startup
+    @Transactional
+    public void startupMethod() {
+        Cat_.repo().deleteAll();
+    }
+}
+```
+
+All the repositories you define as nested interfaces of your entity will be available under their generated metamodel
+class under accessor methods of the same name as the repository. This is strictly equivalent to injecting the repository
+type, and in fact uses CDI under the hood to look up the repository.
+
+== The `PanacheRepository` super type
+
+Just like in previous versions of Hibernate ORM and Hibernate Reactive with Panache, the `PanacheRepository` type comes
+packed with most of the operations you need to work on your entity, such as, out of the box:
+
+```java
+import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.hibernate.Session;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @Transactional
+    public void repositoryOperations(Cat cat) {
+        // entity operations
+        repo.persist(cat);
+        repo.delete(cat);
+        boolean isPersistent = repo.isPersistent(cat);
+        // operations on all entities
+        long count = repo.count();
+        long deleted = repo.deleteAll();
+        List<Cat> allCats = repo.listAll();
+        repo.streamAll().forEach(kitty -> kitty.name = kitty.name.toUpperCase());
+        PanacheBlockingQuery<Cat> catQuery = repo.findAll();
+        // operations on the Hibernate session
+        repo.flush();
+        Session session = repo.getSession();
+        // ID-related operations
+        boolean wasDeleted = repo.deleteById(cat.id);
+        Cat foundCat = repo.findById(cat.id);
+        Optional<Cat> optionalCat = repo.findByIdOptional(cat.id);
+    }
+}
+```
+
+== Non-type-safe queries
+
+With generated finder and query methods, as we've previously shown, everything is validated at build-time, but if
+you want to write non-type-safe queries, you can always use the provided methods of `PanacheRepository`:
+
+```java
+import io.quarkus.hibernate.panache.blocking.PanacheBlockingQuery;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.hibernate.Session;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @Transactional
+    public void nonTypeSafeQueries() {
+        // Find a cat by name
+        Cat cat = repo.find(Cat_.NAME, "Lucky").singleResult();
+        // All cute cats
+        List<Cat> cuteCats = repo.list(Cat_.BREED, Cat.Breed.CUTE);
+        // Cats with no known birth date
+        repo.stream(Cat_.BIRTH+" is null").forEach(kitty -> System.err.println(kitty));
+        // Get rid of non-cute cats
+        long deleted = repo.delete(Cat_.BREED, Cat.Breed.HAIRLESS);
+        // Count ugly cats with no name
+        repo.count("breed = ?1 and name is null", Cat.Breed.HAIRLESS);
+        // Make every cat cute
+        repo.update("breed = CUTE");
+    }
+}
+```
+
+== About entity identifiers
+
+In the example above, we extended the `PanacheEntity` type, and did not define any database identifier, that's
+because `PanacheEntity` comes with a default generated database identifier, so you don't have to worry about it. It
+does this by extending the `WithId.AutoLong` class, which provides a generated database identifier of type `Long`.
+
+You can choose to extend the `WithId.AutoString` for a `String` identifier, or `WithId.AutoUUID` for a `UUID`
+identifier, or even extend `WithId<IdType>` to automatically get an attribute of the form:
+
+```java
+@Id
+@GeneratedValue
+public IdType id;
+```
+
+Naturally, you can also provide your own database identifier explicitly and implement the `PanacheEntity.Managed`
+interface in your entity, as well as use the `PanacheRepository.Managed` interface for your repository, in order to
+specify you database identifier type:
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.hibernate.panache.PanacheRepository;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Entity
+public class CatWithId implements PanacheEntity.Managed {
+    @Id
+    public String id;
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+
+    public interface Repo extends PanacheRepository.Managed<CatWithId, String> {
+        @Find
+        CatWithId findByName(String name);
+
+        @HQL("where breed = CUTE")
+        List<CatWithId> findCute();
+
+        @HQL("delete from Cat where name = :name")
+        long deleteByName(String name);
+
+        @HQL("delete from Cat where breed = HAIRLESS")
+        long deleteHairless();
+    }
+}
+```
+
+Here is a list of entity supertypes you can use and the ID type they provide, but keep in mind you do not have to
+extend any of these types if you define you own ID:
+
+[cols="1,1,1"]
+|===
+|ID type|Supertype|Shortcut type
+
+|`Long`
+|`WithId.AutoLong`
+|`PanacheEntity`
+
+|`UUID`
+|`WithId.AutoUUID`
+|
+
+|`String`
+|`WithId.String`
+|
+
+|`T`
+|`WithId<T>
+|
+
+|===
+
+== Use stateless sessions
+
+Out of the box, your subtype of `PanacheEntity` will be managed by Hibernate ORM, and every change to the entity will
+be automatically sent to the database without requiring any explicit `update` operation.
+
+If on the other hand, you wish to make every `update` operation explicit, then you need to use what Hibernate ORM calls
+a _stateless session_.
+
+In this case, you need to extend `WithId.AutoLong` (or any other ID class or provide your own ID), and implement
+the `PanacheEntity.Stateless` and `PanacheRepository.Stateless` interfaces:
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.hibernate.panache.WithId;
+import jakarta.persistence.Entity;
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Entity
+public class Cat extends WithId.AutoLong implements PanacheEntity.Stateless {
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+
+    public interface Repo extends PanacheRepository.Stateless<Cat, Long> {
+        @Find
+        Cat findByName(String name);
+
+        @HQL("where breed = CUTE")
+        List<Cat> findCute();
+
+        @HQL("delete from Cat where name = :name")
+        long deleteByName(String name);
+
+        @HQL("delete from Cat where breed = HAIRLESS")
+        long deleteHairless();
+    }
+}
+```
+
+As you can see, your entity definition is exactly the same, besides the two interfaces. But now, your entities will
+not be _managed_, so every update operation has to be explicit:
+
+```java
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.hibernate.StatelessSession;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @Transactional
+    public void method() {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Persist the cat
+        cat.insert();
+
+        // Make a change, we need to update it
+        cat.name = "Luckynou";
+        cat.update();
+
+        // Find our cat
+        cat = repo.findByName("Luckynou");
+
+        // Find cute cats
+        List<Cat> cuteCats = repo.findCute();
+
+        // Delete our cat
+        cat.delete();
+
+        // Delete queries
+        repo.deleteByName("Lucky");
+        repo.deleteHairless();
+    }
+}
+```
+
+As you can see, the only differences with a managed entity are:
+
+- Any change to the entity instance fields must be explicitly pushed to the database by calling `update()` either on
+the entity or its repository
+- You need to call `insert()` instead of `persist()` to insert the entity in the database
+- Your session will be of type `StatelessSession` instead of `Session`.
+
+But that's mostly it. Everything else stays the same, in particular for queries and how to obtain entities.
+
+== Let's get reactive
+
+You want to start using your entities in a reactive application? Let's start by importing Hibernate Reactive in your
+`pom.xml` as well as a data source for your database:
+
+```xml
+<!-- Enable Hibernate Reactive support -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-reactive</artifactId>
+</dependency>
+<!-- Pick your database reactive driver -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-reactive-pg-client</artifactId>
+</dependency>
+<!-- FIXME: this will go in time -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
+</dependency>
+```
+
+Make sure you configure your reactive datasource in your `application.properties` (although you don't have to in DEV
+mode: if you don't, a dev service will be provided for you):
+
+```properties
+# FIXME
+```
+
+Now, in your code, the only differences with a regular managed session entity are:
+
+- Your entity implements `PanacheEntity.Reactive`
+- Your repository extends `PanacheRepository.Reactive`
+- All the operations return a `Uni<T>` instead of `T`, which is the standard Mutiny reactive type
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.hibernate.panache.WithId;
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.Entity;
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Entity
+public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive {
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+
+    public interface Repo extends PanacheRepository.Reactive<Cat, Long> {
+        @Find
+        Uni<Cat> findByName(String name);
+
+        @HQL("where breed = CUTE")
+        Uni<List<Cat>> findCute();
+
+        @HQL("delete from Cat where name = :name")
+        Uni<Integer> deleteByName(String name);
+
+        @HQL("delete from Cat where breed = HAIRLESS")
+        Uni<Integer> deleteHairless();
+    }
+}
+```
+
+And now when you want to use your entity or its repository, besides using `@WithTransaction` in place of
+`@Transactional`, you have to compose operations as you normally do in reactive code with Mutiny, but the operations are
+exactly the same otherwise:
+
+```java
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @WithTransaction
+    public Uni<Void> method() {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Persist the cat
+        return cat.persist()
+                // Make a change, no need to update it
+                .invoke(() -> cat.name = "Luckynou")
+                // Find our cat
+                .chain(() -> repo.findByName("Luckynou"))
+                // Find cute cats
+                .chain((Cat foundCat) -> repo.findCute())
+                // Delete our cat
+                .chain((List<Cat> cuteCats) -> cat.delete())
+                // Delete queries
+                .chain(v -> repo.deleteByName("Lucky"))
+                .chain((Integer deletedCount) -> repo.deleteHairless())
+                .replaceWithVoid();
+    }
+}
+```
+
+== Reactive and stateless
+
+If you want to manage manually your entity changes, then you can use a stateless session by switching to
+the `PanacheEntity.Reactive.Stateless` for your entity, and `PanacheRepository.Reactive.Stateless`:
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.hibernate.panache.PanacheRepository;
+import io.quarkus.hibernate.panache.WithId;
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.Entity;
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Entity
+public class Cat extends WithId.AutoLong implements PanacheEntity.Reactive.Stateless {
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+
+    public interface Repo extends PanacheRepository.Reactive.Stateless<Cat, Long> {
+        @Find
+        Uni<Cat> findByName(String name);
+
+        @HQL("where breed = CUTE")
+        Uni<List<Cat>> findCute();
+
+        @HQL("delete from Cat where name = :name")
+        Uni<Integer> deleteByName(String name);
+
+        @HQL("delete from Cat where breed = HAIRLESS")
+        Uni<Integer> deleteHairless();
+    }
+}
+```
+
+And for your usage code, the only change is the standard use of manually calling `update()`, and using `insert()`
+instead of `persist()`:
+
+```java
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @WithTransaction
+    public Uni<Void> method() {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Persist the cat
+        return cat.insert()
+                // Make a change, we need to update it
+                .chain(() -> {
+                    cat.name = "Luckynou";
+                    return cat.update();
+                })
+                // Find our cat
+                .chain(() -> repo.findByName("Luckynou"))
+                // Find cute cats
+                .chain((Cat foundCat) -> repo.findCute())
+                // Delete our cat
+                .chain((List<Cat> cuteCats) -> cat.delete())
+                // Delete queries
+                .chain(v -> repo.deleteByName("Lucky"))
+                .chain((Integer deletedCount) -> repo.deleteHairless())
+                .replaceWithVoid();
+    }
+}
+```
+
+== Combining blocking, reactive, managed, stateless code
+
+Let's say you want to use an entity in a blocking managed session code, but also in a reactive stateless code: this
+is possible no matter which supertype of your entity you picked. You should pick the supertype that represents your
+majority of use-cases, but any one you pick, you can always obtain the alternative operations by using the
+`.statelessReactive()` method on the entity:
+
+```java
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
+import jakarta.transaction.Transactional;
+
+import java.time.LocalDate;
+
+public class Code {
+
+    @Transactional
+    public void blockingManagedMethod() {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Persist the cat
+        cat.persist();
+
+        // Make a change, no need to update it
+        cat.name = "Luckynou";
+    }
+
+    @WithTransaction
+    public Uni<Void> reactiveStatelessMethod(Long catId) {
+        Cat cat = new Cat();
+        cat.name = "Lucky";
+        cat.birth = LocalDate.of(2015, 01, 12);
+        cat.breed = Cat.Breed.CUTE;
+
+        // Insert the cat
+        return cat.statelessReactive().insert()
+                .chain(() -> {
+                    // Make a change, we need to update it
+                    cat.name = "Luckynou";
+                    return cat.statelessReactive().update();
+                });
+
+    }
+}
+```
+
+All the alternative entity operations are available from these methods:
+
+[cols="1,1,1"]
+|===
+|Session type|Entity accessor|Equivalent entity type
+
+|`Session`
+|`.managedBlocking()`
+|`PanacheEntity.Managed`
+
+|`StatelessSession`
+|`.statelessBlocking()`
+|`PanacheEntity.Stateless`
+
+|`Mutiny.Session`
+|`.statelessManaged()`
+|`PanacheEntity.Reactive`
+
+|`Mutiny.StatelessSession`
+|`.statelessReactive()`
+|`PanacheEntity.Reactive.Stateless`
+
+|===
+
+Similarly, for all the repository operations, you can obtain alternate repositories for your entity from the
+generated metamodel accessors, or by injecting them with `@Inject`:
+
+[cols="1,1,1"]
+|===
+|Session type|Metamodel accessor|Repository type
+
+|`Session`
+|`Cat_.managedBlocking()`
+|`PanacheRepository.Managed<Cat, Long>`
+
+|`StatelessSession`
+|`Cat_.statelessBlocking()`
+|`PanacheRepository.Stateless<Cat, Long>`
+
+|`Mutiny.Session`
+|`Cat_.statelessManaged()`
+|`PanacheRepository.Reactive<Cat, Long>`
+
+|`Mutiny.StatelessSession`
+|`Cat_.statelessReactive()`
+|`PanacheRepository.Reactive.Stateless<Cat, Long>`
+
+|===
+
+But you can also define any number of repositories for your custom operations within your entity:
+
+```java
+import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.hibernate.panache.PanacheRepository;
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.Entity;
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Entity
+public class Cat extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+    public Breed breed;
+
+    public enum Breed {
+        CUTE, HAIRLESS;
+    }
+
+    public interface Repo extends PanacheRepository<Cat> {
+        @Find
+        Cat findByName(String name);
+    }
+
+    public interface TheOtherRepo extends PanacheRepository.Reactive.Stateless<Cat, Long> {
+        @Find
+        Uni<Cat> findByName(String name);
+    }
+}
+```
+
+And then you can inject both types of repositories:
+
+```java
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+public class Code {
+
+    @Inject
+    Cat.Repo repo;
+
+    @Inject
+    Cat.TheOtherRepo theOtherRepo;
+
+    @Transactional
+    public void blockingManagedMethod() {
+        Cat cat = repo.findByName("Lucky");
+    }
+
+    @WithTransaction
+    public Uni<Void> reactiveStatelessMethod() {
+        return theOtherRepo.findByName("Lucky")
+                .invoke(cat -> System.err.println(cat))
+                .replaceWithVoid();
+    }
+}
+```
+
+NOTE: you can of course also use the generated metamodel accessors instead of injecting these repositories, with
+`Cat_.repo()` and `Cat_.theOtherRepo()`.
+
+== Recap
+
+Here is a table listing all the options you have for your entity and repository supertypes, depending on which
+model of operation you prefer, and which ID type you want. Remember you don't have to extend `WithId<Id>` if you
+define your own ID entity field:
+
+[cols="1,1,1,1,1"]
+|===
+|Session type|ID type|Entity superclass|Entity superinterface|Repository supertype
+
+|`Session` (managed, blocking)
+|`Long`
+|`PanacheEntity`
+|
+|`PanacheRepository<Entity>`
+
+|`Session` (managed, blocking)
+|`Id`
+|`WithId<Id>`
+|`PanacheEntity.Managed`
+|`PanacheRepository.Managed<Entity, Id>`
+
+|`StatelessSession` (stateless, blocking)
+|`Id`
+|`WithId<Id>`
+|`PanacheEntity.Stateless`
+|`PanacheRepository.Stateless<Entity, Id>`
+
+|`Mutiny.Session` (managed, reactive)
+|`Id`
+|`WithId<Id>`
+|`PanacheEntity.Reactive`
+|`PanacheRepository.Reactive<Entity, Id>`
+
+
+|`Mutiny.StatelessSession` (stateless, reactive)
+|`Id`
+|`WithId<Id>`
+|`PanacheEntity.Reactive.Stateless`
+|`PanacheRepository.Reactive.Stateless<Entity, Id>`
+
+|===
+
+== Startup code
+
+For blocking operations, invoking startup code is pretty trivial:
+
+```java
+import io.quarkus.runtime.Startup;
+import jakarta.transaction.Transactional;
+
+public class OnStart {
+    @Startup
+    @Transactional
+    public void startupMethod() {
+        Cat_.repo().deleteAll();
+    }
+}
+```
+
+For reactive operations, it is a little more complex at the moment, because you need a regular `@Startup` method,
+from which you invoke your reactive `@WithTransaction` method from within a call to
+`VertxContextSupport.subscribeAndAwait` (don't worry, we are working on making this easier):
+
+```java
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.runtime.Startup;
+import io.quarkus.vertx.VertxContextSupport;
+import io.smallrye.mutiny.Uni;
+
+public class OnStart {
+    @Startup
+    public void start() throws Throwable {
+        VertxContextSupport.subscribeAndAwait(() -> runit());
+    }
+
+    @WithTransaction
+    Uni<Void> runit(){
+        return Cat_.repo().deleteAll().replaceWithVoid();
+    }
+}
+```
+
+== Jakarta Data
+
+TODO
+
+== HQL, JDQL, Panache-QL
+
+TODO: explain them here

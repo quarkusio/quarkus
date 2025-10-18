@@ -1,0 +1,23 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate with Panache.Next"
+metadata:
+  keywords:
+  - "hibernate-orm-panache"
+  - "hibernate-hr-panache"
+  - "panache"
+  - "hibernate"
+  - "hibernate-reactive"
+  - "jakarta-data"
+  - "jpa"
+  guide: "https://quarkus.io/guides/hibernate-panache"
+  categories:
+  - "data"
+  status: "experimental"
+  config:
+  - "quarkus.datasource."
+  - "quarkus.hibernate-orm."
+  codestart:
+    name: "hibernate-panache"
+    languages: ["java"]
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

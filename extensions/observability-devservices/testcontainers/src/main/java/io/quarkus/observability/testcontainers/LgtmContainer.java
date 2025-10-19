@@ -104,8 +104,10 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         this.scrapingRequired = scrapingRequired;
         // always expose both -- since the LGTM image already does that as well
         addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
-        config.otelGrpcPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_GRPC_EXPORTER_PORT));
-        config.otelHttpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_HTTP_EXPORTER_PORT));
+        if (!useHostNetworkMode()) {
+            config.otelGrpcPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_GRPC_EXPORTER_PORT));
+            config.otelHttpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_HTTP_EXPORTER_PORT));
+        }
 
         Optional<Set<LgtmComponent>> logging = config.logging();
         logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
@@ -150,6 +152,16 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                                 .withStartupTimeout(config.timeout()));
     }
 
+    protected boolean hasScraping() {
+        return config.forceScraping().orElse(scrapingRequired);
+    }
+
+    @Override
+    protected boolean useHostNetworkMode() {
+        // only makes sense on Linux AND if we need scraping
+        return OS.current() == OS.LINUX && hasScraping();
+    }
+
     @Override
     protected String prefix() {
         return "LGTM";
@@ -182,7 +194,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     private String getPrometheusConfig() {
         String scraping = config.scrapingInterval() + "s";
         String prometheusConfig = String.format(PROMETHEUS_CONFIG_DEFAULT, scraping);
-        if (config.forceScraping().orElse(scrapingRequired)) {
+        if (hasScraping()) {
             boolean isTest = LaunchMode.current() == LaunchMode.TEST;
             Config runtimeConfig = ConfigProvider.getConfig();
             String rootPath = runtimeConfig.getOptionalValue("quarkus.management.root-path", String.class).orElse("/q");
@@ -193,12 +205,14 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
             int httpPort = optionalValue.orElse(isTest ? 8081 : 8080); // when not set use default
 
             // On Linux, you can’t automatically resolve host.docker.internal,
-            // you need to provide the following run flag when you start the container:
-            //--add-host=host.docker.internal:host-gateway
-            if (OS.current() == OS.LINUX) {
+            // you need to provide the following run flags when you start the container:
+            //--net=host
+            //--add-host=host.docker.internal:127.0.0.1
+            if (useHostNetworkMode()) {
                 withCreateContainerCmdModifier(cmd -> cmd
                         .getHostConfig()
-                        .withExtraHosts("host.docker.internal:host-gateway"));
+                        .withNetworkMode("host")
+                        .withExtraHosts("host.docker.internal:127.0.0.1"));
             }
 
             prometheusConfig += String.format(PROMETHEUS_CONFIG_SCRAPE, config.serviceName(), rootPath, metricsPath, scraping,

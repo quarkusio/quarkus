@@ -376,63 +376,42 @@ public class HttpSecurityRecorder {
             }
 
             if (proactiveAuthentication) {
-                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
-                potentialUser
-                        .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                authenticator
+                        .attemptAuthentication(event)
+                        .onItem().ifNull().switchTo(new Supplier<Uni<? extends SecurityIdentity>>() {
                             @Override
-                            public void onSubscribe(UniSubscription subscription) {
-
+                            public Uni<? extends SecurityIdentity> get() {
+                                return authenticator.getIdentityProviderManager()
+                                        .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
                             }
-
+                        })
+                        .invoke(new Consumer<SecurityIdentity>() {
                             @Override
-                            public void onItem(SecurityIdentity identity) {
-                                if (event.response().ended()) {
-                                    return;
-                                }
-                                if (identity == null) {
-                                    Uni<SecurityIdentity> anon = authenticator.getIdentityProviderManager()
-                                            .authenticate(
-                                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
-                                    anon.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-                                        @Override
-                                        public void onSubscribe(UniSubscription subscription) {
-
-                                        }
-
-                                        @Override
-                                        public void onItem(SecurityIdentity item) {
-                                            event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, anon);
-                                            event.setUser(new QuarkusHttpUser(item));
-                                            event.next();
-                                        }
-
-                                        @Override
-                                        public void onFailure(Throwable failure) {
-                                            BiConsumer<RoutingContext, Throwable> handler = event
-                                                    .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-                                            if (handler != null) {
-                                                handler.accept(event, failure);
-                                            }
-                                        }
-                                    });
-                                } else {//when the result is evaluated we set the user, even if it is evaluated lazily
-                                    event.setUser(new QuarkusHttpUser(identity));
-                                    event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, potentialUser);
-                                    event.next();
-                                }
+                            public void accept(SecurityIdentity identity) {
+                                QuarkusHttpUser.setIdentity(identity, event);
                             }
-
-                            @Override
-                            public void onFailure(Throwable failure) {
-                                //this can be customised
-                                BiConsumer<RoutingContext, Throwable> handler = event
-                                        .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-                                if (handler != null) {
-                                    handler.accept(event, failure);
-                                }
-
-                            }
-                        });
+                        })
+                        .subscribe().with(
+                                new Consumer<SecurityIdentity>() {
+                                    @Override
+                                    public void accept(SecurityIdentity ignored) {
+                                        if (event.response().ended()) {
+                                            return;
+                                        }
+                                        event.next();
+                                    }
+                                },
+                                new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(Throwable failure) {
+                                        //this can be customised
+                                        BiConsumer<RoutingContext, Throwable> handler = event
+                                                .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+                                        if (handler != null) {
+                                            handler.accept(event, failure);
+                                        }
+                                    }
+                                });
             } else {
 
                 Uni<SecurityIdentity> lazyUser = Uni

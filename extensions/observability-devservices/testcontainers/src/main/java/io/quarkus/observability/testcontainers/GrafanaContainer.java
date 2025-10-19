@@ -17,8 +17,10 @@ public abstract class GrafanaContainer<T extends GrafanaContainer<T, C>, C exten
         this.config = config;
         withEnv("GF_SECURITY_ADMIN_USER", config.username());
         withEnv("GF_SECURITY_ADMIN_PASSWORD", config.password());
-        addExposedPort(ContainerConstants.GRAFANA_PORT);
-        config.grafanaPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.GRAFANA_PORT));
+        if (!useHostNetworkMode()) {
+            addExposedPort(ContainerConstants.GRAFANA_PORT);
+            config.grafanaPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.GRAFANA_PORT));
+        }
         waitingFor(waitStrategy());
     }
 

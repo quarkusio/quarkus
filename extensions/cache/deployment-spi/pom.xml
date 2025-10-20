@@ -18,10 +18,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-cache-runtime-spi</artifactId>
-        </dependency>
     </dependencies>
     
 </project>

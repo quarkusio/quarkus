@@ -8,7 +8,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.cache.CompositeCacheKey;
-import io.quarkus.cache.deployment.spi.CacheManagerInfoBuildItem;
+import io.quarkus.cache.deployment.CacheManagerInfoBuildItem;
 import io.quarkus.cache.infinispan.runtime.CompositeKeyMarshallerBean;
 import io.quarkus.cache.infinispan.runtime.InfinispanCacheBuildRecorder;
 import io.quarkus.cache.infinispan.runtime.InfinispanCachesBuildTimeConfig;

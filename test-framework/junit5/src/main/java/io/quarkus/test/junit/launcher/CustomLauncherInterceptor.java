@@ -87,6 +87,11 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
         if (!isProductionModeTests()) {
             initializeFacadeClassLoader();
             adjustContextClassLoader();
+
+            // we need to ensure that the Fork-Join pool will use our thread factory, otherwise the TCCL
+            // of the threads could be wrong
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
+                    "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
         }
 
     }

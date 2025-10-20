@@ -6,7 +6,7 @@ import java.util.Collection;
 import org.eclipse.lsp4j.debug.Variable;
 
 import io.quarkus.qute.ResolutionContext;
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
 
 /**

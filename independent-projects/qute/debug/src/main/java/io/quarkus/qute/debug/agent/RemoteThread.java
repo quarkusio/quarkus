@@ -17,6 +17,8 @@ import io.quarkus.qute.debug.StoppedEvent.StoppedReason;
 import io.quarkus.qute.debug.ThreadEvent;
 import io.quarkus.qute.debug.ThreadEvent.ThreadStatus;
 import io.quarkus.qute.debug.agent.breakpoints.RemoteBreakpoint;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.SectionFrameGroup;
 import io.quarkus.qute.trace.ResolveEvent;
 
 /**
@@ -65,6 +67,8 @@ public class RemoteThread extends Thread {
      */
     private transient final LinkedList<RemoteStackFrame> frames;
 
+    private transient final LinkedList<SectionFrameGroup> sectionFrameStack;
+
     /**
      * Reference to the agent managing this thread.
      */
@@ -88,6 +92,7 @@ public class RemoteThread extends Thread {
     public RemoteThread(java.lang.Thread thread, DebuggeeAgent agent) {
         this.lock = new Object();
         this.frames = new LinkedList<>();
+        this.sectionFrameStack = new LinkedList<>();
         super.setId((int) thread.getId());
         super.setName(thread.getName());
         this.agent = agent;
@@ -158,40 +163,96 @@ public class RemoteThread extends Thread {
     }
 
     /**
-     * Called when a Qute template node is about to be resolved.
+     * Called before a Qute template node is resolved.
      * <p>
-     * This method updates the stack frames and determines whether
-     * execution should be suspended due to a breakpoint or step condition.
+     * Updates the current stack frames and handles section frame groups for
+     * template sections (loops, conditionals, etc.).
      * </p>
      *
-     * @param event the {@link ResolveEvent} representing the node resolution
+     * <p>
+     * Sections include constructs like #for, #each, #if, and any other Qute
+     * section nodes. Each section has its own SectionFrameGroup which tracks
+     * the stack frames created while rendering that section.
+     * </p>
+     *
+     * @param event the ResolveEvent representing the node resolution
      */
-    public void onTemplateNode(ResolveEvent event) {
+    public void onBeforeResolve(ResolveEvent event) {
         if (this.isStopped()) {
             return;
         }
 
         var engine = event.getEngine();
-        RemoteStackFrame frame = new RemoteStackFrame(event, getCurrentFrame(), agent.getSourceTemplateRegistry(engine),
-                agent.getVariablesRegistry(), this);
+
+        // Create a new stack frame for the current node
+        RemoteStackFrame frame = new RemoteStackFrame(
+                event,
+                getCurrentFrame(),
+                agent.getSourceTemplateRegistry(engine),
+                agent.getVariablesRegistry(),
+                this);
+
+        // Handle section frames (loops / #for / #each / #if / other sections)
+        var sectionGroup = sectionFrameStack.isEmpty() ? null : sectionFrameStack.getFirst();
+        if (sectionGroup != null) {
+            // Update the section frame group index if iteration has changed and detach old frames
+            sectionGroup.detachFramesIfIndexChanged(event.getContext().getData(), frames);
+            // Add the current frame to the section group
+            sectionGroup.addFrame(frame);
+        }
+
+        // If the current node is a section, push a new SectionFrameGroup to track its frames
+        if (event.getTemplateNode().isSection()) {
+            sectionFrameStack.addFirst(new SectionFrameGroup(event.getTemplateNode().asSection().getHelper()));
+        }
+
+        // Add the frame to the main thread stack
         this.frames.addFirst(frame);
+
         String templateId = frame.getTemplateId();
         URI sourceUri = frame.getTemplateUri();
         RemoteStackFrame previous = frame.getPrevious();
 
+        // Step handling: suspend if stop condition matches
         if (this.stopCondition != null && this.stopCondition.test(event.getTemplateNode())) {
             // suspend and wait because of step reason.
             this.suspendAndWait(StoppedReason.STEP);
         } else {
+            // Breakpoint handling: suspend if a breakpoint matches this frame
             int lineNumber = frame.getLine();
             RemoteBreakpoint breakpoint = agent.getBreakpoint(sourceUri, templateId, lineNumber, engine);
             if (breakpoint != null // a breakpoint matches the frame line number
-                    && (previous == null || !previous.getTemplateId().equals(templateId) || previous.getLine() != lineNumber
+                    && (previous == null
+                            || !previous.getTemplateId().equals(templateId)
+                            || previous.getLine() != lineNumber
                             || event.getTemplateNode().isExpression())
                     && breakpoint.checkCondition(frame)) {
                 // suspend and wait because of breakpoint reason.
                 this.suspendAndWait(StoppedReason.BREAKPOINT);
             }
+        }
+    }
+
+    /**
+     * Called after a Qute template node has been resolved.
+     * <p>
+     * Cleans up section frame groups if the resolved node was a section.
+     * This includes loops (#for / #each), conditionals (#if), or any other
+     * section nodes. Frames accumulated during the section are detached from
+     * the main thread stack when the section ends.
+     * </p>
+     *
+     * @param event the ResolveEvent representing the node resolution
+     */
+    public void onAfterResolve(ResolveEvent event) {
+        if (this.isStopped()) {
+            return;
+        }
+
+        // If the node is a section, pop its SectionFrameGroup and detach its frames
+        if (event.getTemplateNode().isSection()) {
+            var sectionGroup = sectionFrameStack.removeFirst();
+            sectionGroup.detachFrames(frames);
         }
     }
 

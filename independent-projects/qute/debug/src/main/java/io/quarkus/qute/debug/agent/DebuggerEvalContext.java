@@ -7,6 +7,7 @@ import java.util.concurrent.CompletionStage;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.ResolutionContext;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 
 /**
  * Implementation of {@link EvalContext} used by the Qute debugger.

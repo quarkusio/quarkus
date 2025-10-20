@@ -10,7 +10,7 @@ import org.eclipse.lsp4j.debug.Variable;
 
 import io.quarkus.qute.Mapper;
 import io.quarkus.qute.ResolutionContext;
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.variables.VariablesProvider;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
 

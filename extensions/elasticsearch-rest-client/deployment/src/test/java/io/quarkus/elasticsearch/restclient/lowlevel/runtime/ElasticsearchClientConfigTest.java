@@ -1,11 +1,13 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -20,16 +22,19 @@ public class ElasticsearchClientConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(TestConfigurator.class, RestClientBuilderHelper.class)
+                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(TestConfigurator.class)
                             .addAsResource(new StringAsset("quarkus.elasticsearch.hosts=elasticsearch:9200"),
                                     "application.properties"));
 
     @Inject
     ElasticsearchClientsRuntimeConfig config;
 
+    @Inject
+    RestClient client;
+
     @Test
     public void testRestClientBuilderHelperWithElasticsearchClientConfig() {
-        RestClientBuilderHelper.createRestClientBuilder(config).build();
+        assertNotNull(client);
         assertTrue(TestConfigurator.invoked);
     }
 

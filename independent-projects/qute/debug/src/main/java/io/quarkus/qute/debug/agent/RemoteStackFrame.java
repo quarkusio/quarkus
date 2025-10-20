@@ -176,7 +176,15 @@ public class RemoteStackFrame extends StackFrame {
      * </p>
      */
     private CompletableFuture<Object> evaluateExpressionInRenderThread(String expression) {
-        return remoteThread.evaluateInRenderThread(() -> event.getContext().evaluate(expression).toCompletableFuture());
+        return remoteThread.evaluateInRenderThread(() -> {
+            try {
+                return event.getContext().evaluate(expression).toCompletableFuture();
+            } catch (Exception e) {
+                // ex : with expression 'http:', the getContext().evaluate(expression) throws a TemplateException
+                // with the message "Parser error: empty expression found {http:}"
+                return CompletableFuture.failedFuture(e);
+            }
+        });
     }
 
     /**

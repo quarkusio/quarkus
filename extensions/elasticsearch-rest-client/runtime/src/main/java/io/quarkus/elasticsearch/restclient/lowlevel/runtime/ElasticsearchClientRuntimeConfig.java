@@ -6,18 +6,17 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
 public interface ElasticsearchClientRuntimeConfig {
-    /**
-     * The list of hosts of the Elasticsearch servers.
-     */
-    @WithDefault("localhost:9200")
-    List<InetSocketAddress> hosts();
+
+    // TODO: MB#1 implement this ?
+    //	/**
+    //	 * Defines if the client is enabled.
+    //	 */
+    //	@WithDefault("true")
+    //	boolean enabled();
 
     /**
      * The list of hosts of the Elasticsearch servers.
@@ -103,4 +102,5 @@ public interface ElasticsearchClientRuntimeConfig {
         @WithDefault("5M")
         Duration refreshInterval();
     }
+
 }

@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.test.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -8,11 +9,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 import jakarta.inject.Inject;
 
@@ -32,6 +36,9 @@ import io.quarkus.websockets.next.UserData.TypedKey;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.vertx.core.Context;
+import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.net.ProxyOptions;
 
 public class BasicConnectorTest {
 
@@ -117,12 +124,35 @@ public class BasicConnectorTest {
         assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
 
         CountDownLatch conn2Latch = new CountDownLatch(1);
-        WebSocketClientConnection connection2 = BasicWebSocketConnector
+        WebSocketClientConnection connection2 = createConnection2(conn2Latch, (o1, o2) -> {
+        });
+        assertNotNull(connection2);
+        assertTrue(connection2.handshakeRequest().localAddress().matches("127\\.0\\.0\\.1:\\d+"));
+        assertEquals("127.0.0.1:8081", connection2.handshakeRequest().remoteAddress());
+        assertTrue(conn2Latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void testClientOptionsCustomization() {
+        // same connection with empty customizer succeeds in the 'testClient' test method,
+        // together with the thrown exception, this verifies that client options customization works
+        assertThatThrownBy(() -> createConnection2(new CountDownLatch(1), (ignored, clientOptions) -> {
+            clientOptions.setProxyOptions(new ProxyOptions()
+                    .setHost("robert")
+                    .setPort(999)
+                    .setConnectTimeout(Duration.ofMillis(500)));
+        })).rootCause().isInstanceOf(UnknownHostException.class).hasMessageContaining("robert");
+    }
+
+    private WebSocketClientConnection createConnection2(CountDownLatch conn2Latch,
+            BiConsumer<WebSocketConnectOptions, WebSocketClientOptions> customizer) {
+        return BasicWebSocketConnector
                 .create()
                 .baseUri(uri)
                 .path("/Cool")
                 .executionModel(ExecutionModel.NON_BLOCKING)
                 .addHeader("X-Test", "foo")
+                .customizeOptions(customizer)
                 .onTextMessage((c, m) -> {
                     assertTrue(Context.isOnEventLoopThread());
                     // Path params not set
@@ -132,10 +162,6 @@ public class BasicConnectorTest {
                     conn2Latch.countDown();
                 })
                 .connectAndAwait();
-        assertNotNull(connection2);
-        assertTrue(connection2.handshakeRequest().localAddress().matches("127\\.0\\.0\\.1:\\d+"));
-        assertEquals("127.0.0.1:8081", connection2.handshakeRequest().remoteAddress());
-        assertTrue(conn2Latch.await(5, TimeUnit.SECONDS));
     }
 
     @WebSocket(path = "/end/{name}")

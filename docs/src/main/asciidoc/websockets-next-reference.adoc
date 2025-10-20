@@ -1291,21 +1291,25 @@ public class MyBean {
         WebSocketClientConnection connection = connector
             .baseUri(uri) <2>
             .pathParam("name", "Roxanne") <3>
+            .customizeOptions((connectOptions, clientOptions) -> {  <4>
+               // ...
+            })
             .connectAndAwait();
-        connection.sendTextAndAwait("Hi!"); <4>
+        connection.sendTextAndAwait("Hi!"); <5>
     }
 }
 ----
 <1> Inject the connector for `ClientEndpoint`.
 <2> If the base `URI` is not supplied we attempt to obtain the value from the config. The key consists of the client id and the `.base-uri` suffix.
 <3> Set the path param value. Throws `IllegalArgumentException` if the client endpoint path does not contain a parameter with the given name.
-<4> Use the connection to send messages, if needed.
+<4> Optionally, customize client and connection options not configurable with the connector API or Quarkus configuration.
+<5> Use the connection to send messages, if needed.
 
 NOTE: If an application attempts to inject a connector for a missing endpoint, an error is thrown.
 
 Connectors are not thread-safe and should not be used concurrently.
 Connectors should also not be reused. 
-If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+If you need to create multiple connections in a row you'll need to obtain a new connector instance programmatically using `Instance#get()`:
 
 [source, java]
 ----
@@ -1350,6 +1354,9 @@ public class MyBean {
             .onTextMessage((c, m) -> { <5>
                // ...
             })
+            .customizeOptions((connectOptions, clientOptions) -> {  <6>
+               // ...
+            })
             .connectAndAwait();
     }
 }
@@ -1359,6 +1366,7 @@ public class MyBean {
 <3> The additional path that should be appended to the base URI.
 <4> Set the execution model for callback handlers. By default, the callback may block the current thread. However in this case, the callback is executed on the event loop and may not block the current thread.
 <5> The lambda will be called for every text message sent from the server.
+<6> Optionally, customize client and connection options not configurable with the connector API or Quarkus configuration.
 
 The basic connector is closer to a low-level API and is reserved for advanced users.
 However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.

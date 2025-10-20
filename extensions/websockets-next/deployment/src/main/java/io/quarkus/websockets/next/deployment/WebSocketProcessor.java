@@ -437,19 +437,30 @@ public class WebSocketProcessor {
 
     @BuildStep
     void validateConnectorInjectionPoints(List<WebSocketEndpointBuildItem> endpoints,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             if (injectionPoint.getRequiredType().name().equals(WebSocketDotNames.WEB_SOCKET_CONNECTOR)
                     && injectionPoint.hasDefaultedQualifier()) {
                 Type clientEndpointType = injectionPoint.getRequiredType().asParameterizedType().arguments().get(0);
-                if (endpoints.stream()
-                        .filter(WebSocketEndpointBuildItem::isClient)
-                        .map(WebSocketEndpointBuildItem::beanClassName)
-                        .noneMatch(clientEndpointType.name()::equals)) {
+                if (beanDiscoveryFinishedBuildItem.beanStream().withBeanClass(clientEndpointType.name()).isEmpty()) {
+                    // there is no CDI bean with given name
                     validationErrors.produce(
                             new ValidationErrorBuildItem(new WebSocketClientException(String.format(
-                                    "Type argument [%s] of the injected WebSocketConnector is not a @WebSocketClient endpoint: %s",
+                                    "Type argument [%s] of the injected WebSocketConnector is not a @WebSocketClient endpoint, because it is not a bean: %s"
+                                            + "\nPlease consult https://quarkus.io/guides/cdi-reference#bean_discovery on how to make the module containing "
+                                            + "the code discoverable by Quarkus. ",
                                     clientEndpointType, injectionPoint.getTargetInfo()))));
+                } else {
+                    if (endpoints.stream()
+                            .filter(WebSocketEndpointBuildItem::isClient)
+                            .map(WebSocketEndpointBuildItem::beanClassName)
+                            .noneMatch(clientEndpointType.name()::equals)) {
+                        validationErrors.produce(
+                                new ValidationErrorBuildItem(new WebSocketClientException(String.format(
+                                        "Type argument [%s] of the injected WebSocketConnector is not a @WebSocketClient endpoint: %s",
+                                        clientEndpointType, injectionPoint.getTargetInfo()))));
+                    }
                 }
             }
         }

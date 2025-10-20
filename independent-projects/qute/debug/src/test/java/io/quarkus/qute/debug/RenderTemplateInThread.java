@@ -21,7 +21,6 @@ public class RenderTemplateInThread {
 
     public void render() throws InterruptedException {
         Thread httpRequest = new Thread(() -> {
-
             var instance = template.instance(); //
             configure.accept(instance);
             instance.consume(renderResult::append);

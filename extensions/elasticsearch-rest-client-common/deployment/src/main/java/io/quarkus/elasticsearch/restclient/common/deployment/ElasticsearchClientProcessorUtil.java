@@ -1,18 +1,20 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.elasticsearch.restclient.common.ElasticsearchClientName;
-import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.enterprise.inject.Default;
+
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
-import javax.enterprise.inject.Default;
-import javax.inject.Named;
-import java.util.HashSet;
-import java.util.Set;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
+import io.smallrye.common.annotation.Identifier;
 
 public final class ElasticsearchClientProcessorUtil {
 
@@ -20,16 +22,15 @@ public final class ElasticsearchClientProcessorUtil {
     }
 
     private static final DotName DEFAULT_ANNOTATION = DotName.createSimple(Default.class.getName());
-    private static final DotName NAMED_ANNOTATION = DotName.createSimple(Named.class.getName());
-    public static final DotName ELASTICSEARCH_CLIENT_NAME_ANNOTATION = DotName
-            .createSimple(ElasticsearchClientName.class.getName());
+    public static final DotName IDENTIFIER_ELASTICSEARCH_CLIENT_NAME_ANNOTATION = DotName
+            .createSimple(Identifier.class.getName());
 
     /**
      * Collect referenced names for a given type of Elasticsearch client:
      * <ul>
-     *     <li>All injected clients with the @Default, @Named or @ElasticsearchClientName qualifiers</li>
-     *     <li>All configuration classes that are expected to target a given client,
-     *     e.g. @ElasticsearchClientConfig</li>
+     * <li>All injected clients with the @Default, @Named or @ElasticsearchClientName qualifiers</li>
+     * <li>All configuration classes that are expected to target a given client,
+     * e.g. @ElasticsearchClientConfig</li>
      * </ul>
      */
     public static Set<String> collectReferencedClientNames(CombinedIndexBuildItem indexBuildItem,
@@ -39,7 +40,12 @@ public final class ElasticsearchClientProcessorUtil {
         IndexView indexView = indexBuildItem.getIndex();
         for (DotName annotationName : configAnnotationNames) {
             for (AnnotationInstance annotation : indexView.getAnnotations(annotationName)) {
-                referencedNames.add(annotation.value().asString());
+                AnnotationValue value = annotation.value();
+                if (value == null) {
+                    referencedNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
+                } else {
+                    referencedNames.add(value.asString());
+                }
             }
         }
         for (InjectionPointInfo injectionPoint : registrationPhase.getInjectionPoints()) {
@@ -55,10 +61,8 @@ public final class ElasticsearchClientProcessorUtil {
             for (AnnotationInstance requiredQualifier : injectionPoint.getRequiredQualifiers()) {
                 if (requiredQualifier.name().equals(DEFAULT_ANNOTATION)) {
                     referencedNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
-                } else if (requiredQualifier.name().equals(NAMED_ANNOTATION) && requiredQualifier.value() != null) {
-                    referencedNames.add(requiredQualifier.value().asString());
                 }
-                if (requiredQualifier.name().equals(ELASTICSEARCH_CLIENT_NAME_ANNOTATION)) {
+                if (requiredQualifier.name().equals(IDENTIFIER_ELASTICSEARCH_CLIENT_NAME_ANNOTATION)) {
                     referencedNames.add(requiredQualifier.value().asString());
                 }
             }

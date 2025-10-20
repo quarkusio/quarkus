@@ -1,34 +1,44 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.deployment;
 
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchClientAnnotationTypeBuildItem;
-import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchClientProcessorUtil;
-import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchClientTypeBuildItem;
+import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
+import jakarta.inject.Singleton;
+
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.sniff.Sniffer;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchClientProcessorUtil;
+import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+import io.quarkus.elasticsearch.restclient.lowlevel.runtime.ElasticsearchLowLevelClientRecorder;
+import io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheckCondition;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
-import java.util.List;
-import java.util.Set;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import io.smallrye.common.annotation.Identifier;
 
 class ElasticsearchLowLevelClientProcessor {
 
@@ -52,110 +62,6 @@ class ElasticsearchLowLevelClientProcessor {
         }
     }
 
-    @Record(RUNTIME_INIT)
-    @BuildStep
-    void generateClientBeans(MongoClientRecorder recorder,
-                             BeanRegistrationPhaseBuildItem registrationPhase,
-                             List<MongoClientNameBuildItem> mongoClientNames,
-                             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
-                             MongodbConfig mongodbConfig,
-                             List<MongoUnremovableClientsBuildItem> mongoUnremovableClientsBuildItem,
-                             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-
-        boolean makeUnremovable = !mongoUnremovableClientsBuildItem.isEmpty();
-
-        boolean createDefaultBlockingMongoClient = false;
-        boolean createDefaultReactiveMongoClient = false;
-        if (makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients) {
-            // all clients are expected to exist in this case
-            createDefaultBlockingMongoClient = true;
-            createDefaultReactiveMongoClient = true;
-        } else {
-            // we only create the default client if they are actually used by injection points
-            for (InjectionPointInfo injectionPoint : registrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
-                DotName injectionPointType = injectionPoint.getRequiredType().name();
-                if (injectionPointType.equals(MONGO_CLIENT) && injectionPoint.hasDefaultedQualifier()) {
-                    createDefaultBlockingMongoClient = true;
-                } else if (injectionPointType.equals(REACTIVE_MONGO_CLIENT) && injectionPoint.hasDefaultedQualifier()) {
-                    createDefaultReactiveMongoClient = true;
-                }
-
-                if (createDefaultBlockingMongoClient && createDefaultReactiveMongoClient) {
-                    break;
-                }
-            }
-        }
-
-        if (createDefaultBlockingMongoClient) {
-            syntheticBeanBuildItemBuildProducer.produce(createBlockingSyntheticBean(recorder, mongodbConfig,
-                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients,
-                    MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
-        }
-        if (createDefaultReactiveMongoClient) {
-            syntheticBeanBuildItemBuildProducer.produce(createReactiveSyntheticBean(recorder, mongodbConfig,
-                    makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients,
-                    MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
-        }
-
-        for (MongoClientNameBuildItem mongoClientName : mongoClientNames) {
-            // named blocking client
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createBlockingSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
-                            mongoClientName.isAddQualifier()));
-            // named reactive client
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createReactiveSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
-                            mongoClientName.isAddQualifier()));
-        }
-    }
-
-    private SyntheticBeanBuildItem createBlockingSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,
-                                                               boolean makeUnremovable, String clientName, boolean addMongoClientQualifier) {
-
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(MongoClient.class)
-                .scope(ApplicationScoped.class)
-                // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been set up
-                .supplier(recorder.mongoClientSupplier(clientName, mongodbConfig))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, false);
-    }
-
-    private SyntheticBeanBuildItem createReactiveSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,
-                                                               boolean makeUnremovable, String clientName, boolean addMongoClientQualifier) {
-
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(ReactiveMongoClient.class)
-                .scope(ApplicationScoped.class)
-                // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been set up
-                .supplier(recorder.reactiveMongoClientSupplier(clientName, mongodbConfig))
-                .setRuntimeInit();
-
-        return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, true);
-    }
-
-    private SyntheticBeanBuildItem applyCommonBeanConfig(boolean makeUnremovable, String clientName,
-                                                         boolean addMongoClientQualifier, SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator, boolean isReactive) {
-        if (makeUnremovable) {
-            configurator.unremovable();
-        }
-
-        if (MongoClientBeanUtil.isDefault(clientName)) {
-            configurator.addQualifier(Default.class);
-        } else {
-            String namedQualifier = MongoClientBeanUtil.namedQualifier(clientName, isReactive);
-            configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", namedQualifier).done();
-            if (addMongoClientQualifier) {
-                configurator.addQualifier().annotation(MONGO_CLIENT_ANNOTATION).addValue("value", clientName).done();
-            }
-        }
-        return configurator.done();
-    }
-
-
     @BuildStep
     void elasticsearchClientConfigSupport(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
@@ -167,15 +73,130 @@ class ElasticsearchLowLevelClientProcessor {
                         DotNames.APPLICATION_SCOPED, false));
     }
 
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
-                buildTimeConfig.healthEnabled());
+    void generateElasticsearchBeans(
+            ElasticsearchLowLevelClientRecorder recorder,
+            ElasticsearchBuildTimeConfig config,
+            List<ElasticsearchLowLevelClientReferenceBuildItem> elasticsearchLowLevelClientReferenceBuildItems,
+            BuildProducer<SyntheticBeanBuildItem> producer,
+            Capabilities capabilities) {
+        boolean healthChecksPossible = capabilities.isPresent(Capability.SMALLRYE_HEALTH);
+
+        for (ElasticsearchLowLevelClientReferenceBuildItem buildItem : elasticsearchLowLevelClientReferenceBuildItems) {
+            String clientName = buildItem.getName();
+            produceRestClientBean(clientName, recorder, producer);
+            produceRestClientSnifferBean(clientName, recorder, producer);
+            ElasticsearchLowLevelClientBuildTimeConfig clientConfig = config.clients().get(clientName);
+            if (healthChecksPossible && (clientConfig == null || clientConfig.healthEnabled())) {
+                produceHealthCheckBean(clientName, recorder, producer);
+            }
+        }
     }
 
     @BuildStep
-    DevservicesElasticsearchBuildItem devServices() {
-        return new DevservicesElasticsearchBuildItem("quarkus.elasticsearch.hosts");
+    public void devServices(
+            List<ElasticsearchLowLevelClientReferenceBuildItem> clients,
+            BuildProducer<DevservicesElasticsearchBuildItem> producer) {
+        for (ElasticsearchLowLevelClientReferenceBuildItem client : clients) {
+            producer.produce(new DevservicesElasticsearchBuildItem(client.getName(), hostConfigProperty(client.getName())));
+        }
+    }
+
+    private String hostConfigProperty(String clientName) {
+        if (ElasticsearchClientBeanUtil.isDefault(clientName)) {
+            return "quarkus.elasticsearch.hosts";
+        } else {
+            return "quarkus.elasticsearch.\"%s\".hosts".formatted(clientName);
+        }
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
+        boolean healthChecksPossible = capabilities.isPresent(Capability.SMALLRYE_HEALTH);
+        boolean atLeastOneHealthCheckEnabled = false;
+        for (ElasticsearchLowLevelClientBuildTimeConfig config : buildTimeConfig.clients().values()) {
+            if (config.healthEnabled()) {
+                atLeastOneHealthCheckEnabled = true;
+            }
+        }
+        if (healthChecksPossible) {
+            return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
+                    atLeastOneHealthCheckEnabled);
+        }
+        return null;
+    }
+
+    private void produceRestClientBean(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer) {
+        producer.produce(createSyntheticBean(
+                clientName,
+                RestClient.class,
+                Singleton.class,
+                ElasticsearchClientBeanUtil.isDefault(clientName),
+                recorder.checkActiveRestClientSupplier(clientName))
+                .createWith(recorder.restClientSupplier(clientName))
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                .done());
+    }
+
+    private void produceRestClientSnifferBean(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer) {
+        producer.produce(createSyntheticBean(
+                clientName,
+                Sniffer.class,
+                Singleton.class,
+                ElasticsearchClientBeanUtil.isDefault(clientName),
+                recorder.checkActiveSnifferSupplier(clientName))
+                .createWith(recorder.restClientSnifferSupplier(clientName))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(RestClient.class)), qualifier(clientName))
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                .done());
+    }
+
+    private void produceHealthCheckBean(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer) {
+        producer.produce(createSyntheticBean(
+                clientName,
+                ElasticsearchHealthCheckCondition.class,
+                ApplicationScoped.class,
+                ElasticsearchClientBeanUtil.isDefault(clientName),
+                recorder.checkActiveHealthCheckSupplier(clientName))
+                .createWith(recorder.restClientHealthCheckConditionSupplier(clientName))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(RestClient.class)), qualifier(clientName))
+                // .addQualifier(DotName.createSimple("org.eclipse.microprofile.health.Readiness"))
+                .done());
+    }
+
+    private static <T> SyntheticBeanBuildItem.ExtendedBeanConfigurator createSyntheticBean(String clientName,
+            Class<T> type,
+            Class<? extends Annotation> scope,
+            boolean defaultBean,
+            Supplier<ActiveResult> checkActiveSupplier) {
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(type)
+                .scope(scope)
+                .unremovable()
+                .setRuntimeInit()
+                .checkActive(checkActiveSupplier)
+                .startup();
+
+        if (defaultBean) {
+            configurator.defaultBean();
+            configurator.addQualifier(Default.class);
+        }
+
+        configurator.addQualifier().annotation(DotNames.IDENTIFIER).addValue("value", clientName).done();
+
+        return configurator;
+    }
+
+    public static AnnotationInstance qualifier(String clientName) {
+        if (clientName == null || ElasticsearchClientBeanUtil.isDefault(clientName)) {
+            return AnnotationInstance.builder(Default.class).build();
+        } else {
+            return AnnotationInstance.builder(Identifier.class).value(clientName).build();
+        }
     }
 
 }

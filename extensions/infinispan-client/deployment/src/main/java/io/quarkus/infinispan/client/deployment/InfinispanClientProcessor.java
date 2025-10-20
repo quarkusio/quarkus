@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +37,7 @@ import org.infinispan.client.hotrod.annotation.ClientListener;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
+import org.infinispan.client.hotrod.impl.transport.netty.DefaultTransportFactory;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
@@ -57,6 +59,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.netty.channel.EventLoopGroup;
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -100,6 +104,7 @@ import io.quarkus.infinispan.client.runtime.cache.CacheInvalidateInterceptor;
 import io.quarkus.infinispan.client.runtime.cache.CacheResultInterceptor;
 import io.quarkus.infinispan.client.runtime.cache.SynchronousInfinispanGet;
 import io.quarkus.infinispan.client.runtime.graal.DisableLoggingFeature;
+import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class InfinispanClientProcessor {
@@ -437,6 +442,12 @@ class InfinispanClientProcessor {
             marshaller = new ProtoStreamMarshaller();
         }
         properties.put(ConfigurationProperties.MARSHALLER, marshaller);
+
+        if (properties.putIfAbsent(ConfigurationProperties.TRANSPORT_FACTORY,
+                QuarkusTransportFactory.class.getName()) == null) {
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(QuarkusTransportFactory.class).build());
+        }
         return properties;
     }
 
@@ -637,4 +648,10 @@ class InfinispanClientProcessor {
         return result;
     }
 
+    public static class QuarkusTransportFactory extends DefaultTransportFactory {
+        @Override
+        public EventLoopGroup createEventLoopGroup(int maxExecutors, ExecutorService executorService) {
+            return Arc.container().instance(EventLoopGroup.class, MainEventLoopGroup.Literal.INSTANCE).get();
+        }
+    }
 }

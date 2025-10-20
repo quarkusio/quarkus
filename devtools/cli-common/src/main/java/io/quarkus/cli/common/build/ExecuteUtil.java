@@ -6,7 +6,6 @@ import static picocli.CommandLine.ExitCode.SOFTWARE;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 
 import io.quarkus.cli.common.OutputOptionMixin;
@@ -48,9 +47,9 @@ public class ExecuteUtil {
                     holder.exitCode = ec;
                     return true;
                 })
-                .softExitTimeout(Duration.ofMinutes(5))
-                .hardExitTimeout(Duration.ofMinutes(5))
-                .input().empty();
+                .softExitTimeout(null)
+                .hardExitTimeout(null)
+                .input().inherited();
         if (output.isCliTest()) {
             // We have to capture IO differently in tests..
             pb.output().consumeWith(br -> br.lines().forEach(output.out()::println))

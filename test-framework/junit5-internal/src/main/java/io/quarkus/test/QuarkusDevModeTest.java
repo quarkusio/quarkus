@@ -3,6 +3,7 @@ package io.quarkus.test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -38,9 +39,8 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestInstanceFactory;
-import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
-import org.junit.jupiter.api.extension.TestInstantiationException;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
@@ -88,7 +88,7 @@ import io.quarkus.test.config.TestConfigProviderResolver;
  * </ul>
  */
 public class QuarkusDevModeTest
-        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, InvocationInterceptor {
 
     private static final Logger rootLogger;
     public static final OpenOption[] OPEN_OPTIONS = { StandardOpenOption.SYNC, StandardOpenOption.CREATE,
@@ -224,15 +224,13 @@ public class QuarkusDevModeTest
         return this;
     }
 
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
-            throws TestInstantiationException {
-        try {
-            Object actualTestInstance = factoryContext.getTestClass().getDeclaredConstructor().newInstance();
-            TestHTTPResourceManager.inject(actualTestInstance);
-            return actualTestInstance;
-        } catch (Exception e) {
-            throw new TestInstantiationException("Unable to create test proxy", e);
-        }
+    @Override
+    public <T> T interceptTestClassConstructor(Invocation<T> invocation,
+            ReflectiveInvocationContext<Constructor<T>> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        T actualTestInstance = invocation.proceed();
+        TestHTTPResourceManager.inject(actualTestInstance);
+        return actualTestInstance;
     }
 
     @Override

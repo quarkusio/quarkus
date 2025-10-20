@@ -1,7 +1,5 @@
 package io.quarkus.elasticsearch.restclient.lowlevel;
 
-import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
-
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -15,6 +13,8 @@ import java.lang.annotation.Target;
 
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
+
+import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 
 /**
  * Annotate implementations of {@code org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback} to provide further
@@ -30,6 +30,9 @@ public @interface ElasticsearchClientConfig {
 
     String DEFAULT = ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME;
 
+    /**
+     * @return The name of the REST client this config is applicable to.
+     */
     String value() default DEFAULT;
 
     class Literal extends AnnotationLiteral<ElasticsearchClientConfig> implements ElasticsearchClientConfig {
@@ -37,7 +40,7 @@ public @interface ElasticsearchClientConfig {
         private final String name;
 
         public Literal() {
-            this( DEFAULT );
+            this(DEFAULT);
         }
 
         public Literal(String name) {

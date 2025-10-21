@@ -258,6 +258,15 @@ class BuildIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isZero();
     }
 
+    @Test
+    void testJarPathFilterNotAppliedToApplicationTestClass() throws Exception {
+        testDir = initProject("projects/path-filter-not-applied-test-classes");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(List.of("test", "-Dquarkus.analytics.disabled=true"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+    }
+
     private void launch() throws IOException {
         launch(TestContext.FAST_NO_PREFIX, "", "hello, from foo");
     }

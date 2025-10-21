@@ -145,7 +145,7 @@ import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.deployment.TypeInfos.TypeInfo;
 import io.quarkus.qute.deployment.Types.AssignabilityCheck;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
-import io.quarkus.qute.generator.ExtensionMethodGenerator.ExtensionMethodInfo;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceExtensionMethodInfo;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.Param;
 import io.quarkus.qute.generator.TemplateGlobalGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
@@ -2107,12 +2107,13 @@ public class QuteProcessor {
                         .collect(Collectors.groupingBy(TemplateExtensionMethodBuildItem::getPriority));
 
                 for (Entry<Integer, List<TemplateExtensionMethodBuildItem>> priorityEntry : priorityToMethods.entrySet()) {
-                    List<ExtensionMethodGenerator.ExtensionMethodInfo> extensionMethods = new ArrayList<>(
+                    List<ExtensionMethodGenerator.NamespaceExtensionMethodInfo> extensionMethods = new ArrayList<>(
                             priorityEntry.getValue().size());
                     for (TemplateExtensionMethodBuildItem method : priorityEntry.getValue()) {
                         extensionMethods
-                                .add(new ExtensionMethodInfo(method.getMethod(), method.getMatchName(), method.getMatchNames(),
-                                        method.getMatchRegex()));
+                                .add(new NamespaceExtensionMethodInfo(method.getMethod(), method.getMatchName(),
+                                        Set.copyOf(method.getMatchNames()),
+                                        method.getMatchRegex(), method.getParams()));
                     }
                     String generatedType = extensionMethodGenerator.generateNamespaceResolver(
                             priorityEntry.getValue().get(0).getMethod().declaringClass(), nsEntry.getKey(),

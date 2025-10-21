@@ -1400,7 +1400,7 @@ public class DevMojo extends AbstractMojo {
             builder.jvmArgs("-Dquarkus-internal.test.specific-selection=maven:" + test);
         }
 
-        if (openJavaLang) {
+        if (openJavaLang || Runtime.version().feature() >= 24) {
             builder.addOpens("java.base/java.lang=ALL-UNNAMED");
         }
 

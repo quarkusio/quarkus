@@ -14,6 +14,8 @@ import io.quarkus.websockets.next.UserData.TypedKey;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.http.WebSocketConnectOptions;
 
 /**
  * A basic connector can be used to configure and open a new client connection. Unlike with {@link WebSocketConnector} a
@@ -245,4 +247,15 @@ public interface BasicWebSocketConnector {
         VIRTUAL_THREAD,
     }
 
+    /**
+     * This method allows to customize {@link WebSocketConnectOptions} and {@link WebSocketClientOptions}.
+     * Connection options configured directly with this API, such as host and port, have higher priority than this customizer.
+     * Client options configured directly with Quarkus configuration (e.g. if you configure the maximum size of a frame)
+     * have also higher priority than this customizer.
+     * Purpose of this customizer is to complement configuration options not configured elsewhere.
+     *
+     * @param customizer options customizer; must not be null
+     * @return self
+     */
+    BasicWebSocketConnector customizeOptions(BiConsumer<WebSocketConnectOptions, WebSocketClientOptions> customizer);
 }

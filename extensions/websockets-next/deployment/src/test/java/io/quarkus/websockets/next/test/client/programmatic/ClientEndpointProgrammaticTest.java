@@ -55,6 +55,13 @@ public class ClientEndpointProgrammaticTest {
                 .userData(TypedKey.forInt("int"), Integer.MAX_VALUE)
                 .userData(TypedKey.forLong("long"), Long.MAX_VALUE)
                 .userData(TypedKey.forString("string"), "Lu")
+                .customizeOptions((connectOptions, clientOptions) -> {
+                    connectOptions
+                            // test that port configuration is overridden
+                            .setPort(123456)
+                            // test that "Bar" header is sent with the opening handshake request
+                            .addHeader("Bar", "Adam");
+                })
                 .connectAndAwait();
         assertTrue(connection1.userData().get(TypedKey.forBoolean("boolean")));
         assertEquals(Integer.MAX_VALUE, connection1.userData().get(TypedKey.forInt("int")));
@@ -89,7 +96,7 @@ public class ClientEndpointProgrammaticTest {
         assertEquals("Ma", ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forString("string")));
 
         assertTrue(ClientEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
-        assertTrue(ClientEndpoint.MESSAGES.contains("Lu:Hello Lu!"));
+        assertTrue(ClientEndpoint.MESSAGES.contains("Lu:Hello Lu Adam!"));
         assertTrue(ClientEndpoint.MESSAGES.contains("Lu:Hi!"));
         assertTrue(ClientEndpoint.MESSAGES.contains("Ma:Hello Ma!"));
         assertTrue(ClientEndpoint.MESSAGES.contains("Ma:Hi!"), ClientEndpoint.MESSAGES.toString());
@@ -107,7 +114,12 @@ public class ClientEndpointProgrammaticTest {
 
         @OnOpen
         String open(HandshakeRequest handshakeRequest) {
-            return "Hello " + handshakeRequest.header("Foo") + "!";
+            StringBuilder result = new StringBuilder("Hello " + handshakeRequest.header("Foo"));
+            if (handshakeRequest.header("Bar") != null) {
+                result.append(" ").append(handshakeRequest.header("Bar"));
+            }
+            result.append("!");
+            return result.toString();
         }
 
         @OnTextMessage

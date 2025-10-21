@@ -1,10 +1,13 @@
 package io.quarkus.websockets.next.test.client;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -30,6 +33,7 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.ProxyOptions;
 
 public class ClientEndpointTest {
 
@@ -68,6 +72,19 @@ public class ClientEndpointTest {
         connection.closeAndAwait();
         assertTrue(ClientEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
         assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
+
+        // use the same connector instance, but this time configure unknown host and expect failure
+        assertThatThrownBy(() -> connector
+                .baseUri(uri)
+                .pathParam("name", "Lu=")
+                .customizeOptions((ignored, clientOptions) -> {
+                    clientOptions.setProxyOptions(new ProxyOptions()
+                            .setHost("robert")
+                            .setPort(999)
+                            .setConnectTimeout(Duration.ofMillis(500)));
+                })
+                .connectAndAwait())
+                .rootCause().isInstanceOf(UnknownHostException.class).hasMessageContaining("robert");
     }
 
     @WebSocket(path = "/endpoint/{name}")

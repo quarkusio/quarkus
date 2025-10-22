@@ -20,7 +20,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DisableJNDITestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest unitTest = new QuarkusUnitTest();
+    static QuarkusUnitTest unitTest = new QuarkusUnitTest()
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void testJNDIDisabled() throws Exception {

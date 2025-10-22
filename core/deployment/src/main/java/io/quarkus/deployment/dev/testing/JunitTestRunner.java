@@ -103,6 +103,8 @@ public class JunitTestRunner {
     public static final DotName NESTED = DotName.createSimple(Nested.class.getName());
     private static final String ARCHUNIT_FIELDSOURCE_FQCN = "com.tngtech.archunit.junit.FieldSource";
     private static final String FACADE_CLASS_LOADER_NAME = "io.quarkus.test.junit.classloading.FacadeClassLoader";
+
+    // TODO Luca: unrecognised property
     private static final String TEST_DISCOVERY_PROPERTY = "quarkus.continuous-tests-discovery";
 
     private final long runId;

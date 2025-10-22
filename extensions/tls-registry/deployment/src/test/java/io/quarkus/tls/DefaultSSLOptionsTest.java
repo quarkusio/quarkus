@@ -22,6 +22,7 @@ import io.smallrye.certs.junit5.Certificates;
 })
 public class DefaultSSLOptionsTest {
 
+    // TODO Luca does this property exist?  quarkus.tls.session-timeout=20s
     private static final String configuration = """
             quarkus.tls.alpn=true
 
@@ -41,7 +42,8 @@ public class DefaultSSLOptionsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+                    .add(new StringAsset(configuration), "application.properties"))
+            .failOnUnknownProperties(false); // quarkus.tls.session-timeout
 
     @Inject
     TlsConfigurationRegistry certificates;

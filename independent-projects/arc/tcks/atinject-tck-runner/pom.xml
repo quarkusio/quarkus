@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-parent</artifactId>
-        <version>3.29.999-SNAPSHOT</version>
+        <version>3.29.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 

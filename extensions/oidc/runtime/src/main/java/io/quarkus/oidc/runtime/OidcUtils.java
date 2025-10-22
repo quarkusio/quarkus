@@ -103,6 +103,7 @@ public final class OidcUtils {
     public static final String TENANT_ID_SET_BY_SESSION_COOKIE = "tenant-id-set-by-session-cookie";
     public static final String TENANT_ID_SET_BY_STATE_COOKIE = "tenant-id-set-by-state-cookie";
     public static final String DEFAULT_TENANT_ID = "Default";
+    public static final String OIDC_OPERATION = "oidc-operation";
     public static final String SESSION_COOKIE_NAME = "q_session";
     public static final String SESSION_COOKIE_CHUNK_START = "chunk_";
     public static final String SESSION_COOKIE_CHUNK = "_" + SESSION_COOKIE_CHUNK_START;

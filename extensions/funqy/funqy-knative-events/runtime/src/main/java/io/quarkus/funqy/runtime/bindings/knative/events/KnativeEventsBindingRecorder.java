@@ -127,6 +127,8 @@ public class KnativeEventsBindingRecorder {
                     }
                 }
 
+                validateNotBoxedByteArray(inputType, invoker.getName(), "input");
+
                 JavaType javaInputType = objectMapper.constructType(inputType);
                 ObjectReader reader = objectMapper.readerFor(javaInputType);
                 invoker.getBindingContext().put(DATA_OBJECT_READER, reader);
@@ -147,6 +149,8 @@ public class KnativeEventsBindingRecorder {
                         throw new RuntimeException("When using CloudEvent<> generic parameter must be used.");
                     }
                 }
+
+                validateNotBoxedByteArray(outputType, invoker.getName(), "output");
 
                 JavaType outputJavaType = objectMapper.constructType(outputType);
                 ObjectWriter writer = objectMapper.writerFor(outputJavaType);
@@ -277,5 +281,18 @@ public class KnativeEventsBindingRecorder {
             log.warn("Invoker " + name + " has multiple matching filters " + one + " " + two);
         }
         return result;
+    }
+
+    private void validateNotBoxedByteArray(Type type, String functionName, String paramType) {
+        Class<?> rawType = Reflections.getRawType(type);
+        if (rawType != null && rawType.isArray()) {
+            Class<?> componentType = rawType.getComponentType();
+            if (Byte.class.equals(componentType)) {
+                throw new IllegalStateException(
+                        "Function '" + functionName + "' has " + paramType + " type 'Byte[]' (boxed byte array). " +
+                                "Use 'byte[]' (primitive byte array) instead. " +
+                                "Byte[] is not supported for binary data handling in Funqy Knative Events.");
+            }
+        }
     }
 }

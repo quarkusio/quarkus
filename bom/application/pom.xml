@@ -123,7 +123,7 @@
         <postgresql-jdbc.version>42.7.8</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.6</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
-        <mssql-jdbc.version>13.2.0.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.6.0.24.10</oracle-jdbc.version>
         <derby-jdbc.version>10.16.1.1</derby-jdbc.version>
@@ -160,7 +160,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <flyway.version>11.14.0</flyway.version>
+        <flyway.version>11.14.1</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>

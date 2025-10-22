@@ -24,96 +24,80 @@ import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
 import io.quarkus.qute.trace.ResolveEvent;
 
 /**
- * Represents a single stack frame in the Qute debugging process.
+ * Represents a single Qute stack frame in the debugging process.
+ *
  * <p>
- * A {@link RemoteStackFrame} corresponds to the evaluation of a
- * {@link TemplateNode} at runtime. It stores contextual information such as the
- * variables in scope, the template being executed, and the current execution
- * state.
+ * A {@link RemoteStackFrame} corresponds to the evaluation of a {@link TemplateNode}
+ * during the rendering of a Qute template. It encapsulates the current execution context,
+ * including variables, scopes, and the source template being processed.
  * </p>
  *
  * <p>
- * It extends {@link StackFrame} from the Debug Adapter Protocol (DAP), allowing
- * integration with remote debugging clients.
+ * This class integrates with the Debug Adapter Protocol (DAP) through
+ * {@link org.eclipse.lsp4j.debug.StackFrame}, enabling external debuggers (like VSCode or IntelliJ)
+ * to display Qute stack frames, inspect variables, and evaluate expressions.
  * </p>
  */
 public class RemoteStackFrame extends StackFrame {
 
-    /**
-     * Represents an empty array of stack frames.
-     */
+    /** Represents an empty array of stack frames. */
     public static final StackFrame[] EMPTY_STACK_FRAMES = new StackFrame[0];
 
-    /**
-     * Counter used to assign a unique ID to each frame.
-     */
+    /** Counter used to assign a unique ID to each frame. */
     private static final AtomicInteger frameIdCounter = new AtomicInteger();
 
-    /**
-     * The previous frame in the call stack, or {@code null} if this is the first
-     * frame.
-     */
+    /** The previous frame in the call stack, or {@code null} if this is the first frame. */
     private final transient RemoteStackFrame previousFrame;
 
-    /**
-     * The ID of the template currently being executed.
-     */
+    /** The ID of the template currently being executed. */
     private final transient String templateId;
 
-    /**
-     * Registry of variables used in this stack frame.
-     */
+    /** Registry of variables used in this stack frame. */
     private final transient VariablesRegistry variablesRegistry;
 
-    /**
-     * Lazily created list of available scopes (locals, globals, namespaces).
-     */
+    /** Lazily created list of available scopes (locals, globals, namespaces). */
     private transient Collection<RemoteScope> scopes;
 
-    /**
-     * The resolve event associated with this frame, containing runtime context.
-     */
+    /** The resolve event associated with this frame, containing runtime context. */
     private final transient ResolveEvent event;
+
+    /** The remote thread that owns this frame, responsible for executing evaluations. */
+    private final transient RemoteThread remoteThread;
 
     /**
      * Creates a new {@link RemoteStackFrame}.
      *
-     * @param event the resolve event describing the current
-     *        execution
+     * @param event the resolve event describing the current execution
      * @param previousFrame the previous stack frame, may be {@code null}
      * @param sourceTemplateRegistry registry for mapping templates to debug sources
-     * @param variablesRegistry the registry for managing variables
+     * @param variablesRegistry registry for managing variables
+     * @param remoteThread the owning remote thread
      */
     public RemoteStackFrame(ResolveEvent event, RemoteStackFrame previousFrame,
-            SourceTemplateRegistry sourceTemplateRegistry, VariablesRegistry variablesRegistry) {
+            SourceTemplateRegistry sourceTemplateRegistry, VariablesRegistry variablesRegistry,
+            RemoteThread remoteThread) {
         this.event = event;
         this.previousFrame = previousFrame;
         this.variablesRegistry = variablesRegistry;
+        this.remoteThread = remoteThread;
+
         int id = frameIdCounter.incrementAndGet();
         int line = event.getTemplateNode().getOrigin().getLine();
         super.setId(id);
         super.setName(event.getTemplateNode().toString());
         super.setLine(line);
+
         this.templateId = event.getTemplateNode().getOrigin().getTemplateId();
         super.setSource(
-                sourceTemplateRegistry.getSource(templateId,
-                        previousFrame != null ? previousFrame.getSource() : null));
+                sourceTemplateRegistry.getSource(templateId, previousFrame != null ? previousFrame.getSource() : null));
     }
 
-    /**
-     * Returns the template ID associated with this frame.
-     *
-     * @return the template ID
-     */
+    /** @return the template ID associated with this frame */
     public String getTemplateId() {
         return templateId;
     }
 
-    /**
-     * Returns the template Uri associated with this frame and null otherwise.
-     *
-     * @return the template Uri associated with this frame and null otherwise.
-     */
+    /** @return the template URI associated with this frame, or {@code null} if unavailable */
     public URI getTemplateUri() {
         var source = getSource();
         return source != null ? source.getUri() : null;
@@ -124,11 +108,7 @@ public class RemoteStackFrame extends StackFrame {
         return (RemoteSource) super.getSource();
     }
 
-    /**
-     * Returns the previous stack frame, or {@code null} if none exists.
-     *
-     * @return the previous {@link RemoteStackFrame}
-     */
+    /** @return the previous stack frame, or {@code null} if none exists */
     public RemoteStackFrame getPrevious() {
         return previousFrame;
     }
@@ -138,13 +118,12 @@ public class RemoteStackFrame extends StackFrame {
      * <p>
      * Scopes include:
      * <ul>
-     * <li>Locals (variables in the current template context)</li>
-     * <li>Globals (global variables accessible in Qute)</li>
-     * <li>Namespace resolvers (custom resolvers for Qute templates)</li>
+     * <li>Locals — variables specific to the current template</li>
+     * <li>Globals — shared Qute global variables</li>
+     * <li>Namespace resolvers — registered resolvers for {@code namespace:expression}</li>
      * </ul>
-     * </p>
      *
-     * @return the collection of {@link RemoteScope}
+     * @return a collection of {@link RemoteScope}
      */
     public Collection<RemoteScope> getScopes() {
         if (scopes == null) {
@@ -153,32 +132,24 @@ public class RemoteStackFrame extends StackFrame {
         return scopes;
     }
 
-    /**
-     * Creates the list of scopes for this frame.
-     *
-     * @return a collection of {@link RemoteScope}
-     */
     private Collection<RemoteScope> createScopes() {
         Collection<RemoteScope> scopes = new ArrayList<>();
-        // Locals scope
         scopes.add(new LocalsScope(event.getContext(), this, variablesRegistry));
-        // Global scope
         scopes.add(new GlobalsScope(event.getContext(), this, variablesRegistry));
-        // Namespace resolvers scope
         scopes.add(new NamespaceResolversScope(event.getEngine(), this, variablesRegistry));
         return scopes;
     }
 
     /**
-     * Evaluates an expression in the current frame context.
+     * Evaluates an arbitrary Qute expression in the current frame context.
      * <p>
-     * If the expression contains conditional operators, it is parsed and evaluated
-     * as a conditional expression. Otherwise, it is treated as a simple Qute
-     * expression.
+     * If the expression looks like a conditional (e.g. {@code user.age > 18}),
+     * it is parsed and evaluated as a conditional expression. Otherwise, it is
+     * evaluated as a simple Qute value expression.
      * </p>
      *
-     * @param expression the expression to evaluate
-     * @return a {@link CompletableFuture} containing the result of the evaluation
+     * @param expression the Qute expression or condition to evaluate
+     * @return a {@link CompletableFuture} resolving to the evaluation result
      */
     public CompletableFuture<Object> evaluate(String expression) {
         if (isConditionExpression(expression)) {
@@ -188,42 +159,89 @@ public class RemoteStackFrame extends StackFrame {
             } catch (Exception e) {
                 return CompletableFuture.failedFuture(e);
             }
-            // Evaluate condition expression without ignoring syntax expression
-            return evaluateCondition(ifNode, false);
+            // Run the condition evaluation in the render thread
+            return evaluateConditionInRenderThread(ifNode, false);
         }
-        // Evaluate simple expression
-        return event.getContext().evaluate(expression).toCompletableFuture();
+        return evaluateExpressionInRenderThread(expression);
     }
 
     /**
-     * Determines if a given expression should be treated as a conditional
-     * expression.
+     * Evaluates a Qute expression inside the render thread.
      *
-     * @param expression the expression to test
-     * @return {@code true} if the expression contains conditional operators,
-     *         {@code false} otherwise
+     * <p>
+     * Qute expressions (like {@code uri:Todos.index}) must be evaluated inside the
+     * original rendering thread to ensure CDI {@code @RequestScoped} contexts are
+     * active. Evaluating them elsewhere may cause
+     * {@code ContextNotActiveException}.
+     * </p>
+     */
+    private CompletableFuture<Object> evaluateExpressionInRenderThread(String expression) {
+        return remoteThread.evaluateInRenderThread(() -> {
+            try {
+                return event.getContext().evaluate(expression).toCompletableFuture();
+            } catch (Exception e) {
+                // ex : with expression 'http:', the getContext().evaluate(expression) throws a TemplateException
+                // with the message "Parser error: empty expression found {http:}"
+                return CompletableFuture.failedFuture(e);
+            }
+        });
+    }
+
+    /**
+     * Checks if an expression contains conditional operators and should be
+     * interpreted as a condition.
      */
     private static boolean isConditionExpression(String expression) {
-        return expression.contains("!") || expression.contains(">") || expression.contains("gt")
-                || expression.contains(">=") || expression.contains(" ge") || expression.contains("<")
-                || expression.contains(" lt") || expression.contains("<=") || expression.contains(" le")
-                || expression.contains(" eq") || expression.contains("==") || expression.contains(" is")
-                || expression.contains("!=") || expression.contains(" ne") || expression.contains("&&")
-                || expression.contains(" and") || expression.contains("||") || expression.contains(" or");
+        return expression.contains("!") || expression.contains(">") || expression.contains("==")
+                || expression.contains("<") || expression.contains("&&") || expression.contains("||")
+                || expression.contains(" eq") || expression.contains(" ne")
+                || expression.contains(" gt") || expression.contains(" lt")
+                || expression.contains(" ge") || expression.contains(" le")
+                || expression.contains(" and") || expression.contains(" or")
+                || expression.contains(" is");
     }
 
     /**
-     * Evaluates a parsed conditional expression.
+     * Evaluates a parsed conditional expression within the render thread context.
+     *
+     * <p>
+     * This is used for conditional breakpoints: before suspending execution,
+     * the condition must be evaluated safely inside the render thread.
+     * </p>
+     *
+     * <p>
+     * Calling {@code evaluateConditionInRenderThread()} from a suspended state
+     * ensures the evaluation is scheduled on the render thread asynchronously
+     * (via {@link RemoteThread#evaluateInRenderThread(java.util.concurrent.Callable)}),
+     * avoiding deadlocks or premature resumption.
+     * </p>
      *
      * @param ifNode the parsed {@link TemplateNode} representing the condition
-     * @param ignoreError whether to ignore evaluation errors and return
-     *        {@code false}
-     * @return a {@link CompletableFuture} containing {@code true} or {@code false}
+     * @param ignoreError whether to ignore evaluation errors and return {@code false}
+     * @return a future resolving to {@code true} or {@code false}
+     */
+    public CompletableFuture<Object> evaluateConditionInRenderThread(TemplateNode ifNode, boolean ignoreError) {
+        return remoteThread.evaluateInRenderThread(() -> evaluateCondition(ifNode, ignoreError));
+    }
+
+    /**
+     * Evaluates the given Qute {@code if} node in the current context.
+     *
+     * <p>
+     * This method converts the Qute {@link TemplateNode} result into a boolean
+     * value. If evaluation fails and {@code ignoreError} is {@code true}, it
+     * returns {@code false} instead of throwing an exception.
+     * </p>
+     *
+     * <p>
+     * This method runs synchronously inside the render thread. It is typically
+     * called by {@link #evaluateConditionInRenderThread(TemplateNode, boolean)}.
+     * </p>
      */
     public CompletableFuture<Object> evaluateCondition(TemplateNode ifNode, boolean ignoreError) {
         try {
-            return ifNode.resolve(event.getContext())//
-                    .toCompletableFuture()//
+            return ifNode.resolve(event.getContext())
+                    .toCompletableFuture()
                     .handle((result, error) -> {
                         if (error != null) {
                             if (ignoreError) {
@@ -239,32 +257,18 @@ public class RemoteStackFrame extends StackFrame {
         }
     }
 
-    /**
-     * Returns the current Qute engine.
-     *
-     * @return the {@link Engine}
-     */
+    /** @return the current Qute engine */
     public Engine getEngine() {
         return event.getEngine();
     }
 
-    /**
-     * Returns the {@link ResolveEvent} associated with this frame.
-     *
-     * @return the {@link ResolveEvent}
-     */
+    /** @return the current {@link ResolveEvent} associated with this frame */
     ResolveEvent getEvent() {
         return event;
     }
 
-    /**
-     * Creates a new evaluation context for the given base object.
-     *
-     * @param base the base object
-     * @return a new {@link EvalContext}
-     */
+    /** Creates a new {@link EvalContext} for the given base object. */
     public EvalContext createEvalContext(Object base) {
         return new DebuggerEvalContext(base, this);
     }
-
 }

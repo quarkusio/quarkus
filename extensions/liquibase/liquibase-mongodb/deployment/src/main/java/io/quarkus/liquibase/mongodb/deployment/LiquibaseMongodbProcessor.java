@@ -114,6 +114,11 @@ class LiquibaseMongodbProcessor {
                 liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
         reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.precondition.PreconditionLogic.class.getName())
+                .reason(getClass().getName())
+                .fields().build());
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.AbstractSQLChange.class.getName(),
                 liquibase.ext.mongodb.change.AbstractMongoChange.class.getName(),
                 liquibase.ext.mongodb.change.CreateCollectionChange.class.getName(),

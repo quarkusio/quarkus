@@ -10,12 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
-    </properties>
-
     <artifactId>quarkus-cli-common</artifactId>
-    <name>Quarkus - Command Line Common Uitility Classes</name>
+    <name>Quarkus - Command Line Interface - Common Utility Classes</name>
     <description>Quarkus command line common utility classes</description>
 
     <dependencies>
@@ -34,6 +30,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-registry-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-project-core-extension-codestarts</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

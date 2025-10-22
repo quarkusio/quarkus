@@ -34,7 +34,7 @@ public class VersionHelper {
                     props.load(is);
                 }
             }
-            version = props.getProperty("quarkus.version", "999-SNAPSHOT");
+            version = props.getProperty("quarkus-core-version", "999-SNAPSHOT");
         } catch (Exception e) {
             version = "999-SNAPSHOT"; // fallback version
         }

@@ -11,7 +11,7 @@ import org.eclipse.lsp4j.debug.CompletionItem;
 import org.eclipse.lsp4j.debug.CompletionItemType;
 import org.eclipse.lsp4j.debug.CompletionsResponse;
 
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.resolvers.ValueResolverContext;
 
 /**

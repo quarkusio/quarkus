@@ -74,8 +74,12 @@ public class TestTracingProcessor {
     @Produce(ServiceStartBuildItem.class)
     void startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
-        if (TestSupport.instance().isEmpty() || config.continuousTesting() == TestConfig.Mode.DISABLED
-                || config.flatClassPath()) {
+        if (TestSupport.instance().isEmpty()) {
+            return;
+        }
+        TestSupport testSupport = TestSupport.instance().get();
+        testSupport.setConfig(config);
+        if ((config.continuousTesting() == TestConfig.Mode.DISABLED) || config.flatClassPath()) {
             return;
         }
         DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
@@ -86,11 +90,9 @@ public class TestTracingProcessor {
             return;
         }
         testingSetup = true;
-        TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
             testSupport.addListener(i.listener);
         }
-        testSupport.setConfig(config);
         testSupport.setTags(config.includeTags().orElse(Collections.emptyList()),
                 config.excludeTags().orElse(Collections.emptyList()));
         testSupport.setPatterns(config.includePattern().orElse(null),

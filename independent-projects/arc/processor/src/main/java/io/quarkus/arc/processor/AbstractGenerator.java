@@ -1,17 +1,25 @@
 package io.quarkus.arc.processor;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.gizmo2.ClassHierarchyLocator;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Gizmo;
 
 abstract class AbstractGenerator {
 
     static final String DEFAULT_PACKAGE = Arc.class.getPackage().getName() + ".generator";
     static final String UNDERSCORE = "_";
     static final String SYNTHETIC_SUFFIX = "Synthetic";
+
+    private static final Map<ClassDesc, ClassHierarchyLocator.Result> classHierarchyCache = new ConcurrentHashMap<>();
 
     protected final boolean generateSources;
     protected final ReflectionRegistration reflectionRegistration;
@@ -23,6 +31,19 @@ abstract class AbstractGenerator {
 
     public AbstractGenerator(boolean generateSources) {
         this(generateSources, null);
+    }
+
+    static Gizmo gizmo(ClassOutput classOutput) {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        if (tccl == null) {
+            throw new IllegalStateException("No TCCL available");
+        }
+        ClassHierarchyLocator locator = ClassHierarchyLocator.forClassParsing(tccl).cached(() -> classHierarchyCache);
+        return Gizmo.create(classOutput)
+                .withClassHierarchyLocator(locator)
+                .withDebugInfo(false)
+                .withParameters(false)
+                .withLambdasAsAnonymousClasses(true);
     }
 
     /**

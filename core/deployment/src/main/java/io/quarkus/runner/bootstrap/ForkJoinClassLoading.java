@@ -13,11 +13,18 @@ public class ForkJoinClassLoading {
     /**
      * A yucky hack, basically attempt to make sure every thread in the common pool has
      * the correct CL.
-     *
+     * <p>
      * It's not perfect, but as this only affects test and dev mode and not production it is better
      * than nothing.
-     *
+     * <p>
      * Really we should just not use the common pool at all.
+     * <p>
+     * TODO: This no longer works in Java 25 because the `ForkJoinPool` now does
+     * <a href=
+     * "https://github.com/openjdk/jdk/blob/jdk-25%2B36/src/java.base/share/classes/java/util/concurrent/ForkJoinPool.java#L2085">
+     * this</a>, which ends up calling <a href=
+     * "https://github.com/openjdk/jdk/blob/jdk-25%2B36/src/java.base/share/classes/java/util/concurrent/ForkJoinWorkerThread.java#L280">this</a>.
+     * We need to figure out how to deal with this
      */
     public static void setForkJoinClassLoader(ClassLoader classLoader) {
         CountDownLatch allDone = new CountDownLatch(ForkJoinPool.getCommonPoolParallelism());

@@ -25,7 +25,9 @@ public abstract class AbstractGenerator {
     protected AbstractGenerator(IndexView index, ClassOutput classOutput) {
         this.generatedTypes = new HashSet<>();
         this.index = index;
-        this.gizmo = Gizmo.create(classOutput);
+        this.gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
     }
 
     public Set<String> getGeneratedTypes() {

@@ -60,7 +60,9 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
         }
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer, null,
                 applicationClassPredicate.test(currentClassInfo.name().toString()));
-        Gizmo g = Gizmo.create(classOutput);
+        Gizmo g = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
         g.class_(baseName, cc -> {
             cc.defaultConstructor();
             cc.implements_(EndpointInvoker.class);

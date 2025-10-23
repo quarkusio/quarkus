@@ -2,6 +2,7 @@ package io.quarkus.websockets.next.test.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -142,6 +143,27 @@ public class BasicConnectorTest {
                     .setPort(999)
                     .setConnectTimeout(Duration.ofMillis(500)));
         })).rootCause().isInstanceOf(UnknownHostException.class).hasMessageContaining("robert");
+    }
+
+    @Test
+    void testBaseUriValidationFailure() {
+        assertThrows(IllegalArgumentException.class, () -> connector.baseUri("localhost:8080"));
+        assertThrows(IllegalArgumentException.class, () -> connector.baseUri("127.0.0.1:8080/"));
+        assertThrows(IllegalArgumentException.class, () -> connector.baseUri("localhost:8080/hello"));
+        assertThrows(IllegalArgumentException.class, () -> connector.baseUri("jdbc:localhost:8080/hello"));
+        assertThrows(IllegalArgumentException.class, () -> connector.baseUri("jdbc://localhost:8080/hello"));
+        assertDoesNotThrow(() -> connector.baseUri("http://localhost:8080/hello"));
+        assertDoesNotThrow(() -> connector.baseUri("http://localhost:8080/"));
+        assertDoesNotThrow(() -> connector.baseUri("http://localhost:8080"));
+        assertDoesNotThrow(() -> connector.baseUri("ws://localhost:8080/hello"));
+        assertDoesNotThrow(() -> connector.baseUri("ws://localhost:8080/"));
+        assertDoesNotThrow(() -> connector.baseUri("ws://localhost:8080"));
+        assertDoesNotThrow(() -> connector.baseUri("https://localhost:8080/hello"));
+        assertDoesNotThrow(() -> connector.baseUri("https://localhost:8080/"));
+        assertDoesNotThrow(() -> connector.baseUri("https://localhost:8080"));
+        assertDoesNotThrow(() -> connector.baseUri("wss://localhost:8080/hello"));
+        assertDoesNotThrow(() -> connector.baseUri("wss://localhost:8080/"));
+        assertDoesNotThrow(() -> connector.baseUri("wss://localhost:8080"));
     }
 
     private WebSocketClientConnection createConnection2(CountDownLatch conn2Latch,

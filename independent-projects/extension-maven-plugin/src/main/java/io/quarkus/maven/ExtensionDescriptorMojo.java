@@ -911,7 +911,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             final StringBuilder buf = new StringBuilder();
 
             if (rootDeployment.deploymentDepsTotal != 0) {
-                log.error(rootDeployment.deploymentDepsTotal + "Deployment artifact " + getDeploymentCoords() +
+                log.error("Deployment artifact " + getDeploymentCoords() +
                         " was found to be missing dependencies on the Quarkus extension artifacts marked with '-' below:");
                 final List<ArtifactKey> missing = rootDeployment.collectMissingDeploymentDeps(log);
                 buf.append("Deployment artifact ");

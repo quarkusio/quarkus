@@ -39,7 +39,12 @@ public class DebuggerTraceListener implements TraceListener {
      */
     @Override
     public void onBeforeResolve(ResolveEvent event) {
-        agent.onTemplateNode(event);
+        agent.onBeforeResolve(event);
+    }
+
+    @Override
+    public void onAfterResolve(ResolveEvent event) {
+        agent.onAfterResolve(event);
     }
 
     /**

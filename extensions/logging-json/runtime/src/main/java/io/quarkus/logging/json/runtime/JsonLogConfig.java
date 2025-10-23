@@ -129,7 +129,8 @@ public interface JsonLogConfig {
 
         public enum LogFormat {
             DEFAULT,
-            ECS
+            ECS,
+            GCP
         }
     }
 
@@ -154,7 +155,7 @@ public interface JsonLogConfig {
         public enum Type {
             STRING,
             INT,
-            LONG,
+            LONG
         }
     }
 }

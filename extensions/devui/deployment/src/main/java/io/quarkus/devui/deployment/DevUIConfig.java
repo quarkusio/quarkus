@@ -37,8 +37,10 @@ public interface DevUIConfig {
      * More hosts allowed for Dev UI
      *
      * Comma separated list of valid URLs, e.g.: www.quarkus.io, myhost.com
-     * (This can also be a regex)
+     * (This can also be a regex, e.g.: ^([A-Za-z0-9-]+).apps.myhost.com)
      * By default localhost and 127.0.0.1 will always be allowed
+     *
+     * Note: Wildcards are not supported (e.g.: *.apps.myhost.com)
      */
     Optional<List<String>> hosts();
 

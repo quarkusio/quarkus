@@ -3,7 +3,7 @@ package io.quarkus.qute.debug.agent.resolvers;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 
 /**
  * Context used by the debugger to collect properties and methods of an object

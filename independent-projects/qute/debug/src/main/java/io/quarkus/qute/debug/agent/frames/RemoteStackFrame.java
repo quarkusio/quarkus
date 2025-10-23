@@ -1,4 +1,4 @@
-package io.quarkus.qute.debug.agent;
+package io.quarkus.qute.debug.agent.frames;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -13,6 +13,8 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.TextNode;
+import io.quarkus.qute.debug.agent.DebuggerEvalContext;
+import io.quarkus.qute.debug.agent.RemoteThread;
 import io.quarkus.qute.debug.agent.evaluations.ConditionalExpressionHelper;
 import io.quarkus.qute.debug.agent.scopes.GlobalsScope;
 import io.quarkus.qute.debug.agent.scopes.LocalsScope;
@@ -263,7 +265,7 @@ public class RemoteStackFrame extends StackFrame {
     }
 
     /** @return the current {@link ResolveEvent} associated with this frame */
-    ResolveEvent getEvent() {
+    public ResolveEvent getEvent() {
         return event;
     }
 

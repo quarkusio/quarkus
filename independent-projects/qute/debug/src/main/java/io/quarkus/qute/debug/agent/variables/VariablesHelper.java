@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.lsp4j.debug.Variable;
 
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.resolvers.ReflectionValueResolverCollector;
 
 /**

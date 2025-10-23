@@ -394,7 +394,9 @@ public class SchedulerProcessor {
         };
 
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedToBaseNameFun);
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MutableScheduledMethod metadata = new MutableScheduledMethod();

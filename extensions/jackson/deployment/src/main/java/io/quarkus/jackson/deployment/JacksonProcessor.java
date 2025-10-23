@@ -388,7 +388,9 @@ public class JacksonProcessor {
         }
 
         ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
-        Gizmo g = Gizmo.create(classOutput);
+        Gizmo g = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
         g.class_("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer", cc -> {
             cc.implements_(ObjectMapperCustomizer.class);
             cc.defaultConstructor();

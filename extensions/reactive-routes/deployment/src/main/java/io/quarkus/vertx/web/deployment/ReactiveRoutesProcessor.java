@@ -306,7 +306,9 @@ class ReactiveRoutesProcessor {
                 return GeneratedClassGizmoAdaptor.isApplicationClass(className);
             }
         };
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, appClassPredicate));
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, appClassPredicate))
+                .withDebugInfo(false)
+                .withParameters(false);
         IndexView index = beanArchive.getIndex();
         Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
         boolean validatorAvailable = capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);

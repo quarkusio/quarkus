@@ -494,7 +494,9 @@ public class WebSocketProcessor {
                         return name;
                     }
                 });
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
         for (WebSocketEndpointBuildItem endpoint : endpoints) {
             // For each WebSocket endpoint bean we generate an implementation of WebSocketEndpoint
             // A new instance of this generated endpoint is created for each client connection

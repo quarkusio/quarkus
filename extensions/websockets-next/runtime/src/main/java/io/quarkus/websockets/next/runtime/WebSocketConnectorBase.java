@@ -93,6 +93,10 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     }
 
     public THIS baseUri(URI baseUri) {
+        if (!isSecure(baseUri) && !isNotSecure(baseUri)) {
+            throw new IllegalArgumentException(
+                    String.format("[%s] is not a valid scheme in the base URI %s", baseUri.getScheme(), baseUri));
+        }
         this.baseUri = Objects.requireNonNull(baseUri);
         return self();
     }
@@ -238,6 +242,10 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
             connectOptions.setPort(443);
         }
         return connectOptions;
+    }
+
+    protected boolean isNotSecure(URI uri) {
+        return "http".equals(uri.getScheme()) || "ws".equals(uri.getScheme());
     }
 
     protected boolean isSecure(URI uri) {

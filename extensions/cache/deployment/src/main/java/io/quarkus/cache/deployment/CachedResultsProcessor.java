@@ -83,14 +83,16 @@ public class CachedResultsProcessor {
             BuildProducer<AdditionalCacheNameBuildItem> cacheNames,
             BuildProducer<CachedResultsDifferentiator> diffs) {
         ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
         // Generate a wrapper bean for each @CachedResults config
         // Note that config also includes the additional qualifiers declared at injection point
         // However, these qualifiers are only used to inject the delegate bean
         // The wrapper bean itself does not declare these additional qualifiers
         // Otherwise we would end up with ambiguous dependency while injecting the delegate
         // The injection point annotated with @CachedResults is transformed
-        // and additional qualifers are replaced with @CachedResultsDiff
+        // and additional qualifiers are replaced with @CachedResultsDiff
 
         for (CachedResultsInjectConfigBuildItem injectConfig : cachedResultsInjectConfigs) {
             CachedResultsInjectConfig config = injectConfig.getConfig();

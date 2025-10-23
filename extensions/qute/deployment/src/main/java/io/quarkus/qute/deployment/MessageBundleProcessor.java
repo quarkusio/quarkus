@@ -961,7 +961,10 @@ public class MessageBundleProcessor {
                 + SUFFIX;
         String resolveMethodPrefix = baseName + SUFFIX;
 
-        Gizmo.create(classOutput).class_(generatedClassName, cc -> {
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
+        gizmo.class_(generatedClassName, cc -> {
             // MyMessages_Bundle implements MyMessages, Resolver
             cc.implements_(classDescOf(bundleInterface));
             cc.implements_(Resolver.class);

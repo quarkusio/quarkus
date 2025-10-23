@@ -583,7 +583,9 @@ public final class LoggingResourceProcessor {
     private static void generateMinLevelCompute(Map<String, CategoryBuildTimeConfig> categories,
             Map<String, InheritableLevel> categoryMinLevelDefaults, Level rootMinLevel,
             ClassOutput output) {
-        Gizmo g = Gizmo.create(output);
+        Gizmo g = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
         g.class_(MIN_LEVEL_COMPUTE_CLASS_NAME, cc -> {
             cc.final_();
             cc.staticMethod("isMinLevelEnabled", mc -> {
@@ -611,7 +613,9 @@ public final class LoggingResourceProcessor {
     }
 
     private static void generateDefaultLoggerNode(ClassOutput output) {
-        Gizmo g = Gizmo.create(output);
+        Gizmo g = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
         g.class_(LOGGER_NODE_CLASS_NAME, cc -> {
             cc.final_();
             cc.addAnnotation(TargetClass.class, ac -> ac.add(TargetClass::className, "org.jboss.logmanager.LoggerNode"));
@@ -630,7 +634,10 @@ public final class LoggingResourceProcessor {
 
     private static void generateLogManagerLogger(ClassOutput output,
             MinLevelEnabledFunction isMinLevelEnabledFunction) {
-        Gizmo.create(output).class_(LOGMANAGER_LOGGER_CLASS_NAME, cc -> {
+        Gizmo gizmo = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
+        gizmo.class_(LOGMANAGER_LOGGER_CLASS_NAME, cc -> {
             cc.final_();
             This this_ = cc.this_();
             cc.addAnnotation(TargetClass.class, ac -> ac.add(TargetClass::value, org.jboss.logmanager.Logger.class));
@@ -668,7 +675,9 @@ public final class LoggingResourceProcessor {
     }
 
     private static void generateDefaultLoggingLogger(Level minLevel, ClassOutput output) {
-        Gizmo gizmo = Gizmo.create(output);
+        Gizmo gizmo = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
         gizmo.class_(LOGGING_LOGGER_CLASS_NAME, cc -> {
             cc.final_();
             cc.addAnnotation(TargetClass.class, ac -> ac.add(TargetClass::className, "org.jboss.logging.Logger"));

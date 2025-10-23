@@ -2,14 +2,14 @@ package io.quarkus.hal;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
-public class HalCollectionWrapperJacksonSerializer extends JsonSerializer<HalCollectionWrapper<?>> {
+public class HalCollectionWrapperJacksonSerializer extends ValueSerializer<HalCollectionWrapper<?>> {
 
     @Override
-    public void serialize(HalCollectionWrapper<?> wrapper, JsonGenerator generator, SerializerProvider serializers)
+    public void serialize(HalCollectionWrapper<?> wrapper, JsonGenerator generator, SerializationContext serializers)
             throws IOException {
         generator.writeStartObject();
         writeEmbedded(wrapper, generator, serializers);
@@ -17,9 +17,9 @@ public class HalCollectionWrapperJacksonSerializer extends JsonSerializer<HalCol
         generator.writeEndObject();
     }
 
-    private void writeEmbedded(HalCollectionWrapper<?> wrapper, JsonGenerator generator, SerializerProvider serializers)
+    private void writeEmbedded(HalCollectionWrapper<?> wrapper, JsonGenerator generator, SerializationContext serializers)
             throws IOException {
-        JsonSerializer<Object> entitySerializer = serializers.findValueSerializer(HalEntityWrapper.class);
+        ValueSerializer<Object> entitySerializer = serializers.findValueSerializer(HalEntityWrapper.class);
 
         generator.writeFieldName("_embedded");
         generator.writeStartObject();

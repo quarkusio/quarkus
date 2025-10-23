@@ -7,9 +7,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
 
 public class StringUtils {
 
@@ -19,7 +18,6 @@ public class StringUtils {
 
     static {
         OBJECT_MAPPER = (new ObjectMapper()).findAndRegisterModules();
-        OBJECT_MAPPER.registerModule(new JavaTimeModule());
         OBJECT_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE);
     }
 

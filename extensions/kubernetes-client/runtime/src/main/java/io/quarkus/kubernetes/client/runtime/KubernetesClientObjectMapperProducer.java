@@ -6,7 +6,7 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;

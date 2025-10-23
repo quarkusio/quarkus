@@ -107,7 +107,7 @@ updates:
       # Caffeine
       - dependency-name: com.github.ben-manes.caffeine:caffeine
       # Jackson
-      - dependency-name: com.fasterxml.jackson:jackson-bom
+      - dependency-name: tools.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
       # Yasson
       - dependency-name: org.eclipse:yasson

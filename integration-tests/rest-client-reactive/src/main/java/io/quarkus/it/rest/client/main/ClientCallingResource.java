@@ -18,9 +18,9 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestResponse;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.quarkus.arc.Arc;
@@ -156,7 +156,7 @@ public class ClientCallingResource {
                         try {
                             rc.response().putHeader("content-type", "application/json")
                                     .end(mapper.writeValueAsString(list));
-                        } catch (JsonProcessingException e) {
+                        } catch (JacksonException e) {
                             fail(rc, e.getMessage());
                         }
                     }, t -> fail(rc, t.getMessage()));
@@ -324,7 +324,7 @@ public class ClientCallingResource {
     private Apple toApple(String s) {
         try {
             return mapper.readValue(s, Apple.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

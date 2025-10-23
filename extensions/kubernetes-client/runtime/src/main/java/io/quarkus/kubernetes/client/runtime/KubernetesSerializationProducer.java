@@ -3,7 +3,7 @@ package io.quarkus.kubernetes.client.runtime;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.fabric8.kubernetes.client.utils.KubernetesSerialization;
 import io.quarkus.arc.DefaultBean;

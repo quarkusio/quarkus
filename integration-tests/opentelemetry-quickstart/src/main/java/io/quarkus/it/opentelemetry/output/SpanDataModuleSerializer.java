@@ -2,8 +2,8 @@ package io.quarkus.it.opentelemetry.output;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.jackson.ObjectMapperCustomizer;

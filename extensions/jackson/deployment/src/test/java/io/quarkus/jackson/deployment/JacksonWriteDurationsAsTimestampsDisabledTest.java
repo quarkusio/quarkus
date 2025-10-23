@@ -9,8 +9,8 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -24,7 +24,7 @@ public class JacksonWriteDurationsAsTimestampsDisabledTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void testDurationWrittenAsIso8601() throws JsonProcessingException {
+    public void testDurationWrittenAsIso8601() throws JacksonException {
         Pojo pojo = new Pojo();
         pojo.duration = Duration.ofMillis(65542516);
 

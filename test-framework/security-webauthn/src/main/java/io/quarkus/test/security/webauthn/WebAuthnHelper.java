@@ -3,9 +3,9 @@ package io.quarkus.test.security.webauthn;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.dataformat.cbor.CBORFactory;
+import tools.jackson.dataformat.cbor.CBORParser;
 import com.webauthn4j.util.Base64UrlUtil;
 
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;

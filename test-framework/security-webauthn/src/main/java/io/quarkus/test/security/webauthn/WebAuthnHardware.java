@@ -18,8 +18,8 @@ import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.Random;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.dataformat.cbor.CBORFactory;
 import com.webauthn4j.data.attestation.authenticator.AuthenticatorData;
 
 import io.vertx.core.buffer.Buffer;

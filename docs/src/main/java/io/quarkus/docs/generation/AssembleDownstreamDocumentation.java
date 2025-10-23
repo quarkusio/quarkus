@@ -3,8 +3,8 @@ package io.quarkus.docs.generation;
 //These are here to allow running the script directly from command line/IDE
 //The real deps and call are in the pom.xml
 //DEPS org.jboss.logging:jboss-logging:3.4.1.Final
-//DEPS com.fasterxml.jackson.core:jackson-databind:2.12.3
-//DEPS com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.0.rc1
+//DEPS tools.jackson.core:jackson-databind:2.12.3
+//DEPS tools.jackson.dataformat:jackson-dataformat-yaml:2.8.0.rc1
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLGenerator;
 
 import io.quarkus.docs.generation.ReferenceIndexGenerator.Index;
 

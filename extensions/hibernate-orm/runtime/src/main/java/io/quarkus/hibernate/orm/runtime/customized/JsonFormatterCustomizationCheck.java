@@ -11,7 +11,7 @@ import jakarta.json.bind.Jsonb;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;

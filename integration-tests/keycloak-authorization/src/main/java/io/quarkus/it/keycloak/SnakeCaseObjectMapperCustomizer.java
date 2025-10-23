@@ -2,8 +2,8 @@ package io.quarkus.it.keycloak;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 

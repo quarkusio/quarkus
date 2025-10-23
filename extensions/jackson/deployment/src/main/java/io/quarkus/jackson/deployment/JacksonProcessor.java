@@ -30,17 +30,17 @@ import org.jboss.jandex.Type;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.SimpleObjectIdResolver;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.JacksonModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.PropertyNamingStrategy;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonNaming;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
+import tools.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -94,21 +94,15 @@ public class JacksonProcessor {
     private static final DotName JACKSON_NAMING = DotName.createSimple(JsonNaming.class.getName());
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
 
-    private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
+    private static final DotName JSON_NAMING = DotName.createSimple("tools.jackson.databind.annotation.JsonNaming");
 
     private static final DotName JSON_IDENTITY_INFO = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIdentityInfo");
 
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
-
-    private static final String TIME_MODULE = "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule";
-
-    private static final String JDK8_MODULE = "com.fasterxml.jackson.datatype.jdk8.Jdk8Module";
-
-    private static final String PARAMETER_NAMES_MODULE = "com.fasterxml.jackson.module.paramnames.ParameterNamesModule";
     private static final DotName JACKSON_MIXIN = DotName.createSimple(JacksonMixin.class.getName());
 
     private static final MethodDesc OBJECT_MAPPER_REGISTER_MODULE_METHOD_DESC = MethodDesc.of(ObjectMapper.class,
-            "registerModule", ObjectMapper.class, Module.class);
+            "registerModule", ObjectMapper.class, JacksonModule.class);
 
     // this list can probably be enriched with more modules
     private static final List<String> MODULES_NAMES_TO_AUTO_REGISTER = Arrays.asList(TIME_MODULE, JDK8_MODULE,
@@ -140,18 +134,18 @@ public class JacksonProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
-                        "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer",
-                        "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
-                        "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
+                ReflectiveClassBuildItem.builder("tools.jackson.databind.ser.std.SqlDateSerializer",
+                        "tools.jackson.databind.ser.std.SqlTimeSerializer",
+                        "tools.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
+                        "tools.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
                         "com.fasterxml.jackson.annotation.SimpleObjectIdResolver")
                         .reason(getClass().getName())
                         .methods().build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder(
-                        "com.fasterxml.jackson.databind.ser.std.ClassSerializer",
-                        "com.fasterxml.jackson.databind.ext.CoreXMLSerializers",
-                        "com.fasterxml.jackson.databind.ext.CoreXMLDeserializers")
+                        "tools.jackson.databind.ser.std.ClassSerializer",
+                        "tools.jackson.databind.ext.CoreXMLSerializers",
+                        "tools.jackson.databind.ext.CoreXMLDeserializers")
                         .reason(getClass().getName())
                         .constructors()
                         .build());
@@ -428,7 +422,7 @@ public class JacksonProcessor {
                                         ClassMethodDesc.of(simpleModuleClassDesc, "addSerializer",
                                                 MethodTypeDesc.of(simpleModuleClassDesc,
                                                         ConstantDescs.CD_Class, Reflection2Gizmo.classDescOf(
-                                                                JsonSerializer.class))),
+                                                                ValueSerializer.class))),
                                         simpleModuleInstance, targetClass, serializerInstance);
 
                             }
@@ -442,7 +436,7 @@ public class JacksonProcessor {
                                         ClassMethodDesc.of(simpleModuleClassDesc, "addDeserializer",
                                                 MethodTypeDesc.of(simpleModuleClassDesc,
                                                         ConstantDescs.CD_Class, Reflection2Gizmo.classDescOf(
-                                                                JsonDeserializer.class))),
+                                                                ValueDeserializer.class))),
                                         simpleModuleInstance, targetClass, deserializerInstance);
 
                             }

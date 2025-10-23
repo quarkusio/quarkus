@@ -24,9 +24,9 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -212,7 +212,7 @@ public class StreamJsonTest {
         @Path("/single-pojo")
         @Produces(RestMediaType.APPLICATION_STREAM_JSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
-        public String getPojosAsString() throws JsonProcessingException {
+        public String getPojosAsString() throws JacksonException {
             ObjectMapper mapper = new ObjectMapper();
             StringBuilder result = new StringBuilder();
             ObjectWriter objectWriter = mapper.writerFor(Message.class);

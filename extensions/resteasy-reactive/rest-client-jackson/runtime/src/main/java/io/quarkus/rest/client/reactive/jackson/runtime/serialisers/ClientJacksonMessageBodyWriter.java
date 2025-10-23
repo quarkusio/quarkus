@@ -20,8 +20,8 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientMessageBodyWriter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 public class ClientJacksonMessageBodyWriter implements ClientMessageBodyWriter<Object> {
 

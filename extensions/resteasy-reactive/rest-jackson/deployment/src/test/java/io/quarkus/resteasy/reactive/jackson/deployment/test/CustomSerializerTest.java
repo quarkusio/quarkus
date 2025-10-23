@@ -18,12 +18,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
@@ -33,11 +32,9 @@ import io.restassured.response.Response;
 
 public class CustomSerializerTest {
     private static final OffsetDateTime FIXED_TIME = OffsetDateTime.now();
-    private static final Jackson2Mapper MAPPER = new Jackson2Mapper((type, charset) -> {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
-    });
+    private static final Jackson2Mapper MAPPER = new Jackson2Mapper((type, charset) -> 
+        return new ObjectMapper()
+    );
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().withEmptyApplication();
@@ -91,7 +88,7 @@ public class CustomSerializerTest {
 
         @Override
         public void serialize(final CustomData customData, final JsonGenerator jsonGenerator,
-                final SerializerProvider serializerProvider)
+                final SerializationContext serializerProvider)
                 throws IOException {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField("name", customData.getName());

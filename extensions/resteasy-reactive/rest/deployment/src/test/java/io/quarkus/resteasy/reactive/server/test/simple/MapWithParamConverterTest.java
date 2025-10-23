@@ -20,10 +20,10 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.TypeFactory;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -96,7 +96,7 @@ public class MapWithParamConverterTest {
             try {
                 return genericType != null ? objectMapper.readValue(value, genericType)
                         : objectMapper.readValue(value, rawType);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw (new RuntimeException(e));
             }
         }
@@ -108,7 +108,7 @@ public class MapWithParamConverterTest {
             }
             try {
                 return objectMapper.writeValueAsString(value);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw (new RuntimeException(e));
             }
         }

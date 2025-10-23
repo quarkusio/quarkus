@@ -5,7 +5,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 
-import com.fasterxml.jackson.core.JsonParseException;
+import tools.jackson.core.StreamReadException;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
 import com.google.cloud.functions.RawBackgroundFunction;
@@ -106,7 +106,7 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
             try {
                 Object eventObj = gson.fromJson(event, parameterType);
                 delegate.accept(eventObj, context);
-            } catch (JsonParseException e) {
+            } catch (StreamReadException e) {
                 throw new RuntimeException("Could not parse received event payload into type "
                         + parameterType.getCanonicalName(), e);
             }

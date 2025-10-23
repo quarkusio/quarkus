@@ -7,14 +7,14 @@ import java.time.format.DateTimeFormatterBuilder;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeSerializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ext.javatime.ser.ZonedDateTimeSerializer;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 
@@ -36,11 +36,11 @@ public class ZonedDateTimeObjectMapperCustomizer implements ObjectMapperCustomiz
                 .registerModule(customDateModule);
     }
 
-    public static class ZonedDateTimeEuropeLondonDeserializer extends JsonDeserializer<ZonedDateTime> {
+    public static class ZonedDateTimeEuropeLondonDeserializer extends ValueDeserializer<ZonedDateTime> {
 
         @Override
         public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt)
-                throws IOException, JsonProcessingException {
+                throws IOException, JacksonException {
             return ZonedDateTime.parse(p.getValueAsString())
                     .withZoneSameInstant(ZoneId.of("Europe/London"));
         }

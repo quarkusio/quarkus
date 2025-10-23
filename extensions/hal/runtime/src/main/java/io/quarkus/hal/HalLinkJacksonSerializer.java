@@ -2,14 +2,14 @@ package io.quarkus.hal;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
-public class HalLinkJacksonSerializer extends JsonSerializer<HalLink> {
+public class HalLinkJacksonSerializer extends ValueSerializer<HalLink> {
 
     @Override
-    public void serialize(HalLink value, JsonGenerator generator, SerializerProvider serializers) throws IOException {
+    public void serialize(HalLink value, JsonGenerator generator, SerializationContext serializers) throws IOException {
         generator.writeStartObject();
         generator.writeObjectField("href", value.getHref());
         if (value.getTitle() != null) {

@@ -8,9 +8,9 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
@@ -150,7 +150,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             try {
                                 routingContext.response().end(writer.writeValueAsString(o));
-                            } catch (JsonProcessingException e) {
+                            } catch (JacksonException e) {
                                 log.error("Failed to marshal", e);
                                 routingContext.fail(400);
                             }

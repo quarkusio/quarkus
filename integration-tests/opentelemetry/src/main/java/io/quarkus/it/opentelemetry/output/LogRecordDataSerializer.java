@@ -2,9 +2,9 @@ package io.quarkus.it.opentelemetry.output;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 
@@ -19,7 +19,7 @@ public class LogRecordDataSerializer extends StdSerializer<LogRecordData> {
     }
 
     @Override
-    public void serialize(LogRecordData logRecordData, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+    public void serialize(LogRecordData logRecordData, JsonGenerator jsonGenerator, SerializationContext serializerProvider)
             throws IOException {
         jsonGenerator.writeStartObject();
 

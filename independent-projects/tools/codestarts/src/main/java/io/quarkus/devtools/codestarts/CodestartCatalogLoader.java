@@ -18,13 +18,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
 
 public final class CodestartCatalogLoader {
 
@@ -113,7 +112,7 @@ public final class CodestartCatalogLoader {
     }
 
     // Visible for testing
-    static CodestartSpec readCodestartSpec(String content) throws com.fasterxml.jackson.core.JsonProcessingException {
+    static CodestartSpec readCodestartSpec(String content) throws tools.jackson.core.JacksonException {
         return YAML_MAPPER.readerFor(CodestartSpec.class)
                 .readValue(content);
     }

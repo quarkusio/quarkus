@@ -23,9 +23,9 @@ import org.jboss.resteasy.reactive.client.spi.ClientMessageBodyReader;
 import org.jboss.resteasy.reactive.common.providers.serialisers.AbstractJsonMessageBodyReader;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.StreamReadException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReader implements ClientMessageBodyReader<Object> {
 
@@ -56,7 +56,7 @@ public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReade
             return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
                     .readValue(entityStream);
 
-        } catch (JsonParseException e) {
+        } catch (StreamReadException e) {
             log.debug("Server returned invalid json data", e);
             throw new ClientWebApplicationException(e, Response.Status.OK);
         }

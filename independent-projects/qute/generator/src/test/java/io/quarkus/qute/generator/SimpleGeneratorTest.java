@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -34,6 +35,8 @@ import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.TestEvalContext;
 import io.quarkus.qute.ValueResolver;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceExtensionMethodInfo;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.Parameters;
 
 public class SimpleGeneratorTest {
 
@@ -43,7 +46,8 @@ public class SimpleGeneratorTest {
     public static void init() throws IOException {
         ClassOutput classOutput = ClassOutput.fileWriter(new File("target/test-classes/").toPath());
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
-                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class, SomeBean.class, SomeInterface.class);
+                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class, SomeBean.class, SomeInterface.class,
+                NamespaceExtensionMethods.class);
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
                 .addClass(myServiceClazz)
@@ -72,6 +76,24 @@ public class SimpleGeneratorTest {
                 "getDummyVarargs", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple("[L" + String.class.getName() + ";"), Kind.ARRAY));
         extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
+        ClassInfo namespaceExtensionMethodsClazz = index.getClassByName(DotName.createSimple(NamespaceExtensionMethods.class));
+        List<MethodInfo> myExtensionMethods = namespaceExtensionMethodsClazz.methods().stream()
+                .filter(m -> m.name().equals("ping") || m.name().startsWith("pong") || m.name().equals("pingRegex")).toList();
+        extensionMethodGenerator.generateNamespaceResolver(namespaceExtensionMethodsClazz, "my", 0,
+                myExtensionMethods.stream().map(
+                        m -> {
+                            if (m.name().equals("pingRegex")) {
+                                return new NamespaceExtensionMethodInfo(m, null, Set.of(), "alpha",
+                                        new Parameters(m, true, true));
+                            }
+                            if (m.name().equals("ping")
+                                    && m.parametersCount() == 3) {
+                                return new NamespaceExtensionMethodInfo(m, null, Set.of("ping", "pingu"), null,
+                                        new Parameters(m, true, true));
+                            }
+                            return new NamespaceExtensionMethodInfo(m, m.name(), Set.of(), null,
+                                    new Parameters(m, false, true));
+                        }).toList());
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
     }
 
@@ -111,7 +133,8 @@ public class SimpleGeneratorTest {
 
         EngineBuilder builder = Engine.builder().addDefaults();
         for (String generatedType : generatedTypes) {
-            if (generatedType.contains(ValueResolverGenerator.NAMESPACE_SUFFIX)) {
+            if (generatedType.contains(ValueResolverGenerator.NAMESPACE_SUFFIX)
+                    || generatedType.contains(ExtensionMethodGenerator.NAMESPACE_SUFFIX)) {
                 builder.addNamespaceResolver((NamespaceResolver) newResolver(generatedType));
             } else {
                 builder.addValueResolver((ValueResolver) newResolver(generatedType));
@@ -153,6 +176,18 @@ public class SimpleGeneratorTest {
         assertEquals("one", engine.parse("{MyEnum:valueOf('ONE').name}").render());
         assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
         assertEquals("foo", engine.parse("{builder.append('foo')}").data("builder", new StringBuilder()).render());
+
+        assertEquals("NOT_FOUND", engine.parse("{my:ping(a,b,c)}").data(Map.of("a", 100, "b", 50)).render());
+        assertEquals("Number, Number", engine.parse("{my:ping(a,b)}").data(Map.of("a", 100, "b", 50)).render());
+        assertEquals("String, Number:ping", engine.parse("{my:ping(a,b)}").data(Map.of("a", "100", "b", 50)).render());
+        assertEquals("String, Number:pingu", engine.parse("{my:pingu(a,b)}").data(Map.of("a", "100", "b", 50)).render());
+        assertEquals("NOT_FOUND", engine.parse("{my:ping(b,a)}").data(Map.of("a", "100", "b", 50)).render());
+        assertEquals("String, String", engine.parse("{my:ping(a,b)}").data(Map.of("a", "100", "b", "50")).render());
+        assertEquals("String:alpha100", engine.parse("{my:alpha(a)}").data(Map.of("a", "100")).render());
+        assertEquals("String...[]", engine.parse("{my:pong()}").data(Map.of("a", "100", "b", "50")).render());
+        assertEquals("String...[100]", engine.parse("{my:pong(a)}").data(Map.of("a", "100", "b", "50")).render());
+        assertEquals("String...[50, 100]", engine.parse("{my:pong(b,a)}").data(Map.of("a", "100", "b", "50")).render());
+        assertEquals("String...[foo, bar]", engine.parse("{my:pong(my:pongs)}").render());
 
         // Exact match takes precedence over the getter
         assertEquals("bar::true::true::ping::false",

@@ -16,14 +16,15 @@ public class RestResponseBuilderImplTest {
     @Test
     public void shouldBuildWithNonAbsoulteLocationAndIPv6Address() {
         var context = Mockito.mock(ResteasyReactiveRequestContext.class, Mockito.RETURNS_DEEP_STUBS);
-        Mockito.when(context.serverRequest().getRequestHost()).thenReturn("[0:0:0:0:0:0:0:1]");
+        Mockito.when(context.getScheme()).thenReturn("https");
+        Mockito.when(context.getAuthority()).thenReturn("[0:0:0:0:0:0:0:1]");
         Mockito.when(context.getDeployment().getPrefix()).thenReturn("/prefix");
         CurrentRequestManager.set(context);
         var response = RestResponseBuilderImpl.ok().location(URI.create("/host")).build();
-        assertEquals("//[0:0:0:0:0:0:0:1]/prefix/host", response.getLocation().toString());
+        assertEquals("https://[0:0:0:0:0:0:0:1]/prefix/host", response.getLocation().toString());
 
         response = RestResponseBuilderImpl.ok().contentLocation(URI.create("/host")).build();
-        assertEquals("//[0:0:0:0:0:0:0:1]/host", response.getHeaders().getFirst(HttpHeaders.CONTENT_LOCATION).toString());
+        assertEquals("https://[0:0:0:0:0:0:0:1]/host", response.getHeaders().getFirst(HttpHeaders.CONTENT_LOCATION).toString());
     }
 
 }

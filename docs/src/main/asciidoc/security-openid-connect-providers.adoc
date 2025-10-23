@@ -161,7 +161,7 @@ quarkus.oidc.credentials.client-secret=<Client Secret>
 [[facebook]]
 === Facebook
 
-Facebook you will not be let you test your application on `localhost` like most other OIDC providers:
+Facebook will not let you test your application on `localhost` like most other OIDC providers:
 you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 

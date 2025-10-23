@@ -193,6 +193,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         initProjectModule(project, mainModule, sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME), ArtifactSources.MAIN);
         if (workspaceDiscovery) {
+            appArtifact.setReloadable();
             final TaskCollection<Test> testTasks = project.getTasks().withType(Test.class);
             if (!testTasks.isEmpty()) {
                 final Map<File, SourceSet> sourceSetsByClassesDir = new HashMap<>();
@@ -241,18 +242,36 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     private void collectExtensionDependencies(Project project, Configuration deploymentConfiguration,
             ApplicationModelBuilder modelBuilder) {
         final ResolvedConfiguration rc = deploymentConfiguration.getResolvedConfiguration();
+        final Set<ArtifactKey> processedDeps = new HashSet<>();
         for (var dep : rc.getFirstLevelModuleDependencies()) {
-            processDeploymentDependency(project, dep, modelBuilder, false);
+            processDeploymentDependency(project, dep, modelBuilder, false, processedDeps);
         }
     }
 
     private static void processDeploymentDependency(Project project, ResolvedDependency resolvedDep,
-            ApplicationModelBuilder modelBuilder, boolean clearReloadableFlag) {
-        boolean processChildren = false;
-        for (var a : resolvedDep.getModuleArtifacts()) {
-            ResolvedDependencyBuilder dep = modelBuilder.getDependency(getKey(a));
+            ApplicationModelBuilder modelBuilder, boolean clearReloadableFlag, Set<ArtifactKey> processedDeps) {
+        final Set<ResolvedArtifact> resolvedArtifacts = resolvedDep.getModuleArtifacts();
+        boolean processChildren = resolvedArtifacts.isEmpty();
+        for (var a : resolvedArtifacts) {
+            final ArtifactKey artifactKey = getKey(a);
+            if (!processedDeps.add(artifactKey)) {
+                continue;
+            }
+            processChildren = true;
+            ResolvedDependencyBuilder dep = modelBuilder.getDependency(artifactKey);
             if (dep == null) {
-                if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier projectComponentIdentifier) {
+                if (isApplicationRoot(modelBuilder, artifactKey)) {
+                    // An application root artifact may be found among the dependencies in a could of cases:
+                    // test fixtures in an application project and as a deployment module in an extension project
+                    // running deployment module tests.
+                    // In case of test fixtures, the root artifact does not have to be added to the model as a dependency,
+                    // it can simply be skipped.
+                    // In case of a deployment test, it has to be added as a dependency, since otherwise, the deployment
+                    // module will appear to be missing.
+                    // This part here looks like a hack but appears to work for both cases so far.
+                    dep = modelBuilder.getApplicationArtifact();
+                } else if (a.getId()
+                        .getComponentIdentifier() instanceof ProjectComponentIdentifier projectComponentIdentifier) {
                     var includedBuild = ToolingUtils.includedBuild(project,
                             projectComponentIdentifier.getBuild().getBuildPath());
                     final Project projectDep;
@@ -297,20 +316,24 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 }
             }
             if (dep != null) {
-                if (!dep.isDeploymentCp()) {
-                    dep.setDeploymentCp();
-                    processChildren = true;
+                if (dep.isRuntimeExtensionArtifact()) {
+                    clearReloadableFlag = true;
                 }
-                if (clearReloadableFlag) {
+                dep.setDeploymentCp();
+                if (clearReloadableFlag && dep != modelBuilder.getApplicationArtifact()) {
                     dep.clearFlag(DependencyFlags.RELOADABLE);
                 }
             }
         }
         if (processChildren) {
             for (var child : resolvedDep.getChildren()) {
-                processDeploymentDependency(project, child, modelBuilder, clearReloadableFlag);
+                processDeploymentDependency(project, child, modelBuilder, clearReloadableFlag, processedDeps);
             }
         }
+    }
+
+    private static boolean isApplicationRoot(ApplicationModelBuilder modelBuilder, ArtifactKey artifactKey) {
+        return modelBuilder.getApplicationArtifact().getKey().equals(artifactKey);
     }
 
     private static ResolvedDependencyBuilder addArtifactDependency(Project project, ApplicationModelBuilder modelBuilder,
@@ -350,9 +373,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         final Set<File> artifactFiles = getArtifactFilesOrNull(configuration, dependencies);
         for (ResolvedDependency d : configuration.getFirstLevelModuleDependencies()) {
-            collectDependencies(d, workspaceDiscovery, project, artifactFiles, new HashSet<>(),
-                    modelBuilder,
-                    wsModule,
+            collectDependencies(d, workspaceDiscovery, project, artifactFiles, modelBuilder, wsModule,
                     (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_RELOADABLE_MODULES));
         }
 
@@ -403,86 +424,94 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     }
 
     private void collectDependencies(org.gradle.api.artifacts.ResolvedDependency resolvedDep, boolean workspaceDiscovery,
-            Project project, Set<File> artifactFiles, Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder,
+            Project project, Set<File> artifactFiles, ApplicationModelBuilder modelBuilder,
             WorkspaceModule.Mutable parentModule,
             byte flags) {
         WorkspaceModule.Mutable projectModule = null;
-        for (ResolvedArtifact a : resolvedDep.getModuleArtifacts()) {
+        final Set<ResolvedArtifact> resolvedArtifacts = resolvedDep.getModuleArtifacts();
+        boolean processChildren = resolvedArtifacts.isEmpty();
+        for (ResolvedArtifact a : resolvedArtifacts) {
             if (!isDependency(a)) {
                 continue;
             }
-            var depBuilder = modelBuilder.getDependency(getKey(a));
-            if (depBuilder != null) {
-                if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
-                    depBuilder.setDirect(true);
-                }
+            final ArtifactKey artifactKey = getKey(a);
+            if (isApplicationRoot(modelBuilder, artifactKey)) {
                 continue;
             }
-            final ArtifactCoords depCoords = getArtifactCoords(a);
-            depBuilder = ResolvedDependencyBuilder.newInstance()
-                    .setCoords(depCoords)
-                    .setRuntimeCp();
-            if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
-                depBuilder.setDirect(true);
-                flags = clearFlag(flags, COLLECT_DIRECT_DEPS);
-            }
-            if (parentModule != null) {
-                parentModule.addDependency(new ArtifactDependency(depCoords));
-            }
+            var depBuilder = modelBuilder.getDependency(artifactKey);
+            if (depBuilder == null) {
+                processChildren = true;
+                final ArtifactCoords depCoords = getArtifactCoords(a);
+                depBuilder = ResolvedDependencyBuilder.newInstance()
+                        .setCoords(depCoords)
+                        .setRuntimeCp();
+                if (parentModule != null) {
+                    parentModule.addDependency(new ArtifactDependency(depCoords));
+                }
 
-            PathCollection paths = null;
-            if (workspaceDiscovery && a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier compId) {
-                Project projectDep = project.getRootProject().findProject(compId.getProjectPath());
+                PathCollection paths = null;
+                if (workspaceDiscovery && a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier compId) {
+                    Project projectDep = project.getRootProject().findProject(compId.getProjectPath());
 
-                final String classifier = a.getClassifier();
-                if (classifier == null || classifier.isEmpty()) {
-                    final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
-                            compId.getBuild().getBuildPath());
-                    if (includedBuild != null) {
-                        if (includedBuild instanceof IncludedBuildInternal ib) {
-                            projectDep = ToolingUtils.includedBuildProject(ib, compId.getProjectPath());
-                        }
-                        if (projectDep != null) {
-                            initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
+                    final String classifier = a.getClassifier();
+                    if (classifier == null || classifier.isEmpty()) {
+                        final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
+                                compId.getBuild().getBuildPath());
+                        if (includedBuild != null) {
+                            if (includedBuild instanceof IncludedBuildInternal ib) {
+                                projectDep = ToolingUtils.includedBuildProject(ib, compId.getProjectPath());
+                            }
+                            if (projectDep != null) {
+                                initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
+                            } else {
+                                final PathList.Builder pathBuilder = PathList.builder();
+                                addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());
+                                paths = pathBuilder.build();
+                            }
                         } else {
-                            final PathList.Builder pathBuilder = PathList.builder();
-                            addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());
-                            paths = pathBuilder.build();
+                            initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
                         }
                     } else {
                         initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
                     }
-                } else {
-                    initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
+                }
+
+                depBuilder.setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths);
+                if (processQuarkusDependency(depBuilder, modelBuilder)) {
+                    flags = clearFlag(flags, COLLECT_RELOADABLE_MODULES);
+                }
+                modelBuilder.addDependency(depBuilder);
+
+                if (artifactFiles != null) {
+                    artifactFiles.add(a.getFile());
                 }
             }
-
-            depBuilder.setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths);
-            if (processQuarkusDependency(depBuilder, modelBuilder)) {
-                if (isFlagOn(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
+            if (projectModule == null && depBuilder.getWorkspaceModule() != null) {
+                projectModule = depBuilder.getWorkspaceModule().mutable();
+            }
+            if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
+                depBuilder.setDirect(true);
+                flags = clearFlag(flags, COLLECT_DIRECT_DEPS);
+            }
+            if (depBuilder.isRuntimeExtensionArtifact()) {
+                if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
+                    flags = clearFlag(flags, COLLECT_RELOADABLE_MODULES);
+                    processChildren = true;
+                }
+                if (isFlagOn(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES)
+                        && !depBuilder.isFlagSet(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT)) {
                     depBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     flags = clearFlag(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES);
                 }
-                flags = clearFlag(flags, COLLECT_RELOADABLE_MODULES);
             }
             if (!isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
                 depBuilder.clearFlag(DependencyFlags.RELOADABLE);
             }
-            modelBuilder.addDependency(depBuilder);
-            if (projectModule == null && depBuilder.getWorkspaceModule() != null) {
-                projectModule = depBuilder.getWorkspaceModule().mutable();
-            }
-
-            if (artifactFiles != null) {
-                artifactFiles.add(a.getFile());
-            }
         }
 
-        processedModules.add(ArtifactKey.ga(resolvedDep.getModuleGroup(), resolvedDep.getModuleName()));
-        for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
-            if (!processedModules.contains(ArtifactKey.ga(child.getModuleGroup(), child.getModuleName()))) {
-                collectDependencies(child, workspaceDiscovery, project, artifactFiles, processedModules,
-                        modelBuilder, projectModule, flags);
+        if (processChildren) {
+            for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
+                collectDependencies(child, workspaceDiscovery, project, artifactFiles, modelBuilder, projectModule, flags);
             }
         }
     }

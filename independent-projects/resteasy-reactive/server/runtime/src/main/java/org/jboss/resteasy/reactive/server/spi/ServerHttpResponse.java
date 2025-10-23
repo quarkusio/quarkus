@@ -50,4 +50,6 @@ public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse
     boolean isWriteQueueFull();
 
     ServerHttpResponse addDrainHandler(Runnable onDrain);
+
+    void reset();
 }

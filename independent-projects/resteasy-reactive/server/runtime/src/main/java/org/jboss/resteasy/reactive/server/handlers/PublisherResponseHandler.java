@@ -246,6 +246,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
             // it will appear to be an SSE value, which is incorrect, so we should only log it and close the connection
             if (requestContext.serverResponse().headWritten()) {
                 log.error("Exception in SSE server handling, impossible to send it to client", t);
+                // HTTP chunked encoding sends an indeterminate number of chunks, but it has to end with an end chunk of zero size to indicate successful transmission.
+                // reset() will cause this last chunk to not be sent, even though every other chunk was sent, and so clients can detect the error
+                requestContext.serverResponse().reset();
             } else {
                 // we can go through the abort chain
                 requestContext.resume(t, true);

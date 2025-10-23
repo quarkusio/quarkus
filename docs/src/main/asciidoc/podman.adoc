@@ -46,8 +46,8 @@ On systems which involve a Podman Machine managed VM (Mac & Windows), container 
 
 [source,bash]
 ----
-podman machine set --rootful=true # or false
 podman machine stop
+podman machine set --rootful=true # or false
 podman machine start
 ----
 

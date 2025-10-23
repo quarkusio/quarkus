@@ -17,7 +17,7 @@
     <extension>
         <groupId>io.quarkus.develocity</groupId>
         <artifactId>quarkus-project-develocity-extension</artifactId>
-        <version>1.2.3</version>
+        <version>1.2.4</version>
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.nisse</groupId>

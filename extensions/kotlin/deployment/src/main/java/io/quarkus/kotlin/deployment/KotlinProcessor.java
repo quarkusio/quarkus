@@ -13,6 +13,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBu
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassFinalFieldsWritablePredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 
 public class KotlinProcessor {
@@ -52,6 +53,7 @@ public class KotlinProcessor {
      */
     @BuildStep
     void registerKotlinReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<NativeImageResourcePatternsBuildItem> nativeResourcePatterns,
             BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> reflectiveHierarchyIgnoreWarning) {
 
@@ -80,5 +82,9 @@ public class KotlinProcessor {
                 new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("kotlinx.serialization.KSerializer")));
         reflectiveHierarchyIgnoreWarning.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
                 DotName.createSimple("kotlinx.serialization.descriptors.SerialDescriptor")));
+
+        serviceProvider.produce(
+                new ServiceProviderBuildItem("kotlin.reflect.jvm.internal.impl.km.internal.extensions.MetadataExtensions",
+                        "kotlin.reflect.jvm.internal.impl.km.jvm.internal.JvmMetadataExtensions"));
     }
 }

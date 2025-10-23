@@ -201,7 +201,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
             for (MethodInfo method : pseudoBean.getInterceptedMethods().keySet()) {
                 forwardingMethods.put(MethodDescriptor.of(method), SubclassGenerator.createForwardingMethod(clazz,
-                        pseudoBeanClassName, method));
+                        pseudoBeanClassName, method, isInterface));
             }
 
             FieldCreator constructedField = clazz.getFieldCreator(SubclassGenerator.FIELD_NAME_CONSTRUCTED, boolean.class)
@@ -369,9 +369,22 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                     args[i] = mc.getMethodParam(i);
                 }
 
-                BytecodeCreator notConstructed = mc.ifFalse(
-                        mc.readInstanceField(constructedField.getFieldDescriptor(), mc.getThis())).trueBranch();
-                notConstructed.returnValue(notConstructed.invokeSpecialMethod(method, notConstructed.getThis(), args));
+                if (!superClass.equals(Object.class.getName())) {
+                    // Skip delegation if proxy is not constructed yet
+                    // This is not necessary when intercepting interfaces, because interfaces cannot have constructors
+                    // Similarly, this is not necessary when intercepting `Object`, because its constructor does nothing
+                    BytecodeCreator notConstructed = mc.ifFalse(
+                            mc.readInstanceField(constructedField.getFieldDescriptor(), mc.getThis())).trueBranch();
+                    if (method.isAbstract()) {
+                        notConstructed.throwException(IllegalStateException.class, "Cannot invoke abstract method");
+                    } else {
+                        MethodDescriptor superDescriptor = MethodDescriptor.ofMethod(superClass, method.name(),
+                                method.returnType().name().toString(),
+                                method.parameterTypes().stream().map(p -> p.name().toString()).toArray());
+                        notConstructed.returnValue(
+                                notConstructed.invokeSpecialMethod(superDescriptor, notConstructed.getThis(), args));
+                    }
+                }
 
                 ResultHandle dlgt = mc.readInstanceField(delegate.getFieldDescriptor(), mc.getThis());
                 ResultHandle result = method.declaringClass().isInterface()

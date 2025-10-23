@@ -63,6 +63,17 @@ public class HttpTagExplosionPreventionTest {
 
         Assertions.assertEquals(2, registry.find("http.server.requests").tag("uri", "UNKNOWN").timers().size()); // 2 different set of tags
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/api/failure/{message}").timers().size());
+
+        RestAssured.get("/api/not-there").then().statusCode(404);
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 17);
+        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "NOT_FOUND").timers().size());
+
+        RestAssured.get("/api/not-there/").then().statusCode(404);
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 18);
+        // no other uri tags and count should be 2
+        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "NOT_FOUND").timers().size());
+        Assertions.assertEquals(2,
+                registry.find("http.server.requests").tag("uri", "NOT_FOUND").timers().iterator().next().count());
     }
 
     @Path("/")

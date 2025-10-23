@@ -184,12 +184,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
             if (!superClass.equals(Object.class.getName())) {
                 // Skip delegation if proxy is not constructed yet
-                // This check is unnecessary for producers that return an interface
+                // This is not necessary for producers of interfaces, because interfaces cannot have constructors
+                // Similarly, this is not necessary for producers of `Object`, because its constructor does nothing
                 // if(!this.bean == null) return super.foo()
                 BytecodeCreator notConstructed = forward
                         .ifNull(forward.readInstanceField(beanField.getFieldDescriptor(), forward.getThis())).trueBranch();
-                if (Modifier.isAbstract(method.flags())) {
-                    notConstructed.throwException(IllegalStateException.class, "Cannot delegate to an abstract method");
+                if (method.isAbstract()) {
+                    notConstructed.throwException(IllegalStateException.class, "Cannot invoke abstract method");
                 } else {
                     MethodDescriptor superDescriptor = MethodDescriptor.ofMethod(superClass, method.name(),
                             method.returnType().name().toString(),

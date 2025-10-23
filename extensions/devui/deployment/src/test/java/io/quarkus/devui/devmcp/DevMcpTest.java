@@ -176,6 +176,36 @@ public class DevMcpTest {
     }
 
     @Test
+    public void testToolsCallWithEmptyArgs() {
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 4,
+                      "method": "tools/call",
+                      "params": {
+                        "name": "devui-logstream_getLoggers",
+                        "arguments": {}
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo(4))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("result.content.type", CoreMatchers.hasItem("text"))
+                .body("result.content.text", CoreMatchers.notNullValue());
+
+    }
+
+    @Test
     public void testResourcesList() {
         String jsonBody = """
                     {

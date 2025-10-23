@@ -1117,7 +1117,7 @@ Add the following dependencies to your test project:
     <version>${wiremock.version}</version> // <1>
 </dependency>
 ----
-<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
+<1> Use a proper Wiremock version. View all link:https://central.sonatype.com/artifact/org.wiremock/wiremock?smo=true[available WireMock versions] on Maven Central.
 
 Write a Wiremock-based `QuarkusTestResourceLifecycleManager`, for example:
 [source, java]

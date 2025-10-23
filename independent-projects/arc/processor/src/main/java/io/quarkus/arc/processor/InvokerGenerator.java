@@ -5,9 +5,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +28,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.JandexReflection;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodSignatureKey;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
@@ -735,7 +737,7 @@ public class InvokerGenerator extends AbstractGenerator {
         }
 
         boolean originalClass = true;
-        Set<Methods.MethodKey> seenMethods = new HashSet<>();
+        Map<MethodSignatureKey, MethodInfo> seenMethods = new HashMap<>();
         while (!worklist.isEmpty()) {
             ClassInfo current = worklist.removeFirst();
 
@@ -744,13 +746,13 @@ public class InvokerGenerator extends AbstractGenerator {
                     continue;
                 }
 
-                Methods.MethodKey key = new Methods.MethodKey(method);
+                MethodSignatureKey key = method.signatureKey();
 
                 if (Modifier.isStatic(method.flags()) && originalClass) {
-                    seenMethods.add(key);
+                    seenMethods.put(key, method);
                 } else {
-                    if (!Methods.isOverriden(key, seenMethods)) {
-                        seenMethods.add(key);
+                    if (!Methods.isOverridden(key, seenMethods.keySet())) {
+                        seenMethods.put(key, method);
                     }
                 }
             }
@@ -764,8 +766,8 @@ public class InvokerGenerator extends AbstractGenerator {
 
         List<CandidateMethod> matching = new ArrayList<>();
         List<CandidateMethod> notMatching = new ArrayList<>();
-        for (Methods.MethodKey seenMethod : seenMethods) {
-            CandidateMethod candidate = new CandidateMethod(seenMethod.method, assignability);
+        for (Entry<MethodSignatureKey, MethodInfo> seenMethod : seenMethods.entrySet()) {
+            CandidateMethod candidate = new CandidateMethod(seenMethod.getValue(), assignability);
             if (candidate.matches(transformer, expectedType)) {
                 matching.add(candidate);
             } else {

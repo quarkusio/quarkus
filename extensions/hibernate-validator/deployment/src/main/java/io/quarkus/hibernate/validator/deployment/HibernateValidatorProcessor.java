@@ -343,7 +343,9 @@ class HibernateValidatorProcessor {
                 .methods().build());
 
         String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
-        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true));
+        Gizmo gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true))
+                .withDebugInfo(false)
+                .withParameters(false);
         gizmo.class_(builderClassName, cc -> {
             cc.final_();
             cc.implements_(ConfigBuilder.class);

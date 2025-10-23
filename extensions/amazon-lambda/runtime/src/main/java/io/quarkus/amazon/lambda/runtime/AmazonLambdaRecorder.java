@@ -3,7 +3,6 @@ package io.quarkus.amazon.lambda.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.amazon.lambda.runtime.RequestHandlerDefinitionUtil.RequestHandlerDefinition;
 import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -49,18 +49,19 @@ public class AmazonLambdaRecorder {
     static void initializeHandlerClass(Class<? extends RequestHandler<?, ?>> handler) {
         handlerClass = handler;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
-        Method handlerMethod = discoverHandlerMethod(handlerClass);
-        Class<?> parameterType = handlerMethod.getParameterTypes()[0];
+        RequestHandlerDefinition handlerMethodDefinition = RequestHandlerDefinitionUtil.discoverHandlerMethod(handlerClass);
 
-        if (parameterType.equals(S3Event.class)) {
+        Class<?> inputType = handlerMethodDefinition.inputOutputTypes().inputType();
+        Class<?> outputType = handlerMethodDefinition.inputOutputTypes().outputType();
+        if (inputType.equals(S3Event.class)) {
             objectReader = new S3EventInputReader(objectMapper);
-        } else if (Collection.class.isAssignableFrom(parameterType)) {
-            objectReader = new CollectionInputReader<>(objectMapper, handlerMethod);
+        } else if (Collection.class.isAssignableFrom(inputType)) {
+            objectReader = new CollectionInputReader<>(objectMapper, handlerMethodDefinition.method());
         } else {
-            objectReader = new JacksonInputReader(objectMapper.readerFor(parameterType));
+            objectReader = new JacksonInputReader(objectMapper.readerFor(inputType));
         }
 
-        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
+        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(outputType));
     }
 
     public void setBeanContainer(BeanContainer container) {
@@ -85,28 +86,6 @@ public class AmazonLambdaRecorder {
             Object response = handler.handleRequest(request, context);
             objectWriter.writeValue(outputStream, response);
         }
-    }
-
-    private static Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
-        final Method[] methods = handlerClass.getDeclaredMethods();
-        Method method = null;
-        for (int i = 0; i < methods.length && method == null; i++) {
-            if (methods[i].getName().equals("handleRequest")) {
-                if (methods[i].getParameterCount() == 2) {
-                    final Class<?>[] types = methods[i].getParameterTypes();
-                    if (!types[0].equals(Object.class)) {
-                        method = methods[i];
-                    }
-                }
-            }
-        }
-        if (method == null && methods.length > 0) {
-            method = methods[0];
-        }
-        if (method == null) {
-            throw new RuntimeException("Unable to find a method which handles request on handler class " + handlerClass);
-        }
-        return method;
     }
 
     public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unnamedHandlerClasses,

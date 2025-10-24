@@ -41,6 +41,7 @@ import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.deployment.ResolvedJVMRequirements;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -82,9 +83,10 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> parentFirstArtifactKeys,
             Set<ArtifactKey> removedArtifactKeys,
-            ExecutorService executorService) {
+            ExecutorService executorService,
+            ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys);
+                generatedClasses, generatedResources, removedArtifactKeys, jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
         this.executorService = executorService;
@@ -313,6 +315,7 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     outputTarget.getOutputDirectory(), executorService)) {
                 ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
                 generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
+                        jvmRequirements,
                         QuarkusEntryPoint.class.getName(),
                         applicationInfo);
             }

@@ -39,6 +39,8 @@ triage:
   discussions:
     monitoredCategories: [33575230]
   guardedBranches:
+    - ref: '3.27'
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
     - ref: '3.20'
       notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
     - ref: '3.15'

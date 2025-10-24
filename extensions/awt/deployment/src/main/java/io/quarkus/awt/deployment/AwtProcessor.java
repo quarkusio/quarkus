@@ -21,6 +21,7 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildIte
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
@@ -50,9 +51,6 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        unsupported.produce(new UnsupportedOSBuildItem(OS.WINDOWS,
-                "Windows AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: no awt in java.library.path."));
         unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
                 "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
@@ -285,12 +283,124 @@ class AwtProcessor {
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
     }
 
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void setupSystemTrayClasses(BuildProducer<JniRuntimeAccessBuildItem> jraProducer,
+            BuildProducer<RuntimeInitializedClassBuildItem> ricProducer) {
+        List<String> jraClasses = new ArrayList<>();
+        jraClasses.add("java.awt.AWTEvent");
+        jraClasses.add("java.awt.Component");
+        jraClasses.add("java.awt.Container");
+        jraClasses.add("java.awt.desktop.UserSessionEvent$Reason");
+        jraClasses.add("java.awt.Dimension");
+        jraClasses.add("java.awt.Event");
+        jraClasses.add("java.awt.event.ActionEvent");
+        jraClasses.add("java.awt.event.ComponentEvent");
+        jraClasses.add("java.awt.event.InputEvent");
+        jraClasses.add("java.awt.event.KeyEvent");
+        jraClasses.add("java.awt.event.MouseEvent");
+        jraClasses.add("java.awt.Font");
+        jraClasses.add("java.awt.FontMetrics");
+        jraClasses.add("java.awt.Frame");
+        jraClasses.add("java.awt.Insets");
+        jraClasses.add("java.awt.Menu");
+        jraClasses.add("java.awt.MenuComponent");
+        jraClasses.add("java.awt.MenuItem");
+        jraClasses.add("java.awt.Point");
+        jraClasses.add("java.awt.PopupMenu");
+        jraClasses.add("java.awt.SequencedEvent");
+        jraClasses.add("java.awt.Toolkit");
+        jraClasses.add("java.awt.TrayIcon");
+        jraClasses.add("java.awt.Window");
+        jraClasses.add("java.awt.Window$Type");
+        jraClasses.add("java.lang.Enum");
+        jraClasses.add("java.lang.Thread");
+        jraClasses.add("java.util.Locale");
+        jraClasses.add("sun.awt.AWTAutoShutdown");
+        jraClasses.add("sun.awt.EmbeddedFrame");
+        jraClasses.add("sun.awt.ExtendedKeyCodes");
+        jraClasses.add("sun.awt.FontDescriptor");
+        jraClasses.add("sun.awt.im.InputMethodWindow");
+        jraClasses.add("sun.awt.image.SunVolatileImage");
+        jraClasses.add("sun.awt.image.VolatileSurfaceManager");
+        jraClasses.add("sun.awt.LightweightFrame");
+        jraClasses.add("sun.awt.PlatformFont");
+        jraClasses.add("sun.awt.screencast.ScreencastHelper");
+        jraClasses.add("sun.awt.screencast.TokenStorage");
+        jraClasses.add("sun.awt.SunToolkit");
+        jraClasses.add("sun.awt.TimedWindowEvent");
+        jraClasses.add("sun.font.FontDesignMetrics");
+        jraClasses.add("sun.font.FontUtilities");
+        jraClasses.add("sun.java2d.xr.XRBackendNative");
+        if (OS.WINDOWS.isCurrent()) {
+            jraClasses.add("java.awt.Cursor");
+            jraClasses.add("sun.awt.Win32GraphicsConfig");
+            jraClasses.add("sun.awt.Win32GraphicsDevice");
+            jraClasses.add("sun.awt.Win32GraphicsEnvironment");
+            jraClasses.add("sun.awt.windows.WComponentPeer");
+            jraClasses.add("sun.awt.windows.WDesktopPeer");
+            jraClasses.add("sun.awt.windows.WFontPeer");
+            jraClasses.add("sun.awt.windows.WFramePeer");
+            jraClasses.add("sun.awt.windows.WMenuItemPeer");
+            jraClasses.add("sun.awt.windows.WObjectPeer");
+            jraClasses.add("sun.awt.windows.WPanelPeer");
+            jraClasses.add("sun.awt.windows.WToolkit");
+            jraClasses.add("sun.awt.windows.WToolkit");
+            jraClasses.add("sun.awt.windows.WTrayIconPeer");
+            jraClasses.add("sun.awt.windows.WWindowPeer");
+            jraClasses.add("sun.java2d.d3d.D3DGraphicsDevice$1");
+            jraClasses.add("sun.java2d.d3d.D3DRenderQueue$1");
+            jraClasses.add("sun.java2d.windows.WindowsFlags");
+        } else if (OS.LINUX.isCurrent()) {
+            jraClasses.add("sun.awt.X11.XBaseWindow");
+            jraClasses.add("sun.awt.X11.XWindow");
+        }
+        jraProducer.produce(new JniRuntimeAccessBuildItem(true, true, true, jraClasses.toArray(new String[0])));
+
+        List<String> ricClasses = new ArrayList<>();
+        ricClasses.add("com.sun.java.swing.plaf.motif.MotifFileChooserUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicButtonUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicLabelUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicRadioButtonUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicSpinnerUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicTableHeaderUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicTextUI");
+        ricClasses.add("javax.swing.plaf.basic.BasicTransferable");
+        ricClasses.add("javax.swing.plaf.metal.MetalBumps");
+        ricClasses.add("javax.swing.plaf.metal.MetalFileChooserUI");
+        ricClasses.add("javax.swing.plaf.metal.MetalIconFactory");
+        ricClasses.add("javax.swing.plaf.metal.MetalIconFactory$OceanHorizontalSliderThumbIcon");
+        ricClasses.add("javax.swing.plaf.metal.MetalIconFactory$OceanVerticalSliderThumbIcon");
+        ricClasses.add("javax.swing.plaf.metal.MetalLabelUI");
+        ricClasses.add("javax.swing.plaf.metal.MetalTheme");
+        ricClasses.add("javax.swing.plaf.metal.OceanTheme");
+        ricClasses.add("javax.swing.plaf.nimbus.AbstractRegionPainter$PaintContext");
+        ricClasses.add("javax.swing.plaf.nimbus.ImageScalingHelper");
+        ricClasses.add("javax.swing.plaf.nimbus.LoweredBorder");
+        ricClasses.add("javax.swing.plaf.nimbus.NimbusStyle");
+        ricClasses.add("javax.swing.plaf.synth.SynthLookAndFeel");
+        ricClasses.add("javax.swing.plaf.synth.SynthStyle");
+        ricClasses.add("javax.swing.text.html.HiddenTagView");
+        ricClasses.add("javax.swing.text.html.HTMLEditorKit");
+        ricClasses.add("sun.datatransfer.DataFlavorUtil$DefaultDesktopDatatransferService");
+        ricClasses.add("sun.print.PrintServiceLookupProvider");
+        ricClasses.add("sun.swing.plaf.synth.SynthFileChooserUIImpl");
+        ricClasses.add("sun.swing.SwingUtilities2");
+        if (OS.LINUX.isCurrent()) {
+            ricClasses.add("sun.awt.X11.XMSelection");
+            ricClasses.add("sun.awt.X11.XSystemTrayPeer");
+            ricClasses.add("sun.awt.X11.XWM");
+        }
+        for (String className : ricClasses) {
+            ricProducer.produce(new RuntimeInitializedClassBuildItem(className));
+        }
+    }
+
     /*
      * Moved over here due to: https://github.com/quarkusio/quarkus/pull/32069
      * A better detection and DarwinAwtFeature handling might be in order.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitilizedPackages) {
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitializedPackages) {
         /*
          * Note that this initialization is not enough if user wants to deserialize actual images
          * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
@@ -304,7 +414,7 @@ class AwtProcessor {
                 "sun.font",
                 "sun.java2d")
                 .map(RuntimeInitializedPackageBuildItem::new)
-                .forEach(runtimeInitilizedPackages::produce);
+                .forEach(runtimeInitializedPackages::produce);
         //@formatter:on
     }
 }

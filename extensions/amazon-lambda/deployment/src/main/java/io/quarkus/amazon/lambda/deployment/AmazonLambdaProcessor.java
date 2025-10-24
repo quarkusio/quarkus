@@ -23,7 +23,9 @@ import org.joda.time.DateTime;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
+import io.quarkus.amazon.lambda.deployment.RequestHandlerJandexUtil.RequestHandlerJandexDefinition;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder.RequestHandlerDefinition;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaStaticRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
@@ -52,8 +54,8 @@ import io.quarkus.runtime.LaunchMode;
 public final class AmazonLambdaProcessor {
     public static final String AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS = "com/amazonaws/services/lambda/runtime/events";
 
-    private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
-    private static final DotName REQUEST_STREAM_HANDLER = DotName.createSimple(RequestStreamHandler.class.getName());
+    private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class);
+    private static final DotName REQUEST_STREAM_HANDLER = DotName.createSimple(RequestStreamHandler.class);
     private static final DotName SKILL_STREAM_HANDLER = DotName.createSimple("com.amazon.ask.SkillStreamHandler");
 
     private static final DotName NAMED = DotName.createSimple(Named.class.getName());
@@ -218,7 +220,8 @@ public final class AmazonLambdaProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void recordStaticInitHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+    public void recordStaticInitHandlerClass(CombinedIndexBuildItem index,
+            List<AmazonLambdaBuildItem> lambdas,
             LambdaObjectMapperInitializedBuildItem mapper, // ordering!
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
             AmazonLambdaStaticRecorder recorder,
@@ -238,10 +241,9 @@ public final class AmazonLambdaProcessor {
                         .classProxy(providedLambda.get().getHandlerClass().getName());
                 recorder.setStreamHandlerClass(handlerClass);
             } else {
-                Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
-                        .classProxy(providedLambda.get().getHandlerClass().getName());
-
-                recorder.setHandlerClass(handlerClass);
+                RequestHandlerJandexDefinition requestHandlerJandexDefinition = RequestHandlerJandexUtil
+                        .discoverHandlerMethod(providedLambda.get().getHandlerClass().getName(), index.getComputingIndex());
+                recorder.setHandlerClass(toRequestHandlerDefinition(requestHandlerJandexDefinition, context));
             }
         } else if (lambdas != null && lambdas.size() == 1) {
             AmazonLambdaBuildItem item = lambdas.get(0);
@@ -251,11 +253,9 @@ public final class AmazonLambdaProcessor {
                 recorder.setStreamHandlerClass(handlerClass);
 
             } else {
-                Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
-                        .classProxy(item.getHandlerClass());
-
-                recorder.setHandlerClass(handlerClass);
-
+                RequestHandlerJandexDefinition requestHandlerJandexDefinition = RequestHandlerJandexUtil
+                        .discoverHandlerMethod(item.getHandlerClass(), index.getComputingIndex());
+                recorder.setHandlerClass(toRequestHandlerDefinition(requestHandlerJandexDefinition, context));
             }
         } else if (lambdas == null || lambdas.isEmpty()) {
             String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
@@ -276,7 +276,8 @@ public final class AmazonLambdaProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+    public void recordHandlerClass(CombinedIndexBuildItem index,
+            List<AmazonLambdaBuildItem> lambdas,
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
             BeanContainerBuildItem beanContainerBuildItem,
             AmazonLambdaRecorder recorder,
@@ -285,8 +286,8 @@ public final class AmazonLambdaProcessor {
         // Have to set lambda class at runtime if there is not a provided lambda or there is more than one lambda in
         // deployment
         if (!providedLambda.isPresent() && lambdas != null && lambdas.size() > 1) {
-            List<Class<? extends RequestHandler<?, ?>>> unnamed = new ArrayList<>();
-            Map<String, Class<? extends RequestHandler<?, ?>>> named = new HashMap<>();
+            List<RequestHandlerDefinition> unnamed = new ArrayList<>();
+            Map<String, RequestHandlerDefinition> named = new HashMap<>();
 
             List<Class<? extends RequestStreamHandler>> unnamedStreamHandler = new ArrayList<>();
             Map<String, Class<? extends RequestStreamHandler>> namedStreamHandler = new HashMap<>();
@@ -302,9 +303,13 @@ public final class AmazonLambdaProcessor {
                     }
                 } else {
                     if (i.getName() == null) {
-                        unnamed.add((Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
+                        RequestHandlerJandexDefinition requestHandlerJandexDefinition = RequestHandlerJandexUtil
+                                .discoverHandlerMethod(i.getHandlerClass(), index.getComputingIndex());
+                        unnamed.add(toRequestHandlerDefinition(requestHandlerJandexDefinition, context));
                     } else {
-                        named.put(i.getName(), (Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
+                        RequestHandlerJandexDefinition requestHandlerJandexDefinition = RequestHandlerJandexUtil
+                                .discoverHandlerMethod(i.getHandlerClass(), index.getComputingIndex());
+                        named.put(i.getName(), toRequestHandlerDefinition(requestHandlerJandexDefinition, context));
                     }
                 }
             }
@@ -352,4 +357,12 @@ public final class AmazonLambdaProcessor {
         recorder.setExpectedExceptionClasses(classes);
     }
 
+    public RequestHandlerDefinition toRequestHandlerDefinition(RequestHandlerJandexDefinition jandexDefinition,
+            RecorderContext context) {
+        return new RequestHandlerDefinition(
+                (Class<? extends RequestHandler<?, ?>>) context.classProxy(jandexDefinition.handlerClass().name().toString()),
+                context.classProxy(jandexDefinition.method().declaringClass().name().toString()),
+                context.classProxy(jandexDefinition.inputOutputTypes().inputType().name().toString()),
+                context.classProxy(jandexDefinition.inputOutputTypes().outputType().name().toString()));
+    }
 }

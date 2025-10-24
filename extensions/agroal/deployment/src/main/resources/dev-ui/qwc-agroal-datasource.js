@@ -198,7 +198,9 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         _showImportSQLDialog: {state: true},
         _showErDiagramDialog: {state: true},
         _englishToSQLEnabled: {state: true},
-        _englishToSQLLoadingMessage: {state: true}
+        _englishToSQLLoadingMessage: {state: true},
+        _jsonColDialogOpened: {state: true},
+        _selectedJsonCol: {state: true}
     };
     
     constructor() {
@@ -229,6 +231,8 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         this._showErDiagramDialog = false;
         this._englishToSQLEnabled = this.storageControl.get("english-to-sql") === "true";
         this._englishToSQLLoadingMessage = null;
+        this._jsonColDialogOpened = false;
+        this._selectedJsonCol = null;
     }
     
     connectedCallback() {
@@ -252,6 +256,8 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 }, {});
             }
         });
+        this._jsonColDialogOpened = false;
+        this._selectedJsonCol = null;
     }
     
     disconnectedCallback() {
@@ -273,7 +279,8 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                         </div>
                         ${this._renderBusyLoadingDialog()}
                         ${this._renderImportSqlDialog()}
-                        ${this._renderDotViewerDialog()}`;
+                        ${this._renderDotViewerDialog()}
+                        ${this._renderJsonColDialog()}`;
         } else {
             return this._renderProgressBar("Fetching data sources...");
         }
@@ -743,8 +750,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             let colDef = this._selectedTableCols.get(columnName);
             if(colDef){
                 let colType = colDef.columnType.toLowerCase();
-            
-                if(colDef.binary){
+                if(colDef.binary && colType !== "jsonb" && colType !== "json"){
                     return this._renderBinaryCell(value, colType);
                 }else {
                     return this._renderTextCell(value, colType);
@@ -762,12 +768,26 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             }else {
                 return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}" icon="font-awesome-regular:square"></vaadin-icon>`;
             }
+        } else if(colType === "jsonb" || colType === "json"){
+            return html`${this._renderJsonContent(value)}`;
         } else {
             if(value.startsWith("http://") || value.startsWith("https://")){
                 return html`<a href="${value}" target="_blank">${value}</a>`;
-            }else{
+            }else if (typeof value === "string" && this._isJSON(value)) {
+                return this._renderJsonChars(value);
+            }else {
                 return html`<span>${value}</span>`;
             }
+        }
+    }
+    
+    _isJSON(str) {
+        if (typeof str !== "string") return false;
+        try {
+          const result = JSON.parse(str);
+          return result !== null && (typeof result === "object" || Array.isArray(result));
+        } catch {
+          return false;
         }
     }
     
@@ -779,7 +799,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 byteNumbers[i] = byteCharacters.charCodeAt(i);
             }
             const byteArray = new Uint8Array(byteNumbers);
-
+            
             const blob = new Blob([byteArray], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
 
@@ -788,6 +808,39 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             // Here try a normal render. Sometimes Java objects can render in String format (eg. UUID)
             return this._renderTextCell(value, colType);
         }
+    }
+    
+    _renderJsonColDialog(){
+        return html`
+            <vaadin-dialog
+              header-title="Json value"
+              .opened="${this._jsonColDialogOpened}"
+              @closed="${() => {
+                    this._jsonColDialogOpened = false;
+                    this._selectedJsonCol = null;
+              }}"
+              ${dialogRenderer(this._renderJsonColDialogContent, this._selectedJsonCol)}
+            ></vaadin-dialog>`;
+    }
+        
+    _renderJsonContent(value){
+        const byteCharacters = atob(value);
+        return this._renderJsonChars(byteCharacters);
+    }
+    
+    _renderJsonChars(value){
+        return html`<span style="cursor:pointer;" @click="${()=> this._showJsonColDialog(value)}">${value.substring(0, 20)}...</span>`;
+    }
+    
+    _showJsonColDialog(value){
+        
+        const parsed = JSON.parse(value);
+        this._selectedJsonCol = JSON.stringify(parsed, null, 2);
+        this._jsonColDialogOpened = true;
+    }
+    
+    _renderJsonColDialogContent(){
+        return html`<qui-themed-code-block content="${this._selectedJsonCol}" mode="json"></qui-themed-code-block>`;
     }
     
     _watch(){

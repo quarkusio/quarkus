@@ -18,6 +18,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final List<String> className;
     private final boolean methods;
     private final boolean queryMethods;
+    private final boolean queryPublicMethods;
     private final boolean fields;
     private final boolean classes;
     private final boolean constructors;
@@ -50,7 +51,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean getClasses, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
             Class<?>... classes) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
+        this(constructors, false, queryConstructors, methods, queryMethods, false, fields, getClasses, weak, serialization,
                 unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
@@ -122,12 +123,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean weak, boolean serialization,
             boolean unsafeAllocated, String... className) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
+        this(constructors, false, queryConstructors, methods, queryMethods, false, fields, false, weak, serialization,
+                unsafeAllocated,
                 null, className);
     }
 
     ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
-            boolean queryMethods,
+            boolean queryMethods, boolean queryPublicMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, String... className) {
         for (String i : className) {
@@ -145,6 +147,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         } else {
             this.queryMethods = queryMethods;
         }
+        this.queryPublicMethods = queryPublicMethods;
         this.fields = fields;
         this.classes = classes;
         this.constructors = constructors;
@@ -173,6 +176,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public boolean isQueryMethods() {
         return queryMethods;
+    }
+
+    public boolean isQueryPublicMethods() {
+        return queryPublicMethods;
     }
 
     public boolean isFields() {
@@ -218,6 +225,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean queryConstructors;
         private boolean methods;
         private boolean queryMethods;
+        private boolean queryPublicMethods;
         private boolean fields;
         private boolean classes;
         private boolean weak;
@@ -300,6 +308,20 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         /**
+         * Configures whether all public methods should be registered for reflection, for query purposes only,
+         * i.e. {@link Class#getMethods()}. Setting this enables getting all public methods (including ones defined in
+         * superclasses) for the class but does not allow invoking them reflectively.
+         */
+        public Builder queryPublicMethods(boolean queryPublicMethods) {
+            this.queryPublicMethods = queryPublicMethods;
+            return this;
+        }
+
+        public Builder queryPublicMethods() {
+            return queryPublicMethods(true);
+        }
+
+        /**
          * Configures whether fields should be registered for reflection.
          * Setting this enables getting all declared fields for the class as well as accessing them reflectively.
          */
@@ -365,7 +387,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
         public ReflectiveClassBuildItem build() {
             return new ReflectiveClassBuildItem(constructors, publicConstructors, queryConstructors, methods, queryMethods,
-                    fields, classes, weak,
+                    queryPublicMethods, fields, classes, weak,
                     serialization, unsafeAllocated, reason, className);
         }
     }

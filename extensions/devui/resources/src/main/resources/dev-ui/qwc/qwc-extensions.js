@@ -96,6 +96,16 @@ export class QwcExtensions extends observeState(LitElement) {
             width: 2em;
             height: 2em;
         }
+        .extensionFilterInput {
+            width: 99%;
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-top: unset;
+        }
+        vaadin-text-field::part(input-field):focus-within {
+            outline: none;
+            box-shadow: none;
+        }
        `;
 
     static properties = {
@@ -104,8 +114,7 @@ export class QwcExtensions extends observeState(LitElement) {
         _installedExtensions: {state: true, type: Array},
         _selectedFilters: {state: true, type: Array},
         _addExtensionsEnabled: {state: true, type: Boolean},
-        _filterText: {state: true},
-        _showFilterBar: {state: true}
+        _filterText: {state: true}
     }
 
     constructor() {
@@ -116,13 +125,11 @@ export class QwcExtensions extends observeState(LitElement) {
         this._selectedFilters = ["Favorites","Active","Inactive"];
         this._addExtensionsEnabled = false;
         this._filterText = '';
-        this._showFilterBar = false;
     }
 
     connectedCallback() {
         super.connectedCallback();
         window.addEventListener('extensions-filters-changed', this._onFiltersChanged);
-        window.addEventListener('keydown', this._handleGlobalKeyDown);
         window.addEventListener('storage-changed', this._storageChange);
         if (allowExtensionManagement) {
             this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
@@ -138,9 +145,12 @@ export class QwcExtensions extends observeState(LitElement) {
 
     disconnectedCallback() {
         window.removeEventListener('extensions-filters-changed', this._onFiltersChanged);
-        window.removeEventListener('keydown', this._handleGlobalKeyDown);
         window.removeEventListener('storage-changed', this._storageChange);
         super.disconnectedCallback();
+    }
+
+    firstUpdated() {
+        this.updateComplete.then(() => this.renderRoot.getElementById('searchInput')?.focus());
     }
 
     render() {
@@ -151,29 +161,21 @@ export class QwcExtensions extends observeState(LitElement) {
     }
 
     _renderFilterbar(){
-        if(this._showFilterBar){
-            return html`<div style="padding: 10px;">
-                        <vaadin-text-field
-                            id="extensionFilterInput"
+            return html`
+                        <vaadin-text-field id="searchInput"
+                            class="extensionFilterInput"
                             theme="small"
-                            style="width: 100%;"
-                            placeholder="Filter extensions…"
+                            placeholder="Search extensions…"
                             clear-button-visible
                             .value=${this._filterText}
                             @input=${this._onFilterInput}>
-                                <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
-                        </vaadin-text-field>
-                    </div>`;
-        }
+                                <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                        </vaadin-text-field>`;
     }
     
     _onFilterInput(e) {
         const value = e.target.value.trim();
         this._filterText = value;
-
-        if (!value) {
-            this._showFilterBar = false;
-        }
     }
     
     _renderGrid(){
@@ -517,26 +519,6 @@ export class QwcExtensions extends observeState(LitElement) {
         }
     }
     
-    _handleGlobalKeyDown = (e) => {
-        if (!this._showFilterBar && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-            this._showFilterBar = true;
-            const key = e.key;
-            this.updateComplete.then(() => {
-                const input = this.shadowRoot.getElementById('extensionFilterInput');
-                if (input) {
-                    input.value = key;
-                    input.focus();
-                    this._filterText = key;
-                }
-            });
-            e.preventDefault(); // Stop the browser from processing the key further
-        } else if (e.key === 'Escape' && this._showFilterBar) {
-            this._filterText = '';
-            this._showFilterBar = false;
-        }
-    }
-
-
     _onFiltersChanged = (event) => {
         this._selectedFilters = event.detail.filters;
     }

@@ -74,24 +74,34 @@ public class WorkspaceProcessor {
             try {
                 Files.walkFileTree(projectRoot, new SimpleFileVisitor<Path>() {
                     @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                        if (Files.isHidden(dir) || ignoreFolders.contains(dir.getFileName().toString())
-                                || !Files.isReadable(dir) || !Files.isExecutable(dir)) {
-                            return FileVisitResult.SKIP_SUBTREE;
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                        try {
+                            if (Files.isHidden(dir) || ignoreFolders.contains(dir.getFileName().toString())
+                                    || !Files.isReadable(dir) || !Files.isExecutable(dir)) {
+                                return FileVisitResult.SKIP_SUBTREE;
+                            }
+                        } catch (Throwable t) {
+                            // Don't let this stop startup
+                            t.printStackTrace();
                         }
                         return FileVisitResult.CONTINUE;
                     }
 
                     @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                         String fileName = file.getFileName().toString();
-                        boolean shouldIgnore = Files.isHidden(file)
-                                || file.startsWith(outputDir) || !Files.isReadable(file)
-                                || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
+                        try {
+                            boolean shouldIgnore = Files.isHidden(file)
+                                    || file.startsWith(outputDir) || !Files.isReadable(file)
+                                    || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
 
-                        if (!shouldIgnore) {
-                            String name = projectRoot.relativize(file).toString();
-                            workspaceItems.add(new WorkspaceBuildItem.WorkspaceItem(name, file));
+                            if (!shouldIgnore) {
+                                String name = projectRoot.relativize(file).toString();
+                                workspaceItems.add(new WorkspaceBuildItem.WorkspaceItem(name, file));
+                            }
+                        } catch (Throwable t) {
+                            // Don't let this stop startup
+                            t.printStackTrace();
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -110,7 +120,8 @@ public class WorkspaceProcessor {
                 });
 
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                // Don't let this stop startup
+                e.printStackTrace();
             }
 
             sortWorkspaceItems(workspaceItems);

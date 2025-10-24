@@ -1,4 +1,4 @@
-ARG VARIANT=17
+ARG VARIANT=21
 FROM mcr.microsoft.com/vscode/devcontainers/java:0-${VARIANT}
 
 ARG USER=vscode

@@ -19,7 +19,7 @@ env:
 
 jobs:
   build-all-the-things:
-    name: "JDK 17 Build"
+    name: "JDK 21 Build"
     runs-on: ubuntu-latest
     env:
       MAVEN_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=1g"
@@ -51,11 +51,11 @@ jobs:
       - name: Reclaim Disk Space
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Get Date
         id: get-date
         run: |

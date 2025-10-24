@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Install artifacts
         run: ./mvnw ${MAVEN_ARGS} -DskipTests -DskipITs -Dinvoker.skip clean install -pl :quarkus-integration-test-kubernetes-invoker -am
       - name: Tar Maven repository
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Download Maven repository
         uses: actions/download-artifact@v5
         with:

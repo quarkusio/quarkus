@@ -42,7 +42,7 @@
         <version.versions.plugin>2.19.1</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
         <!-- Forbidden API checks -->
-        <version.forbiddenapis-maven-plugin>3.4</version.forbiddenapis-maven-plugin>
+        <version.forbiddenapis-maven-plugin>3.10</version.forbiddenapis-maven-plugin>
         <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
 
         <!-- Code format -->
@@ -50,9 +50,9 @@
 
         <!-- Default properties -->
         <maven.compiler.parameters>true</maven.compiler.parameters>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
         <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
         <maven.compiler.testTarget>${maven.compiler.target}</maven.compiler.testTarget>

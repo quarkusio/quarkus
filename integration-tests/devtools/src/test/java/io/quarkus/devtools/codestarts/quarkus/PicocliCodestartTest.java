@@ -29,6 +29,7 @@ public class PicocliCodestartTest {
     @Test
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.GreetingCommand");
+        codestartTest.checkGeneratedTestSource("org.acme.GreetingCommandTest");
 
         codestartTest.assertThatGeneratedFile(JAVA, "README.md")
                 .satisfies(checkContains("./mvnw quarkus:dev -Dquarkus.args='Quarky"));

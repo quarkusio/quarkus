@@ -32,11 +32,24 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
         withLogConsumer(frameConsumer());
         withLabel(config.label(), config.serviceName());
         withLabel(QUARKUS_DEV_SERVICE, config.serviceName());
-        Optional<Set<String>> aliases = config.networkAliases();
-        aliases.map(s -> s.toArray(new String[0])).ifPresent(this::withNetworkAliases);
-        if (config.shared()) {
-            withNetwork(Network.SHARED);
+
+        // networkMode=host doesn't allow aliases or network setup
+        if (!useHostNetworkMode()) {
+            Optional<Set<String>> aliases = config.networkAliases();
+            aliases.map(s -> s.toArray(new String[0])).ifPresent(this::withNetworkAliases);
+            if (config.shared()) {
+                withNetwork(Network.SHARED);
+            }
         }
+    }
+
+    protected boolean useHostNetworkMode() {
+        return false;
+    }
+
+    @Override
+    public Integer getMappedPort(int originalPort) {
+        return useHostNetworkMode() ? originalPort : super.getMappedPort(originalPort);
     }
 
     protected abstract String prefix();

@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -48,6 +49,10 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry.NoneReturnValue;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry.UsernamePassword;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
@@ -585,6 +590,22 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                     restClients.proxyPassword().orElse(null),
                     restClients.nonProxyHosts().orElse(null),
                     restClients.proxyConnectTimeout().orElse(null));
+        } else {
+            /* Check the named proxy configuration on the rest-client extension level or fallback to global proxy settings */
+            final ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+            registry.getProxyConfig(restClients.proxyConfigurationName(), NoneReturnValue.NONE_INSTANCE)
+                    .map(NamedProxyConfig::assertHttpType)
+                    .ifPresent(proxyConfig -> {
+                        Optional<UsernamePassword> creds = registry.getUsernamePassword(proxyConfig);
+                        configureProxy(
+                                proxyConfig.host().get(),
+                                proxyConfig.port().getAsInt(),
+                                creds.map(UsernamePassword::getUsername).orElse(null),
+                                creds.map(UsernamePassword::getPassword).orElse(null),
+                                proxyConfig.nonProxyHosts().map(nph -> nph.stream().collect(Collectors.joining(",")))
+                                        .orElse(null),
+                                proxyConfig.proxyConnectTimeout().orElse(null));
+                    });
         }
 
         if (!clientBuilder.getConfiguration().hasProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE)) {

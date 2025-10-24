@@ -193,7 +193,6 @@
                 <module>jpa</module>
                 <module>jpa-mapping-xml</module>
                 <module>jpa-db2</module>
-                <module>jpa-derby</module>
                 <module>jpa-postgresql</module>
                 <module>jpa-postgresql-withxml</module>
                 <module>jpa-mariadb</module>

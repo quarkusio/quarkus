@@ -1024,20 +1024,6 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 return true;
             }
 
-            if (jdbcUrl.startsWith("jdbc:derby:memory:")) {
-                return true;
-            }
-
-            if (jdbcUrl.startsWith("jdbc:derby:")) {
-                const derbyUri = jdbcUrl.replace("jdbc:", "");
-                if (derbyUri.startsWith("localhost") || derbyUri.startsWith("127.0.0.1")) {
-                    return true;
-                }
-                if(this._allowedHost && this._allowedHost!=="" && derbyUri.startsWith(this._allowedHost)){
-                    return true;
-                }
-            }
-
             const urlPattern = /\/\/([^:/?#]+)|@([^:/?#]+)/;
             const match = jdbcUrl.match(urlPattern);
 

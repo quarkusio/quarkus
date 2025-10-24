@@ -14,7 +14,6 @@ public class DatabaseKindTest {
     @Test
     public void testNormalize() {
         assertEquals(DatabaseKind.DB2, DatabaseKind.normalize("db2"));
-        assertEquals(DatabaseKind.DERBY, DatabaseKind.normalize("derby"));
         assertEquals(DatabaseKind.H2, DatabaseKind.normalize("h2"));
         assertEquals(DatabaseKind.MARIADB, DatabaseKind.normalize("mariadb"));
         assertEquals(DatabaseKind.MSSQL, DatabaseKind.normalize("mssql"));
@@ -31,9 +30,6 @@ public class DatabaseKindTest {
     public void testIs() {
         assertTrue(DatabaseKind.isDB2("db2"));
         assertFalse(DatabaseKind.isDB2("mariadb"));
-
-        assertTrue(DatabaseKind.isDerby("derby"));
-        assertFalse(DatabaseKind.isDerby("mariadb"));
 
         assertTrue(DatabaseKind.isH2("h2"));
         assertFalse(DatabaseKind.isH2("mariadb"));

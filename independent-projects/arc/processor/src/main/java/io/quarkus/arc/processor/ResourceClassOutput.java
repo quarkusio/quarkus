@@ -1,24 +1,23 @@
 package io.quarkus.arc.processor;
 
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
+import io.quarkus.gizmo2.ClassOutput;
 
-public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.quarkus.gizmo2.ClassOutput {
+public class ResourceClassOutput implements ClassOutput {
 
     private static final Function<String, SpecialType> NO_SPECIAL_TYPE = cn -> null;
 
     private final List<Resource> resources = new ArrayList<>();
-    private final Map<String, StringWriter> sources;
     private final boolean applicationClass;
     private final Function<String, SpecialType> specialTypeFunction;
+
+    // note that the `generateSource` parameters are unused for now,
+    // until https://github.com/quarkusio/gizmo/issues/419 is implemented
 
     /**
      * @param applicationClass whether the generated classes are application classes or not
@@ -39,7 +38,6 @@ public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.qua
         this.applicationClass = applicationClass;
         this.specialTypeFunction = specialTypeFunction;
         // Note that ResourceClassOutput is never used concurrently
-        this.sources = generateSource ? new HashMap<>() : null;
     }
 
     @Override
@@ -50,28 +48,10 @@ public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.qua
         }
         String className = name.replace('/', '.');
         resources.add(ResourceImpl.javaClass(name, data, specialTypeFunction.apply(className),
-                applicationClass, getSource(name)));
-    }
-
-    @Override
-    public Writer getSourceWriter(String className) {
-        if (sources != null) {
-            StringWriter writer = new StringWriter();
-            sources.put(className, writer);
-            return writer;
-        }
-        return io.quarkus.gizmo.ClassOutput.super.getSourceWriter(className);
+                applicationClass, null));
     }
 
     List<Resource> getResources() {
         return resources;
-    }
-
-    String getSource(String className) {
-        if (sources == null) {
-            return null;
-        }
-        StringWriter source = sources.get(className);
-        return source != null ? source.toString() : null;
     }
 }

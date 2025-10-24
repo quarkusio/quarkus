@@ -56,7 +56,10 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
 
     @Override
     public int hashCode() {
-        return Objects.hash(exclusiveProvider, recognizedVersionsExpression);
+        int result = Objects.hashCode(recognizedVersionsExpression);
+        result = 31 * result + Objects.hashCode(recognizedGroupIds);
+        result = 31 * result + Boolean.hashCode(exclusiveProvider);
+        return result;
     }
 
     @Override
@@ -142,19 +145,25 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
     }
 
     static boolean quarkusVersionConfigEquals(RegistryQuarkusVersionsConfig v, Object o) {
-        if (v == o)
+        if (v == o) {
             return true;
-        if (!(o instanceof RegistryQuarkusVersionsConfig))
+        }
+        if (!(o instanceof RegistryQuarkusVersionsConfig that)) {
             return false;
-        RegistryQuarkusVersionsConfig that = (RegistryQuarkusVersionsConfig) o;
-        return v.isExclusiveProvider() == that.isExclusiveProvider()
-                && Objects.equals(v.getRecognizedVersionsExpression(), that.getRecognizedVersionsExpression());
+        }
+        if (v.isExclusiveProvider() != that.isExclusiveProvider()
+                || !Objects.equals(v.getRecognizedVersionsExpression(), that.getRecognizedVersionsExpression())
+                || v.getRecognizedGroupIds().size() != that.getRecognizedGroupIds().size()) {
+            return false;
+        }
+        return v.getRecognizedGroupIds().containsAll(that.getRecognizedGroupIds());
     }
 
     static String quarkusVersionConfigToString(RegistryQuarkusVersionsConfig v) {
         return "RegistryQuarkusVersionsConfig{" +
                 "exclusiveProvider=" + v.isExclusiveProvider() +
                 ", recognizedVersionsExpression='" + v.getRecognizedVersionsExpression() + '\'' +
+                ", recognizedGroupIds=" + v.getRecognizedGroupIds() +
                 '}';
     }
 }

@@ -40,6 +40,7 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
+import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
 
 public class MavenRegistryClientFactory implements RegistryClientFactory {
 
@@ -185,54 +186,85 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return new MavenRegistryArtifactResolverWithCleanup(resolver, cleanupTimestampedArtifacts);
     }
 
-    static RegistryConfig.Mutable completeRegistryConfig(RegistryConfig original, RegistryConfig descriptor) {
+    /**
+     * Merges remote and local registry client configurations, prioritizing the local configuration values.
+     *
+     * @param local local client configuration
+     * @param remote default configuration provided by the registry itself
+     * @return complete registry client configuration
+     */
+    static RegistryConfig.Mutable completeRegistryConfig(RegistryConfig local, RegistryConfig remote) {
         RegistryConfig.Mutable complete = RegistryConfig.builder();
 
-        complete.setId(original.getId() == null ? descriptor.getId() : original.getId());
+        complete.setId(local.getId() == null ? remote.getId() : local.getId());
 
-        if (original.getDescriptor() == null) {
-            complete.setDescriptor(descriptor.getDescriptor());
+        if (local.getDescriptor() == null) {
+            complete.setDescriptor(remote.getDescriptor());
         } else {
-            complete.setDescriptor(original.getDescriptor());
+            complete.setDescriptor(local.getDescriptor());
         }
-        if (original.getPlatforms() == null) {
-            complete.setPlatforms(descriptor.getPlatforms());
+        if (local.getPlatforms() == null) {
+            complete.setPlatforms(remote.getPlatforms());
         } else {
-            complete.setPlatforms(completeRegistryPlatformConfig(original.getPlatforms(), descriptor.getPlatforms()));
+            complete.setPlatforms(completeRegistryPlatformConfig(local.getPlatforms(), remote.getPlatforms()));
         }
-        if (original.getNonPlatformExtensions() == null) {
-            complete.setNonPlatformExtensions(descriptor.getNonPlatformExtensions());
+        if (local.getNonPlatformExtensions() == null) {
+            complete.setNonPlatformExtensions(remote.getNonPlatformExtensions());
         } else {
-            complete.setNonPlatformExtensions(original.getNonPlatformExtensions());
+            complete.setNonPlatformExtensions(local.getNonPlatformExtensions());
         }
-        if (original.getUpdatePolicy() == null) {
-            complete.setUpdatePolicy(descriptor.getUpdatePolicy());
+        if (local.getUpdatePolicy() == null) {
+            complete.setUpdatePolicy(remote.getUpdatePolicy());
         } else {
-            complete.setUpdatePolicy(original.getUpdatePolicy());
+            complete.setUpdatePolicy(local.getUpdatePolicy());
         }
 
-        if (original.getMaven() == null) {
-            complete.setMaven(descriptor.getMaven());
-        } else if (isComplete(original.getMaven())) {
-            complete.setMaven(original.getMaven());
+        if (local.getMaven() == null) {
+            complete.setMaven(remote.getMaven());
+        } else if (isComplete(local.getMaven())) {
+            complete.setMaven(local.getMaven());
         } else {
             complete.setMaven(RegistryMavenConfig.builder()
-                    .setRepository(completeMavenRepoConfig(original.getMaven(), descriptor.getMaven())));
+                    .setRepository(completeMavenRepoConfig(local.getMaven(), remote.getMaven())));
         }
 
-        if (original.getQuarkusVersions() == null) {
-            complete.setQuarkusVersions(descriptor.getQuarkusVersions());
-        }
+        complete.setQuarkusVersions(complete(local.getQuarkusVersions(), remote.getQuarkusVersions()));
 
-        if (original.getExtra().isEmpty()) {
-            complete.setExtra(descriptor.getExtra());
-        } else if (descriptor.getExtra().isEmpty()) {
-            complete.setExtra(original.getExtra());
+        if (local.getExtra().isEmpty()) {
+            complete.setExtra(remote.getExtra());
+        } else if (remote.getExtra().isEmpty()) {
+            complete.setExtra(local.getExtra());
         } else {
-            var extra = new HashMap<>(descriptor.getExtra());
-            extra.putAll(original.getExtra());
+            var extra = new HashMap<>(remote.getExtra());
+            extra.putAll(local.getExtra());
             complete.setExtra(extra);
         }
+        return complete;
+    }
+
+    /**
+     * Merges remote and local registry Quarkus versions configuration, prioritizing the local configuration values.
+     *
+     * @param local local configuration
+     * @param remote default configuration provided by the registry
+     * @return final configuration
+     */
+    private static RegistryQuarkusVersionsConfig complete(RegistryQuarkusVersionsConfig local,
+            RegistryQuarkusVersionsConfig remote) {
+        if (local == null) {
+            return remote;
+        }
+        if (remote == null || local.equals(remote)) {
+            return local;
+        }
+        var complete = RegistryQuarkusVersionsConfig.builder();
+        complete.setExclusiveProvider(local.isExclusiveProvider() || remote.isExclusiveProvider());
+        complete.setRecognizedGroupIds(local.getRecognizedGroupIds().isEmpty()
+                ? remote.getRecognizedGroupIds()
+                : local.getRecognizedGroupIds());
+        complete.setRecognizedVersionsExpression(local.getRecognizedVersionsExpression() == null
+                ? remote.getRecognizedVersionsExpression()
+                : local.getRecognizedVersionsExpression());
         return complete;
     }
 

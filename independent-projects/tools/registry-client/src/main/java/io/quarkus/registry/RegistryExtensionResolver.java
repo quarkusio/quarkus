@@ -63,9 +63,9 @@ class RegistryExtensionResolver {
      */
     private final String offeringSupportKey;
 
-    RegistryExtensionResolver(RegistryClient extensionResolver, MessageWriter log) throws RegistryResolutionException {
-        this.extensionResolver = Objects.requireNonNull(extensionResolver, "Registry extension resolver is null");
-        this.config = extensionResolver.resolveRegistryConfig();
+    RegistryExtensionResolver(RegistryClient registryClient, MessageWriter log) throws RegistryResolutionException {
+        this.extensionResolver = Objects.requireNonNull(registryClient, "Registry extension resolver is null");
+        this.config = registryClient.resolveRegistryConfig();
 
         final String versionExpr = config.getQuarkusVersions() == null ? null
                 : config.getQuarkusVersions().getRecognizedVersionsExpression();

@@ -13,7 +13,7 @@ public class JVMChecksRecorder {
      * we know about the problem, we're working on it, and there's no need to print a warning scaring our
      * users with it.
      */
-    public void disableUnsafeRelatedWarnings() {
+    public static void disableUnsafeRelatedWarnings() {
         if (Runtime.version().feature() < 24) {
             return;
         }

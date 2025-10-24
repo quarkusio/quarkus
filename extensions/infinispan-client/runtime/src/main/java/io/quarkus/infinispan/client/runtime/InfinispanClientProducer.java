@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
@@ -23,6 +24,7 @@ import org.infinispan.client.hotrod.RemoteCounterManagerFactory;
 import org.infinispan.client.hotrod.configuration.ClusterConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
+import org.infinispan.client.hotrod.impl.transport.netty.DefaultTransportFactory;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.commons.configuration.StringConfiguration;
@@ -36,7 +38,9 @@ import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.protostream.schema.Schema;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 
+import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.Arc;
+import io.quarkus.netty.MainEventLoopGroup;
 
 /**
  * Produces a configured remote cache manager instance
@@ -144,6 +148,7 @@ public class InfinispanClientProducer {
         if (conf.servers().isEmpty()) {
             return;
         }
+
         // Build de cache manager if the server list is present
         InfinispanClientsRuntimeConfig infinispanClientsRuntimeConfig = this.infinispanClientsRuntimeConfigHandle.get();
 
@@ -220,6 +225,8 @@ public class InfinispanClientProducer {
                 properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.password().get());
             }
         }
+
+        properties.putIfAbsent(ConfigurationProperties.TRANSPORT_FACTORY, QuarkusTransportFactory.class.getName());
 
         if (infinispanClientRuntimeConfig.clientIntelligence().isPresent()) {
             properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE,
@@ -512,4 +519,10 @@ public class InfinispanClientProducer {
         return RemoteCounterManagerFactory.asCounterManager(cacheManager);
     }
 
+    public static class QuarkusTransportFactory extends DefaultTransportFactory {
+        @Override
+        public EventLoopGroup createEventLoopGroup(int maxExecutors, ExecutorService executorService) {
+            return Arc.container().instance(EventLoopGroup.class, MainEventLoopGroup.Literal.INSTANCE).get();
+        }
+    }
 }

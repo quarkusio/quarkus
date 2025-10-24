@@ -42,11 +42,13 @@ public class OpenTelemetryTestCase {
     KafkaCompanion companion;
 
     private void resetExporter() {
-        given()
-                .when().get("/export/clear")
-                .then()
-                .statusCode(204);
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(5, SECONDS).until(() -> {
+            given()
+                    .when().get("/export/clear")
+                    .then()
+                    .statusCode(204);
+            return getSpans().size() == 0;
+        });
     }
 
     private List<Map<String, Object>> getSpans() {
@@ -158,13 +160,13 @@ public class OpenTelemetryTestCase {
         Assertions.assertEquals(parentRemote, spanData.get("parent_remote"));
 
         Assertions.assertEquals("opentelemetry-integration-test - kafka-consumer-" + channel,
-                spanData.get("attr_messaging.consumer.id"));
+                spanData.get("attr_messaging.client.id"));
         Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
         Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
-        Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.kafka.consumer.group"));
-        Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.partition"));
+        Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.consumer.group.name"));
+        Assertions.assertEquals("0", spanData.get("attr_messaging.destination.partition.id"));
         Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.client_id"));
-        Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.message.offset"));
+        Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.offset"));
     }
 
     private void verifyCdiCall(Map<String, Object> spanData, Map<String, Object> parentSpanData) {

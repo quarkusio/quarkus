@@ -4,6 +4,7 @@ import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationC
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 
 import jakarta.annotation.PostConstruct;
@@ -21,6 +22,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.vertx.core.Vertx;
 
@@ -28,6 +30,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     // note: We can't use constructor injection for these fields because they are registered by RESTEasy
     // which doesn't know about CDI at the point of registration
 
+    private static final String INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
     private static final String ERROR_MSG = "OIDC Token Propagation requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.resteasy-client-oidc-token-propagation.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
     private final boolean enabledDuringAuthentication;
     private final Instance<TokenCredential> accessToken;
@@ -70,6 +73,10 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
+        if (skipPropagation(requestContext)) {
+            return;
+        }
+
         if (acquireTokenCredentialFromCtx(requestContext)) {
             propagateToken(requestContext, exchangeTokenIfNeeded(getTokenCredentialFromContext().getToken()));
         } else {
@@ -113,5 +120,31 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     private static TokenCredential getTokenCredentialFromContext() {
         VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
         return Vertx.currentContext().getLocal(TokenCredential.class.getName());
+    }
+
+    private boolean skipPropagation(ClientRequestContext requestContext) {
+        if (getMethodDescription() == null) {
+            return false;
+        }
+
+        return !getMethodDescription().equals(getInvokedRestClientMethodSignature(requestContext));
+    }
+
+    private static MethodDescription getInvokedRestClientMethodSignature(ClientRequestContext requestContext) {
+        Method method = (Method) requestContext.getProperty(INVOKED_METHOD_PROP);
+        if (method == null) {
+            throw new IllegalStateException(INVOKED_METHOD_PROP + " property must not be null");
+        }
+        return MethodDescription.ofMethod(method);
+    }
+
+    /**
+     * This method is overridden by generated filter classes if the filter should only be applied on the REST client
+     * method.
+     *
+     * @return REST client method description for which this filter should be applied; or null if applies to all methods
+     */
+    protected MethodDescription getMethodDescription() {
+        return null;
     }
 }

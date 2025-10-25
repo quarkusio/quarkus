@@ -8,25 +8,30 @@ import java.util.Map;
 import jakarta.annotation.Priority;
 import jakarta.inject.Singleton;
 
+import org.jboss.jandex.MethodInfo;
+
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.security.spi.runtime.MethodDescription;
 
 public final class AccessTokenRequestFilterGenerator {
 
     private static final int AUTHENTICATION = 1000;
 
-    private record ClientNameAndExchangeToken(String clientName, boolean exchangeTokenActivated) {
+    private record RequestFilterKey(String clientName, boolean exchangeTokenActivated, MethodInfo targetMethodInfo) {
     }
 
     private final BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer;
     private final Class<?> requestFilterClass;
-    private final Map<ClientNameAndExchangeToken, String> cache = new HashMap<>();
+    private final Map<RequestFilterKey, String> cache = new HashMap<>();
 
     public AccessTokenRequestFilterGenerator(BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
@@ -39,7 +44,9 @@ public final class AccessTokenRequestFilterGenerator {
 
     public String generateClass(AccessTokenInstanceBuildItem instance) {
         return cache.computeIfAbsent(
-                new ClientNameAndExchangeToken(instance.getClientName(), instance.exchangeTokenActivated()), i -> {
+                new RequestFilterKey(instance.getClientName(), instance.exchangeTokenActivated(),
+                        instance.getTargetMethodInfo()),
+                i -> {
                     var adaptor = new GeneratedBeanGizmoAdaptor(generatedBeanProducer);
                     String className = createUniqueClassName(i);
                     try (ClassCreator classCreator = ClassCreator.builder()
@@ -64,6 +71,37 @@ public final class AccessTokenRequestFilterGenerator {
                                 methodCreator.returnBoolean(true);
                             }
                         }
+
+                        /*
+                         * protected MethodDescription getMethodDescription() {
+                         * return new MethodDescription(declaringClassName, methodName, parameterTypes);
+                         * }
+                         */
+                        if (i.targetMethodInfo != null) {
+                            try (var methodCreator = classCreator.getMethodCreator("getMethodDescription",
+                                    MethodDescription.class)) {
+                                methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
+                                methodCreator.setModifiers(Modifier.PROTECTED);
+
+                                // String methodName
+                                var methodName = methodCreator.load(i.targetMethodInfo.name());
+                                // String declaringClassName
+                                var declaringClassName = methodCreator
+                                        .load(i.targetMethodInfo.declaringClass().name().toString());
+                                // String[] paramTypes
+                                var paramTypes = methodCreator.marshalAsArray(String[].class,
+                                        i.targetMethodInfo.parameterTypes().stream()
+                                                .map(pt -> pt.name().toString()).map(methodCreator::load)
+                                                .toArray(ResultHandle[]::new));
+                                // new MethodDescription(declaringClassName, methodName, parameterTypes)
+                                var methodDescriptionCtor = MethodDescriptor.ofConstructor(MethodDescription.class,
+                                        String.class, String.class, String[].class);
+                                var newMethodDescription = methodCreator.newInstance(methodDescriptionCtor, declaringClassName,
+                                        methodName, paramTypes);
+                                // return new MethodDescription(declaringClassName, methodName, parameterTypes);
+                                methodCreator.returnValue(newMethodDescription);
+                            }
+                        }
                     }
                     unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(className));
                     reflectiveClassProducer
@@ -74,9 +112,13 @@ public final class AccessTokenRequestFilterGenerator {
                 });
     }
 
-    private String createUniqueClassName(ClientNameAndExchangeToken i) {
-        return "%s_%sClient_%sTokenExchange".formatted(requestFilterClass.getName(), clientName(i.clientName()),
-                exchangeTokenName(i.exchangeTokenActivated()));
+    private String createUniqueClassName(RequestFilterKey i) {
+        String uniqueClassName = "%s_%sClient_%sTokenExchange".formatted(requestFilterClass.getName(),
+                clientName(i.clientName()), exchangeTokenName(i.exchangeTokenActivated()));
+        if (i.targetMethodInfo != null) {
+            uniqueClassName = uniqueClassName + "_" + i.targetMethodInfo.name();
+        }
+        return uniqueClassName;
     }
 
     private static String clientName(String clientName) {

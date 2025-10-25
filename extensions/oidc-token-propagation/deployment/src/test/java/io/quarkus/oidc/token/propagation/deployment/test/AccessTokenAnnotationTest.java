@@ -36,7 +36,9 @@ public class AccessTokenAnnotationTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(DefaultClientDefaultExchange.class, DefaultClientEnabledExchange.class,
                             NamedClientDefaultExchange.class, MultiProviderFrontendResource.class, ProtectedResource.class,
-                            CustomAccessTokenRequestFilter.class)
+                            CustomAccessTokenRequestFilter.class, NamedClientDefaultExchange_OnMethod.class,
+                            DefaultClientEnabledExchange_OnMethod.class, DefaultClientDefaultExchange_OnMethod.class,
+                            MultipleClientsAndMultipleMethods.class)
                     .addAsResource(
                             new StringAsset(
                                     """
@@ -72,16 +74,31 @@ public class AccessTokenAnnotationTest {
     @Test
     public void testDefaultClientEnabledTokenExchange() {
         testRestClientTokenPropagation(true, "defaultClientEnabledExchange");
+        testRestClientTokenPropagation(true, "defaultClientEnabledExchange_OnMethod");
+        testRestClientTokenPropagation(true, "multipleClientsAndMultipleMethods_DefaultClientEnabledExchange");
     }
 
     @Test
     public void testDefaultClientDefaultTokenExchange() {
         testRestClientTokenPropagation(false, "defaultClientDefaultExchange");
+        testRestClientTokenPropagation(false, "defaultClientDefaultExchange_OnMethod");
+        testRestClientTokenPropagation(false, "multipleClientsAndMultipleMethods_DefaultClientDefaultExchange");
     }
 
     @Test
     public void testNamedClientDefaultTokenExchange() {
         testRestClientTokenPropagation(true, "namedClientDefaultExchange");
+        testRestClientTokenPropagation(true, "namedClientDefaultExchange_OnMethod");
+        testRestClientTokenPropagation(true, "multipleClientsAndMultipleMethods_NamedClientDefaultExchange");
+    }
+
+    @Test
+    public void testNoTokenPropagation() {
+        RestAssured.given().auth().oauth2(getBearerAccessToken())
+                .queryParam("client-key", "multipleClientsAndMultipleMethods_NoAccessToken")
+                .when().get("/frontend/token-propagation")
+                .then()
+                .statusCode(401);
     }
 
     private void testRestClientTokenPropagation(boolean exchangeEnabled, String clientKey) {
@@ -122,6 +139,50 @@ public class AccessTokenAnnotationTest {
         String getUserName();
     }
 
+    @RegisterRestClient(baseUri = "http://localhost:8081/protected")
+    @Path("/")
+    public interface DefaultClientDefaultExchange_OnMethod {
+        @AccessToken
+        @GET
+        String getUserName();
+    }
+
+    @RegisterRestClient(baseUri = "http://localhost:8081/protected")
+    @Path("/")
+    public interface DefaultClientEnabledExchange_OnMethod {
+        @AccessToken(exchangeTokenClient = "Default")
+        @GET
+        String getUserName();
+    }
+
+    @RegisterRestClient(baseUri = "http://localhost:8081/protected")
+    @Path("/")
+    public interface MultipleClientsAndMultipleMethods {
+
+        @AccessToken
+        @GET
+        String getUserName_DefaultClientDefaultExchange();
+
+        @AccessToken(exchangeTokenClient = "named")
+        @GET
+        String getUserName_NamedClientDefaultExchange();
+
+        @AccessToken(exchangeTokenClient = "Default")
+        @GET
+        String getUserName_DefaultClientEnabledExchange();
+
+        @GET
+        String getUserName_NoAccessToken();
+    }
+
+    @RegisterRestClient(baseUri = "http://localhost:8081/protected")
+    @Path("/")
+    public interface NamedClientDefaultExchange_OnMethod {
+        @AccessToken(exchangeTokenClient = "named")
+        @GET
+        String getUserName();
+    }
+
     // tests no AmbiguousResolutionException is raised
     @Singleton
     @Unremovable
@@ -141,6 +202,22 @@ public class AccessTokenAnnotationTest {
         @Inject
         @RestClient
         NamedClientDefaultExchange namedClientDefaultExchange;
+
+        @Inject
+        @RestClient
+        DefaultClientDefaultExchange_OnMethod defaultClientDefaultExchange_OnMethod;
+
+        @Inject
+        @RestClient
+        DefaultClientEnabledExchange_OnMethod defaultClientEnabledExchange_OnMethod;
+
+        @Inject
+        @RestClient
+        NamedClientDefaultExchange_OnMethod namedClientDefaultExchange_OnMethod;
+
+        @Inject
+        @RestClient
+        MultipleClientsAndMultipleMethods multipleClientsAndMultipleMethods;
 
         @Inject
         JsonWebToken jwt;
@@ -172,6 +249,17 @@ public class AccessTokenAnnotationTest {
                 case "defaultClientDefaultExchange" -> defaultClientDefaultExchange.getUserName();
                 case "defaultClientEnabledExchange" -> defaultClientEnabledExchange.getUserName();
                 case "namedClientDefaultExchange" -> namedClientDefaultExchange.getUserName();
+                case "defaultClientDefaultExchange_OnMethod" -> defaultClientDefaultExchange_OnMethod.getUserName();
+                case "defaultClientEnabledExchange_OnMethod" -> defaultClientEnabledExchange_OnMethod.getUserName();
+                case "namedClientDefaultExchange_OnMethod" -> namedClientDefaultExchange_OnMethod.getUserName();
+                case "multipleClientsAndMultipleMethods_DefaultClientDefaultExchange" ->
+                    multipleClientsAndMultipleMethods.getUserName_DefaultClientDefaultExchange();
+                case "multipleClientsAndMultipleMethods_DefaultClientEnabledExchange" ->
+                    multipleClientsAndMultipleMethods.getUserName_DefaultClientEnabledExchange();
+                case "multipleClientsAndMultipleMethods_NamedClientDefaultExchange" ->
+                    multipleClientsAndMultipleMethods.getUserName_NamedClientDefaultExchange();
+                case "multipleClientsAndMultipleMethods_NoAccessToken" ->
+                    multipleClientsAndMultipleMethods.getUserName_NoAccessToken();
                 default -> throw new IllegalArgumentException("Unknown client key");
             };
         }

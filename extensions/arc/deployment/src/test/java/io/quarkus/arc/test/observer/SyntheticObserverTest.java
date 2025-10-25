@@ -20,9 +20,10 @@ import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConf
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SyntheticObserverTest {
@@ -47,14 +48,13 @@ public class SyntheticObserverTest {
                         context.produce(new ObserverConfiguratorBuildItem(
                                 observerRegistrationPhase.getContext().configure()
                                         .beanClass(DotName.createSimple(SyntheticObserverTest.class.getName()))
-                                        .observedType(String.class).notify(mc -> {
-                                            ResultHandle events = mc
-                                                    .readStaticField(
-                                                            FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
-                                            mc.invokeInterfaceMethod(
-                                                    MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                                                    events, mc.load("synthetic"));
-                                            mc.returnValue(null);
+                                        .observedType(String.class)
+                                        .notify(ng -> {
+                                            BlockCreator bc = ng.notifyMethod();
+
+                                            bc.withList(Expr.staticField(FieldDesc.of(MyObserver.class, "EVENTS")))
+                                                    .add(Const.of("synthetic"));
+                                            bc.return_();
                                         })));
                     }
                 }).consumes(ObserverRegistrationPhaseBuildItem.class).produces(ObserverConfiguratorBuildItem.class).build();

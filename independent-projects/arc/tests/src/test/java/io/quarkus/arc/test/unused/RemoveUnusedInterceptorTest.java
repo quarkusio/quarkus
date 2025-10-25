@@ -22,7 +22,6 @@ public class RemoveUnusedInterceptorTest extends RemoveUnusedComponentsTest {
             .removeUnusedBeans(true)
             .build();
 
-    @SuppressWarnings("serial")
     @Test
     public void testRemoval() {
         ArcContainer container = Arc.container();

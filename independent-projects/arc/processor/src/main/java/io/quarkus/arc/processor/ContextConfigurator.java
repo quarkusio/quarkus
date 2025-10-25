@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -16,9 +17,13 @@ import jakarta.enterprise.context.NormalScope;
 import io.quarkus.arc.ContextCreator;
 import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableContext;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  * Custom context configurator.
@@ -35,7 +40,7 @@ public final class ContextConfigurator {
 
     boolean isNormal;
 
-    Function<MethodCreator, ResultHandle> creator;
+    Function<CreateGeneration, Expr> creator;
 
     final Map<String, Object> params;
 
@@ -116,17 +121,11 @@ public final class ContextConfigurator {
             throw new IllegalArgumentException(
                     "A context class must either declare a no-args constructor or a constructor that accepts a single parameter of type io.quarkus.arc.CurrentContextFactory");
         }
-        return creator(new Function<>() {
-            @Override
-            public ResultHandle apply(MethodCreator mc) {
-                ResultHandle[] args;
-                if (constructor.getParameterCount() == 0) {
-                    args = new ResultHandle[0];
-                } else {
-                    args = new ResultHandle[] { mc.getMethodParam(0) };
-                }
-                return mc.newInstance(MethodDescriptor.ofConstructor(contextClazz, constructor.getParameterTypes()), args);
-            }
+        return creator(cg -> {
+            BlockCreator bc = cg.method();
+
+            List<Expr> args = constructor.getParameterCount() == 0 ? List.of() : List.of(cg.currentContextFactory());
+            return bc.new_(ConstructorDesc.of(constructor), args);
         });
     }
 
@@ -146,39 +145,38 @@ public final class ContextConfigurator {
     }
 
     public ContextConfigurator creator(Class<? extends ContextCreator> creatorClazz) {
-        return creator(mc -> {
-            ResultHandle paramsHandle = mc.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            mc.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, paramsHandle,
-                    mc.load(ContextCreator.KEY_CURRENT_CONTEXT_FACTORY), mc.getMethodParam(0));
-            for (Entry<String, Object> entry : params.entrySet()) {
-                ResultHandle valHandle = null;
-                if (entry.getValue() instanceof String) {
-                    valHandle = mc.load(entry.getValue().toString());
-                } else if (entry.getValue() instanceof Integer) {
-                    valHandle = mc.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class),
-                            mc.load(((Integer) entry.getValue()).intValue()));
-                } else if (entry.getValue() instanceof Long) {
-                    valHandle = mc.newInstance(MethodDescriptor.ofConstructor(Long.class, long.class),
-                            mc.load(((Long) entry.getValue()).longValue()));
-                } else if (entry.getValue() instanceof Double) {
-                    valHandle = mc.newInstance(MethodDescriptor.ofConstructor(Double.class, double.class),
-                            mc.load(((Double) entry.getValue()).doubleValue()));
-                } else if (entry.getValue() instanceof Class) {
-                    valHandle = mc.loadClass((Class<?>) entry.getValue());
-                } else if (entry.getValue() instanceof Boolean) {
-                    valHandle = mc.load((Boolean) entry.getValue());
+        return creator(cg -> {
+            BlockCreator bc = cg.method();
+
+            LocalVar params = bc.localVar("params", bc.new_(HashMap.class));
+            bc.withMap(params).put(Const.of(ContextCreator.KEY_CURRENT_CONTEXT_FACTORY), cg.currentContextFactory());
+            for (Entry<String, Object> entry : this.params.entrySet()) {
+                Expr value;
+                if (entry.getValue() instanceof String s) {
+                    value = Const.of(s);
+                } else if (entry.getValue() instanceof Integer i) {
+                    value = Const.of(i);
+                } else if (entry.getValue() instanceof Long l) {
+                    value = Const.of(l);
+                } else if (entry.getValue() instanceof Double d) {
+                    value = Const.of(d);
+                } else if (entry.getValue() instanceof Class<?> c) {
+                    value = Const.of(c);
+                } else if (entry.getValue() instanceof Boolean b) {
+                    value = Const.of(b);
+                } else {
+                    throw new IllegalArgumentException("Unknown parameter " + entry.getKey() + ": " + entry.getValue());
                 }
-                mc.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, paramsHandle, mc.load(entry.getKey()), valHandle);
+                bc.withMap(params).put(Const.of(entry.getKey()), value);
             }
-            ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClazz));
-            ResultHandle ret = mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(ContextCreator.class, "create", InjectableContext.class, Map.class),
-                    creatorHandle, paramsHandle);
-            return ret;
+            Expr creator = bc.new_(creatorClazz);
+            return bc.invokeInterface(
+                    MethodDesc.of(ContextCreator.class, "create", InjectableContext.class, Map.class),
+                    creator, params);
         });
     }
 
-    public ContextConfigurator creator(Function<MethodCreator, ResultHandle> creator) {
+    public ContextConfigurator creator(Function<CreateGeneration, Expr> creator) {
         this.creator = creator;
         return this;
     }
@@ -190,4 +188,16 @@ public final class ContextConfigurator {
         }
     }
 
+    public interface CreateGeneration {
+        /**
+         * {@return the {@link BlockCreator} for the method that instantiates the context object}
+         * This method is supposed to contain the creation logic.
+         */
+        BlockCreator method();
+
+        /**
+         * {@return the variable that contains the {@link CurrentContextFactory}}
+         */
+        Var currentContextFactory();
+    }
 }

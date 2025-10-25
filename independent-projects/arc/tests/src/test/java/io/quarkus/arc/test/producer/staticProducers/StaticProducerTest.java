@@ -21,10 +21,10 @@ import io.quarkus.arc.test.ArcTestContainer;
 /**
  * Tests static method/field producers
  */
-public class StaticMethodProducerTest {
+public class StaticProducerTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(StaticMethodProducerTest.class, SomeProducer.class,
+    public ArcTestContainer container = new ArcTestContainer(StaticProducerTest.class, SomeProducer.class,
             MyQualifier.class);
 
     @Test

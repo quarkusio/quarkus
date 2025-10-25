@@ -32,6 +32,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  *
@@ -529,7 +530,7 @@ final class Methods {
 
             List<Type> parameters = method.parameterTypes();
             if (!parameters.isEmpty() && (beanArchiveIndex != null)) {
-                String originalClassPackage = DotNames.packageName(originalClazz.name());
+                String originalClassPackage = DotNames.packagePrefix(originalClazz.name());
                 for (Type type : parameters) {
                     if (type.kind() == Kind.PRIMITIVE) {
                         continue;
@@ -554,7 +555,7 @@ final class Methods {
                     }
                     // e.g. parameters whose class is package-private and the package is not the same as the package of the method for which we are checking can not be loaded,
                     // as we would end up with IllegalAccessError when trying to access the use the load the class
-                    if (!DotNames.packageName(param.name()).equals(originalClassPackage)) {
+                    if (!DotNames.packagePrefix(param.name()).equals(originalClassPackage)) {
                         LOGGER.warn(String.format(
                                 "A method %s() declared on %s has a non-public parameter of type %s which prevents it from being intercepted. Please change the parameter type visibility in order to make it intercepted.",
                                 method.name(), method.declaringClass().name(), type));
@@ -654,9 +655,9 @@ final class Methods {
         }
     }
 
-    static boolean descriptorMatches(MethodDescriptor d1, MethodDescriptor d2) {
-        return d1.getName().equals(d2.getName())
-                && d1.getDescriptor().equals(d2.getDescriptor());
+    static boolean descriptorMatches(MethodDesc d1, MethodDesc d2) {
+        // do _not_ compare `owner` here
+        return d1.name().equals(d2.name()) && d1.type().equals(d2.type());
     }
 
 }

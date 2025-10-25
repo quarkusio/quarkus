@@ -7,7 +7,6 @@ import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBu
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
-import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -70,6 +69,7 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.arc.processor.KotlinDotNames;
 import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.arc.processor.RuntimeTypeCreator;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -1180,7 +1180,7 @@ public class WebSocketProcessor {
                     InvokerInfo invoker = invokerFactory.createInvoker(callback.bean, callback.method)
                             .withInvocationWrapper(CoroutineInvoker.class, "inNewCoroutine")
                             .build();
-                    bc.yield(bc.new_(ConstructorDesc.of(ClassDesc.of(invoker.getClassName()))));
+                    bc.yield(bc.new_(ConstructorDesc.of(invoker.getClassDesc())));
                 });
             });
         }

@@ -5,7 +5,7 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-@Alpha
+@Bravo
 @Priority(1)
 @Interceptor
 public class BravoInterceptor {

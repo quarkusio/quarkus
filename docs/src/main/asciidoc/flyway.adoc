@@ -75,12 +75,6 @@ In your build file, add the following dependencies:
     <artifactId>flyway-database-db2</artifactId>
 </dependency>
 
-<!-- Derby specific dependencies -->
-<dependency>
-    <groupId>org.flywaydb</groupId>
-    <artifactId>flyway-database-derby</artifactId>
-</dependency>
-
 <!-- HSQLDB specific dependencies -->
 <dependency>
     <groupId>org.flywaydb</groupId>
@@ -160,8 +154,6 @@ implementation("org.flywaydb:flyway-database-oracle")
 implementation("org.flywaydb:flyway-database-postgresql")
 // Flyway DB2 specific dependencies
 implementation("org.flywaydb:flyway-database-db2")
-// Flyway Derby specific dependencies
-implementation("org.flywaydb:flyway-database-derby")
 // HSQLDB specific dependencies
 implementation("org.flywaydb:flyway-database-hsqldb")
 // Informix specific dependencies

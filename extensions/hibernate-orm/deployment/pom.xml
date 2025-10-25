@@ -61,11 +61,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator-spi</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-derby-deployment</artifactId>
-            <optional>true</optional>  <!-- conditional dependency -->
-        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

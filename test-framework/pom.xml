@@ -18,7 +18,6 @@
         <module>common</module>
         <module>h2</module>
         <module>grpc</module>
-        <module>derby</module>
         <module>kubernetes-client</module>
         <module>junit5-config</module>
         <module>junit5-internal</module>

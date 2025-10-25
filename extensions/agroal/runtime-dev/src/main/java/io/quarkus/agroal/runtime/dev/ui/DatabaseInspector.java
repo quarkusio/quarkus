@@ -469,8 +469,7 @@ public final class DatabaseInspector {
             if (jdbcUrl.startsWith("jdbc:h2:mem:") || jdbcUrl.startsWith("jdbc:h2:file:")
                     || jdbcUrl.startsWith("jdbc:h2:tcp://localhost")
                     || (allowedHost != null && !allowedHost.isBlank()
-                            && jdbcUrl.startsWith("jdbc:h2:tcp://" + allowedHost))
-                    || jdbcUrl.startsWith("jdbc:derby:memory:")) {
+                            && jdbcUrl.startsWith("jdbc:h2:tcp://" + allowedHost))) {
                 return true;
             }
 

@@ -1393,6 +1393,29 @@ or
 
 [source,java]
 ----
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@RegisterRestClient
+@Path("/")
+public interface InformationService {
+
+    @AccessToken
+    @GET
+    String getUserName();
+
+    @Path("/public")
+    @GET
+    String getPublicInformation();
+}
+----
+
+or
+
+[source,java]
+----
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter;
@@ -1482,6 +1505,30 @@ public interface ProtectedResourceService {
     String getUserName();
 }
 ----
+
+or
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@RegisterRestClient
+@Path("/")
+public interface InformationService {
+
+    @AccessToken
+    @GET
+    String getUserName();
+
+    @Path("/public")
+    @GET
+    String getPublicInformation();
+}
+----
+
 or
 
 [source,java]

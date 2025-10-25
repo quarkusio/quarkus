@@ -3,6 +3,7 @@ package io.quarkus.oidc.token.propagation.common.deployment;
 import java.util.Objects;
 
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -14,18 +15,21 @@ public final class AccessTokenInstanceBuildItem extends MultiBuildItem {
     private final String clientName;
     private final boolean tokenExchange;
     private final AnnotationTarget annotationTarget;
+    private final MethodInfo targetMethodInfo;
 
-    AccessTokenInstanceBuildItem(String clientName, Boolean tokenExchange, AnnotationTarget annotationTarget) {
+    AccessTokenInstanceBuildItem(String clientName, Boolean tokenExchange, AnnotationTarget annotationTarget,
+            MethodInfo targetMethodInfo) {
         this.clientName = Objects.requireNonNull(clientName);
         this.tokenExchange = tokenExchange;
         this.annotationTarget = Objects.requireNonNull(annotationTarget);
+        this.targetMethodInfo = targetMethodInfo;
     }
 
-    public String getClientName() {
+    String getClientName() {
         return clientName;
     }
 
-    public boolean exchangeTokenActivated() {
+    boolean exchangeTokenActivated() {
         return tokenExchange;
     }
 
@@ -34,6 +38,13 @@ public final class AccessTokenInstanceBuildItem extends MultiBuildItem {
     }
 
     public String targetClass() {
-        return annotationTarget.asClass().name().toString();
+        if (annotationTarget.kind() == AnnotationTarget.Kind.CLASS) {
+            return annotationTarget.asClass().name().toString();
+        }
+        return annotationTarget.asMethod().declaringClass().name().toString();
+    }
+
+    MethodInfo getTargetMethodInfo() {
+        return targetMethodInfo;
     }
 }

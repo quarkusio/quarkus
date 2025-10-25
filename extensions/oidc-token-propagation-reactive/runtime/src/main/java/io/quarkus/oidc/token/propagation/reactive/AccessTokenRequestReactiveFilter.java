@@ -3,6 +3,7 @@ package io.quarkus.oidc.token.propagation.reactive;
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.function.Consumer;
 
@@ -16,6 +17,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
 
@@ -27,6 +29,7 @@ import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -77,6 +80,10 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     @Override
     public void filter(ResteasyReactiveClientRequestContext requestContext) {
+        if (skipPropagation(requestContext)) {
+            return;
+        }
+
         if (verifyTokenInstance(requestContext)) {
             if (exchangeTokenClient != null) {
 
@@ -179,5 +186,31 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     protected void abortRequest(ResteasyReactiveClientRequestContext requestContext) {
         requestContext.abortWith(Response.status(401).build());
+    }
+
+    private boolean skipPropagation(ResteasyReactiveClientRequestContext requestContext) {
+        if (getMethodDescription() == null) {
+            return false;
+        }
+
+        return !getMethodDescription().equals(getInvokedRestClientMethodSignature(requestContext));
+    }
+
+    private static MethodDescription getInvokedRestClientMethodSignature(ResteasyReactiveClientRequestContext requestContext) {
+        Method method = (Method) requestContext.getProperty(RestClientRequestContext.INVOKED_METHOD_PROP);
+        if (method == null) {
+            throw new IllegalStateException(RestClientRequestContext.INVOKED_METHOD_PROP + " property must not be null");
+        }
+        return MethodDescription.ofMethod(method);
+    }
+
+    /**
+     * This method is overridden by generated filter classes if the filter should only be applied on the REST client
+     * method.
+     *
+     * @return REST client method description for which this filter should be applied; or null if applies to all methods
+     */
+    protected MethodDescription getMethodDescription() {
+        return null;
     }
 }

@@ -12,8 +12,11 @@ import java.lang.annotation.Target;
  * The end result is that the request propagates the Bearer token present in the current active request or the token acquired
  * from the Authorization Code Flow,
  * as the HTTP {@code Authorization} header's {@code Bearer} scheme value.
+ * <p>
+ * This annotation may also be placed on individual methods of the REST Client interface.
+ * When applied to a method, the {@link AccessTokenRequestFilter} will be registered only for that method.
  */
-@Target({ ElementType.TYPE })
+@Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface AccessToken {

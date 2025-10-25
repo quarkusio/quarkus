@@ -16,6 +16,7 @@
     <modules>
         <module>virtual-threads</module>
         <module>tls-registry</module>
+        <module>proxy-config</module>
 
         <!-- Plumbing -->
         <module>arc</module>

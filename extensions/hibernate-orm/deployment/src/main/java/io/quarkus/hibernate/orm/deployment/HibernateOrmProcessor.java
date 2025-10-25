@@ -471,6 +471,7 @@ public final class HibernateOrmProcessor {
             LiveReloadBuildItem liveReloadBuildItem,
             ExecutorService buildExecutor) throws ExecutionException, InterruptedException {
         Set<String> managedClassAndPackageNames = new HashSet<>(jpaModel.getEntityClassNames());
+        Set<String> managedClassesName = new HashSet<>(jpaModel.getEntityClassNames());
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
             // Note: getManagedClassNames() can also return *package* names
             // See the source code of Hibernate ORM for proof:
@@ -483,7 +484,7 @@ public final class HibernateOrmProcessor {
             managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
         }
 
-        PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames,
+        PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames, managedClassesName,
                 indexBuildItem.getIndex(), transformedClassesBuildItem,
                 generatedClassBuildItemBuildProducer, liveReloadBuildItem, buildExecutor);
 
@@ -1229,6 +1230,12 @@ public final class HibernateOrmProcessor {
         Set<String> modelClassesWithPersistenceUnitAnnotations = new TreeSet<>();
 
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
+
+            if(!jpaModel.getEntityClassNames().contains(modelClassName)) {
+                // We only care about class name here
+                continue;
+            }
+
             ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
                     modelClassInfo);
@@ -1433,7 +1440,7 @@ public final class HibernateOrmProcessor {
         return multiTenancyStrategy;
     }
 
-    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
+    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, Set<String> managedClassesName, IndexView combinedIndex,
             TransformedClassesBuildItem transformedClassesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem,
@@ -1466,6 +1473,12 @@ public final class HibernateOrmProcessor {
                     CachedProxy proxy = proxyCache.cache.get(managedClassOrPackageName);
                     generatedProxyQueue.add(CompletableFuture.completedFuture(proxy));
                 } else {
+
+                    if(!managedClassesName.contains(managedClassOrPackageName)) {
+                        // we don't generate proxies for packages
+                        continue;
+                    }
+
                     if (!proxyHelper.isProxiable(combinedIndex.getClassByName(managedClassOrPackageName))) {
                         // we need to make sure we have a class and not a package and that it is proxiable
                         continue;

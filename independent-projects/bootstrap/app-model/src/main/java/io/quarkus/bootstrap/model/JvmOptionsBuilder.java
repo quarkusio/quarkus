@@ -187,7 +187,7 @@ public class JvmOptionsBuilder {
         return new JvmOptionsImpl(options.isEmpty() ? List.of() : List.copyOf(options.values()));
     }
 
-    private static class JvmOptionsImpl implements JvmOptions, Serializable {
+    public static class JvmOptionsImpl implements JvmOptions, Serializable {
 
         private final List<JvmOption> args;
 

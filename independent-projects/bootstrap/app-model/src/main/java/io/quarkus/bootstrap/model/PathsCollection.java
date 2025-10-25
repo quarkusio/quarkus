@@ -12,12 +12,15 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.quarkus.paths.PathCollection;
 
 public class PathsCollection implements PathCollection, Serializable {
 
     private static final long serialVersionUID = -7214825505580070033L;
 
+    @JsonCreator
     public static PathsCollection from(Iterable<Path> paths) {
         final List<Path> list = new ArrayList<>();
         paths.forEach(list::add);

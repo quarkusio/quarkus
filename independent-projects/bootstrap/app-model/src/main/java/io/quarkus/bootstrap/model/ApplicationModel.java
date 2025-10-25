@@ -1,10 +1,13 @@
 package io.quarkus.bootstrap.model;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -180,4 +183,8 @@ public interface ApplicationModel {
      * @return extension Dev mode configuration options
      */
     Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
+
+    default void serializeTo(Path target) throws IOException {
+        BootstrapUtils.serializeAppModel(this, target);
+    }
 }

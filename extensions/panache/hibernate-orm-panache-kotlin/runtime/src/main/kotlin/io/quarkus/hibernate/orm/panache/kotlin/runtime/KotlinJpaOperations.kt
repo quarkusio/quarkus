@@ -1,9 +1,9 @@
 package io.quarkus.hibernate.orm.panache.kotlin.runtime
 
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations
 import org.hibernate.Session
 
-class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
+class KotlinJpaOperations : AbstractManagedJpaOperations<PanacheQueryImpl<*>>() {
     override fun createPanacheQuery(
         session: Session,
         hqlQuery: String,

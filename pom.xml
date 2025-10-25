@@ -150,6 +150,17 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>nordix-artifactory</id>
+            <url>https://artifactory.nordix.org/artifactory/allies</url>
+            <name>allies</name>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <build>

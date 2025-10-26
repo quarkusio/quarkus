@@ -37,7 +37,7 @@ jobs:
         run: git restore-mtime
 
       - name: Download PR Artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           run-id: ${{ github.event.workflow_run.id }}
           name: documentation

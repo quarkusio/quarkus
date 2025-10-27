@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :topics: security,csrf,http
 :extensions: io.quarkus:quarkus-rest-csrf
 
-https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated. The CSRF prevention filter applies to requests using HTTP `POST`, `PUT`, `PATCH`, `DELETE` and other methods that can change the REST application state.
+https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
 Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and <<csrf-request-header>> techniques.
 
@@ -17,6 +17,8 @@ Quarkus Security provides a CSRF prevention feature which implements https://che
 directly embedded in a hidden form input of server-side rendered HTML forms, or submitted as a request header value.
 
 The extension consists of a xref:rest.adoc[Quarkus REST (formerly RESTEasy Reactive)] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
+
+The CSRF prevention filter applies to requests using HTTP `POST`, `PUT`, `PATCH`, `DELETE` and other methods that can change the REST application state.
 
 == Creating the Project
 

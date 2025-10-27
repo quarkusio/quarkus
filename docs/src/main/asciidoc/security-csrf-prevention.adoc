@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :topics: security,csrf,http
 :extensions: io.quarkus:quarkus-rest-csrf
 
-https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
+https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated. The CSRF filter applies to requests using idempotent REST verbs, including `POST`, `PUT`, `PATCH`, `DELETE`.
 
 Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and <<csrf-request-header>> techniques.
 

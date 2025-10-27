@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,16 +20,19 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import io.quarkus.amazon.lambda.deployment.RequestHandlerJandexUtil.RequestHandlerJandexDefinition;
+import io.quarkus.deployment.index.IndexWrapper;
+import io.quarkus.deployment.index.PersistentClassIndex;
 
 public class RequestHandlerJandexUtilTest {
 
-    private static Index index;
+    private static IndexView index;
 
     @BeforeAll
     public static void setup() throws IOException {
         Indexer indexer = new Indexer();
 
-        // Index all the test classes
+        // Mimick what would happen in a regular Quarkus app:
+        // forcefully index all test classes, but let the computing index index JDK classes
         indexer.indexClass(SimpleStringHandler.class);
         indexer.indexClass(SimpleIntegerHandler.class);
         indexer.indexClass(BaseHandler.class);
@@ -69,16 +72,8 @@ public class RequestHandlerJandexUtilTest {
         indexer.indexClass(GenericListBase.class);
         indexer.indexClass(GenericListConcrete.class);
 
-        // Index required AWS Lambda classes
-        indexer.indexClass(RequestHandler.class);
-        indexer.indexClass(Context.class);
-
-        // Index collection classes
-        indexer.indexClass(List.class);
-        indexer.indexClass(Set.class);
-        indexer.indexClass(Collection.class);
-
-        index = indexer.complete();
+        index = new IndexWrapper(indexer.complete(), Thread.currentThread().getContextClassLoader(),
+                new PersistentClassIndex());
     }
 
     private static void indexClass(Indexer indexer, Class<?> clazz) throws IOException {

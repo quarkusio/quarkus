@@ -425,7 +425,11 @@ public class OidcResource {
         }
 
         if (acr != null && !acr.isEmpty()) {
-            builder.claim("acr", Arrays.asList(acr.split(",")));
+            if (acr.endsWith("_string")) {
+                builder.claim("acr", acr);
+            } else {
+                builder.claim("acr", Arrays.asList(acr.split(",")));
+            }
         }
 
         if (authTime != null && !authTime.isEmpty()) {

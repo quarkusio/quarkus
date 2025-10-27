@@ -6,6 +6,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog-ext https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 
     <changeSet id="1" author="loic">
+      <preConditions onFail="WARN">
+        <ext:collectionExists name="test"/>
+      </preConditions>
 
         <ext:createCollection collectionName="Fruit"/>
 

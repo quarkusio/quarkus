@@ -3,7 +3,8 @@ package io.quarkus.devui.spi.page;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,10 +15,10 @@ import java.util.Optional;
 public final class CardPageBuildItem extends AbstractPageBuildItem {
 
     private Optional<Card> optionalCard = Optional.empty();
-    private List<LibraryLink> libraryVersions = null;
+    private List<LibraryLink> libraryVersions;
 
-    private String darkLogo = null;
-    private String lightLogo = null;
+    private String darkLogo;
+    private String lightLogo;
 
     public CardPageBuildItem() {
         super();
@@ -43,12 +44,12 @@ public final class CardPageBuildItem extends AbstractPageBuildItem {
 
     public void addLibraryVersion(String groupId, String artifactId, String name, URL url) {
         if (libraryVersions == null)
-            libraryVersions = new LinkedList<>();
+            libraryVersions = new ArrayList<>();
         libraryVersions.add(new LibraryLink(groupId, artifactId, name, url));
     }
 
     public List<LibraryLink> getLibraryVersions() {
-        return this.libraryVersions;
+        return this.libraryVersions == null ? Collections.emptyList() : this.libraryVersions;
     }
 
     public boolean hasLibraryVersions() {

@@ -17,6 +17,7 @@ import io.smallrye.config.SecretKeysHandlerFactory;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.config.common.MapBackedConfigSource;
 
 /**
  * Convenience helper to generate the {@link SmallRyeConfigBuilderCustomizer} bytecode, by wrapping methods that
@@ -26,6 +27,11 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
 
     protected static void withDefaultValues(SmallRyeConfigBuilder builder, Map<String, String> values) {
         builder.withDefaultValues(values);
+    }
+
+    protected static void withRuntimeValues(SmallRyeConfigBuilder builder, Map<String, String> values) {
+        builder.withSources(new MapBackedConfigSource("Runtime Values", values, 0) {
+        });
     }
 
     @SuppressWarnings("unchecked")

@@ -675,7 +675,7 @@ public interface RestClientsConfig {
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
-        @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
+        @WithDefault("false")
         Boolean disableDefaultMapper();
 
         /**

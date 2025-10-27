@@ -287,6 +287,10 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         public String apply(final String name) {
             int indexOfRestClient = indexOfRestClient(name);
             if (indexOfRestClient != -1) {
+                int disableDefaultMapper = name.indexOf(".disable-default-mapper", indexOfRestClient);
+                if (disableDefaultMapper != -1) {
+                    return "microprofile.rest.client.disable.default.mapper";
+                }
                 for (Map.Entry<String, String> entry : names.entrySet()) {
                     String original = entry.getKey();
                     String target = entry.getValue();

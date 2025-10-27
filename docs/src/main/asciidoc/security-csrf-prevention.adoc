@@ -18,6 +18,8 @@ directly embedded in a hidden form input of server-side rendered HTML forms, or 
 
 The extension consists of a xref:rest.adoc[Quarkus REST (formerly RESTEasy Reactive)] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
+The CSRF prevention filter applies to requests using HTTP `POST`, `PUT`, `PATCH`, `DELETE` and other methods that can change the REST application state.
+
 == Creating the Project
 
 First, we need a new project.

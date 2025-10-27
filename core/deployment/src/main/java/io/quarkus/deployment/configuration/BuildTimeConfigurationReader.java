@@ -217,7 +217,6 @@ public final class BuildTimeConfigurationReader {
         final ConfigTrackingInterceptor buildConfigTracker;
         final Map<String, ConfigValue> allBuildTimeValues = new TreeMap<>();
         final Map<String, ConfigValue> buildTimeRunTimeValues = new TreeMap<>();
-        final Map<String, ConfigValue> runTimeDefaultValues = new TreeMap<>();
         final Map<String, ConfigValue> runTimeValues = new TreeMap<>();
 
         ReadOperation(final SmallRyeConfig config, ConfigTrackingInterceptor buildConfigTracker) {
@@ -334,7 +333,6 @@ public final class BuildTimeConfigurationReader {
             return new ReadResult.Builder()
                     .setAllBuildTimeValues(allBuildTimeValues)
                     .setBuildTimeRunTimeValues(filterActiveProfileProperties(buildTimeRunTimeValues))
-                    .setRunTimeDefaultValues(filterActiveProfileProperties(runTimeDefaultValues))
                     .setRuntimeValues(runTimeValues)
                     .setBuildTimeMappings(buildTimeMappings)
                     .setBuildTimeRunTimeMappings(buildTimeRunTimeMappings)
@@ -540,7 +538,6 @@ public final class BuildTimeConfigurationReader {
     public static final class ReadResult {
         final Map<String, ConfigValue> allBuildTimeValues;
         final Map<String, ConfigValue> buildTimeRunTimeValues;
-        final Map<String, ConfigValue> runTimeDefaultValues;
         final Map<String, ConfigValue> runTimeValues;
 
         final List<ConfigClass> buildTimeMappings;
@@ -556,7 +553,6 @@ public final class BuildTimeConfigurationReader {
         public ReadResult(final Builder builder) {
             this.allBuildTimeValues = builder.getAllBuildTimeValues();
             this.buildTimeRunTimeValues = builder.getBuildTimeRunTimeValues();
-            this.runTimeDefaultValues = builder.getRunTimeDefaultValues();
             this.runTimeValues = builder.getRuntimeValues();
 
             this.buildTimeMappings = builder.getBuildTimeMappings();
@@ -591,10 +587,6 @@ public final class BuildTimeConfigurationReader {
 
         public Map<String, ConfigValue> getBuildTimeRunTimeValues() {
             return buildTimeRunTimeValues;
-        }
-
-        public Map<String, ConfigValue> getRunTimeDefaultValues() {
-            return runTimeDefaultValues;
         }
 
         public Map<String, ConfigValue> getRunTimeValues() {
@@ -636,7 +628,6 @@ public final class BuildTimeConfigurationReader {
         static class Builder {
             private Map<String, ConfigValue> allBuildTimeValues;
             private Map<String, ConfigValue> buildTimeRunTimeValues;
-            private Map<String, ConfigValue> runTimeDefaultValues;
             private Map<String, ConfigValue> runtimeValues;
             private List<ConfigClass> buildTimeMappings;
             private List<ConfigClass> buildTimeRunTimeMappings;
@@ -660,15 +651,6 @@ public final class BuildTimeConfigurationReader {
 
             Builder setBuildTimeRunTimeValues(final Map<String, ConfigValue> buildTimeRunTimeValues) {
                 this.buildTimeRunTimeValues = buildTimeRunTimeValues;
-                return this;
-            }
-
-            Map<String, ConfigValue> getRunTimeDefaultValues() {
-                return runTimeDefaultValues;
-            }
-
-            Builder setRunTimeDefaultValues(final Map<String, ConfigValue> runTimeDefaultValues) {
-                this.runTimeDefaultValues = runTimeDefaultValues;
                 return this;
             }
 

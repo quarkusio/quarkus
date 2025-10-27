@@ -17,6 +17,7 @@ import io.smallrye.config.SmallRyeConfig;
 public class ConfigBuilderTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .failOnUnknownProperties(false)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Inject

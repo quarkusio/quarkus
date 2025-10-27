@@ -75,6 +75,7 @@ class BuildIT extends MojoTestBase {
                 Map.of());
         assertThat(result.getProcess().waitFor()).isZero();
 
+        // TODO Luca unrecognised property on quarkus.generate-code.skip=true
         // with the source generation disabled (this will use a new resolver initialized before bootstrapping the test)
         result = running.execute(List.of("clean", "test",
                 "-Dquarkus.analytics.disabled=true", "-Dquarkus.generate-code.skip=true"),

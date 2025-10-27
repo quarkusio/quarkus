@@ -22,7 +22,8 @@ public class PeriodicRotatingLoggingTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("PeriodicRotatingLoggingTest.log");
+            .setLogFileName("PeriodicRotatingLoggingTest.log")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void periodicRotatingConfigurationTest() {

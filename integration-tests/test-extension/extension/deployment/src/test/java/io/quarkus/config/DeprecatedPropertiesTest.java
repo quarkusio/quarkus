@@ -15,6 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DeprecatedPropertiesTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .failOnUnknownProperties(false) // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
                 List<LogRecord> deprecatedProperties = logRecords.stream()

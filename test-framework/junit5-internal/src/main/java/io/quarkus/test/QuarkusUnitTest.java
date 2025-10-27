@@ -49,6 +49,7 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -107,6 +108,7 @@ public class QuarkusUnitTest
 
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private Consumer<List<LogRecord>> assertLogRecords;
+    private boolean failOnUnknownProperties = true;
 
     private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
@@ -292,6 +294,20 @@ public class QuarkusUnitTest
                     + " to avoid shadowing out the first call.");
         }
         this.assertLogRecords = assertLogRecords;
+        return this;
+    }
+
+    /**
+     * Enable/Disable strict property validation for UnitTest. By default, the test will fail if any
+     * unrecognized configuration properties are detected during application startup.
+     * This helps catch configuration typos early in testing.
+     *
+     * @param failOnUnknownProperties false to disable strict validation, true to use the default behavior (fail on
+     *        unknownProperty)
+     * @return this QuarkusUnitTest instance for method chaining
+     */
+    public QuarkusUnitTest failOnUnknownProperties(boolean failOnUnknownProperties) {
+        this.failOnUnknownProperties = failOnUnknownProperties;
         return this;
     }
 
@@ -545,7 +561,10 @@ public class QuarkusUnitTest
         TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
+
+        overrideSystemProperty(BootstrapDebug.FAIL_ON_MISSING_PROPERTY_KEY, String.valueOf(failOnUnknownProperties));
         LaunchMode.set(LaunchMode.TEST);
+
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }

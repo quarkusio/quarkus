@@ -34,7 +34,8 @@ public class BuildTimeConfigTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("test-map-config", testFile.getAbsolutePath());
+            .overrideConfigKey("test-map-config", testFile.getAbsolutePath())
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     /**
      * The checks are done before the test is started, in {@link io.quarkus.extest.deployment.MapBuildTimeConfigBuildStep}

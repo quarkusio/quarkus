@@ -18,7 +18,8 @@ public class ExitCodeTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withEmptyApplication()
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Test
     public void testReturnedExitCode() throws ExecutionException, InterruptedException {

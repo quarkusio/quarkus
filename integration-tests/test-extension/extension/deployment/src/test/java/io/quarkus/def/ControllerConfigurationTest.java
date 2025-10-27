@@ -15,7 +15,8 @@ public class ControllerConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withEmptyApplication()
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     ControllerConfiguration controllerConfiguration;

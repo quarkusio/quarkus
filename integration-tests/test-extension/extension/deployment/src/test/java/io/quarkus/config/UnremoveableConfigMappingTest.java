@@ -15,7 +15,8 @@ public class UnremoveableConfigMappingTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(UnremovableMappingFromBuildItem.class));
+                    .addClass(UnremovableMappingFromBuildItem.class))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     SmallRyeConfig config;

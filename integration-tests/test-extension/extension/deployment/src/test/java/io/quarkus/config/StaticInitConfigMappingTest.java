@@ -18,7 +18,8 @@ public class StaticInitConfigMappingTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(StaticInitConfigSourceFactory.class)
                     .addAsServiceProvider("io.smallrye.config.ConfigSourceFactory",
-                            StaticInitConfigSourceFactory.class.getName()));
+                            StaticInitConfigSourceFactory.class.getName()))
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     // This does not come from the static init Config, but it is registered in both static and runtime.
     // If it doesn't fail, it means that the static mapping was done correctly.

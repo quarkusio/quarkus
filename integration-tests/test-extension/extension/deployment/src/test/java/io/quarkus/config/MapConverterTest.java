@@ -20,7 +20,8 @@ class MapConverterTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
-            .overrideConfigKey("map.value", "key1:value1,key2:value2");
+            .overrideConfigKey("map.value", "key1:value1,key2:value2")
+            .failOnUnknownProperties(false); // quarkus.build.unknown.prop from UnknownBuildPropertyConfigSourceFactory
 
     @Inject
     MapMapping mapping;

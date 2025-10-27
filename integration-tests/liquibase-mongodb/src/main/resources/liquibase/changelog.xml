@@ -23,4 +23,22 @@
 
     </changeSet>
 
+  <changeSet id="2" author="RK">
+    <comment>use runCommand to execute arbitrary mongo commands.</comment>
+    <ext:runCommand>
+      <ext:command>
+        {
+        update: "fruit",
+        updates: [
+        {
+        q: {name: null},
+        u: {$set: {name: "unknown"}},
+        multi: true
+        }
+        ]
+        }
+      </ext:command>
+    </ext:runCommand>
+  </changeSet>
+
 </databaseChangeLog>

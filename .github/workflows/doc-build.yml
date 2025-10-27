@@ -96,7 +96,7 @@ jobs:
         run: echo ${{ github.event.number }} > pr-id.txt
 
       - name: Persist documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: documentation
           path: |
@@ -113,7 +113,7 @@ jobs:
               'target/build-report.json' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Documentation Build"

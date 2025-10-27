@@ -31,7 +31,7 @@ jobs:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
       - name: Upload JSON file
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-metadata.json
           path: ${{ steps.setup.outputs.build-metadata-file-path }}

@@ -16,7 +16,7 @@ import io.quarkus.extest.runtime.config.EnvBuildTimeConfigSource;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.SmallRyeConfig;
 
-public class RuntimeDefaultsTest {
+public class RuntimeValuesTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
@@ -27,44 +27,46 @@ public class RuntimeDefaultsTest {
     SmallRyeConfig config;
 
     @Test
-    void doNotRecordEnvRuntimeDefaults() {
-        Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
-        assertTrue(defaultValues.isPresent());
+    void doNotRecordEnvRuntimeValues() {
+        Optional<ConfigSource> runtimeValues = config.getConfigSource("Runtime Values");
+        assertTrue(runtimeValues.isPresent());
         // Do not record Env values for runtime
-        assertNull(defaultValues.get().getValue("quarkus.mapping.rt.do-not-record"));
+        assertNull(runtimeValues.get().getValue("quarkus.mapping.rt.do-not-record"));
         assertEquals("value", config.getConfigValue("quarkus.mapping.rt.do-not-record").getValue());
         // Property available in both Env and application.properties, ok to record application.properties value
-        assertEquals("from-app", defaultValues.get().getValue("bt.ok.to.record"));
+        assertEquals("from-app", runtimeValues.get().getValue("bt.ok.to.record"));
         // You still get the value from Env
         assertEquals("from-env", config.getConfigValue("bt.ok.to.record").getValue());
         // Do not record any of the other properties
-        assertNull(defaultValues.get().getValue(("do.not.record")));
-        assertNull(defaultValues.get().getValue(("DO_NOT_RECORD")));
+        assertNull(runtimeValues.get().getValue(("do.not.record")));
+        assertNull(runtimeValues.get().getValue(("DO_NOT_RECORD")));
         assertEquals("value", config.getConfigValue("do.not.record").getValue());
     }
 
     @Test
-    void doNotRecordActiveUnprofiledPropertiesDefaults() {
-        Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
-        assertTrue(defaultValues.isPresent());
+    void doNotRecordActiveUnprofiledRuntimeValues() {
+        Optional<ConfigSource> runtimeValues = config.getConfigSource("Runtime Values");
+        assertTrue(runtimeValues.isPresent());
         assertEquals("properties", config.getConfigValue("bt.profile.record").getValue());
         // Property needs to be recorded as is, including the profile name
-        assertEquals("properties", defaultValues.get().getValue("%test.bt.profile.record"));
-        assertNull(defaultValues.get().getValue("bt.profile.record"));
+        assertEquals("properties", runtimeValues.get().getValue("%test.bt.profile.record"));
+        assertNull(runtimeValues.get().getValue("bt.profile.record"));
     }
 
     @Test
-    void recordDefaultFromRootEvenIfInActiveProfile() {
+    void recordDefaultFromMappingEvenIfInActiveProfile() {
+        Optional<ConfigSource> runtimeValues = config.getConfigSource("Runtime Values");
+        assertTrue(runtimeValues.isPresent());
+        assertEquals("from-app", runtimeValues.get().getValue("%test.quarkus.mapping.rt.record-default"));
         Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(defaultValues.isPresent());
-        assertEquals("from-app", defaultValues.get().getValue("%test.quarkus.mapping.rt.record-default"));
         assertEquals("from-default", defaultValues.get().getValue("quarkus.mapping.rt.record-default"));
     }
 
     @Test
     void recordProfile() {
-        Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
-        assertTrue(defaultValues.isPresent());
+        Optional<ConfigSource> runtimeValues = config.getConfigSource("Runtime Values");
+        assertTrue(runtimeValues.isPresent());
         assertEquals("record", config.getConfigValue("quarkus.profile").getValue());
     }
 }

@@ -66,6 +66,10 @@
             <artifactId>quarkus-hibernate-orm-derby-deployment</artifactId>
             <optional>true</optional>  <!-- conditional dependency -->
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-datasource-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

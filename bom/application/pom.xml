@@ -2349,6 +2349,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-datasource-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-db2-client</artifactId>
                 <version>${project.version}</version>
             </dependency>

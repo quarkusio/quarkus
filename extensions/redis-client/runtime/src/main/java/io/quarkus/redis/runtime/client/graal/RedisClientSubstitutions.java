@@ -17,3 +17,27 @@ final class Target_io_vertx_redis_client_impl_SentinelTopology {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     static Random RANDOM;
 }
+
+@TargetClass(className = "io.vertx.redis.client.impl.RedisClusterConnection")
+final class Target_io_vertx_redis_client_impl_RedisClusterConnection {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    static Random RANDOM;
+}
+
+@TargetClass(className = "io.vertx.redis.client.impl.RedisReplicationConnection")
+final class Target_io_vertx_redis_client_impl_RedisReplicationConnection {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    static Random RANDOM;
+}
+
+@TargetClass(className = "io.vertx.redis.client.impl.Slots")
+final class Target_io_vertx_redis_client_impl_Slots {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    static Random RANDOM;
+}

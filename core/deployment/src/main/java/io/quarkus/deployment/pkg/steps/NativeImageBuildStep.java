@@ -54,6 +54,7 @@ import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
+import io.quarkus.runtime.graal.JVMChecksFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.cpu.CPU;
@@ -88,6 +89,7 @@ public class NativeImageBuildStep {
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> features) {
         features.produce(new NativeImageFeatureBuildItem(NativeImageFeatureStep.GRAAL_FEATURE));
         features.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
+        features.produce(new NativeImageFeatureBuildItem(JVMChecksFeature.class));
     }
 
     @BuildStep(onlyIf = NativeBuild.class)

@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 import jakarta.persistence.PersistenceUnitTransactionType;
@@ -49,6 +48,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.hibernate.orm.deployment.HibernateDataSourceUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
@@ -189,27 +189,27 @@ public final class HibernateReactiveProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
-        boolean datasourceNamed = persistenceUnitConfig.datasource().isPresent();
 
-        Optional<JdbcDataSourceBuildItem> jdbcDataSource = findDataSourceWithNameDefault(persistenceUnitName,
-                persistenceUnitConfig,
+        Optional<JdbcDataSourceBuildItem> jdbcDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
+                persistenceUnitName,
                 jdbcDataSources,
                 JdbcDataSourceBuildItem::getName,
-                JdbcDataSourceBuildItem::isDefault);
+                JdbcDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
 
-        Optional<ReactiveDataSourceBuildItem> reactiveDataSource = findDataSourceWithNameDefault(persistenceUnitName,
-                persistenceUnitConfig,
+        Optional<ReactiveDataSourceBuildItem> reactiveDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
+                persistenceUnitName,
                 reactiveDataSources,
                 ReactiveDataSourceBuildItem::getName,
-                ReactiveDataSourceBuildItem::isDefault);
+                ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
 
-        if (jdbcDataSource.isPresent() && reactiveDataSource.isEmpty() && datasourceNamed) {
-            LOG.debugf("The datasource '%s' is blocking, do not create this PU '%s' as reactive",
-                    persistenceUnitConfig.datasource().get(), persistenceUnitName);
+        boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
+        if (jdbcDataSource.isPresent() && reactiveDataSource.isEmpty()) {
+            LOG.debugf("The datasource '%s' is only blocking, do not create this PU '%s' as reactive",
+                    persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
             return;
         }
 
-        if (jdbcDataSource.isEmpty() && reactiveDataSource.isEmpty() && datasourceNamed) {
+        if (reactiveDataSource.isEmpty() && explicitDataSource) {
             String dataSourceName = persistenceUnitConfig.datasource().get();
             throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
                     DataSourceUtil.dataSourceNotConfigured(dataSourceName));
@@ -269,25 +269,6 @@ public final class HibernateReactiveProcessor {
                 jpaModel.getXmlMappings(reactivePU.getName()),
                 false,
                 isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
-    }
-
-    private static <T> Optional<T> findDataSourceWithNameDefault(String persistenceUnitName,
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
-            List<T> datasSources,
-            Function<T, String> nameExtractor, Function<T, Boolean> defaultExtractor) {
-        if (persistenceUnitConfig.datasource().isPresent()) {
-            String dataSourceName = persistenceUnitConfig.datasource().get();
-            return datasSources.stream()
-                    .filter(i -> dataSourceName.equals(nameExtractor.apply(i)))
-                    .findFirst();
-        } else if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            return datasSources.stream()
-                    .filter(i -> defaultExtractor.apply(i))
-                    .findFirst();
-        } else {
-            // if it's not the default persistence unit, we mandate an explicit datasource to prevent common errors
-            return Optional.empty();
-        }
     }
 
     @BuildStep

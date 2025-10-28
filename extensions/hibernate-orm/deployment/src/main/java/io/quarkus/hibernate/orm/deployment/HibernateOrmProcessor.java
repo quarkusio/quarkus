@@ -482,6 +482,7 @@ public final class HibernateOrmProcessor {
 
         for (AdditionalJpaModelBuildItem additionalJpaModelBuildItem : additionalJpaModelBuildItems) {
             managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
+            managedClassesName.add(additionalJpaModelBuildItem.getClassName());
         }
 
         PreGeneratedProxies proxyDefinitions = generateProxies(managedClassAndPackageNames, managedClassesName,
@@ -1156,6 +1157,11 @@ public final class HibernateOrmProcessor {
             IndexView index, boolean enableDefaultPersistenceUnit) {
         Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit = new HashMap<>();
 
+        Set<String> managedClassNames = new HashSet<>(jpaModel.getEntityClassNames());
+        for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
+            managedClassNames.add(additionalJpaModel.getClassName());
+        }
+
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = getPackageLevelPersistenceUnitAnnotations(
                 index);
@@ -1231,18 +1237,18 @@ public final class HibernateOrmProcessor {
 
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
 
-            if(!jpaModel.getEntityClassNames().contains(modelClassName)) {
-                // We only care about class name here
-                continue;
-            }
+            Set<String> relatedModelClassNames = new HashSet<>();
+            if (managedClassNames.contains(modelClassName)) {
 
-            ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
-            Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
-                    modelClassInfo);
+                ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
+                relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
+                        modelClassInfo);
 
-            if (modelClassInfo != null && (modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
-                    || modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
-                modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
+                if (modelClassInfo != null && (modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
+                        || modelClassInfo
+                                .declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
+                    modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
+                }
             }
 
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
@@ -1440,7 +1446,8 @@ public final class HibernateOrmProcessor {
         return multiTenancyStrategy;
     }
 
-    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, Set<String> managedClassesName, IndexView combinedIndex,
+    private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, Set<String> managedClassesName,
+            IndexView combinedIndex,
             TransformedClassesBuildItem transformedClassesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem,
@@ -1474,7 +1481,7 @@ public final class HibernateOrmProcessor {
                     generatedProxyQueue.add(CompletableFuture.completedFuture(proxy));
                 } else {
 
-                    if(!managedClassesName.contains(managedClassOrPackageName)) {
+                    if (!managedClassesName.contains(managedClassOrPackageName)) {
                         // we don't generate proxies for packages
                         continue;
                     }

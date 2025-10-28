@@ -9,6 +9,7 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.js
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
 import java.io.IOException;
 import java.net.URL;
@@ -144,6 +145,7 @@ import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.hibernate.validator.spi.BeanValidationTraversableResolverBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
+import io.quarkus.reactive.datasource.spi.ReactiveDataSourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
@@ -327,6 +329,7 @@ public final class HibernateOrmProcessor {
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedPU,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
+            List<ReactiveDataSourceBuildItem> reactiveDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
@@ -380,7 +383,8 @@ public final class HibernateOrmProcessor {
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), additionalJpaModelBuildItems,
+                    jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
+                    additionalJpaModelBuildItems,
                     jpaModel, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, dbKindMetadataBuildItems);
@@ -842,6 +846,7 @@ public final class HibernateOrmProcessor {
             CombinedIndexBuildItem index,
             List<PersistenceXmlDescriptorBuildItem> descriptors,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
+            List<ReactiveDataSourceBuildItem> reactiveDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
@@ -907,7 +912,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig.defaultPersistenceUnit(),
                     modelForDefaultPersistenceUnit.allModelClassAndPackageNames(),
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, storageEngineCollector, dbKindMetadataBuildItems);
         } else if (!modelForDefaultPersistenceUnit.entityClassNames().isEmpty()
@@ -939,7 +944,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig, jpaModel, persistenceUnitName, persistenceUnitEntry.getValue(),
                     model == null ? Collections.emptySet() : model.allModelClassAndPackageNames(),
                     jpaModel.getXmlMappings(persistenceUnitName),
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    jdbcDataSources, reactiveDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, unremovableBeans, storageEngineCollector, dbKindMetadataBuildItems);
         }
@@ -957,6 +962,7 @@ public final class HibernateOrmProcessor {
             Set<String> modelClassesAndPackages,
             List<RecordableXmlMapping> xmlMappings,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
+            List<ReactiveDataSourceBuildItem> reactiveDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             Capabilities capabilities,
@@ -968,8 +974,32 @@ public final class HibernateOrmProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Set<String> storageEngineCollector,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
-        Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
-                jdbcDataSources);
+
+        Optional<JdbcDataSourceBuildItem> jdbcDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
+                persistenceUnitName,
+                jdbcDataSources,
+                JdbcDataSourceBuildItem::getName,
+                JdbcDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+
+        Optional<ReactiveDataSourceBuildItem> reactiveDataSource = HibernateDataSourceUtil.findDataSourceWithNameDefault(
+                persistenceUnitName,
+                reactiveDataSources,
+                ReactiveDataSourceBuildItem::getName,
+                ReactiveDataSourceBuildItem::isDefault, persistenceUnitConfig.datasource());
+
+        if (jdbcDataSource.isEmpty() && reactiveDataSource.isPresent()) {
+            LOG.debugf("The datasource '%s' is only reactive, do not create this PU '%s' as blocking",
+                    persistenceUnitConfig.datasource().orElse(DEFAULT_PERSISTENCE_UNIT_NAME), persistenceUnitName);
+            return;
+        }
+
+        boolean explicitDataSource = persistenceUnitConfig.datasource().isPresent();
+        if (jdbcDataSource.isEmpty() && explicitDataSource) {
+            String dataSourceName = persistenceUnitConfig.datasource().get();
+            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
+                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
+        }
+
         Optional<String> dataSourceName = jdbcDataSource.map(JdbcDataSourceBuildItem::getName);
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
@@ -1096,25 +1126,6 @@ public final class HibernateOrmProcessor {
                             + " by automatically setting '%2$s=%3$s'.",
                             persistenceUnitName, AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, DialectVersions.Defaults.H2);
             properties.setProperty(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, DialectVersions.Defaults.H2);
-        }
-    }
-
-    private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,
-            HibernateOrmConfigPersistenceUnit persistenceUnitConfig, List<JdbcDataSourceBuildItem> jdbcDataSources) {
-        if (persistenceUnitConfig.datasource().isPresent()) {
-            String dataSourceName = persistenceUnitConfig.datasource().get();
-            return Optional.of(jdbcDataSources.stream()
-                    .filter(i -> dataSourceName.equals(i.getName()))
-                    .findFirst()
-                    .orElseThrow(() -> PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
-                            DataSourceUtil.dataSourceNotConfigured(dataSourceName))));
-        } else if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            return jdbcDataSources.stream()
-                    .filter(i -> i.isDefault())
-                    .findFirst();
-        } else {
-            // if it's not the default persistence unit, we mandate an explicit datasource to prevent common errors
-            return Optional.empty();
         }
     }
 

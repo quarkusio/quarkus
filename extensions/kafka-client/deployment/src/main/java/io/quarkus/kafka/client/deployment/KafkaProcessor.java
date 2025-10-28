@@ -84,9 +84,11 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
@@ -528,6 +530,11 @@ public class KafkaProcessor {
                 .addBeanClass(KafkaAdminClient.class)
                 .setUnremovable()
                 .build();
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
+    RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
+        return new RuntimeInitializedPackageBuildItem("org.apache.kafka.common.security.ssl");
     }
 
     // Kafka UI related stuff

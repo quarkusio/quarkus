@@ -67,6 +67,7 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.smallrye.config.ConfigMappings.ConfigClass;
@@ -262,6 +263,7 @@ public class ConfigBuildStep {
 
     @BuildStep
     void generateConfigProperties(
+            NativeConfig nativeConfig,
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -271,7 +273,8 @@ public class ConfigBuildStep {
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
         Map<String, GeneratedClassBuildItem> generatedConfigClasses = new HashMap<>();
-        processConfigClasses(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
+        processConfigClasses(nativeConfig, configItem, combinedIndex, generatedConfigClasses, reflectiveClasses,
+                reflectiveMethods,
                 configClasses, additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
 
         for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {

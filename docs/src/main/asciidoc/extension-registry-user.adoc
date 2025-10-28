@@ -221,19 +221,55 @@ Applications using a registry client can be configured using environment variabl
 
 `QUARKUS_REGISTRIES` environment variable can be used to specify which registries should be enabled as a comma-separated list of registry IDs.
 For example
-```
+----
 QUARKUS_REGISTRIES=registry.acme.org,registry.quarkus.io
-```
+----
 That alone will be enough to initialize a registry client to pull extension catalogs from two registries using their default configurations.
 
 Certain registry options could be initialized with their specific environment variables. Each such option will have the following environment variable prefix:
-```
+----
 QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_
-```
+----
 where `<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>` is a registry ID with each character converted to uppercase and a `.` replaced with `_`. For example, `REGISTRY_ACME_ORG`.
 
-The following options can be configured with this approach:
+Below are examples of various options that can be configured following this approach.
 
-- Repository URL, for example `QUARKUS_REGISTRY_REGISTRY_ACME_ORG_REPO_URL=https://internal.registry.acme.org/maven`
-- Update policy, for example `QUARKUS_REGISTRY_REGISTRY_ACME_ORG_UPDATE_POLICY=always`
-- Offering, for example `QUARKUS_REGISTRY_REGISTRY_ACME_ORG_OFFERING=acme-magic`
+===== Repository URL
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_REPO_URL=<REPO_URL>`
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_REPO_URL=https://internal.registry.acme.org/maven
+----
+
+===== Update policy
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_UPDATE_POLICY=<UPDATE_POLICY>`
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_UPDATE_POLICY=always
+----
+
+===== Offering
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_OFFERING=<OFFERING>`
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_OFFERING=acme-magic
+----
+
+===== Recommend Streams From
+
+Set the oldest acceptable stream value per platform. Streams older than the configured values will be ignored by the client.
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_RECOMMEND_STREAMS_FROM_<UPPERCASED_AND_UNDERSCORED_PLATFORM_KEY>=<STREAM_ID>`
+
+Where `UPPERCASED_AND_UNDERSCORED_PLATFORM_KEY` is a platform key with each character converted to uppercase and a `.` replaced with `_`. For example, `IO_QUARKUS_PLATFORM`.
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_RECOMMEND_STREAMS_FROM_IO_QUARKUS_PLATFORM=3.27
+----

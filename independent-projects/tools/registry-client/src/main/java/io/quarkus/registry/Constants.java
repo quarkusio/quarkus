@@ -22,9 +22,14 @@ public interface Constants {
     String LAST_UPDATED = "last-updated";
 
     /**
-     * Registry configuration option allowing users to limit the extension catalog from a registry to a specific offering
+     * Registry client configuration option allowing users to limit the extension catalog from a registry to a specific offering
      */
     String OFFERING = "offering";
+
+    /**
+     * Registry client configuration option allowing users to set a low boundary for the recommended streams per platform
+     */
+    String RECOMMEND_STREAMS_FROM = "recommend-streams-from";
 
     /**
      * An internal key optionally added to extension metadata by a registry client

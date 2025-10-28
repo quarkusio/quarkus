@@ -767,7 +767,7 @@ public class ResteasyReactiveProcessor {
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
-                    if (classInfo.annotations().stream().anyMatch(knownClientAnnotation)
+                    if (classInfo.asClass().declaredAnnotations().stream().anyMatch(knownClientAnnotation)
                             || method.annotations().stream().anyMatch(knownClientAnnotation)
                             || method.parameters().stream().flatMap(p -> p.annotations().stream())
                                     .anyMatch(knownClientAnnotation)) {
@@ -786,7 +786,7 @@ public class ResteasyReactiveProcessor {
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
-                    if (classInfo.annotations().stream().anyMatch(knownClientAnnotation)
+                    if (classInfo.asClass().declaredAnnotations().stream().anyMatch(knownClientAnnotation)
                             || method.annotations().stream().anyMatch(knownClientAnnotation)
                             || method.parameters().stream().flatMap(p -> p.annotations().stream())
                                     .anyMatch(knownClientAnnotation)) {

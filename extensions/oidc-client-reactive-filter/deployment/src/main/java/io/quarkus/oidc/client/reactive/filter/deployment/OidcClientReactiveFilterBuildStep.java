@@ -1,5 +1,6 @@
 package io.quarkus.oidc.client.reactive.filter.deployment;
 
+import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.DEFAULT_OIDC_REQUEST_FILTER_NAME;
 import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.detectCustomFiltersThatRequireResponseFilter;
 
@@ -83,7 +84,8 @@ public class OidcClientReactiveFilterBuildStep {
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestReactiveFilter.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(OidcClientRequestReactiveFilter.class)
+                .setUnremovable().setDefaultScope(SINGLETON).build());
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(OidcClientRequestReactiveFilter.class.getName()));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OidcClientRequestReactiveFilter.class)

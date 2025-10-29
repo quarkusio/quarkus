@@ -21,18 +21,25 @@ import io.smallrye.config.WithDefault;
 public interface MPRealmRuntimeConfig {
 
     /**
-     * If the properties are stored in plain text. If this is false (the default) then it is expected
-     * that the passwords are of the form HEX( MD5( username ":" realm ":" password ) )
+     * If the passwords are stored in the property file as plain text, e.g.
+     * {@code quarkus.security.users.embedded.users.alice=AlicesSecretPassword}.
+     * If this is false (the default) then it is expected that passwords are hashed as per the {@code algorithm} config
+     * property.
      */
     @WithDefault("false")
     boolean plainText();
 
     /**
-     * Determine which algorithm to use.
+     * The algorithm with which user password is hashed. The library expects a password prepended with the username and the
+     * realm,
+     * in the form ALG( username ":" realm ":" password ) in hexadecimal format.
      * <p>
+     * For example, on a Unix-like system we can produce the expected hash for Alice logging in to the Quarkus realm with
+     * password AlicesSecretPassword using {@code echo -n "alice:Quarkus:AlicesSecretPassword" | sha512sum}, and thus set
+     * {@code quarkus.security.users.embedded.users.alice=c8131...4546} (full hash output abbreviated here).
      * This property is ignored if {@code plainText} is true.
      */
-    @WithDefault(DigestPassword.ALGORITHM_DIGEST_MD5)
+    @WithDefault(DigestPassword.ALGORITHM_DIGEST_SHA_512)
     DigestAlgorithm algorithm();
 
     /**

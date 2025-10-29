@@ -148,12 +148,12 @@ public interface RedisClientConfig {
     Optional<ProtocolVersion> preferredProtocolVersion();
 
     /**
-     * The TTL of the hash slot cache. A hash slot cache is used by the clustered Redis client
-     * to prevent constantly sending {@code CLUSTER SLOTS} commands to the first statically
-     * configured cluster node.
+     * The TTL of the topology cache. A topology cache is used by a clustered Redis client
+     * and a sentinel Redis client to prevent constantly sending topology discovery commands
+     * ({@code CLUSTER SLOTS} or {@code SENTINEL ...}).
      * <p>
-     * This setting is only meaningful in case of a clustered Redis client and has no effect
-     * otherwise.
+     * This setting is only meaningful in case of a clustered Redis client and a sentinel
+     * Redis client and has no effect otherwise.
      */
     @WithDefault("1s")
     Duration hashSlotCacheTtl();

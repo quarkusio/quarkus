@@ -6,7 +6,7 @@ class MessageCallbackArgument implements CallbackArgument {
 
     @Override
     public boolean matches(ParameterContext context) {
-        return context.acceptsMessage() && context.parameterAnnotations().isEmpty();
+        return context.acceptsMessage();
     }
 
     @Override

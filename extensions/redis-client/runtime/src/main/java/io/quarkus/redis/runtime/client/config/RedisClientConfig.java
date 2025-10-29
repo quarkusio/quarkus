@@ -148,15 +148,22 @@ public interface RedisClientConfig {
     Optional<ProtocolVersion> preferredProtocolVersion();
 
     /**
-     * The TTL of the hash slot cache. A hash slot cache is used by the clustered Redis client
-     * to prevent constantly sending {@code CLUSTER SLOTS} commands to the first statically
-     * configured cluster node.
-     * <p>
-     * This setting is only meaningful in case of a clustered Redis client and has no effect
-     * otherwise.
+     * @deprecated use {@code quarkus.redis.topology-cache-ttl}
      */
+    @Deprecated(forRemoval = true, since = "3.30")
     @WithDefault("1s")
     Duration hashSlotCacheTtl();
+
+    /**
+     * The TTL of the topology cache. A topology cache is used by a clustered Redis client
+     * and a sentinel Redis client to prevent constantly sending topology discovery commands
+     * ({@code CLUSTER SLOTS} or {@code SENTINEL ...}).
+     * <p>
+     * This setting is only meaningful in case of a clustered Redis client and a sentinel
+     * Redis client and has no effect otherwise.
+     */
+    @WithDefault("1s")
+    Optional<Duration> topologyCacheTtl();
 
     /**
      * Whether automatic failover is enabled. This only makes sense for sentinel clients

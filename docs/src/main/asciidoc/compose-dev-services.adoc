@@ -35,9 +35,9 @@ This integration provides a seamless development experience while giving you ful
 To use Compose Dev Services, you need:
 
 1. A working *local* container environment: https://docs.docker.com/get-started/get-docker/[Docker] or https://podman.io/docs/installation[Podman]
-
-2. Compose tooling such as `docker-compose` or `podman-compose`
-(Note that `docker compose` and `podman compose` commands internally call these binaries) :
+2. The `docker` or `podman` CLI present in the `$PATH`
+3. Compose tooling such as `docker-compose` or `podman-compose`
+(Note that `docker compose` and `podman compose` commands internally call these binaries):
 
 * For Docker: https://docs.docker.com/compose/install/[Installing Docker Compose]
 * For Podman: https://podman-desktop.io/docs/compose/setting-up-compose[Setting up Compose]

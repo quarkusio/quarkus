@@ -29,6 +29,12 @@ public interface InfinispanClientBuildTimeConfig {
     Optional<String> marshallerClass();
 
     /**
+     * Sets the transport Factory. Default is QuarkusTransportFactory
+     */
+    @WithDefault("io.quarkus.infinispan.client.runtime.QuarkusTransportFactory")
+    String transportFactory();
+
+    /**
      * Configures caches build time config from the client with the provided configuration.
      */
     Map<String, InfinispanClientBuildTimeConfig.RemoteCacheConfig> cache();

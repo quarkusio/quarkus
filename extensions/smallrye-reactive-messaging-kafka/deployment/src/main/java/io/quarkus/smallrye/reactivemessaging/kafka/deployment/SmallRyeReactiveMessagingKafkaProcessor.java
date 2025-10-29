@@ -123,8 +123,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
 
     static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
-        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing",
-                channelName.contains(".") ? "\"" + channelName + "\"" : channelName, propertyName);
+        if ((channelName.charAt(0) != '"' || channelName.charAt(channelName.length() - 1) != '"')
+                && channelName.contains(".")) {
+            channelName = "\"" + channelName + "\"";
+        }
+        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing", channelName, propertyName);
     }
 
     @BuildStep

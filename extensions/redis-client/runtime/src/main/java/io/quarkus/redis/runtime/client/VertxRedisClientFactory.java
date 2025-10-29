@@ -100,7 +100,11 @@ public class VertxRedisClientFactory {
         options.setPassword(config.password().orElse(null));
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
         config.poolRecycleTimeout().ifPresent(d -> options.setPoolRecycleTimeout((int) d.toMillis()));
-        options.setHashSlotCacheTTL(config.hashSlotCacheTtl().toMillis());
+        // the Vert.x Redis client will only unify `topologyCacheTTL` and `hashSlotCacheTTL` in version 5.1,
+        // but in Quarkus, we unify them already
+        long topologyCacheTtl = config.hashSlotCacheTtl().toMillis();
+        options.setHashSlotCacheTTL(topologyCacheTtl);
+        options.setTopologyCacheTTL(topologyCacheTtl);
 
         config.role().ifPresent(options::setRole);
         options.setType(config.clientType());

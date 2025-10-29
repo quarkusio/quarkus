@@ -477,7 +477,8 @@ public final class HibernateOrmProcessor {
             // See the source code of Hibernate ORM for proof:
             // org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
             // is used for packages too, and it relies (indirectly) on getManagedClassNames().
-            managedClassAndPackageNames.addAll(pud.getManagedClassNames());
+            managedClassAndPackageNames.addAll(pud.getManagedClassesAndPackagedNames());
+            managedClassesName.addAll(pud.getManagedClassNames());
         }
 
         for (AdditionalJpaModelBuildItem additionalJpaModelBuildItem : additionalJpaModelBuildItems) {
@@ -683,7 +684,7 @@ public final class HibernateOrmProcessor {
                 // so we need to let Panache know that this mapping may be incomplete.
                 incomplete = true;
             }
-            for (String entityClass : descriptor.getManagedClassNames()) {
+            for (String entityClass : descriptor.getManagedClassesAndPackagedNames()) {
                 entityPersistenceUnitMapping.putIfAbsent(entityClass, new HashSet<>());
                 entityPersistenceUnitMapping.get(entityClass).add(descriptor.getPersistenceUnitName());
             }
@@ -908,6 +909,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig, jpaModel, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit(),
                     modelForDefaultPersistenceUnit.allModelClassAndPackageNames(),
+                    modelForDefaultPersistenceUnit.entityClassNames(),
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
@@ -940,6 +942,7 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, jpaModel, persistenceUnitName, persistenceUnitEntry.getValue(),
                     model == null ? Collections.emptySet() : model.allModelClassAndPackageNames(),
+                    model == null ? Collections.emptySet() : model.entityClassNames(),
                     jpaModel.getXmlMappings(persistenceUnitName),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
@@ -957,6 +960,7 @@ public final class HibernateOrmProcessor {
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             Set<String> modelClassesAndPackages,
+            Set<String> managedClassNames,
             List<RecordableXmlMapping> xmlMappings,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -989,9 +993,10 @@ public final class HibernateOrmProcessor {
                 // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
                 //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
                 new ArrayList<>(modelClassesAndPackages),
+                new ArrayList<>(managedClassNames),
                 new Properties(),
                 false);
-        Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
+        Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassAndPackagesNames());
         entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
@@ -1227,7 +1232,7 @@ public final class HibernateOrmProcessor {
             // and no named persistence units: all the entities will be associated with the default one
             // so we don't need to split them
             var model = new JpaPersistenceUnitModel();
-            model.entityClassNames().addAll(jpaModel.getEntityClassNames());
+            model.entityClassNames().addAll(managedClassNames);
             model.allModelClassAndPackageNames().addAll(jpaModel.getAllModelClassNames());
             model.allModelClassAndPackageNames().addAll(jpaModel.getAllModelPackageNames());
             return Map.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, model);
@@ -1238,9 +1243,13 @@ public final class HibernateOrmProcessor {
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
 
             Set<String> relatedModelClassNames = new HashSet<>();
-            if (managedClassNames.contains(modelClassName)) {
+            ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
+            if(modelClassInfo == null) {
+                // This can happen for example for classes only referenced in XML mapping files
+                continue;
+            }
 
-                ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
+            if (managedClassNames.contains(modelClassName)) {
                 relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
                         modelClassInfo);
 
@@ -1257,7 +1266,7 @@ public final class HibernateOrmProcessor {
                         var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
                                 ignored -> new JpaPersistenceUnitModel());
 
-                        if (jpaModel.getEntityClassNames().contains(modelClassName)) {
+                        if (managedClassNames.contains(modelClassName)) {
                             model.entityClassNames().add(modelClassName);
                         }
                         model.allModelClassAndPackageNames().add(modelClassName);
@@ -1482,7 +1491,7 @@ public final class HibernateOrmProcessor {
                 } else {
 
                     if (!managedClassesName.contains(managedClassOrPackageName)) {
-                        // we don't generate proxies for packages
+                        // we don't generate proxies for packages:
                         continue;
                     }
 

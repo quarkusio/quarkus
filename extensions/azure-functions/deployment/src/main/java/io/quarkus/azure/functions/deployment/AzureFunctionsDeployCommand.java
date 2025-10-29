@@ -41,6 +41,7 @@ import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.auth.AzureCloud;
 import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessage;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessager;
@@ -109,12 +110,16 @@ public class AzureFunctionsDeployCommand {
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
         initAzureAppServiceClient(config);
 
-        final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
-                config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
-        Path outputDirectory = output.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
+        try {
+            final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
+                    config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
+            Path outputDirectory = output.getOutputDirectory();
+            Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
-        deployArtifact(functionStagingDir, target);
+            deployArtifact(functionStagingDir, target);
+        } catch (AzureToolkitRuntimeException e) {
+            throw new DeploymentException("Unable to deploy Azure function: " + e.getMessage().replace("\\r\\n", "\n"), e);
+        }
         producer.produce(new DeployCommandActionBuildItem(AZURE_FUNCTIONS, true));
     }
 

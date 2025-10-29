@@ -46,21 +46,26 @@ public class AmazonLambdaRecorder {
         streamHandlerClass = handler;
     }
 
-    static void initializeHandlerClass(Class<? extends RequestHandler<?, ?>> handler) {
-        handlerClass = handler;
+    static void initializeHandlerClass(RequestHandlerDefinition requestHandlerDefinition) {
+        handlerClass = requestHandlerDefinition.handlerClass();
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
-        Method handlerMethod = discoverHandlerMethod(handlerClass);
-        Class<?> parameterType = handlerMethod.getParameterTypes()[0];
 
-        if (parameterType.equals(S3Event.class)) {
+        if (requestHandlerDefinition.inputType().equals(S3Event.class)) {
             objectReader = new S3EventInputReader(objectMapper);
-        } else if (Collection.class.isAssignableFrom(parameterType)) {
-            objectReader = new CollectionInputReader<>(objectMapper, handlerMethod);
+        } else if (Collection.class.isAssignableFrom(requestHandlerDefinition.inputType())) {
+            // we have to use reflection to figure out the element generic type
+            try {
+                Method handleRequestMethod = requestHandlerDefinition.handleRequestMethodHostClass().getMethod("handleRequest",
+                        requestHandlerDefinition.inputType(), Context.class);
+                objectReader = new CollectionInputReader<>(objectMapper, handleRequestMethod.getGenericParameterTypes()[0]);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to find handleRequest method in " + handlerClass.getName(), e);
+            }
         } else {
-            objectReader = new JacksonInputReader(objectMapper.readerFor(parameterType));
+            objectReader = new JacksonInputReader(objectMapper.readerFor(requestHandlerDefinition.inputType()));
         }
 
-        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
+        objectWriter = new JacksonOutputWriter(objectMapper.writerFor(requestHandlerDefinition.outputType()));
     }
 
     public void setBeanContainer(BeanContainer container) {
@@ -87,62 +92,40 @@ public class AmazonLambdaRecorder {
         }
     }
 
-    private static Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
-        final Method[] methods = handlerClass.getDeclaredMethods();
-        Method method = null;
-        for (int i = 0; i < methods.length && method == null; i++) {
-            if (methods[i].getName().equals("handleRequest")) {
-                if (methods[i].getParameterCount() == 2) {
-                    final Class<?>[] types = methods[i].getParameterTypes();
-                    if (!types[0].equals(Object.class)) {
-                        method = methods[i];
-                    }
-                }
-            }
-        }
-        if (method == null && methods.length > 0) {
-            method = methods[0];
-        }
-        if (method == null) {
-            throw new RuntimeException("Unable to find a method which handles request on handler class " + handlerClass);
-        }
-        return method;
-    }
-
-    public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unnamedHandlerClasses,
-            Map<String, Class<? extends RequestHandler<?, ?>>> namedHandlerClasses,
+    public void chooseHandlerClass(List<RequestHandlerDefinition> unnamedHandlerDefinitions,
+            Map<String, RequestHandlerDefinition> namedHandlerDefinitions,
             List<Class<? extends RequestStreamHandler>> unnamedStreamHandlerClasses,
             Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses) {
 
-        Class<? extends RequestHandler<?, ?>> handlerClass = null;
+        RequestHandlerDefinition handlerDefinition = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;
         if (runtimeConfig.getValue().handler().isPresent()) {
-            handlerClass = namedHandlerClasses.get(runtimeConfig.getValue().handler().get());
+            handlerDefinition = namedHandlerDefinitions.get(runtimeConfig.getValue().handler().get());
             handlerStreamClass = namedStreamHandlerClasses.get(runtimeConfig.getValue().handler().get());
 
-            if (handlerClass == null && handlerStreamClass == null) {
+            if (handlerDefinition == null && handlerStreamClass == null) {
                 String errorMessage = "Unable to find handler class with name " + runtimeConfig.getValue().handler().get()
                         + " make sure there is a handler class in the deployment with the correct @Named annotation";
-                throw new RuntimeException(errorMessage);
+                throw new IllegalStateException(errorMessage);
             }
         } else {
-            int unnamedTotal = unnamedHandlerClasses.size() + unnamedStreamHandlerClasses.size();
-            int namedTotal = namedHandlerClasses.size() + namedStreamHandlerClasses.size();
+            int unnamedTotal = unnamedHandlerDefinitions.size() + unnamedStreamHandlerClasses.size();
+            int namedTotal = namedHandlerDefinitions.size() + namedStreamHandlerClasses.size();
 
             if (unnamedTotal > 1 || namedTotal > 1 || (unnamedTotal > 0 && namedTotal > 0)) {
                 String errorMessage = "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single "
                         + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName()
                         + " implementation in the deployment";
-                throw new RuntimeException(errorMessage);
+                throw new IllegalStateException(errorMessage);
             } else if (unnamedTotal == 0 && namedTotal == 0) {
                 String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
                         + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
-                throw new RuntimeException(errorMessage);
+                throw new IllegalStateException(errorMessage);
             } else if ((unnamedTotal + namedTotal) == 1) {
-                if (!unnamedHandlerClasses.isEmpty()) {
-                    handlerClass = unnamedHandlerClasses.get(0);
-                } else if (!namedHandlerClasses.isEmpty()) {
-                    handlerClass = namedHandlerClasses.values().iterator().next();
+                if (!unnamedHandlerDefinitions.isEmpty()) {
+                    handlerDefinition = unnamedHandlerDefinitions.get(0);
+                } else if (!namedHandlerDefinitions.isEmpty()) {
+                    handlerDefinition = namedHandlerDefinitions.values().iterator().next();
                 } else if (!unnamedStreamHandlerClasses.isEmpty()) {
                     handlerStreamClass = unnamedStreamHandlerClasses.get(0);
                 } else if (!namedStreamHandlerClasses.isEmpty()) {
@@ -154,7 +137,7 @@ public class AmazonLambdaRecorder {
         if (handlerStreamClass != null) {
             setStreamHandlerClass(handlerStreamClass);
         } else {
-            initializeHandlerClass(handlerClass);
+            initializeHandlerClass(handlerDefinition);
         }
     }
 
@@ -199,5 +182,9 @@ public class AmazonLambdaRecorder {
         };
         loop.startPollLoop(context);
 
+    }
+
+    public record RequestHandlerDefinition(Class<? extends RequestHandler<?, ?>> handlerClass,
+            Class<?> handleRequestMethodHostClass, Class<?> inputType, Class<?> outputType) {
     }
 }

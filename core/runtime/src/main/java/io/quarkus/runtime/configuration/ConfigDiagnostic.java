@@ -284,7 +284,7 @@ public final class ConfigDiagnostic {
                     String unprofiledConfigFile = APPLICATION + "." + filename.substring(filename.lastIndexOf('.') + 1);
                     String profile = filename.substring(APPLICATION_LENGTH + 1, filename.lastIndexOf('.'));
                     if (config.getProfiles().contains(profile)
-                            && !Files.exists(Path.of(configFile.getParent().toString(), unprofiledConfigFile))) {
+                            && !Files.exists(configFile.getParent().resolve(unprofiledConfigFile))) {
                         log.warnf(
                                 "Profiled configuration file %s is ignored; a main %s configuration file must exist in the same location to load %s",
                                 configFile, unprofiledConfigFile, filename);

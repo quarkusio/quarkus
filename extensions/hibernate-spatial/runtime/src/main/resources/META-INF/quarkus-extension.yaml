@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Spatial"
+metadata:
+  short-name: "Spatial"
+  keywords:
+  - "hibernate-orm"
+  - "spatial"
+  - "hibernate"
+# todo : add guide when available
+#  guide: "https://quarkus.io/guides/hibernate-orm#spatial"
+  categories:
+  - "data"
+  status: "experimental"

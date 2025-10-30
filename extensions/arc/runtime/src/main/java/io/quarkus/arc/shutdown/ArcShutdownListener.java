@@ -11,7 +11,7 @@ import io.quarkus.runtime.shutdown.ShutdownListener;
 public class ArcShutdownListener implements ShutdownListener {
     @Override
     public void preShutdown(ShutdownNotification notification) {
-        Arc.container().beanManager().getEvent().select(ShutdownDelayInitiatedEvent.class)
+        Arc.requireContainer().beanManager().getEvent().select(ShutdownDelayInitiatedEvent.class)
                 .fire(new ShutdownDelayInitiatedEvent());
         notification.done();
     }

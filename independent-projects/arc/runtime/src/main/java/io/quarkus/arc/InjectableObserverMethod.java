@@ -38,7 +38,11 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
 
     @Override
     default Bean<?> getDeclaringBean() {
-        return getDeclaringBeanIdentifier() != null ? Arc.container().bean(getDeclaringBeanIdentifier()) : null;
+        String id = getDeclaringBeanIdentifier();
+        if (id != null) {
+            return Arc.requireContainer().bean(id);
+        }
+        return null;
     }
 
     default void notify(T event) {

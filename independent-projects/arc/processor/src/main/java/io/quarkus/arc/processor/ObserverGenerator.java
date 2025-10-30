@@ -365,7 +365,7 @@ public class ObserverGenerator extends AbstractGenerator {
             if (Reception.IF_EXISTS == observer.getReception()
                     && !BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
                 // If Reception.IF_EXISTS is used we must check the context of the declaring bean first
-                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
                 ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                         container,
@@ -388,7 +388,7 @@ public class ObserverGenerator extends AbstractGenerator {
                         declaringProviderCtx));
             } else {
                 // Obtain contextual instance for non-dependent beans
-                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
                 ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                         container,

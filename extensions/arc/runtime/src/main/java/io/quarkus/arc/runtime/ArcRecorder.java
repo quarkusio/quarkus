@@ -150,8 +150,9 @@ public class ArcRecorder {
     }
 
     public void initTestApplicationClassPredicate(Set<String> applicationBeanClasses) {
-        PreloadedTestApplicationClassPredicate predicate = Arc.container()
-                .instance(PreloadedTestApplicationClassPredicate.class).get();
+        PreloadedTestApplicationClassPredicate predicate = Arc.requireContainer()
+                .instance(PreloadedTestApplicationClassPredicate.class)
+                .get();
         predicate.setApplicationBeanClasses(applicationBeanClasses);
     }
 

@@ -379,7 +379,7 @@ public class InterceptedStaticMethodsProcessor {
 
     private ResultHandle getInterceptorBean(InterceptorInfo interceptor, BytecodeCreator creator) {
         ResultHandle containerHandle = creator
-                .invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                .invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
         return creator.checkCast(creator.invokeInterfaceMethod(
                 MethodDescriptors.ARC_CONTAINER_BEAN,
                 containerHandle, creator.load(interceptor.getIdentifier())), InjectableInterceptor.class);

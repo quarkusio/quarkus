@@ -24,7 +24,6 @@ public class EffectiveConfigProvider {
     final MapProperty<String, String> forcedProperties;
     final MapProperty<String, Object> projectProperties;
     final MapProperty<String, String> quarkusBuildProperties;
-    final MapProperty<String, String> quarkusRelevantProjectProperties;
     final MapProperty<String, Object> manifestAttributes;
     final MapProperty<String, Attributes> manifestSections;
     final Property<Boolean> nativeBuild;
@@ -36,7 +35,6 @@ public class EffectiveConfigProvider {
             MapProperty<String, String> forcedProperties,
             MapProperty<String, Object> projectProperties,
             MapProperty<String, String> quarkusBuildProperties,
-            MapProperty<String, String> quarkusRelevantProjectProperties,
             MapProperty<String, Object> manifestAttributes,
             MapProperty<String, Attributes> manifestSections,
             Property<Boolean> nativeBuild,
@@ -47,7 +45,6 @@ public class EffectiveConfigProvider {
         this.forcedProperties = forcedProperties;
         this.projectProperties = projectProperties;
         this.quarkusBuildProperties = quarkusBuildProperties;
-        this.quarkusRelevantProjectProperties = quarkusRelevantProjectProperties;
         this.manifestAttributes = manifestAttributes;
         this.manifestSections = manifestSections;
         this.nativeBuild = nativeBuild;
@@ -72,10 +69,6 @@ public class EffectiveConfigProvider {
         defaultProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
         Map<String, String> forced = new HashMap<>(forcedProperties.get());
-        projectProperties.get().forEach((k, v) -> {
-            forced.put(k, v.toString());
-
-        });
         additionalForcedProperties.forEach((k, v) -> {
             forced.put(k, v.toString());
         });
@@ -87,7 +80,7 @@ public class EffectiveConfigProvider {
                 .withForcedProperties(forced)
                 .withTaskProperties(properties)
                 .withBuildProperties(quarkusBuildProperties.get())
-                .withProjectProperties(quarkusRelevantProjectProperties.get())
+                .withProjectProperties(projectProperties.get())
                 .withDefaultProperties(defaultProperties)
                 .withSourceDirectories(resourcesDirs)
                 .withProfile(getQuarkusProfile())
@@ -117,7 +110,7 @@ public class EffectiveConfigProvider {
             profile = quarkusBuildProperties.get().get(QUARKUS_PROFILE);
         }
         if (profile == null) {
-            Object p = quarkusRelevantProjectProperties.get().get(QUARKUS_PROFILE);
+            Object p = projectProperties.get().get(QUARKUS_PROFILE);
             if (p != null) {
                 profile = p.toString();
             }

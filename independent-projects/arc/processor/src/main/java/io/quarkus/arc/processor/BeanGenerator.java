@@ -2059,7 +2059,7 @@ public class BeanGenerator extends AbstractGenerator {
         } else {
             // All pseudo scopes other than @Dependent (incl. @Singleton)
             // return Arc.container().getActiveContext(getScope()).get(this, new CreationalContextImpl<>())
-            ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+            ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
             ResultHandle creationalContext = get.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
                     get.getThis());

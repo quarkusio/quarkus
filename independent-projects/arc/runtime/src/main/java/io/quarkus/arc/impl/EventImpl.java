@@ -95,7 +95,7 @@ class EventImpl<T> implements Event<T> {
 
         Executor executor = options.getExecutor();
         if (executor == null) {
-            executor = Arc.container().getExecutorService();
+            executor = Arc.requireContainer().getExecutorService();
         }
 
         if (notifier.isEmpty()) {
@@ -107,7 +107,7 @@ class EventImpl<T> implements Event<T> {
             public U get() {
                 // Note that async observers are notified serially - no need to synchronize the collection
                 ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler(new ArrayList<>(),
-                        Arc.container().instance(AsyncObserverExceptionHandler.class).get());
+                        Arc.requireContainer().instance(AsyncObserverExceptionHandler.class).get());
                 notifier.notify(event, exceptionHandler, true);
                 handleExceptions(exceptionHandler);
                 return event;
@@ -166,12 +166,13 @@ class EventImpl<T> implements Event<T> {
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {
         Type eventType = getEventType(runtimeType);
-        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()), injectionPoint);
+        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.requireContainer()),
+                injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, InjectionPoint injectionPoint) {
-        return createNotifier(runtimeType, eventType, qualifiers, container, !Arc.container().strictCompatibility(),
+        return createNotifier(runtimeType, eventType, qualifiers, container, !Arc.requireContainer().strictCompatibility(),
                 injectionPoint);
     }
 
@@ -291,7 +292,7 @@ class EventImpl<T> implements Event<T> {
 
                 if (!async && hasTxObservers) {
                     // Note that tx observers are never async
-                    InstanceHandle<TransactionManager> transactionManagerInstance = Arc.container()
+                    InstanceHandle<TransactionManager> transactionManagerInstance = Arc.requireContainer()
                             .instance(TransactionManager.class);
 
                     try {
@@ -338,7 +339,7 @@ class EventImpl<T> implements Event<T> {
                 // Non-tx observers notifications
                 // req. context is activated if not in strict mode and not for lifecycle events such as init/shutdown
                 if (activateRequestContext) {
-                    ManagedContext requestContext = Arc.container().requestContext();
+                    ManagedContext requestContext = Arc.requireContainer().requestContext();
                     if (requestContext.isActive()) {
                         notifyObservers(event, exceptionHandler, predicate);
                     } else {
@@ -478,7 +479,7 @@ class EventImpl<T> implements Event<T> {
         @Override
         public void run() {
             try {
-                ManagedContext reqContext = Arc.container().requestContext();
+                ManagedContext reqContext = Arc.requireContainer().requestContext();
                 if (reqContext.isActive()) {
                     observerMethod.notify(eventContext);
                 } else {

@@ -226,7 +226,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         Objects.requireNonNull(instance);
         if (instance instanceof ClientProxy) {
             ClientProxy proxy = (ClientProxy) instance;
-            InjectableContext context = Arc.container().getActiveContext(proxy.arc_bean().getScope());
+            InjectableContext context = Arc.requireContainer().getActiveContext(proxy.arc_bean().getScope());
             if (context == null) {
                 throw new ContextNotActiveException("No active context found for: " + proxy.arc_bean().getScope());
             }
@@ -235,7 +235,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             // First try to destroy a dependent instance
             if (!creationalContext.removeDependentInstance(instance, true)) {
                 // If not successful then try the singleton context
-                SingletonContext singletonContext = (SingletonContext) Arc.container().getActiveContext(Singleton.class);
+                SingletonContext singletonContext = (SingletonContext) Arc.requireContainer().getActiveContext(Singleton.class);
                 singletonContext.destroyInstance(instance);
             }
         }

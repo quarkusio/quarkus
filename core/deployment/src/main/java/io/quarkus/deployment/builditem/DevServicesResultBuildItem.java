@@ -286,6 +286,11 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * Provides config to inject into the config system. If you've got values that don't change, use config(), and if you've
+         * got values that you'll only know after starting the container, use configProvider() and provide a map of
+         * name->lambda. The key in the map is the name of a config property which is being injected.
+         */
         @SuppressWarnings({ "unchecked", "rawtypes" })
         public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {
             this.applicationConfigProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;

@@ -5,13 +5,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import jakarta.ws.rs.WebApplicationException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestController
 @RequestMapping
@@ -67,6 +73,20 @@ public class RequestParamController {
             result = "Parameters are " + entry.getKey() + "=" + entry.getValue().stream().collect(Collectors.joining(", "));
         }
         return result;
+    }
+
+    @GetMapping("/api/foos/paramRequired")
+    public String getFoosParamRequired(@RequestParam String id) {
+        throw new IllegalStateException("Unexpected state. Should have not been called");
+    }
+
+    @RestControllerAdvice
+    public static class RestExceptionHandler {
+
+        @ExceptionHandler(WebApplicationException.class)
+        public ResponseEntity<Object> handleException(Exception ex) {
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

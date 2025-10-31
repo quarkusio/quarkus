@@ -6,6 +6,7 @@ import static io.quarkus.devtools.utils.Patterns.toRegex;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtendedKeywords;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
+import static io.quarkus.platform.tools.ToolsUtils.countOf;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,8 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
@@ -37,7 +36,7 @@ final class QuarkusCommandHandlers {
         final ArrayList<Extension> builder = new ArrayList<>();
         final Collection<Extension> extensionCatalog = catalog.getExtensions();
         for (String query : extensionsQuery) {
-            final int countColons = StringUtils.countMatches(query, ":");
+            final int countColons = countOf(query, ':');
             if (countColons > 1) {
                 ArtifactCoords artifact = ArtifactCoords.fromString(query);
                 final Extension ext = Extension.builder()

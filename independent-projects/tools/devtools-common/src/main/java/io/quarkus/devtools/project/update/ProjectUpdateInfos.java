@@ -15,6 +15,7 @@ import io.quarkus.devtools.project.state.TopExtensionDependency;
 import io.quarkus.devtools.project.update.ExtensionMapBuilder.ExtensionUpdateInfoBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
@@ -215,7 +216,7 @@ public final class ProjectUpdateInfos {
         ExtensionOrigins.Builder eoBuilder = null;
         for (ExtensionOrigin o : e.getOrigins()) {
             if (o instanceof ExtensionCatalog c) {
-                final OriginPreference op = (OriginPreference) c.getMetadata().get("origin-preference");
+                final OriginPreference op = (OriginPreference) c.getMetadata().get(Constants.REGISTRY_CLIENT_ORIGIN_PREFERENCE);
                 if (op == null) {
                     continue;
                 }

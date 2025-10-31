@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.transaction.TransactionManager;
 
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -41,6 +42,7 @@ public class CacheSetup {
     public static final String MAGAZINE_CACHE = "magazine";
     public static final String BOOKS_CACHE = "books";
     public static final String AUTHORS_CACHE = "authors";
+    public static final String BOOKS_TX_CACHE = "bookstx";
 
     @Inject
     RemoteCacheManager cacheManager;
@@ -65,6 +67,7 @@ public class CacheSetup {
         RemoteCache<String, Magazine> magazineCache = cacheManager.getCache(MAGAZINE_CACHE);
         RemoteCache<String, Book> booksCache = cacheManager.getCache(BOOKS_CACHE);
         RemoteCache<String, Book> anotherBooksCache = anotherCacheManager.getCache(BOOKS_CACHE);
+        RemoteCache<String, Book> txBooksCache = cacheManager.getCache(BOOKS_TX_CACHE);
 
         defaultCache.addClientListener(new EventPrintListener());
 
@@ -134,6 +137,36 @@ public class CacheSetup {
         booksCache.put("hp-3", hp3Book);
 
         anotherBooksCache.put("hp-1", hp1Book);
+
+        TransactionManager transactionManager = txBooksCache.getTransactionManager();
+        if (transactionManager == null) {
+            throw new IllegalStateException("TransactionManager should not be null");
+        }
+        try {
+            transactionManager.begin();
+            txBooksCache.put("hp-1", hp1Book);
+            txBooksCache.put("hp-2", hp2Book);
+            txBooksCache.put("hp-3", hp3Book);
+            transactionManager.commit();
+        } catch (Exception e) {
+            log.error("Error committing transaction", e);
+            throw new RuntimeException(e);
+        }
+
+        try {
+            transactionManager.begin();
+            txBooksCache.put("got-1", got1Book);
+            txBooksCache.put("got-2", got2Book);
+            transactionManager.rollback();
+        } catch (Exception e) {
+            log.error("Error rollback transaction", e);
+            throw new RuntimeException(e);
+        }
+
+        // tx book cache size is 3
+        if (txBooksCache.size() > 3) {
+            throw new RuntimeException("Transactions did not work.");
+        }
     }
 
     public Map<String, Book> getMatches() {

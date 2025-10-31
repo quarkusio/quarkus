@@ -909,7 +909,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                                 configContext.oidcConfig()));
                                             }
                                             if (finalUserQuery != null) {
-                                                finalUriWithoutQuery.append(!removeRedirectParams ? "" : "?");
+                                                finalUriWithoutQuery.append(!removeRedirectParams ? "&" : "?");
                                                 finalUriWithoutQuery.append(finalUserQuery);
                                             }
                                             String finalRedirectUri = finalUriWithoutQuery.toString();

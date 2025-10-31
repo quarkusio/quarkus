@@ -520,7 +520,7 @@ public class ExtensionCatalogResolver {
     }
 
     private static void addOriginPreference(final ExtensionCatalog.Mutable ec, OriginPreference originPreference) {
-        ec.getMetadata().put("origin-preference", originPreference);
+        ec.getMetadata().put(Constants.REGISTRY_CLIENT_ORIGIN_PREFERENCE, originPreference);
     }
 
     public ExtensionCatalog resolveExtensionCatalog(String quarkusCoreVersion) throws RegistryResolutionException {

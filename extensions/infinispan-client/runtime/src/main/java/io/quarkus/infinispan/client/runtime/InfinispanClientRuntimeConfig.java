@@ -6,7 +6,9 @@ import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 
+import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
+import org.infinispan.client.hotrod.configuration.TransactionMode;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
@@ -264,6 +266,13 @@ public interface InfinispanClientRuntimeConfig {
          */
         // @formatter:on
         Optional<Boolean> nearCacheUseBloomFilter();
+
+       // @formatter:off
+       /**
+        * Enables transaction mode in the client side, for transactional caches.
+        */
+       // @formatter:on
+        Optional<TransactionMode> transactionMode();
     }
 
     @ConfigGroup
@@ -289,7 +298,7 @@ public interface InfinispanClientRuntimeConfig {
          */
         // @formatter:on
         @WithDefault("HASH_DISTRIBUTION_AWARE")
-        Optional<String> clientIntelligence();
+        Optional<ClientIntelligence> clientIntelligence();
 
         // @formatter:off
         /**

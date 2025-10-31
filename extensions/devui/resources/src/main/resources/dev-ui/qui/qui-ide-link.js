@@ -67,12 +67,12 @@ export class QuiIdeLink extends observeState(LitElement) {
     }
 
     _checkIfStringStartsWith(str, substrs) {
-        return substrs.some(substr => {
+        return substrs?.some(substr => {
             if(substr && substr.trim !== ""){
                 return str.startsWith(substr);
             }
             return false;
-        });
+        }) ?? false;
     }
 
     render() {

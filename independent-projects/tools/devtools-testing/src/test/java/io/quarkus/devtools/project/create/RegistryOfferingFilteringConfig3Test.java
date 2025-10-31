@@ -93,9 +93,9 @@ public class RegistryOfferingFilteringConfig3Test extends MultiplePlatformBomsTe
 
         assertModel(projectDir,
                 List.of(mainPlatformBom(),
+                        platformMemberBomCoords("acme-c-bom"),
                         ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-a-bom", "1.1.1"),
                         ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-b-bom", "1.1.1"),
-                        platformMemberBomCoords("acme-c-bom"),
                         ArtifactCoords.pom(UPSTREAM_PLATFORM_KEY, "acme-d-bom", "1.1.1")),
                 List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
                         ArtifactCoords.jar("io.acme", "ext-b", null),

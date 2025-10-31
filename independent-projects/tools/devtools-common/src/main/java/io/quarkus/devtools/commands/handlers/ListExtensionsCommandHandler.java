@@ -319,7 +319,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         }
 
         String getRegistryUserSelectedSupportKey() {
-            var supportKey = e.getMetadata().get(Constants.REGISTRY_USER_SELECTED_SUPPORT_KEY);
+            var supportKey = e.getMetadata().get(Constants.REGISTRY_CLIENT_USER_SELECTED_SUPPORT_KEY);
             if (supportKey == null) {
                 return null;
             }

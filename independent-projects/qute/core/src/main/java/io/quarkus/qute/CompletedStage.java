@@ -61,6 +61,9 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
 
     public T get() {
         if (exception != null) {
+            if (exception instanceof TemplateException te) {
+                throw te;
+            }
             // Always wrap the original exception if completed exceptionally
             throw new TemplateException(exception);
         }

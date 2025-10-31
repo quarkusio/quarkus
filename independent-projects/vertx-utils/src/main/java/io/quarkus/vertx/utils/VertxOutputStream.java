@@ -1,11 +1,11 @@
 package io.quarkus.vertx.utils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Optional;
 
+import io.vertx.core.Context;
 import org.jboss.logging.Logger;
 
 import io.netty.buffer.ByteBuf;
@@ -13,11 +13,9 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.impl.HttpServerRequestInternal;
 
 /**
  * An {@link OutputStream} forwarding the bytes to Vert.x Web {@link HttpResponse}.
@@ -35,9 +33,7 @@ public class VertxOutputStream extends OutputStream {
     private boolean committed;
     private boolean closed;
     private boolean waitingForDrain;
-    private boolean first = true;
     private Throwable throwable;
-    private ByteArrayOutputStream overflow;
 
     public VertxOutputStream(VertxJavaIoContext context) {
         this.context = context;
@@ -87,29 +83,13 @@ public class VertxOutputStream extends OutputStream {
         //do all this in the same lock
         synchronized (request.connection()) {
             try {
-                boolean bufferRequired = awaitWriteable() || (overflow != null && overflow.size() > 0);
-                if (bufferRequired) {
-                    //just buffer everything
-                    if (overflow == null) {
-                        overflow = new ByteArrayOutputStream();
+                awaitWriteable();
+                if (last) {
+                    if (!response.ended()) { // can happen when an exception occurs during JSON serialization with Jackson
+                        response.end(createBuffer(data), null);
                     }
-                    if (data.hasArray()) {
-                        overflow.write(data.array(), data.arrayOffset() + data.readerIndex(), data.readableBytes());
-                    } else {
-                        data.getBytes(data.readerIndex(), overflow, data.readableBytes());
-                    }
-                    if (last) {
-                        closed = true;
-                    }
-                    data.release();
                 } else {
-                    if (last) {
-                        if (!response.ended()) { // can happen when an exception occurs during JSON serialization with Jackson
-                            response.end(createBuffer(data), null);
-                        }
-                    } else {
-                        response.write(createBuffer(data), null);
-                    }
+                    response.write(createBuffer(data), null);
                 }
             } catch (Exception e) {
                 if (data != null && data.refCnt() > 0) {
@@ -120,13 +100,11 @@ public class VertxOutputStream extends OutputStream {
         }
     }
 
-    private boolean awaitWriteable() throws IOException {
-        if (Vertx.currentContext() == ((HttpServerRequestInternal) request).context()) {
-            return false; // we are on the (right) event loop, so we can write - Netty will do the right thing.
-        }
-        if (first) {
-            first = false;
-            return false;
+    private void awaitWriteable() throws IOException {
+        // is it running in an event loop?
+        if (Context.isOnEventLoopThread()) {
+            // NEVER block the event loop!
+            return;
         }
         assert Thread.holdsLock(request.connection());
         while (response.writeQueueFull()) {
@@ -136,7 +114,6 @@ public class VertxOutputStream extends OutputStream {
             if (response.closed()) {
                 throw new IOException("Connection has been closed");
             }
-            //            registerDrainHandler();
             try {
                 waitingForDrain = true;
                 request.connection().wait();
@@ -146,7 +123,6 @@ public class VertxOutputStream extends OutputStream {
                 waitingForDrain = false;
             }
         }
-        return false;
     }
 
     /**
@@ -257,16 +233,6 @@ public class VertxOutputStream extends OutputStream {
                 synchronized (out.request.connection()) {
                     if (out.waitingForDrain) {
                         out.request.connection().notifyAll();
-                    }
-                    if (out.overflow != null) {
-                        if (out.overflow.size() > 0) {
-                            if (out.closed) {
-                                out.response.end(Buffer.buffer(out.overflow.toByteArray()), null);
-                            } else {
-                                out.response.write(Buffer.buffer(out.overflow.toByteArray()), null);
-                            }
-                            out.overflow.reset();
-                        }
                     }
                 }
             }

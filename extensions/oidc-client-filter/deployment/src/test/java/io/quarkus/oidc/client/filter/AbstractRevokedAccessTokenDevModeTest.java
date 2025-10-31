@@ -71,41 +71,20 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
                 .addClasses(BASE_TEST_CLASSES));
     }
 
-    @Test
-    void verifyNamedClientHasTokenRefreshedOn401() {
+    void verifyTokenRefreshedOn401(MyClientCategory myClientCategory) {
         RestAssured.given()
-                .body(MyClientCategory.NAMED_CLIENT)
+                .body(myClientCategory)
                 .post(MY_CLIENT_RESOURCE_PATH)
                 .then().statusCode(200)
                 .body(Matchers.is(RESPONSE));
         // access token is revoked now
         RestAssured.given()
-                .body(MyClientCategory.NAMED_CLIENT)
+                .body(myClientCategory)
                 .post(MY_CLIENT_RESOURCE_PATH)
                 .then().statusCode(401);
         // response filter recognized 401 and told the request token to refresh the token on next request
         RestAssured.given()
-                .body(MyClientCategory.NAMED_CLIENT)
-                .post(MY_CLIENT_RESOURCE_PATH)
-                .then().statusCode(200)
-                .body(Matchers.is(RESPONSE));
-    }
-
-    @Test
-    void verifyDefaultClientHasTokenRefreshedOn401() {
-        RestAssured.given()
-                .body(MyClientCategory.DEFAULT_CLIENT)
-                .post(MY_CLIENT_RESOURCE_PATH)
-                .then().statusCode(200)
-                .body(Matchers.is(RESPONSE));
-        // access token is revoked now
-        RestAssured.given()
-                .body(MyClientCategory.DEFAULT_CLIENT)
-                .post(MY_CLIENT_RESOURCE_PATH)
-                .then().statusCode(401);
-        // response filter recognized 401 and told the request token to refresh the token on next request
-        RestAssured.given()
-                .body(MyClientCategory.DEFAULT_CLIENT)
+                .body(myClientCategory)
                 .post(MY_CLIENT_RESOURCE_PATH)
                 .then().statusCode(200)
                 .body(Matchers.is(RESPONSE));
@@ -186,13 +165,19 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
 
         @POST
         public String talkToServerAndRespond(MyClientCategory clientCategory) {
-            MyClient client = switch (clientCategory) {
-                case NAMED_CLIENT -> myNamedClient();
-                case DEFAULT_CLIENT -> myDefaultClient();
-                case DEFAULT_CLIENT_WITHOUT_REFRESH -> myDefaultClientWithoutRefresh();
-                case NAMED_CLIENT_WITHOUT_REFRESH -> myNamedClientWithoutRefresh();
+            String named = clientCategory.named + "";
+            return switch (clientCategory) {
+                case NAMED_CLIENT -> myNamedClient().revokeAccessTokenAndRespond(named);
+                case DEFAULT_CLIENT -> myDefaultClient().revokeAccessTokenAndRespond(named);
+                case DEFAULT_CLIENT_WITHOUT_REFRESH -> myDefaultClientWithoutRefresh().revokeAccessTokenAndRespond(named);
+                case NAMED_CLIENT_WITHOUT_REFRESH -> myNamedClientWithoutRefresh().revokeAccessTokenAndRespond(named);
+                // calls the same endpoint as ones above, however with filter applied on individual RESTEasy client methods
+                case NAMED_CLIENT_ANNOTATION_ON_METHOD -> myNamedClient_AnnotationOnMethod(named);
+                case DEFAULT_CLIENT_ANNOTATION_ON_METHOD -> myDefaultClient_AnnotationOnMethod(named);
+                case NAMED_CLIENT_MULTIPLE_METHODS -> myNamedClient_MultipleMethods(named);
+                case DEFAULT_CLIENT_MULTIPLE_METHODS -> myDefaultClient_MultipleMethods(named);
+                case NO_ACCESS_TOKEN -> multipleMethods_noAccessToken();
             };
-            return client.revokeAccessTokenAndRespond(clientCategory.named + "");
         }
 
         protected abstract MyClient myDefaultClient();
@@ -202,6 +187,26 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
         protected abstract MyClient myDefaultClientWithoutRefresh();
 
         protected abstract MyClient myNamedClientWithoutRefresh();
+
+        protected String myDefaultClient_AnnotationOnMethod(String named) {
+            return null;
+        }
+
+        protected String myNamedClient_AnnotationOnMethod(String named) {
+            return null;
+        }
+
+        protected String myDefaultClient_MultipleMethods(String named) {
+            return null;
+        }
+
+        protected String myNamedClient_MultipleMethods(String named) {
+            return null;
+        }
+
+        protected String multipleMethods_noAccessToken() {
+            return null;
+        }
 
     }
 
@@ -216,7 +221,12 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
         DEFAULT_CLIENT(false),
         NAMED_CLIENT(true),
         DEFAULT_CLIENT_WITHOUT_REFRESH(false),
-        NAMED_CLIENT_WITHOUT_REFRESH(true);
+        NAMED_CLIENT_WITHOUT_REFRESH(true),
+        DEFAULT_CLIENT_ANNOTATION_ON_METHOD(false),
+        NAMED_CLIENT_ANNOTATION_ON_METHOD(true),
+        NAMED_CLIENT_MULTIPLE_METHODS(true),
+        DEFAULT_CLIENT_MULTIPLE_METHODS(false),
+        NO_ACCESS_TOKEN(false);
 
         public final boolean named;
 

@@ -9,6 +9,7 @@ import jakarta.ws.rs.Priorities;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.client.reactive.filter.runtime.AbstractOidcClientRequestReactiveFilter;
@@ -24,6 +25,16 @@ public class OidcClientRequestFilterRevokedTokenDevModeTest extends AbstractRevo
             MyNamedClientWithoutRefresh.class, MyDefaultClientWithoutRefresh.class, MyClientResourceImpl.class,
             DefaultClientRefreshEnabled.class, NamedClientRefreshEnabled.class, DefaultClientRefreshDisabled.class,
             NamedClientRefreshDisabled.class);
+
+    @Test
+    void verifyDefaultClientHasTokenRefreshedOn401() {
+        verifyTokenRefreshedOn401(MyClientCategory.DEFAULT_CLIENT);
+    }
+
+    @Test
+    void verifyNamedClientHasTokenRefreshedOn401() {
+        verifyTokenRefreshedOn401(MyClientCategory.NAMED_CLIENT);
+    }
 
     @RegisterRestClient
     @RegisterProvider(value = DefaultClientRefreshEnabled.class)

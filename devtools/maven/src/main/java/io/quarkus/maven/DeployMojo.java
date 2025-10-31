@@ -49,7 +49,7 @@ public class DeployMojo extends AbstractDeploymentMojo {
                 super.doExecute();
             } else if (targets.size() > 1 && target == null) {
                 getLog().error(
-                        "Too many installed extensions support quarkus:deploy.  You must choose one by setting quarkus.deploy.target.");
+                        "Too many installed extensions support quarkus:deploy. You must choose one by setting quarkus.deploy.target.");
                 getLog().error("Extensions: " + targets.stream().collect(Collectors.joining(" ")));
             } else if (target != null && !targets.contains(target)) {
                 getLog().error(

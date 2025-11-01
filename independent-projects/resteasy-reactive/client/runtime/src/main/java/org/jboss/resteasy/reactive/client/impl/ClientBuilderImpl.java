@@ -41,6 +41,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.core.net.ProxyType;
 import io.vertx.core.net.SSLOptions;
 
 public class ClientBuilderImpl extends ClientBuilder {
@@ -58,6 +59,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private String proxyUser;
     private String nonProxyHosts;
     private Duration proxyConnectTimeout;
+    private ProxyType proxyType;
 
     private boolean followRedirects;
 
@@ -259,6 +261,9 @@ public class ClientBuilderImpl extends ClientBuilder {
                 }
                 if (proxyConnectTimeout != null) {
                     proxyOptions.setConnectTimeout(proxyConnectTimeout);
+                }
+                if (proxyType != null) {
+                    proxyOptions.setType(proxyType);
                 }
                 options.setProxyOptions(proxyOptions);
                 configureNonProxyHosts(options, nonProxyHosts);
@@ -499,6 +504,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl proxyConnectTimeout(Duration proxyConnectTimeout) {
         this.proxyConnectTimeout = proxyConnectTimeout;
+        return this;
+    }
+
+    public ClientBuilderImpl proxyType(ProxyType proxyType) {
+        this.proxyType = proxyType;
         return this;
     }
 }

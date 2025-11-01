@@ -3,27 +3,112 @@ package io.quarkus.bootstrap.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.CapabilityContract;
+import io.quarkus.bootstrap.model.DefaultApplicationModel;
+import io.quarkus.bootstrap.model.ExtensionCapabilities;
+import io.quarkus.bootstrap.model.JvmOptions;
+import io.quarkus.bootstrap.model.JvmOptionsBuilder;
+import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.model.PlatformImports;
+import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
+import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathCollection;
 
 public class BootstrapUtils {
 
     private static final Logger log = Logger.getLogger(BootstrapUtils.class);
-
     private static final int CP_CACHE_FORMAT_ID = 2;
+    /*
+     * We use JSON when serializing the application model in the build system for later use by tests. This allows Develocity's
+     * test distribution feature to read the model and replace the file paths inside with the paths on the remote agent, which
+     * will be different from the ones on the host that started the build.
+     *
+     * The JSON mapper is configured to be as close to Java serialization as possible, to keep the changes to the model
+     * classes minimal.
+     */
+    private static final JsonMapper MAPPER;
+
+    static {
+        JsonMapper.Builder objectMapper = JsonMapper.builder();
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        objectMapper.disable(MapperFeature.AUTO_DETECT_GETTERS, MapperFeature.AUTO_DETECT_IS_GETTERS);
+        objectMapper.visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        SimpleModule module = new SimpleModule();
+        module.addAbstractTypeMapping(ApplicationModel.class, DefaultApplicationModel.class);
+        module.addAbstractTypeMapping(PathCollection.class, PathsCollection.class);
+        module.addAbstractTypeMapping(WorkspaceModule.class, DefaultWorkspaceModule.class);
+        module.addAbstractTypeMapping(ArtifactSources.class, DefaultArtifactSources.class);
+        module.addAbstractTypeMapping(Dependency.class, ResolvedArtifactDependency.class);
+        module.addAbstractTypeMapping(ResolvedDependency.class, ResolvedArtifactDependency.class);
+        module.addAbstractTypeMapping(ArtifactCoords.class, GACTV.class);
+        module.addAbstractTypeMapping(PlatformImports.class, PlatformImportsImpl.class);
+        module.addAbstractTypeMapping(ExtensionCapabilities.class, CapabilityContract.class);
+        module.addAbstractTypeMapping(ArtifactKey.class, GACT.class);
+        module.addAbstractTypeMapping(JvmOptions.class, JvmOptionsBuilder.JvmOptionsImpl.class);
+        module.addSerializer(ResolvedDependencyBuilder.class, new StdSerializer<>(ResolvedDependencyBuilder.class) {
+            @Override
+            public void serialize(ResolvedDependencyBuilder value, JsonGenerator gen, SerializerProvider provider)
+                    throws IOException {
+                gen.writeObject(value.build());
+            }
+        });
+        module.addSerializer(Path.class, new StdSerializer<>(Path.class) {
+            @Override
+            public void serialize(Path value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+                gen.writeString(value.toString());
+            }
+        });
+        module.addDeserializer(Path.class, new StdDeserializer<>(Path.class) {
+            @Override
+            public Path deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                String value = p.getText();
+                return value == null ? null : Path.of(value);
+            }
+        });
+        objectMapper.addModule(module);
+        objectMapper.addModule(new ParameterNamesModule());
+        MAPPER = objectMapper.build();
+    }
 
     private static Pattern splitByWs;
 
@@ -61,11 +146,16 @@ public class BootstrapUtils {
         return serializedModel;
     }
 
-    public static void serializeAppModel(ApplicationModel model, final Path serializedModel)
-            throws IOException {
-        Files.createDirectories(serializedModel.getParent());
-        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
-            out.writeObject(model);
+    public static void serializeAppModel(ApplicationModel model, final Path serializedModel) throws IOException {
+        if (Proxy.isProxyClass(model.getClass())) {
+            /*
+             * For Gradle Tooling API proxies, we need to call the serialization code inside its own classloader,
+             * because our Jackson Mapper can't serialize the proxy.
+             */
+            model.serializeTo(serializedModel);
+        } else {
+            Files.createDirectories(serializedModel.getParent());
+            MAPPER.writeValue(serializedModel.toFile(), model);
         }
     }
 
@@ -78,11 +168,9 @@ public class BootstrapUtils {
     public static ApplicationModel deserializeQuarkusModel(Path modelPath) throws AppModelResolverException {
         if (Files.exists(modelPath)) {
             try (InputStream existing = Files.newInputStream(modelPath);
-                    ObjectInputStream object = new ObjectInputStream(existing)) {
-                ApplicationModel model = (ApplicationModel) object.readObject();
-                IoUtils.recursiveDelete(modelPath);
-                return model;
-            } catch (IOException | ClassNotFoundException e) {
+                    InputStreamReader reader = new InputStreamReader(existing, StandardCharsets.UTF_8)) {
+                return MAPPER.readValue(reader, DefaultApplicationModel.class);
+            } catch (IOException e) {
                 throw new AppModelResolverException("Failed to deserialize quarkus model", e);
             }
         }

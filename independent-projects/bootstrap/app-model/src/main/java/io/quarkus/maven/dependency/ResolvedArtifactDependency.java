@@ -6,6 +6,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -18,6 +21,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
     private PathCollection paths;
     private final WorkspaceModule module;
     private final Collection<ArtifactCoords> deps;
+    @JsonIgnore
     private volatile transient PathTree contentTree;
 
     public ResolvedArtifactDependency(ArtifactCoords coords) {
@@ -33,10 +37,11 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
         this(groupId, artifactId, classifier, type, version, PathList.of(resolvedPath));
     }
 
+    @JsonCreator
     public ResolvedArtifactDependency(String groupId, String artifactId, String classifier, String type, String version,
-            PathCollection resolvedPath) {
+            PathCollection paths) {
         super(groupId, artifactId, classifier, type, version);
-        this.paths = resolvedPath;
+        this.paths = paths;
         this.module = null;
         this.deps = List.of();
     }

@@ -5,17 +5,18 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
@@ -35,26 +36,32 @@ public class RuntimeExceptionMapper {
     private static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
 
     /**
-     * Exceptions that indicate an blocking operation was performed on an IO thread.
+     * Exceptions that indicate a blocking operation was performed on an IO thread.
      * <p>
      * We have a special log message for this.
      */
     private final List<Predicate<Throwable>> blockingProblemPredicates;
     private final List<Predicate<Throwable>> nonBlockingProblemPredicate;
-    private final Set<Class<? extends Throwable>> unwrappedExceptions;
+    private final Map<Class<? extends Throwable>, Boolean> unwrappedExceptions;
 
     public RuntimeExceptionMapper(ExceptionMapping mapping, ClassLoader classLoader) {
+        mappers = new HashMap<>();
+        for (var i : mapping.effectiveMappers().entrySet()) {
+            mappers.put(loadThrowableClass(i.getKey(), classLoader), i.getValue());
+        }
+        blockingProblemPredicates = new ArrayList<>(mapping.blockingProblemPredicates);
+        nonBlockingProblemPredicate = new ArrayList<>(mapping.nonBlockingProblemPredicate);
+        unwrappedExceptions = new HashMap<>();
+        for (Map.Entry<String, Boolean> entry : mapping.getUnwrappedExceptions().entrySet()) {
+            Class<? extends Throwable> clazz = loadThrowableClass(entry.getKey(), classLoader);
+            boolean always = entry.getValue();
+            unwrappedExceptions.put(clazz, always);
+        }
+    }
+
+    private static Class<? extends Throwable> loadThrowableClass(String className, ClassLoader classLoader) {
         try {
-            mappers = new HashMap<>();
-            for (var i : mapping.effectiveMappers().entrySet()) {
-                mappers.put((Class<? extends Throwable>) Class.forName(i.getKey(), false, classLoader), i.getValue());
-            }
-            blockingProblemPredicates = new ArrayList<>(mapping.blockingProblemPredicates);
-            nonBlockingProblemPredicate = new ArrayList<>(mapping.nonBlockingProblemPredicate);
-            unwrappedExceptions = new HashSet<>();
-            for (var i : mapping.unwrappedExceptions) {
-                unwrappedExceptions.add((Class<? extends Throwable>) Class.forName(i, false, classLoader));
-            }
+            return (Class<? extends Throwable>) Class.forName(className, false, classLoader);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not load exception mapper", e);
         }
@@ -199,8 +206,7 @@ public class RuntimeExceptionMapper {
      * if none is found.
      * First checks if the Resource class that contained the Resource method contained class-level exception mappers.
      * {@param throwable} is optional and is used to when no mapper has been found for the original exception type, but the
-     * application
-     * has been configured to unwrap certain exceptions.
+     * application has been configured to unwrap certain exceptions.
      */
     public <T extends Throwable> Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> getExceptionMapper(
             Class<T> clazz,
@@ -226,27 +232,76 @@ public class RuntimeExceptionMapper {
         return context.getTarget() != null ? context.getTarget().getClassExceptionMappers() : null;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private <T extends Throwable> Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> doGetExceptionMapper(
+            Class<T> clazz,
+            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
+            Throwable throwable) {
+        Stream<Supplier<AbstractMap.Entry<Throwable, ExceptionMapper<? extends Throwable>>>> mappingStrategies = Stream.of(
+                // If the exception type is directly mapped, ignore the unwrapping.
+                () -> buildMapperEntryIfExists(clazz, mappers, throwable),
+                // Check if the exception should always be unwrapped (if always=true).
+                // In this case, search mapping for the wrapped exception, ignoring class hierarchy
+                () -> searchMapperForExceptionsToUnwrap(clazz, mappers, throwable, true),
+                // Walk up the class hierarchy looking for a mapper for the type
+                () -> searchMapperInClassHierarchy(clazz, mappers, throwable),
+                // If no mapper found and exception is marked for unwrapping (if always=false), unwrap it
+                () -> searchMapperForExceptionsToUnwrap(clazz, mappers, throwable, false));
+        // Try to get the exception mapper for the exception using strategies in order
+        return mappingStrategies.map(Supplier::get).filter(Objects::nonNull).findFirst().orElse(null);
+    }
+
+    private static AbstractMap.Entry<Throwable, ExceptionMapper<? extends Throwable>> buildMapperEntryIfExists(
+            Class<?> klass,
+            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
+            Throwable throwable) {
+        ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
+        if (mapper != null) {
+            return new AbstractMap.SimpleEntry<>(
+                    throwable,
+                    mapper.getFactory().createInstance().getInstance());
+        }
+        return null;
+    }
+
+    private <T extends Throwable> Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> searchMapperForExceptionsToUnwrap(
+            Class<T> clazz,
+            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
+            Throwable throwable,
+            boolean alwaysRequestedValue) {
+        if (throwable == null) {
+            // Cannot unwrap null
+            return null;
+        }
+        if (!unwrappedExceptions.containsKey(clazz)) {
+            // Exception not defined as unwrappable
+            return null;
+        }
+        boolean always = unwrappedExceptions.get(clazz);
+        if (alwaysRequestedValue != always) {
+            // If unwrap is not the requested value ignore the entry
+            return null;
+        }
+        // Do the unwrapping
+        Throwable cause = throwable.getCause();
+        if (cause != null) {
+            return doGetExceptionMapper(cause.getClass(), mappers, cause);
+        }
+        return null;
+    }
+
+    private static <T extends Throwable> AbstractMap.Entry<Throwable, ExceptionMapper<? extends Throwable>> searchMapperInClassHierarchy(
             Class<T> clazz,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
             Throwable throwable) {
         Class<?> klass = clazz;
         do {
-            ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
-            if (mapper != null) {
-                return new AbstractMap.SimpleEntry(throwable, mapper.getFactory()
-                        .createInstance().getInstance());
+            AbstractMap.Entry<Throwable, ExceptionMapper<? extends Throwable>> res = buildMapperEntryIfExists(klass, mappers,
+                    throwable);
+            if (res != null) {
+                return res;
             }
             klass = klass.getSuperclass();
         } while (klass != null);
-
-        if ((throwable != null) && unwrappedExceptions.contains(clazz)) {
-            Throwable cause = throwable.getCause();
-            if (cause != null) {
-                return doGetExceptionMapper(cause.getClass(), mappers, cause);
-            }
-        }
         return null;
     }
 

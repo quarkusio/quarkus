@@ -134,6 +134,9 @@ public class ResteasyReactiveScanningProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
         for (AnnotationInstance instance : index.getAnnotations(UnwrapException.class)) {
             AnnotationValue value = instance.value();
+            AnnotationValue alwaysValue = instance.value("always");
+            boolean always = alwaysValue != null && alwaysValue.asBoolean();
+
             if (value == null) {
                 // in this case we need to use the class where the annotation was placed as the exception to be unwrapped
 
@@ -162,11 +165,11 @@ public class ResteasyReactiveScanningProcessor {
                                     + classInfo.name() + "'.");
                 }
 
-                producer.produce(new UnwrappedExceptionBuildItem(classInfo.name().toString()));
+                producer.produce(new UnwrappedExceptionBuildItem(classInfo.name().toString(), always));
             } else {
                 Type[] exceptionTypes = value.asClassArray();
                 for (Type exceptionType : exceptionTypes) {
-                    producer.produce(new UnwrappedExceptionBuildItem(exceptionType.name().toString()));
+                    producer.produce(new UnwrappedExceptionBuildItem(exceptionType.name().toString(), always));
                 }
             }
         }
@@ -186,7 +189,7 @@ public class ResteasyReactiveScanningProcessor {
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
         for (UnwrappedExceptionBuildItem bi : unwrappedExceptions) {
-            exceptions.addUnwrappedException(bi.getThrowableClassName());
+            exceptions.addUnwrappedException(bi.getThrowableClassName(), bi.isAlways());
         }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             exceptions.addNonBlockingProblem(

@@ -15,7 +15,6 @@ import java.util.Set;
 public final class DatabaseKind {
 
     public static final String DB2 = "db2";
-    public static final String DERBY = "derby";
     public static final String H2 = "h2";
     public static final String MARIADB = "mariadb";
     public static final String MSSQL = "mssql";
@@ -57,10 +56,6 @@ public final class DatabaseKind {
         return is(value, DB2);
     }
 
-    public static boolean isDerby(String value) {
-        return is(value, DERBY);
-    }
-
     public static boolean isH2(String value) {
         return is(value, H2);
     }
@@ -100,7 +95,6 @@ public final class DatabaseKind {
 
     public enum SupportedDatabaseKind {
         DB2(DatabaseKind.DB2),
-        DERBY(DatabaseKind.DERBY),
         H2(DatabaseKind.H2),
         MARIADB(DatabaseKind.MARIADB),
         MSSQL(DatabaseKind.MSSQL),

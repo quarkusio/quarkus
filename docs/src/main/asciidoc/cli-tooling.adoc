@@ -461,7 +461,6 @@ JDBC Driver - MariaDB                              quarkus-jdbc-mariadb
 JDBC Driver - Microsoft SQL Server                 quarkus-jdbc-mssql
 JDBC Driver - MySQL                                quarkus-jdbc-mysql
 JDBC Driver - Oracle                               quarkus-jdbc-oracle
-JDBC Driver - Derby                                quarkus-jdbc-derby
 Elytron Security JDBC                              quarkus-elytron-security-jdbc
 Agroal - Database connection pool                  quarkus-agroal
 ----

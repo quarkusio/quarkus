@@ -3,6 +3,9 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore.HIBERNATE_ORM_STATE_STORE;
 import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore.HIBERNATE_REACTIVE_STATE_STORE;
 import static io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore.REDIS_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelIncomingPropertyName;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelOutgoingPropertyName;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelPropertyName;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -97,7 +100,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     static boolean hasDLQConfig(String channelName, Config config) {
-        String propertyKey = getChannelPropertyKey(channelName, "failure-strategy", true);
+        String propertyKey = getChannelIncomingPropertyName(channelName, "failure-strategy");
         Optional<String> channelFailureStrategy = config.getOptionalValue(propertyKey, String.class);
         Optional<String> failureStrategy = channelFailureStrategy.or(() -> getConnectorProperty("failure-strategy", config));
 
@@ -119,16 +122,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
         }
         return values;
-    }
-
-    static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
-
-    static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
-        if ((channelName.charAt(0) != '"' || channelName.charAt(channelName.length() - 1) != '"')
-                && channelName.contains(".")) {
-            channelName = "\"" + channelName + "\"";
-        }
-        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing", channelName, propertyName);
     }
 
     @BuildStep
@@ -219,7 +212,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, incoming, channelName)) {
                 continue;
             }
-            String key = getChannelPropertyKey(channelName, incoming ? "graceful-shutdown" : "close-timeout", incoming);
+            String key = getChannelPropertyName(channelName, incoming ? "graceful-shutdown" : "close-timeout", incoming);
             discoveryState.ifNotYetConfigured(key, () -> {
                 defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, incoming ? "false" : "0"));
             });
@@ -259,9 +252,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             Type outgoingType = getOutgoingTypeFromMethod(method);
             processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
+                        getChannelOutgoingPropertyName(channelName, "key.serializer"), keySerializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
+                        getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
 
                 handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
             }, generatedClass, reflection, alreadyGeneratedSerializers);
@@ -291,9 +284,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 Type replyType = injectionPointType.asParameterizedType().arguments().get(1);
                 processOutgoingType(discovery, requestType, (keySerializer, valueSerializer) -> {
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                            getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
+                            getChannelOutgoingPropertyName(channelName, "key.serializer"), keySerializer);
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                            getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
+                            getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
                 }, generatedClass, reflection, alreadyGeneratedSerializers);
                 extractKeyValueType(replyType, (key, value, isBatchType) -> {
                     Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
@@ -302,18 +295,18 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                             alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                            getChannelPropertyKey(channelName, "reply.key.deserializer", false), keyDeserializer);
+                            getChannelOutgoingPropertyName(channelName, "reply.key.deserializer"), keyDeserializer);
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                            getChannelPropertyKey(channelName, "reply.value.deserializer", false), valueDeserializer);
+                            getChannelOutgoingPropertyName(channelName, "reply.value.deserializer"), valueDeserializer);
                     handleAdditionalProperties(channelName, false, discovery, config, keyDeserializer, valueDeserializer);
                 });
             } else {
                 Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
                 processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                            getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
+                            getChannelOutgoingPropertyName(channelName, "key.serializer"), keySerializer);
                     produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                            getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
+                            getChannelOutgoingPropertyName(channelName, "value.serializer"), valueSerializer);
 
                     handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
                 }, generatedClass, reflection, alreadyGeneratedSerializers);
@@ -324,9 +317,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private void processKafkaTransactions(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String channelName, Type injectionPointType) {
         if (injectionPointType != null && isKafkaTransactionsEmitter(injectionPointType)) {
-            String transactionalIdKey = getChannelPropertyKey(channelName, "transactional.id", false);
-            String enableIdempotenceKey = getChannelPropertyKey(channelName, "enable.idempotence", false);
-            String acksKey = getChannelPropertyKey(channelName, "acks", false);
+            String transactionalIdKey = getChannelOutgoingPropertyName(channelName, "transactional.id");
+            String enableIdempotenceKey = getChannelOutgoingPropertyName(channelName, "enable.idempotence");
+            String acksKey = getChannelOutgoingPropertyName(channelName, "acks");
             LOGGER.infof("Transactional producer detected for channel '%s', setting following default config values: "
                     + "'" + transactionalIdKey + "=${quarkus.application.name}-${channelName}', "
                     + "'" + enableIdempotenceKey + "=true', "
@@ -349,12 +342,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                     alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
             produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                    getChannelPropertyKey(channelName, "key.deserializer", true), keyDeserializer);
+                    getChannelIncomingPropertyName(channelName, "key.deserializer"), keyDeserializer);
             produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                    getChannelPropertyKey(channelName, "value.deserializer", true), valueDeserializer);
+                    getChannelIncomingPropertyName(channelName, "value.deserializer"), valueDeserializer);
             if (Boolean.TRUE.equals(isBatchType)) {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        getChannelPropertyKey(channelName, "batch", true), "true");
+                        getChannelIncomingPropertyName(channelName, "batch"), "true");
             }
 
             handleAdditionalProperties(channelName, true, discovery, config, keyDeserializer, valueDeserializer);
@@ -385,7 +378,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
 
             result.additionalProperties.forEach((key, value) -> {
-                String configKey = getChannelPropertyKey(channelName, key, incoming);
+                String configKey = getChannelPropertyName(channelName, key, incoming);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config, configKey, value);
             });
         }
@@ -1101,7 +1094,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private boolean isSerdeJson(IndexView index, Config config, String channelName, boolean serializer, boolean isKey) {
-        String configKey = getChannelPropertyKey(channelName, (isKey ? "key" : "value") + "." +
+        String configKey = getChannelPropertyName(channelName, (isKey ? "key" : "value") + "." +
                 (serializer ? "serializer" : "deserializer"), !serializer);
         ConfigValue configValue = config.getConfigValue(configKey);
         if (configValue.getValue() != null) {

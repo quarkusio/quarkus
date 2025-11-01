@@ -102,13 +102,6 @@ public class SmallRyeReactiveMessagingProcessor {
     static final String DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY = "1024";
     static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
 
-    static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
-
-    public static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
-        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing",
-                channelName.contains(".") ? "\"" + channelName + "\"" : channelName, propertyName);
-    }
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.MESSAGING);

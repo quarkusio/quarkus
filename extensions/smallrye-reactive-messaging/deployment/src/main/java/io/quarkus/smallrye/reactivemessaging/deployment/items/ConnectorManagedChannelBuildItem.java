@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.deployment.items;
 
+import static io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection.OUTGOING;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -27,5 +30,13 @@ public final class ConnectorManagedChannelBuildItem extends MultiBuildItem {
 
     public ChannelDirection getDirection() {
         return direction;
+    }
+
+    public boolean isIncoming() {
+        return INCOMING.equals(direction);
+    }
+
+    public boolean isOutgoing() {
+        return OUTGOING.equals(direction);
     }
 }

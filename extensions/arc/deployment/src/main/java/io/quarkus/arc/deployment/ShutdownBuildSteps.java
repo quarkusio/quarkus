@@ -1,11 +1,12 @@
 package io.quarkus.arc.deployment;
 
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 
 import org.jboss.jandex.AnnotationValue;
@@ -15,7 +16,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
-import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
@@ -24,10 +24,11 @@ import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.shutdown.ShutdownBuildTimeConfig;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.runtime.Shutdown;
 import io.quarkus.runtime.ShutdownDelayInitiated;
 import io.quarkus.runtime.ShutdownDelayInitiatedEvent;
@@ -123,43 +124,47 @@ public class ShutdownBuildSteps {
         }
     }
 
-    private void registerShutdownObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean, String id,
+    private void registerShutdownObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo btBean, String id,
             int priority, MethodInfo shutdownMethod, DotName observedType) {
         ObserverConfigurator configurator = observerRegistration.getContext().configure()
-                .beanClass(bean.getBeanClass())
+                .beanClass(btBean.getBeanClass())
                 .observedType(observedType.equals(SHUTDOWN_NAME) ? ShutdownEvent.class : ShutdownDelayInitiatedEvent.class);
         configurator.id(id);
         configurator.priority(priority);
-        configurator.notify(mc -> {
+        configurator.notify(ng -> {
+            BlockCreator b0 = ng.notifyMethod();
+
             // InjectableBean<Foo> bean = Arc.container().bean("bflmpsvz");
-            ResultHandle containerHandle = mc.invokeStaticMethod(StartupBuildSteps.ARC_CONTAINER);
-            ResultHandle beanHandle = mc.invokeInterfaceMethod(StartupBuildSteps.ARC_CONTAINER_BEAN, containerHandle,
-                    mc.load(bean.getIdentifier()));
-            if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-                ResultHandle creationalContext = mc.newInstance(
-                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                        beanHandle);
+            LocalVar arc = b0.localVar("arc", b0.invokeStatic(StartupBuildSteps.ARC_CONTAINER));
+            LocalVar rtBean = b0.localVar("bean",
+                    b0.invokeInterface(StartupBuildSteps.ARC_CONTAINER_BEAN, arc, Const.of(btBean.getIdentifier())));
+            if (BuiltinScope.DEPENDENT.is(btBean.getScope())) {
+                LocalVar creationalContext = b0.localVar("creationalContext",
+                        b0.new_(StartupBuildSteps.CREATIONAL_CONTEXT_IMPL_CTOR, rtBean));
                 // Create a dependent instance
-                ResultHandle instance = mc.invokeInterfaceMethod(StartupBuildSteps.CONTEXTUAL_CREATE, beanHandle,
-                        creationalContext);
-                TryBlock tryBlock = mc.tryBlock();
-                tryBlock.invokeVirtualMethod(MethodDescriptor.of(shutdownMethod), instance);
-                CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-                catchBlock.invokeInterfaceMethod(StartupBuildSteps.CONTEXTUAL_DESTROY, beanHandle, instance, creationalContext);
-                catchBlock.throwException(RuntimeException.class, "Error destroying bean with @Shutdown method",
-                        catchBlock.getCaughtException());
-                // Destroy the instance immediately
-                mc.invokeInterfaceMethod(StartupBuildSteps.CONTEXTUAL_DESTROY, beanHandle, instance, creationalContext);
+                LocalVar instance = b0.localVar("instance",
+                        b0.invokeInterface(StartupBuildSteps.CONTEXTUAL_CREATE, rtBean, creationalContext));
+                b0.try_(tc -> {
+                    tc.body(b1 -> {
+                        b1.invokeVirtual(methodDescOf(shutdownMethod), instance);
+                    });
+                    tc.catch_(Exception.class, "e", (b1, e) -> {
+                        b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
+                                Const.of("Error calling @Shutdown method"), e));
+                    });
+                    tc.finally_(b1 -> {
+                        // Destroy the instance immediately
+                        b1.invokeInterface(StartupBuildSteps.CONTEXTUAL_DESTROY, rtBean, instance, creationalContext);
+                    });
+                });
             } else {
                 // Obtains the instance from the context
                 // InstanceHandle<Foo> handle = Arc.container().instance(bean);
-                ResultHandle instanceHandle = mc.invokeInterfaceMethod(StartupBuildSteps.ARC_CONTAINER_INSTANCE,
-                        containerHandle,
-                        beanHandle);
-                ResultHandle instance = mc.invokeInterfaceMethod(StartupBuildSteps.INSTANCE_HANDLE_GET, instanceHandle);
-                mc.invokeVirtualMethod(MethodDescriptor.of(shutdownMethod), instance);
+                Expr instanceHandle = b0.invokeInterface(StartupBuildSteps.ARC_CONTAINER_INSTANCE, arc, rtBean);
+                Expr instance = b0.invokeInterface(StartupBuildSteps.INSTANCE_HANDLE_GET, instanceHandle);
+                b0.invokeVirtual(methodDescOf(shutdownMethod), instance);
             }
-            mc.returnValue(null);
+            b0.return_();
         });
         configurator.done();
     }

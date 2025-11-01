@@ -14,6 +14,7 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BeanConfigurator;
+import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -21,10 +22,13 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.FieldVar;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.util.HashUtil;
 
 public class SyntheticBeansProcessor {
@@ -107,40 +111,36 @@ public class SyntheticBeansProcessor {
                         + (configurator.getIdentifier() != null ? configurator.getIdentifier() : ""));
     }
 
-    private Consumer<MethodCreator> creator(String name, SyntheticBeanBuildItem bean) {
-        return new Consumer<MethodCreator>() {
+    private Consumer<BeanConfiguratorBase.CreateGeneration> creator(String name, SyntheticBeanBuildItem bean) {
+        return new Consumer<BeanConfiguratorBase.CreateGeneration>() {
             @Override
-            public void accept(MethodCreator m) {
-                ResultHandle staticMap = m
-                        .readStaticField(FieldDescriptor.of(ArcRecorder.class, "syntheticBeanProviders", Map.class));
-                ResultHandle function = m.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap,
-                        m.load(name));
+            public void accept(BeanConfiguratorBase.CreateGeneration cg) {
+                BlockCreator b0 = cg.createMethod();
+
+                FieldVar staticMap = Expr.staticField(FieldDesc.of(ArcRecorder.class, "syntheticBeanProviders"));
+                LocalVar function = b0.localVar("function", b0.withMap(staticMap).get(Const.of(name)));
                 // Throw an exception if no supplier is found
-                m.ifNull(function).trueBranch().throwException(CreationException.class,
-                        createMessage("Synthetic bean instance for ", name, bean));
-                ResultHandle result = m.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Function.class, "apply", Object.class, Object.class),
-                        function, m.getMethodParam(0));
-                m.returnValue(result);
+                b0.ifNull(function, b1 -> {
+                    b1.throw_(CreationException.class, createMessage("Synthetic bean instance for ", name, bean));
+                });
+                b0.return_(b0.invokeInterface(MethodDesc.of(Function.class, "apply", Object.class, Object.class),
+                        function, cg.syntheticCreationalContext()));
             }
         };
     }
 
-    private Consumer<MethodCreator> checkActive(String name, SyntheticBeanBuildItem bean) {
-        return new Consumer<MethodCreator>() {
+    private Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActive(String name, SyntheticBeanBuildItem bean) {
+        return new Consumer<BeanConfiguratorBase.CheckActiveGeneration>() {
             @Override
-            public void accept(MethodCreator mc) {
-                ResultHandle staticMap = mc.readStaticField(
-                        FieldDescriptor.of(ArcRecorder.class, "syntheticBeanCheckActive", Map.class));
-                ResultHandle supplier = mc.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
-                        staticMap, mc.load(name));
-                mc.ifNull(supplier).trueBranch().throwException(CreationException.class,
-                        createMessage("ActiveResult of synthetic bean for ", name, bean));
-                mc.returnValue(mc.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
-                        supplier));
+            public void accept(BeanConfiguratorBase.CheckActiveGeneration cag) {
+                BlockCreator b0 = cag.checkActiveMethod();
+
+                FieldVar staticMap = Expr.staticField(FieldDesc.of(ArcRecorder.class, "syntheticBeanCheckActive"));
+                LocalVar supplier = b0.localVar("supplier", b0.withMap(staticMap).get(Const.of(name)));
+                b0.ifNull(supplier, b1 -> {
+                    b1.throw_(CreationException.class, createMessage("ActiveResult of synthetic bean for ", name, bean));
+                });
+                b0.return_(b0.invokeInterface(MethodDesc.of(Supplier.class, "get", Object.class), supplier));
             }
         };
     }

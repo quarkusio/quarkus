@@ -1,6 +1,9 @@
 package io.quarkus.restclient.deployment;
 
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+
 import java.io.Closeable;
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,8 +82,11 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsConfig;
@@ -276,34 +282,30 @@ class RestClientProcessor {
             // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
             configurator.addType(restClient.getClassInfo().name());
             configurator.addQualifier(REST_CLIENT);
-            List<String> clientProviders = checkRestClientProviders(restClient.getClassInfo(), restClientProviders);
+            List<ClassDesc> clientProviders = checkRestClientProviders(restClient.getClassInfo(), restClientProviders);
             configurator.scope(restClientBuildTimeConfig.getScope(capabilities, restClient.getClassInfo())
                     .orElse(BuiltinScope.DEPENDENT).getInfo());
-            configurator.creator(m -> {
+            configurator.creator(cg -> {
+                BlockCreator bc = cg.createMethod();
+
                 // return new RestClientBase(proxyType, baseUri).create();
-                ResultHandle interfaceHandle = m.loadClassFromTCCL(restClient.getClassInfo().name().toString());
-                ResultHandle baseUriHandle = restClient.getDefaultBaseUri().isPresent()
-                        ? m.load(restClient.getDefaultBaseUri().get())
-                        : m.loadNull();
-                ResultHandle configKeyHandle = restClient.getConfigKey().isPresent() ? m.load(restClient.getConfigKey().get())
-                        : m.loadNull();
-                ResultHandle restClientProvidersHandle;
+                Const rtInterface = Const.of(classDescOf(restClient.getClassInfo())); // TODO load from TCCL
+                Const rtBaseUri = restClient.getDefaultBaseUri().isPresent()
+                        ? Const.of(restClient.getDefaultBaseUri().get())
+                        : Const.ofNull(String.class);
+                Const rtConfigKey = restClient.getConfigKey().isPresent()
+                        ? Const.of(restClient.getConfigKey().get())
+                        : Const.ofNull(String.class);
+                Expr rtRestClientProviders;
                 if (!clientProviders.isEmpty()) {
-                    restClientProvidersHandle = m.newArray(Class.class, clientProviders.size());
-                    for (int i = 0; i < clientProviders.size(); i++) {
-                        m.writeArrayValue(restClientProvidersHandle, i, m.loadClassFromTCCL(clientProviders.get(i)));
-                    }
+                    rtRestClientProviders = bc.newArray(Class.class, clientProviders, Const::of); // TODO load from TCCL
                 } else {
-                    restClientProvidersHandle = m.loadNull();
+                    rtRestClientProviders = Const.ofNull(Class[].class);
                 }
-                ResultHandle baseHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
-                                String.class,
-                                Class[].class),
-                        interfaceHandle, baseUriHandle, configKeyHandle, restClientProvidersHandle);
-                ResultHandle ret = m.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
-                m.returnValue(ret);
+                Expr base = bc.new_(
+                        ConstructorDesc.of(RestClientBase.class, Class.class, String.class, String.class, Class[].class),
+                        rtInterface, rtBaseUri, rtConfigKey, rtRestClientProviders);
+                bc.return_(bc.invokeVirtual(MethodDesc.of(RestClientBase.class, "create", Object.class), base));
             });
             configurator.destroyer(BeanDestroyer.CloseableDestroyer.class);
             syntheticBeans.produce(configurator.done());
@@ -338,10 +340,12 @@ class RestClientProcessor {
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
     }
 
-    private static List<String> checkRestClientProviders(ClassInfo classInfo,
+    private static List<ClassDesc> checkRestClientProviders(ClassInfo classInfo,
             List<RestClientPredicateProviderBuildItem> restClientProviders) {
-        return restClientProviders.stream().filter(p -> p.appliesTo(classInfo))
-                .map(p -> p.getProviderClass()).collect(Collectors.toList());
+        return restClientProviders.stream()
+                .filter(p -> p.appliesTo(classInfo))
+                .map(p -> ClassDesc.of(p.getProviderClass()))
+                .toList();
     }
 
     @BuildStep

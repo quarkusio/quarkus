@@ -9,9 +9,7 @@ import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassType;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,6 @@ public class SyntheticInjectionPointUnremovableTest {
             .removeUnusedBeans(true)
             .beanRegistrars(new TestRegistrar()).build();
 
-    @SuppressWarnings("serial")
     @Test
     public void testBeanNotRemoved() {
         List<String> list = Arc.container().instance(new TypeLiteral<List<String>>() {
@@ -57,11 +54,10 @@ public class SyntheticInjectionPointUnremovableTest {
         public void register(RegistrationContext context) {
             context.configure(List.class)
                     // List, List<String>
-                    .addType(ClassType.create(DotName.createSimple(List.class)))
-                    .addType(ParameterizedType.create(DotName.createSimple(List.class),
-                            new Type[] { ClassType.create(DotName.createSimple(String.class)) }, null))
+                    .addType(ClassType.create(List.class))
+                    .addType(ParameterizedType.builder(List.class).addArgument(ClassType.create(String.class)).build())
                     .creator(ListCreator.class)
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(SomethingRemovable.class)))
+                    .addInjectionPoint(ClassType.create(SomethingRemovable.class))
                     .unremovable()
                     .done();
         }

@@ -40,9 +40,8 @@ import io.quarkus.arc.processor.CustomAlterableContexts.CustomAlterableContextIn
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
 
 /**
  * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the
@@ -88,7 +87,7 @@ public class BeanProcessor {
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
     private final Predicate<BeanDeployment> optimizeContexts;
-    private final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
+    private final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
     // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
@@ -595,11 +594,12 @@ public class BeanProcessor {
         contextsForScope.put(BuiltinScope.REQUEST.getName(), 1);
         contextsForScope.put(BuiltinScope.SESSION.getName(), 1);
         // custom contexts
-        for (Map.Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment
-                .getCustomContexts()
-                .entrySet()) {
-            if (entry.getKey().isNormal()) {
-                contextsForScope.merge(entry.getKey().getDotName(), entry.getValue().size(), Integer::sum);
+        for (var entry : beanDeployment.getCustomContexts().entrySet()) {
+            ScopeInfo scope = entry.getKey();
+            List<Function<ContextConfigurator.CreateGeneration, Expr>> creators = entry.getValue();
+
+            if (scope.isNormal()) {
+                contextsForScope.merge(scope.getDotName(), creators.size(), Integer::sum);
             }
         }
 
@@ -631,7 +631,7 @@ public class BeanProcessor {
         final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         final List<StereotypeRegistrar> stereotypeRegistrars;
         final List<BeanDeploymentValidator> beanDeploymentValidators;
-        final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
+        final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
 
         boolean removeUnusedBeans = false;
         final List<Predicate<BeanInfo>> removalExclusions;
@@ -977,7 +977,7 @@ public class BeanProcessor {
          * @param generator
          * @return self
          */
-        public Builder addSuppressConditionGenerator(Function<BeanInfo, Consumer<BytecodeCreator>> generator) {
+        public Builder addSuppressConditionGenerator(Function<BeanInfo, Consumer<BlockCreator>> generator) {
             this.suppressConditionGenerators.add(generator);
             return this;
         }

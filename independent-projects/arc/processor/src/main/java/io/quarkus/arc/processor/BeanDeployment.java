@@ -52,8 +52,7 @@ import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.Types.TypeClosure;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
 
 public class BeanDeployment {
 
@@ -118,7 +117,7 @@ public class BeanDeployment {
     private final Set<BeanInfo> beansWithRuntimeDeferredUnproxyableError;
 
     // scope -> list of funs that accept the method creator for ComponentsProvider#getComponents()
-    private final Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts;
+    private final Map<ScopeInfo, List<Function<ContextConfigurator.CreateGeneration, Expr>>> customContexts;
 
     private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
 
@@ -774,7 +773,7 @@ public class BeanDeployment {
         return annotationStore.hasAnnotation(target, name);
     }
 
-    Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> getCustomContexts() {
+    Map<ScopeInfo, List<Function<ContextConfigurator.CreateGeneration, Expr>>> getCustomContexts() {
         return customContexts;
     }
 

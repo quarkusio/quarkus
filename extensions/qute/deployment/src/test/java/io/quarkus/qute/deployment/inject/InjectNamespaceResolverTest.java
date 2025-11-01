@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.gizmo2.Const;
 import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.Hello;
@@ -40,8 +41,8 @@ public class InjectNamespaceResolverTest {
                         context.produce(SyntheticBeanBuildItem.configure(String.class)
                                 .addQualifier().annotation(Identifier.class).addValue("value", "synthetic").done()
                                 .name("synthetic")
-                                .creator(mc -> {
-                                    mc.returnValue(mc.load("Yes!"));
+                                .creator(cg -> {
+                                    cg.createMethod().return_(Const.of("Yes!"));
                                 })
                                 .done());
                     }

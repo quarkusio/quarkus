@@ -20,10 +20,10 @@ import org.jboss.jandex.Type;
 /**
  * Convenient {@link Stream} wrapper that can be used to filter a set of beans.
  * <p>
- * This object is stateful and cannot be reused. After a terminal opration is performed, the underlying stream is considered
- * consumed, and can no longer be used.
+ * This object is stateful and cannot be reused. After a terminal operation is performed, the underlying stream
+ * is considered consumed, and can no longer be used.
  * <p>
- * This construct is not threadsafe.
+ * This construct is not thread-safe.
  */
 public final class BeanStream implements Iterable<BeanInfo> {
 
@@ -35,7 +35,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      *
-     * @param scopeName
+     * @param scope
      * @return the new stream of beans
      * @see BeanInfo#getScope()
      */
@@ -66,7 +66,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      *
-     * @param beanType
+     * @param beanTypeName
      * @return the new stream of beans
      * @see BeanInfo#getTypes()
      */
@@ -129,7 +129,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      *
-     * @param qualifier
+     * @param qualifiers
      * @return the new stream of beans
      * @see BeanInfo#getQualifiers()
      */

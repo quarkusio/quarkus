@@ -50,6 +50,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getManagedClassNames();
     }
 
+    public Collection<String> getManagedClassesAndPackagedNames() {
+        return descriptor.getManagedClassAndPackagesNames();
+    }
+
     public String getExplicitSqlImportScriptResourceName() {
         return descriptor.getProperties().getProperty("jakarta.persistence.sql-load-script-source");
     }

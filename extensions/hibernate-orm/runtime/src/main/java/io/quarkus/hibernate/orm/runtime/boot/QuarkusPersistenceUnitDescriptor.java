@@ -28,6 +28,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final PersistenceUnitTransactionType persistenceUnitTransactionType;
     private final ValidationMode validationMode;
     private final SharedCacheMode sharedCacheMode;
+    private final List<String> managedClassAndPackagesNames;
     private final List<String> managedClassNames;
     private final Properties properties;
     private final boolean reactive;
@@ -35,7 +36,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     public QuarkusPersistenceUnitDescriptor(String name,
             QuarkusPersistenceUnitProviderHelper providerHelper,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
-            List<String> managedClassNames,
+            List<String> managedClassAndPackagesNames, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.providerHelper = providerHelper;
@@ -44,6 +45,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         this.persistenceUnitTransactionType = persistenceUnitTransactionType;
         this.validationMode = null;
         this.sharedCacheMode = null;
+        this.managedClassAndPackagesNames = managedClassAndPackagesNames;
         this.managedClassNames = managedClassNames;
         this.properties = properties;
         this.reactive = reactive;
@@ -60,7 +62,8 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
             QuarkusPersistenceUnitProviderHelper providerHelper,
             String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
-            ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
+            ValidationMode validationMode, SharedCacheMode sharedCacheMode,
+            List<String> managedClassAndPackagesNames, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.providerHelper = providerHelper;
@@ -69,6 +72,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         this.persistenceUnitTransactionType = persistenceUnitTransactionType;
         this.validationMode = validationMode;
         this.sharedCacheMode = sharedCacheMode;
+        this.managedClassAndPackagesNames = managedClassAndPackagesNames;
         this.managedClassNames = managedClassNames;
         this.properties = properties;
         this.reactive = reactive;
@@ -94,6 +98,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
+                Collections.unmodifiableList(toClone.getManagedClassNames()),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
     }
 
@@ -147,6 +152,10 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     @Override
     public SharedCacheMode getSharedCacheMode() {
         return sharedCacheMode;
+    }
+
+    public List<String> getManagedClassAndPackagesNames() {
+        return managedClassAndPackagesNames;
     }
 
     @Override
@@ -225,23 +234,25 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     @Override
-    public String toString() {
-        return "QuarkusPersistenceUnitDescriptor{" +
-                "name='" + name + '\'' +
-                ", providerClassName='" + providerClassName + '\'' +
-                ", useQuotedIdentifiers=" + useQuotedIdentifiers +
-                ", transactionType=" + persistenceUnitTransactionType +
-                ", validationMode=" + validationMode +
-                ", sharedCacheMode=" + sharedCacheMode +
-                ", managedClassNames=" + managedClassNames +
-                ", properties=" + properties +
-                ", isReactive=" + reactive +
-                '}';
-    }
-
-    @Override
     public ClassTransformer getClassTransformer() {
         // We transform classes during the build, not on bootstrap.
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "QuarkusPersistenceUnitDescriptor{" +
+                "name='" + name + '\'' +
+                ", providerHelper=" + providerHelper +
+                ", providerClassName='" + providerClassName + '\'' +
+                ", useQuotedIdentifiers=" + useQuotedIdentifiers +
+                ", persistenceUnitTransactionType=" + persistenceUnitTransactionType +
+                ", validationMode=" + validationMode +
+                ", sharedCacheMode=" + sharedCacheMode +
+                ", managedClassAndPackagesNames=" + managedClassAndPackagesNames +
+                ", managedClassNames=" + managedClassNames +
+                ", properties=" + properties +
+                ", reactive=" + reactive +
+                '}';
     }
 }

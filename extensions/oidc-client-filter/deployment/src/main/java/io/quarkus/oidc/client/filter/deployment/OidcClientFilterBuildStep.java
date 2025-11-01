@@ -99,8 +99,8 @@ public class OidcClientFilterBuildStep {
             }
 
             // we generate exactly one custom filter for each @OidcClientFilter client specified through annotation
-            final var generatedProvider = helper.getOrCreateNamedTokensProducerFor(clientName);
-            final var targetRestClient = instance.target().asClass().name().toString();
+            final var generatedProvider = helper.getOrCreateNamedTokensProducerFor(clientName, instance);
+            final var targetRestClient = OidcClientFilterDeploymentHelper.getTargetRestClientName(instance);
             namedFilterClientClasses.add(targetRestClient);
 
             // register for reflection

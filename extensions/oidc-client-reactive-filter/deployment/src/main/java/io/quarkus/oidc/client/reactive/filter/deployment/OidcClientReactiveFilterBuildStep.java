@@ -57,12 +57,13 @@ public class OidcClientReactiveFilterBuildStep {
             }
 
             // we generate exactly one custom filter for each named client specified through annotation
-            final AnnotationValue valueAttr = createClassValue(helper.getOrCreateFilter(clientName));
+            final AnnotationValue valueAttr = createClassValue(helper.getOrCreateFilter(clientName, instance));
 
             final AnnotationValue priorityAttr = AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION);
-            String targetClass = instance.target().asClass().name().toString();
+            String targetClass = OidcClientFilterDeploymentHelper.getTargetRestClientName(instance);
             producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, AnnotationInstance.create(
-                    DotNames.REGISTER_PROVIDER, instance.target(), List.of(valueAttr, priorityAttr))));
+                    DotNames.REGISTER_PROVIDER, OidcClientFilterDeploymentHelper.getTargetRestClient(instance),
+                    List.of(valueAttr, priorityAttr))));
 
             if (oidcClientReactiveFilterConfig.refreshOnUnauthorized()) {
                 var valueAttribute = createClassValue(DETECT_401_RESPONSE_FILTER);
@@ -70,7 +71,8 @@ public class OidcClientReactiveFilterBuildStep {
                 // currently the MicroProfileRestClientResponseFilter which handles failures runs with priority USER
                 var priority = AnnotationValue.createIntegerValue("priority", Priorities.USER + 100);
                 producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, AnnotationInstance
-                        .create(DotNames.REGISTER_PROVIDER, instance.target(), List.of(valueAttribute, priority))));
+                        .create(DotNames.REGISTER_PROVIDER, OidcClientFilterDeploymentHelper.getTargetRestClient(instance),
+                                List.of(valueAttribute, priority))));
             }
         }
     }

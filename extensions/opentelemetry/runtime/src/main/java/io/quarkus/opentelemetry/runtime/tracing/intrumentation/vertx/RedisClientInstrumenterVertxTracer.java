@@ -194,7 +194,7 @@ public class RedisClientInstrumenterVertxTracer implements
 
         @Override
         public String getDbNamespace(CommandTrace commandTrace) {
-            return DbClientAttributesGetter.super.getDbNamespace(commandTrace);
+            return null;
         }
 
         // kept for compatibility reasons

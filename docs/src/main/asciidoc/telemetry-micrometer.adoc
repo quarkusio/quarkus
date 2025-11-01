@@ -642,6 +642,28 @@ Chunks are the primary unit of memory allocation in Netty's arenas.
 
 |===
 
+==== Unpooled
+
+This uses a utility class providing static methods to create new buffers directly and bypassing the pooling mechanism. The user must also release the allocated buffers.
+
+[NOTE]
+====
+It has been https://github.com/quarkusio/quarkus/issues/50538[reported] that some libraries using the `UnpooledByteBufAllocator` might not release some heap buffers. This will not decrement the reported allocation even if memory is no longer reserved. This might lead to astronomical values in reported memory.
+====
+
+==== Debugging
+
+If high allocation values are reported, there are 2 ways to determine whether it’s a real memory leak:
+
+* By enabling https://netty.io/wiki/reference-counted-objects.html#leak-detection-levels[leak detection], as documented by Netty. Example:
+
+[source,bash]
+----
+java -Dio.netty.leakDetection.level=advanced ...
+----
+
+* Inspect a memory dump from the application.
+
 [[quarkus-extensions-using-micrometer]]
 === List of Quarkus core extensions automatically instrumented with Micrometer
 

@@ -84,6 +84,7 @@ import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
@@ -242,6 +243,11 @@ public final class LoggingResourceProcessor {
                 .accept(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
         provider.accept(
                 new ServiceProviderBuildItem(LogContextInitializer.class.getName(), InitialConfigurator.class.getName()));
+    }
+
+    @BuildStep(onlyIfNot = IsProduction.class)
+    void runtimeLogConfig(BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(LoggingConfigBuilder.class));
     }
 
     @BuildStep

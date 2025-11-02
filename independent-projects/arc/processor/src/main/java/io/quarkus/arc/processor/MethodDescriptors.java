@@ -241,6 +241,9 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
 
+    public static final MethodDescriptor ARC_REQUIRE_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "requireContainer",
+            ArcContainer.class);
+
     public static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
             InjectableBean.class, String.class);
 

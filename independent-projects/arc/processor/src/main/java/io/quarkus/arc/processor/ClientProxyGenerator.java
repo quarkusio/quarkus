@@ -276,7 +276,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             FieldDescriptor contextField) {
         MethodCreator creator = clientProxy.getMethodCreator(Methods.INIT, void.class, String.class);
         creator.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClasName), creator.getThis());
-        ResultHandle containerHandle = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+        ResultHandle containerHandle = creator.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
         ResultHandle beanIdentifierHandle = creator.getMethodParam(0);
         ResultHandle beanHandle = creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, containerHandle,
                 beanIdentifierHandle);

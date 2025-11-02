@@ -183,7 +183,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
             MethodCreator ctor = clazz.getConstructorCreator(CreationalContext.class, Object.class);
             ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClass), ctor.getThis());
             ctor.writeInstanceField(delegate.getFieldDescriptor(), ctor.getThis(), ctor.getMethodParam(1));
-            ResultHandle arc = ctor.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+            ResultHandle arc = ctor.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
             ResultHandle creationalContextHandle = ctor.getMethodParam(0);
             for (InterceptorInfo interceptorInfo : pseudoBean.getBoundInterceptors()) {
                 ResultHandle interceptorBean = ctor.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, arc,

@@ -161,6 +161,38 @@ public class RegistriesConfigLocatorTest {
         assertThat(completeConfig).isEqualTo(expectedConfig);
     }
 
+    @Test
+    void testRecommendStreamsFrom() throws Exception {
+        final Map<String, String> env = new HashMap<>();
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRIES, "registry.acme.org,registry.other.io");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_ACME_ORG_"
+                + RegistriesConfigLocator.RECOMMEND_STREAMS_FROM_ + "ORG_ACME_PLATFORM", "1.1");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_OTHER_IO_"
+                + RegistriesConfigLocator.RECOMMEND_STREAMS_FROM_ + "IO_OTHER_PLATFORM", "2.2");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_OTHER_IO_"
+                + RegistriesConfigLocator.RECOMMEND_STREAMS_FROM_ + "IO_ANOTHER_PLATFORM", "3.3");
+
+        final RegistriesConfig actualConfig = RegistriesConfigLocator.initFromEnvironmentOrNull(env);
+
+        final RegistriesConfig expectedConfig = RegistriesConfig.builder()
+                .setRegistry(RegistryConfig.builder()
+                        .setId("registry.acme.org")
+                        .setExtra(Constants.RECOMMEND_STREAMS_FROM, Map.of("org.acme.platform", "1.1"))
+                        .build())
+                .setRegistry(RegistryConfig.builder()
+                        .setId("registry.other.io")
+                        .setExtra(Constants.RECOMMEND_STREAMS_FROM, Map.of(
+                                "io.other.platform", "2.2",
+                                "io.another.platform", "3.3"))
+                        .build())
+                .build();
+
+        assertThat(actualConfig).isEqualTo(expectedConfig);
+
+        final RegistriesConfig completeConfig = serializeDeserialize(actualConfig);
+        assertThat(completeConfig).isEqualTo(expectedConfig);
+    }
+
     private static RegistriesConfig serializeDeserialize(RegistriesConfig config) throws Exception {
         final StringWriter buf = new StringWriter();
         RegistriesConfigMapperHelper.toYaml(config, buf);

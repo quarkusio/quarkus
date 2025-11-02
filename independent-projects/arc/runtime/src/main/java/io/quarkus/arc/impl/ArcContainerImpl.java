@@ -1045,7 +1045,7 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public static ArcContainerImpl instance() {
-        return unwrap(Arc.container());
+        return unwrap(Arc.requireContainer());
     }
 
     <T> EventImpl<T> getEvent(Type eventType, Set<Annotation> eventQualifiers, InjectionPoint ip) {

@@ -477,7 +477,7 @@ public enum BuiltinBean {
     }
 
     private static ResultHandle loadInvokerTargetBean(InvokerInfo invoker, BytecodeCreator bytecode) {
-        ResultHandle arc = bytecode.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+        ResultHandle arc = bytecode.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
         return bytecode.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, arc,
                 bytecode.load(invoker.targetBean.getIdentifier()));
     }

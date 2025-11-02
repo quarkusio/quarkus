@@ -35,7 +35,7 @@ public final class ClientProxies {
     }
 
     public static <T> T getDelegate(InjectableBean<T> bean) {
-        List<InjectableContext> contexts = Arc.container().getContexts(bean.getScope());
+        List<InjectableContext> contexts = Arc.requireContainer().getContexts(bean.getScope());
         T result = null;
         if (contexts.size() == 1) {
             result = contexts.get(0).getIfActive(bean, ClientProxies::newCreationalContext);

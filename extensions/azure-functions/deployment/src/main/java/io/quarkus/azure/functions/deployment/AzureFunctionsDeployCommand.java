@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,6 +41,7 @@ import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.auth.AzureCloud;
 import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessage;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessager;
@@ -79,7 +81,8 @@ public class AzureFunctionsDeployCommand {
             "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
             "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
-    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 17` and `Java 21`";
+    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(java )?[0-9]+", Pattern.CASE_INSENSITIVE);
+    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `17` or `21`";
 
     protected static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
 
@@ -107,12 +110,16 @@ public class AzureFunctionsDeployCommand {
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
         initAzureAppServiceClient(config);
 
-        final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
-                config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
-        Path outputDirectory = output.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
+        try {
+            final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
+                    config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
+            Path outputDirectory = output.getOutputDirectory();
+            Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
-        deployArtifact(functionStagingDir, target);
+            deployArtifact(functionStagingDir, target);
+        } catch (AzureToolkitRuntimeException e) {
+            throw new DeploymentException("Unable to deploy Azure function: " + e.getMessage().replace("\\r\\n", "\n"), e);
+        }
         producer.produce(new DeployCommandActionBuildItem(AZURE_FUNCTIONS, true));
     }
 
@@ -201,7 +208,8 @@ public class AzureFunctionsDeployCommand {
             throw new BuildException(INVALID_OS);
         }
         // java version
-        if (StringUtils.isNotEmpty(config.runtime().javaVersion())) {
+        if (StringUtils.isNotEmpty(config.runtime().javaVersion())
+                && !JAVA_VERSION_PATTERN.matcher(config.runtime().javaVersion()).matches()) {
             log.warn(format(EXPANDABLE_JAVA_VERSION_WARNING, config.runtime().javaVersion()));
         }
         // pricing tier

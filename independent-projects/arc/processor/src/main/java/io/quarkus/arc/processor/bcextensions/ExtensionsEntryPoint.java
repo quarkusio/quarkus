@@ -26,6 +26,7 @@ import jakarta.enterprise.inject.build.compatible.spi.ClassConfig;
 import jakarta.enterprise.inject.build.compatible.spi.Parameters;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticObserver;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.util.Nonbinding;
@@ -39,6 +40,7 @@ import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InstanceImpl;
 import io.quarkus.arc.impl.SyntheticCreationalContextImpl;
 import io.quarkus.arc.impl.bcextensions.ParametersImpl;
+import io.quarkus.arc.impl.bcextensions.SyntheticInjectionsImpl;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
@@ -388,72 +390,146 @@ public class ExtensionsEntryPoint {
                 bean.priority(syntheticBean.priority);
             }
             configureParams(bean, syntheticBean.params);
+            for (TypeAndQualifiers injectionPoint : syntheticBean.injectionPoints) {
+                bean.addInjectionPoint(injectionPoint.type(), injectionPoint.qualifiers());
+            }
             boolean isDependent = syntheticBean.scope == null
                     || Dependent.class.equals(syntheticBean.scope)
                     || dependentByStereotype;
-            bean.creator(cg -> {
-                BlockCreator bc = cg.createMethod();
+            if (hasNewCreate(syntheticBean.creatorClass)) {
+                bean.creator(cg -> {
+                    BlockCreator bc = cg.createMethod();
 
-                // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
-                Expr synthCC = bc.cast(cg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class);
-                // | CreationalContext delegateCC = synthCC.getDelegateCreationalContext()
-                Expr delegateCC = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
-                        "getDelegateCreationalContext", CreationalContext.class), synthCC);
-                // | CreationalContextImpl ccImpl = (CreationalContextImpl) delegateCC;
-                Expr ccImpl = bc.cast(delegateCC, CreationalContextImpl.class);
-                // | Instance<Object> lookup = InstanceImpl.forSynthesis(ccImpl, isDependent);
-                LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
-                        "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
-                        ccImpl, Const.of(isDependent)));
+                    // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                    Expr synthCC = bc.cast(cg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class);
+                    // | Map<TypeAndQualifiers, Object> injectionsMap = synthCC.getInjectedReferences();
+                    Expr injectionsMap = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                            "getInjectedReferences", Map.class), synthCC);
+                    // | SyntheticInjections injections = new SyntheticInjectionsImpl(injectionsMap);
+                    LocalVar injections = bc.localVar("injections",
+                            bc.new_(ConstructorDesc.of(SyntheticInjectionsImpl.class, Map.class), injectionsMap));
 
-                // | Parameters params = new ParametersImpl(paramsMap);
-                LocalVar params = bc.localVar("params",
-                        bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), cg.paramsMap()));
+                    // | Parameters params = new ParametersImpl(this.params);
+                    LocalVar params = bc.localVar("params",
+                            bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), cg.paramsMap()));
 
-                // | SyntheticBeanCreator creator = new ConfiguredSyntheticBeanCreator();
-                LocalVar creator = bc.localVar("creator",
-                        bc.new_(ConstructorDesc.of(syntheticBean.creatorClass)));
+                    // | SyntheticBeanCreator creator = new ConfiguredSyntheticBeanCreator();
+                    LocalVar creator = bc.localVar("creator",
+                            bc.new_(ConstructorDesc.of(syntheticBean.creatorClass)));
 
-                // | Object instance = creator.create(lookup, params);
-                Expr instance = bc.invokeInterface(MethodDesc.of(SyntheticBeanCreator.class,
-                        "create", Object.class, Instance.class, Parameters.class), creator, lookup, params);
+                    // | Object instance = creator.create(injections, params);
+                    Expr instance = bc.invokeInterface(MethodDesc.of(SyntheticBeanCreator.class,
+                            "create", Object.class, SyntheticInjections.class, Parameters.class),
+                            creator, injections, params);
 
-                // | return instance;
-                bc.return_(instance);
-            });
-            if (syntheticBean.disposerClass != null) {
-                bean.destroyer(dg -> {
-                    BlockCreator bc = dg.destroyMethod();
+                    // | return instance;
+                    bc.return_(instance);
+                });
+            } else { // the old, deprecated `create()` method
+                bean.creator(cg -> {
+                    BlockCreator bc = cg.createMethod();
 
-                    // | CreationalContextImpl creationalContextImpl = (CreationalContextImpl) creationalContext;
-                    LocalVar creationalContextImpl = bc.localVar("creationalContextImpl",
-                            bc.cast(dg.creationalContext(), CreationalContextImpl.class));
-                    // | Instance<Object> lookup = InstanceImpl.forSynthesis(creationalContext, isDependent);
-                    // last argument is `false` because looking up `InjectionPoint` in disposer is invalid
+                    // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                    Expr synthCC = bc.cast(cg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class);
+                    // | CreationalContext delegateCC = synthCC.getDelegateCreationalContext()
+                    Expr delegateCC = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                            "getDelegateCreationalContext", CreationalContext.class), synthCC);
+                    // | CreationalContextImpl ccImpl = (CreationalContextImpl) delegateCC;
+                    Expr ccImpl = bc.cast(delegateCC, CreationalContextImpl.class);
+                    // | Instance<Object> lookup = InstanceImpl.forSynthesis(ccImpl, isDependent);
                     LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
                             "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
-                            creationalContextImpl, Const.of(false)));
+                            ccImpl, Const.of(isDependent)));
 
                     // | Parameters params = new ParametersImpl(paramsMap);
                     LocalVar params = bc.localVar("params",
-                            bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), dg.paramsMap()));
+                            bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), cg.paramsMap()));
 
-                    // | SyntheticBeanDisposer disposer = new ConfiguredSyntheticBeanDisposer();
-                    LocalVar disposer = bc.localVar("disposer",
-                            bc.new_(ConstructorDesc.of(syntheticBean.disposerClass)));
+                    // | SyntheticBeanCreator creator = new ConfiguredSyntheticBeanCreator();
+                    LocalVar creator = bc.localVar("creator",
+                            bc.new_(ConstructorDesc.of(syntheticBean.creatorClass)));
 
-                    // | disposer.dispose(instance, lookup, params);
-                    bc.invokeInterface(MethodDesc.of(SyntheticBeanDisposer.class, "dispose", void.class,
-                            Object.class, Instance.class, Parameters.class),
-                            disposer, dg.destroyedInstance(), lookup, params);
+                    // | Object instance = creator.create(lookup, params);
+                    Expr instance = bc.invokeInterface(MethodDesc.of(SyntheticBeanCreator.class,
+                            "create", Object.class, Instance.class, Parameters.class),
+                            creator, lookup, params);
 
-                    // | creationalContextImpl.release()
-                    bc.invokeVirtual(MethodDesc.of(CreationalContextImpl.class, "release", void.class),
-                            creationalContextImpl);
-
-                    // return type is `void`
-                    bc.return_();
+                    // | return instance;
+                    bc.return_(instance);
                 });
+            }
+            if (syntheticBean.disposerClass != null) {
+                if (hasNewDispose(syntheticBean.disposerClass)) {
+                    bean.destroyer(dg -> {
+                        BlockCreator bc = dg.destroyMethod();
+
+                        // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                        LocalVar synthCC = bc.localVar("synthCC",
+                                bc.cast(dg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class));
+
+                        // | Map<TypeAndQualifiers, Object> injectionsMap = synthCC.getInjectedReferences();
+                        Expr injectionsMap = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                                "getInjectedReferences", Map.class), synthCC);
+                        // | SyntheticInjections injections = new SyntheticInjectionsImpl(injectionsMap);
+                        LocalVar injections = bc.localVar("injections",
+                                bc.new_(ConstructorDesc.of(SyntheticInjectionsImpl.class, Map.class), injectionsMap));
+
+                        // | Parameters params = new ParametersImpl(paramsMap);
+                        LocalVar params = bc.localVar("params",
+                                bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), dg.paramsMap()));
+
+                        // | SyntheticBeanDisposer disposer = new ConfiguredSyntheticBeanDisposer();
+                        LocalVar disposer = bc.localVar("disposer",
+                                bc.new_(ConstructorDesc.of(syntheticBean.disposerClass)));
+
+                        // | disposer.dispose(instance, injections, params);
+                        bc.invokeInterface(MethodDesc.of(SyntheticBeanDisposer.class,
+                                "dispose", void.class, Object.class, SyntheticInjections.class, Parameters.class),
+                                disposer, dg.destroyedInstance(), injections, params);
+
+                        // | synthCC.release()
+                        bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class, "release", void.class), synthCC);
+
+                        bc.return_();
+                    });
+                } else { // the old, deprecated `dispose()` method
+                    bean.destroyer(dg -> {
+                        BlockCreator bc = dg.destroyMethod();
+
+                        // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                        LocalVar synthCC = bc.localVar("synthCC",
+                                bc.cast(dg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class));
+
+                        // | CreationalContext delegateCC = synthCC.getDelegateCreationalContext()
+                        Expr delegateCC = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                                "getDelegateCreationalContext", CreationalContext.class), synthCC);
+                        // | CreationalContextImpl ccImpl = (CreationalContextImpl) delegateCC;
+                        Expr ccImpl = bc.cast(delegateCC, CreationalContextImpl.class);
+                        // | Instance<Object> lookup = InstanceImpl.forSynthesis(creationalContext, isDependent);
+                        // last argument is `false` because looking up `InjectionPoint` in disposer is invalid
+                        LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
+                                "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
+                                ccImpl, Const.of(false)));
+
+                        // | Parameters params = new ParametersImpl(paramsMap);
+                        LocalVar params = bc.localVar("params",
+                                bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), dg.paramsMap()));
+
+                        // | SyntheticBeanDisposer disposer = new ConfiguredSyntheticBeanDisposer();
+                        LocalVar disposer = bc.localVar("disposer",
+                                bc.new_(ConstructorDesc.of(syntheticBean.disposerClass)));
+
+                        // | disposer.dispose(instance, lookup, params);
+                        bc.invokeInterface(MethodDesc.of(SyntheticBeanDisposer.class,
+                                "dispose", void.class, Object.class, Instance.class, Parameters.class),
+                                disposer, dg.destroyedInstance(), lookup, params);
+
+                        // | synthCC.release()
+                        bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class, "release", void.class), synthCC);
+
+                        bc.return_();
+                    });
+                }
             }
             // the generated classes need to see the `creatorClass` and the `disposerClass`,
             // so if they are application classes, the generated classes are forced to also
@@ -466,6 +542,24 @@ public class ExtensionsEntryPoint {
                 bean.forceApplicationClass();
             }
             bean.done();
+        }
+    }
+
+    private boolean hasNewCreate(Class<? extends SyntheticBeanCreator<?>> clazz) {
+        try {
+            clazz.getDeclaredMethod("create", SyntheticInjections.class, Parameters.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    private boolean hasNewDispose(Class<? extends SyntheticBeanDisposer<?>> clazz) {
+        try {
+            clazz.getDeclaredMethod("dispose", Object.class, SyntheticInjections.class, Parameters.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
         }
     }
 

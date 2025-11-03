@@ -6,16 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.build.compatible.spi.Parameters;
 import jakarta.enterprise.inject.build.compatible.spi.Synthesis;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,7 +23,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class SyntheticBeanInjectionPointTest {
+public class SyntheticBeanInjectionPointDependentTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(MyBean.class)
@@ -69,15 +68,6 @@ public class SyntheticBeanInjectionPointTest {
         assertNull(MyDependentBeanDisposer.lookedUp);
     }
 
-    @Test
-    public void testLookupSingletonSynthBean() {
-        try {
-            Arc.container().select(MySingletonBean.class).get();
-        } catch (Exception ignored) {
-        }
-        assertNull(MySingletonBeanCreator.lookedUp);
-    }
-
     @Dependent
     public static class MyBean {
         @Inject
@@ -90,13 +80,9 @@ public class SyntheticBeanInjectionPointTest {
             syn.addBean(MyDependentBean.class)
                     .type(MyDependentBean.class)
                     .scope(Dependent.class)
+                    .withInjectionPoint(InjectionPoint.class)
                     .createWith(MyDependentBeanCreator.class)
                     .disposeWith(MyDependentBeanDisposer.class);
-
-            syn.addBean(MySingletonBean.class)
-                    .type(MySingletonBean.class)
-                    .scope(Singleton.class)
-                    .createWith(MySingletonBeanCreator.class);
         }
     }
 
@@ -105,15 +91,12 @@ public class SyntheticBeanInjectionPointTest {
     static class MyDependentBean {
     }
 
-    static class MySingletonBean {
-    }
-
     public static class MyDependentBeanCreator implements SyntheticBeanCreator<MyDependentBean> {
         static InjectionPoint lookedUp = null;
 
         @Override
-        public MyDependentBean create(Instance<Object> lookup, Parameters params) {
-            lookedUp = lookup.select(InjectionPoint.class).get();
+        public MyDependentBean create(SyntheticInjections injections, Parameters params) {
+            lookedUp = injections.get(InjectionPoint.class);
             return new MyDependentBean();
         }
     }
@@ -122,18 +105,8 @@ public class SyntheticBeanInjectionPointTest {
         static InjectionPoint lookedUp = null;
 
         @Override
-        public void dispose(MyDependentBean instance, Instance<Object> lookup, Parameters params) {
-            lookedUp = lookup.select(InjectionPoint.class).get();
-        }
-    }
-
-    public static class MySingletonBeanCreator implements SyntheticBeanCreator<MySingletonBean> {
-        static InjectionPoint lookedUp = null;
-
-        @Override
-        public MySingletonBean create(Instance<Object> lookup, Parameters params) {
-            lookedUp = lookup.select(InjectionPoint.class).get();
-            return new MySingletonBean();
+        public void dispose(MyDependentBean instance, SyntheticInjections injections, Parameters params) {
+            lookedUp = injections.get(InjectionPoint.class);
         }
     }
 }

@@ -446,20 +446,12 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
             BlockCreator bc = cg.createMethod();
 
             // return new FooBeanCreator().create(syntheticCreationalContext)
-            MethodDesc createDesc = MethodDesc.of(BeanCreator.class, "create", Object.class, SyntheticCreationalContext.class);
+            MethodDesc createDesc = MethodDesc.of(BeanCreator.class,
+                    "create", Object.class, SyntheticCreationalContext.class);
             bc.return_(bc.invokeInterface(createDesc, bc.new_(creatorClazz), cg.syntheticCreationalContext()));
         });
     }
 
-    /**
-     * The first method parameter is the synthetic creational context, i.e. the {@code MethodCreator#getMethodParam(0)} returns
-     * a {@link SyntheticCreationalContext} instance that can be used to obtain contextual references for synthetic injection
-     * points and build-time parameters.
-     * <p>
-     * Furthermore, the consumer can also read the instance field of name {@code params} and type {@link Map}. This map holds
-     * all parameters set via one of the {@code BeanConfigurator#param()} methods.
-     *
-     */
     public THIS creator(Consumer<CreateGeneration> creatorConsumer) {
         this.creatorConsumer = creatorConsumer;
         return cast(this);
@@ -469,11 +461,11 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         return destroyer(dg -> {
             BlockCreator bc = dg.destroyMethod();
 
-            // new FooBeanDestroyer().destroy(instance, context, params)
-            MethodDesc destroyDesc = MethodDesc.of(BeanDestroyer.class, "destroy", void.class, Object.class,
-                    CreationalContext.class, Map.class);
-            bc.invokeInterface(destroyDesc, bc.new_(destroyerClazz), dg.destroyedInstance(),
-                    dg.creationalContext(), dg.paramsMap());
+            // new FooBeanDestroyer().destroy(instance, syntheticCreationalContext)
+            MethodDesc destroyDesc = MethodDesc.of(BeanDestroyer.class,
+                    "destroy", void.class, Object.class, SyntheticCreationalContext.class);
+            bc.invokeInterface(destroyDesc, bc.new_(destroyerClazz),
+                    dg.destroyedInstance(), dg.syntheticCreationalContext());
             bc.return_();
         });
     }
@@ -601,11 +593,19 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         Var destroyedInstance();
 
         /**
-         * {@return the parameter of the generated destruction method that contains the {@link CreationalContext}}
+         * @deprecated use {@link #syntheticCreationalContext()}
+         */
+        @Deprecated(forRemoval = true, since = "4.0")
+        default Var creationalContext() {
+            return syntheticCreationalContext();
+        }
+
+        /**
+         * {@return the parameter of the generated destruction method that contains the {@link SyntheticCreationalContext}}
          *
          * @see #destroyMethod()
          */
-        Var creationalContext();
+        Var syntheticCreationalContext();
     }
 
     public interface CheckActiveGeneration {

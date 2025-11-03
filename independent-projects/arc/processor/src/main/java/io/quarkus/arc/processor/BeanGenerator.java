@@ -1348,6 +1348,40 @@ public class BeanGenerator extends AbstractGenerator {
             });
         }
 
+        LocalVar synthCC = createSyntheticCreationalContext(cc, bean, injectionPointToProviderSupplierField, parentCC, b0);
+
+        LocalVar result = b0.localVar("result", Const.ofNull(classDescOf(bean.getProviderType())));
+        b0.try_(tc -> {
+            tc.body(b1 -> {
+                b1.set(result, b1.invokeVirtual(createSyntheticDesc, cc.this_(), synthCC));
+            });
+            tc.catch_(Exception.class, "e", (b1, e) -> {
+                Expr msg = StringBuilderGen.ofNew(b1)
+                        .append("Error creating synthetic bean [")
+                        .append(bean.getIdentifier())
+                        .append("]: ")
+                        .append(e)
+                        .toString_();
+                b1.throw_(b1.new_(ConstructorDesc.of(CreationException.class, String.class, Throwable.class), msg, e));
+            });
+        });
+
+        if (bean.getScope().isNormal()) {
+            // Normal scoped synthetic beans should never return null
+            b0.ifNull(result, b1 -> {
+                Expr msg = StringBuilderGen.ofNew(b1)
+                        .append("Null contextual instance was produced by a normal scoped synthetic bean: ")
+                        .append(cc.this_())
+                        .toString_();
+                b1.throw_(CreationException.class, msg);
+            });
+        }
+
+        b0.return_(result);
+    }
+
+    private LocalVar createSyntheticCreationalContext(ClassCreator cc, BeanInfo bean,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderSupplierField, ParamVar parentCC, BlockCreator b0) {
         LocalVar injectedReferences;
         if (injectionPointToProviderSupplierField.isEmpty()) {
             injectedReferences = b0.localVar("injectedReferences", b0.mapOf());
@@ -1408,38 +1442,10 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         FieldVar params = cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
-        Expr synthCC = b0.localVar("synthCC", b0.new_(
+
+        return b0.localVar("synthCC", b0.new_(
                 ConstructorDesc.of(SyntheticCreationalContextImpl.class, CreationalContext.class, Map.class, Map.class),
                 parentCC, params, injectedReferences));
-
-        LocalVar result = b0.localVar("result", Const.ofNull(classDescOf(bean.getProviderType())));
-        b0.try_(tc -> {
-            tc.body(b1 -> {
-                b1.set(result, b1.invokeVirtual(createSyntheticDesc, cc.this_(), synthCC));
-            });
-            tc.catch_(Exception.class, "e", (b1, e) -> {
-                Expr msg = StringBuilderGen.ofNew(b1)
-                        .append("Error creating synthetic bean [")
-                        .append(bean.getIdentifier())
-                        .append("]: ")
-                        .append(e)
-                        .toString_();
-                b1.throw_(b1.new_(ConstructorDesc.of(CreationException.class, String.class, Throwable.class), msg, e));
-            });
-        });
-
-        if (bean.getScope().isNormal()) {
-            // Normal scoped synthetic beans should never return null
-            b0.ifNull(result, b1 -> {
-                Expr msg = StringBuilderGen.ofNew(b1)
-                        .append("Null contextual instance was produced by a normal scoped synthetic bean: ")
-                        .append(cc.this_())
-                        .toString_();
-                b1.throw_(CreationException.class, msg);
-            });
-        }
-
-        b0.return_(result);
     }
 
     static void checkPrimitiveInjection(BlockCreator b0, InjectionPointInfo injectionPoint, LocalVar localVar) {
@@ -1628,6 +1634,9 @@ public class BeanGenerator extends AbstractGenerator {
                             b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, ccParam);
                             b1.return_();
                         } else if (bean.isSynthetic()) {
+                            LocalVar synthCC = createSyntheticCreationalContext(cc, bean, injectionPointToProviderField,
+                                    ccParam, b1);
+
                             bean.getDestroyerConsumer().accept(new BeanConfiguratorBase.DestroyGeneration() {
                                 @Override
                                 public ClassCreator beanClass() {
@@ -1645,8 +1654,8 @@ public class BeanGenerator extends AbstractGenerator {
                                 }
 
                                 @Override
-                                public Var creationalContext() {
-                                    return ccParam;
+                                public Var syntheticCreationalContext() {
+                                    return synthCC;
                                 }
                             });
                         }

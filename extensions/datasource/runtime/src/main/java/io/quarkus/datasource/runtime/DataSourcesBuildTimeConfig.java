@@ -41,7 +41,8 @@ public interface DataSourcesBuildTimeConfig {
      * <p>
      * This is a global setting and is not specific to a datasource.
      * <p>
-     * NOTE: This is different from the <code>quarkus.datasource."datasource name".jdbc.metrics.enabled</code> property that needs to be set on the JDBC datasource level to
+     * NOTE: This is different from the <code>quarkus.datasource."datasource name".jdbc.metrics.enabled</code> property that
+     * needs to be set on the JDBC datasource level to
      * enable collection of metrics for that datasource.
      */
     @WithName("metrics.enabled")

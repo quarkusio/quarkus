@@ -24,7 +24,7 @@ public class AgroalMetricsProcessor {
             // IFF metrics are enabled globally and for the data source
             // (they are enabled for each data source by default if they are also enabled globally)
             if (dataSourcesBuildTimeConfig.metricsEnabled() &&
-                    aggregatedDataSourceBuildTimeConfig.getJdbcConfig().enableMetrics().orElse(true)) {
+                    aggregatedDataSourceBuildTimeConfig.getJdbcConfig().metrics().enabled().orElse(true)) {
                 datasourceMetrics.produce(new MetricsFactoryConsumerBuildItem(
                         recorder.registerDataSourceMetrics(aggregatedDataSourceBuildTimeConfig.getName())));
             }

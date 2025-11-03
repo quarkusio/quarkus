@@ -55,47 +55,77 @@ public interface RestClientsConfig {
     Optional<String> multipartPostEncoderMode();
 
     /**
+     * The name of the proxy configuration to use; ignored if {@code quarkus.rest-client.proxy-address} is set.
+     * <p>
+     * If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.
+     * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+     * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown
+     * at runtime.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * Use the value {@code none} to disable using the default configuration defined via {@code quarkus.proxy.*}.
+     * <p>
+     * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+     */
+    Optional<String> proxyConfigurationName();
+
+    /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
      * (or IP address) and port for requests of clients to use.
      * <p>
      * Can be overwritten by client-specific settings.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
     /**
      * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<String> proxyUser();
 
     /**
      * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword JVM settings.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<String> proxyPassword();
 
     /**
      * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
      * Please note that unlike the JVM settings, this property is empty by default.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<String> nonProxyHosts();
 
     /**
-     * Proxy connection timeout
+     * Proxy connection timeout.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     @ConfigDocDefault("10s")
     Optional<Duration> proxyConnectTimeout();
@@ -467,38 +497,68 @@ public interface RestClientsConfig {
         Optional<String> multipartPostEncoderMode();
 
         /**
+         * The name of the proxy configuration to use; ignored if {@code quarkus.rest-client."client".proxy-address} is set.
+         * <p>
+         * If not set and {@code quarkus.rest-client.proxy-configuration-name} or the default proxy configuration
+         * ({@code quarkus.proxy.*}) is set, then the first valid of them will get effective.
+         * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+         * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be
+         * thrown at runtime.
+         * <p>
+         * Use the value {@code none} to disable using the default configuration defined via
+         * {@code quarkus.rest-client.proxy-configuration-name} or {@code quarkus.proxy.*}.
+         * <p>
+         * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+         */
+        Optional<String> proxyConfigurationName();
+
+        /**
          * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
          * (or IP address) and port for requests of this client to use.
          * <p>
          * Use `none` to disable proxy
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
         /**
          * Proxy username.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<String> proxyUser();
 
         /**
          * Proxy password.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<String> proxyPassword();
 
         /**
-         * Hosts to access without proxy
+         * Hosts to access without proxy.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<String> nonProxyHosts();
 
         /**
-         * Proxy connection timeout
+         * Proxy connection timeout.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         @ConfigDocDefault("10s")
         Optional<Duration> proxyConnectTimeout();

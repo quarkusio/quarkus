@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -48,11 +49,16 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry.NoneReturnValue;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry.UsernamePassword;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.ProxyType;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 
@@ -83,6 +89,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String proxyPassword;
     private String nonProxyHosts;
     private Duration proxyConnectTimeout;
+    private ProxyType proxyType;
 
     private ClientLogger clientLogger;
     private LoggingScope loggingScope;
@@ -242,6 +249,27 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     public RestClientBuilderImpl proxyConnectTimeout(Duration proxyConnectTimeout) {
         this.proxyConnectTimeout = proxyConnectTimeout;
         return this;
+    }
+
+    public RestClientBuilderImpl proxyType(io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig.ProxyType proxyType) {
+        this.proxyType = toVertxProxyType(proxyType);
+        return this;
+    }
+
+    static ProxyType toVertxProxyType(io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig.ProxyType type) {
+        switch (type) {
+            case HTTP: {
+                return ProxyType.HTTP;
+            }
+            case SOCKS4: {
+                return ProxyType.SOCKS4;
+            }
+            case SOCKS5: {
+                return ProxyType.SOCKS5;
+            }
+            default:
+                throw new IllegalArgumentException("Unexpected ProxyType " + type);
+        }
     }
 
     public RestClientBuilderImpl multipartPostEncoderMode(String mode) {
@@ -575,7 +603,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
 
         if (proxyHost != null) {
-            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts, proxyConnectTimeout);
+            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts, proxyConnectTimeout, proxyType);
         } else if (restClients.proxyAddress().isPresent()) {
             HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClients.proxyAddress().get());
             configureProxy(
@@ -584,7 +612,25 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                     restClients.proxyUser().orElse(null),
                     restClients.proxyPassword().orElse(null),
                     restClients.nonProxyHosts().orElse(null),
-                    restClients.proxyConnectTimeout().orElse(null));
+                    restClients.proxyConnectTimeout().orElse(null),
+                    null);
+        } else {
+            /* Check the named proxy configuration on the rest-client extension level or fallback to global proxy settings */
+            final ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+            registry.getProxyConfig(restClients.proxyConfigurationName(), NoneReturnValue.NONE_INSTANCE)
+                    .map(NamedProxyConfig::assertHttpType)
+                    .ifPresent(proxyConfig -> {
+                        Optional<UsernamePassword> creds = registry.getUsernamePassword(proxyConfig);
+                        configureProxy(
+                                proxyConfig.host().get(),
+                                proxyConfig.port().getAsInt(),
+                                creds.map(UsernamePassword::getUsername).orElse(null),
+                                creds.map(UsernamePassword::getPassword).orElse(null),
+                                proxyConfig.nonProxyHosts().map(nph -> nph.stream().collect(Collectors.joining(",")))
+                                        .orElse(null),
+                                proxyConfig.proxyConnectTimeout().orElse(null),
+                                toVertxProxyType(proxyConfig.type()));
+                    });
         }
 
         if (!clientBuilder.getConfiguration().hasProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE)) {
@@ -616,7 +662,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     private void configureProxy(String proxyHost, Integer proxyPort, String proxyUser, String proxyPassword,
-            String nonProxyHosts, Duration proxyConnectTimeout) {
+            String nonProxyHosts, Duration proxyConnectTimeout, io.vertx.core.net.ProxyType proxyType) {
         if (proxyHost != null) {
             clientBuilder.proxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyPassword != null) {
@@ -630,6 +676,9 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
             if (proxyConnectTimeout != null) {
                 clientBuilder.proxyConnectTimeout(proxyConnectTimeout);
+            }
+            if (proxyType != null) {
+                clientBuilder.proxyType(proxyType);
             }
         }
     }

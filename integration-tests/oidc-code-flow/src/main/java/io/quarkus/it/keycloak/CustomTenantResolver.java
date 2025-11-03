@@ -28,6 +28,10 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-query";
         }
 
+        if (path.contains("tenant-restore-query-keep-redirect-params")) {
+            return "tenant-restore-query-keep-redirect-params";
+        }
+
         if (path.contains("tenant-listener")) {
             return "tenant-listener";
         }

@@ -1,13 +1,13 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
-import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.annotation.Annotation;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -36,14 +35,16 @@ import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.StringBuilderGen;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ActiveResult;
@@ -65,22 +66,21 @@ import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.Gizmo.StringBuilderGenerator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.FieldVar;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.Reflection2Gizmo;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.creator.ModifierFlag;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  *
@@ -105,13 +105,13 @@ public class BeanGenerator extends AbstractGenerator {
     protected final Map<BeanInfo, String> beanToGeneratedName;
     protected final Map<BeanInfo, String> beanToGeneratedBaseName;
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
-    protected final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
+    protected final List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators;
 
     public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate,
-            List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators) {
+            List<Function<BeanInfo, Consumer<BlockCreator>>> suppressConditionGenerators) {
         super(generateSources, reflectionRegistration);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -124,60 +124,28 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     /**
-     *
-     * @param bean
-     * @return a collection of resources
-     */
-    Collection<Resource> generate(BeanInfo bean) {
-        if (bean.isSynthetic()) {
-            return generateSyntheticBean(bean);
-        } else {
-            AnnotationTarget target = bean.getTarget().get();
-            switch (target.kind()) {
-                case CLASS:
-                    return generateClassBean(bean, target.asClass());
-                case METHOD:
-                    return generateProducerMethodBean(bean, target.asMethod());
-                case FIELD:
-                    return generateProducerFieldBean(bean, target.asField());
-                default:
-                    throw new IllegalArgumentException("Unsupported bean type");
-            }
-        }
-    }
-
-    /**
-     * Precompute the generated name for the given bean so that the {@link ComponentsProviderGenerator} can be executed before
-     * all beans metadata are generated.
+     * Precompute the generated name for the given bean so that the {@link ComponentsProviderGenerator} can be executed
+     * before all beans metadata are generated.
      *
      * @param bean
      */
     void precomputeGeneratedName(BeanInfo bean) {
-        if (bean.isSynthetic()) {
-            generateSyntheticBeanName(bean);
-        } else if (bean.isProducerField()) {
-            generateProducerFieldBeanName(bean);
+        if (bean.isClassBean()) {
+            generateClassBeanName(bean);
         } else if (bean.isProducerMethod()) {
             generateProducerMethodBeanName(bean);
-        } else if (bean.isClassBean()) {
-            generateClassBeanName(bean);
+        } else if (bean.isProducerField()) {
+            generateProducerFieldBeanName(bean);
+        } else if (bean.isSynthetic()) {
+            generateSyntheticBeanName(bean);
         }
     }
 
-    private void generateProducerFieldBeanName(BeanInfo bean) {
-        FieldInfo producerField = bean.getTarget().get().asField();
-        ClassInfo declaringClass = producerField.declaringClass();
-        String declaringClassBase;
-        if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
-                    + DotNames.simpleName(declaringClass);
-        } else {
-            declaringClassBase = DotNames.simpleName(declaringClass);
-        }
-
-        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name();
+    private void generateClassBeanName(BeanInfo bean) {
+        ClassInfo beanClass = bean.getTarget().get().asClass();
+        String baseName = beanClass.name().withoutPackagePrefix();
         this.beanToGeneratedBaseName.put(bean, baseName);
-        String targetPackage = DotNames.packageName(declaringClass.name());
+        String targetPackage = DotNames.packagePrefix(bean.getProviderType().name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
         this.beanToGeneratedName.put(bean, generatedName);
     }
@@ -185,1728 +153,690 @@ public class BeanGenerator extends AbstractGenerator {
     private void generateProducerMethodBeanName(BeanInfo bean) {
         MethodInfo producerMethod = bean.getTarget().get().asMethod();
         ClassInfo declaringClass = producerMethod.declaringClass();
-        String declaringClassBase;
-        if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
-                    + DotNames.simpleName(declaringClass);
-        } else {
-            declaringClassBase = DotNames.simpleName(declaringClass);
-        }
+        String declaringClassBase = declaringClass.name().withoutPackagePrefix();
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(producerMethod.name())
                 .append(UNDERSCORE)
-                .append(producerMethod.returnType().name().toString());
-
-        for (Type i : producerMethod.parameterTypes()) {
-            sigBuilder.append(i.name().toString());
+                .append(producerMethod.returnType().name());
+        for (Type parameterType : producerMethod.parameterTypes()) {
+            sigBuilder.append(parameterType.name());
         }
 
         String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + UNDERSCORE + producerMethod.name() + UNDERSCORE
                 + Hashes.sha1_base64(sigBuilder.toString());
         this.beanToGeneratedBaseName.put(bean, baseName);
-        String targetPackage = DotNames.packageName(declaringClass.name());
+        String targetPackage = DotNames.packagePrefix(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
         this.beanToGeneratedName.put(bean, generatedName);
     }
 
-    private void generateClassBeanName(BeanInfo bean) {
-        ClassInfo beanClass = bean.getTarget().get().asClass();
-        String baseName;
-        if (beanClass.enclosingClass() != null) {
-            baseName = DotNames.simpleName(beanClass.enclosingClass()) + UNDERSCORE + DotNames.simpleName(beanClass);
-        } else {
-            baseName = DotNames.simpleName(beanClass);
-        }
+    private void generateProducerFieldBeanName(BeanInfo bean) {
+        FieldInfo producerField = bean.getTarget().get().asField();
+        ClassInfo declaringClass = producerField.declaringClass();
+        String declaringClassBase = declaringClass.name().withoutPackagePrefix();
+
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name();
         this.beanToGeneratedBaseName.put(bean, baseName);
-        ProviderType providerType = new ProviderType(bean.getProviderType());
-        String targetPackage = DotNames.packageName(providerType.name());
+        String targetPackage = DotNames.packagePrefix(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
         this.beanToGeneratedName.put(bean, generatedName);
     }
 
     private void generateSyntheticBeanName(BeanInfo bean) {
-        StringBuilder baseNameBuilder = new StringBuilder();
-        if (bean.getImplClazz().enclosingClass() != null) {
-            baseNameBuilder.append(DotNames.simpleName(bean.getImplClazz().enclosingClass())).append(UNDERSCORE)
-                    .append(DotNames.simpleName(bean.getImplClazz()));
-        } else {
-            baseNameBuilder.append(DotNames.simpleName(bean.getImplClazz()));
-        }
-        baseNameBuilder.append(UNDERSCORE);
-        baseNameBuilder.append(bean.getIdentifier());
-        baseNameBuilder.append(UNDERSCORE);
-        baseNameBuilder.append(SYNTHETIC_SUFFIX);
-        String baseName = baseNameBuilder.toString();
+        String baseName = bean.getImplClazz().name().withoutPackagePrefix() + UNDERSCORE + bean.getIdentifier()
+                + UNDERSCORE + SYNTHETIC_SUFFIX;
         this.beanToGeneratedBaseName.put(bean, baseName);
         String targetPackage = bean.getTargetPackageName();
         this.beanToGeneratedName.put(bean, generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX));
     }
 
-    Collection<Resource> generateSyntheticBean(BeanInfo bean) {
+    /**
+     *
+     * @param bean
+     * @return a collection of resources
+     */
+    Collection<Resource> generate(BeanInfo bean) {
+        ClassInfo clazz;
+        if (bean.isClassBean()) {
+            clazz = bean.getTarget().get().asClass();
+        } else if (bean.isProducerMethod()) {
+            clazz = bean.getTarget().get().asMethod().declaringClass();
+        } else if (bean.isProducerField()) {
+            clazz = bean.getTarget().get().asField().declaringClass();
+        } else if (bean.isSynthetic()) {
+            clazz = bean.getImplClazz();
+        } else {
+            throw new IllegalArgumentException("Unknown bean type: " + bean);
+        }
+
         ProviderType providerType = new ProviderType(bean.getProviderType());
-        String targetPackage = bean.getTargetPackageName();
         String baseName = beanToGeneratedBaseName.get(bean);
+        String targetPackage = bean.isSynthetic()
+                ? bean.getTargetPackageName()
+                : DotNames.packagePrefix(bean.isProducer() ? clazz.name() : providerType.name());
         String generatedName = beanToGeneratedName.get(bean);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name())
-                || bean.isForceApplicationClass();
-        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
-
-        // Foo_Bean implements InjectableBean<T>
-        ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class, Supplier.class).build();
-
-        // Fields
-        FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
-        FieldCreator qualifiers = null;
-        if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-            qualifiers = beanCreator.getFieldCreator(FIELD_NAME_QUALIFIERS, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-        if (bean.getScope().isNormal()) {
-            // For normal scopes a client proxy is generated too
-            initializeProxy(bean, baseName, beanCreator);
-        }
-        FieldCreator stereotypes = null;
-        if (!bean.getStereotypes().isEmpty()) {
-            stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-
-        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = Collections.emptyMap();
-        if (bean.hasInjectionPoint()) {
-            injectionPointToProviderSupplierField = new HashMap<>();
-            // Synthetic beans are not intercepted
-            initMaps(bean, injectionPointToProviderSupplierField, null, null);
-            createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, Collections.emptyMap(),
-                    Collections.emptyMap());
-        }
-
-        MethodCreator constructor = initConstructor(classOutput, beanCreator, bean, injectionPointToProviderSupplierField,
-                Collections.emptyMap(), Collections.emptyMap(),
-                annotationLiterals, reflectionRegistration);
-
-        SyntheticComponentsUtil.addParamsFieldAndInit(beanCreator, constructor, bean.getParams(), annotationLiterals,
-                bean.getDeployment().getBeanArchiveIndex());
-
-        constructor.returnValue(null);
-
-        implementGetIdentifier(bean, beanCreator);
-        implementSupplierGet(beanCreator);
-        if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName,
-                    targetPackage);
-        }
-        implementCreate(classOutput, beanCreator, bean, providerType, baseName,
-                injectionPointToProviderSupplierField, Collections.emptyMap(),
-                Collections.emptyMap(), targetPackage, isApplicationClass);
-        implementGet(bean, beanCreator, providerType, baseName);
-
-        implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!BuiltinScope.isDefault(bean.getScope())) {
-            implementGetScope(bean, beanCreator);
-        }
-        if (qualifiers != null) {
-            implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
-        }
-
-        implementIsAlternative(bean, beanCreator);
-        implementGetPriority(bean, beanCreator);
-
-        if (stereotypes != null) {
-            implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
-        }
-        implementGetBeanClass(bean, beanCreator);
-        implementGetImplementationClass(bean, beanCreator);
-        implementGetName(bean, beanCreator);
-        if (bean.isDefaultBean()) {
-            implementIsDefaultBean(bean, beanCreator);
-        }
-        implementGetKind(beanCreator, InjectableBean.Kind.SYNTHETIC);
-        implementEquals(bean, beanCreator);
-        implementHashCode(bean, beanCreator);
-        implementToString(beanCreator);
-
-        implementGetInjectionPoints(bean, beanCreator);
-
-        beanCreator.close();
-        return classOutput.getResources();
-    }
-
-    Collection<Resource> generateClassBean(BeanInfo bean, ClassInfo beanClass) {
-        ProviderType providerType = new ProviderType(bean.getProviderType());
-        String targetPackage = DotNames.packageName(providerType.name());
-        String generatedName = beanToGeneratedName.get(bean);
-        String baseName = beanToGeneratedBaseName.get(bean);
-        if (existingClasses.contains(generatedName)) {
-            return Collections.emptyList();
-        }
-
-        boolean isApplicationClass = applicationClassPredicate.test(beanClass.name())
+        boolean isApplicationClass = applicationClassPredicate.test(clazz.name())
                 || bean.isForceApplicationClass()
                 || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
-        // Foo_Bean implements InjectableBean<T>
-        ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class, Supplier.class).build();
+        Gizmo gizmo = gizmo(classOutput);
 
-        // Fields
-        FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
-        FieldCreator qualifiers = null;
-        if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-            qualifiers = beanCreator.getFieldCreator(FIELD_NAME_QUALIFIERS, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-        if (bean.getScope().isNormal()) {
-            // For normal scopes a client proxy is generated too
-            initializeProxy(bean, baseName, beanCreator);
-        }
-        FieldCreator stereotypes = null;
-        if (!bean.getStereotypes().isEmpty()) {
-            stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
+        generateBean(gizmo, bean, generatedName, baseName, targetPackage, isApplicationClass, providerType);
 
-        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = new HashMap<>();
-        Map<InterceptorInfo, String> interceptorToProviderSupplierField = new HashMap<>();
-        Map<DecoratorInfo, String> decoratorToProviderSupplierField = new HashMap<>();
-        initMaps(bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
-                decoratorToProviderSupplierField);
-
-        createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
-                decoratorToProviderSupplierField);
-
-        // Constructor
-        createConstructor(classOutput, beanCreator, bean, injectionPointToProviderSupplierField,
-                interceptorToProviderSupplierField, decoratorToProviderSupplierField,
-                annotationLiterals, reflectionRegistration);
-
-        // Methods
-        implementGetIdentifier(bean, beanCreator);
-        implementSupplierGet(beanCreator);
-        if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, injectionPointToProviderSupplierField, isApplicationClass,
-                    baseName, targetPackage);
-        }
-        implementCreate(classOutput, beanCreator, bean, providerType, baseName,
-                injectionPointToProviderSupplierField,
-                interceptorToProviderSupplierField,
-                decoratorToProviderSupplierField,
-                targetPackage, isApplicationClass);
-        implementGet(bean, beanCreator, providerType, baseName);
-
-        implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!BuiltinScope.isDefault(bean.getScope())) {
-            implementGetScope(bean, beanCreator);
-        }
-        if (qualifiers != null) {
-            implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
-        }
-
-        implementIsAlternative(bean, beanCreator);
-        implementGetPriority(bean, beanCreator);
-
-        if (stereotypes != null) {
-            implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
-        }
-        implementGetBeanClass(bean, beanCreator);
-        implementGetName(bean, beanCreator);
-        if (bean.isDefaultBean()) {
-            implementIsDefaultBean(bean, beanCreator);
-        }
-
-        implementIsSuppressed(bean, beanCreator);
-        implementEquals(bean, beanCreator);
-        implementHashCode(bean, beanCreator);
-        implementToString(beanCreator);
-
-        implementGetInjectionPoints(bean, beanCreator);
-
-        beanCreator.close();
         return classOutput.getResources();
     }
 
-    Collection<Resource> generateProducerMethodBean(BeanInfo bean, MethodInfo producerMethod) {
-        ClassInfo declaringClass = producerMethod.declaringClass();
-        ProviderType providerType = new ProviderType(bean.getProviderType());
-        String baseName = beanToGeneratedBaseName.get(bean);
-        String targetPackage = DotNames.packageName(declaringClass.name());
-        String generatedName = beanToGeneratedName.get(bean);
+    private void generateBean(Gizmo gizmo, BeanInfo bean, String generatedName, String baseName,
+            String targetPackage, boolean isApplicationClass, ProviderType providerType) {
+        gizmo.class_(generatedName, cc -> {
+            cc.implements_(InjectableBean.class);
+            cc.implements_(Supplier.class);
 
-        if (existingClasses.contains(generatedName)) {
-            return Collections.emptyList();
-        }
+            FieldDesc beanTypesField = cc.field(FIELD_NAME_BEAN_TYPES, fc -> {
+                fc.private_();
+                fc.final_();
+                fc.setType(Set.class);
+            });
+            FieldDesc qualifiersField = null;
+            if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
+                qualifiersField = cc.field(FIELD_NAME_QUALIFIERS, fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(Set.class);
+                });
+            }
+            FieldDesc stereotypesField = null;
+            if (!bean.getStereotypes().isEmpty()) {
+                stereotypesField = cc.field(FIELD_NAME_STEREOTYPES, fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(Set.class);
+                });
+            }
+            FieldDesc declaringProviderSupplierField = null;
+            if (bean.isProducer()) {
+                declaringProviderSupplierField = cc.field(FIELD_NAME_DECLARING_PROVIDER_SUPPLIER, fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(Supplier.class);
+                });
+            }
+            if (bean.getScope().isNormal()) {
+                // For normal scopes a client proxy is generated too
+                generateProxy(cc, bean, baseName);
+            }
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderSupplierField = new HashMap<>();
+            Map<InterceptorInfo, FieldDesc> interceptorToProviderSupplierField = new HashMap<>();
+            Map<DecoratorInfo, FieldDesc> decoratorToProviderSupplierField = new HashMap<>();
+            generateProviderFields(bean, cc, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
+                    decoratorToProviderSupplierField);
 
-        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name()) || bean.isForceApplicationClass();
-        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
+            generateConstructor(cc, bean, beanTypesField, qualifiersField, stereotypesField,
+                    declaringProviderSupplierField, injectionPointToProviderSupplierField,
+                    interceptorToProviderSupplierField, decoratorToProviderSupplierField,
+                    bean.isSynthetic() ? bc -> {
+                        SyntheticComponentsUtil.addParamsFieldAndInit(cc, bc, bean.getParams(), annotationLiterals,
+                                bean.getDeployment().getBeanArchiveIndex());
+                    } : bc -> {
+                    });
 
-        // Foo_Bean implements InjectableBean<T>
-        ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class, Supplier.class).build();
-
-        // Fields
-        FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
-        FieldCreator qualifiers = null;
-        if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-            qualifiers = beanCreator.getFieldCreator(FIELD_NAME_QUALIFIERS, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-        if (bean.getScope().isNormal()) {
-            // For normal scopes a client proxy is generated too
-            initializeProxy(bean, baseName, beanCreator);
-        }
-        FieldCreator stereotypes = null;
-        if (!bean.getStereotypes().isEmpty()) {
-            stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-
-        Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
-        // Producer methods are not intercepted
-        initMaps(bean, injectionPointToProviderField, null, null);
-
-        createProviderFields(beanCreator, bean, injectionPointToProviderField, Collections.emptyMap(), Collections.emptyMap());
-        createConstructor(classOutput, beanCreator, bean, injectionPointToProviderField, Collections.emptyMap(),
-                Collections.emptyMap(),
-                annotationLiterals, reflectionRegistration);
-
-        implementGetIdentifier(bean, beanCreator);
-        implementSupplierGet(beanCreator);
-        if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, injectionPointToProviderField, isApplicationClass, baseName,
-                    targetPackage);
-        }
-        implementCreate(classOutput, beanCreator, bean, providerType, baseName,
-                injectionPointToProviderField,
-                Collections.emptyMap(), Collections.emptyMap(),
-                targetPackage, isApplicationClass);
-        implementGet(bean, beanCreator, providerType, baseName);
-
-        implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!BuiltinScope.isDefault(bean.getScope())) {
-            implementGetScope(bean, beanCreator);
-        }
-        if (qualifiers != null) {
-            implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
-        }
-
-        implementIsAlternative(bean, beanCreator);
-        implementGetPriority(bean, beanCreator);
-
-        implementGetDeclaringBean(beanCreator);
-        if (stereotypes != null) {
-            implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
-        }
-        implementGetBeanClass(bean, beanCreator);
-        implementGetImplementationClass(bean, beanCreator);
-        implementGetName(bean, beanCreator);
-        if (bean.isDefaultBean()) {
-            implementIsDefaultBean(bean, beanCreator);
-        }
-        implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_METHOD);
-        implementIsSuppressed(bean, beanCreator);
-        implementEquals(bean, beanCreator);
-        implementHashCode(bean, beanCreator);
-        implementToString(beanCreator);
-
-        implementGetInjectionPoints(bean, beanCreator);
-
-        beanCreator.close();
-        return classOutput.getResources();
+            generateCreate(cc, bean, providerType, baseName, injectionPointToProviderSupplierField,
+                    interceptorToProviderSupplierField, decoratorToProviderSupplierField, targetPackage,
+                    isApplicationClass);
+            if (bean.hasDestroyLogic()) {
+                generateDestroy(cc, bean, injectionPointToProviderSupplierField, isApplicationClass,
+                        baseName, targetPackage);
+            }
+            generateSupplierGet(cc);
+            generateInjectableReferenceProviderGet(bean, cc, baseName);
+            generateGetIdentifier(cc, bean);
+            generateGetTypes(beanTypesField, cc);
+            if (!BuiltinScope.isDefault(bean.getScope())) {
+                generateGetScope(cc, bean);
+            }
+            if (qualifiersField != null) {
+                generateGetQualifiers(cc, qualifiersField);
+            }
+            generateIsAlternative(cc, bean);
+            generateGetPriority(cc, bean);
+            if (bean.isProducer()) {
+                generateGetDeclaringBean(cc, declaringProviderSupplierField);
+            }
+            if (stereotypesField != null) {
+                generateGetStereotypes(cc, stereotypesField);
+            }
+            generateGetBeanClass(cc, bean);
+            if (bean.isProducer() || bean.isSynthetic()) {
+                generateGetImplementationClass(cc, bean);
+            }
+            generateGetName(cc, bean);
+            if (bean.isDefaultBean()) {
+                generateIsDefaultBean(cc, bean);
+            }
+            generateGetKind(cc, bean);
+            generateIsSuppressed(cc, bean);
+            generateGetInjectionPoints(cc, bean);
+            generateEquals(cc, bean);
+            generateHashCode(cc, bean);
+            generateToString(cc);
+        });
     }
 
-    Collection<Resource> generateProducerFieldBean(BeanInfo bean, FieldInfo producerField) {
-        ClassInfo declaringClass = producerField.declaringClass();
-        ProviderType providerType = new ProviderType(bean.getProviderType());
-        String baseName = beanToGeneratedBaseName.get(bean);
-        String targetPackage = DotNames.packageName(declaringClass.name());
-        String generatedName = beanToGeneratedName.get(bean);
-
-        if (existingClasses.contains(generatedName)) {
-            return Collections.emptyList();
+    private void generateProxy(ClassCreator cc, BeanInfo bean, String baseName) {
+        if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
+            return;
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name()) || bean.isForceApplicationClass();
-        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
+        ClassDesc proxyType = getClientProxyType(bean, baseName);
 
-        // Foo_Bean implements InjectableBean<T>
-        ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class, Supplier.class).build();
+        FieldDesc proxyField = cc.field(FIELD_NAME_PROXY, fc -> {
+            fc.private_();
+            fc.volatile_();
+            fc.setType(proxyType);
+        });
 
-        // Fields
-        FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
-        FieldCreator qualifiers = null;
-        if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-            qualifiers = beanCreator.getFieldCreator(FIELD_NAME_QUALIFIERS, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-        if (bean.getScope().isNormal()) {
-            // For normal scopes a client proxy is generated too
-            initializeProxy(bean, baseName, beanCreator);
-        }
-        FieldCreator stereotypes = null;
-        if (!bean.getStereotypes().isEmpty()) {
-            stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-
-        createProviderFields(beanCreator, bean, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
-        createConstructor(classOutput, beanCreator, bean, Collections.emptyMap(), Collections.emptyMap(),
-                Collections.emptyMap(),
-                annotationLiterals, reflectionRegistration);
-
-        implementGetIdentifier(bean, beanCreator);
-        implementSupplierGet(beanCreator);
-        if (bean.hasDestroyLogic()) {
-            implementDestroy(bean, beanCreator, providerType, null, isApplicationClass, baseName, targetPackage);
-        }
-        implementCreate(classOutput, beanCreator, bean, providerType, baseName,
-                Collections.emptyMap(), Collections.emptyMap(),
-                Collections.emptyMap(), targetPackage, isApplicationClass);
-        implementGet(bean, beanCreator, providerType, baseName);
-
-        implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!BuiltinScope.isDefault(bean.getScope())) {
-            implementGetScope(bean, beanCreator);
-        }
-        if (qualifiers != null) {
-            implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
-        }
-
-        implementIsAlternative(bean, beanCreator);
-        implementGetPriority(bean, beanCreator);
-
-        implementGetDeclaringBean(beanCreator);
-        if (stereotypes != null) {
-            implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
-        }
-        implementGetBeanClass(bean, beanCreator);
-        implementGetImplementationClass(bean, beanCreator);
-        implementGetName(bean, beanCreator);
-        if (bean.isDefaultBean()) {
-            implementIsDefaultBean(bean, beanCreator);
-        }
-        implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_FIELD);
-        implementIsSuppressed(bean, beanCreator);
-        implementEquals(bean, beanCreator);
-        implementHashCode(bean, beanCreator);
-        implementToString(beanCreator);
-
-        implementGetInjectionPoints(bean, beanCreator);
-
-        beanCreator.close();
-        return classOutput.getResources();
+        cc.method(FIELD_NAME_PROXY, mc -> {
+            mc.private_();
+            mc.returning(proxyType);
+            mc.body(b0 -> {
+                LocalVar proxy = b0.localVar("proxy", cc.this_().field(proxyField));
+                // Create a new proxy instance, atomicity does not really matter here
+                b0.ifNull(proxy, b1 -> {
+                    b1.set(proxy, b1.new_(proxyType, Const.of(bean.getIdentifier())));
+                    b1.set(cc.this_().field(proxyField), proxy);
+                });
+                b0.return_(proxy);
+            });
+        });
     }
 
-    protected void initMaps(BeanInfo bean, Map<InjectionPointInfo, String> injectionPointToProvider,
-            Map<InterceptorInfo, String> interceptorToProvider, Map<DecoratorInfo, String> decoratorToProvider) {
+    protected void generateProviderFields(BeanInfo bean, ClassCreator cc,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProvider,
+            Map<InterceptorInfo, FieldDesc> interceptorToProvider,
+            Map<DecoratorInfo, FieldDesc> decoratorToProvider) {
+
         int providerIdx = 1;
+        // Injection points
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
-            injectionPointToProvider.put(injectionPoint, "injectProviderSupplier" + providerIdx++);
+            FieldDesc field = cc.field("injectProviderSupplier" + providerIdx++, fc -> {
+                fc.private_();
+                fc.final_();
+                fc.setType(Supplier.class);
+            });
+            injectionPointToProvider.put(injectionPoint, field);
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                injectionPointToProvider.put(injectionPoint, "disposerProviderSupplier" + providerIdx++);
+                FieldDesc field = cc.field("disposerProviderSupplier" + providerIdx++, fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(Supplier.class);
+                });
+                injectionPointToProvider.put(injectionPoint, field);
             }
-        }
-        for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-            interceptorToProvider.put(interceptor, "interceptorProviderSupplier" + providerIdx++);
-        }
-        for (DecoratorInfo decorator : bean.getBoundDecorators()) {
-            decoratorToProvider.put(decorator, "decoratorProviderSupplier" + providerIdx++);
-        }
-    }
-
-    protected void createProviderFields(ClassCreator beanCreator, BeanInfo bean,
-            Map<InjectionPointInfo, String> injectionPointToProviderSupplier,
-            Map<InterceptorInfo, String> interceptorToProviderSupplier,
-            Map<DecoratorInfo, String> decoratorToProviderSupplier) {
-        // Declaring bean provider
-        if (bean.isProducer()) {
-            beanCreator.getFieldCreator(FIELD_NAME_DECLARING_PROVIDER_SUPPLIER, Supplier.class)
-                    .setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-        // Injection points
-        for (String provider : injectionPointToProviderSupplier.values()) {
-            beanCreator.getFieldCreator(provider, Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
         // Interceptors
-        for (String interceptorProvider : interceptorToProviderSupplier.values()) {
-            beanCreator.getFieldCreator(interceptorProvider, Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
+            FieldDesc field = cc.field("interceptorProviderSupplier" + providerIdx++, fc -> {
+                fc.private_();
+                fc.final_();
+                fc.setType(Supplier.class);
+            });
+            interceptorToProvider.put(interceptor, field);
         }
         // Decorators
-        for (String decoratorProvider : decoratorToProviderSupplier.values()) {
-            beanCreator.getFieldCreator(decoratorProvider, Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        }
-    }
-
-    protected void createConstructor(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
-            Map<InjectionPointInfo, String> injectionPointToProviderField,
-            Map<InterceptorInfo, String> interceptorToProviderField,
-            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
-            AnnotationLiteralProcessor annotationLiterals,
-            ReflectionRegistration reflectionRegistration) {
-        initConstructor(classOutput, beanCreator, bean, injectionPointToProviderField, interceptorToProviderField,
-                decoratorToProviderSupplierField,
-                annotationLiterals, reflectionRegistration)
-                .returnValue(null);
-    }
-
-    protected MethodCreator initConstructor(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
-            Map<InjectionPointInfo, String> injectionPointToProviderField,
-            Map<InterceptorInfo, String> interceptorToProviderField,
-            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
-            AnnotationLiteralProcessor annotationLiterals,
-            ReflectionRegistration reflectionRegistration) {
-
-        // First collect all param types
-        List<String> parameterTypes = new ArrayList<>();
-        if (bean.isProducer()) {
-            parameterTypes.add(Supplier.class.getName());
-        }
-        for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
-            if (!injectionPoint.isDelegate() && BuiltinBean.resolve(injectionPoint) == null) {
-                parameterTypes.add(Supplier.class.getName());
-            }
-        }
-        if (bean.getDisposer() != null) {
-            for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                if (BuiltinBean.resolve(injectionPoint) == null) {
-                    parameterTypes.add(Supplier.class.getName());
-                }
-            }
-        }
-        for (int i = 0; i < interceptorToProviderField.size(); i++) {
-            parameterTypes.add(Supplier.class.getName());
-        }
-        for (int i = 0; i < decoratorToProviderSupplierField.size(); i++) {
-            parameterTypes.add(Supplier.class.getName());
-        }
-
-        MethodCreator constructor = beanCreator.getMethodCreator(Methods.INIT, "V", parameterTypes.toArray(new String[0]));
-        // Invoke super()
-        constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
-
-        // Get the TCCL - we will use it later
-        ResultHandle currentThread = constructor
-                .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
-        ResultHandle tccl = constructor.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
-
-        // Declaring bean provider
-        int paramIdx = 0;
-        if (bean.isProducer()) {
-            constructor.writeInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
-                            Supplier.class.getName()),
-                    constructor.getThis(), constructor.getMethodParam(0));
-            paramIdx++;
-        }
-
-        List<InjectionPointInfo> allInjectionPoints = new ArrayList<>();
-        allInjectionPoints.addAll(bean.getAllInjectionPoints());
-        if (bean.getDisposer() != null) {
-            allInjectionPoints.addAll(bean.getDisposer().getInjection().injectionPoints);
-        }
-        for (InjectionPointInfo injectionPoint : allInjectionPoints) {
-            // Injection points
-            if (injectionPoint.isDelegate()) {
-                // this.delegateProvider = () -> new DecoratorDelegateProvider();
-                ResultHandle delegateProvider = constructor.newInstance(
-                        MethodDescriptor.ofConstructor(DecoratorDelegateProvider.class));
-                ResultHandle delegateProviderSupplier = constructor.newInstance(
-                        MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, delegateProvider);
-                constructor.writeInstanceField(
-                        FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
-                                Supplier.class.getName()),
-                        constructor.getThis(),
-                        delegateProviderSupplier);
-            } else {
-                if (injectionPoint.getResolvedBean() == null) {
-                    BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
-                    builtinBean.getGenerator()
-                            .generate(new GeneratorContext(classOutput, bean.getDeployment(), injectionPoint, beanCreator,
-                                    constructor, injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean,
-                                    reflectionRegistration, injectionPointAnnotationsPredicate));
-                } else {
-                    // Not a built-in bean
-                    if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
-                        ResultHandle wrapHandle = wrapCurrentInjectionPoint(bean, constructor, injectionPoint,
-                                constructor.getThis(), constructor.getMethodParam(paramIdx++), tccl,
-                                annotationLiterals, reflectionRegistration, injectionPointAnnotationsPredicate);
-                        ResultHandle wrapSupplierHandle = constructor.newInstance(
-                                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
-                        constructor.writeInstanceField(
-                                FieldDescriptor.of(beanCreator.getClassName(),
-                                        injectionPointToProviderField.get(injectionPoint),
-                                        Supplier.class.getName()),
-                                constructor.getThis(), wrapSupplierHandle);
-                    } else {
-                        constructor.writeInstanceField(
-                                FieldDescriptor.of(beanCreator.getClassName(),
-                                        injectionPointToProviderField.get(injectionPoint),
-                                        Supplier.class.getName()),
-                                constructor.getThis(), constructor.getMethodParam(paramIdx++));
-                    }
-                }
-            }
-        }
-        for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-            constructor.writeInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
-                            Supplier.class.getName()),
-                    constructor.getThis(), constructor.getMethodParam(paramIdx++));
-        }
         for (DecoratorInfo decorator : bean.getBoundDecorators()) {
-            constructor.writeInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), decoratorToProviderSupplierField.get(decorator),
-                            Supplier.class.getName()),
-                    constructor.getThis(), constructor.getMethodParam(paramIdx++));
+            FieldDesc field = cc.field("decoratorProviderSupplier" + providerIdx++, fc -> {
+                fc.private_();
+                fc.final_();
+                fc.setType(Supplier.class);
+            });
+            decoratorToProvider.put(decorator, field);
         }
-
-        // Bean types
-        ResultHandle typesArray = constructor.newArray(Object.class, bean.getTypes().size());
-        int typeIndex = 0;
-        for (org.jboss.jandex.Type type : bean.getTypes()) {
-            ResultHandle typeHandle;
-            try {
-                typeHandle = Types.getTypeHandle(constructor, type, tccl);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalStateException("Unable to construct the type handle for " + bean + ": " + e.getMessage());
-            }
-            constructor.writeArrayValue(typesArray, constructor.load(typeIndex++), typeHandle);
-        }
-        constructor.writeInstanceField(
-                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_BEAN_TYPES, Set.class.getName()),
-                constructor.getThis(),
-                constructor.invokeStaticMethod(MethodDescriptors.SETS_OF,
-                        typesArray));
-
-        // Qualifiers
-        if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
-            ResultHandle qualifiersArray = constructor.newArray(Object.class, bean.getQualifiers().size());
-            int qualifierIndex = 0;
-            for (AnnotationInstance qualifierAnnotation : bean.getQualifiers()) {
-                BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-                if (qualifier != null) {
-                    constructor.writeArrayValue(qualifiersArray, constructor.load(qualifierIndex++),
-                            qualifier.getLiteralInstance(constructor));
-                } else {
-                    // Create the annotation literal first
-                    ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
-                    constructor.writeArrayValue(qualifiersArray, constructor.load(qualifierIndex++),
-                            annotationLiterals.create(constructor, qualifierClass, qualifierAnnotation));
-                }
-            }
-            constructor.writeInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_QUALIFIERS, Set.class.getName()),
-                    constructor.getThis(),
-                    constructor.invokeStaticMethod(MethodDescriptors.SETS_OF,
-                            qualifiersArray));
-        }
-
-        // Stereotypes
-        if (!bean.getStereotypes().isEmpty()) {
-            ResultHandle stereotypesArray = constructor.newArray(Object.class, bean.getStereotypes().size());
-            int stereotypesIndex = 0;
-            for (StereotypeInfo stereotype : bean.getStereotypes()) {
-                constructor.writeArrayValue(stereotypesArray, constructor.load(stereotypesIndex++),
-                        constructor.loadClass(stereotype.getTarget().name().toString()));
-            }
-            constructor.writeInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_STEREOTYPES, Set.class.getName()),
-                    constructor.getThis(),
-                    constructor.invokeStaticMethod(MethodDescriptors.SETS_OF,
-                            stereotypesArray));
-        }
-
-        return constructor;
     }
 
-    protected void implementDestroy(BeanInfo bean, ClassCreator beanCreator, ProviderType providerType,
-            Map<InjectionPointInfo, String> injectionPointToProviderField, boolean isApplicationClass, String baseName,
-            String targetPackage) {
+    protected void generateConstructor(ClassCreator cc, BeanInfo bean,
+            FieldDesc beanTypesField,
+            FieldDesc qualifiersField,
+            FieldDesc stereotypesField,
+            FieldDesc declaringProviderSupplierField,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderField,
+            Map<InterceptorInfo, FieldDesc> interceptorToProviderField,
+            Map<DecoratorInfo, FieldDesc> decoratorToProviderSupplierField,
+            Consumer<BlockCreator> additionalCode) {
 
-        MethodCreator doDestroy = beanCreator
-                .getMethodCreator("doDestroy", void.class, providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PRIVATE);
-
-        if (bean.isClassBean()) {
-            if (!bean.isInterceptor()) {
-                // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
-                // they may pass us a client proxy
-                ResultHandle instance = doDestroy.invokeStaticInterfaceMethod(MethodDescriptors.CLIENT_PROXY_UNWRAP,
-                        doDestroy.getMethodParam(0));
-
-                // if there's no `@PreDestroy` interceptor, we'll generate code to invoke `@PreDestroy` callbacks
-                // directly into the `doDestroy` method:
-                //
-                // private void doDestroy(MyBean var1, CreationalContext var2) {
-                //     var1.myPreDestroyCallback();
-                //     var2.release();
-                // }
-                BytecodeCreator preDestroyBytecode = doDestroy;
-
-                // PreDestroy interceptors
-                if (!bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()) {
-                    // if there _is_ some `@PreDestroy` interceptor, however, we'll reify the chain of `@PreDestroy`
-                    // callbacks into a `Runnable` that we pass into the interceptor chain to be called
-                    // by the last `proceed()` call:
-                    //
-                    // private void doDestroy(MyBean var1, CreationalContext var2) {
-                    //     // this is a `Runnable` that calls `MyBean.myPreDestroyCallback()`
-                    //     MyBean_Bean$$function$$2 var3 = new MyBean_Bean$$function$$2(var1);
-                    //     ((MyBean_Subclass)var1).arc$destroy((Runnable)var3);
-                    //     var2.release();
-                    // }
-                    FunctionCreator preDestroyForwarder = doDestroy.createFunction(Runnable.class);
-                    preDestroyBytecode = preDestroyForwarder.getBytecode();
-
-                    doDestroy.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName),
-                                    SubclassGenerator.DESTROY_METHOD_NAME, void.class, Runnable.class),
-                            instance, preDestroyForwarder.getInstance());
+        cc.constructor(mc -> {
+            List<ParamVar> params = new ArrayList<>();
+            if (bean.isProducer()) {
+                params.add(mc.parameter("declaringBean", Reflection2Gizmo.classDescOf(Supplier.class)));
+            }
+            int ipIdx = 0;
+            for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
+                if (!injectionPoint.isDelegate() && BuiltinBean.resolve(injectionPoint) == null) {
+                    params.add(mc.parameter("injectionPoint" + (ipIdx++), Reflection2Gizmo.classDescOf(Supplier.class)));
                 }
-
-                // PreDestroy callbacks
-                // possibly wrapped into Runnable so that PreDestroy interceptors can proceed() correctly
-                List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
-                        DotNames.PRE_DESTROY,
-                        bean.getDeployment().getBeanArchiveIndex());
-                for (MethodInfo callback : preDestroyCallbacks) {
-                    if (isReflectionFallbackNeeded(callback, targetPackage)) {
-                        if (Modifier.isPrivate(callback.flags())) {
-                            privateMembers.add(isApplicationClass, String.format("@PreDestroy callback %s#%s()",
-                                    callback.declaringClass().name(), callback.name()));
-                        }
-                        reflectionRegistration.registerMethod(callback);
-                        preDestroyBytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                                preDestroyBytecode.loadClass(callback.declaringClass().name().toString()),
-                                preDestroyBytecode.load(callback.name()),
-                                preDestroyBytecode.newArray(Class.class, preDestroyBytecode.load(0)),
-                                instance,
-                                preDestroyBytecode.newArray(Object.class, preDestroyBytecode.load(0)));
-                    } else {
-                        // instance.superCoolDestroyCallback()
-                        preDestroyBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), instance);
+            }
+            if (bean.getDisposer() != null) {
+                ipIdx = 0;
+                for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                    if (BuiltinBean.resolve(injectionPoint) == null) {
+                        params.add(mc.parameter("disposerInjectionPoint" + (ipIdx++), Supplier.class));
                     }
                 }
-                if (preDestroyBytecode != doDestroy) {
-                    // only if we're generating a `Runnable`, see above
-                    preDestroyBytecode.returnVoid();
+            }
+            for (int i = 0; i < interceptorToProviderField.size(); i++) {
+                params.add(mc.parameter("interceptorProvider" + i, Supplier.class));
+            }
+            for (int i = 0; i < decoratorToProviderSupplierField.size(); i++) {
+                params.add(mc.parameter("decoratorProvider" + i, Supplier.class));
+            }
+            mc.body(bc -> {
+                // Invoke super()
+                bc.invokeSpecial(MethodDescs.OBJECT_CONSTRUCTOR, cc.this_());
+
+                LocalVar tccl = bc.localVar("tccl", bc.invokeVirtual(MethodDescs.THREAD_GET_TCCL, bc.currentThread()));
+
+                // Bean types
+                RuntimeTypeCreator rttc = RuntimeTypeCreator.of(bc).withTCCL(tccl);
+                Expr typesArray = bc.newArray(Object.class, bean.getTypes()
+                        .stream()
+                        .map(type -> {
+                            try {
+                                return rttc.create(type);
+                            } catch (IllegalArgumentException e) {
+                                throw new IllegalStateException("Unable to construct type for " + bean + ": " + e.getMessage());
+                            }
+                        })
+                        .toList());
+                bc.set(cc.this_().field(beanTypesField), bc.invokeStatic(MethodDescs.SETS_OF, typesArray));
+
+                // Qualifiers
+                if (!bean.getQualifiers().isEmpty() && !bean.hasDefaultQualifiers()) {
+                    Expr qualifiersArray = bc.newArray(Object.class, bean.getQualifiers()
+                            .stream()
+                            .map(qualifier -> {
+                                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                                if (builtinQualifier != null) {
+                                    return builtinQualifier.getLiteralInstance();
+                                } else {
+                                    ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifier.name());
+                                    return annotationLiterals.create(bc, qualifierClass, qualifier);
+                                }
+                            })
+                            .toList());
+                    bc.set(cc.this_().field(qualifiersField), bc.invokeStatic(MethodDescs.SETS_OF, qualifiersArray));
                 }
-            }
 
-            // ctx.release()
-            doDestroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, doDestroy.getMethodParam(1));
-            doDestroy.returnValue(null);
-
-        } else if (bean.getDisposer() != null) {
-            // Invoke the disposer method
-            // declaringProvider.get(new CreationalContextImpl<>()).dispose()
-            MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
-            boolean isStatic = Modifier.isStatic(disposerMethod.flags());
-
-            ResultHandle declaringProviderSupplierHandle = doDestroy.readInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
-                            Supplier.class.getName()),
-                    doDestroy.getThis());
-            ResultHandle declaringProviderHandle = doDestroy.invokeInterfaceMethod(
-                    MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
-            ResultHandle ctxHandle = doDestroy.newInstance(
-                    MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), doDestroy.loadNull());
-            ResultHandle declaringProviderInstanceHandle;
-            if (isStatic) {
-                // for static disposers, we don't need to resolve this handle
-                // the `null` will only be used for reflective invocation in case the disposer is private, which is OK
-                declaringProviderInstanceHandle = doDestroy.loadNull();
-            } else {
-                declaringProviderInstanceHandle = doDestroy.invokeInterfaceMethod(
-                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
-                        ctxHandle);
-                if (bean.getDeclaringBean().getScope().isNormal()) {
-                    // We need to unwrap the client proxy
-                    declaringProviderInstanceHandle = doDestroy.invokeInterfaceMethod(
-                            MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
-                            declaringProviderInstanceHandle);
+                // Stereotypes
+                if (!bean.getStereotypes().isEmpty()) {
+                    Expr stereotypesArray = bc.newArray(Object.class, bean.getStereotypes()
+                            .stream()
+                            .map(stereotype -> Const.of(classDescOf(stereotype.getTarget())))
+                            .toList());
+                    bc.set(cc.this_().field(stereotypesField), bc.invokeStatic(MethodDescs.SETS_OF, stereotypesArray));
                 }
-            }
 
-            ResultHandle[] referenceHandles = new ResultHandle[disposerMethod.parametersCount()];
-            int disposedParamPosition = bean.getDisposer().getDisposedParameter().position();
-            Iterator<InjectionPointInfo> injectionPointsIterator = bean.getDisposer().getInjection().injectionPoints.iterator();
-            for (int i = 0; i < disposerMethod.parametersCount(); i++) {
-                if (i == disposedParamPosition) {
-                    referenceHandles[i] = doDestroy.getMethodParam(0);
-                } else {
-                    InjectionPointInfo injectionPoint = injectionPointsIterator.next();
-                    ResultHandle childCtxHandle = doDestroy.invokeStaticMethod(
-                            MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                            declaringProviderHandle, ctxHandle);
-                    ResultHandle providerSupplierHandle = doDestroy
-                            .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                                    injectionPointToProviderField.get(injectionPoint),
-                                    Supplier.class.getName()), doDestroy.getThis());
-                    ResultHandle providerHandle = doDestroy.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
-                            providerSupplierHandle);
-                    AssignableResultHandle referenceHandle = doDestroy.createVariable(Object.class);
-                    doDestroy.assign(referenceHandle,
-                            doDestroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                                    providerHandle, childCtxHandle));
-                    checkPrimitiveInjection(doDestroy, injectionPoint, referenceHandle);
-                    referenceHandles[i] = referenceHandle;
+                int paramIdx = 0;
+                // Declaring bean provider
+                if (bean.isProducer()) {
+                    bc.set(cc.this_().field(declaringProviderSupplierField), params.get(paramIdx++));
                 }
-            }
-
-            if (Modifier.isPrivate(disposerMethod.flags())) {
-                privateMembers.add(isApplicationClass, String.format("Disposer %s#%s", disposerMethod.declaringClass().name(),
-                        disposerMethod.name()));
-                ResultHandle paramTypesArray = doDestroy.newArray(Class.class, doDestroy.load(referenceHandles.length));
-                ResultHandle argsArray = doDestroy.newArray(Object.class, doDestroy.load(referenceHandles.length));
-                for (int i = 0; i < referenceHandles.length; i++) {
-                    doDestroy.writeArrayValue(paramTypesArray, i,
-                            doDestroy.loadClass(disposerMethod.parameterType(i).name().toString()));
-                    doDestroy.writeArrayValue(argsArray, i, referenceHandles[i]);
+                // Injection points
+                List<InjectionPointInfo> allInjectionPoints = new ArrayList<>(bean.getAllInjectionPoints());
+                if (bean.getDisposer() != null) {
+                    allInjectionPoints.addAll(bean.getDisposer().getInjection().injectionPoints);
                 }
-                reflectionRegistration.registerMethod(disposerMethod);
-                doDestroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        doDestroy.loadClass(disposerMethod.declaringClass().name().toString()),
-                        doDestroy.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
-            } else if (isStatic) {
-                doDestroy.invokeStaticMethod(MethodDescriptor.of(disposerMethod), referenceHandles);
-            } else {
-                doDestroy.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle,
-                        referenceHandles);
-            }
+                for (InjectionPointInfo injectionPoint : allInjectionPoints) {
+                    if (injectionPoint.isDelegate()) {
+                        // this.delegateProvider = () -> new DecoratorDelegateProvider();
+                        Expr delegateProvider = bc.new_(DecoratorDelegateProvider.class);
+                        Expr delegateProviderSupplier = bc.new_(MethodDescs.FIXED_VALUE_SUPPLIER_CONSTRUCTOR,
+                                delegateProvider);
+                        bc.set(cc.this_().field(injectionPointToProviderField.get(injectionPoint)), delegateProviderSupplier);
+                    } else if (injectionPoint.getResolvedBean() == null) {
+                        BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
+                        builtinBean.getGenerator().generate(new GeneratorContext(bean.getDeployment(), bean, injectionPoint,
+                                cc, bc, injectionPointToProviderField.get(injectionPoint), annotationLiterals,
+                                reflectionRegistration, injectionPointAnnotationsPredicate, null));
+                    } else if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
+                        Expr wrap = wrapCurrentInjectionPoint(bean, bc, injectionPoint, cc.this_(),
+                                params.get(paramIdx++), tccl, annotationLiterals, reflectionRegistration,
+                                injectionPointAnnotationsPredicate);
+                        Expr wrapSupplier = bc.new_(MethodDescs.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrap);
+                        bc.set(cc.this_().field(injectionPointToProviderField.get(injectionPoint)), wrapSupplier);
+                    } else {
+                        bc.set(cc.this_().field(injectionPointToProviderField.get(injectionPoint)), params.get(paramIdx++));
+                    }
+                }
+                // Interceptors
+                for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
+                    bc.set(cc.this_().field(interceptorToProviderField.get(interceptor)), params.get(paramIdx++));
+                }
+                // Decorators
+                for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                    bc.set(cc.this_().field(decoratorToProviderSupplierField.get(decorator)), params.get(paramIdx++));
+                }
 
-            // Destroy @Dependent instances injected into method parameters of a disposer method
-            doDestroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
+                additionalCode.accept(bc);
 
-            // If the declaring bean is @Dependent and the disposer is not static, we must destroy the instance afterwards
-            if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope()) && !isStatic) {
-                doDestroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
-                        declaringProviderInstanceHandle, ctxHandle);
-            }
-            // ctx.release()
-            doDestroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, doDestroy.getMethodParam(1));
-            doDestroy.returnValue(null);
-
-        } else if (bean.isSynthetic()) {
-            bean.getDestroyerConsumer().accept(doDestroy);
-        }
-
-        MethodCreator destroy = beanCreator
-                .getMethodCreator("destroy", void.class, providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
-
-        TryBlock tryBlock = destroy.tryBlock();
-        tryBlock.invokeSpecialMethod(doDestroy.getMethodDescriptor(), tryBlock.getThis(),
-                tryBlock.getMethodParam(0), tryBlock.getMethodParam(1));
-
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-        ResultHandle error = catchBlock.load("Error occurred while destroying instance of " + bean);
-        ResultHandle logger = catchBlock.readStaticField(FieldDescriptor.of(UncaughtExceptions.class, "LOGGER", Logger.class));
-        ResultHandle isDebugEnabled = catchBlock
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Logger.class, "isDebugEnabled", boolean.class), logger);
-        BranchResult branch = catchBlock.ifFalse(isDebugEnabled);
-        branch.falseBranch().invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Logger.class, "error", void.class, Object.class, Throwable.class),
-                logger, error, catchBlock.getCaughtException());
-        ResultHandle fullError = Gizmo.newStringBuilder(branch.trueBranch())
-                .append(error)
-                .append(": ")
-                .append(catchBlock.getCaughtException())
-                .callToString();
-        branch.trueBranch().invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Logger.class, "error", void.class, Object.class),
-                logger, fullError);
-
-        destroy.returnVoid();
-
-        // Bridge method needed
-        MethodCreator bridgeDestroy = beanCreator.getMethodCreator("destroy", void.class, Object.class, CreationalContext.class)
-                .setModifiers(ACC_PUBLIC | ACC_BRIDGE);
-        bridgeDestroy.returnValue(bridgeDestroy.invokeVirtualMethod(destroy.getMethodDescriptor(), bridgeDestroy.getThis(),
-                bridgeDestroy.getMethodParam(0),
-                bridgeDestroy.getMethodParam(1)));
+                bc.return_();
+            });
+        });
     }
 
-    protected void implementCreate(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
-            String baseName, Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
-            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
-            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
+    protected void generateCreate(ClassCreator cc, BeanInfo bean, ProviderType providerType,
+            String baseName, Map<InjectionPointInfo, FieldDesc> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, FieldDesc> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, FieldDesc> decoratorToProviderSupplierField,
             String targetPackage, boolean isApplicationClass) {
 
-        MethodCreator doCreate = beanCreator
-                .getMethodCreator("doCreate", providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PRIVATE);
-
-        if (bean.isClassBean()) {
-            implementCreateForClassBean(classOutput, beanCreator, bean, providerType, baseName,
-                    injectionPointToProviderSupplierField, interceptorToProviderSupplierField, decoratorToProviderSupplierField,
-                    reflectionRegistration,
-                    targetPackage, isApplicationClass, doCreate);
-        } else if (bean.isProducerMethod()) {
-            implementCreateForProducerMethod(classOutput, beanCreator, bean, providerType, baseName,
-                    injectionPointToProviderSupplierField, reflectionRegistration,
-                    targetPackage, isApplicationClass, doCreate);
-        } else if (bean.isProducerField()) {
-            implementCreateForProducerField(classOutput, beanCreator, bean, providerType, baseName,
-                    injectionPointToProviderSupplierField, reflectionRegistration,
-                    targetPackage, isApplicationClass, doCreate);
-        } else if (bean.isSynthetic()) {
-            implementCreateForSyntheticBean(beanCreator, bean, providerType, injectionPointToProviderSupplierField, doCreate);
-        }
-
-        MethodCreator create = beanCreator.getMethodCreator("create", providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
-        TryBlock tryBlock = create.tryBlock();
-        tryBlock.returnValue(
-                tryBlock.invokeSpecialMethod(doCreate.getMethodDescriptor(), tryBlock.getThis(), tryBlock.getMethodParam(0)));
-        // `Reflections.newInstance()` throws `CreationException` on its own,
-        // but that's handled like all other `RuntimeException`s
-        // also ignore custom Throwables, they are virtually never used in practice
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-        catchBlock.ifFalse(catchBlock.instanceOf(catchBlock.getCaughtException(), RuntimeException.class))
-                .falseBranch().throwException(catchBlock.getCaughtException());
-        ResultHandle creationException = catchBlock.newInstance(
-                MethodDescriptor.ofConstructor(CreationException.class, Throwable.class),
-                catchBlock.getCaughtException());
-        catchBlock.throwException(creationException);
-
-        // Bridge method needed
-        MethodCreator bridgeCreate = beanCreator.getMethodCreator("create", Object.class, CreationalContext.class)
-                .setModifiers(ACC_PUBLIC | ACC_BRIDGE);
-        bridgeCreate.returnValue(bridgeCreate.invokeVirtualMethod(create.getMethodDescriptor(), bridgeCreate.getThis(),
-                bridgeCreate.getMethodParam(0)));
-    }
-
-    private void implementCreateForSyntheticBean(ClassCreator beanCreator, BeanInfo bean, ProviderType providerType,
-            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField, MethodCreator doCreate) {
-
-        MethodCreator createSynthetic = beanCreator
-                .getMethodCreator("createSynthetic", providerType.descriptorName(), SyntheticCreationalContext.class)
-                .setModifiers(ACC_PRIVATE);
-        bean.getCreatorConsumer().accept(createSynthetic);
-
-        Consumer<MethodCreator> checkActiveConsumer = bean.getCheckActiveConsumer();
-        if (checkActiveConsumer != null) {
-            MethodCreator checkActive = beanCreator.getMethodCreator("checkActive", ActiveResult.class);
-            checkActiveConsumer.accept(checkActive);
-
-            List<InjectionPointInfo> matchingIPs = new ArrayList<>();
-            for (InjectionPointInfo injectionPoint : bean.getDeployment().getInjectionPoints()) {
-                if (!injectionPoint.isSynthetic() && bean.equals(injectionPoint.getResolvedBean())) {
-                    matchingIPs.add(injectionPoint);
-                }
-            }
-
-            ResultHandle active = doCreate.invokeVirtualMethod(checkActive.getMethodDescriptor(), doCreate.getThis());
-            ResultHandle activeBool = doCreate.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_VALUE, active);
-            BytecodeCreator ifNotActive = doCreate.ifFalse(activeBool).trueBranch();
-            StringBuilderGenerator msg = Gizmo.newStringBuilder(ifNotActive);
-            msg.append("Bean is not active: ");
-            msg.append(Gizmo.toString(ifNotActive, ifNotActive.getThis()));
-            msg.append("\nReason: ");
-            msg.append(ifNotActive.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_REASON, active));
-            AssignableResultHandle cause = ifNotActive.createVariable(ActiveResult.class);
-            ifNotActive.assign(cause, ifNotActive.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_CAUSE, active));
-            BytecodeCreator loop = ifNotActive.whileLoop(bc -> bc.ifNotNull(cause)).block();
-            loop.invokeVirtualMethod(MethodDescriptors.STRING_BUILDER_APPEND, msg.getInstance(), loop.load("\nCause: "));
-            ResultHandle causeReason = loop.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_REASON, cause);
-            loop.invokeVirtualMethod(MethodDescriptors.STRING_BUILDER_APPEND, msg.getInstance(), causeReason);
-            loop.assign(cause, loop.invokeVirtualMethod(MethodDescriptors.ACTIVE_RESULT_CAUSE, cause));
-            msg.append("\nTo avoid this exception while keeping the bean inactive:");
-            msg.append("\n\t- Configure all extensions consuming this bean as inactive as well, if they allow it,"
-                    + " e.g. 'quarkus.someextension.active=false'");
-            msg.append("\n\t- Make sure that custom code only accesses this bean if it is active");
-            if (!matchingIPs.isEmpty()) {
-                ResultHandle implClassName = ifNotActive.load(bean.getImplClazz().name().toString());
-                msg.append("\n\t- Inject the bean with 'Instance<")
-                        .append(implClassName)
-                        .append(">' instead of '")
-                        .append(implClassName)
-                        .append("'");
-                msg.append("\nThis bean is injected into:");
-                for (InjectionPointInfo matchingIP : matchingIPs) {
-                    msg.append("\n\t- ");
-                    msg.append(matchingIP.getTargetInfo());
-                }
-            }
-            ifNotActive.throwException(ifNotActive.newInstance(
-                    MethodDescriptor.ofConstructor(InactiveBeanException.class, String.class),
-                    msg.callToString()));
-        }
-
-        ResultHandle injectedReferences;
-        if (injectionPointToProviderSupplierField.isEmpty()) {
-            injectedReferences = doCreate.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
-        } else {
-            // Initialize injected references
-            injectedReferences = doCreate.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            ResultHandle tccl = doCreate.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL,
-                    doCreate.invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD));
-            for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
-                TryBlock tryBlock = doCreate.tryBlock();
-                ResultHandle requiredType;
-                try {
-                    IndexView index = bean.getDeployment().getBeanArchiveIndex();
-                    requiredType = Types.getTypeHandle(tryBlock, injectionPoint.getType(), tccl, index);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalStateException(
-                            "Unable to construct the type handle for " + injectionPoint.getType() + ": " + e.getMessage());
-                }
-                ResultHandle qualifiersArray;
-                if (injectionPoint.hasDefaultedQualifier()) {
-                    qualifiersArray = tryBlock.loadNull();
-                } else {
-                    qualifiersArray = tryBlock.newArray(Annotation.class, injectionPoint.getRequiredQualifiers().size());
-                    int qualifierIndex = 0;
-                    for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
-                        BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-                        if (qualifier != null) {
-                            tryBlock.writeArrayValue(qualifiersArray, tryBlock.load(qualifierIndex++),
-                                    qualifier.getLiteralInstance(tryBlock));
-                        } else {
-                            // Create the annotation literal first
-                            ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
-                            tryBlock.writeArrayValue(qualifiersArray, tryBlock.load(qualifierIndex++),
-                                    annotationLiterals.create(tryBlock, qualifierClass, qualifierAnnotation));
+        MethodDesc createDesc = cc.method("create", mc -> {
+            mc.returning(classDescOf(bean.getProviderType()));
+            ParamVar ccParam = mc.parameter("creationalContext", CreationalContext.class);
+            mc.body(b0 -> {
+                b0.try_(tc -> {
+                    tc.body(b1 -> {
+                        if (bean.isClassBean()) {
+                            generateCreateForClassBean(cc, bean, providerType, baseName,
+                                    injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
+                                    decoratorToProviderSupplierField, targetPackage, isApplicationClass, b1, ccParam);
+                        } else if (bean.isProducerMethod()) {
+                            generateCreateForProducerMethod(cc, bean, injectionPointToProviderSupplierField,
+                                    isApplicationClass, b1, ccParam);
+                        } else if (bean.isProducerField()) {
+                            generateCreateForProducerField(cc, bean, isApplicationClass, b1);
+                        } else if (bean.isSynthetic()) {
+                            generateCreateForSyntheticBean(cc, bean, injectionPointToProviderSupplierField, b1, ccParam);
                         }
-                    }
-                }
-                ResultHandle typeAndQualifiers = tryBlock.newInstance(
-                        MethodDescriptor.ofConstructor(TypeAndQualifiers.class, java.lang.reflect.Type.class,
-                                Annotation[].class),
-                        requiredType, qualifiersArray);
+                    });
+                    tc.catch_(Exception.class, "e", (b1, e) -> {
+                        // `Reflections.newInstance()` throws `CreationException` on its own,
+                        // but that's handled like all other `RuntimeException`s
+                        // also ignore custom Throwables, they are virtually never used in practice
+                        b1.ifInstanceOf(e, RuntimeException.class, BlockCreator::throw_);
+                        b1.throw_(b1.new_(ConstructorDesc.of(CreationException.class, Throwable.class), e));
+                    });
+                });
+            });
+        });
 
-                ResultHandle providerSupplierHandle = tryBlock.readInstanceField(
-                        FieldDescriptor.of(beanCreator.getClassName(),
-                                injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                        tryBlock.getThis());
-                ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
-                ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                        providerHandle, tryBlock.getMethodParam(0));
-                AssignableResultHandle injectedReference = tryBlock.createVariable(Object.class);
-                tryBlock.assign(injectedReference, tryBlock.invokeInterfaceMethod(
-                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        providerHandle, childCtxHandle));
-                checkPrimitiveInjection(tryBlock, injectionPoint, injectedReference);
-                tryBlock.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, injectedReferences, typeAndQualifiers,
-                        injectedReference);
-
-                CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
-                catchBlock.throwException(RuntimeException.class,
-                        "Error injecting synthetic injection point of bean: " + bean.getIdentifier(),
-                        catchBlock.getCaughtException());
-            }
-        }
-        ResultHandle paramsHandle = doCreate.readInstanceField(
-                FieldDescriptor.of(doCreate.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                doCreate.getThis());
-        ResultHandle syntheticCreationalContext = doCreate.newInstance(
-                MethodDescriptor.ofConstructor(SyntheticCreationalContextImpl.class, CreationalContext.class, Map.class,
-                        Map.class),
-                doCreate.getMethodParam(0), paramsHandle, injectedReferences);
-
-        AssignableResultHandle ret = doCreate.createVariable(providerType.descriptorName());
-        TryBlock tryBlock = doCreate.tryBlock();
-        tryBlock.assign(ret, tryBlock.invokeVirtualMethod(createSynthetic.getMethodDescriptor(), tryBlock.getThis(),
-                syntheticCreationalContext));
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-        StringBuilderGenerator strBuilder = Gizmo.newStringBuilder(catchBlock);
-        strBuilder.append("Error creating synthetic bean [");
-        strBuilder.append(bean.getIdentifier());
-        strBuilder.append("]: ");
-        strBuilder.append(Gizmo.toString(catchBlock, catchBlock.getCaughtException()));
-        ResultHandle exception = catchBlock.newInstance(
-                MethodDescriptor.ofConstructor(CreationException.class, String.class, Throwable.class),
-                strBuilder.callToString(), catchBlock.getCaughtException());
-        catchBlock.throwException(exception);
-
-        if (bean.getScope().isNormal()) {
-            // Normal scoped synthetic beans should never return null
-            BytecodeCreator nullBeanInstance = doCreate.ifNull(ret).trueBranch();
-            StringBuilderGenerator message = Gizmo.newStringBuilder(nullBeanInstance);
-            message.append("Null contextual instance was produced by a normal scoped synthetic bean: ");
-            message.append(Gizmo.toString(nullBeanInstance, nullBeanInstance.getThis()));
-            ResultHandle e = nullBeanInstance.newInstance(
-                    MethodDescriptor.ofConstructor(CreationException.class, String.class), message.callToString());
-            nullBeanInstance.throwException(e);
-        }
-        doCreate.returnValue(ret);
-    }
-
-    private void newProviderHandles(BeanInfo bean, ClassCreator beanCreator, MethodCreator createMethod,
-            Map<InjectionPointInfo, String> injectionPointToProviderField,
-            Map<InterceptorInfo, String> interceptorToProviderField,
-            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
-            Map<InterceptorInfo, ResultHandle> interceptorToWrap,
-            List<TransientReference> transientReferences,
-            List<ResultHandle> injectableParamHandles,
-            List<ResultHandle> allOtherParamHandles) {
-
-        Optional<Injection> constructorInjection = bean.getConstructorInjection();
-
-        if (constructorInjection.isPresent()) {
-            for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
-                ResultHandle providerSupplierHandle = createMethod.readInstanceField(
-                        FieldDescriptor.of(beanCreator.getClassName(),
-                                injectionPointToProviderField.get(injectionPoint), Supplier.class.getName()),
-                        createMethod.getThis());
-                ResultHandle providerHandle = createMethod.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
-                        providerSupplierHandle);
-                ResultHandle childCtx = createMethod.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                        providerHandle, createMethod.getMethodParam(0));
-                AssignableResultHandle referenceHandle = createMethod.createVariable(Object.class);
-                createMethod.assign(referenceHandle, createMethod
-                        .invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, providerHandle, childCtx));
-                checkPrimitiveInjection(createMethod, injectionPoint, referenceHandle);
-                injectableParamHandles.add(referenceHandle);
-                if (injectionPoint.isDependentTransientReference()) {
-                    transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtx));
-                }
-            }
-        }
-        if (bean.isSubclassRequired()) {
-            for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-                ResultHandle wrapped = interceptorToWrap.get(interceptor);
-                if (wrapped != null) {
-                    allOtherParamHandles.add(wrapped);
-                } else {
-                    ResultHandle interceptorProviderSupplierHandle = createMethod.readInstanceField(
-                            FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
-                                    Supplier.class),
-                            createMethod.getThis());
-                    ResultHandle interceptorProviderHandle = createMethod.invokeInterfaceMethod(
-                            MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplierHandle);
-                    allOtherParamHandles.add(interceptorProviderHandle);
-                }
-            }
-            for (DecoratorInfo decorator : bean.getBoundDecorators()) {
-                ResultHandle decoratorProviderSupplierHandle = createMethod.readInstanceField(
-                        FieldDescriptor.of(beanCreator.getClassName(), decoratorToProviderSupplierField.get(decorator),
-                                Supplier.class),
-                        createMethod.getThis());
-                ResultHandle decoratorProviderHandle = createMethod.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, decoratorProviderSupplierHandle);
-                allOtherParamHandles.add(decoratorProviderHandle);
-            }
+        if (!ClassType.OBJECT_TYPE.equals(bean.getProviderType())) {
+            // Bridge method needed
+            cc.method("create", mc -> {
+                mc.addFlag(ModifierFlag.BRIDGE);
+                mc.returning(Object.class);
+                ParamVar ccParam = mc.parameter("creationalContext", CreationalContext.class);
+                mc.body(bc -> {
+                    bc.return_(bc.invokeVirtual(createDesc, cc.this_(), ccParam));
+                });
+            });
         }
     }
 
-    static void checkPrimitiveInjection(BytecodeCreator bytecode, InjectionPointInfo injectionPoint,
-            AssignableResultHandle referenceHandle) {
-        if (injectionPoint.getType().kind() == Type.Kind.PRIMITIVE) {
-            Type type = null;
-            if (injectionPoint.getResolvedBean().isProducerField()) {
-                type = injectionPoint.getResolvedBean().getTarget().get().asField().type();
-            } else if (injectionPoint.getResolvedBean().isProducerMethod()) {
-                type = injectionPoint.getResolvedBean().getTarget().get().asMethod().returnType();
-            }
+    private void generateCreateForClassBean(ClassCreator cc, BeanInfo bean,
+            ProviderType providerType, String baseName,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, FieldDesc> interceptorToProviderSupplierField,
+            Map<DecoratorInfo, FieldDesc> decoratorToProviderSupplierField,
+            String targetPackage, boolean isApplicationClass, BlockCreator bc, ParamVar parentCC) {
 
-            if (type != null && Types.isPrimitiveWrapperType(type)) {
-                BytecodeCreator isNull = bytecode.ifNull(referenceHandle).trueBranch();
-                isNull.assign(referenceHandle,
-                        Types.loadPrimitiveDefault(injectionPoint.getType().asPrimitiveType().primitive(), isNull));
-            }
-        }
-    }
+        // Note that we must share the interceptors instances with the intercepted subclass, if present
+        InterceptionInfo postConstructInterception = bean.getLifecycleInterceptors(InterceptionType.POST_CONSTRUCT);
+        InterceptionInfo aroundConstructInterception = bean.getLifecycleInterceptors(InterceptionType.AROUND_CONSTRUCT);
 
-    private ResultHandle newInstanceHandle(BeanInfo bean, ClassCreator beanCreator, BytecodeCreator creator,
-            MethodCreator createMethod,
-            String providerTypeName, String baseName, List<ResultHandle> providerHandles, ReflectionRegistration registration,
-            boolean isApplicationClass) {
-
-        Optional<Injection> constructorInjection = bean.getConstructorInjection();
-        MethodInfo constructor = constructorInjection.isPresent() ? constructorInjection.get().target.asMethod() : null;
-        List<InjectionPointInfo> injectionPoints = constructorInjection.isPresent() ? constructorInjection.get().injectionPoints
-                : Collections.emptyList();
-
-        if (bean.isSubclassRequired()) {
-            // new SimpleBean_Subclass(foo,ctx,lifecycleInterceptorProvider1)
-
-            List<InterceptorInfo> interceptors = bean.getBoundInterceptors();
-            List<DecoratorInfo> decorators = bean.getBoundDecorators();
-            List<String> paramTypes = new ArrayList<>();
-            List<ResultHandle> paramHandles = new ArrayList<>();
-
-            // 1. constructor injection points
-            for (int i = 0; i < injectionPoints.size(); i++) {
-                paramTypes.add(injectionPoints.get(i).getType().name().toString());
-                paramHandles.add(providerHandles.get(i));
-            }
-            // 2. ctx
-            paramHandles.add(createMethod.getMethodParam(0));
-            paramTypes.add(CreationalContext.class.getName());
-
-            // 3. interceptors (wrapped if needed)
-            for (int i = 0; i < interceptors.size(); i++) {
-                paramTypes.add(InjectableInterceptor.class.getName());
-                paramHandles.add(providerHandles.get(injectionPoints.size() + i));
-            }
-            // 4. decorators
-            for (int i = 0; i < decorators.size(); i++) {
-                paramTypes.add(InjectableDecorator.class.getName());
-                paramHandles.add(providerHandles.get(injectionPoints.size() + interceptors.size() + i));
-            }
-
-            return creator.newInstance(
-                    MethodDescriptor.ofConstructor(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName),
-                            paramTypes.toArray(new String[0])),
-                    paramHandles.toArray(new ResultHandle[0]));
-
-        } else if (constructorInjection.isPresent()) {
-            if (Modifier.isPrivate(constructor.flags())) {
-                privateMembers.add(isApplicationClass,
-                        String.format("Bean constructor %s on %s", constructor, constructor.declaringClass().name()));
-                int params = providerHandles.size();
-                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
-                    params++;
-                }
-                ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(params));
-                ResultHandle argsArray = creator.newArray(Object.class, creator.load(params));
-                for (int i = 0; i < injectionPoints.size(); i++) {
-                    creator.writeArrayValue(paramTypesArray, i,
-                            creator.loadClass(injectionPoints.get(i).getType().name().toString()));
-                    creator.writeArrayValue(argsArray, i, providerHandles.get(i));
-                }
-                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
-                    creator.writeArrayValue(paramTypesArray, params - 1, creator.loadClass(CreationalContext.class));
-                    creator.writeArrayValue(argsArray, params - 1, createMethod.getMethodParam(0));
-                }
-                registration.registerMethod(constructor);
-                return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
-                        creator.loadClass(constructor.declaringClass().name().toString()),
-                        paramTypesArray, argsArray);
-            } else {
-                // new SimpleBean(foo)
-                int params = injectionPoints.size();
-                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
-                    params++;
-                }
-                String[] paramTypes = new String[params];
-                for (ListIterator<InjectionPointInfo> iterator = injectionPoints.listIterator(); iterator.hasNext();) {
-                    InjectionPointInfo injectionPoint = iterator.next();
-                    paramTypes[iterator.previousIndex()] = DescriptorUtils.typeToString(injectionPoint.getType());
-                }
-                ResultHandle[] args = new ResultHandle[params];
-                for (int i = 0; i < providerHandles.size(); i++) {
-                    args[i] = providerHandles.get(i);
-                }
-                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
-                    paramTypes[params - 1] = CreationalContext.class.getName();
-                    args[params - 1] = createMethod.getMethodParam(0);
-                }
-                return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, paramTypes), args);
-            }
-        } else {
-            MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
-            if (Modifier.isPrivate(noArgsConstructor.flags())) {
-                privateMembers.add(isApplicationClass,
-                        String.format("Bean constructor %s on %s", noArgsConstructor,
-                                noArgsConstructor.declaringClass().name()));
-                ResultHandle paramTypesArray;
-                ResultHandle argsArray;
-                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
-                    paramTypesArray = creator.newArray(Class.class, 1);
-                    argsArray = creator.newArray(Object.class, 1);
-                    creator.writeArrayValue(paramTypesArray, 0, creator.loadClass(CreationalContext.class));
-                    creator.writeArrayValue(argsArray, 0, createMethod.getMethodParam(0));
-                } else {
-                    paramTypesArray = creator.newArray(Class.class, 0);
-                    argsArray = creator.newArray(Object.class, 0);
-                }
-
-                registration.registerMethod(noArgsConstructor);
-                return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
-                        creator.loadClass(noArgsConstructor.declaringClass().name().toString()), paramTypesArray,
-                        argsArray);
-            } else {
-                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
-                    // new SimpleDecorator_Impl(ctx)
-                    return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, CreationalContext.class),
-                            createMethod.getMethodParam(0));
-                } else {
-                    // new SimpleBean()
-                    return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName));
-                }
-            }
-        }
-    }
-
-    void implementCreateForProducerField(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
-            ProviderType providerType, String baseName, Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
-            ReflectionRegistration reflectionRegistration,
-            String targetPackage, boolean isApplicationClass, MethodCreator create) {
-
-        AssignableResultHandle instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerType.className()));
-        // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).field
-
-        FieldInfo producerField = bean.getTarget().get().asField();
-
-        ResultHandle declaringProviderSupplierHandle = create.readInstanceField(
-                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
-                        Supplier.class.getName()),
-                create.getThis());
-        ResultHandle declaringProviderHandle = create.invokeInterfaceMethod(
-                MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
-        ResultHandle ctxHandle = create.newInstance(
-                MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), create.getThis());
-        ResultHandle declaringProviderInstanceHandle;
-        if (Modifier.isStatic(producerField.flags())) {
-            declaringProviderInstanceHandle = create.loadNull();
-        } else {
-            declaringProviderInstanceHandle = create.invokeInterfaceMethod(
-                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
-                    ctxHandle);
-
-            if (bean.getDeclaringBean().getScope().isNormal()) {
-                // We need to unwrap the client proxy
-                declaringProviderInstanceHandle = create.invokeInterfaceMethod(
-                        MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
-                        declaringProviderInstanceHandle);
-            }
-        }
-
-        if (Modifier.isPrivate(producerField.flags())) {
-            privateMembers.add(isApplicationClass,
-                    String.format("Producer field %s#%s", producerField.declaringClass().name(), producerField.name()));
-            reflectionRegistration.registerField(producerField);
-            create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_READ_FIELD,
-                    create.loadClass(producerField.declaringClass().name().toString()),
-                    create.load(producerField.name()),
-                    declaringProviderInstanceHandle));
-        } else {
-            ResultHandle readFieldHandle;
-            if (Modifier.isStatic(producerField.flags())) {
-                readFieldHandle = create.readStaticField(FieldDescriptor.of(producerField));
-            } else {
-                readFieldHandle = create.readInstanceField(FieldDescriptor.of(producerField),
-                        declaringProviderInstanceHandle);
-            }
-            create.assign(instanceHandle, readFieldHandle);
-        }
-
-        if (bean.getScope().isNormal()) {
-            create.ifNull(instanceHandle).trueBranch().throwException(IllegalProductException.class,
-                    "Normal scoped producer field may not be null: " + bean.getDeclaringBean().getImplClazz().name() + "."
-                            + bean.getTarget().get().asField().name());
-        }
-
-        // If the declaring bean is @Dependent we must destroy the instance afterwards
-        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope())) {
-            create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
-                    declaringProviderInstanceHandle, ctxHandle);
-        }
-        create.returnValue(instanceHandle);
-    }
-
-    void implementCreateForProducerMethod(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
-            ProviderType providerType, String baseName, Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
-            ReflectionRegistration reflectionRegistration,
-            String targetPackage, boolean isApplicationClass, MethodCreator create) {
-
-        AssignableResultHandle instanceHandle;
-
-        MethodInfo producerMethod = bean.getTarget().get().asMethod();
-        boolean isStatic = Modifier.isStatic(producerMethod.flags());
-
-        instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerType.className()));
-        // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).produce()
-        ResultHandle ctxHandle = create.newInstance(
-                MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), create.getThis());
-        ResultHandle declaringProviderInstanceHandle;
-        ResultHandle declaringProviderSupplierHandle = create.readInstanceField(
-                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
-                        Supplier.class.getName()),
-                create.getThis());
-        ResultHandle declaringProviderHandle = create.invokeInterfaceMethod(
-                MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
-        if (isStatic) {
-            // for static producers, we don't need to resolve this handle
-            // the `null` will only be used for reflective invocation in case the producer is private, which is OK
-            declaringProviderInstanceHandle = create.loadNull();
-        } else {
-            declaringProviderInstanceHandle = create.invokeInterfaceMethod(
-                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
-                    ctxHandle);
-            if (bean.getDeclaringBean().getScope().isNormal()) {
-                // We need to unwrap the client proxy
-                declaringProviderInstanceHandle = create.invokeInterfaceMethod(
-                        MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
-                        declaringProviderInstanceHandle);
-            }
-        }
-
-        List<InjectionPointInfo> injectionPoints = bean.getAllInjectionPoints();
-        ResultHandle[] referenceHandles = new ResultHandle[injectionPoints.size()];
-        List<TransientReference> transientReferences = new ArrayList<>();
-        int paramIdx = 0;
-        for (InjectionPointInfo injectionPoint : injectionPoints) {
-            ResultHandle providerSupplierHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                    injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                    create.getThis());
-            ResultHandle providerHandle = create.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
-                    providerSupplierHandle);
-            ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                    providerHandle, create.getMethodParam(0));
-            AssignableResultHandle referenceHandle = create.createVariable(Object.class);
-            create.assign(referenceHandle, create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                    providerHandle, childCtxHandle));
-            checkPrimitiveInjection(create, injectionPoint, referenceHandle);
-            referenceHandles[paramIdx++] = referenceHandle;
-            // We need to destroy dependent beans for @TransientReference injection points
-            if (injectionPoint.isDependentTransientReference()) {
-                transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtxHandle));
-            }
-        }
-
-        if (Modifier.isPrivate(producerMethod.flags())) {
-            privateMembers.add(isApplicationClass, String.format("Producer method %s#%s()",
-                    producerMethod.declaringClass().name(), producerMethod.name()));
-            ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
-            ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
-            for (int i = 0; i < referenceHandles.length; i++) {
-                create.writeArrayValue(paramTypesArray, i,
-                        create.loadClass(producerMethod.parameterType(i).name().toString()));
-                create.writeArrayValue(argsArray, i, referenceHandles[i]);
-            }
-            reflectionRegistration.registerMethod(producerMethod);
-            create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                    create.loadClass(producerMethod.declaringClass().name().toString()),
-                    create.load(producerMethod.name()),
-                    paramTypesArray,
-                    declaringProviderInstanceHandle,
-                    argsArray));
-        } else {
-            ResultHandle invokeMethodHandle;
-            if (isStatic) {
-                invokeMethodHandle = create.invokeStaticMethod(MethodDescriptor.of(producerMethod),
-                        referenceHandles);
-            } else {
-                invokeMethodHandle = create.invokeVirtualMethod(MethodDescriptor.of(producerMethod),
-                        declaringProviderInstanceHandle, referenceHandles);
-            }
-            create.assign(instanceHandle, invokeMethodHandle);
-        }
-
-        if (bean.getScope().isNormal()) {
-            create.ifNull(instanceHandle).trueBranch().throwException(IllegalProductException.class,
-                    "Normal scoped producer method may not return null: " + bean.getDeclaringBean().getImplClazz().name()
-                            + "." +
-                            bean.getTarget().get().asMethod().name() + "()");
-        }
-
-        // If the declaring bean is @Dependent and the producer is not static, we must destroy the instance afterwards
-        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope()) && !isStatic) {
-            create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
-                    declaringProviderInstanceHandle, ctxHandle);
-        }
-        // Destroy injected transient references
-        destroyTransientReferences(create, transientReferences);
-
-        create.returnValue(instanceHandle);
-    }
-
-    void implementCreateForClassBean(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
-            ProviderType providerType,
-            String baseName, Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
-            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
-            Map<DecoratorInfo, String> decoratorToProviderSupplierField,
-            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass,
-            MethodCreator create) {
-
-        AssignableResultHandle instanceHandle;
-
-        ResultHandle postConstructsHandle = null;
-        ResultHandle aroundConstructsHandle = null;
-        Map<InterceptorInfo, ResultHandle> interceptorToWrap = new HashMap<>();
+        LocalVar aroundConstructs = null;
+        LocalVar postConstructs = null;
+        Map<InterceptorInfo, LocalVar> interceptorToWrap = new HashMap<>();
 
         if (bean.hasLifecycleInterceptors()) {
-            // Note that we must share the interceptors instances with the intercepted subclass, if present
-            InterceptionInfo postConstructs = bean.getLifecycleInterceptors(InterceptionType.POST_CONSTRUCT);
-            InterceptionInfo aroundConstructs = bean.getLifecycleInterceptors(InterceptionType.AROUND_CONSTRUCT);
-
             // Wrap InjectableInterceptors using InitializedInterceptor
             Set<InterceptorInfo> wraps = new HashSet<>();
-            wraps.addAll(aroundConstructs.interceptors);
-            wraps.addAll(postConstructs.interceptors);
+            wraps.addAll(aroundConstructInterception.interceptors);
+            wraps.addAll(postConstructInterception.interceptors);
 
             // instances of around/post construct interceptors also need to be shared
-            // build a map that links InterceptorInfo to ResultHandle and reuse that when creating wrappers
-            Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
+            // build a map that links `InterceptorInfo` to `LocalVar` and reuse that when creating wrappers
+            Map<InterceptorInfo, LocalVar> interceptorVars = new HashMap<>();
 
             for (InterceptorInfo interceptor : wraps) {
-                ResultHandle interceptorProviderSupplier = create.readInstanceField(
-                        FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderSupplierField.get(interceptor),
-                                Supplier.class.getName()),
-                        create.getThis());
-                ResultHandle interceptorProvider = create.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplier);
-                ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
-                        create.getMethodParam(0));
-                ResultHandle interceptorInstanceHandle = create.invokeInterfaceMethod(
-                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
-                        childCtxHandle);
-                interceptorToResultHandle.put(interceptor, interceptorInstanceHandle);
-                ResultHandle wrapHandle = create.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(InitializedInterceptor.class, "of",
+                Expr interceptorProviderSupplier = cc.this_().field(interceptorToProviderSupplierField.get(interceptor));
+                LocalVar interceptorProvider = bc.localVar("interceptorProvider", bc.invokeInterface(
+                        MethodDescs.SUPPLIER_GET, interceptorProviderSupplier));
+                Expr childCC = bc.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD, parentCC);
+                LocalVar interceptorInstance = bc.localVar("interceptorInstance",
+                        bc.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, interceptorProvider, childCC));
+                interceptorVars.put(interceptor, interceptorInstance);
+                LocalVar wrap = bc.localVar("wrap",
+                        bc.invokeStatic(MethodDesc.of(InitializedInterceptor.class, "of",
                                 InitializedInterceptor.class, Object.class, InjectableInterceptor.class),
-                        interceptorInstanceHandle, interceptorProvider);
-                interceptorToWrap.put(interceptor, wrapHandle);
+                                interceptorInstance, interceptorProvider));
+                interceptorToWrap.put(interceptor, wrap);
             }
 
-            if (!postConstructs.isEmpty()) {
-                // postConstructs = new ArrayList<InterceptorInvocation>()
-                postConstructsHandle = create.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-                for (InterceptorInfo interceptor : postConstructs.interceptors) {
-                    ResultHandle interceptorSupplierHandle = create.readInstanceField(
-                            FieldDescriptor.of(beanCreator.getClassName(),
-                                    interceptorToProviderSupplierField.get(interceptor), Supplier.class.getName()),
-                            create.getThis());
-                    ResultHandle interceptorHandle = create.invokeInterfaceMethod(
-                            MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
-
-                    ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
-                            MethodDescriptors.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
-                            interceptorHandle, interceptorToResultHandle.get(interceptor));
-
-                    // postConstructs.add(InterceptorInvocation.postConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
-                    create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, postConstructsHandle,
-                            interceptorInvocationHandle);
+            if (!aroundConstructInterception.isEmpty()) {
+                // aroundConstructs = new ArrayList<InterceptorInvocation>()
+                aroundConstructs = bc.localVar("aroundConstructs", bc.new_(ArrayList.class));
+                for (InterceptorInfo interceptor : aroundConstructInterception.interceptors) {
+                    // aroundConstructs.add(InterceptorInvocation.aroundConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
+                    Expr interceptorSupplier = cc.this_().field(interceptorToProviderSupplierField.get(interceptor));
+                    Expr interceptorInstance = bc.invokeInterface(MethodDescs.SUPPLIER_GET, interceptorSupplier);
+                    Expr interceptorInvocationHandle = bc.invokeStatic(MethodDescs.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
+                            interceptorInstance, interceptorVars.get(interceptor));
+                    bc.withList(aroundConstructs).add(interceptorInvocationHandle);
                 }
             }
-            if (!aroundConstructs.isEmpty()) {
-                // aroundConstructs = new ArrayList<InterceptorInvocation>()
-                aroundConstructsHandle = create.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-                for (InterceptorInfo interceptor : aroundConstructs.interceptors) {
-                    ResultHandle interceptorSupplierHandle = create.readInstanceField(
-                            FieldDescriptor.of(beanCreator.getClassName(),
-                                    interceptorToProviderSupplierField.get(interceptor), Supplier.class.getName()),
-                            create.getThis());
-                    ResultHandle interceptorHandle = create.invokeInterfaceMethod(
-                            MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
 
-                    ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
-                            MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
-                            interceptorHandle, interceptorToResultHandle.get(interceptor));
-
-                    // aroundConstructs.add(InterceptorInvocation.aroundConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
-                    create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, aroundConstructsHandle,
-                            interceptorInvocationHandle);
+            if (!postConstructInterception.isEmpty()) {
+                // postConstructs = new ArrayList<InterceptorInvocation>()
+                postConstructs = bc.localVar("postConstructs", bc.new_(ArrayList.class));
+                for (InterceptorInfo interceptor : postConstructInterception.interceptors) {
+                    // postConstructs.add(InterceptorInvocation.postConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
+                    FieldVar interceptorSupplier = cc.this_().field(interceptorToProviderSupplierField.get(interceptor));
+                    Expr interceptorInstance = bc.invokeInterface(MethodDescs.SUPPLIER_GET, interceptorSupplier);
+                    Expr interceptorInvocation = bc.invokeStatic(MethodDescs.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
+                            interceptorInstance, interceptorVars.get(interceptor));
+                    bc.withList(postConstructs).add(interceptorInvocation);
                 }
             }
         }
 
+        LocalVar instance;
+
         // AroundConstruct lifecycle callback interceptors
-        InterceptionInfo aroundConstructs = bean.getLifecycleInterceptors(InterceptionType.AROUND_CONSTRUCT);
-        instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerType.className()));
-        if (!aroundConstructs.isEmpty()) {
+        if (!aroundConstructInterception.isEmpty()) {
             Optional<Injection> constructorInjection = bean.getConstructorInjection();
-            ResultHandle constructorHandle;
+            LocalVar constructor;
             if (constructorInjection.isPresent()) {
-                List<String> paramTypes = new ArrayList<>();
+                List<ClassDesc> paramTypes = new ArrayList<>();
                 for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
-                    paramTypes.add(injectionPoint.getType().name().toString());
+                    paramTypes.add(classDescOf(injectionPoint.getType()));
                 }
-                ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = create.loadClass(providerType.className());
-                ResultHandle paramsArray = create.newArray(Class.class, create.load(paramTypes.size()));
-                for (ListIterator<String> iterator = paramTypes.listIterator(); iterator.hasNext();) {
-                    create.writeArrayValue(paramsArray, iterator.nextIndex(), create.loadClass(iterator.next()));
-                }
-                paramsHandles[1] = paramsArray;
-                constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
-                        paramsHandles);
+                constructor = bc.localVar("constructor", bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_CONSTRUCTOR,
+                        Const.of(providerType.classDesc()),
+                        bc.newArray(Class.class, paramTypes.stream().map(Const::of).toList())));
                 reflectionRegistration.registerMethod(constructorInjection.get().target.asMethod());
             } else {
                 // constructor = Reflections.findConstructor(Foo.class)
-                ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = create.loadClass(providerType.className());
-                paramsHandles[1] = create.newArray(Class.class, create.load(0));
-                constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
-                        paramsHandles);
+                constructor = bc.localVar("constructor", bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_CONSTRUCTOR,
+                        Const.of(providerType.classDesc()), bc.newEmptyArray(Class.class, 0)));
                 MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
                 reflectionRegistration.registerMethod(noArgsConstructor);
             }
 
             List<TransientReference> transientReferences = new ArrayList<>();
-            // List of handles representing injectable parameters
-            List<ResultHandle> injectableCtorParams = new ArrayList<>();
-            // list of handles representing all other parameters, such as injectable interceptors
-            List<ResultHandle> allOtherCtorParams = new ArrayList<>();
-            newProviderHandles(bean, beanCreator, create,
-                    injectionPointToProviderSupplierField, interceptorToProviderSupplierField, decoratorToProviderSupplierField,
-                    interceptorToWrap, transientReferences, injectableCtorParams, allOtherCtorParams);
+            // List of injectable parameters
+            List<Var> injectableCtorParams = new ArrayList<>();
+            // list of all other parameters, such as injectable interceptors
+            List<Var> allOtherCtorParams = new ArrayList<>();
+            newProviders(bean, cc, bc, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
+                    decoratorToProviderSupplierField, interceptorToWrap, transientReferences, injectableCtorParams,
+                    allOtherCtorParams, parentCC);
 
             // Forwarding function
             // Function<Object[], Object> forward = (params) -> new SimpleBean_Subclass(params[0], ctx, lifecycleInterceptorProvider1)
-            FunctionCreator func = create.createFunction(Function.class);
-            BytecodeCreator funcBytecode = func.getBytecode();
-            List<ResultHandle> params = new ArrayList<>();
-            if (!injectableCtorParams.isEmpty()) {
-                // `injectableCtorParams` are passed to the first interceptor in the chain
-                // the `Function` generated here obtains the parameter array from `InvocationContext`
-                // these 2 arrays have the same shape (size and element types), but not necessarily the same content
-                ResultHandle paramsArray = funcBytecode.checkCast(funcBytecode.getMethodParam(0), Object[].class);
-                for (int i = 0; i < injectableCtorParams.size(); i++) {
-                    params.add(funcBytecode.readArrayValue(paramsArray, i));
+            LocalVar func = bc.localVar("func", bc.lambda(Function.class, lc -> {
+                List<Var> capturedAllOtherCtorParams = new ArrayList<>();
+                for (int i = 0; i < allOtherCtorParams.size(); i++) {
+                    Var param = allOtherCtorParams.get(i);
+                    capturedAllOtherCtorParams.add(lc.capture(param.name() + i, param));
                 }
-            }
-            List<ResultHandle> providerHandles = new ArrayList<>(params);
-            providerHandles.addAll(allOtherCtorParams);
-            ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerType.className(),
-                    baseName,
-                    providerHandles,
-                    reflectionRegistration, isApplicationClass);
-            // Destroy injected transient references
-            destroyTransientReferences(funcBytecode, transientReferences);
-            funcBytecode.returnValue(retHandle);
+                Var capturedParentCC = lc.capture(parentCC);
+                List<TransientReference> capturedTransientReferences = transientReferences.stream()
+                        .map(it -> new TransientReference(
+                                lc.capture(it.provider), lc.capture(it.instance), lc.capture(it.creationalContext)))
+                        .toList();
+                ParamVar params = lc.parameter("params", 0);
+                lc.body(lbc -> {
+                    List<LocalVar> args = new ArrayList<>();
+                    if (!injectableCtorParams.isEmpty()) {
+                        // `injectableCtorParams` are passed to the first interceptor in the chain
+                        // the `Function` generated here obtains the parameter array from `InvocationContext`
+                        // these 2 arrays have the same shape (size and element types), but not necessarily the same content
+                        LocalVar paramsArray = lbc.localVar("params", lbc.cast(params, Object[].class));
+                        for (int i = 0; i < injectableCtorParams.size(); i++) {
+                            args.add(lbc.localVar("arg" + i, paramsArray.elem(i)));
+                        }
+                    }
+                    List<Var> providers = new ArrayList<>(args);
+                    providers.addAll(capturedAllOtherCtorParams);
+                    LocalVar result = lbc.localVar("result", newBeanInstance(bean, lbc, providerType, baseName,
+                            providers, isApplicationClass, capturedParentCC));
+                    // Destroy injected transient references
+                    destroyTransientReferences(lbc, capturedTransientReferences);
+                    lbc.return_(result);
+                });
+            }));
 
             // Interceptor bindings
-            ResultHandle bindingsArray = create.newArray(Object.class, aroundConstructs.bindings.size());
+            LocalVar bindingsArray = bc.localVar("bindings",
+                    bc.newEmptyArray(Object.class, aroundConstructInterception.bindings.size()));
             int bindingsIndex = 0;
-            for (AnnotationInstance binding : aroundConstructs.bindings) {
+            for (AnnotationInstance binding : aroundConstructInterception.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                create.writeArrayValue(bindingsArray, bindingsIndex++,
-                        annotationLiterals.create(create, bindingClass, binding));
+                bc.set(bindingsArray.elem(bindingsIndex++), annotationLiterals.create(bc, bindingClass, binding));
             }
             // ResultHandle of Object[] holding all constructor args
-            ResultHandle ctorArgsArray = create.newArray(Object.class, create.load(injectableCtorParams.size()));
-            for (int i = 0; i < injectableCtorParams.size(); i++) {
-                create.writeArrayValue(ctorArgsArray, i, injectableCtorParams.get(i));
-            }
-            ResultHandle invocationContextHandle = create.invokeStaticMethod(
-                    MethodDescriptors.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructorHandle,
-                    ctorArgsArray,
-                    aroundConstructsHandle, func.getInstance(),
-                    create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
-            TryBlock tryCatch = create.tryBlock();
-            CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
-            exceptionCatch.ifFalse(exceptionCatch.instanceOf(exceptionCatch.getCaughtException(), RuntimeException.class))
-                    .falseBranch().throwException(exceptionCatch.getCaughtException());
-            // throw new RuntimeException(e)
-            exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs",
-                    exceptionCatch.getCaughtException());
-            // InvocationContextImpl.aroundConstruct(constructor,aroundConstructs,forward).proceed()
-            tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED,
-                    invocationContextHandle);
-            // instance = InvocationContext.getTarget()
-            tryCatch.assign(instanceHandle, tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_GET_TARGET,
-                    invocationContextHandle));
-
+            LocalVar ctorArgsArray = bc.localVar("ctorArgs", bc.newArray(Object.class, injectableCtorParams));
+            LocalVar invocationContext = bc.localVar("invocationContext", bc.invokeStatic(
+                    MethodDescs.INVOCATION_CONTEXTS_AROUND_CONSTRUCT, constructor, ctorArgsArray, aroundConstructs,
+                    func, bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray)));
+            instance = bc.localVar("instance", Const.ofNull(providerType.classDesc()));
+            bc.try_(tc -> {
+                tc.body(b1 -> {
+                    // InvocationContextImpl.aroundConstruct(constructor,aroundConstructs,forward).proceed()
+                    b1.invokeInterface(MethodDescs.INVOCATION_CONTEXT_PROCEED, invocationContext);
+                    // instance = InvocationContext.getTarget()
+                    b1.set(instance, b1.invokeInterface(MethodDescs.INVOCATION_CONTEXT_GET_TARGET,
+                            invocationContext));
+                });
+                tc.catch_(Exception.class, "e", (b1, e) -> {
+                    b1.ifInstanceOf(e, RuntimeException.class, BlockCreator::throw_);
+                    b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
+                            Const.of("Error invoking aroundConstructs"), e));
+                });
+            });
         } else {
             List<TransientReference> transientReferences = new ArrayList<>();
-            List<ResultHandle> providerHandles = new ArrayList<>();
-            newProviderHandles(bean, beanCreator, create, injectionPointToProviderSupplierField,
-                    interceptorToProviderSupplierField, decoratorToProviderSupplierField,
-                    interceptorToWrap, transientReferences, providerHandles, providerHandles);
-            create.assign(instanceHandle,
-                    newInstanceHandle(bean, beanCreator, create, create, providerType.className(), baseName,
-                            providerHandles,
-                            reflectionRegistration, isApplicationClass));
+            List<Var> providers = new ArrayList<>();
+            newProviders(bean, cc, bc, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
+                    decoratorToProviderSupplierField, interceptorToWrap, transientReferences, providers, providers,
+                    parentCC);
+            instance = bc.localVar("instance",
+                    newBeanInstance(bean, bc, providerType, baseName, providers, isApplicationClass, parentCC));
             // Destroy injected transient references
-            destroyTransientReferences(create, transientReferences);
+            destroyTransientReferences(bc, transientReferences);
         }
 
         // Perform field and initializer injections
         for (Injection injection : bean.getInjections()) {
             if (injection.isField()) {
-                TryBlock tryBlock = create.tryBlock();
-                InjectionPointInfo injectionPoint = injection.injectionPoints.get(0);
-                ResultHandle providerSupplierHandle = tryBlock.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                        injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                        tryBlock.getThis());
-                ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
-                ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                        providerHandle, tryBlock.getMethodParam(0));
-                AssignableResultHandle referenceHandle = tryBlock.createVariable(Object.class);
-                tryBlock.assign(referenceHandle, tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        providerHandle, childCtxHandle));
-                checkPrimitiveInjection(tryBlock, injectionPoint, referenceHandle);
+                bc.try_(tc -> {
+                    tc.body(b1 -> {
+                        InjectionPointInfo injectionPoint = injection.injectionPoints.get(0);
+                        FieldVar providerSupplier = cc.this_().field(injectionPointToProviderSupplierField.get(injectionPoint));
+                        LocalVar provider = b1.localVar("provider",
+                                b1.invokeInterface(MethodDescs.SUPPLIER_GET, providerSupplier));
+                        Expr childCC = b1.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL, provider, parentCC);
+                        LocalVar injectedReference = b1.localVar("injectedReference",
+                                b1.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCC));
+                        checkPrimitiveInjection(b1, injectionPoint, injectedReference);
 
-                FieldInfo injectedField = injection.target.asField();
-                // only use reflection fallback if we are not performing transformation
-                if (isReflectionFallbackNeeded(injectedField, targetPackage, bean)) {
-                    if (Modifier.isPrivate(injectedField.flags())) {
-                        privateMembers.add(isApplicationClass,
-                                String.format("@Inject field %s#%s", injection.target.asField().declaringClass().name(),
-                                        injection.target.asField().name()));
-                    }
-                    reflectionRegistration.registerField(injectedField);
-                    tryBlock.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
-                            tryBlock.loadClass(injectedField.declaringClass().name().toString()),
-                            tryBlock.load(injectedField.name()), instanceHandle, referenceHandle);
+                        FieldInfo injectedField = injection.target.asField();
+                        // only use reflection fallback if we are not performing transformation
+                        if (isReflectionFallbackNeeded(injectedField, targetPackage, bean)) {
+                            if (Modifier.isPrivate(injectedField.flags())) {
+                                privateMembers.add(isApplicationClass, String.format("@Inject field %s#%s",
+                                        injection.target.asField().declaringClass().name(), injection.target.asField().name()));
+                            }
+                            reflectionRegistration.registerField(injectedField);
+                            b1.invokeStatic(MethodDescs.REFLECTIONS_WRITE_FIELD,
+                                    Const.of(classDescOf(injectedField.declaringClass())),
+                                    Const.of(injectedField.name()), instance, injectedReference);
 
-                } else {
-                    // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
-                    tryBlock.writeInstanceField(
-                            FieldDescriptor.of(injectedField.declaringClass().name().toString(), injectedField.name(),
-                                    DescriptorUtils.typeToString(injectionPoint.getAnnotationTarget().asField().type())),
-                            instanceHandle, referenceHandle);
-                }
-                CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
-                catchBlock.throwException(RuntimeException.class, "Error injecting " + injection.target,
-                        catchBlock.getCaughtException());
+                        } else {
+                            // We cannot use `injectionPoint.getRequiredType()` because it might be a resolved
+                            // parameterize type and we could get `NoSuchFieldError`
+                            Type ipType = injectionPoint.getAnnotationTarget().asField().type();
+                            b1.set(instance.field(FieldDesc.of(classDescOf(injectedField.declaringClass()),
+                                    injectedField.name(), classDescOf(ipType))), injectedReference);
+                        }
+                    });
+                    tc.catch_(RuntimeException.class, "e", (b1, e) -> {
+                        b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
+                                Const.of("Error injecting " + injection.target), e));
+                    });
+                });
             } else if (injection.isMethod() && !injection.isConstructor()) {
                 List<TransientReference> transientReferences = new ArrayList<>();
-                ResultHandle[] referenceHandles = new ResultHandle[injection.injectionPoints.size()];
+                LocalVar[] injectedReferences = new LocalVar[injection.injectionPoints.size()];
                 int paramIdx = 0;
                 for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
-                    ResultHandle providerSupplierHandle = create.readInstanceField(
-                            FieldDescriptor.of(beanCreator.getClassName(),
-                                    injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                            create.getThis());
-                    ResultHandle providerHandle = create.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
-                            providerSupplierHandle);
-                    ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                            providerHandle, create.getMethodParam(0));
-                    AssignableResultHandle referenceHandle = create.createVariable(Object.class);
-                    create.assign(referenceHandle, create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                            providerHandle, childCtxHandle));
-                    checkPrimitiveInjection(create, injectionPoint, referenceHandle);
-                    referenceHandles[paramIdx++] = referenceHandle;
+                    FieldVar providerSupplier = cc.this_().field(injectionPointToProviderSupplierField.get(injectionPoint));
+                    LocalVar provider = bc.localVar("provider",
+                            bc.invokeInterface(MethodDescs.SUPPLIER_GET, providerSupplier));
+                    LocalVar childCC = bc.localVar("childCC",
+                            bc.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL, provider, parentCC));
+                    LocalVar injectedReference = bc.localVar("injectedReference",
+                            bc.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCC));
+                    checkPrimitiveInjection(bc, injectionPoint, injectedReference);
+                    injectedReferences[paramIdx++] = injectedReference;
                     // We need to destroy dependent beans for @TransientReference injection points
                     if (injectionPoint.isDependentTransientReference()) {
-                        transientReferences.add(new TransientReference(providerHandle, referenceHandle, childCtxHandle));
+                        transientReferences.add(new TransientReference(provider, injectedReference, childCC));
                     }
                 }
 
                 MethodInfo initializerMethod = injection.target.asMethod();
                 if (isReflectionFallbackNeeded(initializerMethod, targetPackage)) {
                     if (Modifier.isPrivate(initializerMethod.flags())) {
-                        privateMembers.add(isApplicationClass,
-                                String.format("@Inject initializer %s#%s()", initializerMethod.declaringClass().name(),
-                                        initializerMethod.name()));
-                    }
-                    ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
-                    ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
-                    for (int i = 0; i < referenceHandles.length; i++) {
-                        create.writeArrayValue(paramTypesArray, i,
-                                create.loadClass(initializerMethod.parameterType(i).name().toString()));
-                        create.writeArrayValue(argsArray, i, referenceHandles[i]);
+                        privateMembers.add(isApplicationClass, String.format("@Inject initializer %s#%s()",
+                                initializerMethod.declaringClass().name(), initializerMethod.name()));
                     }
                     reflectionRegistration.registerMethod(initializerMethod);
-                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                            create.loadClass(initializerMethod.declaringClass().name().toString()),
-                            create.load(injection.target.asMethod().name()),
-                            paramTypesArray, instanceHandle, argsArray);
+
+                    Expr paramTypes = bc.newArray(Class.class, initializerMethod.parameterTypes()
+                            .stream()
+                            .map(paramType -> Const.of(classDescOf(paramType)))
+                            .toList());
+                    Expr args = bc.newArray(Object.class, injectedReferences);
+                    bc.invokeStatic(MethodDescs.REFLECTIONS_INVOKE_METHOD,
+                            Const.of(classDescOf(initializerMethod.declaringClass())),
+                            Const.of(initializerMethod.name()), paramTypes, instance, args);
 
                 } else {
-                    create.invokeVirtualMethod(MethodDescriptor.of(injection.target.asMethod()), instanceHandle,
-                            referenceHandles);
+                    bc.invokeVirtual(methodDescOf(initializerMethod), instance, injectedReferences);
                 }
 
                 // Destroy injected transient references
-                destroyTransientReferences(create, transientReferences);
+                destroyTransientReferences(bc, transientReferences);
             }
         }
 
@@ -1921,24 +851,50 @@ public class BeanGenerator extends AbstractGenerator {
             // and also the CDI specification:
             //
             // > Invocations of initializer methods by the container are not business method invocations.
-            String subclassName = SubclassGenerator.generatedName(bean.getProviderType().name(), baseName);
-            create.invokeVirtualMethod(MethodDescriptor.ofMethod(subclassName,
-                    SubclassGenerator.MARK_CONSTRUCTED_METHOD_NAME, void.class), instanceHandle);
+            ClassDesc subclass = ClassDesc.of(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName));
+            bc.invokeVirtual(ClassMethodDesc.of(subclass, SubclassGenerator.MARK_CONSTRUCTED_METHOD_NAME, void.class),
+                    bc.cast(instance, subclass));
         }
 
-        // if there's no `@PostConstruct` interceptor, we'll generate code to invoke `@PostConstruct` callbacks
-        // directly into the `doCreate` method:
-        //
-        // private MyBean doCreate(CreationalContext var1) {
-        //     MyBean var2 = new MyBean();
-        //     var2.myPostConstructCallback();
-        //     return var2;
-        // }
-        BytecodeCreator postConstructsBytecode = create;
+        class PostConstructGenerator {
+            void generate(BlockCreator bc, Var instance) {
+                if (!bean.isInterceptor()) {
+                    List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
+                            DotNames.POST_CONSTRUCT, bean.getDeployment().getBeanArchiveIndex());
+
+                    for (MethodInfo callback : postConstructCallbacks) {
+                        if (isReflectionFallbackNeeded(callback, targetPackage)) {
+                            if (Modifier.isPrivate(callback.flags())) {
+                                privateMembers.add(isApplicationClass, String.format("@PostConstruct callback %s#%s()",
+                                        callback.declaringClass().name(), callback.name()));
+                            }
+                            reflectionRegistration.registerMethod(callback);
+                            bc.invokeStatic(MethodDescs.REFLECTIONS_INVOKE_METHOD,
+                                    Const.of(classDescOf(callback.declaringClass())),
+                                    Const.of(callback.name()),
+                                    bc.newEmptyArray(Class.class, 0),
+                                    instance,
+                                    bc.newEmptyArray(Object.class, 0));
+                        } else {
+                            bc.invokeVirtual(methodDescOf(callback), instance);
+                        }
+                    }
+                }
+            }
+        }
 
         // PostConstruct lifecycle callback interceptors
-        InterceptionInfo postConstructs = bean.getLifecycleInterceptors(InterceptionType.POST_CONSTRUCT);
-        if (!postConstructs.isEmpty()) {
+        if (postConstructInterception.isEmpty()) {
+            // if there's no `@PostConstruct` interceptor, we'll generate code to invoke `@PostConstruct` callbacks
+            // directly into the `doCreate` method:
+            //
+            // private MyBean doCreate(CreationalContext var1) {
+            //     MyBean var2 = new MyBean();
+            //     var2.myPostConstructCallback();
+            //     return var2;
+            // }
+            new PostConstructGenerator().generate(bc, instance);
+        } else {
             // if there _is_ some `@PostConstruct` interceptor, however, we'll reify the chain of `@PostConstruct`
             // callbacks into a `Runnable` that we pass into the interceptor chain to be called
             // by the last `proceed()` call:
@@ -1953,297 +909,1076 @@ public class BeanGenerator extends AbstractGenerator {
             //     var12.proceed();
             //     return var7;
             // }
-            FunctionCreator postConstructForwarder = create.createFunction(Runnable.class);
-            postConstructsBytecode = postConstructForwarder.getBytecode();
+            LocalVar runnable = bc.localVar("runnable", bc.lambda(Runnable.class, lc -> {
+                Var capturedInstance = lc.capture("instance", instance);
+                lc.body(lbc -> {
+                    new PostConstructGenerator().generate(lbc, capturedInstance);
+                    lbc.return_();
+                });
+            }));
 
             // Interceptor bindings
-            ResultHandle bindingsArray = create.newArray(Object.class, postConstructs.bindings.size());
+            LocalVar bindingsArray = bc.localVar("bindings",
+                    bc.newEmptyArray(Object.class, postConstructInterception.bindings.size()));
             int bindingsIndex = 0;
-            for (AnnotationInstance binding : postConstructs.bindings) {
+            for (AnnotationInstance binding : postConstructInterception.bindings) {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                create.writeArrayValue(bindingsArray, bindingsIndex++,
-                        annotationLiterals.create(create, bindingClass, binding));
-
+                bc.set(bindingsArray.elem(bindingsIndex++),
+                        annotationLiterals.create(bc, bindingClass, binding));
             }
 
             // InvocationContextImpl.postConstruct(instance,postConstructs).proceed()
-            ResultHandle invocationContextHandle = create.invokeStaticMethod(
-                    MethodDescriptors.INVOCATION_CONTEXTS_POST_CONSTRUCT, instanceHandle,
-                    postConstructsHandle, create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray),
-                    postConstructForwarder.getInstance());
-
-            TryBlock tryCatch = create.tryBlock();
-            CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
-            exceptionCatch.ifFalse(exceptionCatch.instanceOf(exceptionCatch.getCaughtException(), RuntimeException.class))
-                    .falseBranch().throwException(exceptionCatch.getCaughtException());
-            // throw new RuntimeException(e)
-            exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs",
-                    exceptionCatch.getCaughtException());
-            tryCatch.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class),
-                    invocationContextHandle);
+            LocalVar invocationContext = bc.localVar("invocationContext",
+                    bc.invokeStatic(MethodDescs.INVOCATION_CONTEXTS_POST_CONSTRUCT, instance, postConstructs,
+                            bc.invokeStatic(MethodDescs.SETS_OF, bindingsArray), runnable));
+            bc.try_(tc -> {
+                tc.body(b1 -> {
+                    b1.invokeInterface(MethodDesc.of(InvocationContext.class, "proceed", Object.class),
+                            invocationContext);
+                });
+                tc.catch_(Exception.class, "e", (b1, e) -> {
+                    b1.ifInstanceOf(e, RuntimeException.class, BlockCreator::throw_);
+                    // throw new RuntimeException(e)
+                    b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
+                            Const.of("Error invoking postConstructs"), e));
+                });
+            });
         }
 
-        // PostConstruct callbacks
-        // possibly wrapped into Runnable so that PostConstruct interceptors can proceed() correctly
-        if (!bean.isInterceptor()) {
-            List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
-                    DotNames.POST_CONSTRUCT, bean.getDeployment().getBeanArchiveIndex());
+        bc.return_(instance);
+    }
 
-            for (MethodInfo callback : postConstructCallbacks) {
-                if (isReflectionFallbackNeeded(callback, targetPackage)) {
-                    if (Modifier.isPrivate(callback.flags())) {
-                        privateMembers.add(isApplicationClass,
-                                String.format("@PostConstruct callback %s#%s()", callback.declaringClass().name(),
-                                        callback.name()));
-                    }
-                    reflectionRegistration.registerMethod(callback);
-                    postConstructsBytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                            postConstructsBytecode.loadClass(callback.declaringClass().name().toString()),
-                            postConstructsBytecode.load(callback.name()),
-                            postConstructsBytecode.newArray(Class.class, postConstructsBytecode.load(0)), instanceHandle,
-                            postConstructsBytecode.newArray(Object.class, postConstructsBytecode.load(0)));
+    private Expr newBeanInstance(BeanInfo bean, BlockCreator bc, ProviderType providerType, String baseName,
+            List<Var> providers, boolean isApplicationClass, Var parentCC) {
+        Optional<Injection> constructorInjection = bean.getConstructorInjection();
+        MethodInfo constructor = constructorInjection.isPresent() ? constructorInjection.get().target.asMethod() : null;
+        List<InjectionPointInfo> injectionPoints = constructorInjection.isPresent()
+                ? constructorInjection.get().injectionPoints
+                : Collections.emptyList();
+
+        if (bean.isSubclassRequired()) {
+            // new SimpleBean_Subclass(foo,ctx,lifecycleInterceptorProvider1)
+            List<ClassDesc> paramTypes = new ArrayList<>();
+            List<Expr> args = new ArrayList<>();
+
+            List<InterceptorInfo> interceptors = bean.getBoundInterceptors();
+            List<DecoratorInfo> decorators = bean.getBoundDecorators();
+
+            // 1. constructor injection points
+            for (int i = 0; i < injectionPoints.size(); i++) {
+                paramTypes.add(classDescOf(injectionPoints.get(i).getType()));
+                args.add(providers.get(i));
+            }
+            // 2. ctx
+            paramTypes.add(Reflection2Gizmo.classDescOf(CreationalContext.class));
+            args.add(parentCC);
+            // 3. interceptors (wrapped if needed)
+            for (int i = 0; i < interceptors.size(); i++) {
+                paramTypes.add(Reflection2Gizmo.classDescOf(InjectableInterceptor.class));
+                args.add(providers.get(injectionPoints.size() + i));
+            }
+            // 4. decorators
+            for (int i = 0; i < decorators.size(); i++) {
+                paramTypes.add(Reflection2Gizmo.classDescOf(InjectableDecorator.class));
+                args.add(providers.get(injectionPoints.size() + interceptors.size() + i));
+            }
+
+            ClassDesc subclass = ClassDesc.of(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName));
+            return bc.new_(ConstructorDesc.of(subclass, paramTypes), args);
+        } else if (constructorInjection.isPresent()) {
+            if (Modifier.isPrivate(constructor.flags())) {
+                // we often remove `private` from the constructor (see `Beans.validateBean()`),
+                // so we could avoid using reflection here
+                privateMembers.add(isApplicationClass, String.format("Bean constructor %s on %s",
+                        constructor, constructor.declaringClass().name()));
+                reflectionRegistration.registerMethod(constructor);
+                int params = providers.size();
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerType.className())) {
+                    params++;
+                }
+                LocalVar paramTypes = bc.localVar("paramTypes", bc.newEmptyArray(Class.class, params));
+                LocalVar args = bc.localVar("args", bc.newEmptyArray(Object.class, params));
+                for (int i = 0; i < injectionPoints.size(); i++) {
+                    bc.set(paramTypes.elem(i), Const.of(classDescOf(injectionPoints.get(i).getType())));
+                    bc.set(args.elem(i), providers.get(i));
+                }
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerType.className())) {
+                    bc.set(paramTypes.elem(params - 1), Const.of(CreationalContext.class));
+                    bc.set(args.elem(params - 1), parentCC);
+                }
+                ClassDesc declaringClass = classDescOf(constructor.declaringClass());
+                return bc.cast(bc.invokeStatic(MethodDescs.REFLECTIONS_NEW_INSTANCE,
+                        Const.of(declaringClass), paramTypes, args), declaringClass);
+            } else {
+                // new SimpleBean(foo)
+                int params = injectionPoints.size();
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerType.className())) {
+                    params++;
+                }
+                List<ClassDesc> paramTypes = new ArrayList<>(params);
+                for (InjectionPointInfo injectionPoint : injectionPoints) {
+                    paramTypes.add(classDescOf(injectionPoint.getType()));
+                }
+                Expr[] args = new Expr[params];
+                for (int i = 0; i < injectionPoints.size(); i++) {
+                    args[i] = providers.get(i);
+                }
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerType.className())) {
+                    paramTypes.add(Reflection2Gizmo.classDescOf(CreationalContext.class));
+                    args[params - 1] = parentCC;
+                }
+                return bc.new_(ConstructorDesc.of(providerType.classDesc(), paramTypes), args);
+            }
+        } else {
+            MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
+            if (Modifier.isPrivate(noArgsConstructor.flags())) {
+                // we often remove `private` from the constructor (see `Beans.validateBean()`),
+                // so we could avoid using reflection here
+                privateMembers.add(isApplicationClass, String.format("Bean constructor %s on %s",
+                        noArgsConstructor, noArgsConstructor.declaringClass().name()));
+                reflectionRegistration.registerMethod(noArgsConstructor);
+                Expr paramTypesArray;
+                Expr argsArray;
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerType.className())) {
+                    paramTypesArray = bc.newArray(Class.class, Const.of(CreationalContext.class));
+                    argsArray = bc.newArray(Object.class, parentCC);
                 } else {
-                    postConstructsBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), instanceHandle);
+                    paramTypesArray = bc.newArray(Class.class);
+                    argsArray = bc.newArray(Object.class);
+                }
+                ClassDesc declaringClass = classDescOf(noArgsConstructor.declaringClass());
+                return bc.cast(bc.invokeStatic(MethodDescs.REFLECTIONS_NEW_INSTANCE,
+                        Const.of(declaringClass), paramTypesArray, argsArray), declaringClass);
+            } else {
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerType.className())) {
+                    // new SimpleDecorator_Impl(ctx)
+                    return bc.new_(ConstructorDesc.of(providerType.classDesc(), CreationalContext.class), parentCC);
+                } else {
+                    // new SimpleBean()
+                    return bc.new_(ConstructorDesc.of(providerType.classDesc()));
                 }
             }
         }
-        if (postConstructsBytecode != create) {
-            // only if we're generating a `Runnable`, see above
-            postConstructsBytecode.returnVoid();
-        }
-
-        create.returnValue(instanceHandle);
     }
 
-    protected void implementGet(BeanInfo bean, ClassCreator beanCreator, ProviderType providerType, String baseName) {
+    private void newProviders(BeanInfo bean, ClassCreator cc, BlockCreator bc,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderField,
+            Map<InterceptorInfo, FieldDesc> interceptorToProviderField,
+            Map<DecoratorInfo, FieldDesc> decoratorToProviderSupplierField,
+            Map<InterceptorInfo, LocalVar> interceptorToWrap,
+            List<TransientReference> transientReferences,
+            List<Var> injectableParams,
+            List<Var> allOtherParams,
+            ParamVar parentCC) {
 
-        MethodCreator get = beanCreator.getMethodCreator("get", providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
+        Optional<Injection> constructorInjection = bean.getConstructorInjection();
 
-        if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
-            get.throwException(UnproxyableResolutionException.class, "Bean not proxyable: " + bean);
-            get.returnValue(get.loadNull());
-        } else if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-            // @Dependent pseudo-scope
-            // Foo instance = create(ctx)
-            ResultHandle instance = get.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerType.descriptorName(),
-                            CreationalContext.class),
-                    get.getThis(),
-                    get.getMethodParam(0));
+        if (constructorInjection.isPresent()) {
+            for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
+                Expr providerSupplier = cc.this_().field(injectionPointToProviderField.get(injectionPoint));
+                LocalVar provider = bc.localVar("provider",
+                        bc.invokeInterface(MethodDescs.SUPPLIER_GET, providerSupplier));
+                LocalVar childCC = bc.localVar("childCC",
+                        bc.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL, provider, parentCC));
+                LocalVar injectedReference = bc.localVar("injectedReference",
+                        bc.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCC));
+                checkPrimitiveInjection(bc, injectionPoint, injectedReference);
+                injectableParams.add(injectedReference);
+                if (injectionPoint.isDependentTransientReference()) {
+                    transientReferences.add(new TransientReference(provider, injectedReference, childCC));
+                }
+            }
+        }
+        if (bean.isSubclassRequired()) {
+            for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
+                LocalVar wrapped = interceptorToWrap.get(interceptor);
+                if (wrapped != null) {
+                    allOtherParams.add(wrapped);
+                } else {
+                    FieldVar interceptorProviderSupplier = cc.this_().field(interceptorToProviderField.get(interceptor));
+                    LocalVar interceptorProvider = bc.localVar("interceptorProvider",
+                            bc.invokeInterface(MethodDescs.SUPPLIER_GET, interceptorProviderSupplier));
+                    allOtherParams.add(interceptorProvider);
+                }
+            }
+            for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                FieldVar decoratorProviderSupplier = cc.this_().field(decoratorToProviderSupplierField.get(decorator));
+                LocalVar decoratorProvider = bc.localVar("decoratorProvider",
+                        bc.invokeInterface(MethodDescs.SUPPLIER_GET, decoratorProviderSupplier));
+                allOtherParams.add(decoratorProvider);
+            }
+        }
+    }
 
-            // We can optimize if:
-            // 1) class bean - has no @PreDestroy interceptor and there is no @PreDestroy callback
-            // 2) producer - there is no disposal method
-            // 3) synthetic bean - has no destruction logic
-            if (!bean.hasDestroyLogic()) {
-                // If there is no dependency in the creational context we don't have to store the instance in the CreationalContext
-                ResultHandle creationalContext = get.checkCast(get.getMethodParam(0), CreationalContextImpl.class);
-                get.ifNonZero(
-                        get.invokeVirtualMethod(MethodDescriptors.CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES, creationalContext))
-                        .falseBranch().returnValue(instance);
+    private void generateCreateForProducerMethod(ClassCreator cc, BeanInfo bean,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderSupplierField, boolean isApplicationClass,
+            BlockCreator b0, ParamVar parentCC) {
+
+        MethodInfo producerMethod = bean.getTarget().get().asMethod();
+        boolean isStatic = Modifier.isStatic(producerMethod.flags());
+
+        // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).produce()
+
+        FieldDesc declaringProviderSupplierField = FieldDesc.of(cc.type(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                Supplier.class);
+        FieldVar declaringProviderSupplier = cc.this_().field(declaringProviderSupplierField);
+        LocalVar declaringProvider = b0.localVar("declaringProvider",
+                b0.invokeInterface(MethodDescs.SUPPLIER_GET, declaringProviderSupplier));
+        LocalVar creationalContext = b0.localVar("creationalContext",
+                b0.new_(ConstructorDesc.of(CreationalContextImpl.class, Contextual.class), cc.this_()));
+        LocalVar declaringProviderInstance = b0.localVar("declaringProviderInstance",
+                b0.blockExpr(classDescOf(producerMethod.declaringClass()), b1 -> {
+                    if (isStatic) {
+                        // for `static` producers, we don't need to instantiate the bean
+                        // the `null` will only be used for reflective invocation in case the producer is `private`, which is OK
+                        b1.yieldNull();
+                        return;
+                    }
+                    Expr result = b1.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, declaringProvider,
+                            creationalContext);
+                    if (bean.getDeclaringBean().getScope().isNormal()) {
+                        b1.yield(b1.invokeInterface(MethodDescs.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE, result));
+                    } else {
+                        b1.yield(result);
+                    }
+                }));
+
+        List<InjectionPointInfo> injectionPoints = bean.getAllInjectionPoints();
+        LocalVar[] injectedReferences = new LocalVar[injectionPoints.size()];
+        List<TransientReference> transientReferences = new ArrayList<>();
+        int idx = 0;
+        for (InjectionPointInfo injectionPoint : injectionPoints) {
+            FieldVar providerSupplier = cc.this_().field(injectionPointToProviderSupplierField.get(injectionPoint));
+            LocalVar provider = b0.localVar("provider" + idx,
+                    b0.invokeInterface(MethodDescs.SUPPLIER_GET, providerSupplier));
+            LocalVar childCC = b0.localVar("childCC" + idx,
+                    b0.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL, provider, parentCC));
+            LocalVar instance = b0.localVar("instance" + idx,
+                    b0.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCC));
+            checkPrimitiveInjection(b0, injectionPoint, instance);
+            injectedReferences[idx] = instance;
+            if (injectionPoint.isDependentTransientReference()) {
+                transientReferences.add(new TransientReference(provider, instance, childCC));
+            }
+            idx++;
+        }
+        LocalVar instance = b0.localVar("instance", b0.blockExpr(classDescOf(bean.getProviderType()), b1 -> {
+            Expr result;
+            if (Modifier.isPrivate(producerMethod.flags())) {
+                privateMembers.add(isApplicationClass, String.format("Producer method %s#%s()",
+                        producerMethod.declaringClass().name(), producerMethod.name()));
+                reflectionRegistration.registerMethod(producerMethod);
+                LocalVar paramTypes = b1.localVar("paramTypes", b1.newEmptyArray(Class.class, injectedReferences.length));
+                LocalVar args = b1.localVar("args", b1.newEmptyArray(Object.class, injectedReferences.length));
+                for (int i = 0; i < injectedReferences.length; i++) {
+                    b1.set(paramTypes.elem(i), Const.of(classDescOf(producerMethod.parameterType(i))));
+                    b1.set(args.elem(i), injectedReferences[i]);
+                }
+                result = b1.invokeStatic(MethodDescs.REFLECTIONS_INVOKE_METHOD,
+                        Const.of(classDescOf(producerMethod.declaringClass())), Const.of(producerMethod.name()),
+                        paramTypes, declaringProviderInstance, args);
+            } else {
+                result = isStatic
+                        ? b1.invokeStatic(methodDescOf(producerMethod), injectedReferences)
+                        : b1.invokeVirtual(methodDescOf(producerMethod), declaringProviderInstance, injectedReferences);
+            }
+            b1.yield(result);
+        }));
+
+        if (bean.getScope().isNormal()) {
+            b0.ifNull(instance, b1 -> {
+                b1.throw_(IllegalProductException.class, "Normal scoped producer method may not return null: "
+                        + bean.getDeclaringBean().getImplClazz().name() + "." + producerMethod.name() + "()");
+            });
+        }
+
+        // If the declaring bean is `@Dependent` and the producer is not `static`, we must destroy the instance afterwards
+        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope()) && !isStatic) {
+            b0.invokeInterface(MethodDescs.INJECTABLE_BEAN_DESTROY, declaringProvider, declaringProviderInstance,
+                    creationalContext);
+        }
+
+        // Destroy injected transient references
+        destroyTransientReferences(b0, transientReferences);
+
+        b0.return_(instance);
+    }
+
+    private void generateCreateForProducerField(ClassCreator cc, BeanInfo bean,
+            boolean isApplicationClass, BlockCreator b0) {
+
+        FieldInfo producerField = bean.getTarget().get().asField();
+        boolean isStatic = Modifier.isStatic(producerField.flags());
+
+        // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).field
+
+        FieldDesc declaringProviderSupplierField = FieldDesc.of(cc.type(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                Supplier.class);
+        FieldVar declaringProviderSupplier = cc.this_().field(declaringProviderSupplierField);
+        LocalVar declaringProvider = b0.localVar("declaringProvider",
+                b0.invokeInterface(MethodDescs.SUPPLIER_GET, declaringProviderSupplier));
+        LocalVar creationalContext = b0.localVar("creationalContext",
+                b0.new_(ConstructorDesc.of(CreationalContextImpl.class, Contextual.class), cc.this_()));
+        LocalVar declaringProviderInstance = b0.localVar("declaringProviderInstance",
+                b0.blockExpr(classDescOf(producerField.declaringClass()), b1 -> {
+                    if (isStatic) {
+                        // for `static` producers, we don't need to instantiate the bean
+                        // the `null` will only be used for reflective access in case the producer is `private`, which is OK
+                        b1.yieldNull();
+                        return;
+                    }
+                    Expr result = b1.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, declaringProvider,
+                            creationalContext);
+                    if (bean.getDeclaringBean().getScope().isNormal()) {
+                        b1.yield(b1.invokeInterface(MethodDescs.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE, result));
+                    } else {
+                        b1.yield(result);
+                    }
+                }));
+
+        LocalVar instance = b0.localVar("instance", b0.blockExpr(classDescOf(bean.getProviderType()), b1 -> {
+            Expr result;
+            if (Modifier.isPrivate(producerField.flags())) {
+                privateMembers.add(isApplicationClass,
+                        String.format("Producer field %s#%s", producerField.declaringClass().name(), producerField.name()));
+                reflectionRegistration.registerField(producerField);
+                result = b1.invokeStatic(MethodDescs.REFLECTIONS_READ_FIELD,
+                        Const.of(classDescOf(producerField.declaringClass())), Const.of(producerField.name()),
+                        declaringProviderInstance);
+            } else {
+                result = Modifier.isStatic(producerField.flags())
+                        ? Expr.staticField(fieldDescOf(producerField))
+                        : declaringProviderInstance.field(fieldDescOf(producerField));
+            }
+            b1.yield(result);
+        }));
+
+        if (bean.getScope().isNormal()) {
+            b0.ifNull(instance, b1 -> {
+                b1.throw_(IllegalProductException.class, "Normal scoped producer field may not be null: "
+                        + bean.getDeclaringBean().getImplClazz().name() + "." + bean.getTarget().get().asField().name());
+            });
+        }
+
+        // If the declaring bean is `@Dependent` and the producer is not `static`, we must destroy the instance afterwards
+        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope()) && !isStatic) {
+            b0.invokeInterface(MethodDescs.INJECTABLE_BEAN_DESTROY, declaringProvider, declaringProviderInstance,
+                    creationalContext);
+        }
+
+        b0.return_(instance);
+    }
+
+    private void generateCreateForSyntheticBean(ClassCreator cc, BeanInfo bean,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderSupplierField, BlockCreator b0, ParamVar parentCC) {
+
+        MethodDesc createSyntheticDesc = cc.method("createSynthetic", mc -> {
+            // returning `Object` because the creation logic would otherwise have to cast explicitly
+            mc.returning(Object.class);
+            ParamVar synthCC = mc.parameter("synthCC", SyntheticCreationalContext.class);
+            mc.body(bc -> {
+                bean.getCreatorConsumer().accept(new BeanConfiguratorBase.CreateGeneration() {
+                    @Override
+                    public ClassCreator beanClass() {
+                        return cc;
+                    }
+
+                    @Override
+                    public BlockCreator createMethod() {
+                        return bc;
+                    }
+
+                    @Override
+                    public Var syntheticCreationalContext() {
+                        return synthCC;
+                    }
+                });
+            });
+        });
+
+        Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActiveConsumer = bean.getCheckActiveConsumer();
+        if (checkActiveConsumer != null) {
+            MethodDesc checkActiveDesc = cc.method("checkActive", mc -> {
+                mc.returning(ActiveResult.class);
+                mc.body(bc -> {
+                    checkActiveConsumer.accept(new BeanConfiguratorBase.CheckActiveGeneration() {
+                        @Override
+                        public ClassCreator beanClass() {
+                            return cc;
+                        }
+
+                        @Override
+                        public BlockCreator checkActiveMethod() {
+                            return bc;
+                        }
+                    });
+                });
+            });
+
+            List<InjectionPointInfo> matchingIPs = new ArrayList<>();
+            for (InjectionPointInfo injectionPoint : bean.getDeployment().getInjectionPoints()) {
+                if (!injectionPoint.isSynthetic() && bean.equals(injectionPoint.getResolvedBean())) {
+                    matchingIPs.add(injectionPoint);
+                }
             }
 
-            // CreationalContextImpl.addDependencyToParent(this,instance,ctx)
-            get.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_ADD_DEP_TO_PARENT, get.getThis(), instance,
-                    get.getMethodParam(0));
-            // return instance
-            get.returnValue(instance);
-        } else if (bean.getScope().isNormal()) {
-            // All normal scopes
-            // return proxy()
-            get.returnValue(get.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(beanCreator.getClassName(), FIELD_NAME_PROXY, getProxyTypeName(bean, baseName)),
-                    get.getThis()));
-        } else {
-            // All pseudo scopes other than @Dependent (incl. @Singleton)
-            // return Arc.container().getActiveContext(getScope()).get(this, new CreationalContextImpl<>())
-            ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_REQUIRE_CONTAINER);
-            ResultHandle creationalContext = get.newInstance(
-                    MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                    get.getThis());
-            ResultHandle scope = get.loadClass(bean.getScope().getDotName().toString());
-            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT, container,
-                    scope);
-            get.returnValue(
-                    get.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, get.getThis(), creationalContext));
+            LocalVar active = b0.localVar("active", b0.invokeVirtual(checkActiveDesc, cc.this_()));
+            Expr activeBool = b0.invokeVirtual(MethodDescs.ACTIVE_RESULT_VALUE, active);
+            b0.ifNot(activeBool, b1 -> {
+                LocalVar msg = b1.localVar("msg", b1.new_(StringBuilder.class));
+                StringBuilderGen msgBuilder = StringBuilderGen.of(msg, b1)
+                        .append("Bean is not active: ")
+                        .append(cc.this_())
+                        .append("\nReason: ")
+                        .append(b1.invokeVirtual(MethodDescs.ACTIVE_RESULT_REASON, active));
+                LocalVar cause = b1.localVar("cause", b1.invokeVirtual(MethodDescs.ACTIVE_RESULT_CAUSE, active));
+                b1.while_(b2 -> b2.yield(b2.isNotNull(cause)), b2 -> {
+                    StringBuilderGen.of(msg, b2)
+                            .append("\nCause: ")
+                            .append(b2.invokeVirtual(MethodDescs.ACTIVE_RESULT_REASON, cause));
+                    b2.set(cause, b2.invokeVirtual(MethodDescs.ACTIVE_RESULT_CAUSE, cause));
+                });
+                msgBuilder.append("\nTo avoid this exception while keeping the bean inactive:")
+                        .append("\n\t- Configure all extensions consuming this bean as inactive as well, if they allow it,")
+                        .append(" e.g. 'quarkus.someextension.active=false'")
+                        .append("\n\t- Make sure that custom code only accesses this bean if it is active");
+                if (!matchingIPs.isEmpty()) {
+                    Expr implClassName = Const.of(bean.getImplClazz().name().toString());
+                    msgBuilder.append("\n\t- Inject the bean with 'Instance<")
+                            .append(implClassName)
+                            .append(">' instead of '")
+                            .append(implClassName)
+                            .append("'\n");
+                    msgBuilder.append("This bean is injected into:");
+                    for (InjectionPointInfo matchingIP : matchingIPs) {
+                        msgBuilder.append("\n\t- ").append(matchingIP.getTargetInfo());
+                    }
+                }
+                b1.throw_(InactiveBeanException.class, b1.objToString(msg));
+            });
         }
 
-        // Bridge method needed
-        MethodCreator bridgeGet = beanCreator.getMethodCreator("get", Object.class, CreationalContext.class)
-                .setModifiers(ACC_PUBLIC | ACC_BRIDGE);
-        bridgeGet.returnValue(
-                bridgeGet.invokeVirtualMethod(get.getMethodDescriptor(), bridgeGet.getThis(), bridgeGet.getMethodParam(0)));
+        LocalVar injectedReferences;
+        if (injectionPointToProviderSupplierField.isEmpty()) {
+            injectedReferences = b0.localVar("injectedReferences", b0.mapOf());
+        } else {
+            // Initialize injected references
+            injectedReferences = b0.localVar("injectedReferences", b0.new_(HashMap.class));
+            LocalVar tccl = b0.localVar("tccl", b0.invokeVirtual(MethodDescs.THREAD_GET_TCCL, b0.currentThread()));
+            IndexView index = bean.getDeployment().getBeanArchiveIndex();
+            for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
+                b0.try_(tc -> {
+                    tc.body(b1 -> {
+                        LocalVar requiredType;
+                        try {
+                            requiredType = RuntimeTypeCreator.of(b1).withTCCL(tccl).withIndex(index)
+                                    .create(injectionPoint.getType());
+                        } catch (IllegalArgumentException e) {
+                            throw new IllegalStateException("Unable to construct type for " + injectionPoint.getType()
+                                    + ": " + e.getMessage());
+                        }
+                        LocalVar requiredQualifiers;
+                        if (injectionPoint.hasDefaultedQualifier()) {
+                            requiredQualifiers = b1.localVar("qualifiers", Const.ofNull(Annotation[].class));
+                        } else {
+                            requiredQualifiers = b1.localVar("qualifiers",
+                                    b1.newEmptyArray(Annotation.class, injectionPoint.getRequiredQualifiers().size()));
+                            int idx = 0;
+                            for (AnnotationInstance qualifier : injectionPoint.getRequiredQualifiers()) {
+                                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                                if (builtinQualifier != null) {
+                                    b1.set(requiredQualifiers.elem(idx++), builtinQualifier.getLiteralInstance());
+                                } else {
+                                    // Create the annotation literal first
+                                    ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifier.name());
+                                    b1.set(requiredQualifiers.elem(idx++),
+                                            annotationLiterals.create(b1, qualifierClass, qualifier));
+                                }
+                            }
+                        }
+                        LocalVar typeAndQualifiers = b1.localVar("typeAndQualifiers",
+                                b1.new_(TypeAndQualifiers.class, requiredType, requiredQualifiers));
+                        FieldVar providerSupplier = cc.this_().field(
+                                injectionPointToProviderSupplierField.get(injectionPoint));
+                        LocalVar provider = b1.localVar("provider",
+                                b1.invokeInterface(MethodDescs.SUPPLIER_GET, providerSupplier));
+                        LocalVar childCC = b1.localVar("childCC",
+                                b1.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL, provider, parentCC));
+                        LocalVar injectedReference = b1.localVar("injectedReference",
+                                b1.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCC));
+                        checkPrimitiveInjection(b1, injectionPoint, injectedReference);
+                        b1.withMap(injectedReferences).put(typeAndQualifiers, injectedReference);
+                    });
+                    tc.catch_(RuntimeException.class, "e", (b1, e) -> {
+                        b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
+                                Const.of("Error injecting synthetic injection point of bean: " + bean.getIdentifier()), e));
+                    });
+                });
+            }
+        }
+
+        FieldVar params = cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
+        Expr synthCC = b0.localVar("synthCC", b0.new_(
+                ConstructorDesc.of(SyntheticCreationalContextImpl.class, CreationalContext.class, Map.class, Map.class),
+                parentCC, params, injectedReferences));
+
+        LocalVar result = b0.localVar("result", Const.ofNull(classDescOf(bean.getProviderType())));
+        b0.try_(tc -> {
+            tc.body(b1 -> {
+                b1.set(result, b1.invokeVirtual(createSyntheticDesc, cc.this_(), synthCC));
+            });
+            tc.catch_(Exception.class, "e", (b1, e) -> {
+                Expr msg = StringBuilderGen.ofNew(b1)
+                        .append("Error creating synthetic bean [")
+                        .append(bean.getIdentifier())
+                        .append("]: ")
+                        .append(e)
+                        .toString_();
+                b1.throw_(b1.new_(ConstructorDesc.of(CreationException.class, String.class, Throwable.class), msg, e));
+            });
+        });
+
+        if (bean.getScope().isNormal()) {
+            // Normal scoped synthetic beans should never return null
+            b0.ifNull(result, b1 -> {
+                Expr msg = StringBuilderGen.ofNew(b1)
+                        .append("Null contextual instance was produced by a normal scoped synthetic bean: ")
+                        .append(cc.this_())
+                        .toString_();
+                b1.throw_(CreationException.class, msg);
+            });
+        }
+
+        b0.return_(result);
+    }
+
+    static void checkPrimitiveInjection(BlockCreator b0, InjectionPointInfo injectionPoint, LocalVar localVar) {
+        if (injectionPoint.getType().kind() == Type.Kind.PRIMITIVE) {
+            Type producerType = null;
+            if (injectionPoint.getResolvedBean().isProducerField()) {
+                producerType = injectionPoint.getResolvedBean().getTarget().get().asField().type();
+            } else if (injectionPoint.getResolvedBean().isProducerMethod()) {
+                producerType = injectionPoint.getResolvedBean().getTarget().get().asMethod().returnType();
+            }
+
+            if (PrimitiveType.isBox(producerType)) {
+                b0.ifNull(localVar, b1 -> {
+                    // this will be auto-boxed by Gizmo
+                    b1.set(localVar, Const.ofDefault(classDescOf(injectionPoint.getType())));
+                });
+            }
+        }
+    }
+
+    protected void generateDestroy(ClassCreator cc, BeanInfo bean,
+            Map<InjectionPointInfo, FieldDesc> injectionPointToProviderField, boolean isApplicationClass, String baseName,
+            String targetPackage) {
+
+        MethodDesc destroyDesc = cc.method("destroy", mc -> {
+            mc.returning(void.class);
+            ParamVar providerParam = mc.parameter("provider", classDescOf(bean.getProviderType()));
+            ParamVar ccParam = mc.parameter("creationalContext", CreationalContext.class);
+            mc.body(b0 -> {
+                b0.try_(tc -> {
+                    tc.body(b1 -> {
+                        if (bean.isClassBean()) {
+                            if (!bean.isInterceptor()) {
+                                // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
+                                // they may pass us a client proxy
+                                LocalVar instance = b1.localVar("instance",
+                                        b1.invokeStatic(MethodDescs.CLIENT_PROXY_UNWRAP, providerParam));
+
+                                class PreDestroyGenerator {
+                                    void generate(BlockCreator bc, Var instance) {
+                                        // PreDestroy callbacks
+                                        // possibly wrapped into Runnable so that PreDestroy interceptors can proceed() correctly
+                                        List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(
+                                                bean.getTarget().get().asClass(), DotNames.PRE_DESTROY,
+                                                bean.getDeployment().getBeanArchiveIndex());
+                                        for (MethodInfo callback : preDestroyCallbacks) {
+                                            if (isReflectionFallbackNeeded(callback, targetPackage)) {
+                                                if (Modifier.isPrivate(callback.flags())) {
+                                                    privateMembers.add(isApplicationClass,
+                                                            String.format("@PreDestroy callback %s#%s()",
+                                                                    callback.declaringClass().name(), callback.name()));
+                                                }
+                                                reflectionRegistration.registerMethod(callback);
+                                                bc.invokeStatic(MethodDescs.REFLECTIONS_INVOKE_METHOD,
+                                                        Const.of(classDescOf(callback.declaringClass())),
+                                                        Const.of(callback.name()),
+                                                        bc.newEmptyArray(Class.class, 0),
+                                                        instance,
+                                                        bc.newEmptyArray(Object.class, 0));
+                                            } else {
+                                                // instance.superCoolDestroyCallback()
+                                                bc.invokeVirtual(methodDescOf(callback), instance);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()) {
+                                    // if there's no `@PreDestroy` interceptor, we'll generate code to invoke `@PreDestroy` callbacks
+                                    // directly into the `doDestroy` method:
+                                    //
+                                    // private void doDestroy(MyBean var1, CreationalContext var2) {
+                                    //     var1.myPreDestroyCallback();
+                                    //     var2.release();
+                                    // }
+                                    new PreDestroyGenerator().generate(b1, instance);
+                                } else {
+                                    ClassDesc subclass = ClassDesc.of(SubclassGenerator.generatedName(
+                                            bean.getProviderType().name(), baseName));
+
+                                    // if there _is_ some `@PreDestroy` interceptor, however, we'll reify the chain of `@PreDestroy`
+                                    // callbacks into a `Runnable` that we pass into the interceptor chain to be called
+                                    // by the last `proceed()` call:
+                                    //
+                                    // private void doDestroy(MyBean var1, CreationalContext var2) {
+                                    //     // this is a `Runnable` that calls `MyBean.myPreDestroyCallback()`
+                                    //     MyBean_Bean$$function$$2 var3 = new MyBean_Bean$$function$$2(var1);
+                                    //     ((MyBean_Subclass)var1).arc$destroy((Runnable)var3);
+                                    //     var2.release();
+                                    // }
+                                    Expr runnable = b1.lambda(Runnable.class, lc -> {
+                                        Var capturedInstance = lc.capture(instance);
+                                        lc.body(lbc -> {
+                                            new PreDestroyGenerator().generate(lbc, capturedInstance);
+                                            lbc.return_();
+                                        });
+                                    });
+
+                                    b1.invokeVirtual(ClassMethodDesc.of(subclass, SubclassGenerator.DESTROY_METHOD_NAME,
+                                            void.class, Runnable.class), instance, runnable);
+                                }
+                            }
+
+                            // ctx.release()
+                            b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, ccParam);
+                            b1.return_();
+                        } else if (bean.getDisposer() != null) {
+                            // Invoke the disposer method
+                            // declaringProvider.get(new CreationalContextImpl<>()).dispose()
+                            MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
+                            boolean isStatic = Modifier.isStatic(disposerMethod.flags());
+
+                            Expr declaringProviderSupplier = cc.this_().field(
+                                    FieldDesc.of(cc.type(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER, Supplier.class));
+                            LocalVar declaringProvider = b1.localVar("declaringProvider",
+                                    b1.invokeInterface(MethodDescs.SUPPLIER_GET, declaringProviderSupplier));
+                            LocalVar parentCC = b1.localVar("parentCC",
+                                    b1.new_(ConstructorDesc.of(CreationalContextImpl.class, Contextual.class),
+                                            Const.ofNull(Contextual.class)));
+                            // for static disposers, we don't need to obtain the value
+                            // `null` will only be used for reflective invocation in case the disposer is `private`, which is OK
+                            LocalVar declaringProviderInstance = b1.localVar("declaringProviderInstance",
+                                    Const.ofNull(Object.class));
+                            if (!isStatic) {
+                                b1.set(declaringProviderInstance, b1.invokeInterface(
+                                        MethodDescs.INJECTABLE_REF_PROVIDER_GET, declaringProvider, parentCC));
+                                if (bean.getDeclaringBean().getScope().isNormal()) {
+                                    // We need to unwrap the client proxy
+                                    b1.set(declaringProviderInstance, b1.invokeInterface(
+                                            MethodDescs.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
+                                            declaringProviderInstance));
+                                }
+                            }
+
+                            Var[] disposerArgs = new Var[disposerMethod.parametersCount()];
+                            int disposedParamPosition = bean.getDisposer().getDisposedParameter().position();
+                            Iterator<InjectionPointInfo> injectionPointsIterator = bean.getDisposer()
+                                    .getInjection().injectionPoints.iterator();
+                            for (int i = 0; i < disposerMethod.parametersCount(); i++) {
+                                if (i == disposedParamPosition) {
+                                    disposerArgs[i] = providerParam;
+                                } else {
+                                    InjectionPointInfo injectionPoint = injectionPointsIterator.next();
+                                    Expr providerSupplier = cc.this_().field(injectionPointToProviderField.get(injectionPoint));
+                                    Expr provider = b1.invokeInterface(MethodDescs.SUPPLIER_GET, providerSupplier);
+                                    Expr childCC = b1.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                                            declaringProvider, parentCC);
+                                    LocalVar injection = b1.localVar("injection" + i,
+                                            b1.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCC));
+                                    checkPrimitiveInjection(b1, injectionPoint, injection);
+                                    disposerArgs[i] = injection;
+                                }
+                            }
+
+                            if (Modifier.isPrivate(disposerMethod.flags())) {
+                                privateMembers.add(isApplicationClass, String.format("Disposer %s#%s",
+                                        disposerMethod.declaringClass().name(), disposerMethod.name()));
+                                reflectionRegistration.registerMethod(disposerMethod);
+                                LocalVar paramTypesArray = b1.localVar("paramTypes",
+                                        b1.newEmptyArray(Class.class, disposerArgs.length));
+                                LocalVar argsArray = b1.localVar("args",
+                                        b1.newEmptyArray(Object.class, disposerArgs.length));
+                                for (int i = 0; i < disposerArgs.length; i++) {
+                                    b1.set(paramTypesArray.elem(i), Const.of(classDescOf(disposerMethod.parameterType(i))));
+                                    b1.set(argsArray.elem(i), disposerArgs[i]);
+                                }
+                                b1.invokeStatic(MethodDescs.REFLECTIONS_INVOKE_METHOD,
+                                        Const.of(classDescOf(disposerMethod.declaringClass())),
+                                        Const.of(disposerMethod.name()), paramTypesArray,
+                                        declaringProviderInstance, argsArray);
+                            } else {
+                                if (isStatic) {
+                                    b1.invokeStatic(methodDescOf(disposerMethod), disposerArgs);
+                                } else {
+                                    b1.invokeVirtual(methodDescOf(disposerMethod), declaringProviderInstance, disposerArgs);
+                                }
+                            }
+
+                            // Destroy @Dependent instances injected into method parameters of a disposer method
+                            b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, parentCC);
+
+                            // If the declaring bean is `@Dependent` and the disposer is not `static`, we must destroy the instance afterwards
+                            if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope()) && !isStatic) {
+                                b1.invokeInterface(MethodDescs.INJECTABLE_BEAN_DESTROY, declaringProvider,
+                                        declaringProviderInstance, parentCC);
+                            }
+                            // ctx.release()
+                            b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, ccParam);
+                            b1.return_();
+                        } else if (bean.isSynthetic()) {
+                            bean.getDestroyerConsumer().accept(new BeanConfiguratorBase.DestroyGeneration() {
+                                @Override
+                                public ClassCreator beanClass() {
+                                    return cc;
+                                }
+
+                                @Override
+                                public BlockCreator destroyMethod() {
+                                    return b1;
+                                }
+
+                                @Override
+                                public Var destroyedInstance() {
+                                    return providerParam;
+                                }
+
+                                @Override
+                                public Var creationalContext() {
+                                    return ccParam;
+                                }
+                            });
+                        }
+                    });
+                    tc.catch_(Throwable.class, "e", (b1, e) -> {
+                        Const error = Const.of("Error occurred while destroying instance of " + bean);
+                        LocalVar logger = b1.localVar("logger",
+                                Expr.staticField(FieldDesc.of(UncaughtExceptions.class, "LOGGER")));
+                        Expr isDebugEnabled = b1.invokeVirtual(MethodDesc.of(Logger.class, "isDebugEnabled", boolean.class),
+                                logger);
+                        b1.ifElse(isDebugEnabled, b2 -> {
+                            b2.invokeVirtual(MethodDesc.of(Logger.class, "error", void.class, Object.class, Throwable.class),
+                                    logger, error, e);
+                        }, b2 -> {
+                            b2.invokeVirtual(MethodDesc.of(Logger.class, "error", void.class, Object.class), logger,
+                                    StringBuilderGen.ofNew(b2).append(error).append(": ").append(e).toString_());
+                        });
+                    });
+                });
+                b0.return_();
+            });
+        });
+
+        if (!ClassType.OBJECT_TYPE.equals(bean.getProviderType())) {
+            // Bridge method needed
+            cc.method("destroy", mc -> {
+                mc.addFlag(ModifierFlag.BRIDGE);
+                mc.returning(void.class);
+                ParamVar provider = mc.parameter("provider", Object.class);
+                ParamVar creationalContext = mc.parameter("creationalContext", CreationalContext.class);
+                mc.body(bc -> {
+                    bc.return_(bc.invokeVirtual(destroyDesc, cc.this_(), provider, creationalContext));
+                });
+            });
+        }
+    }
+
+    protected void generateSupplierGet(ClassCreator cc) {
+        cc.method("get", mc -> {
+            mc.returning(Object.class);
+            mc.body(bc -> {
+                bc.return_(cc.this_());
+            });
+        });
+    }
+
+    protected void generateInjectableReferenceProviderGet(BeanInfo bean, ClassCreator cc, String baseName) {
+        ClassDesc providerType = classDescOf(bean.getProviderType());
+
+        MethodDesc getDesc = cc.method("get", mc -> {
+            mc.returning(providerType);
+            ParamVar creationalContextParam = mc.parameter("creationalContext", CreationalContext.class);
+            mc.body(b0 -> {
+                if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
+                    b0.throw_(UnproxyableResolutionException.class, "Bean not proxyable: " + bean);
+                } else if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+                    // @Dependent pseudo-scope
+                    // Foo instance = create(ctx)
+                    LocalVar instance = b0.localVar("instance", b0.invokeVirtual(ClassMethodDesc.of(cc.type(), "create",
+                            MethodTypeDesc.of(providerType, Reflection2Gizmo.classDescOf(CreationalContext.class))),
+                            cc.this_(), creationalContextParam));
+
+                    // We can optimize if:
+                    // 1) class bean - has no @PreDestroy interceptor and there is no @PreDestroy callback
+                    // 2) producer - there is no disposal method
+                    // 3) synthetic bean - has no destruction logic
+                    if (!bean.hasDestroyLogic()) {
+                        // If there is no dependency in the creational context we don't have to store the instance in the CreationalContext
+                        Expr hasDependentInstances = b0.invokeVirtual(MethodDescs.CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES,
+                                b0.cast(creationalContextParam, CreationalContextImpl.class));
+                        b0.ifNot(hasDependentInstances, b1 -> {
+                            b1.return_(instance);
+                        });
+                    }
+
+                    // CreationalContextImpl.addDependencyToParent(this,instance,ctx)
+                    b0.invokeStatic(MethodDescs.CREATIONAL_CTX_ADD_DEP_TO_PARENT, cc.this_(), instance, creationalContextParam);
+                    // return instance
+                    b0.return_(instance);
+                } else if (bean.getScope().isNormal()) {
+                    // All normal scopes
+                    // return proxy()
+                    b0.return_(b0.invokeVirtual(ClassMethodDesc.of(cc.type(), FIELD_NAME_PROXY,
+                            MethodTypeDesc.of(getClientProxyType(bean, baseName))), cc.this_()));
+                } else {
+                    // All pseudo scopes other than @Dependent (incl. @Singleton)
+                    // return Arc.requireContainer().getActiveContext(getScope()).get(this, new CreationalContextImpl<>(this))
+                    Expr context = b0.invokeInterface(MethodDescs.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                            b0.invokeStatic(MethodDescs.ARC_REQUIRE_CONTAINER),
+                            Const.of(classDescOf(bean.getScope().getDotName())));
+                    Expr creationalContext = b0.new_(ConstructorDesc.of(CreationalContextImpl.class, Contextual.class),
+                            cc.this_());
+                    Expr instance = b0.invokeInterface(MethodDescs.CONTEXT_GET, context, cc.this_(), creationalContext);
+                    b0.return_(instance);
+                }
+            });
+        });
+
+        if (!ClassType.OBJECT_TYPE.equals(bean.getProviderType())) {
+            // Bridge method needed
+            cc.method("get", mc -> {
+                mc.addFlag(ModifierFlag.BRIDGE);
+                mc.returning(Object.class);
+                ParamVar creationalContext = mc.parameter("creationalContext", CreationalContext.class);
+                mc.body(bc -> {
+                    bc.return_(bc.invokeVirtual(getDesc, cc.this_(), creationalContext));
+                });
+            });
+        }
     }
 
     /**
-     *
-     * @param beanCreator
-     * @see InjectableBean#getTypes()
-     */
-    protected void implementGetTypes(ClassCreator beanCreator, FieldDescriptor typesField) {
-        MethodCreator getScope = beanCreator.getMethodCreator("getTypes", Set.class).setModifiers(ACC_PUBLIC);
-        getScope.returnValue(getScope.readInstanceField(typesField, getScope.getThis()));
-    }
-
-    /**
-     *
-     * @param bean
-     * @param beanCreator
-     * @see InjectableBean#getScope()
-     */
-    protected void implementGetScope(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator getScope = beanCreator.getMethodCreator("getScope", Class.class).setModifiers(ACC_PUBLIC);
-        getScope.returnValue(getScope.loadClass(bean.getScope().getDotName().toString()));
-    }
-
-    /**
-     *
-     * @param bean
-     * @param beanCreator
      * @see InjectableBean#getIdentifier()
      */
-    protected void implementGetIdentifier(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator getScope = beanCreator.getMethodCreator("getIdentifier", String.class).setModifiers(ACC_PUBLIC);
-        getScope.returnValue(getScope.load(bean.getIdentifier()));
-    }
-
-    protected void implementEquals(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator equals = beanCreator.getMethodCreator("equals", boolean.class, Object.class).setModifiers(ACC_PUBLIC);
-        final ResultHandle obj = equals.getMethodParam(0);
-        // if (this == obj) {
-        //    return true;
-        // }
-        equals.ifReferencesEqual(equals.getThis(), obj)
-                .trueBranch().returnValue(equals.load(true));
-
-        // if (obj == null) {
-        //    return false;
-        // }
-        equals.ifNull(obj).trueBranch().returnValue(equals.load(false));
-        // if (!(obj instanceof InjectableBean)) {
-        //    return false;
-        // }
-        equals.ifFalse(equals.instanceOf(obj, InjectableBean.class)).trueBranch()
-                .returnValue(equals.load(false));
-        // return identifier.equals(((InjectableBean) obj).getIdentifier());
-        ResultHandle injectableBean = equals.checkCast(obj, InjectableBean.class);
-        ResultHandle otherIdentifier = equals.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER, injectableBean);
-        equals.returnValue(equals.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, equals.load(bean.getIdentifier()),
-                otherIdentifier));
-    }
-
-    protected void implementHashCode(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator hashCode = beanCreator.getMethodCreator("hashCode", int.class).setModifiers(ACC_PUBLIC);
-        final ResultHandle constantHashCodeResult = hashCode.load(bean.getIdentifier().hashCode());
-        hashCode.returnValue(constantHashCodeResult);
-    }
-
-    protected void implementToString(ClassCreator beanCreator) {
-        MethodCreator toString = beanCreator.getMethodCreator("toString", String.class).setModifiers(ACC_PUBLIC);
-        toString.returnValue(toString.invokeStaticMethod(MethodDescriptors.BEANS_TO_STRING, toString.getThis()));
+    protected void generateGetIdentifier(ClassCreator cc, BeanInfo bean) {
+        cc.method("getIdentifier", mc -> {
+            mc.returning(String.class);
+            mc.body(bc -> {
+                bc.return_(Const.of(bean.getIdentifier()));
+            });
+        });
     }
 
     /**
-     *
-     * @param bean
-     * @param beanCreator
-     * @param qualifiersField
+     * @see InjectableBean#getTypes()
+     */
+    protected void generateGetTypes(FieldDesc typesField, ClassCreator cc) {
+        cc.method("getTypes", mc -> {
+            mc.returning(Set.class);
+            mc.body(bc -> {
+                bc.return_(cc.this_().field(typesField));
+            });
+        });
+    }
+
+    /**
+     * @see InjectableBean#getScope()
+     */
+    protected void generateGetScope(ClassCreator cc, BeanInfo bean) {
+        cc.method("getScope", mc -> {
+            mc.returning(Class.class);
+            mc.body(bc -> {
+                bc.return_(Const.of(classDescOf(bean.getScope().getDotName())));
+            });
+        });
+    }
+
+    /**
      * @see InjectableBean#getQualifiers()
      */
-    protected void implementGetQualifiers(BeanInfo bean, ClassCreator beanCreator, FieldDescriptor qualifiersField) {
-        MethodCreator getQualifiers = beanCreator.getMethodCreator("getQualifiers", Set.class).setModifiers(ACC_PUBLIC);
-        getQualifiers.returnValue(getQualifiers.readInstanceField(qualifiersField, getQualifiers.getThis()));
+    protected void generateGetQualifiers(ClassCreator cc, FieldDesc qualifiersField) {
+        cc.method("getQualifiers", mc -> {
+            mc.returning(Set.class);
+            mc.body(bc -> {
+                bc.return_(cc.this_().field(qualifiersField));
+            });
+        });
     }
 
-    protected void implementGetDeclaringBean(ClassCreator beanCreator) {
-        MethodCreator getDeclaringBean = beanCreator.getMethodCreator("getDeclaringBean", InjectableBean.class)
-                .setModifiers(ACC_PUBLIC);
-        ResultHandle declaringProviderSupplierHandle = getDeclaringBean.readInstanceField(
-                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
-                        Supplier.class.getName()),
-                getDeclaringBean.getThis());
-        getDeclaringBean.returnValue(getDeclaringBean.invokeInterfaceMethod(
-                MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle));
-    }
-
-    protected void implementIsAlternative(BeanInfo bean, ClassCreator beanCreator) {
+    /**
+     * @see InjectableBean#isAlternative()
+     */
+    protected void generateIsAlternative(ClassCreator cc, BeanInfo bean) {
         if (bean.isAlternative()) {
-            MethodCreator isAlternative = beanCreator.getMethodCreator("isAlternative", boolean.class)
-                    .setModifiers(ACC_PUBLIC);
-            isAlternative
-                    .returnValue(isAlternative.load(true));
+            cc.method("isAlternative", mc -> {
+                mc.returning(boolean.class);
+                mc.body(BlockCreator::returnTrue);
+            });
         }
     }
 
-    protected void implementGetPriority(BeanInfo bean, ClassCreator beanCreator) {
+    /**
+     * @see InjectableBean#getPriority()
+     */
+    protected void generateGetPriority(ClassCreator cc, BeanInfo bean) {
         if (bean.getPriority() != null) {
-            MethodCreator hasPriority = beanCreator.getMethodCreator("hasPriority", boolean.class)
-                    .setModifiers(ACC_PUBLIC);
-            hasPriority.returnBoolean(true);
-
-            MethodCreator getPriority = beanCreator.getMethodCreator("getPriority", int.class)
-                    .setModifiers(ACC_PUBLIC);
-            getPriority.returnInt(bean.getPriority());
+            cc.method("hasPriority", mc -> {
+                mc.returning(boolean.class);
+                mc.body(BlockCreator::returnTrue);
+            });
+            cc.method("getPriority", mc -> {
+                mc.returning(int.class);
+                mc.body(bc -> {
+                    bc.return_(bean.getPriority());
+                });
+            });
         }
     }
 
-    protected void implementIsDefaultBean(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator isDefaultBean = beanCreator.getMethodCreator("isDefaultBean", boolean.class)
-                .setModifiers(ACC_PUBLIC);
-        isDefaultBean
-                .returnValue(isDefaultBean.load(bean.isDefaultBean()));
+    /**
+     * @see InjectableBean#getDeclaringBean()
+     */
+    protected void generateGetDeclaringBean(ClassCreator cc,
+            FieldDesc declaringProviderSupplierField) {
+        cc.method("getDeclaringBean", mc -> {
+            mc.returning(InjectableBean.class);
+            mc.body(bc -> {
+                Expr declaringProviderSupplier = cc.this_().field(declaringProviderSupplierField);
+                bc.return_(bc.invokeInterface(MethodDescs.SUPPLIER_GET, declaringProviderSupplier));
+            });
+        });
     }
 
-    protected void implementGetStereotypes(BeanInfo bean, ClassCreator beanCreator, FieldDescriptor stereotypesField) {
-        MethodCreator getStereotypes = beanCreator.getMethodCreator("getStereotypes", Set.class).setModifiers(ACC_PUBLIC);
-        getStereotypes.returnValue(getStereotypes.readInstanceField(stereotypesField, getStereotypes.getThis()));
+    /**
+     * @see InjectableBean#getStereotypes()
+     */
+    protected void generateGetStereotypes(ClassCreator cc, FieldDesc stereotypesField) {
+        cc.method("getStereotypes", mc -> {
+            mc.returning(Set.class);
+            mc.body(bc -> {
+                bc.return_(cc.this_().field(stereotypesField));
+            });
+        });
     }
 
-    protected void implementGetBeanClass(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator getBeanClass = beanCreator.getMethodCreator("getBeanClass", Class.class).setModifiers(ACC_PUBLIC);
-        getBeanClass.returnValue(getBeanClass.loadClass(bean.getBeanClass().toString()));
+    /**
+     * @see InjectableBean#getBeanClass()
+     */
+    protected void generateGetBeanClass(ClassCreator cc, BeanInfo bean) {
+        cc.method("getBeanClass", mc -> {
+            mc.returning(Class.class);
+            mc.body(bc -> {
+                bc.return_(Const.of(classDescOf(bean.getBeanClass())));
+            });
+        });
     }
 
-    protected void implementGetImplementationClass(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator getImplementationClass = beanCreator.getMethodCreator("getImplementationClass", Class.class)
-                .setModifiers(ACC_PUBLIC);
-        getImplementationClass.returnValue(bean.getImplClazz() != null ? getImplementationClass.loadClass(bean.getImplClazz())
-                : getImplementationClass.loadNull());
+    /**
+     * @see InjectableBean#getImplementationClass()
+     */
+    protected void generateGetImplementationClass(ClassCreator cc, BeanInfo bean) {
+        cc.method("getImplementationClass", mc -> {
+            mc.returning(Class.class);
+            mc.body(bc -> {
+                bc.return_(bean.getImplClazz() != null
+                        ? Const.of(classDescOf(bean.getImplClazz()))
+                        : Const.ofNull(Class.class));
+            });
+        });
     }
 
-    protected void implementGetName(BeanInfo bean, ClassCreator beanCreator) {
+    /**
+     * @see InjectableBean#getName()
+     */
+    protected void generateGetName(ClassCreator cc, BeanInfo bean) {
         if (bean.getName() != null) {
-            MethodCreator getName = beanCreator.getMethodCreator("getName", String.class)
-                    .setModifiers(ACC_PUBLIC);
-            getName.returnValue(getName.load(bean.getName()));
+            cc.method("getName", mc -> {
+                mc.returning(String.class);
+                mc.body(bc -> {
+                    bc.return_(Const.of(bean.getName()));
+                });
+            });
         }
     }
 
-    protected void implementGetKind(ClassCreator beanCreator, InjectableBean.Kind kind) {
-        MethodCreator getScope = beanCreator.getMethodCreator("getKind", InjectableBean.Kind.class).setModifiers(ACC_PUBLIC);
-        getScope.returnValue(getScope
-                .readStaticField(FieldDescriptor.of(InjectableBean.Kind.class, kind.toString(), InjectableBean.Kind.class)));
+    /**
+     * @see InjectableBean#isDefaultBean()
+     */
+    protected void generateIsDefaultBean(ClassCreator cc, BeanInfo bean) {
+        cc.method("isDefaultBean", mc -> {
+            mc.returning(boolean.class);
+            mc.body(bc -> {
+                bc.return_(bean.isDefaultBean());
+            });
+        });
     }
 
-    protected void implementSupplierGet(ClassCreator beanCreator) {
-        MethodCreator get = beanCreator.getMethodCreator("get", Object.class).setModifiers(ACC_PUBLIC);
-        get.returnValue(get.getThis());
-    }
-
-    protected void implementIsSuppressed(BeanInfo bean, ClassCreator beanCreator) {
-        MethodCreator isSuppressed = beanCreator.getMethodCreator("isSuppressed", boolean.class).setModifiers(ACC_PUBLIC);
-        for (Function<BeanInfo, Consumer<BytecodeCreator>> generator : suppressConditionGenerators) {
-            Consumer<BytecodeCreator> condition = generator.apply(bean);
-            if (condition != null) {
-                condition.accept(isSuppressed);
-            }
+    /**
+     * @see InjectableBean#getKind()
+     */
+    protected void generateGetKind(ClassCreator cc, BeanInfo bean) {
+        if (bean.isClassBean()) {
+            // the `default` implementation of `InjectableBean.getKind()` returns `CLASS`, so that
+            // we don't need to implement the method and make the class larger in the most common case
+            return;
         }
-        isSuppressed.returnValue(isSuppressed.load(false));
+
+        InjectableBean.Kind kind;
+        if (bean.isProducerMethod()) {
+            kind = InjectableBean.Kind.PRODUCER_METHOD;
+        } else if (bean.isProducerField()) {
+            kind = InjectableBean.Kind.PRODUCER_FIELD;
+        } else if (bean.isSynthetic()) {
+            kind = InjectableBean.Kind.SYNTHETIC;
+        } else {
+            // `getKind()` is implemented on `InjectableInterceptor`/`InjectableDecorator`/`BuiltinBean`,
+            // which are the kinds of beans not covered by this `if` chain, so this branch should never be taken
+            throw new IllegalArgumentException("Unknown bean kind: " + bean);
+        }
+        cc.method("getKind", mc -> {
+            mc.returning(InjectableBean.Kind.class);
+            mc.body(bc -> {
+                bc.return_(Expr.staticField(FieldDesc.of(InjectableBean.Kind.class, kind.name())));
+            });
+        });
     }
 
-    private void implementGetInjectionPoints(BeanInfo bean, ClassCreator beanCreator) {
+    /**
+     * @see InjectableBean#isSuppressed()
+     */
+    protected void generateIsSuppressed(ClassCreator cc, BeanInfo bean) {
+        cc.method("isSuppressed", mc -> {
+            mc.returning(boolean.class);
+            mc.body(bc -> {
+                for (Function<BeanInfo, Consumer<BlockCreator>> generator : suppressConditionGenerators) {
+                    Consumer<BlockCreator> condition = generator.apply(bean);
+                    if (condition != null) {
+                        condition.accept(bc);
+                    }
+                }
+                bc.returnFalse();
+            });
+        });
+    }
+
+    /**
+     * @see InjectableBean#getInjectionPoints()
+     */
+    protected void generateGetInjectionPoints(ClassCreator cc, BeanInfo bean) {
         // this is practically never used at runtime, but it makes the `Bean` classes bigger;
         // let's only implement `getInjectionPoints()` in strict mode, to be able to pass the TCK
         if (!bean.getDeployment().strictCompatibility) {
@@ -2256,138 +1991,146 @@ public class BeanGenerator extends AbstractGenerator {
             return;
         }
 
-        MethodCreator getInjectionPoints = beanCreator.getMethodCreator("getInjectionPoints", Set.class);
+        cc.method("getInjectionPoints", mc -> {
+            mc.returning(Set.class);
+            mc.body(bc -> {
+                LocalVar tccl = bc.localVar("tccl", bc.invokeVirtual(MethodDescs.THREAD_GET_TCCL, bc.currentThread()));
+                LocalVar result = bc.localVar("result", bc.new_(HashSet.class));
+                for (InjectionPointInfo injectionPoint : injectionPoints) {
+                    LocalVar type = RuntimeTypeCreator.of(bc).withTCCL(tccl).create(injectionPoint.getType());
+                    Var qualifiers = collectInjectionPointQualifiers(bean.getDeployment(), bc, injectionPoint,
+                            annotationLiterals);
+                    Var annotations = collectInjectionPointAnnotations(bean.getDeployment(), bc, injectionPoint,
+                            annotationLiterals, injectionPointAnnotationsPredicate);
+                    Var member = getJavaMember(bc, injectionPoint, reflectionRegistration);
 
-        ResultHandle tccl = getInjectionPoints.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL,
-                getInjectionPoints.invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD));
-
-        ResultHandle result = getInjectionPoints.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        for (InjectionPointInfo injectionPoint : injectionPoints) {
-            ResultHandle type = Types.getTypeHandle(getInjectionPoints, injectionPoint.getType(), tccl);
-            ResultHandle qualifiers = collectInjectionPointQualifiers(bean.getDeployment(), getInjectionPoints,
-                    injectionPoint, annotationLiterals);
-            ResultHandle annotations = collectInjectionPointAnnotations(bean.getDeployment(), getInjectionPoints,
-                    injectionPoint, annotationLiterals, injectionPointAnnotationsPredicate);
-            ResultHandle member = getJavaMemberHandle(getInjectionPoints, injectionPoint, reflectionRegistration);
-
-            ResultHandle ip = getInjectionPoints.newInstance(MethodDescriptors.INJECTION_POINT_IMPL_CONSTRUCTOR,
-                    type, type, qualifiers, getInjectionPoints.getThis(), annotations, member,
-                    getInjectionPoints.load(injectionPoint.getPosition()),
-                    getInjectionPoints.load(injectionPoint.isTransient()));
-            getInjectionPoints.invokeInterfaceMethod(MethodDescriptors.SET_ADD, result, ip);
-
-        }
-        getInjectionPoints.returnValue(result);
+                    Expr ip = bc.new_(MethodDescs.INJECTION_POINT_IMPL_CONSTRUCTOR, type, type, qualifiers, cc.this_(),
+                            annotations, member, Const.of(injectionPoint.getPosition()),
+                            Const.of(injectionPoint.isTransient()));
+                    bc.withSet(result).add(ip);
+                }
+                bc.return_(result);
+            });
+        });
     }
 
-    private String getProxyTypeName(BeanInfo bean, String baseName) {
+    protected void generateEquals(ClassCreator cc, BeanInfo bean) {
+        cc.method("equals", mc -> {
+            mc.returning(boolean.class);
+            ParamVar other = mc.parameter("other", Object.class);
+            mc.body(bc -> {
+                // if (this == other) {
+                //    return true;
+                // }
+                bc.if_(bc.eq(cc.this_(), other), BlockCreator::returnTrue);
+                // if (other == null) {
+                //    return false;
+                // }
+                bc.ifNull(other, BlockCreator::returnFalse);
+                // if (!(other instanceof InjectableBean)) {
+                //    return false;
+                // }
+                bc.ifNotInstanceOf(other, InjectableBean.class, BlockCreator::returnFalse);
+                // return identifier.equals(((InjectableBean) other).getIdentifier());
+                Expr otherBean = bc.cast(other, InjectableBean.class);
+                Expr otherIdentifier = bc.invokeInterface(MethodDescs.GET_IDENTIFIER, otherBean);
+                bc.return_(bc.objEquals(Const.of(bean.getIdentifier()), otherIdentifier));
+            });
+        });
+    }
+
+    protected void generateHashCode(ClassCreator cc, BeanInfo bean) {
+        cc.method("hashCode", mc -> {
+            mc.returning(int.class);
+            mc.body(bc -> {
+                bc.return_(Const.of(bean.getIdentifier().hashCode()));
+            });
+        });
+    }
+
+    protected void generateToString(ClassCreator cc) {
+        cc.method("toString", mc -> {
+            mc.returning(String.class);
+            mc.body(bc -> {
+                bc.return_(bc.invokeStatic(MethodDescs.BEANS_TO_STRING, cc.this_()));
+            });
+        });
+    }
+
+    private ClassDesc getClientProxyType(BeanInfo bean, String baseName) {
         StringBuilder proxyTypeName = new StringBuilder();
         proxyTypeName.append(bean.getClientProxyPackageName());
-        if (proxyTypeName.length() > 0) {
+        if (!proxyTypeName.isEmpty()) {
             proxyTypeName.append(".");
         }
         proxyTypeName.append(baseName);
         proxyTypeName.append(ClientProxyGenerator.CLIENT_PROXY_SUFFIX);
-        return proxyTypeName.toString();
+        return ClassDesc.of(proxyTypeName.toString());
     }
 
-    static ResultHandle wrapCurrentInjectionPoint(BeanInfo bean, MethodCreator constructor,
-            InjectionPointInfo injectionPoint, ResultHandle beanHandle, ResultHandle delegateSupplierHandle,
-            ResultHandle tcclHandle, AnnotationLiteralProcessor annotationLiterals,
+    static Expr wrapCurrentInjectionPoint(BeanInfo bean, BlockCreator constructor, InjectionPointInfo injectionPoint,
+            Expr beanExpr, Expr delegateSupplier, LocalVar tccl, AnnotationLiteralProcessor annotationLiterals,
             ReflectionRegistration reflectionRegistration, Predicate<DotName> injectionPointAnnotationsPredicate) {
-        ResultHandle requiredQualifiersHandle = collectInjectionPointQualifiers(bean.getDeployment(),
+        Var requiredQualifiers = collectInjectionPointQualifiers(bean.getDeployment(),
                 constructor, injectionPoint, annotationLiterals);
-        ResultHandle annotationsHandle = collectInjectionPointAnnotations(bean.getDeployment(),
+        Var annotations = collectInjectionPointAnnotations(bean.getDeployment(),
                 constructor, injectionPoint, annotationLiterals, injectionPointAnnotationsPredicate);
-        ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint, reflectionRegistration);
+        Var javaMember = getJavaMember(constructor, injectionPoint, reflectionRegistration);
 
         // TODO empty IP for synthetic injections
 
-        return constructor.newInstance(
-                MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
-                        Supplier.class, java.lang.reflect.Type.class,
-                        Set.class, Set.class, Member.class, int.class, boolean.class),
-                beanHandle, delegateSupplierHandle,
-                Types.getTypeHandle(constructor, injectionPoint.getType(), tcclHandle),
-                requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
-                constructor.load(injectionPoint.getPosition()),
-                constructor.load(injectionPoint.isTransient()));
-    }
-
-    private void initializeProxy(BeanInfo bean, String baseName, ClassCreator beanCreator) {
-        if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
-            return;
+        RuntimeTypeCreator rttc = RuntimeTypeCreator.of(constructor);
+        if (tccl != null) {
+            rttc = rttc.withTCCL(tccl);
         }
 
-        // Add proxy volatile field
-        String proxyTypeName = getProxyTypeName(bean, baseName);
-        beanCreator.getFieldCreator(FIELD_NAME_PROXY, proxyTypeName)
-                .setModifiers(ACC_PRIVATE | ACC_VOLATILE);
-
-        // Add proxy() method
-        MethodCreator proxy = beanCreator.getMethodCreator(FIELD_NAME_PROXY, proxyTypeName).setModifiers(ACC_PRIVATE);
-        AssignableResultHandle proxyInstance = proxy.createVariable(DescriptorUtils.extToInt(proxyTypeName));
-        proxy.assign(proxyInstance, proxy.readInstanceField(
-                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, proxyTypeName),
-                proxy.getThis()));
-        // Create a new proxy instance, atomicity does not really matter here
-        BytecodeCreator proxyNull = proxy.ifNull(proxyInstance).trueBranch();
-        proxyNull.assign(proxyInstance, proxyNull.newInstance(
-                MethodDescriptor.ofConstructor(proxyTypeName, String.class), proxyNull.load(bean.getIdentifier())));
-        proxyNull.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, proxyTypeName),
-                proxyNull.getThis(),
-                proxyInstance);
-        proxy.returnValue(proxyInstance);
+        return constructor.new_(ConstructorDesc.of(CurrentInjectionPointProvider.class, InjectableBean.class,
+                Supplier.class, java.lang.reflect.Type.class, Set.class, Set.class, Member.class, int.class, boolean.class),
+                beanExpr, delegateSupplier, rttc.create(injectionPoint.getType()),
+                requiredQualifiers, annotations, javaMember, Const.of(injectionPoint.getPosition()),
+                Const.of(injectionPoint.isTransient()));
     }
 
-    public static ResultHandle getJavaMemberHandle(MethodCreator bytecode, InjectionPointInfo injectionPoint,
+    public static Var getJavaMember(BlockCreator bc, InjectionPointInfo injectionPoint,
             ReflectionRegistration reflectionRegistration) {
-        ResultHandle javaMemberHandle;
+        Expr javaMember;
         if (injectionPoint.isSynthetic()) {
-            javaMemberHandle = bytecode.loadNull();
+            javaMember = Const.ofNull(Member.class);
         } else if (injectionPoint.isField()) {
             FieldInfo field = injectionPoint.getAnnotationTarget().asField();
-            javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
-                    bytecode.loadClass(field.declaringClass().name().toString()),
-                    bytecode.load(field.name()));
             reflectionRegistration.registerField(field);
+            javaMember = bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_FIELD,
+                    Const.of(classDescOf(field.declaringClass())), Const.of(field.name()));
         } else {
             MethodInfo method = injectionPoint.getAnnotationTarget().asMethodParameter().method();
             reflectionRegistration.registerMethod(method);
             if (method.name().equals(Methods.INIT)) {
                 // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
-                ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = bytecode.loadClass(method.declaringClass().name().toString());
-                ResultHandle paramsArray = bytecode.newArray(Class.class, bytecode.load(method.parametersCount()));
-                for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
-                    bytecode.writeArrayValue(paramsArray, iterator.nextIndex(),
-                            bytecode.loadClass(iterator.next().name().toString()));
-                }
-                paramsHandles[1] = paramsArray;
-                javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
-                        paramsHandles);
+                Expr clazz = Const.of(classDescOf(method.declaringClass()));
+                Expr paramsArray = bc.newArray(Class.class, method.parameterTypes()
+                        .stream()
+                        .map(paramType -> Const.of(classDescOf(paramType)))
+                        .toList());
+                javaMember = bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_CONSTRUCTOR, clazz, paramsArray);
             } else {
                 // Reflections.findMethod(org.foo.SimpleBean.class,"foo",java.lang.String.class)
-                ResultHandle[] paramsHandles = new ResultHandle[3];
-                paramsHandles[0] = bytecode.loadClass(method.declaringClass().name().toString());
-                paramsHandles[1] = bytecode.load(method.name());
-                ResultHandle paramsArray = bytecode.newArray(Class.class, bytecode.load(method.parametersCount()));
-                for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
-                    bytecode.writeArrayValue(paramsArray, iterator.nextIndex(),
-                            bytecode.loadClass(iterator.next().name().toString()));
-                }
-                paramsHandles[2] = paramsArray;
-                javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
+                Expr clazz = Const.of(classDescOf(method.declaringClass()));
+                Expr name = Const.of(method.name());
+                Expr paramsArray = bc.newArray(Class.class, method.parameterTypes()
+                        .stream()
+                        .map(paramType -> Const.of(classDescOf(paramType)))
+                        .toList());
+                javaMember = bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_METHOD, clazz, name, paramsArray);
             }
         }
-        return javaMemberHandle;
+        return bc.localVar("member", javaMember);
     }
 
-    public static ResultHandle collectInjectionPointAnnotations(BeanDeployment beanDeployment, MethodCreator bytecode,
+    public static Var collectInjectionPointAnnotations(BeanDeployment beanDeployment, BlockCreator bc,
             InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals,
             Predicate<DotName> injectionPointAnnotationsPredicate) {
         if (injectionPoint.isSynthetic()) {
-            return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+            return bc.localVar("annotations", bc.setOf());
         }
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
@@ -2395,83 +2138,67 @@ public class BeanGenerator extends AbstractGenerator {
             annotations = beanDeployment.getAnnotations(field);
         } else {
             MethodInfo method = injectionPoint.getAnnotationTarget().asMethodParameter().method();
-            annotations = Annotations.getParameterAnnotations(beanDeployment,
-                    method, injectionPoint.getPosition());
+            annotations = Annotations.getParameterAnnotations(beanDeployment, method, injectionPoint.getPosition());
         }
         if (annotations.isEmpty()) {
-            return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+            return bc.localVar("annotations", bc.setOf());
         }
-        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+
+        LocalVar annotationsVar = bc.localVar("annotations", bc.new_(HashSet.class));
         for (AnnotationInstance annotation : annotations) {
             if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
                 continue;
             }
-            ResultHandle annotationHandle;
+            Expr annotationExpr;
             if (DotNames.INJECT.equals(annotation.name())) {
-                annotationHandle = bytecode
-                        .readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class));
+                annotationExpr = Expr.staticField(FieldDesc.of(InjectLiteral.class, "INSTANCE"));
             } else {
                 ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
                 if (annotationClass == null) {
                     continue;
                 }
-                annotationHandle = annotationLiterals.create(bytecode, annotationClass, annotation);
+                annotationExpr = annotationLiterals.create(bc, annotationClass, annotation);
             }
-            bytecode.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
-                    annotationHandle);
+            bc.withSet(annotationsVar).add(annotationExpr);
         }
-        return annotationsHandle;
+        return annotationsVar;
     }
 
-    public static ResultHandle collectInjectionPointQualifiers(BeanDeployment beanDeployment, MethodCreator bytecode,
+    public static Var collectInjectionPointQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
             InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
-        return collectQualifiers(beanDeployment, bytecode, annotationLiterals,
+        return collectQualifiers(beanDeployment, bc, annotationLiterals,
                 injectionPoint.hasDefaultedQualifier() ? Collections.emptySet() : injectionPoint.getRequiredQualifiers());
     }
 
-    public static ResultHandle collectQualifiers(BeanDeployment beanDeployment, MethodCreator bytecode,
+    public static Var collectQualifiers(BeanDeployment beanDeployment, BlockCreator bc,
             AnnotationLiteralProcessor annotationLiterals, Set<AnnotationInstance> qualifiers) {
-        ResultHandle qualifiersHandle;
         if (qualifiers.isEmpty()) {
-            qualifiersHandle = bytecode.readStaticField(FieldDescriptors.QUALIFIERS_IP_QUALIFIERS);
+            return Expr.staticField(FieldDescs.QUALIFIERS_IP_QUALIFIERS);
         } else {
-            qualifiersHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (AnnotationInstance qualifierAnnotation : qualifiers) {
-                BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-                ResultHandle qualifierHandle;
-                if (qualifier != null) {
-                    qualifierHandle = qualifier.getLiteralInstance(bytecode);
+            LocalVar qualifiersVar = bc.localVar("qualifiers", bc.new_(HashSet.class));
+            for (AnnotationInstance qualifier : qualifiers) {
+                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                Expr qualifierExpr;
+                if (builtinQualifier != null) {
+                    qualifierExpr = builtinQualifier.getLiteralInstance();
                 } else {
                     // Create annotation literal if needed
-                    qualifierHandle = annotationLiterals.create(bytecode,
-                            beanDeployment.getQualifier(qualifierAnnotation.name()), qualifierAnnotation);
+                    qualifierExpr = annotationLiterals.create(bc, beanDeployment.getQualifier(qualifier.name()), qualifier);
                 }
-                bytecode.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
-                        qualifierHandle);
+                bc.withSet(qualifiersVar).add(qualifierExpr);
             }
+            return qualifiersVar;
         }
-        return qualifiersHandle;
     }
 
-    static void destroyTransientReferences(BytecodeCreator bytecode, Iterable<TransientReference> transientReferences) {
+    static void destroyTransientReferences(BlockCreator bc, Iterable<TransientReference> transientReferences) {
         for (TransientReference transientReference : transientReferences) {
-            bytecode.invokeStaticMethod(MethodDescriptors.INJECTABLE_REFERENCE_PROVIDERS_DESTROY, transientReference.provider,
+            bc.invokeStatic(MethodDescs.INJECTABLE_REFERENCE_PROVIDERS_DESTROY, transientReference.provider,
                     transientReference.instance, transientReference.creationalContext);
         }
     }
 
-    static class TransientReference {
-
-        final ResultHandle provider;
-        final ResultHandle instance;
-        final ResultHandle creationalContext;
-
-        public TransientReference(ResultHandle provider, ResultHandle contextualInstance, ResultHandle creationalContext) {
-            this.provider = provider;
-            this.instance = contextualInstance;
-            this.creationalContext = creationalContext;
-        }
-
+    record TransientReference(Var provider, Var instance, Var creationalContext) {
     }
 
     /**
@@ -2481,13 +2208,17 @@ public class BeanGenerator extends AbstractGenerator {
     static final class ProviderType {
 
         private final Type type;
+        private final ClassDesc desc;
         private final String className;
-        private final String descriptorName;
 
         public ProviderType(Type type) {
             this.type = type;
+            this.desc = classDescOf(type);
             this.className = type.name().toString();
-            this.descriptorName = DescriptorUtils.typeToString(type);
+        }
+
+        ClassDesc classDesc() {
+            return desc;
         }
 
         DotName name() {
@@ -2501,15 +2232,5 @@ public class BeanGenerator extends AbstractGenerator {
         String className() {
             return className;
         }
-
-        /**
-         *
-         * @return the name used in JVM descriptors, e.g. {@code Lorg/acme/Foo;}
-         */
-        String descriptorName() {
-            return descriptorName;
-        }
-
     }
-
 }

@@ -20,7 +20,7 @@ final class InvocationTransformer {
             case EXCEPTION -> "exception transformer ";
             case WRAPPER -> "invocation wrapper ";
         };
-        return kind + clazz.getName() + "#" + method;
+        return kind + clazz.getName() + "." + method + "()";
     }
 
     public boolean isInputTransformer() {

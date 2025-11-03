@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.buildextension.observers;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,12 +16,12 @@ public class SyntheticObserverErrorTest {
             .observerRegistrars(new ObserverRegistrar() {
                 @Override
                 public void register(RegistrationContext context) {
-                    context.configure().observedType(String.class).notify(mc -> {
-                        mc.returnValue(null);
+                    context.configure().observedType(String.class).notify(og -> {
+                        og.notifyMethod().return_();
                     }).done();
 
-                    context.configure().observedType(String.class).notify(mc -> {
-                        mc.returnValue(null);
+                    context.configure().observedType(String.class).notify(og -> {
+                        og.notifyMethod().return_();
                     }).done();
                 }
             }).shouldFail().build();
@@ -30,7 +30,7 @@ public class SyntheticObserverErrorTest {
     public void testSyntheticObserver() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof IllegalStateException);
+        assertInstanceOf(IllegalStateException.class, error);
     }
 
 }

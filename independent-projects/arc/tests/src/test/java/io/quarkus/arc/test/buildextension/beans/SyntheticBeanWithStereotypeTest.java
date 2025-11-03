@@ -35,7 +35,6 @@ import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.StereotypeInfo;
 import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.gizmo.MethodDescriptor;
 
 public class SyntheticBeanWithStereotypeTest {
     @RegisterExtension
@@ -125,7 +124,7 @@ public class SyntheticBeanWithStereotypeTest {
             context.configure(SomeBean.class)
                     .types(SomeBean.class)
                     .stereotypes(stereotype)
-                    .creator(mc -> mc.returnValue(mc.newInstance(MethodDescriptor.ofConstructor(SomeBean.class))))
+                    .creator(cg -> cg.createMethod().return_(cg.createMethod().new_(SomeBean.class)))
                     .done();
         }
     }

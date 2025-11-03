@@ -205,43 +205,45 @@ public final class DotNames {
     }
 
     /**
-     * @param clazz
-     * @return the simple name for the given top-level or nested class
+     * {@return {@link DotName#packagePrefix()} or an empty string if {@code packagePrefix()} returns {@code null}}
      */
-    public static String simpleName(ClassInfo clazz) {
-        switch (clazz.nestingType()) {
-            case TOP_LEVEL:
-                return simpleName(clazz.name());
-            case INNER:
-                // Nested class
-                // com.foo.Foo$Bar -> Bar
-                return clazz.simpleName();
-            default:
-                throw new IllegalStateException("Unsupported nesting type: " + clazz);
-        }
+    public static String packagePrefix(DotName name) {
+        String result = name.packagePrefix();
+        return result != null ? result : "";
     }
 
     /**
-     * @param dotName
-     * @see #simpleName(String)
+     * @deprecated use {@link ClassInfo#simpleName()}
      */
+    @Deprecated(forRemoval = true, since = "3.30")
+    public static String simpleName(ClassInfo clazz) {
+        return switch (clazz.nestingType()) {
+            case TOP_LEVEL -> simpleName(clazz.name());
+            case INNER -> clazz.simpleName(); // com.foo.Foo$Bar -> Bar
+            default -> throw new IllegalStateException("Unsupported nesting type: " + clazz);
+        };
+    }
+
+    /**
+     * @deprecated use {@link DotName#withoutPackagePrefix()}
+     */
+    @Deprecated(forRemoval = true, since = "3.30")
     public static String simpleName(DotName dotName) {
         return simpleName(dotName.toString());
     }
 
     /**
-     * Note that dollar sign is a valid character for class names so we cannot detect a nested class here. Therefore, this
-     * method returns "Foo$Bar" for the parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to
-     * distinguish
-     * the nested classes.
-     *
-     * @param name
-     * @return the simple name
+     * @deprecated use {@link DotName#withoutPackagePrefix()}
      */
+    @Deprecated(forRemoval = true, since = "3.30")
     public static String simpleName(String name) {
-        return name.contains(".") ? name.substring(name.lastIndexOf(".") + 1, name.length()) : name;
+        return name.contains(".") ? name.substring(name.lastIndexOf(".") + 1) : name;
     }
 
+    /**
+     * @deprecated use {@link DotNames#packagePrefix(DotName)}
+     */
+    @Deprecated(forRemoval = true, since = "3.30")
     public static String packageName(DotName dotName) {
         String name = dotName.toString();
         int index = name.lastIndexOf('.');
@@ -252,12 +254,11 @@ public final class DotNames {
     }
 
     /**
-     * Returns a package name with a trailing '/'. If the class is in the default package then this returns
-     * the empty string.
-     * <p>
-     * This method should be used to determine the package to generate classes in to ensure the default package is handled
-     * correctly.
+     * @deprecated do not create internal names ({@code com/example/FooBar_Suffix});
+     *             instead, create binary names ({@code com.example.FooBar_Suffix})
+     *             by appending a suffix to the base class name
      */
+    @Deprecated(forRemoval = true, since = "3.30")
     public static String internalPackageNameWithTrailingSlash(DotName dotName) {
         String name = dotName.toString();
         int index = name.lastIndexOf('.');
@@ -266,5 +267,4 @@ public final class DotNames {
         }
         return name.substring(0, index).replace('.', '/') + '/';
     }
-
 }

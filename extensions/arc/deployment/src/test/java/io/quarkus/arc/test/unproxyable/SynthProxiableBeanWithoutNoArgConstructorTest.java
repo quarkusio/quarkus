@@ -17,8 +17,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SynthProxiableBeanWithoutNoArgConstructorTest {
@@ -42,11 +42,10 @@ public class SynthProxiableBeanWithoutNoArgConstructorTest {
                                 .scope(ApplicationScoped.class)
                                 .types(SynthBean.class)
                                 .unremovable()
-                                .creator(mc -> {
-                                    ResultHandle ret = mc.newInstance(
-                                            MethodDescriptor.ofConstructor(SynthBean.class, String.class),
-                                            mc.load("foo"));
-                                    mc.returnValue(ret);
+                                .creator(cg -> {
+                                    BlockCreator bc = cg.createMethod();
+
+                                    bc.return_(bc.new_(SynthBean.class, Const.of("foo")));
                                 })
                                 .done());
                     }

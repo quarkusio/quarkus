@@ -4,6 +4,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.GenericSignature;
 import org.jboss.jandex.Type;
 
+@Deprecated(forRemoval = true, since = "3.30")
 public class AsmUtil {
     /**
      * Returns the Java bytecode generic signature of a hypothetical subclass of given {@code superClass},

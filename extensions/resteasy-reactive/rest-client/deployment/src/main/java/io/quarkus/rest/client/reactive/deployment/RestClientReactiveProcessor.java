@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.deployment;
 
-import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
+import static io.quarkus.jaxrs.client.reactive.deployment.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_EXCEPTION_MAPPER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAMS;

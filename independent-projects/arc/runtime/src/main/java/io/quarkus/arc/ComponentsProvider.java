@@ -3,7 +3,7 @@ package io.quarkus.arc;
 import org.jboss.logging.Logger;
 
 /**
- * Service provider interface used to colllect the runtime components.
+ * Service provider interface used to collect the runtime components.
  */
 public interface ComponentsProvider {
 

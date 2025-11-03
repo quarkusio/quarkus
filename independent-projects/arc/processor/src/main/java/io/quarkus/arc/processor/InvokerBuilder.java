@@ -110,8 +110,9 @@ import org.jboss.jandex.MethodInfo;
  * <p>
  * For the purpose of the specification of transformers and wrappers below, the term
  * <em>any-type</em> is recursively defined as: the {@code java.lang.Object} class type,
- * or a type variable that has no bound, or a type variable whose first bound is
- * <em>any-type</em>.
+ * or a type variable that has no bound, or a type variable whose first bound (including
+ * an implicitly declared {@code java.lang.Object} bound in case all declared bounds are
+ * interface types) is <em>any-type</em>.
  *
  * <h2>Input transformations</h2>
  *

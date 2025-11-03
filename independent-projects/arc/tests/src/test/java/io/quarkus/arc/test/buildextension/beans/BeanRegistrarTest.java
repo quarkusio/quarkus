@@ -46,8 +46,8 @@ import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.creator.BlockCreator;
 
 public class BeanRegistrarTest {
 
@@ -168,9 +168,10 @@ public class BeanRegistrarTest {
 
             BeanConfigurator<Integer> integerConfigurator = context.configure(Integer.class);
             integerConfigurator.unremovable();
-            integerConfigurator.types(Integer.class).creator(mc -> {
-                ResultHandle ret = mc.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class), mc.load(152));
-                mc.returnValue(ret);
+            integerConfigurator.types(Integer.class).creator(cg -> {
+                BlockCreator bc = cg.createMethod();
+
+                bc.return_(bc.new_(Integer.class, Const.of(152)));
             });
             integerConfigurator.destroyer(SimpleDestroyer.class);
             integerConfigurator.scope(Singleton.class);
@@ -204,7 +205,7 @@ public class BeanRegistrarTest {
             context.configure(Long.class)
                     .addType(Long.class)
                     .priority(10)
-                    .creator(mc -> mc.returnValue(mc.load(42l)))
+                    .creator(cg -> cg.createMethod().return_(Const.of(42L)))
                     .unremovable()
                     .done();
 
@@ -212,7 +213,7 @@ public class BeanRegistrarTest {
                     .addType(Long.class)
                     .addType(Double.class)
                     .priority(5)
-                    .creator(mc -> mc.returnValue(mc.load(22l)))
+                    .creator(cg -> cg.createMethod().return_(Const.of(22L)))
                     .unremovable()
                     .done();
 

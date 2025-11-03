@@ -7,13 +7,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.build.compatible.spi.Parameters;
 import jakarta.enterprise.inject.build.compatible.spi.Synthesis;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents;
-import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,7 +22,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class SyntheticBeanWithLookupTest {
+public class SyntheticBeanWithLookupOldTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(MyDependentBean.class)
@@ -64,7 +64,6 @@ public class SyntheticBeanWithLookupTest {
             syn.addBean(MyPojo.class)
                     .type(MyPojo.class)
                     .scope(Dependent.class)
-                    .withInjectionPoint(MyDependentBean.class)
                     .createWith(MyPojoCreator.class)
                     .disposeWith(MyPojoDisposer.class);
         }
@@ -109,10 +108,10 @@ public class SyntheticBeanWithLookupTest {
         static final AtomicInteger counter = new AtomicInteger();
 
         @Override
-        public MyPojo create(SyntheticInjections injections, Parameters params) {
+        public MyPojo create(Instance<Object> lookup, Parameters params) {
             counter.incrementAndGet();
 
-            injections.get(MyDependentBean.class);
+            lookup.select(MyDependentBean.class).get();
 
             return new MyPojo();
         }
@@ -122,10 +121,10 @@ public class SyntheticBeanWithLookupTest {
         static final AtomicInteger counter = new AtomicInteger();
 
         @Override
-        public void dispose(MyPojo instance, SyntheticInjections injections, Parameters params) {
+        public void dispose(MyPojo instance, Instance<Object> lookup, Parameters params) {
             counter.incrementAndGet();
 
-            injections.get(MyDependentBean.class);
+            lookup.select(MyDependentBean.class).get();
 
             instance.destroy();
         }

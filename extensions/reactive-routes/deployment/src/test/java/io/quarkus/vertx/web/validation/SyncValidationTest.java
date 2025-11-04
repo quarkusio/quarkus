@@ -17,6 +17,7 @@ import org.hibernate.validator.constraints.Length;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.DisabledOnSemeru;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Param;
@@ -24,6 +25,7 @@ import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HttpMethod;
 import io.vertx.core.json.JsonObject;
 
+@DisabledOnSemeru(reason = "https://github.com/eclipse-openj9/openj9/issues/22812")
 public class SyncValidationTest {
 
     @RegisterExtension

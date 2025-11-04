@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.DisabledOnSemeru;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Header;
@@ -26,6 +27,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
+@DisabledOnSemeru(reason = "https://github.com/eclipse-openj9/openj9/issues/22812")
 public class RouteMethodParametersTest {
 
     @RegisterExtension

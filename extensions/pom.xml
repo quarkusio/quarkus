@@ -98,7 +98,6 @@
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>
-        <module>hibernate-orm-derby</module>
         <module>hibernate-envers</module>
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
@@ -202,7 +201,6 @@
         <module>flyway-oracle</module>
         <module>flyway-mysql</module>
         <module>flyway-mssql</module>
-        <module>flyway-derby</module>
         <module>flyway-db2</module>
         <module>liquibase</module>
 

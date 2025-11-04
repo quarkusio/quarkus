@@ -46,7 +46,6 @@
           "io.quarkus:quarkus-jdbc-h2",
           "io.quarkus:quarkus-jdbc-mssql",
           "io.quarkus:quarkus-jdbc-db2",
-          "io.quarkus:quarkus-jdbc-derby",
           "io.quarkus:quarkus-jdbc-oracle"
         ]
       }

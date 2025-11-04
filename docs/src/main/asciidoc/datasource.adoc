@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: data,getting-started,reactive
 :topics: data,database,datasource,sql,jdbc,reactive
-:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 Use a unified configuration model to define data sources for Java Database Connectivity (JDBC) and Reactive drivers.
 
@@ -64,9 +64,6 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 . Add the correct JDBC extension for the database of your choice.
 
 * `quarkus-jdbc-db2`
-* `quarkus-jdbc-derby`
-+
-include::_includes/snip-note-derby.adoc[]
 * `quarkus-jdbc-h2`
 * `quarkus-jdbc-mariadb`
 * `quarkus-jdbc-mssql`
@@ -152,9 +149,6 @@ If the application operates with a single driver, this driver is detected automa
 Quarkus currently includes the following built-in database kinds:
 +
 * DB2: `db2`
-* Derby: `derby`
-+
-include::_includes/snip-note-derby.adoc[]
 * H2: `h2`
 * MariaDB: `mariadb`
 * Microsoft SQL Server: `mssql`
@@ -194,14 +188,11 @@ JDBC is the most common database connection pattern, typically needed when used 
 
 .. For use with a built-in JDBC driver, choose and add the Quarkus extension for your relational database driver from the list below:
 +
-* Derby - `quarkus-jdbc-derby`
-+
-include::_includes/snip-note-derby.adoc[]
 * H2 - `quarkus-jdbc-h2`
 +
 [NOTE]
 ====
-You can configure H2 and Derby databases to run in "embedded mode"; however, the Derby extension does not support compiling the embedded database engine into native executables.
+You can configure H2 databases to run in "embedded mode"
 
 For suggestions regarding integration testing, see <<in-memory-databases,Testing with in-memory databases>> .
 ====
@@ -700,7 +691,7 @@ You will usually specify the `db-kind` property or explicitly enable Dev Service
 [[in-memory-databases]]
 === Testing with in-memory databases
 
-Some databases like H2 and Derby are commonly used in the _embedded mode_ as a facility to run integration tests quickly.
+Some databases like H2 are commonly used in the _embedded mode_ as a facility to run integration tests quickly.
 
 The recommended approach is to use the database intended for production to get results as close as possible to a production environment.
 This is made easier by xref:databases-dev-services.adoc[Dev Services] because they require no configuration and start relatively quickly.
@@ -708,11 +699,8 @@ However, it is also possible to use JVM-powered databases for scenarios when the
 
 ==== Support and limitations
 
-Embedded databases (H2 and Derby) work in JVM mode.
+Embedded databases (H2) work in JVM mode.
 For native mode, the following limitations apply:
-
-* Derby cannot be embedded into the application in native mode.
-However, the Quarkus Derby extension allows native compilation of the Derby JDBC *client*, supporting *remote* connections.
 
 * Embedding H2 within your native image is not recommended.
 Consider using an alternative approach, for example, using a remote connection to a separate database instead.
@@ -723,14 +711,12 @@ ifndef::no-deprecated-test-resource[]
 . Add a dependency on the artifacts providing the additional tools that are under the following Maven coordinates:
 +
 * `io.quarkus:quarkus-test-h2` for H2
-* `io.quarkus:quarkus-test-derby` for Derby
 +
 This will allow you to test your application even when it is compiled into a native executable while the database will run as a JVM process.
 
 . Add the following specific annotation on any class in your integration tests for running integration tests in both JVM or native executables:
 +
 * `@QuarkusTestResource(H2DatabaseTestResource.class)`
-* `@QuarkusTestResource(DerbyDatabaseTestResource.class)`
 +
 This ensures that the test suite starts and terminates the managed database in a separate process as required for test execution.
 +
@@ -782,17 +768,6 @@ The following section gives an overview of each database URL and a link to the o
 Example:: `jdbc:db2://localhost:50000/MYDB:user=dbadm;password=dbadm;`
 
 For more information on URL syntax and additional supported options, see the link:https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052342.html[official documentation].
-
-==== Derby
-
-`jdbc:derby:[//serverName[:portNumber]/][memory:]databaseName[;property=value[;property=value]]`
-
-Example:: `jdbc:derby://localhost:1527/myDB`, `jdbc:derby:memory:myDB;create=true`
-
-Derby is an embedded database that can run as a server, based on a file, or can run completely in memory.
-All of these options are available as listed above.
-
-For more information, see the link:https://db.apache.org/derby/docs/10.8/devguide/cdevdvlp17453.html#cdevdvlp17453[official documentation].
 
 ==== H2
 
@@ -881,12 +856,6 @@ When using one of the built-in datasource kinds, the JDBC and Reactive drivers a
 a|* JDBC: `com.ibm.db2.jcc.DB2Driver`
 
 * XA: `com.ibm.db2.jcc.DB2XADataSource`
-
-|`derby`
-|`quarkus-jdbc-derby`
-a|* JDBC: `org.apache.derby.jdbc.ClientDriver`
-
-* XA: `org.apache.derby.jdbc.ClientXADataSource`
 
 |`h2`
 |`quarkus-jdbc-h2`

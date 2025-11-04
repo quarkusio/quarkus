@@ -7,14 +7,13 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :categories: data, tooling
 include::_attributes.adoc[]
 :topics: dev-services,data,database,datasource,dev-mode,testing
-:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 When testing or running in dev mode Quarkus can provide you with a zero-config database out of the box, a feature we refer to as Dev Services.
 Depending on your database type you may need Docker installed in order to use this feature.
 Dev Services is supported for the following databases:
 
 * DB2 (container) (requires <<#license_acceptance,license acceptance>>)
-* Derby (in-process)
 * H2 (in-process)
 * MariaDB (container)
 * Microsoft SQL Server (container) (requires <<#license_acceptance,license acceptance>>)
@@ -43,7 +42,7 @@ quarkus.devservices.enabled=false
 quarkus.datasource.devservices.enabled=false
 ----
 
-Dev Services for databases relies on Docker to start the server (except for H2 and Derby which are run in process).
+Dev Services for databases relies on Docker to start the server (except for H2 which is run in process).
 If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
 
 [[license_acceptance]]
@@ -90,7 +89,7 @@ Quarkus will (by default) stop all database Dev Services.
 [[reuse-across-executions]]
 === Reusing Dev Service containers across runs
 
-Assuming you rely on Dev Services based on containers (unlike H2 or Derby),
+Assuming you rely on Dev Services based on containers (unlike H2),
 if you want to keep Dev Service containers running *after a dev mode session or test suite execution*
 to reuse them in the next dev mode session or test suite execution,
 this is possible as well.

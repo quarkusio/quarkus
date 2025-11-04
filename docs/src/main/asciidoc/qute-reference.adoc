@@ -3042,7 +3042,14 @@ Message bundle files must be encoded in _UTF-8_.
 The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by a language tag (IETF; e.g. `en-US`).
 The language tag may be omitted, in which case the language tag of the default bundle locale is used.
 For example, if bundle `msg` has default locale `en`, then `msg.properties` is going to be treated as `msg_en.properties`.
-If both `msg.properties` and `msg_en.properties` are detected, an exception is thrown and build fails.
+
+If there are multiple files for a specific locale then Qute attempts to resolve the ambiguity.
+Localized files from the application root have higher priority and take precedence over localized files from dependencies.
+If multiple files of the same priority exist, then the build fails.
+For example, if the default bundle locale is `en` and the files `msg.properties` and `msg_en.properties` are found in the application root, then an exception is thrown and the build fails. 
+Or another example - if there are two dependencies and both contain the `msg_en.properties` file, then the build fails again.
+On the other hand, if there is the `msg_en.properties` file in the application root and also the `msg_en.properties` file in a dependency, then messages from the application root take precedence and override the values from the dependency.
+
 The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
 Blank lines are ignored.
 Keys are _mapped to method names_ from the corresponding message bundle interface.

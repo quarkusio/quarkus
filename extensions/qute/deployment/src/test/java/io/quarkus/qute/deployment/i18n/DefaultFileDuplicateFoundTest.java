@@ -33,7 +33,7 @@ public class DefaultFileDuplicateFoundTest {
                     e = e.getCause();
                 }
                 assertNotNull(mbe);
-                assertTrue(mbe.getMessage().contains("localized file already exists for locale [cs]"), mbe.getMessage());
+                assertTrue(mbe.getMessage().contains("Duplicate localized files with priority 10 found"), mbe.getMessage());
                 assertTrue(mbe.getMessage().contains("msg_cs.properties"), mbe.getMessage());
                 assertTrue(mbe.getMessage().contains("msg.properties"), mbe.getMessage());
             });

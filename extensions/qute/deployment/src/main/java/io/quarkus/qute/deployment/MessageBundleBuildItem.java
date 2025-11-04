@@ -1,24 +1,25 @@
 package io.quarkus.qute.deployment;
 
-import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.qute.deployment.MessageBundleProcessor.MessageFile;
 
 public final class MessageBundleBuildItem extends MultiBuildItem {
 
     private final String name;
     private final ClassInfo defaultBundleInterface;
     private final Map<String, ClassInfo> localizedInterfaces;
-    private final Map<String, Path> localizedFiles;
-    private final Map<String, Path> mergeCandidates;
+    private final Map<String, List<MessageFile>> localizedFiles;
+    private final Map<String, List<MessageFile>> mergeCandidates;
     private final String defaultLocale;
 
     public MessageBundleBuildItem(String name, ClassInfo defaultBundleInterface,
-            Map<String, ClassInfo> localizedInterfaces, Map<String, Path> localizedFiles,
-            Map<String, Path> mergeCandidates, String defaultLocale) {
+            Map<String, ClassInfo> localizedInterfaces, Map<String, List<MessageFile>> localizedFiles,
+            Map<String, List<MessageFile>> mergeCandidates, String defaultLocale) {
         this.name = name;
         this.defaultBundleInterface = defaultBundleInterface;
         this.localizedInterfaces = localizedInterfaces;
@@ -39,17 +40,15 @@ public final class MessageBundleBuildItem extends MultiBuildItem {
         return localizedInterfaces;
     }
 
-    public Map<String, Path> getLocalizedFiles() {
+    public Map<String, List<MessageFile>> getLocalizedFiles() {
         return localizedFiles;
     }
 
     /**
      * Merge candidates are localized files used as a supplementary source of message templates
      * not specified by localized interfaces.
-     *
-     * @return locale -> localized file {@link Path}
      */
-    public Map<String, Path> getMergeCandidates() {
+    public Map<String, List<MessageFile>> getMergeCandidates() {
         return mergeCandidates;
     }
 

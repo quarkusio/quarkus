@@ -139,7 +139,8 @@ public class MessageBundleProcessor {
         Map<String, ClassInfo> found = new HashMap<>();
         List<MessageBundleBuildItem> bundles = new ArrayList<>();
         List<DotName> localizedInterfaces = new ArrayList<>();
-        List<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
+        // Message files sorted by priority
+        List<MessageFile> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
 
         // First collect all interfaces annotated with @MessageBundle
         for (AnnotationInstance bundleAnnotation : index.getAnnotations(Names.BUNDLE)) {
@@ -209,48 +210,40 @@ public class MessageBundleProcessor {
                     }
 
                     // Find localized files
-                    Map<String, Path> localeToFile = new HashMap<>();
+                    Map<String, List<MessageFile>> localeToFiles = new HashMap<>();
                     // Message templates not specified by a localized interface are looked up in a localized file (merge candidate)
-                    Map<String, Path> localeToMergeCandidate = new HashMap<>();
-                    for (Path messageFile : messageFiles) {
-                        String fileName = messageFile.getFileName().toString();
-                        if (bundleNameMatchesFileName(fileName, name)) {
-                            final String locale;
-                            int postfixIdx = fileName.indexOf('.');
-                            if (postfixIdx == name.length()) {
-
-                                // msg.txt -> use bundle default locale
+                    Map<String, List<MessageFile>> localeToMergeCandidates = new HashMap<>();
+                    for (MessageFile messageFile : messageFiles) {
+                        if (messageFile.matchesBundle(name)) {
+                            String locale = messageFile.getLocale(name);
+                            if (locale == null) {
                                 locale = defaultLocale;
-                            } else {
-
-                                locale = fileName
-                                        // msg_en.txt -> en
-                                        // msg_Views_Index_cs.properties -> cs
-                                        // msg_Views_Index_cs-CZ.properties -> cs-CZ
-                                        // msg_Views_Index_cs_CZ.properties -> cs_CZ
-                                        .substring(name.length() + 1, postfixIdx)
-                                        // Support resource bundle naming convention
-                                        .replace('_', '-');
                             }
-
                             ClassInfo localizedInterface = localeToInterface.get(locale);
+                            List<MessageFile> files;
                             if (defaultLocale.equals(locale) || localizedInterface != null) {
-                                // both file and interface exist for one locale, therefore we need to merge them
-                                Path previous = localeToMergeCandidate.put(locale, messageFile);
-                                if (previous != null) {
-                                    throw new MessageBundleException(
-                                            String.format(
-                                                    "Cannot register [%s] - a localized file already exists for locale [%s]: [%s]",
-                                                    fileName, locale, previous.getFileName().toString()));
+                                files = localeToMergeCandidates.get(locale);
+                                if (files == null) {
+                                    files = new ArrayList<>();
+                                    localeToMergeCandidates.put(locale, files);
                                 }
                             } else {
-                                localeToFile.put(locale, messageFile);
+                                files = localeToFiles.get(locale);
+                                if (files == null) {
+                                    files = new ArrayList<>();
+                                    localeToFiles.put(locale, files);
+                                }
                             }
+                            files.add(messageFile);
                         }
                     }
 
+                    // Check for duplicates again
+                    checkForDuplicates(localeToMergeCandidates);
+                    checkForDuplicates(localeToFiles);
+
                     bundles.add(new MessageBundleBuildItem(name, bundleClass, localeToInterface,
-                            localeToFile, localeToMergeCandidate, defaultLocale));
+                            localeToFiles, localeToMergeCandidates, defaultLocale));
                 } else {
                     throw new MessageBundleException("@MessageBundle must be declared on an interface: " + bundleClass);
                 }
@@ -289,7 +282,6 @@ public class MessageBundleProcessor {
                     .scope(Singleton.class)
                     .creator(cg -> {
                         BlockCreator bc = cg.createMethod();
-
                         // Just create a new instance of the generated class
                         bc.return_(bc.new_(ConstructorDesc.of(
                                 generatedImplementations.get(bundleInterface.name().toString()))));
@@ -304,14 +296,13 @@ public class MessageBundleProcessor {
                         .scope(Singleton.class)
                         .creator(cg -> {
                             BlockCreator bc = cg.createMethod();
-
                             // Just create a new instance of the generated class
                             bc.return_(bc.new_(ConstructorDesc.of(
                                     generatedImplementations.get(localizedInterface.name().toString()))));
                         }).done();
             }
             // Localized files
-            for (Entry<String, Path> entry : bundle.getLocalizedFiles().entrySet()) {
+            for (Entry<String, List<MessageFile>> entry : bundle.getLocalizedFiles().entrySet()) {
                 beanRegistration.getContext().configure(bundle.getDefaultBundleInterface().name())
                         .addType(bundle.getDefaultBundleInterface().name())
                         .addQualifier().annotation(Names.LOCALIZED)
@@ -319,39 +310,14 @@ public class MessageBundleProcessor {
                         .unremovable()
                         .scope(Singleton.class).creator(cg -> {
                             BlockCreator bc = cg.createMethod();
-
                             // Just create a new instance of the generated class
                             bc.return_(bc.new_(ConstructorDesc.of(
-                                    generatedImplementations.get(entry.getValue().toString()))));
+                                    generatedImplementations.get(entry.getValue().get(0).fileName()))));
                         }).done();
             }
         }
 
         return bundles;
-    }
-
-    static boolean bundleNameMatchesFileName(String fileName, String name) {
-        int fileSeparatorIdx = fileName.indexOf('.');
-        // Remove file extension if exists
-        if (fileSeparatorIdx > -1) {
-            fileName = fileName.substring(0, fileSeparatorIdx);
-        }
-        // Split the filename and the bundle name by underscores
-        String[] fileNameParts = fileName.split("_");
-        String[] nameParts = name.split("_");
-
-        if (fileNameParts.length < nameParts.length) {
-            return false;
-        }
-
-        // Compare each part of the filename with the corresponding part of the bundle name
-        for (int i = 0; i < nameParts.length; i++) {
-            if (!fileNameParts[i].equals(nameParts[i])) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     @Record(value = STATIC_INIT)
@@ -769,9 +735,12 @@ public class MessageBundleProcessor {
             }
 
             // Generate implementation for each localized file
-            for (Entry<String, Path> entry : bundle.getLocalizedFiles().entrySet()) {
-                Path localizedFile = entry.getValue();
-                var keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile, index);
+            for (Entry<String, List<MessageFile>> entry : bundle.getLocalizedFiles().entrySet()) {
+                List<MessageFile> localizedFiles = entry.getValue();
+                if (localizedFiles.isEmpty()) {
+                    continue;
+                }
+                var keyToTemplate = parseKeyToTemplateFromLocalizedFiles(bundleInterface, localizedFiles, index);
 
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
@@ -785,7 +754,7 @@ public class MessageBundleProcessor {
                                 return className;
                             }
                         }));
-                generatedTypes.put(localizedFile.toString(),
+                generatedTypes.put(localizedFiles.get(0).fileName(),
                         ClassDesc.of(generateImplementation(bundle, bundleInterface, bundleImpl,
                                 new SimpleClassInfoWrapper(bundleInterface), localeAwareGizmoAdaptor, messageTemplateMethods,
                                 keyToTemplate, locale, index)));
@@ -798,9 +767,9 @@ public class MessageBundleProcessor {
             ClassInfo bundleInterface, String locale, List<MethodInfo> methods, ClassInfo localizedInterface, IndexView index)
             throws IOException {
 
-        Path localizedFile = bundle.getMergeCandidates().get(locale);
-        if (localizedFile != null) {
-            Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile, index);
+        List<MessageFile> localizedFiles = bundle.getMergeCandidates().get(locale);
+        if (localizedFiles != null) {
+            Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFiles(bundleInterface, localizedFiles, index);
             if (!keyToTemplate.isEmpty()) {
 
                 // keep message templates if value wasn't provided by Message#value
@@ -830,42 +799,48 @@ public class MessageBundleProcessor {
                 return keyToTemplate;
             }
         }
-        return Collections.emptyMap();
+        return Map.of();
     }
 
-    private Map<String, String> parseKeyToTemplateFromLocalizedFile(ClassInfo bundleInterface,
-            Path localizedFile, IndexView index) throws IOException {
+    private Map<String, String> parseKeyToTemplateFromLocalizedFiles(ClassInfo bundleInterface,
+            List<MessageFile> localizedFile, IndexView index) throws IOException {
         Map<String, String> keyToTemplate = new HashMap<>();
-        for (ListIterator<String> it = Files.readAllLines(localizedFile).listIterator(); it.hasNext();) {
-            String line = it.next();
-            if (line.isBlank()) {
-                // Blank lines are skipped
-                continue;
-            }
-            line = line.strip();
-            if (line.startsWith("#")) {
-                // Comments are skipped
-                continue;
-            }
-            int eqIdx = line.indexOf('=');
-            if (eqIdx == -1) {
-                throw new MessageBundleException(
-                        "Missing key/value separator\n\t- file: " + localizedFile + "\n\t- line " + it.previousIndex());
-            }
-            String key = line.substring(0, eqIdx).strip();
-            if (!hasMessageBundleMethod(bundleInterface, key) && !isEnumConstantMessageKey(key, index, bundleInterface)) {
-                throw new MessageBundleException(
-                        "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
-                                + localizedFile + "\n\t- line " + it.previousIndex());
-            }
-            String value = adaptLine(line.substring(eqIdx + 1, line.length()));
-            if (value.endsWith("\\")) {
-                // The logical line is spread out across several normal lines
-                StringBuilder builder = new StringBuilder(value.substring(0, value.length() - 1));
-                constructLine(builder, it);
-                keyToTemplate.put(key, builder.toString());
-            } else {
-                keyToTemplate.put(key, value);
+        for (MessageFile messageFile : localizedFile) {
+            for (ListIterator<String> it = Files.readAllLines(messageFile.path()).listIterator(); it.hasNext();) {
+                String line = it.next();
+                if (line.isBlank()) {
+                    // Blank lines are skipped
+                    continue;
+                }
+                line = line.strip();
+                if (line.startsWith("#")) {
+                    // Comments are skipped
+                    continue;
+                }
+                int eqIdx = line.indexOf('=');
+                if (eqIdx == -1) {
+                    throw new MessageBundleException(
+                            "Missing key/value separator\n\t- file: " + localizedFile + "\n\t- line " + it.previousIndex());
+                }
+                String key = line.substring(0, eqIdx).strip();
+                if (keyToTemplate.containsKey(key)) {
+                    // Message template with higher priority takes precedence
+                    continue;
+                }
+                if (!hasMessageBundleMethod(bundleInterface, key) && !isEnumConstantMessageKey(key, index, bundleInterface)) {
+                    throw new MessageBundleException(
+                            "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
+                                    + localizedFile + "\n\t- line " + it.previousIndex());
+                }
+                String value = adaptLine(line.substring(eqIdx + 1, line.length()));
+                if (value.endsWith("\\")) {
+                    // The logical line is spread out across several normal lines
+                    StringBuilder builder = new StringBuilder(value.substring(0, value.length() - 1));
+                    constructLine(builder, it);
+                    keyToTemplate.put(key, builder.toString());
+                } else {
+                    keyToTemplate.put(key, value);
+                }
             }
         }
         return keyToTemplate;
@@ -1534,66 +1509,136 @@ public class MessageBundleProcessor {
         return defaultLocale;
     }
 
-    private List<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    record MessageFile(Path path, String fileName, int priority) implements Comparable<MessageFile> {
+
+        MessageFile(Path path, int priority) {
+            this(path, path.getFileName().toString(), priority);
+        }
+
+        boolean matchesBundle(String bundleName) {
+            String fileName = this.fileName;
+            int fileSeparatorIdx = fileName.indexOf('.');
+            // Remove file extension if exists
+            if (fileSeparatorIdx > -1) {
+                fileName = fileName.substring(0, fileSeparatorIdx);
+            }
+            // Split the filename and the bundle name by underscores
+            String[] fileNameParts = fileName.split("_");
+            String[] nameParts = bundleName.split("_");
+
+            if (fileNameParts.length < nameParts.length) {
+                return false;
+            }
+
+            // Compare each part of the filename with the corresponding part of the bundle name
+            for (int i = 0; i < nameParts.length; i++) {
+                if (!fileNameParts[i].equals(nameParts[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        String getLocale(String bundleName) {
+            String fileName = this.fileName;
+            int postfixIdx = fileName.indexOf('.');
+            if (postfixIdx == bundleName.length()) {
+                // msg.txt -> use bundle default locale
+                return null;
+            } else {
+                return fileName
+                        // msg_en.txt -> en
+                        // msg_Views_Index_cs.properties -> cs
+                        // msg_Views_Index_cs-CZ.properties -> cs-CZ
+                        // msg_Views_Index_cs_CZ.properties -> cs_CZ
+                        .substring(bundleName.length() + 1, postfixIdx)
+                        // Support resource bundle naming convention
+                        .replace('_', '-');
+            }
+        }
+
+        @Override
+        public int compareTo(MessageFile other) {
+            // Higher priority goes first
+            return Integer.compare(other.priority(), priority());
+        }
+    }
+
+    private void checkForDuplicates(Map<String, List<MessageFile>> groupByName) {
+        // Check for duplicates
+        // If there are multiple message files of the same priority then fail the build
+        for (var entry : groupByName.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                Map<Integer, List<MessageFile>> groupByPriority = entry.getValue().stream()
+                        .collect(Collectors.groupingBy(MessageFile::priority));
+                for (var groupEntry : groupByPriority.entrySet()) {
+                    if (groupEntry.getValue().size() > 1) {
+                        StringBuilder builder = new StringBuilder("Duplicate localized files with priority ")
+                                .append(groupEntry.getValue().get(0).priority())
+                                .append(" found:\n\t- ")
+                                .append(entry.getKey())
+                                .append(": ")
+                                .append(groupEntry.getValue());
+                        throw new MessageBundleException(builder.toString());
+                    }
+                }
+            }
+        }
+    }
+
+    private List<MessageFile> findMessageFiles(ApplicationArchivesBuildItem applicationArchives,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) throws IOException {
 
-        Map<String, List<Path>> messageFileNameToPath = new HashMap<>();
+        List<MessageFile> messageFiles = new ArrayList<>();
 
-        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            archive.accept(tree -> {
-                final Path messagesPath = tree.getPath(MESSAGES);
-                if (messagesPath == null) {
-                    return;
-                }
-                try (Stream<Path> files = Files.list(messagesPath)) {
-                    Iterator<Path> iter = files.iterator();
-                    while (iter.hasNext()) {
-                        Path filePath = iter.next();
-                        if (Files.isRegularFile(filePath)) {
-                            String messageFileName = messagesPath.relativize(filePath).toString();
-                            if (File.separatorChar != '/') {
-                                messageFileName = messageFileName.replace(File.separatorChar, '/');
-                            }
-                            List<Path> paths = messageFileNameToPath.get(messageFileName);
-                            if (paths == null) {
-                                paths = new ArrayList<>();
-                                messageFileNameToPath.put(messageFileName, paths);
-                            }
-                            paths.add(filePath);
-                        }
-                    }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
+        addMessageFiles(applicationArchives.getRootArchive(), 10, messageFiles);
+        for (ApplicationArchive archive : applicationArchives.getApplicationArchives()) {
+            addMessageFiles(archive, 1, messageFiles);
         }
 
-        if (messageFileNameToPath.isEmpty()) {
-            return Collections.emptyList();
+        if (messageFiles.isEmpty()) {
+            return List.of();
         }
 
-        // Check duplicates
-        List<Entry<String, List<Path>>> duplicates = messageFileNameToPath.entrySet().stream()
-                .filter(e -> e.getValue().size() > 1).collect(Collectors.toList());
-        if (!duplicates.isEmpty()) {
-            StringBuilder builder = new StringBuilder("Duplicate localized files found:");
-            for (Entry<String, List<Path>> e : duplicates) {
-                builder.append("\n\t- ")
-                        .append(e.getKey())
-                        .append(": ")
-                        .append(e.getValue());
-            }
-            throw new IllegalStateException(builder.toString());
-        }
+        // Check for duplicates
+        Map<String, List<MessageFile>> groupByName = messageFiles.stream()
+                .collect(Collectors.groupingBy(MessageFile::fileName));
+        checkForDuplicates(groupByName);
+
+        // Sort message files by priority
+        messageFiles.sort(null);
 
         // Hot deployment
-        for (String messageFileName : messageFileNameToPath.keySet()) {
-            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFileName));
+        for (MessageFile messageFile : messageFiles) {
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFile.fileName()));
         }
 
-        List<Path> messageFiles = new ArrayList<>();
-        messageFileNameToPath.values().forEach(messageFiles::addAll);
         return messageFiles;
+    }
+
+    private void addMessageFiles(ApplicationArchive archive, int priority,
+            List<MessageFile> messageFiles) {
+        archive.accept(tree -> {
+            final Path messagesPath = tree.getPath(MESSAGES);
+            if (messagesPath == null) {
+                return;
+            }
+            try (Stream<Path> files = Files.list(messagesPath)) {
+                Iterator<Path> iter = files.iterator();
+                while (iter.hasNext()) {
+                    Path filePath = iter.next();
+                    if (Files.isRegularFile(filePath)) {
+                        String messageFileName = messagesPath.relativize(filePath).toString();
+                        if (File.separatorChar != '/') {
+                            messageFileName = messageFileName.replace(File.separatorChar, '/');
+                        }
+                        messageFiles.add(new MessageFile(filePath, priority));
+                    }
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     private static class AppClassPredicate implements Predicate<String> {

@@ -389,6 +389,9 @@ public class ExtensionsEntryPoint {
             if (syntheticBean.priority != null) {
                 bean.priority(syntheticBean.priority);
             }
+            if (syntheticBean.isEager) {
+                bean.eager(true);
+            }
             configureParams(bean, syntheticBean.params);
             for (TypeAndQualifiers injectionPoint : syntheticBean.injectionPoints) {
                 bean.addInjectionPoint(injectionPoint.type(), injectionPoint.qualifiers());

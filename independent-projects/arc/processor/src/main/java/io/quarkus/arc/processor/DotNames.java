@@ -16,6 +16,7 @@ import jakarta.annotation.Priority;
 import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Eager;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.control.ActivateRequestContext;
@@ -145,6 +146,7 @@ public final class DotNames {
     public static final DotName LIST = create(List.class);
     public static final DotName ALL = create(All.class);
     public static final DotName SPECIALIZES = create(Specializes.class);
+    public static final DotName EAGER = create(Eager.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);

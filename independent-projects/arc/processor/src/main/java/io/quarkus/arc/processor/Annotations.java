@@ -295,7 +295,7 @@ public final class Annotations {
             return org.jboss.jandex.AnnotationValue.createEnumValue(name,
                     DotName.createSimple(((Enum<?>) value).getDeclaringClass().getName()), ((Enum<?>) value).name());
         } else if (value instanceof Class) {
-            return org.jboss.jandex.AnnotationValue.createClassValue(name, Types.jandexType((Class<?>) value));
+            return org.jboss.jandex.AnnotationValue.createClassValue(name, org.jboss.jandex.Type.create((Class<?>) value));
         } else if (value.getClass().isAnnotation()) {
             Class<? extends Annotation> annotationType = annotationType((Annotation) value);
             @SuppressWarnings("unchecked")
@@ -315,57 +315,49 @@ public final class Annotations {
     }
 
     private static Object[] boxArray(Object value) {
-        if (value instanceof boolean[]) {
-            boolean[] primitiveArray = (boolean[]) value;
+        if (value instanceof boolean[] primitiveArray) {
             Object[] boxedArray = new Boolean[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof byte[]) {
-            byte[] primitiveArray = (byte[]) value;
+        } else if (value instanceof byte[] primitiveArray) {
             Object[] boxedArray = new Byte[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof short[]) {
-            short[] primitiveArray = (short[]) value;
+        } else if (value instanceof short[] primitiveArray) {
             Object[] boxedArray = new Short[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof int[]) {
-            int[] primitiveArray = (int[]) value;
+        } else if (value instanceof int[] primitiveArray) {
             Object[] boxedArray = new Integer[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof long[]) {
-            long[] primitiveArray = (long[]) value;
+        } else if (value instanceof long[] primitiveArray) {
             Object[] boxedArray = new Long[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof float[]) {
-            float[] primitiveArray = (float[]) value;
+        } else if (value instanceof float[] primitiveArray) {
             Object[] boxedArray = new Float[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof double[]) {
-            double[] primitiveArray = (double[]) value;
+        } else if (value instanceof double[] primitiveArray) {
             Object[] boxedArray = new Double[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];
             }
             return boxedArray;
-        } else if (value instanceof char[]) {
-            char[] primitiveArray = (char[]) value;
+        } else if (value instanceof char[] primitiveArray) {
             Object[] boxedArray = new Character[primitiveArray.length];
             for (int i = 0; i < primitiveArray.length; i++) {
                 boxedArray[i] = primitiveArray[i];

@@ -1,5 +1,6 @@
 package io.quarkus.qute.debug.breakpoints;
 
+import static io.quarkus.qute.debug.adapter.RegisterDebugServerAdapter.findAvailableSocketPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -17,7 +18,6 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.debug.RenderTemplateInThread;
 import io.quarkus.qute.debug.adapter.RegisterDebugServerAdapter;
 import io.quarkus.qute.debug.client.DAPClient;
-import io.quarkus.qute.debug.client.DebuggerUtils;
 
 public class ConditionalBreakpointTest {
 
@@ -25,7 +25,7 @@ public class ConditionalBreakpointTest {
 
     @Test
     public void debuggingTemplate() throws Exception {
-        int port = DebuggerUtils.findAvailableSocketPort();
+        int port = findAvailableSocketPort();
 
         // Server side :
         // - create a Qute engine and set the debugging port as 1234
@@ -114,8 +114,7 @@ public class ConditionalBreakpointTest {
         // Stack frame on item_count
         frameId = currentFrame.getId();
         frameName = currentFrame.getName();
-        assertEquals(
-                "ExpressionNode [expression=Expression [namespace=null, parts=[item_count], literal=null]]",
+        assertEquals("ExpressionNode [expression=Expression [namespace=null, parts=[item_count], literal=null]]",
                 frameName);
 
         // Evaluate item_count
@@ -156,8 +155,7 @@ public class ConditionalBreakpointTest {
         // Stack frame on item_count
         frameId = currentFrame.getId();
         frameName = currentFrame.getName();
-        assertEquals(
-                "ExpressionNode [expression=Expression [namespace=null, parts=[item_count], literal=null]]",
+        assertEquals("ExpressionNode [expression=Expression [namespace=null, parts=[item_count], literal=null]]",
                 frameName);
 
         // Evaluate item_count

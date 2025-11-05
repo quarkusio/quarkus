@@ -32,7 +32,7 @@ public class ConsoleHandlerTest {
         Formatter formatter = handler.getFormatter();
         assertThat(formatter).isInstanceOf(PatternFormatter.class);
         PatternFormatter patternFormatter = (PatternFormatter) formatter;
-        assertThat(patternFormatter.getPattern()).isEqualTo("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n");
+        assertThat(patternFormatter.getPattern()).isEqualTo("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n");
     }
 
 }

@@ -95,6 +95,7 @@ public final class Beans {
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
+        boolean isEager = false;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerMethod)) {
             DotName annotationName = annotation.name();
@@ -144,6 +145,10 @@ public final class Beans {
                 }
                 continue;
             }
+            if (DotNames.EAGER.equals(annotationName)) {
+                isEager = true;
+                continue;
+            }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotationName);
             if (scopeAnnotation != null) {
                 scopes.add(scopeAnnotation);
@@ -181,6 +186,9 @@ public final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, producerMethod, beanDeployment);
         }
+        if (!isEager) {
+            isEager = initStereotypeEager(stereotypes, beanDeployment);
+        }
 
         if (isAlternative && isReserve) {
             throw new DefinitionException("Producer method " + producerMethod + " is both @Alternative and @Reserve");
@@ -192,6 +200,10 @@ public final class Beans {
         if (declaringBean.isReserve() && isAlternative) {
             throw new DefinitionException("Declaring bean " + declaringBean
                     + " is @Reserve, cannot declare @Alternative producer " + producerMethod);
+        }
+        if (isEager && !allowsEager(scope)) {
+            throw new DefinitionException("Producer method declared @Eager, it must be @ApplicationScoped or @Singleton: "
+                    + producerMethod);
         }
 
         if (isAlternative) {
@@ -257,7 +269,7 @@ public final class Beans {
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer,
                 Injection.BeanType.PRODUCER_METHOD);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, typeClosure.types(), qualifiers, injections,
-                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, null, priority,
+                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, isEager, null, priority,
                 typeClosure.unrestrictedTypes(), interceptionProxy);
         for (Injection injection : injections) {
             injection.init(bean);
@@ -276,6 +288,7 @@ public final class Beans {
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
+        boolean isEager = false;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerField)) {
             DotName annotationName = annotation.name();
@@ -330,6 +343,10 @@ public final class Beans {
                 }
                 continue;
             }
+            if (DotNames.EAGER.equals(annotationName)) {
+                isEager = true;
+                continue;
+            }
         }
 
         if (scopes.size() > 1) {
@@ -356,6 +373,9 @@ public final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, producerField, beanDeployment);
         }
+        if (!isEager) {
+            isEager = initStereotypeEager(stereotypes, beanDeployment);
+        }
 
         if (isAlternative && isReserve) {
             throw new DefinitionException("Producer field " + producerField + " is both @Alternative and @Reserve");
@@ -367,6 +387,10 @@ public final class Beans {
         if (declaringBean.isReserve() && isAlternative) {
             throw new DefinitionException("Declaring bean " + declaringBean
                     + " is @Reserve, cannot declare @Alternative producer " + producerField);
+        }
+        if (isEager && !allowsEager(scope)) {
+            throw new DefinitionException("Producer field declared @Eager, it must be @ApplicationScoped or @Singleton: "
+                    + producerField);
         }
 
         if (isAlternative) {
@@ -406,7 +430,7 @@ public final class Beans {
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, typeClosure.types(), qualifiers,
                 Collections.emptyList(),
-                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, null, priority,
+                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, isEager, null, priority,
                 typeClosure.unrestrictedTypes(), null);
         return bean;
     }
@@ -523,6 +547,20 @@ public final class Beans {
         return null;
     }
 
+    static boolean initStereotypeEager(List<StereotypeInfo> stereotypes, BeanDeployment beanDeployment) {
+        if (stereotypes.isEmpty()) {
+            return false;
+        }
+
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
+            if (stereotype.isEager()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static List<StereotypeInfo> stereotypesWithTransitive(List<StereotypeInfo> stereotypes,
             Map<DotName, StereotypeInfo> allStereotypes) {
         List<StereotypeInfo> result = new ArrayList<>();
@@ -545,6 +583,10 @@ public final class Beans {
         }
 
         return result;
+    }
+
+    static boolean allowsEager(ScopeInfo scope) {
+        return BuiltinScope.SINGLETON.is(scope) || BuiltinScope.APPLICATION.is(scope);
     }
 
     /**
@@ -1359,6 +1401,7 @@ public final class Beans {
         private Integer priority;
         private boolean isAlternative;
         private boolean isReserve;
+        private boolean isEager;
 
         ClassBeanFactory(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
             this.beanClass = beanClass;
@@ -1368,6 +1411,7 @@ public final class Beans {
             this.isAlternative = false;
             this.isReserve = false;
             this.name = null;
+            this.isEager = false;
         }
 
         void processInheritedAnnotation(
@@ -1439,6 +1483,10 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 return;
             }
+            if (DotNames.EAGER.equals(annotationName)) {
+                isEager = true;
+                return;
+            }
             StereotypeInfo stereotype = beanDeployment.getStereotype(annotationName);
             if (stereotype != null) {
                 stereotypes.add(stereotype);
@@ -1501,9 +1549,16 @@ public final class Beans {
             if (name == null) {
                 name = initStereotypeName(stereotypes, beanClass, beanDeployment);
             }
+            if (!isEager) {
+                isEager = initStereotypeEager(stereotypes, beanDeployment);
+            }
 
             if (isAlternative && isReserve) {
                 throw new DefinitionException("Bean " + beanClass + " is both @Alternative and @Reserve");
+            }
+            if (isEager && !allowsEager(scope)) {
+                throw new DefinitionException("Bean declared @Eager, it must be @ApplicationScoped or @Singleton: "
+                        + beanClass);
             }
 
             if (isAlternative) {
@@ -1532,7 +1587,7 @@ public final class Beans {
             List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer,
                     Injection.BeanType.MANAGED_BEAN);
             BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, typeClosure.types(), qualifiers,
-                    injections, null, null, isAlternative, stereotypes, name, isReserve, null, priority,
+                    injections, null, null, isAlternative, stereotypes, name, isReserve, isEager, null, priority,
                     typeClosure.unrestrictedTypes(), null);
             for (Injection injection : injections) {
                 injection.init(bean);

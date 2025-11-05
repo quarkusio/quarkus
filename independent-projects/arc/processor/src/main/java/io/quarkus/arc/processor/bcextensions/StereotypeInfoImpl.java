@@ -47,6 +47,11 @@ class StereotypeInfoImpl implements StereotypeInfo {
     }
 
     @Override
+    public boolean isEager() {
+        return arcStereotype.isEager();
+    }
+
+    @Override
     public boolean isNamed() {
         return arcStereotype.isNamed();
     }

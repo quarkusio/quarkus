@@ -58,7 +58,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         super(null, ClassType.create(InterceptFunction.class), null, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Sets.singletonHashSet(Type.create(DotName.OBJECT_NAME, Kind.CLASS)), new HashSet<>(), injections, null,
                 null, false,
-                Collections.emptyList(), null, false, cg -> {
+                Collections.emptyList(), null, false, false, cg -> {
                     BlockCreator b0 = cg.createMethod();
 
                     Expr creator = b0.new_(ConstructorDesc.of(creatorClass));
@@ -85,7 +85,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
             List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
-                null, null, false, Collections.emptyList(), null, false, null, priority, null, null);
+                null, null, false, Collections.emptyList(), null, false, false, null, priority, null, null);
         this.bindings = bindings;
         this.interceptionType = null;
         this.creatorClass = null;

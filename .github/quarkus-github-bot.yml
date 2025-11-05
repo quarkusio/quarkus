@@ -101,7 +101,7 @@ triage:
     - id: jbang
       labels: [area/jbang]
       titleBody: "jbang"
-      notify: [quarkusio/devtools, iocanel]
+      notify: [quarkusio/devtools]
       directories:
         - "**/*JBang*"
         - "**/*jbang*"
@@ -330,7 +330,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand, iocanel]
+      notify: [geoand]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -343,11 +343,11 @@ triage:
     - id: openshift
       labels: [area/kubernetes]
       titleBody: "openshift"
-      notify: [geoand, iocanel]
+      notify: [geoand]
     - id: knative
       labels: [area/kubernetes]
       titleBody: "knative"
-      notify: [geoand, iocanel]
+      notify: [geoand]
     - id: container-image
       labels: [area/container-image]
       expression: |
@@ -468,7 +468,7 @@ triage:
       title: "\\b(cli)\\b"
       directories:
         - devtools/cli/
-      notify: [iocanel,ebullient]
+      notify: [ebullient]
     - id: picocli
       labels: [area/picocli]
       title: "picocli"

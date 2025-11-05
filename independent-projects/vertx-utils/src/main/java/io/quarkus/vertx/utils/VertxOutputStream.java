@@ -229,12 +229,12 @@ public class VertxOutputStream extends OutputStream {
     private record DrainHandler(VertxOutputStream out) implements Handler<Void> {
 
         @Override
-            public void handle(Void event) {
-                synchronized (out.request.connection()) {
-                    if (out.waitingForDrain) {
-                        out.request.connection().notifyAll();
-                    }
+        public void handle(Void event) {
+            synchronized (out.request.connection()) {
+                if (out.waitingForDrain) {
+                    out.request.connection().notifyAll();
                 }
             }
         }
+    }
 }

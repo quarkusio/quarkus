@@ -50,8 +50,8 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getManagedClassNames();
     }
 
-    public Collection<String> getManagedClassesAndPackagedNames() {
-        return descriptor.getManagedClassAndPackagesNames();
+    public Collection<String> getManagedClassNamesOnly() {
+        return descriptor.getManagedClassNamesOnly();
     }
 
     public String getExplicitSqlImportScriptResourceName() {

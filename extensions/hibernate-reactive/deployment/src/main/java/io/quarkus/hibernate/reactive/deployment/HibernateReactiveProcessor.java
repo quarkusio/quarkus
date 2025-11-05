@@ -245,7 +245,7 @@ public final class HibernateReactiveProcessor {
                 jsonMapper);
 
         QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
-        Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassAndPackagesNames());
+        Set<String> entityClassNames = new HashSet<>(reactivePU.getManagedClassNames());
         entityClassNames.retainAll(jpaModel.getEntityClassNames());
 
         //Some constant arguments to the following method:
@@ -367,7 +367,7 @@ public final class HibernateReactiveProcessor {
                 new HibernateReactivePersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
                 new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassAndPackageNames()),
-                new ArrayList<>(model == null ? Collections.emptySet() : model.entityClassNames()),
+                new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassNamesOnly()),
                 new Properties(),
                 true);
 

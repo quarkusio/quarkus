@@ -46,7 +46,7 @@ public abstract class AbstractOidcClientRequestReactiveFilter extends AbstractTo
             requestContext.setProperty(REQUEST_FILTER_KEY, this);
         }
 
-        super.getTokens().subscribe().with(new Consumer<>() {
+        getTokens().subscribe().with(new Consumer<>() {
             @Override
             public void accept(Tokens tokens) {
                 requestContext.getHeaders().putSingle(HttpHeaders.AUTHORIZATION,

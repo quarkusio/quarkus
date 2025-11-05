@@ -8,7 +8,7 @@ import org.eclipse.lsp4j.debug.CompletionsArguments;
 import org.eclipse.lsp4j.debug.CompletionsResponse;
 
 import io.quarkus.qute.debug.agent.DebuggeeAgent;
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.resolvers.ValueResolverRegistry;
 
 /**

@@ -119,6 +119,14 @@ class LiquibaseMongodbProcessor {
                 .fields().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.command.CommandFactory.class.getName(),
+                liquibase.database.LiquibaseTableNamesFactory.class.getName(),
+                liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName())
+                .reason(getClass().getName())
+                .constructors().build());
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.AbstractSQLChange.class.getName(),
                 liquibase.ext.mongodb.change.AbstractMongoChange.class.getName(),
                 liquibase.ext.mongodb.change.CreateCollectionChange.class.getName(),
@@ -127,6 +135,7 @@ class LiquibaseMongodbProcessor {
                 liquibase.ext.mongodb.change.DropIndexChange.class.getName(),
                 liquibase.ext.mongodb.change.InsertManyChange.class.getName(),
                 liquibase.ext.mongodb.change.InsertOneChange.class.getName(),
+                liquibase.ext.mongodb.change.RunCommandChange.class.getName(),
                 liquibase.database.jvm.JdbcConnection.class.getName())
                 .methods().build());
 

@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Optional;
+import java.util.Set;
 
 import io.smallrye.config.WithDefault;
 
@@ -26,9 +27,27 @@ public interface AccessLogConfig {
      * - long: `%r\n%{ALL_REQUEST_HEADERS}`
      * <p>
      * Otherwise, consult the Quarkus documentation for the full list of variables that can be used.
+     *
+     * Note that enabling the `%{ALL_REQUEST_HEADERS}` attribute directly or with a `long` named format introduces a risk
+     * of sensitive header values being logged.
+     * <p>
+     * HTTP `Authorization` header value is always masked. Use the {@link #maskedHeaders()} property to mask other sensitive
+     * headers.
      */
     @WithDefault("common")
     String pattern();
+
+    /**
+     * Set of HTTP headers whose values must be masked when the `%{ALL_REQUEST_HEADERS}` attribute
+     * is enabled with the {@link #pattern()} property.
+     */
+    Optional<Set<String>> maskedHeaders();
+
+    /**
+     * Set of HTTP Cookie headers whose values must be masked when the `%{ALL_REQUEST_HEADERS}` attribute
+     * is enabled with the {@link #pattern()} property.
+     */
+    Optional<Set<String>> maskedCookies();
 
     /**
      * If logging should be done to a separate file.

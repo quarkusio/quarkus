@@ -18,7 +18,6 @@ import org.eclipse.lsp4j.debug.CompletionsArguments;
 import org.eclipse.lsp4j.debug.CompletionsResponse;
 import org.eclipse.lsp4j.debug.ConfigurationDoneArguments;
 import org.eclipse.lsp4j.debug.ContinueArguments;
-import org.eclipse.lsp4j.debug.ContinueResponse;
 import org.eclipse.lsp4j.debug.EvaluateArguments;
 import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
 import org.eclipse.lsp4j.debug.EvaluateResponse;
@@ -148,13 +147,13 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
         initialized.complete(null);
     }
 
-    public CompletableFuture<ContinueResponse> continue_(int threadId) {
+    public void continue_(int threadId) {
         if (debugProtocolServer == null) {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
         ContinueArguments args = new ContinueArguments();
         args.setThreadId(threadId);
-        return debugProtocolServer.continue_(args);
+        getResult(debugProtocolServer.continue_(args));
     }
 
     public void next(int threadId) {
@@ -163,7 +162,7 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
         }
         NextArguments args = new NextArguments();
         args.setThreadId(threadId);
-        debugProtocolServer.next(args);
+        getResult(debugProtocolServer.next(args));
     }
 
     public void stepOut(int threadId) {
@@ -181,7 +180,7 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
         }
         StepInArguments args = new StepInArguments();
         args.setThreadId(threadId);
-        debugProtocolServer.stepIn(args);
+        getResult(debugProtocolServer.stepIn(args));
     }
 
     @Override
@@ -350,7 +349,7 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
 
     private <T> T getResult(CompletableFuture<T> future) {
         try {
-            return future.get(3000, TimeUnit.DAYS);
+            return future.get(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             java.lang.Thread.currentThread().interrupt();
             throw new RuntimeException(e);

@@ -6,7 +6,7 @@ import org.eclipse.lsp4j.debug.Breakpoint;
 import org.eclipse.lsp4j.debug.Source;
 
 import io.quarkus.qute.TemplateNode;
-import io.quarkus.qute.debug.agent.RemoteStackFrame;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 
 /**
  * Represents a remote breakpoint set by the client through the Debug Adapter Protocol (DAP).

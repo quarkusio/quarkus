@@ -1,6 +1,6 @@
 package io.quarkus.qute.debug.agent;
 
-import static io.quarkus.qute.debug.agent.RemoteStackFrame.EMPTY_STACK_FRAMES;
+import static io.quarkus.qute.debug.agent.frames.RemoteStackFrame.EMPTY_STACK_FRAMES;
 import static io.quarkus.qute.debug.agent.scopes.RemoteScope.EMPTY_SCOPES;
 
 import java.net.URI;
@@ -37,6 +37,7 @@ import io.quarkus.qute.debug.agent.breakpoints.BreakpointsRegistry;
 import io.quarkus.qute.debug.agent.breakpoints.RemoteBreakpoint;
 import io.quarkus.qute.debug.agent.completions.CompletionSupport;
 import io.quarkus.qute.debug.agent.evaluations.EvaluationSupport;
+import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.source.SourceReferenceRegistry;
 import io.quarkus.qute.debug.agent.source.SourceTemplateRegistry;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
@@ -177,7 +178,7 @@ public class DebuggeeAgent implements Debugger {
      *
      * @param event the resolve event representing the current node.
      */
-    public void onTemplateNode(ResolveEvent event) {
+    public void onBeforeResolve(ResolveEvent event) {
         if (!isEnabled()) {
             return;
         }
@@ -188,7 +189,15 @@ public class DebuggeeAgent implements Debugger {
         output(args);
 
         RemoteThread debuggee = getOrCreateDebuggeeThread();
-        debuggee.onTemplateNode(event);
+        debuggee.onBeforeResolve(event);
+    }
+
+    public void onAfterResolve(ResolveEvent event) {
+        if (!isEnabled()) {
+            return;
+        }
+        RemoteThread debuggee = getOrCreateDebuggeeThread();
+        debuggee.onAfterResolve(event);
     }
 
     /**

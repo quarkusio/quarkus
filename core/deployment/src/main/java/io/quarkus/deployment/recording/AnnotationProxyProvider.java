@@ -232,7 +232,10 @@ public class AnnotationProxyProvider {
 
         public A build(io.quarkus.gizmo2.ClassOutput classOutput) {
             generatedLiterals.computeIfAbsent(annotationLiteral, generatedName -> {
-                Gizmo.create(classOutput).class_(generatedName, cc -> {
+                Gizmo gizmo = Gizmo.create(classOutput)
+                        .withDebugInfo(false)
+                        .withParameters(false);
+                gizmo.class_(generatedName, cc -> {
                     ClassDesc annotationClassDesc = classDescOf(annotationInstance.name());
                     cc.extends_(GenericType.ofClass(AnnotationLiteral.class, TypeArgument.of(annotationClassDesc)));
                     cc.implements_(annotationClassDesc);

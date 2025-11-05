@@ -48,7 +48,7 @@ Here, the https://hub.docker.com/_/hello-world[`hello-world`] image is used, but
 
 [source,java]
 ----
-@BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public DevServicesResultBuildItem createContainer() {
     DockerImageName dockerImageName = DockerImageName.parse("hello-world");
     GenericContainer container = new GenericContainer<>(dockerImageName)
@@ -118,7 +118,7 @@ For example,
 
 [source,java]
 ----
-@BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public DevServicesResultBuildItem createContainer(MyConfig config) {}
 ----
 

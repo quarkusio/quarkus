@@ -31,6 +31,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.logging.Logger;
 
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
@@ -55,6 +56,8 @@ import io.quarkus.qute.ValueResolver;
  */
 public class ExtensionMethodGenerator extends AbstractGenerator {
 
+    private static final Logger LOG = Logger.getLogger(ExtensionMethodGenerator.class);
+
     public static final DotName TEMPLATE_EXTENSION = DotName.createSimple(TemplateExtension.class.getName());
     public static final DotName TEMPLATE_ATTRIBUTE = DotName.createSimple(TemplateExtension.TemplateAttribute.class.getName());
     public static final String SUFFIX = "_Extension" + ValueResolverGenerator.SUFFIX;
@@ -69,10 +72,6 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
 
     public ExtensionMethodGenerator(IndexView index, ClassOutput classOutput) {
         super(index, classOutput);
-    }
-
-    public Set<String> getGeneratedTypes() {
-        return generatedTypes;
     }
 
     public static void validate(MethodInfo method, String namespace) {
@@ -100,6 +99,8 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
      * @return the fully qualified name of the generated class
      */
     public String generate(MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Integer priority) {
+
+        LOG.debugf("Generating resolver for extension method declared on %s: %s", method.declaringClass(), method);
 
         AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
         List<Type> parameters = method.parameterTypes();
@@ -206,7 +207,11 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
     }
 
     public String generateNamespaceResolver(ClassInfo declaringClass, String namespace, int priority,
-            List<ExtensionMethodInfo> extensionMethods) {
+            List<NamespaceExtensionMethodInfo> extensionMethods) {
+        // Generate namespace resolver for extension methods from a single class with the same priority
+        LOG.debugf("Generating namespace [%s] resolver for extension methods declared on %s with priority %s", namespace,
+                declaringClass, priority);
+
         String baseName;
         if (declaringClass.enclosingClass() != null) {
             baseName = simpleName(declaringClass.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
@@ -223,7 +228,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
 
         gizmo.class_(generatedClassName, cc -> {
             cc.implements_(NamespaceResolver.class);
-            for (ExtensionMethodInfo extensionMethod : extensionMethods) {
+            for (NamespaceExtensionMethodInfo extensionMethod : extensionMethods) {
                 String matchRegex = extensionMethod.matchRegex();
                 if (matchRegex != null && !matchRegex.isEmpty()) {
                     cc.field(PATTERN + "_" + sha1(extensionMethod.method().toString()), fc -> {
@@ -246,17 +251,213 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                 ParamVar evalContext = mc.parameter("ec", EvalContext.class);
 
                 mc.body(bc -> {
+                    // Note that we have to group all extension methods in one resolver because
+                    // it's not allowed to register multiple namespace resolvers for the same namespace with the same priority
+
                     LocalVar name = bc.localVar("name", bc.invokeInterface(Descriptors.GET_NAME, evalContext));
-                    LocalVar paramsCount = bc.localVar("count", bc.invokeInterface(Descriptors.COLLECTION_SIZE,
-                            bc.invokeInterface(Descriptors.GET_PARAMS, evalContext)));
-                    for (ExtensionMethodInfo extensionMethod : extensionMethods) {
-                        String matchRegex = extensionMethod.matchRegex();
-                        FieldDesc patternField = matchRegex != null ? FieldDesc.of(cc.type(),
-                                PATTERN + "_" + sha1(extensionMethod.method().toString()), Pattern.class) : null;
-                        addNamespaceExtensionMethod(cc, bc, evalContext, patternField, extensionMethod.method(),
-                                extensionMethod.matchName(),
-                                extensionMethod.matchNames(), matchRegex, name, paramsCount);
+                    LocalVar params = bc.localVar("params", bc.invokeInterface(Descriptors.GET_PARAMS, evalContext));
+                    LocalVar paramsCount = bc.localVar("paramsCount",
+                            bc.invokeInterface(Descriptors.COLLECTION_SIZE, params));
+
+                    // First group extension methods by number of _evaluated_ params, e.g.:
+                    // 0 -> [ping(), pong()]
+                    // 1 -> [ping(int a), ping(String name), pong(boolean val)]
+                    Map<Integer, List<NamespaceExtensionMethodInfo>> byNumberOfParams = new HashMap<>();
+                    Map<Integer, List<NamespaceExtensionMethodInfo>> varargsByMinParams = new HashMap<>();
+                    for (NamespaceExtensionMethodInfo em : extensionMethods) {
+                        int count = em.params().evaluated().size();
+                        List<NamespaceExtensionMethodInfo> matching = byNumberOfParams.get(count);
+                        if (matching == null) {
+                            matching = new ArrayList<>();
+                            byNumberOfParams.put(count, matching);
+                        }
+                        matching.add(em);
+                        if (ValueResolverGenerator.isVarArgs(em.method())) {
+                            int minCount = count - 1;
+                            matching = varargsByMinParams.get(minCount);
+                            if (matching == null) {
+                                matching = new ArrayList<>();
+                                varargsByMinParams.put(minCount, matching);
+                            }
+                            matching.add(em);
+                        }
                     }
+                    for (Map.Entry<Integer, List<NamespaceExtensionMethodInfo>> e : byNumberOfParams.entrySet()) {
+                        // For example, ping(int... a) should be also included for entry with 2 params
+                        varargsByMinParams.entrySet().stream()
+                                .filter(ve -> e.getKey() >= ve.getKey())
+                                .forEach(ve -> e.getValue().addAll(ve.getValue()));
+                    }
+
+                    for (Map.Entry<Integer, List<NamespaceExtensionMethodInfo>> e : byNumberOfParams.entrySet()) {
+                        // Then group extension methods by matching names
+                        // "ping" -> [ping(int a), ping(String name)]
+                        // Keep in mind that extension methods may have a special name matching config,
+                        // e.g. TemplateExtension#matchNames()
+                        Map<String, List<NamespaceExtensionMethodInfo>> matchingName = new HashMap<>();
+                        Map<Set<String>, List<NamespaceExtensionMethodInfo>> matchingNames = new HashMap<>();
+                        int numberOfParams = e.getKey();
+                        List<NamespaceExtensionMethodInfo> extensionMethodForParams = e.getValue();
+
+                        for (NamespaceExtensionMethodInfo em : extensionMethodForParams) {
+                            if (em.matchesName()) {
+                                List<NamespaceExtensionMethodInfo> matching = matchingName.get(em.matchName());
+                                if (matching == null) {
+                                    matching = new ArrayList<>();
+                                    matchingName.put(em.matchName(), matching);
+                                }
+                                matching.add(em);
+                            } else if (em.matchesNames()) {
+                                List<NamespaceExtensionMethodInfo> matching = matchingNames.get(em.matchNames());
+                                if (matching == null) {
+                                    matching = new ArrayList<>();
+                                    matchingNames.put(em.matchNames(), matching);
+                                }
+                                matching.add(em);
+                            }
+                        }
+                        for (Map.Entry<String, List<NamespaceExtensionMethodInfo>> mne : matchingName.entrySet()) {
+                            // Add extension methods with TemplateExtension#matchNames() and TemplateExtension#matchRegex()
+                            // that also match the given name
+                            for (NamespaceExtensionMethodInfo em : extensionMethodForParams) {
+                                if (em.alsoMatches(mne.getKey())) {
+                                    mne.getValue().add(em);
+                                }
+                            }
+                        }
+                        for (Map.Entry<Set<String>, List<NamespaceExtensionMethodInfo>> mne : matchingNames.entrySet()) {
+                            // Add extension methods with TemplateExtension#matchRegex()
+                            // that also match the given names
+                            for (NamespaceExtensionMethodInfo em : extensionMethodForParams) {
+                                if (em.alsoMatches(mne.getKey())) {
+                                    mne.getValue().add(em);
+                                }
+                            }
+                        }
+
+                        // First handle all methods matching the same number of params and the _same name_
+                        // This includes extension methods with TemplateExtension#matchNames() and TemplateExtension#matchRegex()
+                        for (Map.Entry<String, List<NamespaceExtensionMethodInfo>> mne : matchingName.entrySet()) {
+                            String matchName = mne.getKey();
+                            boolean matchAny = matchName.equals(TemplateExtension.ANY);
+
+                            bc.block(nested -> {
+                                // Test name
+                                if (!matchAny) {
+                                    nested.ifNot(nested.objEquals(name, Const.of(matchName)),
+                                            notMatching -> notMatching.break_(nested));
+                                }
+                                // Test number of evaluated params
+                                nested.if_(nested.ne(paramsCount, Const.of(numberOfParams)),
+                                        notEqual -> notEqual.break_(nested));
+
+                                List<NamespaceExtensionMethodInfo> methods = mne.getValue();
+                                if (numberOfParams == 0) {
+                                    // No params -> there must be exactly one extension method
+                                    if (methods.size() > 1) {
+                                        throw new IllegalStateException(
+                                                "Multiple extension methods match 0 params and the name %s: %s. Specify priorities to avoid this problem."
+                                                        .formatted(matchName, methods));
+                                    }
+                                    nested.return_(doInvokeNoParams(nested, name, evalContext, methods.get(0)));
+                                } else {
+                                    evaluateAndInvoke(nested, evalContext, name, methods);
+                                }
+                            });
+                        }
+
+                        // Then handle all methods matching the same number of params and the _same names_
+                        for (Map.Entry<Set<String>, List<NamespaceExtensionMethodInfo>> mne : matchingNames.entrySet()) {
+                            Set<String> matchNames = mne.getKey();
+
+                            bc.block(nested -> {
+                                // Test that any of the names matches
+                                nested.block(nested2 -> {
+                                    for (String matchName : matchNames) {
+                                        nested2.if_(nested2.objEquals(name, Const.of(matchName)),
+                                                namesMatch -> namesMatch.break_(nested2));
+                                    }
+                                    nested2.break_(nested);
+                                });
+                                // Test number of evaluated params
+                                nested.if_(nested.ne(paramsCount, Const.of(numberOfParams)),
+                                        notEqual -> notEqual.break_(nested));
+
+                                List<NamespaceExtensionMethodInfo> methods = mne.getValue();
+                                if (numberOfParams == 0) {
+                                    // No params -> there must be exactly one extension method
+                                    if (methods.size() > 1) {
+                                        throw new IllegalStateException(
+                                                "Multiple extension methods match 0 params and the names %s: %s. Specify priorities to avoid this problem."
+                                                        .formatted(matchNames, methods));
+                                    }
+                                    nested.return_(doInvokeNoParams(nested, name, evalContext, methods.get(0)));
+                                } else {
+                                    evaluateAndInvoke(nested, evalContext, name, methods);
+                                }
+                            });
+                        }
+
+                        // Next handle all matchRegex methods
+                        for (NamespaceExtensionMethodInfo em : extensionMethodForParams) {
+                            if (em.matchesRegex()) {
+                                bc.block(nested -> {
+                                    // Test regexp
+                                    FieldDesc patternField = FieldDesc.of(cc.type(),
+                                            PATTERN + "_" + sha1(em.method().toString()), Pattern.class);
+                                    Expr pattern = cc.this_().field(patternField);
+                                    Expr matcher = nested.invokeVirtual(Descriptors.PATTERN_MATCHER, pattern, name);
+                                    nested.ifNot(nested.invokeVirtual(Descriptors.MATCHER_MATCHES, matcher),
+                                            notMatching -> notMatching.break_(nested));
+                                    // Test number of evaluated params
+                                    nested.if_(nested.ne(paramsCount, Const.of(e.getKey())),
+                                            notEqual -> notEqual.break_(nested));
+                                    evaluateAndInvoke(nested, evalContext, name, List.of(em));
+                                });
+                            }
+                        }
+
+                    }
+
+                    // Finally handle varargs methods
+                    // For varargs methods we need to match name and any number of params
+                    for (Map.Entry<Integer, List<NamespaceExtensionMethodInfo>> e : varargsByMinParams.entrySet()) {
+                        for (NamespaceExtensionMethodInfo em : e.getValue()) {
+                            bc.block(nested -> {
+                                // Test number of evaluated params >= min params
+                                nested.if_(nested.lt(paramsCount, Const.of(e.getKey())), notGe -> notGe.break_(nested));
+                                if (em.matchesRegex()) {
+                                    // Test regexp
+                                    FieldDesc patternField = FieldDesc.of(cc.type(),
+                                            PATTERN + "_" + sha1(em.method().toString()), Pattern.class);
+                                    Expr pattern = cc.this_().field(patternField);
+                                    Expr matcher = nested.invokeVirtual(Descriptors.PATTERN_MATCHER, pattern, name);
+                                    nested.ifNot(nested.invokeVirtual(Descriptors.MATCHER_MATCHES, matcher),
+                                            notMatching -> notMatching.break_(nested));
+                                } else if (em.matchesNames()) {
+                                    // Test that any of the names matches
+                                    nested.block(nested2 -> {
+                                        for (String matchName : em.matchNames()) {
+                                            nested2.if_(nested2.objEquals(name, Const.of(matchName)),
+                                                    namesMatch -> namesMatch.break_(nested2));
+                                        }
+                                        nested2.break_(nested);
+                                    });
+                                } else {
+                                    String matchName = em.matchName();
+                                    boolean matchAny = matchName.equals(TemplateExtension.ANY);
+                                    // Test name
+                                    if (!matchAny) {
+                                        nested.ifNot(nested.objEquals(name, Const.of(matchName)),
+                                                notMatching -> notMatching.break_(nested));
+                                    }
+                                }
+                                evaluateAndInvoke(nested, evalContext, name, List.of(em));
+                            });
+                        }
+
+                    }
+
                     bc.return_(bc.invokeStatic(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
                 });
             });
@@ -264,157 +465,208 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
         return generatedClassName;
     }
 
-    private void addNamespaceExtensionMethod(ClassCreator namespaceResolver, BlockCreator resolve, ParamVar evalContext,
-            FieldDesc patternField,
-            MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Var name, Var paramsCount) {
-        boolean isNameParamRequired = patternField != null || !matchNames.isEmpty()
-                || matchName.equals(TemplateExtension.ANY);
-        Parameters params = new Parameters(method, isNameParamRequired, true);
-        boolean matchAny = patternField == null && matchNames.isEmpty() && matchName.equals(TemplateExtension.ANY);
-        boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-
-        resolve.block(nested -> {
-            // Test property name
-            if (!matchAny) {
-                if (patternField != null) {
-                    Expr pattern = namespaceResolver.this_().field(patternField);
-                    Expr matcher = nested.invokeVirtual(Descriptors.PATTERN_MATCHER, pattern, name);
-                    nested.ifNot(nested.invokeVirtual(Descriptors.MATCHER_MATCHES, matcher),
-                            notMatching -> notMatching.break_(nested));
-
-                } else if (!matchNames.isEmpty()) {
-                    // Any of the name matches
-                    nested.block(namesMatch -> {
-                        for (String match : matchNames) {
-                            namesMatch.if_(namesMatch.objEquals(name, Const.of(match)),
-                                    matching -> matching.break_(namesMatch));
-                        }
-                        namesMatch.break_(nested);
-                    });
-
-                } else {
-                    nested.ifNot(nested.objEquals(name, Const.of(matchName)), matching -> matching.break_(nested));
-                }
-            }
-            // Test number of parameters
-            int realParamSize = params.evaluated().size();
-            if (!isVarArgs || realParamSize > 1) {
-                if (isVarArgs) {
-                    // For varargs methods match the minimal number of params
-                    nested.if_(nested.le(paramsCount, Const.of(realParamSize - 1)), lessEqual -> lessEqual.break_(nested));
-                } else {
-                    // https://github.com/quarkusio/gizmo/issues/467
-                    // workaround: use the constant as the second argument
-                    nested.if_(nested.ne(paramsCount, Const.of(realParamSize)), notEqual -> notEqual.break_(nested));
-                }
-            }
-
-            if (!params.needsEvaluation()) {
-                Expr[] args = new Expr[params.size()];
-                for (int i = 0; i < params.size(); i++) {
-                    Param param = params.get(i);
+    private void doInvoke(BlockCreator bc, Var capturedRet, Var capturedName, Var capturedEvalContext,
+            Var capturedEvaluatedParams, ParamVar result,
+            NamespaceExtensionMethodInfo em) {
+        LocalVar invokeRet = bc.localVar("ret", Const.ofNull(Object.class));
+        List<Type> parameterTypes = em.params().parameterTypes();
+        bc.try_(tc -> {
+            tc.body(tcb -> {
+                Expr[] args = new Expr[parameterTypes.size()];
+                // Collect the params
+                int evalIdx = 0;
+                int lastIdx = parameterTypes.size() - 1;
+                for (int i = 0; i < parameterTypes.size(); i++) {
+                    Param param = em.params().get(i);
                     if (param.kind == ParamKind.NAME) {
-                        args[i] = name;
+                        args[i] = capturedName;
                     } else if (param.kind == ParamKind.ATTR) {
-                        args[i] = nested.invokeInterface(Descriptors.GET_ATTRIBUTE, evalContext,
+                        args[i] = tcb.invokeInterface(Descriptors.GET_ATTRIBUTE, capturedEvalContext,
                                 Const.of(param.name));
+                    } else {
+                        if (ValueResolverGenerator.isVarArgs(em.method()) && i == lastIdx) {
+                            // Last param is varargs
+                            Type varargsParam = em.params().get(lastIdx).type;
+                            Expr componentType = Const
+                                    .of(classDescOf(varargsParam.asArrayType().constituent().name()));
+                            Expr varargsResults = tcb.invokeVirtual(
+                                    Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
+                                    capturedEvaluatedParams, Const.of(em.params().evaluated().size()), componentType);
+                            args[i] = varargsResults;
+                        } else {
+                            args[i] = tcb.invokeVirtual(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                    capturedEvaluatedParams, Const.of(evalIdx++));
+                        }
                     }
                 }
-                nested.return_(nested.invokeStatic(Descriptors.COMPLETED_STAGE_OF,
-                        nested.invokeStatic(methodDescOf(method), args)));
-            } else {
-                LocalVar ret = nested.localVar("ret", nested.new_(CompletableFuture.class));
-                // Evaluate params first
-                // The CompletionStage upon which we invoke whenComplete()
-                LocalVar evaluatedParams = nested.localVar("evaluatedParams",
-                        nested.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE,
-                                evalContext));
-                Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
 
-                // Function that is called when params are evaluated
-                Expr whenCompleteFun = nested.lambda(BiConsumer.class, lc -> {
-                    Var capturedName = isNameParamRequired ? lc.capture(name) : null;
-                    Var capturedRet = lc.capture(ret);
-                    Var capturedEvaluatedParams = lc.capture(evaluatedParams);
-                    Var capturedEvalContext = lc.capture(evalContext);
-                    @SuppressWarnings("unused")
-                    ParamVar result = lc.parameter("r", 0);
-                    ParamVar throwable = lc.parameter("t", 1);
+                // Now call the method
+                tcb.set(invokeRet, tcb.invokeStatic(methodDescOf(em.method()), args));
 
-                    lc.body(accept -> {
-                        accept.ifElse(accept.isNull(throwable), success -> {
-                            // Check type parameters and return NO_RESULT if failed
-                            List<Param> evaluated = params.evaluated();
-                            LocalVar paramTypes = success.localVar("pt", success.newArray(Class.class, evaluated.stream()
-                                    .map(p -> Const.of(classDescOf(p.type)))
-                                    .toList()));
-                            success.ifNot(success.invokeVirtual(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
-                                    capturedEvaluatedParams, Const.of(isVarArgs), paramTypes),
-                                    typeMatchFailed -> {
-                                        typeMatchFailed.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
-                                                typeMatchFailed.invokeStatic(Descriptors.NOT_FOUND_FROM_EC,
-                                                        capturedEvalContext));
-                                        typeMatchFailed.return_();
-                                    });
-
-                            // try-catch
-                            success.try_(tc -> {
-
-                                tc.body(tcb -> {
-
-                                    // Collect the params
-                                    Expr[] args = new Expr[params.size()];
-                                    int evalIdx = 0;
-                                    int lastIdx = params.size() - 1;
-                                    for (int i = 0; i < params.size(); i++) {
-                                        Param param = params.get(i);
-                                        if (param.kind == ParamKind.NAME) {
-                                            args[i] = capturedName;
-                                        } else if (param.kind == ParamKind.ATTR) {
-                                            args[i] = tcb.invokeInterface(Descriptors.GET_ATTRIBUTE, capturedEvalContext,
-                                                    Const.of(param.name));
-                                        } else {
-                                            if (isVarArgs && i == lastIdx) {
-                                                // Last param is varargs
-                                                Type varargsParam = params.get(lastIdx).type;
-                                                Expr componentType = Const
-                                                        .of(classDescOf(varargsParam.asArrayType().elementType()));
-                                                Expr varargsResults = tcb.invokeVirtual(
-                                                        Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
-                                                        capturedEvaluatedParams, Const.of(evaluated.size()), componentType);
-                                                args[i] = varargsResults;
-                                            } else {
-                                                args[i] = tcb.invokeVirtual(Descriptors.EVALUATED_PARAMS_GET_RESULT,
-                                                        capturedEvaluatedParams, Const.of(evalIdx++));
-                                            }
-                                        }
-                                    }
-                                    // Invoke the extension method
-                                    Expr invokeRet = tcb.invokeStatic(methodDescOf(method), args);
-                                    tcb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet, invokeRet);
-                                });
-
-                                tc.catch_(Throwable.class, "e", (cb, e) -> {
-                                    cb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, capturedRet, e);
-                                });
+                if (hasCompletionStage(em.method().returnType())) {
+                    Expr fun2 = tcb.lambda(BiConsumer.class, lc2 -> {
+                        Var capturedRet2 = lc2.capture(capturedRet);
+                        ParamVar result2 = lc2.parameter("r", 0);
+                        ParamVar throwable2 = lc2.parameter("t", 1);
+                        lc2.body(whenComplete2 -> {
+                            whenComplete2.ifNull(throwable2, success2 -> {
+                                success2.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE,
+                                        capturedRet2,
+                                        result2);
+                                success2.return_();
                             });
-                        },
-                                failure -> {
-                                    failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
-                                            capturedRet,
-                                            throwable);
-                                });
-                        accept.return_();
+                            whenComplete2.invokeVirtual(
+                                    Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                    capturedRet2,
+                                    throwable2);
+                            whenComplete2.return_();
+                        });
                     });
-
-                });
-                nested.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun);
-                nested.return_(ret);
-            }
+                    tcb.invokeInterface(Descriptors.CF_WHEN_COMPLETE, invokeRet, fun2);
+                } else {
+                    tcb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                            invokeRet);
+                }
+            });
+            tc.catch_(Throwable.class, "t", (cb, e) -> {
+                cb.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                        capturedRet, e);
+            });
         });
     }
 
-    public record ExtensionMethodInfo(MethodInfo method, String matchName, List<String> matchNames, String matchRegex) {
+    Expr doInvokeNoParams(BlockCreator bc, Var name, Var evalContext, NamespaceExtensionMethodInfo em) {
+        Parameters p = em.params();
+        // No parameter needs to be evaluated
+        Expr[] args = new Expr[p.size()];
+        for (int i = 0; i < p.size(); i++) {
+            Param param = p.get(i);
+            if (param.kind == ParamKind.NAME) {
+                args[i] = name;
+            } else if (param.kind == ParamKind.ATTR) {
+                args[i] = bc.invokeInterface(Descriptors.GET_ATTRIBUTE, evalContext,
+                        Const.of(param.name));
+            } else {
+                if (ValueResolverGenerator.isVarArgs(em.method())) {
+                    // Last param is varargs
+                    Type varargsParam = em.params().getFirst(ParamKind.EVAL).type;
+                    args[i] = bc.newArray(classDescOf(varargsParam.asArrayType().constituent().name()));
+                }
+            }
+        }
+        MethodInfo method = em.method();
+        Expr result = bc.invokeStatic(methodDescOf(method), args);
+        if (hasCompletionStage(method.returnType())) {
+            return result;
+        } else {
+            return bc.invokeStatic(Descriptors.COMPLETED_STAGE_OF, result);
+        }
+    }
+
+    void evaluateAndInvoke(BlockCreator nested, Var evalContext, Var name, List<NamespaceExtensionMethodInfo> methods) {
+        LocalVar ret = nested.localVar("ret", nested.new_(CompletableFuture.class));
+        // We need to evaluate the params first
+        LocalVar evaluatedParams = nested.localVar("evaluatedParams",
+                nested.invokeStatic(Descriptors.EVALUATED_PARAMS_EVALUATE,
+                        evalContext));
+        Expr paramsReady = evaluatedParams.field(Descriptors.EVALUATED_PARAMS_STAGE);
+        // Function that is called when params are evaluated
+        Expr whenCompleteFun = nested.lambda(BiConsumer.class, lc -> {
+            Var capturedRet = lc.capture(ret);
+            Var capturedName = lc.capture(name);
+            Var capturedEvaluatedParams = lc.capture(evaluatedParams);
+            Var capturedEvalContext = lc.capture(evalContext);
+            ParamVar result = lc.parameter("r", 0);
+            ParamVar throwable = lc.parameter("t", 1);
+
+            lc.body(accept -> {
+                accept.ifElse(accept.isNull(throwable), success -> {
+
+                    for (NamespaceExtensionMethodInfo em : methods) {
+                        success.block(nested2 -> {
+                            // Try to match parameter types
+                            LocalVar paramTypesArray = nested2.localVar("pt",
+                                    nested2.newArray(Class.class, em.params()
+                                            .evaluated()
+                                            .stream()
+                                            .map(p -> Const.of(classDescOf(p.type)))
+                                            .toList()));
+                            nested2.ifNot(
+                                    nested2.invokeVirtual(
+                                            Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
+                                            capturedEvaluatedParams,
+                                            Const.of(ValueResolverGenerator.isVarArgs(em.method())),
+                                            paramTypesArray),
+                                    notMatched -> notMatched.break_(nested2));
+
+                            // Parameters matched
+                            doInvoke(nested2, capturedRet, capturedName, capturedEvalContext,
+                                    capturedEvaluatedParams, result,
+                                    em);
+                            nested2.return_();
+                        });
+                    }
+
+                    // No method matches - result not found
+                    success.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE, capturedRet,
+                            success.invokeStatic(Descriptors.NOT_FOUND_FROM_EC,
+                                    capturedEvalContext));
+                    success.return_();
+
+                }, failure -> {
+                    failure.invokeVirtual(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                            capturedRet,
+                            throwable);
+                });
+                accept.return_();
+            });
+        });
+
+        nested.invokeInterface(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun);
+        nested.return_(ret);
+    }
+
+    public record NamespaceExtensionMethodInfo(MethodInfo method, String matchName, Set<String> matchNames, String matchRegex,
+            Parameters params) {
+
+        boolean matchesName() {
+            return matchRegex == null && matchNames.isEmpty();
+        }
+
+        boolean matchesNames() {
+            return matchRegex == null && !matchNames.isEmpty();
+        }
+
+        boolean matchesRegex() {
+            return matchRegex != null;
+        }
+
+        boolean alsoMatches(String name) {
+            if (matchRegex != null) {
+                return Pattern.matches(matchRegex, name);
+            } else if (!matchNames.isEmpty()) {
+                return matchNames.contains(name);
+            }
+            return false;
+        }
+
+        boolean alsoMatches(Set<String> names) {
+            if (matchRegex != null) {
+                Pattern p = Pattern.compile(matchRegex);
+                for (String name : names) {
+                    if (!p.matcher(name).matches()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "NamespaceExtensionMethodInfo [declaringClass=" + method.declaringClass() + ", method=" + method + "]";
+        }
 
     }
 
@@ -679,9 +931,11 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
 
     public static final class Parameters implements Iterable<Param> {
 
+        final boolean isNameParameterRequired;
         final List<Param> params;
 
         public Parameters(MethodInfo method, boolean isNameParameterRequired, boolean hasNamespace) {
+            this.isNameParameterRequired = isNameParameterRequired;
             List<Type> parameters = method.parameterTypes();
             Map<Integer, String> attributeParamNames = new HashMap<>();
             for (AnnotationInstance annotation : method.annotations()) {
@@ -747,6 +1001,10 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                                     + " must be of type java.lang.Object: " + method);
                 }
             }
+        }
+
+        public List<Type> parameterTypes() {
+            return params.stream().map(p -> p.type).toList();
         }
 
         public String[] parameterTypesAsStringArray() {

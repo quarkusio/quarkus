@@ -73,7 +73,6 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.ComputingCache;
-import io.quarkus.arc.impl.Identified;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -146,11 +145,6 @@ public final class DotNames {
     public static final DotName LIST = create(List.class);
     public static final DotName ALL = create(All.class);
     public static final DotName SPECIALIZES = create(Specializes.class);
-    /**
-     * @see Identified
-     */
-    @Deprecated(forRemoval = true, since = "3.26")
-    public static final DotName IDENTIFIED = create(Identified.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);

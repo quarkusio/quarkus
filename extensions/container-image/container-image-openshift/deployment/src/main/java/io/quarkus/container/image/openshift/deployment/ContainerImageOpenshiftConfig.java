@@ -29,6 +29,9 @@ public interface ContainerImageOpenshiftConfig {
     public static final String FALLBACK_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
+        if (version.isJava25OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+            return ContainerImages.S2I_JAVA_25;
+        }
         if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return ContainerImages.S2I_JAVA_21;
         }

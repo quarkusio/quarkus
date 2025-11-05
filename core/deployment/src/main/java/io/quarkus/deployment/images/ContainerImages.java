@@ -1,6 +1,7 @@
 package io.quarkus.deployment.images;
 
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem.JavaVersion.Status;
 
 /**
  * This class is used to define the container images that are used by Quarkus.
@@ -33,12 +34,12 @@ public class ContainerImages {
     /**
      * Version used for more UBI9 Java images.
      */
-    public static final String UBI9_JAVA_VERSION = "1.23";
+    public static final String UBI9_JAVA_VERSION = "1.24";
 
     /**
      * Version uses for the native builder image.
      */
-    public static final String NATIVE_BUILDER_VERSION = "jdk-21";
+    public static final String NATIVE_BUILDER_VERSION = "jdk-25";
 
     // === Runtime images for containers (native)
 
@@ -89,6 +90,11 @@ public class ContainerImages {
     public static final String UBI9_JAVA_21_VERSION = UBI9_JAVA_VERSION;
     public static final String UBI9_JAVA_21 = UBI9_JAVA_21_IMAGE_NAME + ":" + UBI9_JAVA_21_VERSION;
 
+    // UBI 9 OpenJDK 25 Runtime - https://catalog.redhat.com/en/software/containers/ubi9/openjdk-25-runtime/69204990c46419100ce30a5b
+    public static final String UBI9_JAVA_25_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-25-runtime";
+    public static final String UBI9_JAVA_25_VERSION = UBI9_JAVA_VERSION;
+    public static final String UBI9_JAVA_25 = UBI9_JAVA_25_IMAGE_NAME + ":" + UBI9_JAVA_25_VERSION;
+
     // === Source To Image images
 
     // UBI 8 Quarkus Binary Source To Image - https://quay.io/repository/quarkus/ubi-quarkus-native-binary-s2i?tab=tags
@@ -118,6 +124,11 @@ public class ContainerImages {
     public static final String S2I_JAVA_21_VERSION = UBI9_JAVA_VERSION;
     public static final String S2I_JAVA_21 = S2I_JAVA_21_IMAGE_NAME + ":" + S2I_JAVA_21_VERSION;
 
+    // Java Source To Image - https://catalog.redhat.com/en/software/containers/ubi9/openjdk-25/69204893fc0d23c633bf5c29
+    public static final String S2I_JAVA_25_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-25";
+    public static final String S2I_JAVA_25_VERSION = UBI9_JAVA_VERSION;
+    public static final String S2I_JAVA_25 = S2I_JAVA_25_IMAGE_NAME + ":" + S2I_JAVA_25_VERSION;
+
     // === Native Builder images
 
     // Mandrel Builder Image - https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags
@@ -141,11 +152,14 @@ public class ContainerImages {
     public static final String UBI9_GRAALVM_BUILDER = UBI9_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI9_GRAALVM_BUILDER_VERSION;
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
-        switch (version.isJava21OrHigher()) {
-            case TRUE:
-                return UBI9_JAVA_21;
-            default:
-                return UBI9_JAVA_17;
+        if (version.isJava25OrHigher() == Status.TRUE) {
+            return UBI9_JAVA_25;
         }
+
+        if (version.isJava21OrHigher() == Status.TRUE) {
+            return UBI9_JAVA_21;
+        }
+
+        return UBI9_JAVA_17;
     }
 }

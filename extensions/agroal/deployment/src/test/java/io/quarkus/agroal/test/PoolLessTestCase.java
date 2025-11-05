@@ -17,7 +17,7 @@ public class PoolLessTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("base.properties")
-            .overrideConfigKey("quarkus.datasource.jdbc.enable-metrics", "true")
+            .overrideConfigKey("quarkus.datasource.jdbc.metrics.enabled", "true")
             .overrideConfigKey("quarkus.datasource.jdbc.pooling-enabled", "false");
 
     @Inject

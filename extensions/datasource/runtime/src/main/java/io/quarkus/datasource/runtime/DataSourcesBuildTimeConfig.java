@@ -37,11 +37,12 @@ public interface DataSourcesBuildTimeConfig {
     boolean healthEnabled();
 
     /**
-     * Whether or not datasource metrics are published in case a metrics extension is present.
+     * Whether datasource metrics are published in case a metrics extension is present.
      * <p>
      * This is a global setting and is not specific to a datasource.
      * <p>
-     * NOTE: This is different from the "jdbc.enable-metrics" property that needs to be set on the JDBC datasource level to
+     * NOTE: This is different from the <code>quarkus.datasource."datasource name".jdbc.metrics.enabled</code> property that
+     * needs to be set on the JDBC datasource level to
      * enable collection of metrics for that datasource.
      */
     @WithName("metrics.enabled")

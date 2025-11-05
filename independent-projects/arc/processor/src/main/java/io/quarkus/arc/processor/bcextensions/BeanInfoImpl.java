@@ -115,6 +115,11 @@ class BeanInfoImpl implements BeanInfo {
     }
 
     @Override
+    public boolean isEager() {
+        return arcBeanInfo.isEager();
+    }
+
+    @Override
     public String name() {
         return arcBeanInfo.getName();
     }

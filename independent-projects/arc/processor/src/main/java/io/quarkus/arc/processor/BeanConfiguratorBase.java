@@ -54,6 +54,9 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected Boolean reserve;
     protected final List<StereotypeInfo> stereotypes;
     protected String name;
+    // this is for CDI `@Eager`, while `startupPriority` is for ArC `@Startup`
+    // they are intentionally disconnected, because expressing one in terms of the other would be needlessly complex
+    protected Boolean eager;
     protected Consumer<CreateGeneration> creatorConsumer;
     protected Consumer<DestroyGeneration> destroyerConsumer;
     protected boolean removable;
@@ -62,6 +65,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected String targetPackageName;
     protected Integer priority;
     protected final Set<TypeAndQualifiers> injectionPoints;
+    // see `eager`
     protected Integer startupPriority;
     protected InterceptionProxyInfo interceptionProxy;
     protected Consumer<CheckActiveGeneration> checkActiveConsumer;
@@ -110,6 +114,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         injectionPoints.clear();
         injectionPoints.addAll(base.injectionPoints);
         startupPriority = base.startupPriority;
+        eager = base.eager;
         interceptionProxy = base.interceptionProxy;
         checkActiveConsumer = base.checkActiveConsumer;
         return self();
@@ -381,6 +386,22 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      */
     public THIS startup() {
         return startup(ObserverMethod.DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @param eager whether this bean should be eagerly initialized
+     * @return self
+     */
+    public THIS eager(boolean eager) {
+        this.eager = eager;
+        return eager ? unremovable() : self();
     }
 
     /**

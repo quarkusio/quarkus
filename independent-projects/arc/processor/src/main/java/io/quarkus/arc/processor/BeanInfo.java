@@ -86,6 +86,10 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final boolean reserve;
 
+    // this is for CDI `@Eager`, while `startupPriority` is for ArC `@Startup`
+    // they are intentionally disconnected, because expressing one in terms of the other would be needlessly complex
+    private final boolean eager;
+
     private final List<MethodInfo> aroundInvokes;
 
     private final List<MethodInfo> postConstructCallbacks;
@@ -108,6 +112,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String targetPackageName;
 
+    // see `eager`
     private final Integer startupPriority;
 
     // used to create the implementation of `InjectableBean.checkActive()`,
@@ -116,16 +121,18 @@ public class BeanInfo implements InjectionTargetInfo {
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
-            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve, String targetPackageName,
-            Integer priority, Set<Type> unrestrictedTypes, InterceptionProxyInfo interceptionProxy) {
+            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve, boolean isEager,
+            String targetPackageName, Integer priority, Set<Type> unrestrictedTypes,
+            InterceptionProxyInfo interceptionProxy) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
-                alternative, stereotypes, name, isReserve, null, null, Collections.emptyMap(), true, false,
+                alternative, stereotypes, name, isReserve, isEager, null, null, Collections.emptyMap(), true, false,
                 targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
             Set<Type> types, Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean,
             DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve,
+            boolean isEager,
             Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer,
             Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer,
             Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass, String targetPackageName,
@@ -163,6 +170,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.stereotypes = Unique.stereotypes(stereotypes);
         this.name = name;
         this.reserve = isReserve;
+        this.eager = isEager;
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.removable = isRemovable;
@@ -604,6 +612,10 @@ public class BeanInfo implements InjectionTargetInfo {
     @Deprecated(forRemoval = true, since = "4.0")
     public boolean isDefaultBean() {
         return reserve;
+    }
+
+    public boolean isEager() {
+        return eager;
     }
 
     public OptionalInt getStartupPriority() {
@@ -1192,6 +1204,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private boolean reserve;
 
+        private boolean eager;
+
         private Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer;
 
         private Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer;
@@ -1305,6 +1319,11 @@ public class BeanInfo implements InjectionTargetInfo {
             return reserve(isDefaultBean);
         }
 
+        Builder eager(boolean value) {
+            this.eager = value;
+            return this;
+        }
+
         Builder startupPriority(Integer value) {
             this.startupPriority = value;
             return this;
@@ -1347,7 +1366,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
-                    declaringBean, disposer, alternative, stereotypes, name, reserve, creatorConsumer,
+                    declaringBean, disposer, alternative, stereotypes, name, reserve, eager, creatorConsumer,
                     destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
                     identifier, null, startupPriority, interceptionProxy, checkActiveConsumer);
         }

@@ -9,6 +9,9 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isIn
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.isOutboundConnector;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.produceIncomingChannel;
 import static io.quarkus.smallrye.reactivemessaging.deployment.WiringHelper.produceOutgoingChannel;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelIncomingPropertyName;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelOutgoingPropertyName;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelPropertyName;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -215,10 +218,10 @@ public class WiringProcessor {
         }
         if (outgoing != null) {
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.outgoing." + outgoing.value().asString() + ".tls-configuration-name", null,
+                    getChannelOutgoingPropertyName(outgoing.value().asString(), "tls-configuration-name"), null,
                     "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", null,
+                    getChannelOutgoingPropertyName(outgoing.value().asString(), "connector"), null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
 
             produceOutgoingChannel(appChannels, outgoing.value().asString());
@@ -236,10 +239,10 @@ public class WiringProcessor {
                             new DeploymentException("Empty @Outgoing annotation on method " + method)));
                 }
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                        "mp.messaging.outgoing." + instance.value().asString() + ".tls-configuration-name", null,
+                        getChannelOutgoingPropertyName(instance.value().asString(), "tls-configuration-name"), null,
                         "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                        "mp.messaging.outgoing." + instance.value().asString() + ".connector", null,
+                        getChannelOutgoingPropertyName(instance.value().asString(), "connector"), null,
                         "The connector to use", null, null, ConfigPhase.BUILD_TIME));
                 produceOutgoingChannel(appChannels, instance.value().asString());
             }
@@ -257,10 +260,10 @@ public class WiringProcessor {
                             new DeploymentException("Empty @Incoming annotation on method " + method)));
                 }
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                        "mp.messaging.incoming." + instance.value().asString() + ".tls-configuration-name", null,
+                        getChannelIncomingPropertyName(instance.value().asString(), "tls-configuration-name"), null,
                         "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                        "mp.messaging.incoming." + instance.value().asString() + ".connector", null,
+                        getChannelIncomingPropertyName(instance.value().asString(), "connector"), null,
                         "The connector to use", null, null, ConfigPhase.BUILD_TIME));
                 produceIncomingChannel(appChannels, instance.value().asString());
             }
@@ -277,10 +280,10 @@ public class WiringProcessor {
         }
         if (incoming != null) {
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.incoming." + incoming.value().asString() + ".tls-configuration-name", null,
+                    getChannelIncomingPropertyName(incoming.value().asString(), "tls-configuration-name"), null,
                     "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.incoming." + incoming.value().asString() + ".connector", null,
+                    getChannelIncomingPropertyName(incoming.value().asString(), "connector"), null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
             produceIncomingChannel(appChannels, incoming.value().asString());
         }
@@ -327,9 +330,7 @@ public class WiringProcessor {
         HtmlRenderer renderer = HtmlRenderer.builder().build();
         for (ConnectorManagedChannelBuildItem channel : channels) {
             ConnectorBuildItem connector = find(connectors, channel.getConnector(), channel.getDirection());
-            String prefix = "mp.messaging."
-                    + (channel.getDirection() == ChannelDirection.INCOMING ? "incoming" : "outgoing") + "."
-                    + channel.getName() + ".";
+            String prefix = getChannelPropertyName(channel.getName(), "", channel.isIncoming());
             if (connector != null) {
                 for (ConnectorAttribute attribute : connector.getAttributes()) {
                     ConfigDescriptionBuildItem cfg = new ConfigDescriptionBuildItem(
@@ -369,7 +370,7 @@ public class WiringProcessor {
             for (OrphanChannelBuildItem orphan : orphans) {
                 if (orphan.getDirection() == ChannelDirection.INCOMING) {
                     config.produce(new RunTimeConfigurationDefaultBuildItem(
-                            "mp.messaging.incoming." + orphan.getName() + ".connector", connector));
+                            getChannelIncomingPropertyName(orphan.getName(), "connector"), connector));
                     LOGGER.infof("Configuring the channel '%s' to be managed by the connector '%s'", orphan.getName(),
                             connector);
                     connectorManagedChannels.produce(new ConnectorManagedChannelBuildItem(orphan.getName(),
@@ -384,7 +385,7 @@ public class WiringProcessor {
             for (OrphanChannelBuildItem orphan : orphans) {
                 if (orphan.getDirection() == ChannelDirection.OUTGOING) {
                     config.produce(new RunTimeConfigurationDefaultBuildItem(
-                            "mp.messaging.outgoing." + orphan.getName() + ".connector", connector));
+                            getChannelOutgoingPropertyName(orphan.getName(), "connector"), connector));
                     LOGGER.infof("Configuring the channel '%s' to be managed by the connector '%s'", orphan.getName(),
                             connector);
                     connectorManagedChannels.produce(new ConnectorManagedChannelBuildItem(orphan.getName(),

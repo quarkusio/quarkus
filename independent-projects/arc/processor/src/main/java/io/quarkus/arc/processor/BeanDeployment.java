@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.Startup;
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.enterprise.inject.spi.InterceptionType;
@@ -46,6 +47,8 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
 import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
@@ -56,7 +59,11 @@ import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class BeanDeployment {
 
@@ -1010,6 +1017,7 @@ public class BeanDeployment {
                 List<AnnotationInstance> bindings = new ArrayList<>();
                 List<AnnotationInstance> parentStereotypes = new ArrayList<>();
                 boolean isNamed = false;
+                boolean isEager = false;
 
                 for (AnnotationInstance annotation : annotationStore.getAnnotations(stereotypeClass)) {
                     if (DotNames.ALTERNATIVE.equals(annotation.name())) {
@@ -1028,6 +1036,8 @@ public class BeanDeployment {
                                     "Stereotype must not declare @Named with a non-empty value: " + stereotypeClass);
                         }
                         isNamed = true;
+                    } else if (DotNames.EAGER.equals(annotation.name())) {
+                        isEager = true;
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
                         priority = annotation.value().asInt();
                     } else {
@@ -1043,11 +1053,17 @@ public class BeanDeployment {
                             "Stereotype must not declare both @Alternative and @Reserve: " + stereotypeClass);
                 }
 
-                boolean isAdditionalStereotype = additionalStereotypes.contains(stereotypeName);
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
+
+                if (isEager && scope != null && !Beans.allowsEager(scope)) {
+                    throw new DefinitionException("Stereotype must not declare @Eager and @" + scope.getDotName()
+                            + ", because eager initialization is not allowed for this scope: " + stereotypeClass);
+                }
+
+                boolean isAdditionalStereotype = additionalStereotypes.contains(stereotypeName);
                 boolean isInherited = stereotypeClass.declaredAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, isReserve,
-                        priority, isNamed, isAdditionalStereotype, stereotypeClass, isInherited,
+                        priority, isNamed, isEager, isAdditionalStereotype, stereotypeClass, isInherited,
                         parentStereotypes));
             }
         }
@@ -1614,11 +1630,70 @@ public class BeanDeployment {
             registrar.register(context);
             context.extension = null;
         }
+        registerSyntheticObserversForEagerBeans(context);
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.registerSyntheticObservers(context, applicationClassPredicate);
             buildCompatibleExtensions.runRegistrationAgain(beanArchiveComputingIndex, beans, observers, invokerFactory);
         }
         return context;
+    }
+
+    // see also `io.quarkus.arc.deployment.StartupBuildSteps`
+    private void registerSyntheticObserversForEagerBeans(ObserverRegistrationContextImpl context) {
+        for (BeanInfo btBean : beansView) {
+            if (!btBean.isEager()) {
+                continue;
+            }
+
+            context.configure()
+                    .id(btBean.getIdentifier() + "_EagerInit")
+                    .beanClass(btBean.getBeanClass())
+                    .priority(Integer.MIN_VALUE)
+                    .observedType(Startup.class)
+                    .notify(ng -> {
+                        BlockCreator bc = ng.notifyMethod();
+
+                        // | ArcContainer arc = Arc.container();
+                        LocalVar arc = bc.localVar("arc", bc.invokeStatic(MethodDescs.ARC_REQUIRE_CONTAINER));
+                        // | InjectableBean<Foo> bean = arc.bean("bflmpsvz");
+                        LocalVar rtBean = bc.localVar("bean",
+                                bc.invokeInterface(MethodDescs.ARC_CONTAINER_BEAN, arc, Const.of(btBean.getIdentifier())));
+
+                        // if the [synthetic] bean is not active and is not injected in an always-active bean, skip obtaining the instance
+                        // this means that an inactive bean that is injected into an always-active bean will end up with an error
+                        if (btBean.canBeInactive()) {
+                            boolean isInjectedInAlwaysActiveBean = false;
+                            for (InjectionPointInfo ip : injectionPoints) {
+                                if (btBean.equals(ip.getResolvedBean()) && ip.getTargetBean().isPresent()
+                                        && !ip.getTargetBean().get().canBeInactive()) {
+                                    isInjectedInAlwaysActiveBean = true;
+                                    break;
+                                }
+                            }
+
+                            if (!isInjectedInAlwaysActiveBean) {
+                                // | if (!bean.isActive()) {
+                                // |     return;
+                                // | }
+                                Expr isActive = bc.invokeInterface(
+                                        MethodDesc.of(InjectableBean.class, "isActive", boolean.class), rtBean);
+                                bc.ifNot(isActive, BlockCreator::return_);
+                            }
+                        }
+
+                        // | InstanceHandle<Foo> handle = arc.instance(bean);
+                        Expr instanceHandle = bc.invokeInterface(MethodDescs.ARC_CONTAINER_INSTANCE, arc, rtBean);
+                        // | Foo instance = handle.get();
+                        Expr instance = bc.invokeInterface(MethodDescs.INSTANCE_HANDLE_GET, instanceHandle);
+                        if (btBean.getScope().isNormal()) {
+                            // | ((ClientProxy) instance).arc_contextualInstance();
+                            Expr proxy = bc.cast(instance, ClientProxy.class);
+                            bc.invokeInterface(MethodDescs.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE, proxy);
+                        }
+                        bc.return_();
+                    })
+                    .done();
+        }
     }
 
     private void addSyntheticBean(BeanInfo bean) {

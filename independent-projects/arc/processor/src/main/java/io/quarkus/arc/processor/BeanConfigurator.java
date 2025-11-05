@@ -80,6 +80,11 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 priority = Beans.initStereotypePriority(stereotypes, implClass, beanDeployment);
             }
 
+            Boolean eager = this.eager;
+            if (eager == null) {
+                eager = Beans.initStereotypeEager(stereotypes, beanDeployment);
+            }
+
             InterceptionProxyInfo interceptionProxy = this.interceptionProxy;
             if (interceptionProxy != null) {
                 Type providerType = this.providerType;
@@ -106,6 +111,11 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                         + " is both @Alternative and @Reserve");
             }
 
+            if (eager && !Beans.allowsEager(scope)) {
+                throw new DefinitionException("Synthetic bean declared eager, it must be @ApplicationScoped or @Singleton: "
+                        + implClass + (identifier != null ? (" (identifier " + identifier + ")") : ""));
+            }
+
             BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
                     .identifier(identifier)
@@ -118,6 +128,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .priority(priority)
                     .stereotypes(stereotypes)
                     .name(name)
+                    .eager(eager)
                     .creator(creatorConsumer)
                     .destroyer(destroyerConsumer)
                     .params(params)

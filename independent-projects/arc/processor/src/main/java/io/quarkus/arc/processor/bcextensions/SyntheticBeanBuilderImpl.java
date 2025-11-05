@@ -14,7 +14,6 @@ import jakarta.enterprise.lang.model.types.Type;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.processor.Annotations;
-import io.quarkus.arc.processor.Types;
 
 class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<SyntheticBeanBuilderImpl<T>>
         implements SyntheticBeanBuilder<T> {
@@ -25,6 +24,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
     boolean isAlternative;
     boolean isReserve;
     Integer priority;
+    boolean isEager;
     String name;
     Set<DotName> stereotypes = new HashSet<>();
     Set<TypeAndQualifiers> injectionPoints = new HashSet<>();
@@ -42,7 +42,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
 
     @Override
     public SyntheticBeanBuilder<T> type(Class<?> type) {
-        this.types.add(Types.jandexType(type));
+        this.types.add(org.jboss.jandex.Type.create(type));
         return this;
     }
 
@@ -103,6 +103,12 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
     }
 
     @Override
+    public SyntheticBeanBuilder<T> eager(boolean isEager) {
+        this.isEager = isEager;
+        return this;
+    }
+
+    @Override
     public SyntheticBeanBuilder<T> name(String name) {
         this.name = name;
         return this;
@@ -138,7 +144,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
 
     @Override
     public SyntheticBeanBuilder<T> withInjectionPoint(Class<?> type, Annotation... qualifiers) {
-        org.jboss.jandex.Type jandexType = Types.jandexType(type);
+        org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(type);
         org.jboss.jandex.AnnotationInstance[] jandexQualifiers = new org.jboss.jandex.AnnotationInstance[qualifiers.length];
         for (int i = 0; i < qualifiers.length; i++) {
             jandexQualifiers[i] = Annotations.jandexAnnotation(qualifiers[i]);
@@ -149,7 +155,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
 
     @Override
     public SyntheticBeanBuilder<T> withInjectionPoint(Class<?> type, AnnotationInfo... qualifiers) {
-        org.jboss.jandex.Type jandexType = Types.jandexType(type);
+        org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(type);
         org.jboss.jandex.AnnotationInstance[] jandexQualifiers = new org.jboss.jandex.AnnotationInstance[qualifiers.length];
         for (int i = 0; i < qualifiers.length; i++) {
             jandexQualifiers[i] = ((AnnotationInfoImpl) qualifiers[i]).jandexAnnotation;

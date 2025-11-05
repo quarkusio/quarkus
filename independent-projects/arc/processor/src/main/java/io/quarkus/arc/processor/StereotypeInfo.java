@@ -14,6 +14,7 @@ public class StereotypeInfo {
     private final boolean reserve;
     private final Integer priority;
     private final boolean isNamed;
+    private final boolean isEager;
     private final boolean isInherited;
     private final List<AnnotationInstance> parentStereotypes;
     private final ClassInfo target;
@@ -21,14 +22,15 @@ public class StereotypeInfo {
     private final boolean isAdditionalStereotype;
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            boolean reserve, Integer priority, boolean isNamed, boolean isAdditionalStereotype, ClassInfo target,
-            boolean isInherited, List<AnnotationInstance> parentStereotypes) {
+            boolean reserve, Integer priority, boolean isNamed, boolean isEager, boolean isAdditionalStereotype,
+            ClassInfo target, boolean isInherited, List<AnnotationInstance> parentStereotypes) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.alternative = alternative;
         this.reserve = reserve;
         this.priority = priority;
         this.isNamed = isNamed;
+        this.isEager = isEager;
         this.isInherited = isInherited;
         this.parentStereotypes = parentStereotypes;
         this.target = target;
@@ -36,9 +38,9 @@ public class StereotypeInfo {
     }
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            boolean reserve, Integer priority, boolean isNamed, ClassInfo target, boolean isInherited,
+            boolean reserve, Integer priority, boolean isNamed, boolean isEager, ClassInfo target, boolean isInherited,
             List<AnnotationInstance> parentStereotype) {
-        this(defaultScope, interceptorBindings, alternative, reserve, priority, isNamed, false, target,
+        this(defaultScope, interceptorBindings, alternative, reserve, priority, isNamed, isEager, false, target,
                 isInherited, parentStereotype);
     }
 
@@ -76,6 +78,10 @@ public class StereotypeInfo {
 
     public boolean isNamed() {
         return isNamed;
+    }
+
+    public boolean isEager() {
+        return isEager;
     }
 
     public ClassInfo getTarget() {

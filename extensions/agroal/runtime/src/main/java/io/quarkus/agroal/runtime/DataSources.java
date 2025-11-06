@@ -354,6 +354,7 @@ public class DataSources {
         }
         poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport());
         poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose());
+        poolConfiguration.recoveryEnable(dataSourceJdbcRuntimeConfig.enableRecovery());
     }
 
     /**

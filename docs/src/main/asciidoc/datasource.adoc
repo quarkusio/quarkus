@@ -680,6 +680,8 @@ You can override this by setting the `transactions` configuration property:
 * `quarkus.datasource.jdbc.transactions` for default unnamed datasource
 * `quarkus.datasource._<datasource-name>_.jdbc.transactions` for named datasource
 
+When a datasource is enabled for XA (by setting `quarkus.datasource[.optional name].jdbc.transactions to xa)` and the transaction recovery system is enabled (by setting the property `quarkus.transaction-manager.enable-recovery` to true) then the datasource is automatically registered for recovery. This is a safe default, but you can override this behaviour on a per-datasource basis by setting `quarkus.datasource.jdbc.enable-recovery`/`quarkus.datasource."datasource-name".jdbc.enable-recovery` to `false`. Only use this for advanced use cases and if you know recovery will not be necessary, otherwise it may result in data loss and/or data unavailability because resources may become locked indefinitely.
+
 For more information, see the <<configuration-reference,Configuration reference>> section below.
 
 To facilitate the storage of transaction logs in a database by using JDBC, see xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.

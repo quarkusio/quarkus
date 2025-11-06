@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
@@ -16,6 +17,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
@@ -103,11 +105,12 @@ public class RedisDatasourceProcessor {
 
         // Create the supplier and define the beans.
         for (String name : names) {
+            Supplier<ActiveResult> checkActive = recorder.checkActive(name);
             // Data sources
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, RedisDataSource.class,
-                    recorder.getBlockingDataSource(name)));
+                    checkActive, recorder.getBlockingDataSource(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisDataSource.class,
-                    recorder.getReactiveDataSource(name)));
+                    checkActive, recorder.getReactiveDataSource(name)));
         }
 
         recorder.cleanup(shutdown);

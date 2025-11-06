@@ -347,6 +347,9 @@ It is not set by default, thus no delay is applied.
 The `@io.quarkus.runtime.ShutdownDelayInitiated` annotation is used to mark a business method of a CDI bean that should be executed when the shutdown delay initiates.
 The annotated method must be non-private and non-static and declare no arguments. Furthermore, `quarkus.shutdown.delay-enabled` configuration needs to be set to `true`.
 
+
+TIP: Declared `@ShutdownDelayInitiated` methods are always executed and as such may block the shutdown procedure.
+
 The behavior is similar to a declaration of a `ShutdownDelayInitiatedEvent` observer.
 The following examples are functionally equivalent.
 

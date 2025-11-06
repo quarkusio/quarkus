@@ -27,6 +27,7 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.PathList;
+import io.quarkus.runtime.JVMChecksRecorder;
 import io.smallrye.common.os.OS;
 
 /**
@@ -71,6 +72,7 @@ public class DevModeMain implements Closeable {
     public void start() throws Exception {
         //propagate system props
         propagateSystemProperties();
+        prepareJVMSettings();
 
         try {
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
@@ -110,6 +112,11 @@ public class DevModeMain implements Closeable {
             throw (t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException(t));
             //System.exit(1);
         }
+    }
+
+    private void prepareJVMSettings() {
+        //Disable the sun.misc.Unsafe warnings in dev-mode:
+        JVMChecksRecorder.disableUnsafeRelatedWarnings();
     }
 
     private PathList getApplicationBuildDirs() {

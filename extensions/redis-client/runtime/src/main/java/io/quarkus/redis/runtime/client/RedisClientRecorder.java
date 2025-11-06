@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
@@ -49,7 +50,8 @@ public class RedisClientRecorder {
     }
 
     public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names,
-            Supplier<TlsConfigurationRegistry> registry) {
+            Supplier<TlsConfigurationRegistry> tlsRegistrySupplier,
+            Supplier<ProxyConfigurationRegistry> proxyRegistrySupplier) {
         Instance<ObservableRedisMetrics> instance = CDI.current().select(ObservableRedisMetrics.class);
         if (instance.isResolvable()) {
             this.metrics = instance.get();
@@ -59,11 +61,12 @@ public class RedisClientRecorder {
 
         this.vertx = Vertx.newInstance(vertx.getValue());
 
-        TlsConfigurationRegistry tlsRegistry = registry.get();
+        TlsConfigurationRegistry tlsRegistry = tlsRegistrySupplier.get();
+        ProxyConfigurationRegistry proxyRegistry = proxyRegistrySupplier.get();
 
         _registerCodecs();
 
-        _initialize(vertx.getValue(), names, tlsRegistry);
+        _initialize(vertx.getValue(), names, tlsRegistry, proxyRegistry);
     }
 
     private static void _registerCodecs() {
@@ -72,7 +75,8 @@ public class RedisClientRecorder {
         Codecs.register(codecs.stream());
     }
 
-    public void _initialize(io.vertx.core.Vertx vertx, Set<String> names, TlsConfigurationRegistry tlsRegistry) {
+    public void _initialize(io.vertx.core.Vertx vertx, Set<String> names, TlsConfigurationRegistry tlsRegistry,
+            ProxyConfigurationRegistry proxyRegistry) {
         for (String name : names) {
             // Search if we have an associated config:
             // - if default -> Default
@@ -91,13 +95,13 @@ public class RedisClientRecorder {
                                         "You must at least configure `quarkus.redis." + name + ".hosts`.");
                             }
                         });
-                clients.computeIfAbsent(name,
-                        x -> new RedisClientAndApi(name, VertxRedisClientFactory.create(name, vertx, actualConfig, tlsRegistry),
-                                metrics));
+                clients.computeIfAbsent(name, x -> new RedisClientAndApi(name,
+                        VertxRedisClientFactory.create(name, vertx, actualConfig, tlsRegistry, proxyRegistry),
+                        metrics));
             } else if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) && maybe.isPresent()) {
-                clients.computeIfAbsent(name,
-                        x -> new RedisClientAndApi(name,
-                                VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get(), tlsRegistry), metrics));
+                clients.computeIfAbsent(name, x -> new RedisClientAndApi(name,
+                        VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get(), tlsRegistry, proxyRegistry),
+                        metrics));
             }
             // Do not throw an error. We would need to check if the default redis client is used.
         }

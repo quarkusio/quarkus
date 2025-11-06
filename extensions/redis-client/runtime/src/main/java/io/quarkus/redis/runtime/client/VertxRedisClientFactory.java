@@ -21,6 +21,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.runtime.client.config.NetConfig;
@@ -33,6 +35,7 @@ import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.core.net.ProxyType;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisOptions;
@@ -51,7 +54,8 @@ public class VertxRedisClientFactory {
         // Avoid direct instantiation.
     }
 
-    public static Redis create(String name, Vertx vertx, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry) {
+    public static Redis create(String name, Vertx vertx, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry,
+            ProxyConfigurationRegistry proxyRegistry) {
         RedisOptions options = new RedisOptions();
 
         Consumer<Set<URI>> configureOptions = new Consumer<Set<URI>>() {
@@ -113,7 +117,7 @@ public class VertxRedisClientFactory {
         config.topology().ifPresent(options::setTopology);
         config.clusterTransactions().ifPresent(options::setClusterTransactions);
 
-        options.setNetClientOptions(toNetClientOptions(config));
+        options.setNetClientOptions(toNetClientOptions(config, proxyRegistry));
         configureTLS(name, config, tlsRegistry, options.getNetClientOptions(), hosts);
 
         options.setPoolName(name);
@@ -179,7 +183,7 @@ public class VertxRedisClientFactory {
         }
     }
 
-    private static NetClientOptions toNetClientOptions(RedisClientConfig config) {
+    private static NetClientOptions toNetClientOptions(RedisClientConfig config, ProxyConfigurationRegistry proxyRegistry) {
         NetConfig tcp = config.tcp();
         NetClientOptions net = new NetClientOptions();
 
@@ -193,7 +197,6 @@ public class VertxRedisClientFactory {
         net.setReconnectInterval(config.reconnectInterval().toMillis());
 
         tcp.localAddress().ifPresent(net::setLocalAddress);
-        tcp.nonProxyHosts().ifPresent(net::setNonProxyHosts);
         if (tcp.proxyOptions().host().isPresent()) {
             ProxyOptions po = new ProxyOptions();
             po.setHost(tcp.proxyOptions().host().get());
@@ -202,6 +205,24 @@ public class VertxRedisClientFactory {
             tcp.proxyOptions().username().ifPresent(po::setUsername);
             tcp.proxyOptions().password().ifPresent(po::setPassword);
             net.setProxyOptions(po);
+            tcp.nonProxyHosts().ifPresent(net::setNonProxyHosts);
+        } else {
+            Optional<ProxyConfiguration> proxyConfig = proxyRegistry.get(tcp.proxyConfigurationName());
+            proxyConfig.ifPresent(proxy -> {
+                ProxyOptions po = new ProxyOptions();
+                po.setHost(proxy.host());
+                po.setPort(proxy.port());
+                po.setUsername(proxy.username().orElse(null));
+                po.setPassword(proxy.password().orElse(null));
+                po.setConnectTimeout(proxy.proxyConnectTimeout().orElse(null));
+                po.setType(switch (proxy.type()) {
+                    case HTTP -> ProxyType.HTTP;
+                    case SOCKS4 -> ProxyType.SOCKS4;
+                    case SOCKS5 -> ProxyType.SOCKS5;
+                });
+                net.setProxyOptions(po);
+                proxy.nonProxyHosts().ifPresent(net::setNonProxyHosts);
+            });
         }
         tcp.readIdleTimeout().ifPresent(d -> net.setReadIdleTimeout((int) d.toSeconds()));
         tcp.reconnectAttempts().ifPresent(net::setReconnectAttempts);

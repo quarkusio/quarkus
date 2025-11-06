@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisHostsProvider;
@@ -128,7 +129,8 @@ public class RedisClientProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchModeBuildItem launchMode,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem,
+            ProxyRegistryBuildItem proxyRegistryBuildItem) {
 
         // Collect the used redis clients, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
@@ -157,7 +159,8 @@ public class RedisClientProcessor {
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
         // Inject the creation of the client when the application starts.
-        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry());
+        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry(),
+                proxyRegistryBuildItem.registry());
 
         // Create the supplier and define the beans.
         for (String name : names) {

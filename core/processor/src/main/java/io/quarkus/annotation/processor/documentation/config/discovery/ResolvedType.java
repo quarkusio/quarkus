@@ -14,6 +14,7 @@ public record ResolvedType(
         boolean isMap,
         boolean isList,
         boolean isOptional,
+        boolean isSecret,
         boolean isDeclared,
         boolean isInterface,
         boolean isClass,
@@ -36,14 +37,14 @@ public record ResolvedType(
 
     public static ResolvedType ofPrimitive(TypeMirror unwrappedType, String typeName) {
         return new ResolvedType(unwrappedType, unwrappedType, typeName, typeName, typeName, true, false, false,
-                false, false, false, false, false, false, false);
+                false, false, false, false, false, false, false, false);
     }
 
     public static ResolvedType ofDeclaredType(TypeMirror type, String binaryName,
             String qualifiedName, String simpleName,
             boolean isInterface, boolean isClass, boolean isEnum, boolean isDuration, boolean isConfigGroup) {
-        return new ResolvedType(type, type, binaryName, qualifiedName, simpleName, false, false, false, false, true,
-                isInterface, isClass, isEnum, isDuration, isConfigGroup);
+        return new ResolvedType(type, type, binaryName, qualifiedName, simpleName, false, false, false, false, false,
+                true, isInterface, isClass, isEnum, isDuration, isConfigGroup);
     }
 
     public static ResolvedType makeList(TypeMirror type, ResolvedType unwrappedResolvedType) {
@@ -52,6 +53,7 @@ public record ResolvedType(
                 unwrappedResolvedType.isPrimitive,
                 unwrappedResolvedType.isMap, true,
                 unwrappedResolvedType.isOptional,
+                unwrappedResolvedType.isSecret,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
                 unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
     }
@@ -61,6 +63,18 @@ public record ResolvedType(
                 unwrappedResolvedType.binaryName, unwrappedResolvedType.qualifiedName, unwrappedResolvedType.simplifiedName,
                 unwrappedResolvedType.isPrimitive,
                 unwrappedResolvedType.isMap, unwrappedResolvedType.isList,
+                true,
+                unwrappedResolvedType.isSecret,
+                unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
+                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
+    }
+
+    public static ResolvedType makeSecret(ResolvedType unwrappedResolvedType) {
+        return new ResolvedType(unwrappedResolvedType.wrapperType, unwrappedResolvedType.unwrappedType,
+                unwrappedResolvedType.binaryName, unwrappedResolvedType.qualifiedName, unwrappedResolvedType.simplifiedName,
+                unwrappedResolvedType.isPrimitive,
+                unwrappedResolvedType.isMap, unwrappedResolvedType.isList,
+                unwrappedResolvedType.isOptional,
                 true,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
                 unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
@@ -72,6 +86,7 @@ public record ResolvedType(
                 unwrappedResolvedType.isPrimitive,
                 true, false,
                 unwrappedResolvedType.isOptional,
+                unwrappedResolvedType.isSecret,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
                 unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
     }

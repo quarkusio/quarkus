@@ -192,15 +192,17 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
             }
             log.debug("Underlying exception: " + e);
-            log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
-            log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
+            log.debug("Thread Context ClassLoader: " + Thread.currentThread().getContextClassLoader());
+            log.debug("The classloader of the class we use for mapping is " + TestConfig.class.getClassLoader());
             String message = isVSCode || isMaybeVSCode
                     ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
                     : isEclipse
                             ? "Could not execute test class because it was loaded with the wrong classloader by the Eclipse test runner. Try running test methods individually, or edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
                                     + context.getRequiredTestClass().getName()
                                     + "]` in the program arguments. "
-                            : "Internal error: Test class was loaded with an unexpected classloader or the thread context classloader was incorrect.";
+                            : "Internal error: Test class was loaded with an unexpected classloader ("
+                                    + TestConfig.class.getClassLoader() + ") or the thread context classloader ("
+                                    + Thread.currentThread().getContextClassLoader() + ") was incorrect.";
             throw new IllegalStateException(message, e);
         } finally {
             if (!isFlatClasspath) {

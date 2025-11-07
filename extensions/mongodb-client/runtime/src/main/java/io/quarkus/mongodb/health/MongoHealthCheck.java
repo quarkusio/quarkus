@@ -1,9 +1,11 @@
 package io.quarkus.mongodb.health;
 
+import static io.quarkus.mongodb.runtime.MongodbConfig.isDefaultClient;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -42,40 +44,28 @@ public class MongoHealthCheck implements HealthCheck {
 
     private static final Document COMMAND = new Document("ping", 1);
 
+    // TODO - Rewrite this with active / inactive. Follow Redis implementation
     public MongoHealthCheck(MongodbConfig config) {
-        Iterable<InstanceHandle<MongoClient>> handle = Arc.container().select(MongoClient.class, Any.Literal.INSTANCE)
-                .handles();
+        Iterable<InstanceHandle<MongoClient>> handle = Arc.container()
+                .select(MongoClient.class, Any.Literal.INSTANCE).handles();
         Iterable<InstanceHandle<ReactiveMongoClient>> reactiveHandlers = Arc.container()
                 .select(ReactiveMongoClient.class, Any.Literal.INSTANCE).handles();
 
-        if (config.defaultMongoClientConfig() != null) {
-            MongoClient client = getClient(handle, null);
-            ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers, null);
+        for (Entry<String, MongoClientConfig> entry : config.clients().entrySet()) {
+            String clientName = entry.getKey();
+            MongoClientConfig clientConfig = entry.getValue();
+            MongoClient client = getClient(handle, isDefaultClient(clientName) ? null : entry.getKey());
+            ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers,
+                    isDefaultClient(clientName) ? null : entry.getKey());
             if (client != null) {
-                checks.add(new MongoClientCheck(CLIENT_DEFAULT, client, config.defaultMongoClientConfig()));
+                checks.add(
+                        new MongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT : clientName, client, clientConfig));
             }
             if (reactiveClient != null) {
-                checks.add(new ReactiveMongoClientCheck(CLIENT_DEFAULT_REACTIVE,
-                        reactiveClient,
-                        config.defaultMongoClientConfig()));
+                checks.add(new ReactiveMongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT_REACTIVE : clientName,
+                        reactiveClient, clientConfig));
             }
         }
-
-        config.mongoClientConfigs().forEach(new BiConsumer<>() {
-            @Override
-            public void accept(String name, MongoClientConfig cfg) {
-                MongoClient client = getClient(handle, name);
-                ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers, name);
-                if (client != null) {
-                    checks.add(new MongoClientCheck(name, client,
-                            config.defaultMongoClientConfig()));
-                }
-                if (reactiveClient != null) {
-                    checks.add(new ReactiveMongoClientCheck(name, reactiveClient,
-                            config.defaultMongoClientConfig()));
-                }
-            }
-        });
     }
 
     private MongoClient getClient(Iterable<InstanceHandle<MongoClient>> handle, String name) {

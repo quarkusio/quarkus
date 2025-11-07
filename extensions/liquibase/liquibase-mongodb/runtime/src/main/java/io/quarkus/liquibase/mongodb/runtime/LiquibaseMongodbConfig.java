@@ -2,7 +2,7 @@ package io.quarkus.liquibase.mongodb.runtime;
 
 import java.util.Map;
 
-import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -34,7 +34,7 @@ public interface LiquibaseMongodbConfig {
     @ConfigDocMapKey("client-name")
     @ConfigDocSection
     @WithParentName
-    @WithUnnamedKey(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)
+    @WithUnnamedKey(MongodbConfig.DEFAULT_CLIENT_NAME)
     @WithDefaults
     Map<String, LiquibaseMongodbClientConfig> clientConfigs();
 }

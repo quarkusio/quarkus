@@ -5,17 +5,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.mongodb")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface MongodbConfig {
     String CONFIG_NAME = "mongodb";
+    String DEFAULT_CLIENT_NAME = "<default>";
     @Deprecated
     String NATIVE_DNS_LOG_ACTIVITY = "native.dns.log-activity";
     String DNS_LOG_ACTIVITY = "dns.log-activity";
@@ -30,25 +34,35 @@ public interface MongodbConfig {
     String DNS_LOOKUP_TIMEOUT = "dns.lookup-timeout";
 
     /**
-     * The default mongo client connection.
-     */
-    @WithParentName
-    MongoClientConfig defaultMongoClientConfig();
-
-    /**
-     * Configures additional mongo client connections.
+     * Configures the Mongo clients.
      * <p>
-     * each cluster have a unique identifier witch must be identified to select the right connection.
-     * example:
+     * The default client does not have a name, and it is configured as:
+     *
+     * <pre>
+     * quarkus.mongodb.connection-string = mongodb://mongo1:27017
+     * </pre>
+     *
+     * And then use {@link jakarta.inject.Inject} to inject the client:
+     *
+     * <pre>
+     * &#64;Inject
+     * MongoClient mongoClient;
+     * </pre>
+     *
      * <p>
+     * Named clusters must be identified to select the right client:
      *
      * <pre>
      * quarkus.mongodb.cluster1.connection-string = mongodb://mongo1:27017
      * quarkus.mongodb.cluster2.connection-string = mongodb://mongo2:27017,mongodb://mongo3:27017
      * </pre>
-     * <p>
-     * And then use annotations above the instances of MongoClient to indicate which instance we are going to use
-     * <p>
+     *
+     * And then use the {@link io.quarkus.mongodb.MongoClientName} annotation to select any of the beans:
+     * <ul>
+     * <li>{@link com.mongodb.client.MongoClient}</li>
+     * <li>{@link io.quarkus.mongodb.reactive.ReactiveMongoClient}</li>
+     * </ul>
+     * And inject the client:
      *
      * <pre>
      * {@code
@@ -59,7 +73,10 @@ public interface MongodbConfig {
      * </pre>
      */
     @WithParentName
-    Map<String, MongoClientConfig> mongoClientConfigs();
+    @WithDefaults
+    @WithUnnamedKey(DEFAULT_CLIENT_NAME)
+    @ConfigDocMapKey("mongo-client-name")
+    Map<String, MongoClientConfig> clients();
 
     /**
      * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable.
@@ -144,4 +161,8 @@ public interface MongodbConfig {
     @WithDefault("false")
     @WithName(DNS_LOG_ACTIVITY)
     Optional<Boolean> dnsLookupLogActivity();
+
+    static boolean isDefaultClient(final String name) {
+        return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name);
+    }
 }

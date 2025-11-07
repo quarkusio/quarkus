@@ -11,7 +11,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
-import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.RuntimeValue;
@@ -58,18 +57,17 @@ public class LiquibaseMongodbRecorder {
                 if (liquibaseMongodbClientConfig.mongoClientName().isPresent()) {
                     // keep compatibility with the legacy configuration which makes possible set the mongo-client-name
                     String forceMongoClientName = liquibaseMongodbClientConfig.mongoClientName().get();
-                    mongoClientConfig = mongodbRuntimeConfig.getValue().mongoClientConfigs().get(forceMongoClientName);
+                    mongoClientConfig = mongodbRuntimeConfig.getValue().clients().get(forceMongoClientName);
                     if (mongoClientConfig == null) {
                         throw new IllegalArgumentException(
                                 "Mongo client named '%s' not found".formatted(forceMongoClientName));
                     }
                     clientNameSelected = forceMongoClientName;
-                } else if (MongoClientBeanUtil.isDefault(clientName)) {
-                    mongoClientConfig = mongodbRuntimeConfig.getValue().defaultMongoClientConfig();
+                } else if (MongodbConfig.isDefaultClient(clientName)) {
+                    mongoClientConfig = mongodbRuntimeConfig.getValue().clients().get(clientName);
                     clientNameSelected = clientName;
                 } else {
-                    mongoClientConfig = getRequiredConfig(
-                            mongodbRuntimeConfig.getValue().mongoClientConfigs(),
+                    mongoClientConfig = getRequiredConfig(mongodbRuntimeConfig.getValue().clients(),
                             "Mongo client named '%s' not found");
                     clientNameSelected = clientName;
                 }
@@ -83,7 +81,7 @@ public class LiquibaseMongodbRecorder {
     }
 
     private Annotation getLiquibaseMongodbQualifier(String clientName) {
-        if (MongoClientBeanUtil.isDefault(clientName)) {
+        if (MongodbConfig.isDefaultClient(clientName)) {
             return Default.Literal.INSTANCE;
         } else {
             return LiquibaseMongodbClient.LiquibaseMongodbClientLiteral.of(clientName);

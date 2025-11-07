@@ -87,7 +87,7 @@ public class MongoClientRecorder {
 
     @SuppressWarnings("rawtypes")
     private AnnotationLiteral literal(String name) {
-        if (name.startsWith(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)) {
+        if (name.startsWith(MongodbConfig.DEFAULT_CLIENT_NAME)) {
             return Default.Literal.INSTANCE;
         }
         return NamedLiteral.of(name);
@@ -118,8 +118,7 @@ public class MongoClientRecorder {
      */
     public void performInitialization(RuntimeValue<Vertx> vertx) {
         MongoDnsClientProvider.vertx = vertx.getValue();
-        initializeDNSLookup(runtimeConfig.getValue().defaultMongoClientConfig());
-        for (MongoClientConfig mongoClientConfig : runtimeConfig.getValue().mongoClientConfigs().values()) {
+        for (MongoClientConfig mongoClientConfig : runtimeConfig.getValue().clients().values()) {
             initializeDNSLookup(mongoClientConfig);
         }
     }

@@ -126,7 +126,7 @@ public class MongoClients {
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, mongodbConfig.clients().get(clientName),
                 false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
         mongoclients.put(clientName, client);
@@ -135,18 +135,13 @@ public class MongoClients {
 
     public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, mongodbConfig.clients().get(clientName),
                 true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration, DRIVER_INFORMATION);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
         reactiveMongoClients.put(clientName, reactive);
         return reactive;
-    }
-
-    public MongoClientConfig getMatchingMongoClientConfig(String clientName) {
-        return MongoClientBeanUtil.isDefault(clientName) ? mongodbConfig.defaultMongoClientConfig()
-                : mongodbConfig.mongoClientConfigs().get(clientName);
     }
 
     private static class ClusterSettingBuilder implements Block<ClusterSettings.Builder> {
@@ -394,7 +389,7 @@ public class MongoClients {
         // If the client name is the default one, we use a customizer that does not have the MongoClientName qualifier.
         // Otherwise, we use the one that has the qualifier.
         // Note that at build time, we check that we have at most one customizer per client, including for the default one.
-        if (MongoClientBeanUtil.isDefault(name)) {
+        if (MongodbConfig.isDefaultClient(name)) {
             var maybe = customizers.handlesStream()
                     .filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
                     .findFirst(); // We have at most one customizer without the qualifier.

@@ -3,6 +3,7 @@ package io.quarkus.mutiny.deployment.test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -117,6 +118,21 @@ public class MutinyTest {
         Assertions.assertEquals("check.0 | onSubscribe()", logRecord.getMessage());
         logRecord = julHandler.logRecords.get(1);
         Assertions.assertEquals("check.0 | onItem(HELLO)", logRecord.getMessage());
+    }
+
+    @Test
+    public void testContextPropagationCancelsUpstream() {
+        // See https://github.com/quarkusio/quarkus/issues/50513
+        CompletableFuture<String> cf = new CompletableFuture<>();
+        // we want to make sure that Infrastructure.setCompletableFutureWrapper uses .copy() in
+        // order to create a CF wrapper that forwards cancel upstream, which is what
+        // subscribeAsCompletionStage() calls.
+        // That cancel is then forwarded to the Uni, which is then forwarded to the original CF
+        Uni.createFrom().completionStage(cf).subscribeAsCompletionStage().cancel(true);
+
+        Assertions.assertTrue(cf.isCancelled());
+        Assertions.assertTrue(cf.isDone());
+        Assertions.assertTrue(cf.isCompletedExceptionally());
     }
 
     @ApplicationScoped

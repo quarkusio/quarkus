@@ -80,6 +80,7 @@ public interface SmallRyeHealthBuildTimeConfig {
      * Whether the context should be propagated to each health check invocation.
      */
     @WithDefault("false")
+    @Deprecated(since = "3.30", forRemoval = true)
     boolean contextPropagation();
 
     /**

@@ -7,7 +7,7 @@ import jakarta.enterprise.inject.Default;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 
-import io.smallrye.health.api.event.HealthStatusChangeEvent;
+import io.smallrye.health.event.SmallRyeHealthStatusChangeEvent;
 
 @ApplicationScoped
 public class HealthObserver {
@@ -16,15 +16,15 @@ public class HealthObserver {
     public static int readinessChangeCounter = 0;
     public static int livenessChangeCounter = 0;
 
-    public void observeHealthChange(@Observes @Default HealthStatusChangeEvent event) {
+    public void observeHealthChange(@Observes @Default SmallRyeHealthStatusChangeEvent event) {
         healthChangeCounter++;
     }
 
-    public void observeReadinessChange(@Observes @Readiness HealthStatusChangeEvent event) {
+    public void observeReadinessChange(@Observes @Readiness SmallRyeHealthStatusChangeEvent event) {
         readinessChangeCounter++;
     }
 
-    public void observeLivenessChange(@Observes @Liveness HealthStatusChangeEvent event) {
+    public void observeLivenessChange(@Observes @Liveness SmallRyeHealthStatusChangeEvent event) {
         livenessChangeCounter++;
     }
 }

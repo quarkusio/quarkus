@@ -139,6 +139,9 @@ public class ComposeProject {
                     // Add wait for log message
                     if (e.getKey().startsWith(COMPOSE_WAIT_FOR_LOGS)) {
                         int times = 1;
+                        if (COMPOSE_WAIT_FOR_LOGS_TIMEOUT.equals(e.getKey())) {
+                            continue;
+                        }
                         if (e.getKey().length() > COMPOSE_WAIT_FOR_LOGS.length()) {
                             try {
                                 times = Integer.parseInt(e.getKey().replace(COMPOSE_WAIT_FOR_LOGS + ".", ""));
@@ -146,7 +149,10 @@ public class ComposeProject {
                                 LOG.warnv("Cannot parse label `{}`", e.getKey());
                             }
                         }
-                        addWaitStrategy(waitStrategies, serviceName, Wait.forLogMessage((String) e.getValue(), times));
+                        String waitForTimeout = (String) labels.get(COMPOSE_WAIT_FOR_LOGS_TIMEOUT);
+                        Duration timeout = waitForTimeout != null ? Duration.parse("PT" + waitForTimeout) : startupTimeout;
+                        addWaitStrategy(waitStrategies, serviceName, Wait.forLogMessage((String) e.getValue(), times)
+                                .withStartupTimeout(timeout));
                     }
                 }
                 // Add wait for port availability

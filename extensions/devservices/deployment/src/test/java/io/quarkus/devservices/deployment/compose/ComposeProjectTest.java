@@ -6,12 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
 public class ComposeProjectTest {
 
@@ -36,9 +40,43 @@ public class ComposeProjectTest {
         assertTrue(waitStrategies.containsKey("db"));
         assertTrue(waitStrategies.containsKey("redis"));
 
+        // check wait strategy startup times
+        WaitAllStrategy db = waitStrategies.get("db");
+        List<WaitStrategy> strategies = getChildStrategies(db);
+        assertEquals(1, strategies.size());
+        Duration startupTimeout = getStartupTimeout(strategies.get(0));
+        assertEquals(Duration.of(10, ChronoUnit.SECONDS), startupTimeout);
+
+        WaitAllStrategy redis = waitStrategies.get("redis");
+        strategies = getChildStrategies(redis);
+        assertEquals(2, strategies.size());
+        for (WaitStrategy strategy : strategies) {
+            assertEquals(Duration.of(2, ChronoUnit.MINUTES), getStartupTimeout(strategy));
+        }
+
         // Verify project name
         String project = composeProject.getProject();
         assertEquals("test", project);
+    }
+
+    private static Duration getStartupTimeout(WaitStrategy waitStrategy) {
+        try {
+            Field startupTimeout = AbstractWaitStrategy.class.getDeclaredField("startupTimeout");
+            startupTimeout.setAccessible(true);
+            return (Duration) startupTimeout.get(waitStrategy);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static List<WaitStrategy> getChildStrategies(WaitAllStrategy db) {
+        try {
+            Field strategies = WaitAllStrategy.class.getDeclaredField("strategies");
+            strategies.setAccessible(true);
+            return (List) strategies.get(db);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

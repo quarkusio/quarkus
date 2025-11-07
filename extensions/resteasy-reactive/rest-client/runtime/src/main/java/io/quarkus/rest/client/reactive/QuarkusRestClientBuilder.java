@@ -20,7 +20,7 @@ import org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
-import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig.ProxyType;
+import io.quarkus.proxy.ProxyType;
 import io.quarkus.rest.client.reactive.runtime.QuarkusRestClientBuilderImpl;
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
 import io.quarkus.tls.TlsConfiguration;

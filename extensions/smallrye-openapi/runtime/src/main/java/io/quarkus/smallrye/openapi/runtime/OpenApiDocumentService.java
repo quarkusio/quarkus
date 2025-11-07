@@ -21,7 +21,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
-import io.smallrye.openapi.model.BaseModel;
 import io.smallrye.openapi.runtime.io.Format;
 
 /**
@@ -170,8 +169,7 @@ public class OpenApiDocumentService {
             SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
                     .withConfig(config)
                     .withApplicationClassLoader(loader)
-                    // FIXME - new smallrye release will make the copy itself
-                    .withInitialModel(BaseModel.deepCopy(generatedOnBuild, OpenAPI.class))
+                    .withInitialModel(generatedOnBuild)
                     .enableModelReader(false)
                     .enableStandardStaticFiles(false)
                     .enableAnnotationScan(false)

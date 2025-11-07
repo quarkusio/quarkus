@@ -5,7 +5,7 @@ import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.set
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.Prioritized;
@@ -13,10 +13,12 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.grpc.ForwardingServerCall;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.grpc.Status;
 import io.grpc.StatusException;
 import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.GlobalInterceptor;
@@ -54,15 +56,27 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         }
     }
 
-    private <ReqT, RespT> Supplier<ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
+    private <ReqT, RespT> Function<Runnable, ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
             Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
         // Must be sure to call next.startCall on the right context
         io.grpc.Context current = io.grpc.Context.current();
-        return () -> {
+        return onClose -> {
             io.grpc.Context previous = current.attach();
             try {
-                return next.startCall(call, headers);
+                var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
+                    @Override
+                    protected ServerCall<ReqT, RespT> delegate() {
+                        return call;
+                    }
+
+                    @Override
+                    public void close(Status status, Metadata trailers) {
+                        onClose.run();
+                        super.close(status, trailers);
+                    }
+                };
+                return next.startCall(forwardingCall, headers);
             } finally {
                 current.detach(previous);
             }
@@ -77,31 +91,35 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
     static class ListenedOnDuplicatedContext<ReqT, RespT> extends ServerCall.Listener<ReqT> {
 
         private final Context context;
-        private final Supplier<ServerCall.Listener<ReqT>> supplier;
+        private final Function<Runnable, ServerCall.Listener<ReqT>> listenerCreator;
         private final ExceptionHandlerProvider ehp;
         private final ServerCall<ReqT, RespT> call;
-        private ServerCall.Listener<ReqT> delegate;
+        private volatile ServerCall.Listener<ReqT> delegate;
 
         private final AtomicBoolean closed = new AtomicBoolean();
 
         public ListenedOnDuplicatedContext(
                 ExceptionHandlerProvider ehp,
-                ServerCall<ReqT, RespT> call, Supplier<ServerCall.Listener<ReqT>> supplier, Context context) {
+                ServerCall<ReqT, RespT> call, Function<Runnable, ServerCall.Listener<ReqT>> listenerCreator, Context context) {
             this.ehp = ehp;
             this.context = context;
-            this.supplier = supplier;
+            this.listenerCreator = listenerCreator;
             this.call = call;
         }
 
-        private synchronized ServerCall.Listener<ReqT> getDelegate() {
-            if (delegate == null) {
-                try {
-                    delegate = supplier.get();
-                } catch (Throwable t) {
-                    // If the interceptor supplier throws an exception, catch it, and close the call.
-                    log.warn("Unable to retrieve gRPC Server call listener, see the cause below.");
-                    close(t);
-                    return null;
+        private ServerCall.Listener<ReqT> getDelegate() {
+            if (delegate == null && !closed.get()) {
+                synchronized (this) {
+                    if (delegate == null && !closed.get()) {
+                        try {
+                            delegate = listenerCreator.apply(() -> closed.set(true));
+                        } catch (Throwable t) {
+                            // If the interceptor supplier throws an exception, catch it, and close the call.
+                            log.warn("Unable to retrieve gRPC Server call listener, see the cause below.");
+                            close(t);
+                            return null;
+                        }
+                    }
                 }
             }
             return delegate;

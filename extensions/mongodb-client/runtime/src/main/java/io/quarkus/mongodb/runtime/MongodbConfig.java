@@ -20,18 +20,6 @@ import io.smallrye.config.WithUnnamedKey;
 public interface MongodbConfig {
     String CONFIG_NAME = "mongodb";
     String DEFAULT_CLIENT_NAME = "<default>";
-    @Deprecated
-    String NATIVE_DNS_LOG_ACTIVITY = "native.dns.log-activity";
-    String DNS_LOG_ACTIVITY = "dns.log-activity";
-    @Deprecated
-    String NATIVE_DNS_SERVER_HOST = "native.dns.server-host";
-    String DNS_SERVER_HOST = "dns.server-host";
-    @Deprecated
-    String NATIVE_DNS_SERVER_PORT = "native.dns.server-port";
-    String DNS_SERVER_PORT = "dns.server-port";
-    @Deprecated
-    String NATIVE_DNS_LOOKUP_TIMEOUT = "native.dns.lookup-timeout";
-    String DNS_LOOKUP_TIMEOUT = "dns.lookup-timeout";
 
     /**
      * Configures the Mongo clients.
@@ -93,74 +81,32 @@ public interface MongodbConfig {
     boolean useVertxDnsResolverInNativeMode();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server.
-     * If the server is not set, it tries to read the first {@code nameserver} from {@code /etc/resolv.conf} (if the
-     * file exists), otherwise fallback to the default.
-     *
-     * @deprecated this property has been deprecated in favor of {@link #dnsServer}
-     */
-    @Deprecated
-    @WithName(NATIVE_DNS_SERVER_HOST)
-    Optional<String> dnsServerInNativeMode();
-
-    /**
      * This property configures the DNS server. If the server is not set, it tries to read the first {@code nameserver} from
      * {@code /etc /resolv.conf} (if the file exists), otherwise fallback to the default.
      */
-    @WithName(DNS_SERVER_HOST)
+    @WithName("dns.server-host")
     Optional<String> dnsServer();
-
-    /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server port.
-     *
-     * @deprecated this property has been deprecated in favor of {@link #dnsServerPort}
-     */
-    @Deprecated
-    @WithName(NATIVE_DNS_SERVER_PORT)
-    OptionalInt dnsServerPortInNativeMode();
 
     /**
      * This property configures the DNS server port.
      */
-    @WithName(DNS_SERVER_PORT)
+    @WithName("dns.server-port")
     OptionalInt dnsServerPort();
 
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
      * duration.
-     *
-     * @deprecated this property has been deprecated in favor of {@link #dnsLookupTimeout}
      */
-    @Deprecated
-    @WithName(NATIVE_DNS_LOOKUP_TIMEOUT)
-    @WithDefault("5s")
-    Duration dnsLookupTimeoutInNativeMode();
-
-    /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
-     * duration.
-     */
-    @WithName(DNS_LOOKUP_TIMEOUT)
+    @WithName("dns.lookup-timeout")
     @WithDefault("5s")
     Duration dnsLookupTimeout();
-
-    /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property enables the logging ot the
-     * DNS lookup. It can be useful to understand why the lookup fails.
-     *
-     * @deprecated this property has been deprecated in favor of {@link #dnsLookupLogActivity}
-     */
-    @Deprecated
-    @WithDefault("false")
-    @WithName(NATIVE_DNS_LOG_ACTIVITY)
-    Optional<Boolean> dnsLookupLogActivityInNativeMode();
 
     /**
      * This property enables the logging ot the DNS lookup. It can be useful to understand why the lookup fails.
      */
     @WithDefault("false")
-    @WithName(DNS_LOG_ACTIVITY)
-    Optional<Boolean> dnsLookupLogActivity();
+    @WithName("dns.log-activity")
+    boolean dnsLookupLogActivity();
 
     static boolean isDefaultClient(final String name) {
         return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name);

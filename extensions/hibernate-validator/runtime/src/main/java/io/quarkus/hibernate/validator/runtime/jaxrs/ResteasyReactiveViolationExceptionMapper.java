@@ -19,6 +19,7 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import org.hibernate.validator.path.RandomAccessPath;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -57,6 +58,11 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
     }
 
     private boolean isReturnValueViolation(ConstraintViolation<?> violation) {
+        if (violation.getPropertyPath() instanceof RandomAccessPath randomAccessPath) {
+            return randomAccessPath.getRootNode().getKind() == ElementKind.METHOD
+                    && randomAccessPath.getNode(1).getKind() == ElementKind.RETURN_VALUE;
+        }
+
         Iterator<Path.Node> nodes = violation.getPropertyPath().iterator();
         Path.Node firstNode = nodes.next();
 

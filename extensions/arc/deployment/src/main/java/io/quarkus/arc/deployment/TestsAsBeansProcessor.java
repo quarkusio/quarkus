@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -61,7 +62,11 @@ public class TestsAsBeansProcessor {
 
     @BuildStep(onlyIf = IsTest.class)
     AnnotationsTransformerBuildItem vetoTestClassesNotMatchingTestProfile(Optional<TestProfileBuildItem> testProfile,
-            CombinedIndexBuildItem index) {
+            CombinedIndexBuildItem index, List<TestAnnotationBuildItem> testAnnotationBuildItems) {
+        Set<String> additionalTestAnnotationNames = testAnnotationBuildItems.stream()
+                .map(TestAnnotationBuildItem::getAnnotationClassName)
+                .filter(a -> !a.equals(QUARKUS_TEST.toString()))
+                .collect(Collectors.toSet());
         // Since we only need to register all test classes that belong to the "current" test profile
         // we need to veto other test classes during the build
         return new AnnotationsTransformerBuildItem(AnnotationTransformation
@@ -71,7 +76,8 @@ public class TestsAsBeansProcessor {
                     boolean veto = false;
                     if (maybeTestClass.hasAnnotation(QUARKUS_TEST)
                             || maybeTestClass.hasAnnotation(QUARKUS_INTEGRATION_TEST)
-                            || maybeTestClass.hasAnnotation(QUARKUS_MAIN_TEST)) {
+                            || maybeTestClass.hasAnnotation(QUARKUS_MAIN_TEST)
+                            || additionalTestAnnotationNames.stream().anyMatch(maybeTestClass::hasAnnotation)) {
                         String testProfileClassName = testProfile.map(TestProfileBuildItem::getTestProfileClassName)
                                 .orElse(null);
                         veto = !matchesProfile(maybeTestClass, testProfileClassName);

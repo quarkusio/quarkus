@@ -45,6 +45,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PERIOD;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_BOOLEAN;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_CHAR;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_DOUBLE;
@@ -159,7 +160,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             RESOURCE_INFO);
 
     protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
-            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR, YEAR_MONTH);
+            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR, YEAR_MONTH, PERIOD);
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};

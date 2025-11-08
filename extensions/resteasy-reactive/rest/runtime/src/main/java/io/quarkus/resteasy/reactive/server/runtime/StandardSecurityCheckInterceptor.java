@@ -16,6 +16,7 @@ import jakarta.interceptor.InvocationContext;
 
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -36,7 +37,9 @@ public abstract class StandardSecurityCheckInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        if (controller.isAuthorizationEnabled() && CurrentRequestManager.get() != null
+        if (controller.isAuthorizationEnabled() && Arc.container() != null
+                && Arc.container().requestContext().isActive()
+                && CurrentRequestManager.get() != null
                 && alreadyDoneByEagerSecurityHandler(
                         CurrentRequestManager.get().getProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR), ic.getMethod())) {
             ic.getContextData().put(SECURITY_HANDLER, EXECUTED);

@@ -1,8 +1,11 @@
 package io.quarkus.security.spi;
 
+import java.util.Objects;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.security.spi.SecurityTransformer.AuthorizationType;
 
 /**
  * Allows integrating extensions to signal they provide their own security annotation.
@@ -16,12 +19,22 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class AdditionalSecurityAnnotationBuildItem extends MultiBuildItem {
 
     private final DotName securityAnnotationName;
+    private final AuthorizationType authorizationType;
 
     public AdditionalSecurityAnnotationBuildItem(DotName securityAnnotationName) {
-        this.securityAnnotationName = securityAnnotationName;
+        this(securityAnnotationName, AuthorizationType.AUTHORIZATION_POLICY);
+    }
+
+    public AdditionalSecurityAnnotationBuildItem(DotName securityAnnotationName, AuthorizationType authorizationType) {
+        this.securityAnnotationName = Objects.requireNonNull(securityAnnotationName);
+        this.authorizationType = Objects.requireNonNull(authorizationType);
     }
 
     public DotName getSecurityAnnotationName() {
         return securityAnnotationName;
+    }
+
+    public AuthorizationType getAuthorizationType() {
+        return authorizationType;
     }
 }

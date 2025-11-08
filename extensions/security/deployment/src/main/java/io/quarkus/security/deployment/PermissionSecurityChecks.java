@@ -59,6 +59,7 @@ import io.quarkus.security.runtime.QuarkusPermission;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
+import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.smallrye.common.annotation.Blocking;
 
@@ -92,9 +93,10 @@ interface PermissionSecurityChecks {
         private volatile SecurityCheckRecorder recorder;
         private volatile PermissionConverterGenerator paramConverterGenerator;
 
-        PermissionSecurityChecksBuilder(IndexView index, PermissionsAllowedMetaAnnotationBuildItem metaAnnotationItem) {
+        PermissionSecurityChecksBuilder(IndexView index, PermissionsAllowedMetaAnnotationBuildItem metaAnnotationItem,
+                SecurityTransformer securityTransformer) {
             this.index = index;
-            var instances = getPermissionsAllowedInstances(index, metaAnnotationItem);
+            var instances = getPermissionsAllowedInstances(metaAnnotationItem, securityTransformer);
             // make sure we process annotations on methods first
             instances.sort(new Comparator<AnnotationInstance>() {
                 @Override
@@ -524,22 +526,23 @@ interface PermissionSecurityChecks {
                     || clazz.name().toString().endsWith("PermissionsAllowedInterceptor");
         }
 
-        private static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(IndexView index,
-                PermissionsAllowedMetaAnnotationBuildItem item) {
-            var instances = getPermissionsAllowedInstances(index);
+        private static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(
+                PermissionsAllowedMetaAnnotationBuildItem item, SecurityTransformer securityTransformer) {
+            var instances = getPermissionsAllowedInstances(securityTransformer);
             if (!item.getTransitiveInstances().isEmpty()) {
                 instances.addAll(item.getTransitiveInstances());
             }
             return instances;
         }
 
-        static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(IndexView index) {
-            return new ArrayList<>(
-                    index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
+        static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(
+                SecurityTransformer securityTransformer) {
+            return new ArrayList<>(securityTransformer.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED));
         }
 
-        static PermissionsAllowedMetaAnnotationBuildItem movePermFromMetaAnnToMetaTarget(IndexView index) {
-            var permissionsAllowed = getPermissionsAllowedInstances(index)
+        static PermissionsAllowedMetaAnnotationBuildItem movePermFromMetaAnnToMetaTarget(
+                SecurityTransformer securityTransformer) {
+            var permissionsAllowed = getPermissionsAllowedInstances(securityTransformer)
                     .stream()
                     .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
                     .filter(ai -> ai.target().asClass().isAnnotation())
@@ -550,7 +553,7 @@ interface PermissionSecurityChecks {
                     .flatMap(instanceOnMetaAnn -> {
                         var metaAnnotationName = instanceOnMetaAnn.target().asClass().name();
                         metaAnnotationNames.add(metaAnnotationName);
-                        return index.getAnnotations(metaAnnotationName).stream()
+                        return securityTransformer.getAnnotations(metaAnnotationName).stream()
                                 .map(ai -> AnnotationInstance.create(PERMISSIONS_ALLOWED, ai.target(),
                                         instanceOnMetaAnn.values()));
                     })

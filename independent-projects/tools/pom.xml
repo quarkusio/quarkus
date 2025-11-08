@@ -44,7 +44,7 @@
         <gradle-wrapper.version>9.1.0</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <compiler-plugin.version>3.14.0</compiler-plugin.version>
+        <compiler-plugin.version>3.14.1</compiler-plugin.version>
         <kotlin.version>1.6.0</kotlin.version>
         <scala.version>2.13.12</scala.version>
         <scala-plugin.version>4.4.0</scala-plugin.version>
@@ -59,7 +59,7 @@
         <mockito.version>5.20.0</mockito.version>
         <quarkus.version>3.29.999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.5.0</jandex.version>
+        <jandex.version>3.5.1</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>

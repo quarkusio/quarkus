@@ -349,6 +349,10 @@ public class DevServicesProcessor {
     }
 
     private ContainerInfo.ContainerPort[] getExposedPorts(Container container) {
+        if (container.getPorts() == null) {
+            return new ContainerInfo.ContainerPort[0];
+        }
+
         return Arrays.stream(container.getPorts())
                 .map(c -> new ContainerInfo.ContainerPort(c.getIp(), c.getPrivatePort(), c.getPublicPort(), c.getType()))
                 .toArray(ContainerInfo.ContainerPort[]::new);

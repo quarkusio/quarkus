@@ -80,6 +80,11 @@ public class RequestParamController {
         throw new IllegalStateException("Unexpected state. Should have not been called");
     }
 
+    @GetMapping("/api/foos/paramExplicitlyRequired")
+    public String getFoosParamExplicitlyRequired(@RequestParam(required = true) String id) {
+        throw new IllegalStateException("Unexpected state. Should have not been called");
+    }
+
     @RestControllerAdvice
     public static class RestExceptionHandler {
 
@@ -87,6 +92,7 @@ public class RequestParamController {
         public ResponseEntity<Object> handleException(Exception ex) {
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
         }
+
     }
 
 }

@@ -64,6 +64,10 @@ public class ContainerLocator {
     }
 
     private Optional<ContainerPort> getMappedPort(Container container, int port) {
+        if (container.getPorts() == null) {
+            return Optional.empty();
+        }
+
         return Arrays.stream(container.getPorts())
                 .filter(containerPort -> hasMatchingPort(containerPort, port))
                 .findAny();
@@ -99,6 +103,10 @@ public class ContainerLocator {
         if (shared && launchMode == LaunchMode.DEVELOPMENT) {
             return lookup(serviceName).findAny()
                     .map(container -> {
+                        if (container.getPorts() == null) {
+                            return container.getId();
+                        }
+
                         Arrays.stream(container.getPorts())
                                 .filter(cp -> Objects.nonNull(cp.getPublicPort()) && Objects.nonNull(cp.getPrivatePort()))
                                 .forEach(cp -> {

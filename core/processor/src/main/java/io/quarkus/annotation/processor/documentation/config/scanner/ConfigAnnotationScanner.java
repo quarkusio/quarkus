@@ -318,6 +318,7 @@ public class ConfigAnnotationScanner {
         String qualifiedName = typeElement.getQualifiedName().toString();
 
         boolean optional = qualifiedName.startsWith(Optional.class.getName());
+        boolean secret = qualifiedName.startsWith("io.smallrye.config.Secret");
         boolean map = qualifiedName.equals(Map.class.getName());
         boolean list = qualifiedName.equals(List.class.getName())
                 || qualifiedName.equals(Set.class.getName());
@@ -327,6 +328,8 @@ public class ConfigAnnotationScanner {
             // let's resolve the type
             if (typeArguments.size() == 1 && optional) {
                 return ResolvedType.makeOptional(resolveType(typeArguments.get(0)));
+            } else if (typeArguments.size() == 1 && secret) {
+                return ResolvedType.makeSecret(resolveType(typeArguments.get(0)));
             } else if (typeArguments.size() == 1 && list) {
                 return ResolvedType.makeList(typeMirror, resolveType(typeArguments.get(0)));
             } else if (typeArguments.size() == 2 && map) {

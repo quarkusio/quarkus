@@ -18,6 +18,7 @@ public final class ConfigProperty extends AbstractConfigItem {
     private final boolean map;
     private final boolean list;
     private final boolean optional;
+    private final boolean secret;
     private final String mapKey;
     private final boolean unnamedMapKey;
     private final boolean withinMap;
@@ -31,7 +32,7 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     public ConfigProperty(ConfigPhase phase, String sourceType, String sourceElementName, SourceElementType sourceElementType,
             PropertyPath path, List<PropertyPath> additionalPaths, String type, String typeDescription, boolean map,
-            boolean list, boolean optional,
+            boolean list, boolean optional, boolean secret,
             String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, @JsonProperty("enum") boolean isEnum,
             EnumAcceptedValues enumAcceptedValues,
             String defaultValue, String javadocSiteLink,
@@ -43,6 +44,7 @@ public final class ConfigProperty extends AbstractConfigItem {
         this.map = map;
         this.list = list;
         this.optional = optional;
+        this.secret = secret;
         this.mapKey = mapKey;
         this.unnamedMapKey = unnamedMapKey;
         this.withinMap = withinMap;
@@ -85,6 +87,10 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     public boolean isOptional() {
         return optional;
+    }
+
+    public boolean isSecret() {
+        return secret;
     }
 
     public String getMapKey() {

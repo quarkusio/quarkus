@@ -3,8 +3,8 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem.isExcludedAnnotationTarget;
-import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_POLICY;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
 import static java.util.stream.Collectors.toMap;
@@ -80,6 +80,8 @@ import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.CurrentIdentityAssociationClassBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
+import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
@@ -113,6 +115,7 @@ public class HttpSecurityProcessor {
     private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
+    static final DotName AUTHORIZATION_POLICY = DotName.createSimple(AuthorizationPolicy.class);
 
     @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Produce(ServiceStartBuildItem.class)
@@ -354,10 +357,14 @@ public class HttpSecurityProcessor {
             BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
             List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
             List<HttpAuthMechanismAnnotationBuildItem> additionalHttpAuthMechAnnotations,
-            CombinedIndexBuildItem combinedIndexBuildItem) {
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
         if (capabilities.isMissing(Capability.SECURITY)) {
             return;
         }
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
+                combinedIndexBuildItem.getIndex(),
+                securityTransformerBuildItem);
 
         // methods annotated with @HttpAuthenticationMechanism that we should additionally secure;
         // when there is no other RBAC annotation applied
@@ -375,13 +382,14 @@ public class HttpSecurityProcessor {
                                 .filter(Objects::nonNull).filter(Predicate.not(isExcludedAnnotationTarget)).toList());
                         // e.g. collect @Basic without @RolesAllowed, @PermissionsAllowed, ..
                         methodsWithoutRbacAnnotations
-                                .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances)));
+                                .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances),
+                                        securityTransformer));
                         methodsWithoutRbacAnnotations
                                 .addAll(collectClassMethodsWithoutRbacAnnotation(collectAnnotatedClasses(instances,
-                                        useClassLevelSecurity.negate())));
+                                        useClassLevelSecurity.negate()), securityTransformer));
                         // class-level security; this registers @Authenticated if no RBAC is explicitly declared
                         collectAnnotatedClasses(instances, useClassLevelSecurity).stream()
-                                .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
+                                .filter(Predicate.not(securityTransformer::hasSecurityAnnotation))
                                 .forEach(c -> registerClassSecurityCheckProducer.produce(
                                         new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
                                                 .builder(Authenticated.class).buildWithTarget(c))));
@@ -527,10 +535,12 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     AuthorizationPolicyInstancesBuildItem gatherAuthorizationPolicyInstances(CombinedIndexBuildItem combinedIndex,
-            Capabilities capabilities) {
+            Capabilities capabilities, Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
+                combinedIndex.getIndex(), securityTransformerBuildItem);
         var methodToPolicy = combinedIndex.getIndex()
                 // @AuthorizationPolicy(name = "policy-name")
                 .getAnnotations(AUTHORIZATION_POLICY)
@@ -545,11 +555,16 @@ public class HttpSecurityProcessor {
                                 The @AuthorizationPolicy annotation placed on '%s' must not have blank policy name.
                                 """.formatted(targetName));
                     }
-                    return getPolicyTargetEndpointCandidates(ai.target())
+                    return getPolicyTargetEndpointCandidates(ai.target(), securityTransformer)
                             .map(mi -> Map.entry(mi, policyName));
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new AuthorizationPolicyInstancesBuildItem(methodToPolicy);
+    }
+
+    @BuildStep
+    AdditionalSecurityAnnotationBuildItem registerAuthorizationPolicyAnnotation() {
+        return new AdditionalSecurityAnnotationBuildItem(AUTHORIZATION_POLICY);
     }
 
     /**
@@ -577,8 +592,7 @@ public class HttpSecurityProcessor {
     @BuildStep
     void generateAuthorizationPolicyStorage(BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer,
             Capabilities capabilities,
-            AuthorizationPolicyInstancesBuildItem authZPolicyInstancesItem,
-            BuildProducer<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationProducer) {
+            AuthorizationPolicyInstancesBuildItem authZPolicyInstancesItem) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return;
         }
@@ -610,9 +624,6 @@ public class HttpSecurityProcessor {
                     }
                 } else {
                     // detected @AuthorizationPolicy annotation instances
-                    additionalSecurityAnnotationProducer
-                            .produce(new AdditionalSecurityAnnotationBuildItem(AUTHORIZATION_POLICY));
-
                     // generates:
                     // private final Map<MethodDescription, String> methodToPolicyName;
                     var methodToPolicyNameField = cc.getFieldCreator("methodToPolicyName", mapDescriptorType)
@@ -688,7 +699,8 @@ public class HttpSecurityProcessor {
         return new IgnoredContextLocalDataKeysBuildItem(recorder.getSecurityIdentityContextKeySupplier());
     }
 
-    private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target) {
+    private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target,
+            SecurityTransformer securityTransformer) {
         if (target.kind() == AnnotationTarget.Kind.METHOD) {
             var method = target.asMethod();
             if (!hasProperEndpointModifiers(method)) {
@@ -707,7 +719,7 @@ public class HttpSecurityProcessor {
         }
         return target.asClass().methods().stream()
                 .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
-                .filter(mi -> !HttpSecurityUtils.hasSecurityAnnotation(mi));
+                .filter(mi -> !securityTransformer.hasSecurityAnnotation(mi));
     }
 
     private static void validateAuthMechanismAnnotationUsage(Capabilities capabilities,
@@ -726,21 +738,23 @@ public class HttpSecurityProcessor {
         return !ClientAuth.NONE.equals(httpBuildTimeConfig.tlsClientAuth());
     }
 
-    public static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
+    public static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes,
+            SecurityTransformer securityTransformer) {
         return classes
                 .stream()
-                .filter(c -> !HttpSecurityUtils.hasSecurityAnnotation(c))
+                .filter(c -> !securityTransformer.hasSecurityAnnotation(c))
                 .map(ClassInfo::methods)
                 .flatMap(Collection::stream)
                 .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
-                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
+                .filter(m -> !securityTransformer.hasSecurityAnnotation(m))
                 .collect(Collectors.toSet());
     }
 
-    public static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
+    public static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods,
+            SecurityTransformer securityTransformer) {
         return methods
                 .stream()
-                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
+                .filter(m -> !securityTransformer.hasSecurityAnnotation(m))
                 .collect(Collectors.toSet());
     }
 

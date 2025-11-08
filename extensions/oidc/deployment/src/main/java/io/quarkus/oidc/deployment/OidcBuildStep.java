@@ -9,6 +9,7 @@ import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
 import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectAnnotatedClasses;
 import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectClassMethodsWithoutRbacAnnotation;
@@ -109,13 +110,14 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
+import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
-import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
@@ -437,11 +439,14 @@ public class OidcBuildStep {
             BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
             List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
             BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
-            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer) {
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
         var authCtxAnnotations = combinedIndexBuildItem.getIndex().getAnnotations(AUTHENTICATION_CONTEXT_NAME);
         if (authCtxAnnotations.isEmpty() || !areEagerSecInterceptorsSupported(capabilities, httpBuildTimeConfig)) {
             return;
         }
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
+                combinedIndexBuildItem.getIndex(), securityTransformerBuildItem);
         bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authenticationContextInterceptorCreator(),
                 ai -> {
                     AnnotationValue maxAgeAnnotationValue = ai.value("maxAge");
@@ -468,18 +473,18 @@ public class OidcBuildStep {
                 .map(AnnotationInstance::target)
                 .filter(at -> at.kind() == METHOD)
                 .map(AnnotationTarget::asMethod)
-                .toList());
+                .toList(), securityTransformer);
         additionalSecuredMethodsProducer
                 .produce(new AdditionalSecuredMethodsBuildItem(annotatedMethods, Optional.of(List.of("**"))));
         // method-level security; this registers @Authenticated if no RBAC is explicitly declared
         Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
         Set<MethodInfo> annotatedClassMethods = collectClassMethodsWithoutRbacAnnotation(
-                collectAnnotatedClasses(authCtxAnnotations, Predicate.not(useClassLevelSecurity)));
+                collectAnnotatedClasses(authCtxAnnotations, Predicate.not(useClassLevelSecurity)), securityTransformer);
         additionalSecuredMethodsProducer
                 .produce(new AdditionalSecuredMethodsBuildItem(annotatedClassMethods, Optional.of(List.of("**"))));
         // class-level security; this registers @Authenticated if no RBAC is explicitly declared
         collectAnnotatedClasses(authCtxAnnotations, useClassLevelSecurity).stream()
-                .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
+                .filter(Predicate.not(securityTransformer::hasSecurityAnnotation))
                 .forEach(c -> registerClassSecurityCheckProducer.produce(
                         new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
                                 .builder(Authenticated.class).buildWithTarget(c))));

@@ -1,7 +1,6 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.security.spi.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
-import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerBuildItem.createSecurityTransformer;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -42,6 +41,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.security.deployment.AdditionalSecurityCheckBuildItem;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
+import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.di.deployment.SpringBeanNameToDotNameBuildItem;
 import io.quarkus.spring.security.runtime.interceptor.SpringPreauthorizeInterceptor;
@@ -76,9 +77,12 @@ class SpringSecurityProcessor {
     @BuildStep
     void addSpringSecuredSecurityCheck(CombinedIndexBuildItem index,
             SecurityCheckRecorder securityCheckRecorder,
-            BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityCheckBuildItems) {
+            BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityCheckBuildItems,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
 
         Set<MethodInfo> methodsWithSecurityAnnotation = new HashSet<>();
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(index.getIndex(),
+                securityTransformerBuildItem);
 
         // first go through the list of annotated methods
         for (AnnotationInstance instance : index.getIndex().getAnnotations(DotNames.SPRING_SECURED)) {
@@ -89,8 +93,8 @@ class SpringSecurityProcessor {
 
             if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo methodInfo = instance.target().asMethod();
-                checksStandardSecurity(instance, methodInfo);
-                checksStandardSecurity(instance, methodInfo.declaringClass());
+                checksStandardSecurity(instance, methodInfo, securityTransformer);
+                checksStandardSecurity(instance, methodInfo.declaringClass(), securityTransformer);
                 additionalSecurityCheckBuildItems.produce(new AdditionalSecurityCheckBuildItem(methodInfo,
                         securityCheckRecorder.rolesAllowed(rolesAllowed)));
                 methodsWithSecurityAnnotation.add(methodInfo);
@@ -106,12 +110,12 @@ class SpringSecurityProcessor {
 
             if (instance.target().kind() == AnnotationTarget.Kind.CLASS) {
                 ClassInfo classInfo = instance.target().asClass();
-                checksStandardSecurity(instance, classInfo);
+                checksStandardSecurity(instance, classInfo, securityTransformer);
                 for (MethodInfo methodInfo : classInfo.methods()) {
                     if (!isPublicNonStaticNonConstructor(methodInfo)) {
                         continue;
                     }
-                    checksStandardSecurity(instance, methodInfo);
+                    checksStandardSecurity(instance, methodInfo, securityTransformer);
                     if (hasSpringSecurityAnnotationOtherThan(methodInfo, DotNames.SPRING_SECURED)) {
                         continue;
                     }
@@ -137,11 +141,13 @@ class SpringSecurityProcessor {
     }
 
     //Validates that there is no @Secured with the standard security annotations at class level
-    private void checksStandardSecurity(AnnotationInstance instance, ClassInfo classInfo) {
-        if (hasSecurityAnnotation(classInfo)) {
-            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(classInfo);
+    private void checksStandardSecurity(AnnotationInstance instance, ClassInfo classInfo,
+            SecurityTransformer securityTransformer) {
+        if (securityTransformer.hasSecurityAnnotation(classInfo)) {
+            Optional<AnnotationInstance> firstStandardSecurityAnnotation = securityTransformer
+                    .findFirstSecurityAnnotation(classInfo);
             if (firstStandardSecurityAnnotation.isPresent()) {
-                String securityAnnotationName = findFirstStandardSecurityAnnotation(classInfo).get().name()
+                String securityAnnotationName = securityTransformer.findFirstSecurityAnnotation(classInfo).get().name()
                         .withoutPackagePrefix();
                 throw new IllegalArgumentException("An invalid security annotation combination was detected: Found @"
                         + instance.name().withoutPackagePrefix() + " and @" + securityAnnotationName + " on class "
@@ -151,11 +157,13 @@ class SpringSecurityProcessor {
     }
 
     //Validates that there is no @Secured with the standard security annotations at method level
-    private void checksStandardSecurity(AnnotationInstance instance, MethodInfo methodInfo) {
-        if (hasSecurityAnnotation(methodInfo)) {
-            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(methodInfo);
+    private void checksStandardSecurity(AnnotationInstance instance, MethodInfo methodInfo,
+            SecurityTransformer securityTransformer) {
+        if (securityTransformer.hasSecurityAnnotation(methodInfo)) {
+            Optional<AnnotationInstance> firstStandardSecurityAnnotation = securityTransformer
+                    .findFirstSecurityAnnotation(methodInfo);
             if (firstStandardSecurityAnnotation.isPresent()) {
-                String securityAnnotationName = findFirstStandardSecurityAnnotation(methodInfo).get()
+                String securityAnnotationName = securityTransformer.findFirstSecurityAnnotation(methodInfo).get()
                         .name()
                         .withoutPackagePrefix();
                 throw new IllegalArgumentException("An invalid security annotation combination was detected: Found "
@@ -174,7 +182,11 @@ class SpringSecurityProcessor {
     void locatePreAuthorizedInstances(
             CombinedIndexBuildItem index,
             BuildProducer<SpringPreAuthorizeAnnotatedMethodBuildItem> springPreAuthorizeAnnotatedMethods,
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(index.getIndex(),
+                securityTransformerBuildItem);
+
         Map<MethodInfo, AnnotationInstance> result = new HashMap<>();
 
         // first go through the list of annotated methods
@@ -186,7 +198,7 @@ class SpringSecurityProcessor {
                 continue;
             }
             MethodInfo methodInfo = instance.target().asMethod();
-            checksStandardSecurity(instance, methodInfo);
+            checksStandardSecurity(instance, methodInfo, securityTransformer);
             result.put(methodInfo, instance);
         }
 
@@ -207,12 +219,12 @@ class SpringSecurityProcessor {
                 metaAnnotations.put(classInfo.name(), classInfo);
                 continue;
             }
-            checksStandardSecurity(instance, classInfo);
+            checksStandardSecurity(instance, classInfo, securityTransformer);
             for (MethodInfo methodInfo : classInfo.methods()) {
                 if (!isPublicNonStaticNonConstructor(methodInfo)) {
                     continue;
                 }
-                checksStandardSecurity(instance, methodInfo);
+                checksStandardSecurity(instance, methodInfo, securityTransformer);
                 if (hasSpringSecurityAnnotationOtherThan(methodInfo, DotNames.SPRING_PRE_AUTHORIZE)) {
                     continue;
                 }
@@ -232,7 +244,7 @@ class SpringSecurityProcessor {
                     continue;
                 }
                 MethodInfo methodInfo = instance.target().asMethod();
-                checksStandardSecurity(instance, methodInfo);
+                checksStandardSecurity(instance, methodInfo, securityTransformer);
                 result.put(methodInfo, metaAnnotation.declaredAnnotation(DotNames.SPRING_PRE_AUTHORIZE));
                 classesInNeedOfAnnotationTransformation.add(methodInfo.declaringClass().name());
             }

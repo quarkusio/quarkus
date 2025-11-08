@@ -742,6 +742,22 @@ public class BearerTokenAuthorizationTest {
                 .body(Matchers.containsString("Hello Jonathan from alice"));
     }
 
+    @Test
+    public void testAuthorizationOnGrpcServiceClassLevel() {
+        String token = getAccessToken("alice", Set.of("user"));
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/greeter/other/bearer")
+                .then()
+                .statusCode(500);
+
+        token = getAccessToken("alice", Set.of("admin"));
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/greeter/other/bearer")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Hi Jonathan from alice"));
+    }
+
     private static void assertSecurityIdentityAcquired(String tenant, String user, String role) {
         String jsonPath = tenant + "." + user + ".findAll{ it == \"" + role + "\"}.size()";
         RestAssured.given().when().get("/startup-service").then().statusCode(200)

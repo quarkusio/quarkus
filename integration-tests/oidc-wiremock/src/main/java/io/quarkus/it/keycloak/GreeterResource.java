@@ -9,6 +9,9 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
+import examples.MutinySaluterGrpc;
+import examples.SaluteReply;
+import examples.SaluteRequest;
 import io.grpc.Metadata;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcClientUtils;
@@ -26,6 +29,9 @@ public class GreeterResource {
     @GrpcClient("hello")
     MutinyGreeterGrpc.MutinyGreeterStub helloClient;
 
+    @GrpcClient("saluter")
+    MutinySaluterGrpc.MutinySaluterStub saluterClient;
+
     @Path("bearer")
     @GET
     public Uni<String> sayHello() {
@@ -33,6 +39,15 @@ public class GreeterResource {
         headers.put(AUTHORIZATION, "Bearer " + accessToken.getRawToken());
         return GrpcClientUtils.attachHeaders(helloClient, headers)
                 .bearer(HelloRequest.newBuilder().setName("Jonathan").build()).map(HelloReply::getMessage);
+    }
+
+    @Path("/other/bearer")
+    @GET
+    public Uni<String> sayHi() {
+        Metadata headers = new Metadata();
+        headers.put(AUTHORIZATION, "Bearer " + accessToken.getRawToken());
+        return GrpcClientUtils.attachHeaders(saluterClient, headers)
+                .bearer(SaluteRequest.newBuilder().setName("Jonathan").build()).map(SaluteReply::getMessage);
     }
 
 }

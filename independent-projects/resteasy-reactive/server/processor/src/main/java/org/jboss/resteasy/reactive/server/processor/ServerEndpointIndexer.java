@@ -18,6 +18,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PERIOD;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
@@ -81,6 +82,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetTimeP
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OptionalConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.PeriodParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
@@ -636,6 +638,8 @@ public class ServerEndpointIndexer
             return new YearParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (YEAR_MONTH.equals(paramType)) {
             return new YearMonthParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
+        } else if (PERIOD.equals(paramType)) {
+            return new PeriodParamConverter.Supplier();
         }
 
         throw new RuntimeException(

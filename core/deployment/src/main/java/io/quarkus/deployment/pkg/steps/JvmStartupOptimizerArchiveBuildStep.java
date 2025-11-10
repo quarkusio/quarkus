@@ -226,6 +226,10 @@ public class JvmStartupOptimizerArchiveBuildStep {
     private Path createAot(JarBuildItem jarResult,
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
             boolean isFastJar) {
+        if (Runtime.version().feature() < 25) {
+            throw new IllegalStateException(
+                    "AOT cache generation requires building with JDK 25 or newer (see JEP 514). ");
+        }
         ArchivePathsContainer aotPathContainers = ArchivePathsContainer.aotFromQuarkusJar(jarResult.getPath());
         return launchArchiveCreateCommand(aotPathContainers.workingDirectory, aotPathContainers.resultingFile,
                 createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotPathContainers));

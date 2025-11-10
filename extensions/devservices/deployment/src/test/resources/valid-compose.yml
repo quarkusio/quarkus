@@ -7,12 +7,16 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
     labels:
-      io.quarkus.devservices.compose.wait_for.logs: "database system is ready to accept connections"
+      io.quarkus.devservices.compose.wait_for.logs.2: "database system is ready to accept connections"
+      io.quarkus.devservices.compose.wait_for.logs.timeout: 10s
+      io.quarkus.devservices.compose.wait_for.ports.disable: true
 
   redis:
     image: redis:6
     ports:
       - "6379:6379"
+    labels:
+      io.quarkus.devservices.compose.wait_for.logs: "The server is now ready to accept connections"
 
   kafka:
     profiles:

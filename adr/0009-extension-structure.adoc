@@ -35,7 +35,7 @@ Depending on an `runtime-api` module does not transitively include the full exte
 * `deployment`: Contains build-time logic, including `BuildSteps`.
 This module may define internal build items.
 * `deployment-spi`: Contains build-time APIs intended to be reused across multiple extensions for integration purposes.
-Extensions contributing to or using build items from other extensions should depend on `build-spi` modules.
+Extensions contributing to or using build items from other extensions should depend on `deployment-spi` modules.
 * `runtime-dev`: Contains runtime classes used exclusively in dev mode (e.g., for the Dev UI). This avoids shipping dev-only classes into production artifacts.
 * `codestart`: Contains the _Codestart_ templates for the extension. See https://quarkus.io/guides/extension-codestart[Codestart Guide] for more details.
 * `cli`: Contains CLI commands related to the extension. This is optional and should be used only if the extension provides specific CLI functionality.
@@ -74,7 +74,7 @@ Module dependencies must follow strict rules:
 Using the `Automatic-Module-Name` allows extensions to be used as JPMS modules in the future, even if we do not fully adopt JPMS yet.
 Also, it avoids split packages, as the `Automatic-Module-Name` must be unique across all modules in the Quarkus ecosystem:
 
-	- Runtime: `io.<quarkus|quarkiverse>.<extension-name>`
+	- Runtime: `io.<quarkus|quarkiverse>.<extension-name>.runtime`
 	- Deployment: `io.<quarkus|quarkiverse>.<extension-name>.deployment`
 	- Runtime API: `io.<quarkus|quarkiverse>.<extension-name>.api`
 	- Deployment SPI: `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`
@@ -137,7 +137,7 @@ IMPORTANT: Once an extension has a `runtime-api` module, it should not expose pu
 |===
 | Scenario | Recommended Structure | Notes
 
-| Small/simple extension not reused by others
+| Small/simple extensions not reused by others
 | `runtime`
 | Keep everything in `runtime`. Avoid unnecessary modularity.
 
@@ -182,11 +182,11 @@ To transform an extension name into a package name, use the following pattern:
 * If the extension name contains a hyphen, it is recommended to replace it with an underscore (e.g., `quarkus-foo-bar` becomes `io.quarkus.foo_bar`). 
 
 ==== `runtime` module
-* `io.<quarkus|quarkiverse>.<extension-name>.runtime.internal|impl`: Internal implementation. Not part of the public API.
+* `io.<quarkus|quarkiverse>.<extension-name>.runtime.internal|impl`: Internal implementation. Not part of the public API. `internal` recommended.
 * `io.<quarkus|quarkiverse>.<extension-name>.runtime.graal`: GraalVM substitutions. Not part of the public API.
-* `io.<quarkus|quarkiverse>.<extension-name>`: Public API when requiring tight-coupling. May include subpackages (excluding `api` and `dev` packages). Example: `io.quarkus.cache`. Note that this is discouraged in favor of the `runtime-api` module.
+* `io.<quarkus|quarkiverse>.<extension-name>.runtime`: Public API when requiring tight-coupling. May include subpackages (excluding `api` and `dev` packages). Example: `io.quarkus.cache`. Note that this is discouraged in favor of the `runtime-api` module.
 
-Non-API packages should be under `.impl` or `internal` like `io.quarkus.<extension-name>.runtime.internal` or `io.quarkus.<extension-name>.runtime.impl`.
+Non-API packages should be under `internal` like `io.quarkus.<extension-name>.runtime.internal` (`io.quarkus.<extension-name>.runtime.impl` is tolerated).
 Thus, automated tooling can easily use this information to help generate a `module-info` with the correct exports, as well as excluding those packages from JavaDoc generation.
 
 ==== `deployment` module
@@ -205,7 +205,11 @@ Build items in this module should be documented with their intended use (produce
 
 ==== `codegen` module
 
-* `io.<quarkus|quarkiverse>.<extension-name>.codegen`: Code generation logic, if applicable. This module is optional and may not be present in all extensions.
+* `io.<quarkus|quarkiverse>.<extension-name>.codegen`: Source code generation logic, if applicable. This module is optional and may not be present in all extensions.
+
+==== `cli` module
+
+* `io.<quarkus|quarkiverse>.<extension-name>.cli`: Quarkus CLI plugin. This module is optional and may not be present in all extensions.
 
 
 === Module Summary Table

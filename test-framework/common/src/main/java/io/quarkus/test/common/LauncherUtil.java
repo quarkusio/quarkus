@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -46,32 +45,24 @@ public final class LauncherUtil {
      * as can be seen in <a href="https://github.com/quarkusio/quarkus/issues/33229">here</a>
      */
     static Process launchProcessAndDrainIO(List<String> args, Map<String, String> env) throws IOException {
-        Process process = launchProcess(args, env);
-        new Thread(new ProcessReader(process.getInputStream())).start();
-        new Thread(new ProcessReader(process.getErrorStream())).start();
+        ProcessBuilder pb = new ProcessBuilder(args)
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .redirectInput(ProcessBuilder.Redirect.INHERIT);
+        pb.environment().putAll(env);
+        Process process = pb.start();
+        //        new Thread(new ProcessReader(process.getInputStream())).start();
+        //        new Thread(new ProcessReader(process.getErrorStream())).start();
         return process;
     }
 
     /**
-     * Launches a process using the supplied arguments but does drain the IO
+     * Launches a process using the supplied arguments but does not drain the IO
      */
     static Process launchProcess(List<String> args, Map<String, String> env) throws IOException {
-        Process process;
-        if (env.isEmpty()) {
-            process = Runtime.getRuntime().exec(args.toArray(new String[0]));
-        } else {
-            Map<String, String> currentEnv = System.getenv();
-            Map<String, String> finalEnv = new HashMap<>(currentEnv);
-            finalEnv.putAll(env);
-            String[] envArray = new String[finalEnv.size()];
-            int i = 0;
-            for (var entry : finalEnv.entrySet()) {
-                envArray[i] = entry.getKey() + "=" + entry.getValue();
-                i++;
-            }
-            process = Runtime.getRuntime().exec(args.toArray(new String[0]), envArray);
-        }
-        return process;
+        ProcessBuilder pb = new ProcessBuilder(args);
+        pb.environment().putAll(env);
+        return pb.start();
     }
 
     /**
@@ -128,7 +119,7 @@ public final class LauncherUtil {
     static void destroyProcess(Process quarkusProcess) {
         quarkusProcess.destroy();
         int i = 0;
-        while (i++ < 10) {
+        while (i++ < 200) {
             try {
                 Thread.sleep(LOG_CHECK_INTERVAL);
             } catch (InterruptedException ignored) {

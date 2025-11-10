@@ -11,5 +11,7 @@ public interface JarArtifactLauncher extends ArtifactLauncher<JarArtifactLaunche
     interface JarInitContext extends InitContext {
 
         Path jarPath();
+
+        boolean generateAotFile();
     }
 }

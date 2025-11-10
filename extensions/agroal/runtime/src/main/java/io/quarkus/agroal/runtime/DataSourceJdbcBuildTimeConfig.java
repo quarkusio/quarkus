@@ -45,7 +45,6 @@ public interface DataSourceJdbcBuildTimeConfig {
         /**
          * Enable metrics collection for this datasource.
          */
-        @WithDefault("false")
         Optional<Boolean> enabled();
 
     }

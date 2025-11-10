@@ -17,7 +17,7 @@ import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.mongodb")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface MongodbConfig {
+public interface MongoConfig {
     String CONFIG_NAME = "mongodb";
     String DEFAULT_CLIENT_NAME = "<default>";
 

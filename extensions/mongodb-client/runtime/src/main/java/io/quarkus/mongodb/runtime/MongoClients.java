@@ -85,7 +85,7 @@ public class MongoClients {
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
     private static final MongoDriverInformation DRIVER_INFORMATION = MongoDriverInformation
             .builder(MongoDriverInformation.builder().build()).driverName("quarkus").build();
-    private final MongodbConfig mongodbConfig;
+    private final MongoConfig mongoConfig;
     private final MongoClientSupport mongoClientSupport;
     private final Instance<CodecProvider> codecProviders;
     private final TlsConfigurationRegistry tlsConfigurationRegistry;
@@ -98,7 +98,7 @@ public class MongoClients {
     private final Instance<MongoClientCustomizer> customizers;
     private final Vertx vertx;
 
-    public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
+    public MongoClients(MongoConfig mongoConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
             TlsConfigurationRegistry tlsConfigurationRegistry,
             Instance<PropertyCodecProvider> propertyCodecProviders,
@@ -106,7 +106,7 @@ public class MongoClients {
             Instance<ReactiveContextProvider> reactiveContextProviders,
             @Any Instance<MongoClientCustomizer> customizers,
             Vertx vertx) {
-        this.mongodbConfig = mongodbConfig;
+        this.mongoConfig = mongoConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
         this.tlsConfigurationRegistry = tlsConfigurationRegistry;
@@ -126,7 +126,7 @@ public class MongoClients {
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, mongodbConfig.clients().get(clientName),
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, mongoConfig.clients().get(clientName),
                 false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
         mongoclients.put(clientName, client);
@@ -135,7 +135,7 @@ public class MongoClients {
 
     public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, mongodbConfig.clients().get(clientName),
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, mongoConfig.clients().get(clientName),
                 true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration, DRIVER_INFORMATION);
@@ -389,7 +389,7 @@ public class MongoClients {
         // If the client name is the default one, we use a customizer that does not have the MongoClientName qualifier.
         // Otherwise, we use the one that has the qualifier.
         // Note that at build time, we check that we have at most one customizer per client, including for the default one.
-        if (MongodbConfig.isDefaultClient(name)) {
+        if (MongoConfig.isDefaultClient(name)) {
             var maybe = customizers.handlesStream()
                     .filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
                     .findFirst(); // We have at most one customizer without the qualifier.

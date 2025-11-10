@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.health;
 
-import static io.quarkus.mongodb.runtime.MongodbConfig.isDefaultClient;
+import static io.quarkus.mongodb.runtime.MongoConfig.isDefaultClient;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -45,7 +45,7 @@ public class MongoHealthCheck implements HealthCheck {
     private static final Document COMMAND = new Document("ping", 1);
 
     // TODO - Rewrite this with active / inactive. Follow Redis implementation
-    public MongoHealthCheck(MongodbConfig config) {
+    public MongoHealthCheck(MongoConfig config) {
         Iterable<InstanceHandle<MongoClient>> handle = Arc.container()
                 .select(MongoClient.class, Any.Literal.INSTANCE).handles();
         Iterable<InstanceHandle<ReactiveMongoClient>> reactiveHandlers = Arc.container()

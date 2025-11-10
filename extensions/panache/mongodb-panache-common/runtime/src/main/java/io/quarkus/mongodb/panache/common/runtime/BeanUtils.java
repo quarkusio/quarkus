@@ -16,7 +16,7 @@ import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class BeanUtils {
@@ -29,7 +29,7 @@ public final class BeanUtils {
             return entity.clientName();
         }
 
-        return MongodbConfig.DEFAULT_CLIENT_NAME;
+        return MongoConfig.DEFAULT_CLIENT_NAME;
     }
 
     public static <T> T clientFromArc(MongoEntity entity,
@@ -64,12 +64,12 @@ public final class BeanUtils {
 
     public static String getDatabaseName(MongoEntity mongoEntity, String clientBeanName) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        MongodbConfig mongoConfig = config.getConfigMapping(MongodbConfig.class);
+        MongoConfig mongoConfig = config.getConfigMapping(MongoConfig.class);
         MongoClientConfig mongoClientConfig = mongoConfig.clients().get(clientBeanName);
         if (mongoClientConfig.database().isPresent()) {
             return mongoClientConfig.database().get();
         }
-        mongoClientConfig = mongoConfig.clients().get(MongodbConfig.DEFAULT_CLIENT_NAME);
+        mongoClientConfig = mongoConfig.clients().get(MongoConfig.DEFAULT_CLIENT_NAME);
         if (mongoClientConfig.database().isPresent()) {
             return mongoClientConfig.database().get();
         }

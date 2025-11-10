@@ -24,9 +24,9 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class MongoClientRecorder {
-    private final RuntimeValue<MongodbConfig> runtimeConfig;
+    private final RuntimeValue<MongoConfig> runtimeConfig;
 
-    public MongoClientRecorder(final RuntimeValue<MongodbConfig> runtimeConfig) {
+    public MongoClientRecorder(final RuntimeValue<MongoConfig> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
     }
 
@@ -87,7 +87,7 @@ public class MongoClientRecorder {
 
     @SuppressWarnings("rawtypes")
     private AnnotationLiteral literal(String name) {
-        if (name.startsWith(MongodbConfig.DEFAULT_CLIENT_NAME)) {
+        if (name.startsWith(MongoConfig.DEFAULT_CLIENT_NAME)) {
             return Default.Literal.INSTANCE;
         }
         return NamedLiteral.of(name);

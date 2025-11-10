@@ -12,7 +12,7 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
@@ -21,12 +21,12 @@ import liquibase.Liquibase;
 public class LiquibaseMongodbRecorder {
     private final LiquibaseMongodbBuildTimeConfig buildTimeConfig;
     private final RuntimeValue<LiquibaseMongodbConfig> runtimeConfig;
-    private final RuntimeValue<MongodbConfig> mongodbRuntimeConfig;
+    private final RuntimeValue<MongoConfig> mongodbRuntimeConfig;
 
     public LiquibaseMongodbRecorder(
             final LiquibaseMongodbBuildTimeConfig buildTimeConfig,
             final RuntimeValue<LiquibaseMongodbConfig> runtimeConfig,
-            final RuntimeValue<MongodbConfig> mongodbRuntimeConfig) {
+            final RuntimeValue<MongoConfig> mongodbRuntimeConfig) {
         this.buildTimeConfig = buildTimeConfig;
         this.runtimeConfig = runtimeConfig;
         this.mongodbRuntimeConfig = mongodbRuntimeConfig;
@@ -63,7 +63,7 @@ public class LiquibaseMongodbRecorder {
                                 "Mongo client named '%s' not found".formatted(forceMongoClientName));
                     }
                     clientNameSelected = forceMongoClientName;
-                } else if (MongodbConfig.isDefaultClient(clientName)) {
+                } else if (MongoConfig.isDefaultClient(clientName)) {
                     mongoClientConfig = mongodbRuntimeConfig.getValue().clients().get(clientName);
                     clientNameSelected = clientName;
                 } else {
@@ -81,7 +81,7 @@ public class LiquibaseMongodbRecorder {
     }
 
     private Annotation getLiquibaseMongodbQualifier(String clientName) {
-        if (MongodbConfig.isDefaultClient(clientName)) {
+        if (MongoConfig.isDefaultClient(clientName)) {
             return Default.Literal.INSTANCE;
         } else {
             return LiquibaseMongodbClient.LiquibaseMongodbClientLiteral.of(clientName);

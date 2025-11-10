@@ -12,7 +12,7 @@ public final class MongoClientBeanUtil {
     }
 
     public static String namedQualifier(String clientName, boolean isReactive) {
-        if (MongodbConfig.isDefaultClient(clientName)) {
+        if (MongoConfig.isDefaultClient(clientName)) {
             throw new IllegalArgumentException("The default client should not have a named qualifier");
         }
         return isReactive ? clientName + REACTIVE_CLIENT_NAME_SUFFIX : clientName;
@@ -20,7 +20,7 @@ public final class MongoClientBeanUtil {
 
     @SuppressWarnings("rawtypes")
     public static AnnotationLiteral clientLiteral(String clientName, boolean isReactive) {
-        if (MongodbConfig.isDefaultClient(clientName)) {
+        if (MongoConfig.isDefaultClient(clientName)) {
             return Default.Literal.INSTANCE;
         }
         return NamedLiteral.of(namedQualifier(clientName, isReactive));

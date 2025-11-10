@@ -24,7 +24,7 @@ import com.mongodb.MongoConfigurationException;
 import com.mongodb.spi.dns.DnsClient;
 import com.mongodb.spi.dns.DnsException;
 
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
@@ -43,10 +43,10 @@ public class MongoDnsClient implements DnsClient {
     private static final Map<String, List<String>> TXT_CACHE = new ConcurrentHashMap<>();
 
     private final io.vertx.mutiny.core.dns.DnsClient dnsClient;
-    private final MongodbConfig mongoConfig;
+    private final MongoConfig mongoConfig;
 
     MongoDnsClient(io.vertx.core.Vertx vertx) {
-        this.mongoConfig = getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(MongodbConfig.class);
+        this.mongoConfig = getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(MongoConfig.class);
         Vertx mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
 
         // If the server is not set, we attempt to read the /etc/resolv.conf. If it does not exist, we use the default

@@ -18,9 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HttpMethod;
+import io.vertx.core.json.JsonObject;
 
 public class SyncValidationTest {
 
@@ -109,6 +111,27 @@ public class SyncValidationTest {
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(400))
                 .body("detail", containsString("validation constraint violations"));
+
+        given()
+                .contentType("application/json")
+                .body(new JsonObject().put("name", "foo").put("message", "bar").encode())
+                .when()
+                .post("/echo")
+                .then()
+                .statusCode(500)
+                .body("title", is("Constraint Violation"))
+                .body("detail", is("validation constraint violations"))
+                .body("status", is(500));
+
+        given()
+                .contentType("application/json")
+                .body(new JsonObject().put("name", "foobar").put("message", "quux").encode())
+                .when()
+                .post("/echo")
+                .then()
+                .statusCode(200)
+                .body("name", is("foobar"))
+                .body("welcome", is("quux"));
     }
 
     @ApplicationScoped
@@ -146,6 +169,10 @@ public class SyncValidationTest {
             return "hi";
         }
 
+        @Route(methods = HttpMethod.POST, path = "/echo")
+        public @Valid Greeting echo(@Valid @Body JsonObject greeting) {
+            return new Greeting(greeting.getString("name"), greeting.getString("message"));
+        }
     }
 
     public static class Greeting {

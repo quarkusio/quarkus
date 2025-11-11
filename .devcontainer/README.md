@@ -8,7 +8,7 @@ Sometimes, you don´t have the right dev environment to explore and contribute i
 
 ## Getting Started
 
-If you visit the project in Github: https://github.com/jabrena/quarkus in the main view, exist a Green button named `Code` if you click in the dropdown, you will see the option `Codespaces` so, if you click in the button `Open in Codespaces`, you will open a new Tab in your web browser to load Quarkus in Codespaces.
+If you visit the project in Github: https://github.com/quarkusio/quarkus in the main view, exist a Green button named `Code` if you click in the dropdown, you will see the option `Codespaces` so, if you click in the button `Open in Codespaces`, you will open a new Tab in your web browser to load Quarkus in Codespaces.
 
 ## Benefits
 

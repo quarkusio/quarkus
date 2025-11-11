@@ -8,6 +8,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
@@ -41,6 +42,13 @@ public class LinksMethodScanner implements MethodScanner {
             if (restInstanceValue != null) {
                 entityType = restInstanceValue.asClass().name().toString();
             }
+        }
+        // If not explicitly set on @RestLink, deduce the entity type from the method return type.
+        // This ensures collection-returning endpoints (e.g., List<Foo>) inject links for the element type (Foo),
+        // instead of the runtime collection class.
+        if (entityType == null) {
+            Type nonAsync = RestLinksTypeUtil.getNonAsyncReturnType(method.returnType());
+            entityType = RestLinksTypeUtil.deductEntityType(nonAsync);
         }
 
         RestLinksHandler handler = new RestLinksHandler();

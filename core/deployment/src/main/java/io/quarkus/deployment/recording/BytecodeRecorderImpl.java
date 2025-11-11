@@ -1418,7 +1418,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     } catch (Exception e) {
                         throw new RuntimeException(
                                 "Couldn't load object of type " + i.propertyType.getName() + " for property '" + i.getName()
-                                        + "' on object '" + param + "'.");
+                                        + "' on object '" + param
+                                        + "'. Please, check the Bytecode Recording documentation " +
+                                        "https://quarkus.io/guides/writing-extensions#bytecode-recording to be sure this type "
+                                        +
+                                        "is supported to be passed to @Record classes.",
+                                e);
                     }
                     if (ctorParamIndex != null) {
                         nonDefaultConstructorHandles[ctorParamIndex] = val;

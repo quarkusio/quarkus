@@ -16,7 +16,7 @@ on:
       - '.github/*.java'
       - '.github/*.conf'
       - '.sdkmanrc'
-      - '.devcontainer'
+      - '.devcontainer/**'
   pull_request:
     paths:
       - '.gitignore'
@@ -31,7 +31,7 @@ on:
       - '.github/*.java'
       - '.github/*.conf'
       - '.sdkmanrc'
-      - '.devcontainer'
+      - '.devcontainer/**'
 
 jobs:
   ci-sanity-check:

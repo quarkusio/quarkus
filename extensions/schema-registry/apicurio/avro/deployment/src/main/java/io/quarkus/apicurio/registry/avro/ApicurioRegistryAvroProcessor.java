@@ -14,8 +14,7 @@ public class ApicurioRegistryAvroProcessor {
     }
 
     @BuildStep
-    public void apicurioRegistryAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
+    public void apicurioRegistryAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.apicurio.registry.serde.avro.AvroKafkaDeserializer",
                 "io.apicurio.registry.serde.avro.AvroKafkaSerializer").methods().build());
@@ -24,7 +23,9 @@ public class ApicurioRegistryAvroProcessor {
                 "io.apicurio.registry.serde.strategy.TopicIdStrategy",
                 "io.apicurio.registry.serde.avro.DefaultAvroDatumProvider",
                 "io.apicurio.registry.serde.avro.ReflectAvroDatumProvider",
+                "io.apicurio.registry.serde.avro.ReflectAllowNullAvroDatumProvider",
                 "io.apicurio.registry.serde.avro.strategy.RecordIdStrategy",
+                "io.apicurio.registry.serde.avro.strategy.QualifiedRecordIdStrategy",
                 "io.apicurio.registry.serde.avro.strategy.TopicRecordIdStrategy").methods().fields()
                 .build());
 

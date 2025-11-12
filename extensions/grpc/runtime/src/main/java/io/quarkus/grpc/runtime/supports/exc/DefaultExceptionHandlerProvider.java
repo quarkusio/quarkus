@@ -58,7 +58,15 @@ public class DefaultExceptionHandlerProvider implements ExceptionHandlerProvider
         protected void handleException(Throwable exception, ServerCall<ReqT, RespT> call, Metadata metadata) {
             StatusException se = (StatusException) toStatusException(authExceptionHandlerProvider, exception);
             Metadata trailers = se.getTrailers() != null ? se.getTrailers() : metadata;
-            call.close(se.getStatus(), trailers);
+            try {
+                call.close(se.getStatus(), trailers);
+            } catch (IllegalStateException ise) {
+                // Ignore the exception if the server is already closed
+                // Since we don't have a specific exception type for this case, we need to check the message
+                if (!"Already closed".equals(ise.getMessage())) {
+                    throw ise;
+                }
+            }
         }
     }
 }

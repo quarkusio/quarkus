@@ -41,7 +41,7 @@
         <compiler.plugin.version>3.14.1</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.5.4</surefire.plugin.version>
-        <jandex.version>3.5.1</jandex.version>
+        <jandex.version>3.5.2</jandex.version>
         <smallrye-common.version>2.14.0</smallrye-common.version>
 
         <junit5.version>5.13.4</junit5.version>

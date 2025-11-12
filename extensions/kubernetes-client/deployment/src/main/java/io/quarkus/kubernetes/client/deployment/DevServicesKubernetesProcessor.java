@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.fabric8.kubernetes.client.readiness.Readiness;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerState;
@@ -45,9 +46,6 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.apps.ReplicaSet;
-import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.deployment.Feature;
@@ -218,7 +216,7 @@ public class DevServicesKubernetesProcessor {
                             resources.forEach(resource -> {
                                 client.resource(resource).create();
 
-                                if (isReadinessApplicable(resource)) {
+                                if (Readiness.getInstance().isReadinessApplicable(resource)) {
                                     resourcesWithReadiness.add(resource);
                                 }
                             });
@@ -240,17 +238,6 @@ public class DevServicesKubernetesProcessor {
         } catch (Exception e) {
             log.error("Failed to create Kubernetes client while trying to apply manifests.", e);
         }
-    }
-
-    private boolean isReadinessApplicable(HasMetadata item) {
-        return (item instanceof Deployment ||
-                item instanceof io.fabric8.kubernetes.api.model.extensions.Deployment ||
-                item instanceof ReplicaSet ||
-                item instanceof Pod ||
-                item instanceof ReplicationController ||
-                item instanceof Endpoints ||
-                item instanceof Node ||
-                item instanceof StatefulSet);
     }
 
     private InputStream getManifestStream(String manifestPath) throws IOException {

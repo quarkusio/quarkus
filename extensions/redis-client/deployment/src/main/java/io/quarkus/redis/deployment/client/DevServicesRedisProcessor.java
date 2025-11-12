@@ -2,12 +2,14 @@ package io.quarkus.redis.deployment.client;
 
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.redis.runtime.client.config.RedisConfig.HOSTS;
+import static io.quarkus.redis.runtime.client.config.RedisConfig.getPropertyName;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
@@ -28,7 +30,6 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
-import io.quarkus.redis.deployment.client.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -50,9 +51,6 @@ public class DevServicesRedisProcessor {
     private static final ContainerLocator redisContainerLocator = locateContainerWithLabels(REDIS_EXPOSED_PORT,
             DEV_SERVICE_LABEL);
 
-    private static final String QUARKUS = "quarkus.";
-    private static final String DOT = ".";
-
     @BuildStep
     public void startRedisContainers(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
@@ -62,23 +60,21 @@ public class DevServicesRedisProcessor {
             BuildProducer<DevServicesResultBuildItem> devServicesResult,
             DevServicesConfig devServicesConfig) {
 
-        Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices());
-        currentDevServicesConfiguration.put(RedisConfig.DEFAULT_CLIENT_NAME, config.defaultDevService());
+        Set<String> names = new HashSet<>(config.clients().keySet());
+        names.add(RedisConfig.DEFAULT_CLIENT_NAME);
 
         try {
-            for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
-                String name = entry.getKey();
+            for (String name : names) {
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
 
-                String configPrefix = getConfigPrefix(name);
-                io.quarkus.redis.deployment.client.DevServicesConfig redisConfig = entry.getValue().devservices();
-                if (redisDevServicesEnabled(dockerStatusBuildItem, name, redisConfig, configPrefix)) {
+                io.quarkus.redis.deployment.client.DevServicesConfig redisConfig = config.clients().get(name).devservices();
+                if (redisDevServicesEnabled(dockerStatusBuildItem, name, redisConfig)) {
                     // If the dev services are disabled, we don't need to do anything
                     continue;
                 }
 
-                DevServicesResultBuildItem discovered = discoverRunningService(composeProjectBuildItem, configPrefix,
+                DevServicesResultBuildItem discovered = discoverRunningService(composeProjectBuildItem, name,
                         redisConfig, launchMode.getLaunchMode(), useSharedNetwork);
                 if (discovered != null) {
                     devServicesResult.produce(discovered);
@@ -97,15 +93,14 @@ public class DevServicesRedisProcessor {
                                             // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
                                             // for backwards compatibility we still add the custom label
                                             .withSharedServiceLabel(launchMode.getLaunchMode(), redisConfig.serviceName()))
-                                    .configProvider(Map.of(configPrefix + RedisConfig.HOSTS_CONFIG_NAME,
-                                            s -> REDIS_SCHEME + s.getConnectionInfo()))
+                                    .configProvider(
+                                            Map.of(getPropertyName(name, HOSTS), s -> REDIS_SCHEME + s.getConnectionInfo()))
                                     .build());
                 }
             }
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
-
     }
 
     /**
@@ -127,7 +122,7 @@ public class DevServicesRedisProcessor {
      * extra sure we'd put on a special 'not external' label and filter for that, too
      */
     private DevServicesResultBuildItem discoverRunningService(DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            String configPrefix,
+            String name,
             io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig,
             LaunchMode launchMode,
             boolean useSharedNetwork) {
@@ -140,14 +135,13 @@ public class DevServicesRedisProcessor {
                     return DevServicesResultBuildItem.discovered()
                             .feature(Feature.REDIS_CLIENT)
                             .containerId(containerAddress.getId())
-                            .config(Map.of(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisUrl))
+                            .config(Map.of(RedisConfig.getPropertyName(name, HOSTS), redisUrl))
                             .build();
                 }).orElse(null);
     }
 
     private static boolean redisDevServicesEnabled(DockerStatusBuildItem dockerStatusBuildItem, String name,
-            io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig,
-            String configPrefix) {
+            io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig) {
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
@@ -155,7 +149,8 @@ public class DevServicesRedisProcessor {
             return true;
         }
 
-        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + RedisConfig.HOSTS_CONFIG_NAME);
+        // TODO - We shouldn't query runtime config during deployment
+        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(RedisConfig.getPropertyName(name, HOSTS));
         if (!needToStart) {
             log.debug("Not starting dev services for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as hosts have been provided");
@@ -169,14 +164,6 @@ public class DevServicesRedisProcessor {
             return true;
         }
         return false;
-    }
-
-    private String getConfigPrefix(String name) {
-        String configPrefix = QUARKUS + RedisConfig.REDIS_CONFIG_ROOT_NAME + DOT;
-        if (!RedisConfig.isDefaultClient(name)) {
-            configPrefix = configPrefix + name + DOT;
-        }
-        return configPrefix;
     }
 
     private static class QuarkusPortRedisContainer extends GenericContainer<QuarkusPortRedisContainer> implements Startable {

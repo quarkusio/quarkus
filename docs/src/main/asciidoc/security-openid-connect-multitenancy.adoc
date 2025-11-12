@@ -348,7 +348,7 @@ docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_
 
 where `keycloak.version` is set to `26.0.7` or higher.
 
-Access your Keycloak server at http://localhost:8180[localhost:8180].
+Access your Keycloak server at `http://localhost:8180`.
 
 Log in as the `admin` user to access the Keycloak administration console.
 The username and password are both `admin`.

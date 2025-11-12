@@ -507,7 +507,7 @@ docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_
 
 Set `{keycloak.version}` to `26.4.0` or later.
 
-You can access your Keycloak Server at http://localhost:8180[localhost:8180].
+You can access your Keycloak Server at `http://localhost:8180`.
 
 Log in as the `admin` user to access the Keycloak Administration Console.
 The password is `admin`.
@@ -528,7 +528,7 @@ include::{includes}/devtools/dev.adoc[]
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] launches a Keycloak container and imports `quarkus-realm.json`.
 
-Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click a `Keycloak provider` link in the *OpenID Connect Dev UI* card.
+Open a xref:dev-ui.adoc[Dev UI] available at `http://localhost:8080/q/dev-ui` and click a `Keycloak provider` link in the *OpenID Connect Dev UI* card.
 
 When asked, log in to a `Single Page Application` provided by the OpenID Connect Dev UI:
 

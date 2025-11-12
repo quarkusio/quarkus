@@ -116,6 +116,13 @@ java -XX:AOTCache=app.aot -jar quarkus-run.jar
 ----
 ====
 
+=== Generate the AOT cache from integration tests
+
+Although Quarkus can generate an AOT cache file without ever running the production application, the file will not be optimal as the application was never exercised against any load. To alleviate this,
+Quarkus can use the existing testsuite of tests annotated with `@QuarkusIntegrationTest` to create an AOT cache file.
+See the xref:getting-started-testing.adoc#generating-an-aot-cache-during-integration-tests[corresponding section] in the Testing Guide for more details.
+
+
 === Usage in containers
 
 When building container images using the `quarkus-container-image-jib` extension, Quarkus automatically takes care of all the steps needed to generate the archive and make it usable at runtime in the container.

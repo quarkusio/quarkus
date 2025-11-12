@@ -282,7 +282,7 @@ public class DevServicesApicurioRegistryProcessor {
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             withEnv("QUARKUS_PROFILE", "prod");
-            if (!dockerImageName.getRepository().endsWith("apicurio/apicurio-registry")) {
+            if (!dockerImageName.getRepository().contains("apicurio/apicurio-registry")) {
                 throw new IllegalArgumentException("Only apicurio/apicurio-registry images are supported");
             }
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "apicurio-registry");

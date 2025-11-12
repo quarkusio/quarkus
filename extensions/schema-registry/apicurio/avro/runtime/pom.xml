@@ -18,6 +18,12 @@
         <dependency>
             <groupId>io.apicurio</groupId>
             <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.kiota</groupId>
+                    <artifactId>kiota-http-jdk</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

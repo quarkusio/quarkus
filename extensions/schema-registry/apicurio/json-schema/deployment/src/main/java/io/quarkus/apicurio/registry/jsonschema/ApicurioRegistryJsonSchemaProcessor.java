@@ -14,9 +14,7 @@ public class ApicurioRegistryJsonSchemaProcessor {
     }
 
     @BuildStep
-    public void apicurioRegistryJsonSchema(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
-
+    public void apicurioRegistryJsonSchema(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass
                 .produce(ReflectiveClassBuildItem.builder("io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaDeserializer",
                         "io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaSerializer").methods().build());

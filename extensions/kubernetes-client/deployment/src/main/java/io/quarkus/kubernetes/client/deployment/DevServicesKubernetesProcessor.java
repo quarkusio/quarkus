@@ -20,7 +20,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import io.fabric8.kubernetes.client.readiness.Readiness;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerState;
@@ -45,9 +44,11 @@ import com.dajudge.kindcontainer.client.config.UserSpec;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
-import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;

@@ -270,7 +270,8 @@ class SmallRyeHealthProcessor {
     public void processSmallRyeHealthConfigValues(SmallRyeHealthBuildTimeConfig healthConfig,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
         if (healthConfig.contextPropagation()) {
-            config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.context.propagation", "true"));
+            LOG.warn(
+                    "The config property quarkus.smallrye-health.context-propagation is deprecated and will be removed. The context is now always propagated.");
         }
         if (healthConfig.maxGroupRegistriesCount().isPresent()) {
             config.produce(new RunTimeConfigurationDefaultBuildItem("io.smallrye.health.maxGroupRegistriesCount",

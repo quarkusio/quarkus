@@ -50,6 +50,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private List<String> argLine;
     private Map<String, String> env;
     private Path jarPath;
+    private boolean generateAotFile;
 
     private final Map<String, String> systemProps = new HashMap<>();
     private Process quarkusProcess;
@@ -65,6 +66,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.argLine = initContext.argLine();
         this.env = initContext.env();
         this.jarPath = initContext.jarPath();
+        this.generateAotFile = initContext.generateAotFile();
     }
 
     public void start() throws IOException {
@@ -111,6 +113,9 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         args.add(determineJavaPath());
         if (!argLine.isEmpty()) {
             args.addAll(argLine);
+        }
+        if (generateAotFile) {
+            args.add("-XX:AOTCacheOutput=%s".formatted(jarPath.resolveSibling("app.aot")));
         }
         if (HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);

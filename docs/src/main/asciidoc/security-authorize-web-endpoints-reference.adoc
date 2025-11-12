@@ -790,6 +790,7 @@ It is possible to use multiple expressions in the role definition.
 In development mode, it allows any authenticated user.
 <5> Property expression `all-roles` will be treated as a collection type `List`, therefore, the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
 
+[[security-annotations-inheritance]]
 === Endpoint security annotations and Jakarta REST inheritance
 
 Quarkus supports security annotations placed on the endpoint implementation or its class like in the example below:

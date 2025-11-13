@@ -5,7 +5,6 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -39,7 +38,7 @@ final class Decorators {
             InjectionPointModifier transformer) {
 
         // Find the delegate injection point
-        List<InjectionPointInfo> delegateInjectionPoints = new LinkedList<>();
+        List<InjectionPointInfo> delegateInjectionPoints = new ArrayList<>();
         List<Injection> injections = Injection.forBean(decoratorClass, null, beanDeployment, transformer,
                 Injection.BeanType.DECORATOR);
         for (Injection injection : injections) {
@@ -118,6 +117,10 @@ final class Decorators {
         }
 
         if (Modifier.isAbstract(decoratorClass.flags())) {
+            // TODO this check is not precise: we check that decorators do not declare _any_ abstract methods,
+            //  but the spec says that decorators may not declare abstract methods that do not belong
+            //  to a decorated type
+            //  also, we only check methods declared on the decorator class itself, not inherited methods
             List<MethodInfo> abstractMethods = new ArrayList<>();
             for (MethodInfo method : decoratorClass.methods()) {
                 if (Modifier.isAbstract(method.flags())) {

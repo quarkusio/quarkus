@@ -6,9 +6,12 @@ import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -255,6 +258,36 @@ public class DecoratorGenerator extends BeanGenerator {
                 });
             });
 
+            // remember all implemented (not `abstract`) methods that are either declared on the decorator class
+            // or inherited from superclasses and superinterfaces
+            // since decorated types are interfaces, the implemented methods must be `public`, otherwise
+            // they wouldn't be inherited
+            // we later use it to figure out if a decorated method is implemented by the decorator,
+            // so order does not matter
+            List<MethodInfo> decoratorMethods = new ArrayList<>();
+            Deque<ClassInfo> worklist = new ArrayDeque<>();
+            Set<DotName> seen = new HashSet<>();
+            worklist.add(decoratorClass);
+            while (!worklist.isEmpty()) {
+                ClassInfo clazz = worklist.poll();
+                if (!seen.add(clazz.name())) {
+                    continue;
+                }
+
+                for (MethodInfo decoratorMethod : clazz.methods()) {
+                    if (!decoratorMethod.isAbstract() && Modifier.isPublic(decoratorMethod.flags())) {
+                        decoratorMethods.add(decoratorMethod);
+                    }
+                }
+
+                if (!clazz.isInterface() && clazz.superName() != null) {
+                    worklist.add(index.getClassByName(clazz.superName()));
+                }
+                for (DotName iface : clazz.interfaceNames()) {
+                    worklist.add(index.getClassByName(iface));
+                }
+            }
+
             // Find non-decorated methods from all decorated types
             Set<MethodDesc> abstractMethods = new HashSet<>();
             Map<MethodDesc, MethodDesc> bridgeMethods = new HashMap<>();
@@ -294,7 +327,7 @@ public class DecoratorGenerator extends BeanGenerator {
                     }
 
                     boolean include = true;
-                    for (MethodInfo decoratorMethod : decoratorClass.methods()) {
+                    for (MethodInfo decoratorMethod : decoratorMethods) {
                         if (decoratorMethod.isConstructor() || decoratorMethod.isStaticInitializer()) {
                             // we cannot build a `MethodDesc` for constructors and static initializers
                             // (`methodDescOf()` below would throw) and they cannot be decorated anyway

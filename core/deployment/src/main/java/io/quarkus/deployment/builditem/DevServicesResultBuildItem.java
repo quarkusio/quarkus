@@ -4,9 +4,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -79,6 +81,27 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      */
     private final Map<String, Function<Startable, String>> applicationConfigProvider;
     private final Set<String> highPriorityConfig;
+    private final Set<DevServiceConfigDependency<? extends Startable>> dependencies;
+    private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies;
+
+    private DevServicesResultBuildItem(String name, String description, String serviceName, Object serviceConfig,
+            Map<String, String> config, Supplier<Startable> startableSupplier, Consumer<Startable> postStartAction,
+            Map<String, Function<Startable, String>> applicationConfigProvider, Set<String> highPriorityConfig,
+            Set<DevServiceConfigDependency<? extends Startable>> dependencies,
+            Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies) {
+        this.name = name;
+        this.description = description;
+        this.containerId = null;
+        this.config = config == null ? Collections.emptyMap() : Collections.unmodifiableMap(config);
+        this.serviceName = serviceName;
+        this.serviceConfig = serviceConfig;
+        this.startableSupplier = startableSupplier;
+        this.postStartAction = postStartAction;
+        this.applicationConfigProvider = applicationConfigProvider;
+        this.highPriorityConfig = highPriorityConfig;
+        this.dependencies = dependencies;
+        this.optionalDependencies = optionalDependencies;
+    }
 
     public static DiscoveredServiceBuilder discovered() {
         return new DiscoveredServiceBuilder();
@@ -111,6 +134,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.highPriorityConfig = null;
         this.startableSupplier = null;
         this.postStartAction = null;
+        this.dependencies = null;
+        this.optionalDependencies = null;
     }
 
     /**
@@ -135,6 +160,9 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.postStartAction = postStartAction;
         this.applicationConfigProvider = applicationConfigProvider;
         this.highPriorityConfig = highPriorityConfig;
+        this.dependencies = null;
+        this.optionalDependencies = null;
+
     }
 
     public String getName() {
@@ -212,6 +240,19 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         return map;
     }
 
+    public boolean hasDependencies() {
+        return (dependencies != null && !dependencies.isEmpty())
+                || (optionalDependencies != null && !optionalDependencies.isEmpty());
+    }
+
+    public Set<DevServiceConfigDependency<? extends Startable>> getDependencies() {
+        return dependencies;
+    }
+
+    public Set<DevServiceConfigDependency<? extends Startable>> getOptionalDependencies() {
+        return optionalDependencies;
+    }
+
     public static class DiscoveredServiceBuilder {
         private String name;
         private String containerId;
@@ -264,6 +305,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Consumer<? extends Startable> postStartAction;
         private Map<String, Function<Startable, String>> applicationConfigProvider;
         private Set<String> highPriorityConfig;
+        private final Set<DevServiceConfigDependency<? extends Startable>> dependencies = new HashSet<>();
+        private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies = new HashSet<>();
 
         /**
          * Use {@link #feature(String)} instead
@@ -367,6 +410,49 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * Declares that this dev service should not be started until config from a dependency dev service is available.
+         * Before service start, the `DevServiceConfigDependency`` will be given an opportunity to inject the required config
+         * into the `Startable`.
+         * <p>
+         * If the config key never becomes available, the service will not be started.
+         * </p>
+         * <p>
+         * This method can be called multiple times, and all of the config values will be injected.
+         *
+         * @param key the config key which should be waited for; will never be null
+         * @param function a function which should be invoked on the startable to pass in the config
+         * @return a builder, for chaining
+         */
+        public OwnedServiceBuilder<T> dependsOnConfig(String key, BiConsumer<T, String> function) {
+            this.dependencies.add(new DevServiceConfigDependency<>(key, function));
+            return this;
+        }
+
+        /**
+         * Declares that this dev service should not be started until config from a dependency dev service has a chance to
+         * become available.
+         * Before service start, the `DevServiceConfigDependency`` will be given an opportunity to inject the required config
+         * into the `Startable`.
+         * <p>
+         * This method can be called multiple times, and all of the config values will be injected.
+         *
+         * @param key the config key which should be waited for
+         * @param function a function which should be invoked on the startable to pass in the config; will not be called if the
+         *        config never becomes available
+         * @param optional whether to start the service if the config never becomes availbale
+         *
+         * @return a builder, for chaining
+         */
+        public OwnedServiceBuilder<T> dependsOnConfig(String key, BiConsumer<T, String> function, boolean optional) {
+            if (optional) {
+                this.optionalDependencies.add(new DevServiceConfigDependency<>(key, function));
+                return this;
+            } else {
+                return dependsOnConfig(key, function);
+            }
+        }
+
         @SuppressWarnings("unchecked")
         public <S extends Startable> OwnedServiceBuilder<S> startable(Supplier<S> startableSupplier) {
             this.startableSupplier = startableSupplier;
@@ -416,7 +502,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider, highPriorityConfig);
+                    applicationConfigProvider, highPriorityConfig, dependencies, optionalDependencies);
         }
 
         private static boolean isClassAvailable(String className) {
@@ -427,6 +513,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
                 return false;
             }
         }
+
     }
 
     /**
@@ -515,6 +602,10 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
                     .config(getConfig())
                     .build();
         }
+    }
+
+    record DevServiceConfigDependency<T extends Startable>(String requiredConfigKey,
+            BiConsumer<T, String> valueInjector) {
     }
 
 }

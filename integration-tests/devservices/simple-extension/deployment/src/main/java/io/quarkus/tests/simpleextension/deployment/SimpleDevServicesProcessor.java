@@ -13,7 +13,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 
 public class SimpleDevServicesProcessor {
 
-    private static final String FEATURE = "Basic-A";
+    private static final String FEATURE = "Simples";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -24,9 +24,9 @@ public class SimpleDevServicesProcessor {
     public DevServicesResultBuildItem createContainer() {
 
         return DevServicesResultBuildItem.owned()
-                .name("quarkus-Basic")
+                .feature("quarkus-Basic")
                 .serviceName(FEATURE)
-                .startable(() -> new io.quarkus.tests.simpleextension.deployment.SimpleContainer()) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
+                .startable(SimpleContainer::new) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
                 .config(Map.of(QUARKUS_SIMPLE_EXTENSION_STATIC_THING, "some value"))
                 .configProvider(Map.of(QUARKUS_SIMPLE_EXTENSION_BASE_URL,
                         c -> c.getConnectionInfo()))

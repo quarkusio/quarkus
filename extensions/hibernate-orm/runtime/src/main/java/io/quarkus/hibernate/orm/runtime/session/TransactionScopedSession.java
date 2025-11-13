@@ -859,7 +859,7 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
-    public <T> T merge(T object, EntityGraph<?> loadGraph) {
+    public <T> T merge(T object, EntityGraph<? super T> loadGraph) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.merge(object, loadGraph);

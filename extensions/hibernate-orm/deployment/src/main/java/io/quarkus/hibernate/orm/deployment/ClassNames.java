@@ -435,7 +435,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.View"));
 
     public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = List.of(
-            createConstant("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProvider"));
+            createConstant("org.hibernate.engine.jdbc.connections.internal.DataSourceConnectionProvider"));
 
     public static final List<DotName> JPA_LISTENER_ANNOTATIONS = List.of(
             createConstant("jakarta.persistence.PostLoad"),

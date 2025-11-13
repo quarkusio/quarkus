@@ -1,14 +1,14 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.isUniReturnType;
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.proceedUni;
+
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
-
-import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.isUniReturnType;
-import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.proceedUni;
 
 @WithSessionOnDemand
 @Interceptor

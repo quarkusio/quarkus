@@ -33,7 +33,8 @@ public class HibernateReactiveRecorder {
         this.runtimeConfig = runtimeConfig;
     }
 
-    public static final OpenedSessionsState OPENED_SESSIONS_STATE = new OpenedSessionsState();
+    public static final OpenedSessionsState<Mutiny.Session> OPENED_SESSIONS_STATE = new OpenedSessionsStateStatefulImpl();
+    public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATLESS = new OpenedSessionsStateStatelessImpl();
 
     /**
      * The feature needs to be initialized, even if it's not enabled.
@@ -125,7 +126,8 @@ public class HibernateReactiveRecorder {
     public static Mutiny.Session getSession(String persistenceUnitName) {
         Context context = Vertx.currentContext();
 
-        Optional<OpenedSessionsState.SessionWithKey> openedSession = OPENED_SESSIONS_STATE.getOpenedSession(context,
+        Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedSession = OPENED_SESSIONS_STATE.getOpenedSession(
+                context,
                 persistenceUnitName);
         // reuse the existing reactive session
         if (openedSession.isPresent()) {
@@ -149,16 +151,29 @@ public class HibernateReactiveRecorder {
                 return new MutinyStatelessSessionDelegator() {
                     @Override
                     public Mutiny.StatelessSession delegate() {
-                        // TODO check we're in @Transactional
-                        // TODO get the session from vert.x context or open it (similar to Panache.getSession)
-                        // To open, use SessionFactory#openSessionWithLazyConnectionOpening -> returns Mutiny.Session
-
-                        throw new UnsupportedOperationException();
-
+                        return getStatelessSession(persistenceUnitName);
                     }
                 };
             }
         };
+    }
+
+    public static Mutiny.StatelessSession getStatelessSession(String persistenceUnitName) {
+        Context context = Vertx.currentContext();
+
+        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedSession = OPENED_SESSIONS_STATE_STATLESS
+                .getOpenedSession(context, persistenceUnitName);
+        // reuse the existing reactive session
+        if (openedSession.isPresent()) {
+            return openedSession.get().session();
+        } else if (context.getLocal(TRANSACTIONAL_METHOD_KEY) == null) {
+            throw new IllegalStateException("No current Mutiny.Session found"
+                    + "\n\t- no reactive session was found in the Vert.x context and the context was not marked to open a new session lazily"
+                    + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
+                    + "\n\t- you may need to annotate the business method with @Transactional");
+        } else {
+            return OPENED_SESSIONS_STATE_STATLESS.createNewSession(persistenceUnitName, context);
+        }
     }
 
 }

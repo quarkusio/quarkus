@@ -17,7 +17,7 @@ import io.vertx.core.Context;
 @WithTransaction
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class WithTransactionInterceptor  {
+public class WithTransactionInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {

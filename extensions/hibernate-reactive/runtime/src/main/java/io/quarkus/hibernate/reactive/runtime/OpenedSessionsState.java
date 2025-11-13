@@ -12,7 +12,6 @@ import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context.Key;
 import org.hibernate.reactive.context.impl.BaseKey;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
@@ -21,30 +20,39 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
-public class OpenedSessionsState {
+public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     // This key is used to keep track of the Set<String> sessions created on demand
-    private static final String SESSIONS_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
+    private final String sessionOnDemandKey;
 
-    private final ComputingCache<String, Key<Mutiny.Session>> sessionKeys = new ComputingCache<>(
-            k -> createSessionFactoryAndStoreKey(k));
+    protected abstract T newSessionMethod(Mutiny.SessionFactory sessionFactory);
+
+    protected abstract Class<T> getSessionType();
+
+    protected abstract boolean isSessionOpen(T session);
+
+    private final ComputingCache<String, Key<T>> sessionKeys = new ComputingCache<>(
+            k -> createKeyForSessionType(k));
 
     private final ComputingCache<String, Mutiny.SessionFactory> sessionFactories = new ComputingCache<>(
             k -> createSessionFactory(k));
 
-    public record SessionWithKey(org.hibernate.reactive.context.Context.Key<Mutiny.Session> key, Mutiny.Session session) {
-
+    protected OpenedSessionsState() {
+        sessionOnDemandKey = "hibernate.reactive.panache.sessionOnDemandOpened" + getSessionType().getName();
     }
 
-    public Optional<SessionWithKey> getOpenedSession(Context context, String persistenceUnitName) {
-        Key<Mutiny.Session> sessionKey = sessionKeys.getValue(persistenceUnitName);
+    public record SessionWithKey<T>(org.hibernate.reactive.context.Context.Key<T> key, T session) {
+    }
+
+    public Optional<SessionWithKey<T>> getOpenedSession(Context context, String persistenceUnitName) {
+        Key<T> sessionKey = sessionKeys.getValue(persistenceUnitName);
         return getOpenedSession(context, sessionKey);
     }
 
-    private static Optional<SessionWithKey> getOpenedSession(Context context, Key<Mutiny.Session> sessionKey) {
-        Mutiny.Session current = context.getLocal(sessionKey);
+    private Optional<SessionWithKey<T>> getOpenedSession(Context context, Key<T> sessionKey) {
+        T current = context.getLocal(sessionKey);
         return Optional.ofNullable(current)
-                .filter(s -> s.isOpen())
-                .map(s -> new SessionWithKey(sessionKey, s));
+                .filter(s -> isSessionOpen(s))
+                .map(s -> new SessionWithKey<>(sessionKey, s));
     }
 
     public Uni<Void> closeAllOpenedSessions(Context context) {
@@ -53,54 +61,57 @@ public class OpenedSessionsState {
             return Uni.createFrom().voidItem();
         }
         List<Uni<Void>> closedSessionsUnis = new ArrayList<>();
-        for (String s : onDemandSessionCreated) {
-            Optional<SessionWithKey> openedSession = getOpenedSession(context, s);
-            closedSessionsUnis.add(closeAndRemoveSession(context, openedSession));
+        for (String sessionName : onDemandSessionCreated) {
+
+            Uni<Void> closeSessionUni = getOpenedSession(context, sessionName)
+                    .map(session -> closeAndRemoveSession(context, session))
+                    .orElse(Uni.createFrom().voidItem());
+
+            closedSessionsUnis.add(closeSessionUni);
         }
-        context.removeLocal(SESSIONS_ON_DEMAND_OPENED_KEY);
+        context.removeLocal(sessionOnDemandKey);
         return Uni.combine().all().unis(closedSessionsUnis).discardItems();
     }
 
-    public Mutiny.Session createNewSession(String persistenceUnitName, Context context) {
+    public T createNewSession(String persistenceUnitName, Context context) {
+        Mutiny.SessionFactory sessionFactory = sessionFactories.getValue(persistenceUnitName);
+        T session = newSessionMethod(sessionFactory);
+        Key<T> sessionKey = sessionKeys.getValue(persistenceUnitName);
 
+        storeSession(context, persistenceUnitName, sessionKey, session);
+        return session;
+    }
+
+    private void storeSession(Context context, String persistenceUnitName, Key<T> sessionKey, T session) {
         Set<String> openedSession = openedSessionContextSet(context);
-
         // open a new reactive session and store it in the vertx duplicated context
         // the context was marked as "lazy" which means that the session will be eventually closed
         openedSession.add(persistenceUnitName);
-
-        Mutiny.SessionFactory sessionFactory = sessionFactories.getValue(persistenceUnitName);
-        MutinySessionImpl session = (MutinySessionImpl) sessionFactory.createSession();
-
-        Key<Mutiny.Session> sessionKey = sessionKeys.getValue(persistenceUnitName);
         context.putLocal(sessionKey, session);
-
-        return session;
     }
 
     private Set<String> openedSessionContextSet(Context context) {
         // This will keep track of all on-demand opened sessions
-        Set<String> onDemandSessionsCreated = context.getLocal(SESSIONS_ON_DEMAND_OPENED_KEY);
+        Set<String> onDemandSessionsCreated = context.getLocal(sessionOnDemandKey);
         if (onDemandSessionsCreated == null) {
             onDemandSessionsCreated = new HashSet<>();
-            context.putLocal(SESSIONS_ON_DEMAND_OPENED_KEY, onDemandSessionsCreated);
+            context.putLocal(sessionOnDemandKey, onDemandSessionsCreated);
         }
         return onDemandSessionsCreated;
     }
 
-    private Uni<Void> closeAndRemoveSession(Context context, Optional<SessionWithKey> openSession) {
-        return openSession.map((SessionWithKey s) -> s.session.close()
-                .eventually(() -> context.removeLocal(s.key)))
-                .orElse(Uni.createFrom().voidItem());
+    private Uni<Void> closeAndRemoveSession(Context context, SessionWithKey<T> openSession) {
+        return openSession.session.close()
+                .eventually(() -> context.removeLocal(openSession.key));
     }
 
-    private Key<Mutiny.Session> createSessionFactoryAndStoreKey(String persistenceUnitName) {
+    private Key<T> createKeyForSessionType(String persistenceUnitName) {
         Mutiny.SessionFactory value = createSessionFactory(persistenceUnitName);
         Implementor implementor = (Implementor) ClientProxy.unwrap(value);
-        return new BaseKey<>(Mutiny.Session.class, implementor.getUuid());
+        return new BaseKey<>(getSessionType(), implementor.getUuid());
     }
 
-    private Mutiny.SessionFactory createSessionFactory(String persistenceunitname) {
+    private static Mutiny.SessionFactory createSessionFactory(String persistenceunitname) {
         Mutiny.SessionFactory sessionFactory;
 
         // Note that Mutiny.SessionFactory is @ApplicationScoped bean - it's safe to use the cached client proxy

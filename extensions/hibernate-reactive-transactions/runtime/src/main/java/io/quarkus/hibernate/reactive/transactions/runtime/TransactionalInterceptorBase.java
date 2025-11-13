@@ -123,7 +123,10 @@ public abstract class TransactionalInterceptorBase {
             // perform the work and eventually close the session and remove the key
             return work.get().eventually(() -> {
                 context.removeLocal(TRANSACTIONAL_METHOD_KEY);
-                return HibernateReactiveRecorder.OPENED_SESSIONS_STATE.closeAllOpenedSessions(context);
+                return Uni.combine().all().unis(
+                        HibernateReactiveRecorder.OPENED_SESSIONS_STATE.closeAllOpenedSessions(context),
+                        HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATLESS.closeAllOpenedSessions(context))
+                        .discardItems();
             });
         }
     }

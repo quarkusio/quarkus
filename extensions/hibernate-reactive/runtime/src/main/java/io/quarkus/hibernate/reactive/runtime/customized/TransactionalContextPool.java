@@ -4,6 +4,8 @@ import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.TR
 
 import java.util.function.Function;
 
+import org.jboss.logging.Logger;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -17,6 +19,7 @@ import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Transaction;
 
 /**
  * A pool that handles transaction based on Vert.x context set by the @Transactional interceptor.
@@ -51,15 +54,21 @@ public class TransactionalContextPool implements Pool {
         }
     }
 
+    private static final Logger LOG = Logger.getLogger(TransactionalContextPool.class);
+
     @Override
     public Future<SqlConnection> getConnection() {
         if (!shouldOpenTransaction()) {
             return delegate.getConnection();
         } else {
+            LOG.tracef("Getting a new connection");
             return delegate.getConnection()
                     .compose(connection -> {
+                        LOG.tracef("New connection, about to start transaction: %s", connection);
                         return connection.begin().map(t -> {
-                            Vertx.currentContext().putLocal(CURRENT_TRANSACTION_KEY, connection.transaction());
+                            Transaction transaction = connection.transaction();
+                            LOG.tracef("Transaction started: %s", transaction);
+                            Vertx.currentContext().putLocal(CURRENT_TRANSACTION_KEY, transaction);
                             return new TransactionalContextConnection(connection);
                         });
                     });

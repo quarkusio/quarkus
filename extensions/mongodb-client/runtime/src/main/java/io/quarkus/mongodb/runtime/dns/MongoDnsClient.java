@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.runtime.dns;
 
 import static java.lang.String.format;
+import static org.eclipse.microprofile.config.ConfigProvider.getConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,16 +18,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import com.mongodb.MongoConfigurationException;
 import com.mongodb.spi.dns.DnsClient;
 import com.mongodb.spi.dns.DnsException;
 
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -34,22 +34,7 @@ import io.vertx.mutiny.core.dns.SrvRecord;
 
 @RegisterForReflection
 public class MongoDnsClient implements DnsClient {
-    private static final String BASE_CONFIG_NAME = "quarkus." + MongodbConfig.CONFIG_NAME + ".";
-
-    public static final String DNS_LOOKUP_TIMEOUT = BASE_CONFIG_NAME + MongodbConfig.DNS_LOOKUP_TIMEOUT;
-    public static final String NATIVE_DNS_LOOKUP_TIMEOUT = BASE_CONFIG_NAME + MongodbConfig.NATIVE_DNS_LOOKUP_TIMEOUT;
-
-    public static final String DNS_LOG_ACTIVITY = BASE_CONFIG_NAME + MongodbConfig.DNS_LOG_ACTIVITY;
-    public static final String NATIVE_DNS_LOG_ACTIVITY = BASE_CONFIG_NAME + MongodbConfig.NATIVE_DNS_LOG_ACTIVITY;
-
-    public static final String DNS_SERVER = BASE_CONFIG_NAME + MongodbConfig.DNS_SERVER_HOST;
-    public static final String NATIVE_DNS_SERVER = BASE_CONFIG_NAME + MongodbConfig.NATIVE_DNS_SERVER_HOST;
-    public static final String DNS_SERVER_PORT = BASE_CONFIG_NAME + MongodbConfig.DNS_SERVER_PORT;
-    public static final String NATIVE_DNS_SERVER_PORT = BASE_CONFIG_NAME + MongodbConfig.NATIVE_DNS_SERVER_PORT;
-
-    private final Config config = ConfigProvider.getConfig();
-
-    private final io.vertx.mutiny.core.dns.DnsClient dnsClient;
+    private static final Logger log = Logger.getLogger(MongoDnsClient.class);
 
     // the static fields are used in order to hold DNS resolution result that has been performed on the main thread
     // at application startup
@@ -57,16 +42,16 @@ public class MongoDnsClient implements DnsClient {
     private static final Map<String, List<SrvRecord>> SRV_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, List<String>> TXT_CACHE = new ConcurrentHashMap<>();
 
-    private static final Logger log = Logger.getLogger(MongoDnsClient.class);
+    private final io.vertx.mutiny.core.dns.DnsClient dnsClient;
+    private final MongoConfig mongoConfig;
 
     MongoDnsClient(io.vertx.core.Vertx vertx) {
+        this.mongoConfig = getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(MongoConfig.class);
         Vertx mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
-
-        boolean activity = config.getOptionalValue(DNS_LOG_ACTIVITY, Boolean.class).orElse(false);
 
         // If the server is not set, we attempt to read the /etc/resolv.conf. If it does not exist, we use the default
         // configuration.
-        String server = config.getOptionalValue(DNS_SERVER, String.class).orElseGet(() -> {
+        String server = mongoConfig.dnsServer().orElseGet(() -> {
             List<String> list = nameServers();
             if (!list.isEmpty()) {
                 return list.get(0);
@@ -74,14 +59,14 @@ public class MongoDnsClient implements DnsClient {
             return null;
         });
         DnsClientOptions dnsClientOptions = new DnsClientOptions()
-                .setLogActivity(activity);
+                .setLogActivity(mongoConfig.dnsLookupLogActivity());
         if (server != null) {
             dnsClientOptions.setHost(server);
-            if (config.getOptionalValue(DNS_SERVER_PORT, Integer.class).isPresent()) {
-                dnsClientOptions.setPort(config.getOptionalValue(DNS_SERVER_PORT, Integer.class).orElseThrow());
+            if (mongoConfig.dnsServerPort().isPresent()) {
+                dnsClientOptions.setPort(mongoConfig.dnsServerPort().orElseThrow());
             }
         }
-        dnsClientOptions.setQueryTimeout(config.getValue(DNS_LOOKUP_TIMEOUT, Duration.class).toMillis());
+        dnsClientOptions.setQueryTimeout(mongoConfig.dnsLookupTimeout().toMillis());
 
         if (log.isDebugEnabled()) {
             log.debugf("DNS client options: %s", dnsClientOptions.toJson());
@@ -128,8 +113,7 @@ public class MongoDnsClient implements DnsClient {
      */
     private List<String> resolveSrvRequest(final String srvHost) {
         List<String> hosts = new ArrayList<>();
-        Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
-                .orElse(Duration.ofSeconds(5));
+        Duration timeout = mongoConfig.dnsLookupTimeout();
 
         try {
             List<SrvRecord> srvRecords;
@@ -184,9 +168,7 @@ public class MongoDnsClient implements DnsClient {
             return TXT_CACHE.get(host);
         }
         try {
-            Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
-                    .orElse(Duration.ofSeconds(5));
-
+            Duration timeout = mongoConfig.dnsLookupTimeout();
             return Uni.createFrom().<List<String>> deferred(
                     new Supplier<>() {
                         @Override

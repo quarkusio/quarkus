@@ -14,10 +14,10 @@ import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -85,20 +85,22 @@ public class MongoClients {
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
     private static final MongoDriverInformation DRIVER_INFORMATION = MongoDriverInformation
             .builder(MongoDriverInformation.builder().build()).driverName("quarkus").build();
-    private final MongodbConfig mongodbConfig;
+    private final MongoConfig mongoConfig;
     private final MongoClientSupport mongoClientSupport;
     private final Instance<CodecProvider> codecProviders;
     private final TlsConfigurationRegistry tlsConfigurationRegistry;
     private final Instance<PropertyCodecProvider> propertyCodecProviders;
     private final Instance<CommandListener> commandListeners;
 
-    private final Map<String, MongoClient> mongoclients = new HashMap<>();
-    private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
+    private final Map<String, MongoClient> mongoClients = new ConcurrentHashMap<>();
+    private final Map<String, ReactiveMongoClient> reactiveMongoClients = new ConcurrentHashMap<>();
     private final Instance<ReactiveContextProvider> reactiveContextProviders;
     private final Instance<MongoClientCustomizer> customizers;
     private final Vertx vertx;
 
-    public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
+    public MongoClients(
+            MongoConfig mongoConfig,
+            MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
             TlsConfigurationRegistry tlsConfigurationRegistry,
             Instance<PropertyCodecProvider> propertyCodecProviders,
@@ -106,7 +108,7 @@ public class MongoClients {
             Instance<ReactiveContextProvider> reactiveContextProviders,
             @Any Instance<MongoClientCustomizer> customizers,
             Vertx vertx) {
-        this.mongodbConfig = mongodbConfig;
+        this.mongoConfig = mongoConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
         this.tlsConfigurationRegistry = tlsConfigurationRegistry;
@@ -125,28 +127,53 @@ public class MongoClients {
         }
     }
 
-    public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
-                false);
-        MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
-        mongoclients.put(clientName, client);
-        return client;
+    /**
+     * Creates an unmanaged {@link MongoClient} using the configuration for a specific client name. Callers must close
+     * the client manually.
+     * <p>
+     * Intended for use by Mongo DB schema management tools.
+     *
+     * @param clientName the MongoDB client name.
+     * @return a {@link MongoClient}
+     */
+    public MongoClient unmanagedMongoClient(String clientName) throws MongoException {
+        MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
+        if (!clientConfig.active()) {
+            throw new IllegalStateException(String.format("Mongo Client '%s' is not active", clientName));
+        }
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, clientConfig, false);
+        return com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
     }
 
-    public ReactiveMongoClient createReactiveMongoClient(String clientName)
+    MongoClient createMongoClient(String clientName) throws MongoException {
+        MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
+        if (!clientConfig.active()) {
+            throw new IllegalStateException(String.format("Mongo Client '%s' is not active", clientName));
+        }
+        return mongoClients.computeIfAbsent(clientName, new Function<String, MongoClient>() {
+            @Override
+            public MongoClient apply(String s) {
+                MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, clientConfig, false);
+                return com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
+            }
+        });
+    }
+
+    ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
-                true);
-        com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
-                .create(mongoConfiguration, DRIVER_INFORMATION);
-        ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
-        reactiveMongoClients.put(clientName, reactive);
-        return reactive;
-    }
-
-    public MongoClientConfig getMatchingMongoClientConfig(String clientName) {
-        return MongoClientBeanUtil.isDefault(clientName) ? mongodbConfig.defaultMongoClientConfig()
-                : mongodbConfig.mongoClientConfigs().get(clientName);
+        MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
+        if (!clientConfig.active()) {
+            throw new IllegalStateException(String.format("Mongo Client '%s' is not active", clientName));
+        }
+        return reactiveMongoClients.computeIfAbsent(clientName, new Function<String, ReactiveMongoClient>() {
+            @Override
+            public ReactiveMongoClient apply(String s) {
+                MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, clientConfig, true);
+                com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
+                        .create(mongoConfiguration, DRIVER_INFORMATION);
+                return new ReactiveMongoClientImpl(client);
+            }
+        });
     }
 
     private static class ClusterSettingBuilder implements Block<ClusterSettings.Builder> {
@@ -161,7 +188,7 @@ public class MongoClients {
             Optional<String> maybeConnectionString = config.connectionString();
             if (maybeConnectionString.isEmpty()) {
                 // Parse hosts
-                List<ServerAddress> hosts = parseHosts(config.hosts());
+                List<ServerAddress> hosts = parseHosts(config.hosts().orElse(List.of()));
                 builder.hosts(hosts);
 
                 if (hosts.size() == 1 && config.replicaSetName().isEmpty()) {
@@ -394,7 +421,7 @@ public class MongoClients {
         // If the client name is the default one, we use a customizer that does not have the MongoClientName qualifier.
         // Otherwise, we use the one that has the qualifier.
         // Note that at build time, we check that we have at most one customizer per client, including for the default one.
-        if (MongoClientBeanUtil.isDefault(name)) {
+        if (MongoConfig.isDefaultClient(name)) {
             var maybe = customizers.handlesStream()
                     .filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
                     .findFirst(); // We have at most one customizer without the qualifier.
@@ -553,7 +580,7 @@ public class MongoClients {
 
     @PreDestroy
     public void stop() {
-        for (MongoClient client : mongoclients.values()) {
+        for (MongoClient client : mongoClients.values()) {
             if (client != null) {
                 client.close();
             }

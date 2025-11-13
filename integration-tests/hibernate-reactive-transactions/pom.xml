@@ -7,7 +7,7 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>hibernate-reactive-transactions-integration-tests</artifactId>
+    <artifactId>quarkus-reactive-transactions-integration-tests</artifactId>
     <name>Quarkus - Hibernate Reactive Transactions - Integration Tests</name>
 
     <properties>
@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>hibernate-reactive-transactions</artifactId>
+            <artifactId>quarkus-reactive-transactions</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -40,7 +40,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>hibernate-reactive-transactions-deployment</artifactId>
+            <artifactId>quarkus-reactive-transactions-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

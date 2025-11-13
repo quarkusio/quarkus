@@ -17,7 +17,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 
 class HibernateReactiveTransactionsProcessor {
 
-    private static final String FEATURE = "hibernate-reactive-transactions";
+    private static final String FEATURE = "quarkus-reactive-transactions";
 
     private static final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
 

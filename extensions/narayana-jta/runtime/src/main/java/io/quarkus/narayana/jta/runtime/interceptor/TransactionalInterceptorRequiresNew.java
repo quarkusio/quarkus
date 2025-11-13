@@ -1,6 +1,5 @@
 package io.quarkus.narayana.jta.runtime.interceptor;
 
-import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;

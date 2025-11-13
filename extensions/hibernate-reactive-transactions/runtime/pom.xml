@@ -4,10 +4,10 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>hibernate-reactive-transactions-parent</artifactId>
+        <artifactId>quarkus-reactive-transactions-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>hibernate-reactive-transactions</artifactId>
+    <artifactId>quarkus-reactive-transactions</artifactId>
     <name>Quarkus - Hibernate Reactive Transactions - Runtime</name>
     <description>Quarkus - Hibernate Reactive Transaction manager</description>
 

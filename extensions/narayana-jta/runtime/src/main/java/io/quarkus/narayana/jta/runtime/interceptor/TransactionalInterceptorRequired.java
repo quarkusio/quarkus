@@ -10,7 +10,6 @@ import jakarta.transaction.Transactional;
 
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
-import io.smallrye.mutiny.Uni;
 
 /**
  * @author paul.robinson@redhat.com 25/05/2013

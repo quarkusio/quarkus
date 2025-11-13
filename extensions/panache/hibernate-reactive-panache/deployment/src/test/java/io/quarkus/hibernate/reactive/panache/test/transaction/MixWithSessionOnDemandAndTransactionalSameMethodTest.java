@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.transactions.test.mixing;
+package io.quarkus.hibernate.reactive.panache.test.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;

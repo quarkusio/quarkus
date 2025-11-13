@@ -13,9 +13,9 @@ public class HibernateReactiveTransactionsResourceTest {
     @Test
     public void testHelloEndpoint() {
         given()
-                .when().get("/hibernate-reactive-transactions")
+                .when().get("/quarkus-reactive-transactions")
                 .then()
                 .statusCode(200)
-                .body(is("Hello hibernate-reactive-transactions"));
+                .body(is("Hello quarkus-reactive-transactions"));
     }
 }

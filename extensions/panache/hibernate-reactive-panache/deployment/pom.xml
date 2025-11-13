@@ -28,6 +28,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-panache-hibernate-common-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-transactions-deployment</artifactId>
+        </dependency>
 
         <!-- test dependencies -->
         <dependency>

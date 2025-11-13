@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.transactions.test.mixing;
+package io.quarkus.hibernate.reactive.panache.test.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,14 +7,14 @@ import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
 import io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
 
-public class MixWithTransactionTest {
+public class MixWithSessionOnDemandTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,39 +22,39 @@ public class MixWithTransactionTest {
 
     @Test
     @RunOnVertxContext
-    public void testTransactionalCallingWithTransaction(UniAsserter asserter) {
+    public void testTransactionalCallingSessionOnDemand(UniAsserter asserter) {
         asserter.assertFailedWith(
-                () -> methodAnnotatedWithTransactionalCallingWithTransaction(),
+                () -> methodAnnotatedWithTransactionalCallingSessionOnDemand(),
                 t -> assertThat(t)
                         .hasMessageContaining(
-                                "Cannot call a method annotated with @WithTransaction from a method annotated with @Transactional"));
+                                "Cannot call a method annotated with @WithSessionOnDemand from a method annotated with @Transactional"));
     }
 
     @Transactional
-    public Uni<?> methodAnnotatedWithTransactionalCallingWithTransaction() {
+    public Uni<?> methodAnnotatedWithTransactionalCallingSessionOnDemand() {
         Uni<?> a = Uni.createFrom().item("transactional_method");
-        return a.flatMap(b -> methodAnnotatedWithTransaction());
+        return a.flatMap(b -> methodAnnotatedWithSessionOnDemand());
     }
 
-    @WithTransaction
-    public Uni<String> methodAnnotatedWithTransaction() {
-        return Uni.createFrom().item("with_transaction");
+    @WithSessionOnDemand
+    public Uni<String> methodAnnotatedWithSessionOnDemand() {
+        return Uni.createFrom().item("whatever");
     }
 
     @Test
     @RunOnVertxContext
-    public void testWithTransactionCallingTransactional(UniAsserter asserter) {
+    public void testSessionOnDemandCallingTransactional(UniAsserter asserter) {
         // This should tell users do not do this and migrate to @Transactional
         asserter.assertFailedWith(
-                () -> methodAnnotatedWithTransactionCallingTransactional(),
+                () -> methodAnnotatedWithSessionOnDemandCallingTransactional(),
                 t -> assertThat(t)
                         .hasMessageContaining(
-                                "Cannot call a method annotated with @Transactional from a method annotated with @WithTransaction"));
+                                "Cannot call a method annotated with @Transactional from a method annotated with @WithSessionOnDemand"));
     }
 
-    @WithTransaction
-    public Uni<?> methodAnnotatedWithTransactionCallingTransactional() {
-        Uni<?> a = Uni.createFrom().item("with_transaction");
+    @WithSessionOnDemand
+    public Uni<?> methodAnnotatedWithSessionOnDemandCallingTransactional() {
+        Uni<?> a = Uni.createFrom().item("with_session_on_demand_method");
         return a.flatMap(b -> methodAnnotatedWithTransactional());
     }
 

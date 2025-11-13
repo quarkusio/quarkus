@@ -1386,12 +1386,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>hibernate-reactive-transactions</artifactId>
+                <artifactId>quarkus-reactive-transactions</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>hibernate-reactive-transactions-deployment</artifactId>
+                <artifactId>quarkus-reactive-transactions-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

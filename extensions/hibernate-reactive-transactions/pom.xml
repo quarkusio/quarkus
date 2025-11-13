@@ -7,7 +7,7 @@
         <artifactId>quarkus-extensions-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>hibernate-reactive-transactions-parent</artifactId>
+    <artifactId>quarkus-reactive-transactions-parent</artifactId>
     <packaging>pom</packaging>
     <name>Quarkus - Hibernate Reactive Transactions - Parent</name>
 

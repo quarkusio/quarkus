@@ -20,13 +20,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-@Path("/hibernate-reactive-transactions")
+@Path("/quarkus-reactive-transactions")
 @ApplicationScoped
 public class HibernateReactiveTransactionsResource {
     // add some rest methods here
 
     @GET
     public String hello() {
-        return "Hello hibernate-reactive-transactions";
+        return "Hello quarkus-reactive-transactions";
     }
 }

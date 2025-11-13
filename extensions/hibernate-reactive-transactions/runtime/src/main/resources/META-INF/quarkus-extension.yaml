@@ -2,7 +2,7 @@ name: Quarkus - Hibernate Reactive Transactions
 #description: Quarkus - Hibernate Reactive Transaction manager
 metadata:
 #  keywords:
-#    - hibernate-reactive-transactions
+#    - quarkus-reactive-transactions
 #  guide: ... # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
 #  categories:
 #    - "miscellaneous"

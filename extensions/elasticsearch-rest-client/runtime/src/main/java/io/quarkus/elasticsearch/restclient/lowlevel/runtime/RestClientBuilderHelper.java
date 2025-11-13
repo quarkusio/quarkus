@@ -2,8 +2,11 @@ package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -12,6 +15,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.conn.NoopIOSessionStrategy;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -24,6 +28,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class RestClientBuilderHelper {
 
@@ -54,16 +59,7 @@ public final class RestClientBuilderHelper {
         builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
             @Override
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                if (config.username().isPresent()) {
-                    if (!"https".equalsIgnoreCase(config.protocol())) {
-                        LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
-                                "use the HTTPS protocol instead.");
-                    }
-                    CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                    credentialsProvider.setCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
-                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                }
+                applyAuthentication(httpClientBuilder, config);
 
                 if (config.ioThreadCounts().isPresent()) {
                     IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
@@ -111,5 +107,29 @@ public final class RestClientBuilderHelper {
         }
 
         return builder.build();
+    }
+
+    private static void applyAuthentication(HttpAsyncClientBuilder httpClientBuilder, ElasticsearchConfig config) {
+        boolean hasBasic = config.username().isPresent();
+        boolean hasApiKey = config.apiKey().isPresent();
+        if (hasBasic && hasApiKey) {
+            throw new ConfigurationException("You must provide either a valid username/password pair for Basic " +
+                    "authentication OR only a valid API key for ApiKey authentication. Both methods are currently " +
+                    "enabled.");
+        }
+        if (!"https".equalsIgnoreCase(config.protocol()) && (hasBasic || hasApiKey)) {
+            LOG.warn("Transmitting authentication information over HTTP is unsafe as it implies sending sensitive " +
+                    "information as plain text over an unencrypted channel. Use the HTTPS protocol instead.");
+        }
+        if (hasBasic) {
+            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                    new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
+            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+        } else if (hasApiKey) {
+            String apiKey = config.apiKey().get();
+            Header apiKeyHeader = new BasicHeader(HttpHeaders.AUTHORIZATION, "ApiKey " + apiKey);
+            httpClientBuilder.setDefaultHeaders(Collections.singleton(apiKeyHeader));
+        }
     }
 }

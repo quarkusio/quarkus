@@ -1,6 +1,9 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
 import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.WITH_TRANSACTION_METHOD_KEY;
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.isUniReturnType;
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.proceedUni;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -14,9 +17,7 @@ import io.vertx.core.Context;
 @WithTransaction
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class WithTransactionInterceptor extends AbstractUniInterceptor {
-
-    public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
+public class WithTransactionInterceptor  {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {

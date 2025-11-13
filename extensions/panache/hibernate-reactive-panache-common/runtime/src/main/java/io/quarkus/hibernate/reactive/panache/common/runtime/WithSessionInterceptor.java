@@ -7,10 +7,13 @@ import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
 
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.isUniReturnType;
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.proceedUni;
+
 @WithSession
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class WithSessionInterceptor extends AbstractUniInterceptor {
+public class WithSessionInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {

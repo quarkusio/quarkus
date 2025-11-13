@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.SESSION_ON_DEMAND_KEY;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -61,9 +62,6 @@ public final class SessionOperations {
                 .unwrap(value);
         return new BaseKey<>(Session.class, implementor.getUuid());
     }
-
-    // This key is used to indicate that reactive sessions should be opened lazily/on-demand (when needed) in the current vertx context
-    private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
 
     // This key is used to keep track of the Set<String> sessions created on demand
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";

@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.reactive.transactions.runtime;
 
-import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.WITH_TRANSACTION_METHOD_KEY;
 import static io.quarkus.hibernate.reactive.runtime.customized.TransactionalContextPool.CURRENT_TRANSACTION_KEY;
 
 import java.util.Optional;
@@ -71,9 +70,8 @@ public abstract class TransactionalInterceptorBase {
                 .toCompletionStage());
     }
 
-    // TODO copied from Panache -- refactor and put in a common module?
     @SuppressWarnings("unchecked")
-    protected <T> Uni<T> proceedUni(InvocationContext context) {
+    public static <T> Uni<T> proceedUni(InvocationContext context) {
         try {
             return ((Uni<T>) context.proceed());
         } catch (Exception e) {
@@ -82,7 +80,7 @@ public abstract class TransactionalInterceptorBase {
     }
 
     // TODO copied from Panache -- refactor and put in a common module?
-    protected boolean isUniReturnType(InvocationContext context) {
+    public static boolean isUniReturnType(InvocationContext context) {
         return context.getMethod().getReturnType().equals(Uni.class);
     }
 
@@ -92,8 +90,11 @@ public abstract class TransactionalInterceptorBase {
     // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor field
     private static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
 
-    // This key is copied from panache and it's the marker key the WithSessionOnDemand intereceptor uses
-    private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
+    // This key is used by Panache internally it's the marker key the WithSessionOnDemand intereceptor uses
+    public static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
+
+    // This key is used by Panache internally it's the marker key the WithTransaction intereceptor uses
+    public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
 
     static <T> Uni<T> withTransactionalSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();

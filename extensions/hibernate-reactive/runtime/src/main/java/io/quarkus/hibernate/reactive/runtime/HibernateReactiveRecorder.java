@@ -122,9 +122,6 @@ public class HibernateReactiveRecorder {
     // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor TRANSACTIONAL_METHOD_KEY field
     public static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
 
-    // TODO Luca find a way to remove duplication
-    public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
-
     public static Mutiny.Session getSession(String persistenceUnitName) {
         Context context = Vertx.currentContext();
 

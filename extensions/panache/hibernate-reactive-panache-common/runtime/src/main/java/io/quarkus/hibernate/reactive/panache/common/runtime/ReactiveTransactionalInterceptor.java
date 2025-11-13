@@ -5,10 +5,12 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
+import static io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorBase.proceedUni;
+
 @ReactiveTransactional
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)
-public class ReactiveTransactionalInterceptor extends AbstractUniInterceptor {
+public class ReactiveTransactionalInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {

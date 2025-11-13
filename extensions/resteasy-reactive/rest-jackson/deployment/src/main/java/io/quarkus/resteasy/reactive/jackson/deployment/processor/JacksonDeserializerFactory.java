@@ -475,10 +475,16 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         BranchResult isValueNull = bytecode.ifNull(valueNode);
+
         BytecodeCreator isValueNullTrue = isValueNull.trueBranch();
         isValueNullTrue.assign(result, JacksonSerializationUtils.getDefaultValue(isValueNullTrue, fieldType));
 
-        BytecodeCreator isValueNullFalse = isValueNull.falseBranch();
+        BranchResult isNullNode = isValueNull.falseBranch()
+                .ifTrue(isValueNull.falseBranch().invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class),
+                        valueNode));
+        isNullNode.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNullNode.trueBranch(), fieldType));
+
+        BytecodeCreator isValueNullFalse = isNullNode.falseBranch();
 
         ResultHandle convertedValue = switch (fieldType.name().toString()) {
             case "java.lang.String" -> isValueNullFalse.invokeVirtualMethod(ofMethod(JsonNode.class, "asText", String.class),

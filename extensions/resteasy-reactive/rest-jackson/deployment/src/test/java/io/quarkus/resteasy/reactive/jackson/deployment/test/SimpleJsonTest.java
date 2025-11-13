@@ -29,7 +29,7 @@ public class SimpleJsonTest extends AbstractSimpleJsonTest {
                                     Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class,
                                     PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
                                     ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
-                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class)
+                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class, StringWrapper.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");

@@ -592,16 +592,9 @@ public class SubclassGenerator extends AbstractGenerator {
         // First generate the delegate subclass
         // An instance of this subclass is injected in the delegate injection point of a decorator instance
         ClassInfo decoratorClass = decorator.getTarget().get().asClass();
-        String baseName;
-        if (decoratorClass.enclosingClass() != null) {
-            baseName = decoratorClass.enclosingClass().withoutPackagePrefix() + UNDERSCORE
-                    + decoratorClass.name().withoutPackagePrefix();
-        } else {
-            baseName = decoratorClass.name().withoutPackagePrefix();
-        }
         // Name: AlphaDecorator_FooBeanId_Delegate_Subclass
         String generatedName = generatedName(providerType.name(),
-                baseName + UNDERSCORE + bean.getIdentifier() + UNDERSCORE + "Delegate");
+                decoratorClass.name().withoutPackagePrefix() + UNDERSCORE + bean.getIdentifier() + UNDERSCORE + "Delegate");
 
         Set<MethodInfo> decoratedMethods = bean.getDecoratedMethods(decorator);
         Set<MethodDesc> decoratedMethodDescriptors = new HashSet<>(decoratedMethods.size());

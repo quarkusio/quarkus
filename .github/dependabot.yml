@@ -41,6 +41,8 @@ updates:
       # Quarkus
       - dependency-name: io.quarkus.*:*
       - dependency-name: io.quarkus:*
+      # Keycloak
+      - dependency-name: org.keycloak:*
       # Elytron
       - dependency-name: org.wildfly.security:*
       - dependency-name: org.wildfly.openssl:*

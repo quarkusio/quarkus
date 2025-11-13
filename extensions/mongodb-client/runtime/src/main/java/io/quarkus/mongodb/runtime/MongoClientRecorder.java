@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.runtime;
 
+import static io.quarkus.mongodb.runtime.MongoConfig.getPropertyName;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -13,6 +15,7 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.metrics.MicrometerConnectionPoolListener;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
@@ -129,5 +132,33 @@ public class MongoClientRecorder {
         }
         // this ensures that DNS resolution will take place if necessary
         new ConnectionString(mongoClientConfig.connectionString().get());
+    }
+
+    public Supplier<ActiveResult> checkActive(final String name) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                MongoClientConfig mongoClientConfig = runtimeConfig.getValue().clients().get(name);
+                if (!mongoClientConfig.active()) {
+                    return ActiveResult.inactive(String.format(
+                            """
+                                    Mongo Client '%s' was deactivated through configuration properties. \
+                                    To activate the Mongo Client, set configuration property '%s' to 'true' and configure the Mongo Client '%s'. \
+                                    Refer to https://quarkus.io/guides/mongodb for guidance.
+                                    """,
+                            name, getPropertyName(name, "active"), name));
+                }
+                if (mongoClientConfig.hosts().isEmpty() && mongoClientConfig.connectionString().isEmpty()) {
+                    return ActiveResult.inactive(String.format(
+                            """
+                                    Mongo Client '%s' was deactivated automatically because neither the hosts nor the connectionString is set. \
+                                    To activate the Mongo Client, set the configuration property '%s' or '%s' \
+                                    Refer to https://quarkus.io/guides/mongodb for guidance.
+                                    """,
+                            name, getPropertyName(name, "hosts"), getPropertyName(name, "connection-string")));
+                }
+                return ActiveResult.active();
+            }
+        };
     }
 }

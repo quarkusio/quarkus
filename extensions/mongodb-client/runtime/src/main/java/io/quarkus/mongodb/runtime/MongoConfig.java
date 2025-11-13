@@ -111,4 +111,11 @@ public interface MongoConfig {
     static boolean isDefaultClient(final String name) {
         return DEFAULT_CLIENT_NAME.equalsIgnoreCase(name);
     }
+
+    static String getPropertyName(final String name, final String attribute) {
+        String prefix = DEFAULT_CLIENT_NAME.equals(name)
+                ? "quarkus.mongodb."
+                : "quarkus.mongodb." + (name.contains(".") ? "\"" + name + "\"" : name) + ".";
+        return prefix + attribute;
+    }
 }

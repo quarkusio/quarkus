@@ -397,9 +397,9 @@ public class MongoClientProcessor {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(MongoClient.class)
                 .scope(ApplicationScoped.class)
-                // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been set up
                 .supplier(recorder.mongoClientSupplier(clientName))
+                .checkActive(recorder.checkActive(clientName))
+                .startup()
                 .setRuntimeInit();
 
         return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, false);
@@ -411,9 +411,9 @@ public class MongoClientProcessor {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(ReactiveMongoClient.class)
                 .scope(ApplicationScoped.class)
-                // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been set up
                 .supplier(recorder.reactiveMongoClientSupplier(clientName))
+                .checkActive(recorder.checkActive(clientName))
+                .startup()
                 .setRuntimeInit();
 
         return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, true);

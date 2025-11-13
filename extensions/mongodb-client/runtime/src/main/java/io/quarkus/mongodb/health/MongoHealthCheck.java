@@ -1,18 +1,20 @@
 package io.quarkus.mongodb.health;
 
+import static io.quarkus.mongodb.runtime.MongoConfig.DEFAULT_CLIENT_NAME;
 import static io.quarkus.mongodb.runtime.MongoConfig.isDefaultClient;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.Bean;
+import jakarta.inject.Inject;
 
 import org.bson.Document;
 import org.eclipse.microprofile.health.HealthCheck;
@@ -22,7 +24,7 @@ import org.eclipse.microprofile.health.Readiness;
 
 import com.mongodb.client.MongoClient;
 
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -35,7 +37,6 @@ import io.smallrye.mutiny.tuples.Tuple2;
 @Readiness
 @ApplicationScoped
 public class MongoHealthCheck implements HealthCheck {
-
     public static final String CLIENT_DEFAULT = "<default>";
     public static final String CLIENT_DEFAULT_REACTIVE = "<default-reactive>";
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
@@ -44,54 +45,43 @@ public class MongoHealthCheck implements HealthCheck {
 
     private static final Document COMMAND = new Document("ping", 1);
 
-    // TODO - Rewrite this with active / inactive. Follow Redis implementation
-    public MongoHealthCheck(MongoConfig config) {
-        Iterable<InstanceHandle<MongoClient>> handle = Arc.container()
-                .select(MongoClient.class, Any.Literal.INSTANCE).handles();
-        Iterable<InstanceHandle<ReactiveMongoClient>> reactiveHandlers = Arc.container()
-                .select(ReactiveMongoClient.class, Any.Literal.INSTANCE).handles();
+    @Inject
+    MongoConfig mongoConfig;
+    @Any
+    @Inject
+    InjectableInstance<MongoClient> mongoClient;
+    @Any
+    @Inject
+    InjectableInstance<ReactiveMongoClient> reactiveMongoClients;
 
-        for (Entry<String, MongoClientConfig> entry : config.clients().entrySet()) {
-            String clientName = entry.getKey();
-            MongoClientConfig clientConfig = entry.getValue();
-            MongoClient client = getClient(handle, isDefaultClient(clientName) ? null : entry.getKey());
-            ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers,
-                    isDefaultClient(clientName) ? null : entry.getKey());
-            if (client != null) {
-                checks.add(
-                        new MongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT : clientName, client, clientConfig));
+    @PostConstruct
+    void init() {
+        for (InstanceHandle<MongoClient> handle : mongoClient.handles()) {
+            if (handle.getBean().isActive()) {
+                String clientName = getClientName(handle.getBean());
+                MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
+                checks.add(new MongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT : clientName, handle.get(),
+                        clientConfig));
             }
-            if (reactiveClient != null) {
+        }
+
+        for (InstanceHandle<ReactiveMongoClient> handle : reactiveMongoClients.handles()) {
+            if (handle.getBean().isActive()) {
+                String clientName = getClientName(handle.getBean());
+                MongoClientConfig clientConfig = mongoConfig.clients().get(clientName);
                 checks.add(new ReactiveMongoClientCheck(isDefaultClient(clientName) ? CLIENT_DEFAULT_REACTIVE : clientName,
-                        reactiveClient, clientConfig));
+                        handle.get(), clientConfig));
             }
         }
     }
 
-    private MongoClient getClient(Iterable<InstanceHandle<MongoClient>> handle, String name) {
-        for (InstanceHandle<MongoClient> client : handle) {
-            String n = getMongoClientName(client.getBean());
-            if (name == null && n == null) {
-                return client.get();
-            }
-            if (name != null && name.equals(n)) {
-                return client.get();
+    private static String getClientName(final Bean<?> bean) {
+        for (Object qualifier : bean.getQualifiers()) {
+            if (qualifier instanceof MongoClientName mongoClientName) {
+                return mongoClientName.value();
             }
         }
-        return null;
-    }
-
-    private ReactiveMongoClient getReactiveClient(Iterable<InstanceHandle<ReactiveMongoClient>> handle, String name) {
-        for (InstanceHandle<ReactiveMongoClient> client : handle) {
-            String n = getMongoClientName(client.getBean());
-            if (name == null && n == null) {
-                return client.get();
-            }
-            if (name != null && name.equals(n)) {
-                return client.get();
-            }
-        }
-        return null;
+        return DEFAULT_CLIENT_NAME;
     }
 
     private BiFunction<Document, Throwable, Tuple2<String, String>> toResult(String name) {
@@ -101,22 +91,6 @@ public class MongoHealthCheck implements HealthCheck {
                 return Tuple2.of(name, failure == null ? "OK" : failure.getMessage());
             }
         };
-    }
-
-    /**
-     * Get mongoClient name if defined.
-     *
-     * @param bean the bean from which the name will be extracted.
-     * @return mongoClient name or null if not defined
-     * @see MongoClientName
-     */
-    private String getMongoClientName(Bean<?> bean) {
-        for (Object qualifier : bean.getQualifiers()) {
-            if (qualifier instanceof MongoClientName) {
-                return ((MongoClientName) qualifier).value();
-            }
-        }
-        return null;
     }
 
     @Override

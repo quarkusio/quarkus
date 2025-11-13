@@ -117,11 +117,11 @@ public final class RestClientBuilderHelper {
                     "authentication OR only a valid API key for ApiKey authentication. Both methods are currently " +
                     "enabled.");
         }
+        if (!"https".equalsIgnoreCase(config.protocol()) && (hasBasic || hasApiKey)) {
+            LOG.warn("Transmitting authentication information over HTTP is unsafe as it implies sending sensitive " +
+                    "information as plain text over an unencrypted channel. Use the HTTPS protocol instead.");
+        }
         if (hasBasic) {
-            if (!"https".equalsIgnoreCase(config.protocol())) {
-                LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
-                        "use the HTTPS protocol instead.");
-            }
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY,
                     new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));

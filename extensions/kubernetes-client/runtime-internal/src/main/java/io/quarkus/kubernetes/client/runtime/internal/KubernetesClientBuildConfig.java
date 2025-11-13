@@ -47,6 +47,12 @@ public interface KubernetesClientBuildConfig {
     Optional<String> caCertData();
 
     /**
+     * Path to a kubeconfig file to use for configuring the client. When set, the file will be read and used as the base
+     * configuration.
+     */
+    Optional<String> kubeconfigFile();
+
+    /**
      * Client certificate file
      */
     Optional<String> clientCertFile();

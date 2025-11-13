@@ -212,6 +212,9 @@ public abstract class ResteasyReactiveRequestContext
     public void setupInitialMatchAndRestart(RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch) {
         this.initialMatch = initialMatch;
 
+        // add a default close handler that simply discards whatever REST handlers still remain to be run
+        serverResponse().addCloseHandler(new DiscardRemainingRunner(this));
+
         restart(initialMatch.value.handlers);
         setMaxPathParams(initialMatch.value.maxPathParams);
         setRemaining(initialMatch.remaining);
@@ -433,6 +436,14 @@ public abstract class ResteasyReactiveRequestContext
             log.debug("Failed to close stream", e);
         }
         super.close();
+    }
+
+    /**
+     * This method ensures that no more handlers will run and that all the resources tied to the request are closed
+     */
+    private void discardRemaining() {
+        setPosition(getHandlers().length);
+        close();
     }
 
     public LazyResponse getResponse() {
@@ -1329,5 +1340,25 @@ public abstract class ResteasyReactiveRequestContext
 
         private final PreviousResource prev;
 
+    }
+
+    private static class DiscardRemainingRunner implements Runnable {
+
+        private ResteasyReactiveRequestContext context;
+
+        private DiscardRemainingRunner(ResteasyReactiveRequestContext context) {
+            this.context = context;
+        }
+
+        @Override
+        public void run() {
+            try {
+                context.discardRemaining();
+            } catch (Exception ignored) {
+
+            } finally {
+                context = null;
+            }
+        }
     }
 }

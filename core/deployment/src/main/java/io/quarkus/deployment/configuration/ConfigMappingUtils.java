@@ -27,6 +27,8 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.smallrye.config.ConfigMapping;
@@ -47,6 +49,7 @@ public class ConfigMappingUtils {
 
     // Used for application Mappings and MP ConfigProperties
     public static void processConfigClasses(
+            NativeConfig nativeConfig,
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
             Map<String, GeneratedClassBuildItem> generatedConfigClasses,
@@ -75,12 +78,14 @@ public class ConfigMappingUtils {
                 continue;
             }
             Kind configClassKind = getConfigClassType(instance);
-            processConfigClass(configClass, configClassKind, combinedIndex, generatedConfigClasses, reflectiveClasses,
+            processConfigClass(nativeConfig, configClass, configClassKind, combinedIndex, generatedConfigClasses,
+                    reflectiveClasses,
                     reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
     }
 
     public static void processConfigMapping(
+            NativeConfig nativeConfig,
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
             Map<String, GeneratedClassBuildItem> generatedConfigClasses,
@@ -88,11 +93,13 @@ public class ConfigMappingUtils {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
-        processConfigClasses(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
+        processConfigClasses(nativeConfig, configItem, combinedIndex, generatedConfigClasses, reflectiveClasses,
+                reflectiveMethods,
                 configClasses, additionalConstrainedClasses, CONFIG_MAPPING_NAME);
     }
 
     public static void processExtensionConfigMapping(
+            NativeConfig nativeConfig,
             ConfigClass configClass,
             CombinedIndexBuildItem combinedIndex,
             Map<String, GeneratedClassBuildItem> generatedConfigClasses,
@@ -101,11 +108,12 @@ public class ConfigMappingUtils {
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigClass(configClass, Kind.MAPPING, combinedIndex, generatedConfigClasses, reflectiveClasses,
+        processConfigClass(nativeConfig, configClass, Kind.MAPPING, combinedIndex, generatedConfigClasses, reflectiveClasses,
                 reflectiveMethods, configClasses, additionalConstrainedClasses);
     }
 
     private static void processConfigClass(
+            NativeConfig nativeConfig,
             ConfigClass configClassWithPrefix,
             Kind configClassKind,
             CombinedIndexBuildItem combinedIndex,
@@ -131,7 +139,11 @@ public class ConfigMappingUtils {
                             classBytes));
             additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
                     classBytes));
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName())
+            ReflectiveClassBuildItem.Builder reflection = ReflectiveClassBuildItem.builder(mappingMetadata.getClassName());
+            if (NativeImageFutureDefault.COMPLETE_REFLECTION_TYPES.isEnabled(nativeConfig)) {
+                reflection.methods();
+            }
+            reflectiveClasses.produce(reflection
                     .reason(ConfigMappingUtils.class.getName())
                     .build());
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),

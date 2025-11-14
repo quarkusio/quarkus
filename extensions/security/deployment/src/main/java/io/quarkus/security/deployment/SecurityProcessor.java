@@ -99,6 +99,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -209,6 +210,23 @@ public class SecurityProcessor {
                         .produce(new JCAProviderBuildItem(providerName, security.securityProviderConfig().get(providerName)));
             }
             log.debugf("Added providerName: %s", providerName);
+        }
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
+    void registerBouncyCastleReflection(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflection) {
+        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
+                x -> x.getGroupId().equals("org.bouncycastle") && x.getArtifactId().startsWith("bcprov-"))) {
+            reflection.produce(ReflectiveClassBuildItem.builder("org.bouncycastle.jcajce.provider.symmetric.AES",
+                    "org.bouncycastle.jcajce.provider.symmetric.AES$Mappings",
+                    "org.bouncycastle.jcajce.provider.asymmetric.EC",
+                    "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
+                    "org.bouncycastle.jcajce.provider.asymmetric.RSA",
+                    "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+                    "org.bouncycastle.jcajce.provider.drbg.DRBG",
+                    "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings").methods().fields()
+                    .build());
         }
     }
 
@@ -342,8 +360,22 @@ public class SecurityProcessor {
         runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("sun.security.pkcs11.P11Util"));
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
     @Record(ExecutionTime.STATIC_INIT)
+    void recordBouncyCastleProvidersStaticInit(SecurityProviderRecorder recorder,
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        recordBouncyCastleProviders(recorder, bouncyCastleProviders, bouncyCastleJsseProviders);
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void recordBouncyCastleProvidersRuntimeInit(SecurityProviderRecorder recorder,
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        recordBouncyCastleProviders(recorder, bouncyCastleProviders, bouncyCastleJsseProviders);
+    }
+
     void recordBouncyCastleProviders(SecurityProviderRecorder recorder,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {

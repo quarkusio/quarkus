@@ -1,7 +1,6 @@
 package io.quarkus.spring.data.deployment;
 
 import static io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
-import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -45,6 +44,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
@@ -95,6 +95,12 @@ public class SpringDataJPAProcessor {
         ignorable.add(Auditable.class.getName());
         ignorable.add(Persistable.class.getName());
         return new IgnorableNonIndexedClasses(ignorable);
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.CompleteReflectionTypes.class)
+    void registerReflectionForCompleteReflectionTypes(BuildProducer<ReflectiveClassBuildItem> producer) {
+        producer.produce(ReflectiveClassBuildItem.builder(
+                "org.springframework.data.util.Streamable").methods().build());
     }
 
     @BuildStep

@@ -669,7 +669,7 @@ public class OidcProvider implements Closeable {
         }
 
         private Key initKey(Key generatedInternalSignatureKey) {
-            String clientSecret = OidcCommonUtils.getClientOrJwtSecret(oidcConfig.credentials());
+            String clientSecret = client.getClientSecret();
             if (clientSecret != null) {
                 LOG.debug("Verifying internal ID token with a configured client secret");
                 return KeyUtils.createSecretKeyFromSecret(clientSecret);

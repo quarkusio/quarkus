@@ -365,6 +365,7 @@ For more information about customizing `SecurityIdentity`, see the xref:security
 
 In the <<mutual-tls>> section we configured the mutual TLS client authentication in the `application.properties` file like this:
 
+[source,properties]
 ----
 quarkus.tls.tls-config-1.key-store.p12.path=server-keystore.p12
 quarkus.tls.tls-config-1.key-store.p12.password=the_key_store_secret

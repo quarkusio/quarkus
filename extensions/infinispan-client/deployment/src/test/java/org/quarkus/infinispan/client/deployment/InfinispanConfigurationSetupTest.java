@@ -12,6 +12,7 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.infinispan.client.runtime.QuarkusTransportFactory;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class InfinispanConfigurationSetupTest {
@@ -32,6 +33,7 @@ public class InfinispanConfigurationSetupTest {
         Configuration configuration = remoteCacheManager.getConfiguration();
         assertThat(configuration.servers()).extracting("host", "port").containsExactly(tuple("cluster1", 31000));
         assertThat(configuration.tracingPropagationEnabled()).isFalse();
+        assertThat(configuration.transportFactory().getClass()).isEqualTo(QuarkusTransportFactory.class);
         assertThat(configuration.clientIntelligence()).isEqualTo(ClientIntelligence.BASIC);
         assertThat(configuration.security().authentication().enabled()).isTrue();
         assertThat(configuration.security().authentication().saslMechanism()).isEqualTo("BASIC");

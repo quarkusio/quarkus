@@ -5,10 +5,11 @@ import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
+import io.quarkus.test.common.JdkUtil;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
@@ -98,18 +100,17 @@ public class MetricsTest {
 
         await().atMost(10, SECONDS).untilAsserted(() -> {
             Set<String> allMetricNames = getAllMetricNames("jvm.");
-            assertThat(allMetricNames.size())
-                    .withFailMessage("The jvm metrics are " + allMetricNames)
-                    .isGreaterThanOrEqualTo(allMetrics.size());
+            assertThat(allMetricNames)
+                    .containsAll(allMetrics.stream().map(MetricToAssert::name).toList());
         });
 
         allMetrics.forEach(metricToAssert -> {
 
             // metric is there and has at least 1 reading
             await().atMost(10, SECONDS)
-                    .untilAsserted(() -> assertThat(getMetrics(metricToAssert.name()).size())
-                            .withFailMessage("The metric " + metricToAssert.name())
-                            .isGreaterThan(0));
+                    .untilAsserted(() -> assertThat(getMetrics(metricToAssert.name()))
+                            .withFailMessage("The metric " + metricToAssert.name() + " is not defined")
+                            .hasSizeGreaterThan(0));
 
             // skip assertions from flaky metrics
             if (!metricToAssert.name().equals("jvm.memory.used_after_last_gc") &&
@@ -164,40 +165,44 @@ public class MetricsTest {
     }
 
     protected Set<MetricToAssert> getJvmMetricsToAssert() {
-        return Set.of(
-                //                new MetricToAssert("http.server.request.duration", "Duration of HTTP server requests.", "s",
-                //                        HISTOGRAM), // just because we generate load with HTTP
-                new MetricToAssert("jvm.memory.committed", "Measure of memory committed.", "By", LONG_SUM),
-                new MetricToAssert("jvm.memory.used", "Measure of memory used.", "By", LONG_SUM),
-                // Not on native
-                new MetricToAssert("jvm.memory.limit", "Measure of max obtainable memory.", "By", LONG_SUM),
-                new MetricToAssert("jvm.memory.used_after_last_gc",
-                        "Measure of memory used, as measured after the most recent garbage collection event on this pool.",
-                        "By", LONG_SUM),
-                // not on native
-                new MetricToAssert("jvm.gc.duration", "Duration of JVM garbage collection actions.", "s",
-                        HISTOGRAM),
-                new MetricToAssert("jvm.class.count", "Number of classes currently loaded.", "{class}",
-                        LONG_SUM),
-                new MetricToAssert("jvm.class.loaded", "Number of classes loaded since JVM start.", "{class}",
-                        LONG_SUM),
-                new MetricToAssert("jvm.class.unloaded", "Number of classes unloaded since JVM start.",
-                        "{class}", LONG_SUM),
-                new MetricToAssert("jvm.cpu.count",
-                        "Number of processors available to the Java virtual machine.", "{cpu}", LONG_SUM),
-                new MetricToAssert("jvm.cpu.limit", "", "1", LONG_SUM),
-                //jvm.system.cpu.utilization instead, on native
-                new MetricToAssert("jvm.cpu.time", "CPU time used by the process as reported by the JVM.", "s",
-                        DOUBLE_SUM),
-                new MetricToAssert("jvm.cpu.recent_utilization",
-                        "Recent CPU utilization for the process as reported by the JVM.", "1", DOUBLE_GAUGE),
-                new MetricToAssert("jvm.cpu.longlock", "Long lock times", "s", HISTOGRAM),
-                new MetricToAssert("jvm.cpu.context_switch", "", "Hz", DOUBLE_SUM),
-                // not on native
-                new MetricToAssert("jvm.network.io", "Network read/write bytes.", "By", HISTOGRAM),
-                new MetricToAssert("jvm.network.time", "Network read/write duration.", "s", HISTOGRAM),
-                new MetricToAssert("jvm.thread.count", "Number of executing platform threads.", "{thread}",
-                        LONG_SUM));
+        Set<MetricToAssert> jvmMetrics = new HashSet<>();
+
+        // metrics.add(new MetricToAssert("http.server.request.duration", "Duration of HTTP server requests.", "s", HISTOGRAM)); // just because we generate load with HTTP
+        jvmMetrics.add(new MetricToAssert("jvm.memory.committed", "Measure of memory committed.", "By", LONG_SUM));
+        jvmMetrics.add(new MetricToAssert("jvm.memory.used", "Measure of memory used.", "By", LONG_SUM));
+        // Not on native
+        jvmMetrics.add(new MetricToAssert("jvm.memory.limit", "Measure of max obtainable memory.", "By", LONG_SUM));
+        jvmMetrics.add(new MetricToAssert("jvm.memory.used_after_last_gc",
+                "Measure of memory used, as measured after the most recent garbage collection event on this pool.",
+                "By", LONG_SUM));
+        // not on native
+        jvmMetrics.add(new MetricToAssert("jvm.gc.duration", "Duration of JVM garbage collection actions.", "s", HISTOGRAM));
+        jvmMetrics.add(new MetricToAssert("jvm.class.count", "Number of classes currently loaded.", "{class}", LONG_SUM));
+        jvmMetrics
+                .add(new MetricToAssert("jvm.class.loaded", "Number of classes loaded since JVM start.", "{class}", LONG_SUM));
+        jvmMetrics.add(
+                new MetricToAssert("jvm.class.unloaded", "Number of classes unloaded since JVM start.", "{class}", LONG_SUM));
+        jvmMetrics.add(new MetricToAssert("jvm.cpu.count", "Number of processors available to the Java virtual machine.",
+                "{cpu}", LONG_SUM));
+        // jvm.system.cpu.utilization instead, on native
+        jvmMetrics.add(
+                new MetricToAssert("jvm.cpu.time", "CPU time used by the process as reported by the JVM.", "s", DOUBLE_SUM));
+        jvmMetrics.add(new MetricToAssert("jvm.cpu.recent_utilization",
+                "Recent CPU utilization for the process as reported by the JVM.", "1", DOUBLE_GAUGE));
+        jvmMetrics.add(new MetricToAssert("jvm.thread.count", "Number of executing platform threads.", "{thread}", LONG_SUM));
+
+        // not supported on Semeru
+        if (!JdkUtil.isSemeru()) {
+            jvmMetrics.add(new MetricToAssert("jvm.cpu.limit", "", "1", LONG_SUM));
+            jvmMetrics.add(new MetricToAssert("jvm.cpu.longlock", "Long lock times", "s", HISTOGRAM));
+            jvmMetrics.add(new MetricToAssert("jvm.cpu.context_switch", "", "Hz", DOUBLE_SUM));
+
+            // not on native
+            jvmMetrics.add(new MetricToAssert("jvm.network.io", "Network read/write bytes.", "By", HISTOGRAM));
+            jvmMetrics.add(new MetricToAssert("jvm.network.time", "Network read/write duration.", "s", HISTOGRAM));
+        }
+
+        return jvmMetrics;
     }
 
     private Double getLastReading(MetricToAssert metricToAssert) {

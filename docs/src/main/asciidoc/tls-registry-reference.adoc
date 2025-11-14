@@ -680,7 +680,7 @@ TLS 1.3 completely removes support for renegotiation, effectively closing this p
 
 * To secure TLS 1.2 and earlier, set `jdk.tls.rejectClientInitiatedRenegotiation` to `true` to prevent client-initiated renegotiation.
 +
-[source]
+[source,bash]
 ----
 # JVM mode:
 java -Djdk.tls.rejectClientInitiatedRenegotiation=true -jar ...
@@ -690,7 +690,7 @@ java -Djdk.tls.rejectClientInitiatedRenegotiation=true -jar ...
 +
 If you are using the Quarkus-provided `Dockerfile` in JVM mode, you can disable renegotiation by adding the property to the `JAVA_OPTS_APPEND` environment variable:
 +
-[source]
+[source,dockerfile]
 ----
 ENV JAVA_OPTS_APPPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Djdk.tls.rejectClientInitiatedRenegotiation=true"
 ----

@@ -146,6 +146,7 @@ import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegister
 import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
@@ -170,6 +171,8 @@ public final class HibernateOrmProcessor {
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
+
+    private static final String JAKARTA_DATA_REPOSITORY_ANNOTATION = "jakarta.data.repository.Repository";
 
     @BuildStep
     NativeImageFeatureBuildItem registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {
@@ -834,6 +837,15 @@ public final class HibernateOrmProcessor {
             reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .constructors(false).methods().build());
+        }
+    }
+
+    @BuildStep
+    public void registerJakartaDataRepositorySecurityAnnotations(Capabilities capabilities,
+            BuildProducer<SecuredInterfaceAnnotationBuildItem> securedInterfaceAnnotationProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            securedInterfaceAnnotationProducer
+                    .produce(new SecuredInterfaceAnnotationBuildItem(DotName.createSimple(JAKARTA_DATA_REPOSITORY_ANNOTATION)));
         }
     }
 

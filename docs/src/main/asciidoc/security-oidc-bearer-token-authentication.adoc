@@ -1649,6 +1649,7 @@ quarkus.http.auth.proactive=false <1>
 
 If the bearer access token claim `acr` does not contain `myACR`, Quarkus returns an authentication requirements challenge indicating required `acr_values`:
 
+[source,text]
 ----
 HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer error="insufficient_user_authentication",

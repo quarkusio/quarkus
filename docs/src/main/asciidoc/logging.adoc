@@ -273,6 +273,8 @@ This identifies code like `if(logger.isDebug()) callMethod();` that will never b
 [WARNING]
 ====
 If you add these properties on the command line, ensure the `"` character is escaped properly:
+
+[source,properties]
 ----
 -Dquarkus.log.category.\"org.hibernate\".level=TRACE
 ----

@@ -1620,6 +1620,7 @@ The OIDC client will also refresh expired access tokens.
 
 To configure which OIDC client should be used by the GraphQL client, select one of the configured OIDC clients with the `quarkus.oidc-client-graphql.client-name` property, for example:
 
+[source,properties]
 ----
 quarkus.oidc-client-graphql.client-name=oidc-client-for-graphql
 

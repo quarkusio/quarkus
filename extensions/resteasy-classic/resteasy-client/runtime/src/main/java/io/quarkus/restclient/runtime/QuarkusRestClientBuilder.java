@@ -385,10 +385,12 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         if (trustAll.isPresent() && trustAll.get()) {
             clientBuilder.hostnameVerifier(new NoopHostnameVerifier());
             try {
-                SSLContext sslContext = SSLContext.getInstance("TLS");
-                sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
-                        new SecureRandom());
-                clientBuilder.sslContext(sslContext);
+                if (this.sslContext == null) {
+                    SSLContext sslContext = SSLContext.getInstance("TLS");
+                    sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
+                            new SecureRandom());
+                    clientBuilder.sslContext(sslContext);
+                }
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new RuntimeException("Failed to initialized SSL context", e);
             }

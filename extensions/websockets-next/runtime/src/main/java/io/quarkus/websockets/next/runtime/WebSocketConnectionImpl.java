@@ -8,10 +8,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.quarkus.websockets.next.HandshakeRequest;
+import io.quarkus.websockets.next.UserData;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.smallrye.mutiny.Uni;
@@ -32,16 +34,24 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
 
     private final BroadcastSender defaultBroadcast;
 
+    private final SecuritySupport securitySupport;
+
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
             ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx,
-            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+            TrafficLogger trafficLogger, UserData userData, SendingInterceptor sendingInterceptor,
+            Function<WebSocketConnectionImpl, SecuritySupport> securitySupportCreator) {
         super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger,
-                sendingInterceptor);
+                userData, sendingInterceptor);
         this.generatedEndpointClass = generatedEndpointClass;
         this.endpointId = endpointClass;
         this.webSocket = Objects.requireNonNull(webSocket);
         this.connectionManager = Objects.requireNonNull(connectionManager);
         this.defaultBroadcast = new BroadcastImpl(null);
+        this.securitySupport = securitySupportCreator.apply(this);
+    }
+
+    SecuritySupport securitySupport() {
+        return securitySupport;
     }
 
     @Override
@@ -66,11 +76,6 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
     }
 
     @Override
-    public String subprotocol() {
-        return webSocket.subProtocol();
-    }
-
-    @Override
     public String toString() {
         return "WebSocket connection [endpointId=" + endpointId + ", path=" + webSocket.path() + ", id=" + identifier + "]";
     }
@@ -92,7 +97,7 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
         return Objects.equals(identifier, other.identifier);
     }
 
-    private static class HandshakeRequestImpl implements HandshakeRequest {
+    private static class HandshakeRequestImpl extends HandshakeRequestBase implements HandshakeRequest {
 
         private final ServerWebSocket webSocket;
 
@@ -142,6 +147,16 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
         @Override
         public String query() {
             return webSocket.query();
+        }
+
+        @Override
+        public String localAddress() {
+            return formatSocketAddress(webSocket.localAddress());
+        }
+
+        @Override
+        public String remoteAddress() {
+            return formatSocketAddress(webSocket.remoteAddress());
         }
 
         static Map<String, List<String>> initHeaders(RoutingContext ctx) {

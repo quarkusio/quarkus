@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.Constants;
 
 public class RegistriesConfigLocatorTest {
 
@@ -36,7 +36,7 @@ public class RegistriesConfigLocatorTest {
 
     @Test
     void testSimpleRegistryListFromEnvironment() throws Exception {
-        final Map<String, String> env = Collections.singletonMap(RegistriesConfigLocator.QUARKUS_REGISTRIES,
+        final Map<String, String> env = Map.of(RegistriesConfigLocator.QUARKUS_REGISTRIES,
                 "registry.acme.org,registry.other.io");
 
         final RegistriesConfig actualConfig = RegistriesConfigLocator.initFromEnvironmentOrNull(env);
@@ -126,6 +126,64 @@ public class RegistriesConfigLocatorTest {
                                         .setUrl("https://custom.registry.net/mvn")
                                         .build())
                                 .build())
+                        .build())
+                .build();
+
+        assertThat(actualConfig).isEqualTo(expectedConfig);
+
+        final RegistriesConfig completeConfig = serializeDeserialize(actualConfig);
+        assertThat(completeConfig).isEqualTo(expectedConfig);
+    }
+
+    @Test
+    void testRegistryOfferingFromEnvironment() throws Exception {
+        final Map<String, String> env = new HashMap<>();
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRIES, "registry.acme.org,registry.other.io");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_ACME_ORG_OFFERING", "acme-magic");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_OTHER_IO_OFFERING", "other-cloud");
+
+        final RegistriesConfig actualConfig = RegistriesConfigLocator.initFromEnvironmentOrNull(env);
+
+        final RegistriesConfig expectedConfig = RegistriesConfig.builder()
+                .setRegistry(RegistryConfig.builder()
+                        .setId("registry.acme.org")
+                        .setExtra(Constants.OFFERING, "acme-magic")
+                        .build())
+                .setRegistry(RegistryConfig.builder()
+                        .setId("registry.other.io")
+                        .setExtra(Constants.OFFERING, "other-cloud")
+                        .build())
+                .build();
+
+        assertThat(actualConfig).isEqualTo(expectedConfig);
+
+        final RegistriesConfig completeConfig = serializeDeserialize(actualConfig);
+        assertThat(completeConfig).isEqualTo(expectedConfig);
+    }
+
+    @Test
+    void testRecommendStreamsFrom() throws Exception {
+        final Map<String, String> env = new HashMap<>();
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRIES, "registry.acme.org,registry.other.io");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_ACME_ORG_"
+                + RegistriesConfigLocator.RECOMMEND_STREAMS_FROM_ + "ORG_ACME_PLATFORM", "1.1");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_OTHER_IO_"
+                + RegistriesConfigLocator.RECOMMEND_STREAMS_FROM_ + "IO_OTHER_PLATFORM", "2.2");
+        env.put(RegistriesConfigLocator.QUARKUS_REGISTRY_ENV_VAR_PREFIX + "REGISTRY_OTHER_IO_"
+                + RegistriesConfigLocator.RECOMMEND_STREAMS_FROM_ + "IO_ANOTHER_PLATFORM", "3.3");
+
+        final RegistriesConfig actualConfig = RegistriesConfigLocator.initFromEnvironmentOrNull(env);
+
+        final RegistriesConfig expectedConfig = RegistriesConfig.builder()
+                .setRegistry(RegistryConfig.builder()
+                        .setId("registry.acme.org")
+                        .setExtra(Constants.RECOMMEND_STREAMS_FROM, Map.of("org.acme.platform", "1.1"))
+                        .build())
+                .setRegistry(RegistryConfig.builder()
+                        .setId("registry.other.io")
+                        .setExtra(Constants.RECOMMEND_STREAMS_FROM, Map.of(
+                                "io.other.platform", "2.2",
+                                "io.another.platform", "3.3"))
                         .build())
                 .build();
 

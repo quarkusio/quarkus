@@ -37,7 +37,6 @@ public class InfoDevUIProcessor {
                 .isJsonContent();
 
         CardPageBuildItem cardBuildItem = new CardPageBuildItem();
-        cardBuildItem.addBuildTimeData("infoUrl", path);
         cardBuildItem.addPage(infoPage);
         cardBuildItem.addPage(rawPage);
         cardPageProducer.produce(cardBuildItem);

@@ -22,10 +22,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
         </dependency>
         <dependency>
@@ -55,6 +51,11 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -118,12 +119,12 @@
                             <annotationProcessorPaths>
                                 <annotationProcessorPath>
                                     <groupId>org.hibernate.orm</groupId>
-                                    <artifactId>hibernate-jpamodelgen</artifactId>
+                                    <artifactId>hibernate-processor</artifactId>
                                     <version>${hibernate-orm.version}</version>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                             <annotationProcessors>
-                                <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
+                                <annotationProcessor>org.hibernate.processor.HibernateProcessor</annotationProcessor>
                             </annotationProcessors>
                         </configuration>
                     </execution>

@@ -3,9 +3,15 @@ package io.quarkus.devtools.testing.registry.client;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
+import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.util.repository.ChainedLocalRepositoryManager;
 
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -28,7 +34,7 @@ public class TestRegistryClient implements RegistryClient {
     private final boolean enableMavenResolver;
 
     public TestRegistryClient(RegistryClientEnvironment env, RegistryConfig clientConfig) {
-        this.resolver = env.resolver();
+        this.resolver = configureMavenResolver(env.resolver(), clientConfig);
         this.log = env.log();
         final Path configYaml = RegistriesConfigLocator.locateConfigYaml();
         if (configYaml == null) {
@@ -61,10 +67,42 @@ public class TestRegistryClient implements RegistryClient {
         if (clientConfig.getQuarkusVersions() != null) {
             registryConfig.setQuarkusVersions(clientConfig.getQuarkusVersions());
         }
-
-        final Object o = clientConfig.getExtra().get("enable-maven-resolver");
-        enableMavenResolver = o == null ? false : Boolean.parseBoolean(o.toString());
+        if (!clientConfig.getExtra().isEmpty()) {
+            if (registryConfig.getExtra().isEmpty()) {
+                registryConfig.setExtra(clientConfig.getExtra());
+            } else {
+                for (Map.Entry<String, Object> e : clientConfig.getExtra().entrySet()) {
+                    registryConfig.getExtra().put(e.getKey(), e.getValue());
+                }
+            }
+        }
+        enableMavenResolver = Boolean.parseBoolean(String.valueOf(clientConfig.getExtra().get("enable-maven-resolver")));
         this.config = registryConfig;
+    }
+
+    private static MavenArtifactResolver configureMavenResolver(MavenArtifactResolver originalResolver,
+            RegistryConfig registryConfig) {
+        Object testLocalMavenRepo = registryConfig.getExtra().get("test-local-maven-repo");
+        if (testLocalMavenRepo == null) {
+            return originalResolver;
+        }
+        try {
+            var session = new DefaultRepositorySystemSession(originalResolver.getSession());
+            session.setLocalRepositoryManager(new ChainedLocalRepositoryManager(
+                    originalResolver.getSystem().newLocalRepositoryManager(originalResolver.getSession(),
+                            new LocalRepository(testLocalMavenRepo.toString())),
+                    List.of(originalResolver.getSystem().newLocalRepositoryManager(originalResolver.getSession(),
+                            new LocalRepository(originalResolver.getMavenContext().getLocalRepo()))),
+                    false));
+            return new MavenArtifactResolver(new BootstrapMavenContext(BootstrapMavenContext.config()
+                    .setWorkspaceDiscovery(false)
+                    .setRepositorySystemSession(session)
+                    .setRemoteRepositoryManager(originalResolver.getRemoteRepositoryManager())
+                    .setRemoteRepositories(originalResolver.getRepositories())
+                    .setRepositorySystem(originalResolver.getSystem())));
+        } catch (BootstrapMavenException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

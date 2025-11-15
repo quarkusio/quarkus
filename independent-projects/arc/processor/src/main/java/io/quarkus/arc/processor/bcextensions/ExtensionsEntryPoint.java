@@ -3,6 +3,7 @@ package io.quarkus.arc.processor.bcextensions;
 import static io.quarkus.arc.processor.Beans.stereotypesWithTransitive;
 
 import java.lang.annotation.Annotation;
+import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,9 +60,12 @@ import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.arc.processor.StereotypeInfo;
 import io.quarkus.arc.processor.StereotypeRegistrar;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  * Entrypoint for the Build Compatible Extensions implementation. Used by the rest of ArC.
@@ -237,8 +241,8 @@ public class ExtensionsEntryPoint {
                         } else {
                             CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal,
                                     scopeAnnotation);
-                            config.creator(bytecode -> {
-                                return bytecode.newInstance(MethodDescriptor.ofConstructor(info.generatedName));
+                            config.creator(cg -> {
+                                return cg.method().new_(ConstructorDesc.of(ClassDesc.of(info.generatedName)));
                             });
                         }
                         if (context.isNormal != null) {
@@ -384,71 +388,68 @@ public class ExtensionsEntryPoint {
             boolean isDependent = syntheticBean.scope == null
                     || Dependent.class.equals(syntheticBean.scope)
                     || dependentByStereotype;
-            bean.creator(mc -> { // generated method signature: Object(SyntheticCreationalContext)
+            bean.creator(cg -> {
+                BlockCreator bc = cg.createMethod();
+
                 // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
-                ResultHandle synthCC = mc.checkCast(mc.getMethodParam(0), SyntheticCreationalContextImpl.class);
+                Expr synthCC = bc.cast(cg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class);
                 // | CreationalContext delegateCC = synthCC.getDelegateCreationalContext()
-                ResultHandle delegateCC = mc.invokeVirtualMethod(MethodDescriptor.ofMethod(SyntheticCreationalContextImpl.class,
+                Expr delegateCC = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
                         "getDelegateCreationalContext", CreationalContext.class), synthCC);
                 // | CreationalContextImpl ccImpl = (CreationalContextImpl) delegateCC;
-                ResultHandle ccImpl = mc.checkCast(delegateCC, CreationalContextImpl.class);
-                // | Instance<Object> lookup = InstanceImpl.forSynthesis(creationalContext, isDependent);
-                ResultHandle lookup = mc.invokeStaticMethod(MethodDescriptor.ofMethod(InstanceImpl.class,
+                Expr ccImpl = bc.cast(delegateCC, CreationalContextImpl.class);
+                // | Instance<Object> lookup = InstanceImpl.forSynthesis(ccImpl, isDependent);
+                LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
                         "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
-                        ccImpl, mc.load(isDependent));
+                        ccImpl, Const.of(isDependent)));
 
-                // | Map<String, Object> paramsMap = this.params;
-                // the generated bean class has a "params" field filled with all the data
-                ResultHandle paramsMap = mc.readInstanceField(
-                        FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                        mc.getThis());
                 // | Parameters params = new ParametersImpl(paramsMap);
-                ResultHandle params = mc.newInstance(MethodDescriptor.ofConstructor(ParametersImpl.class, Map.class),
-                        paramsMap);
+                LocalVar params = bc.localVar("params",
+                        bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), cg.paramsMap()));
 
                 // | SyntheticBeanCreator creator = new ConfiguredSyntheticBeanCreator();
-                ResultHandle creator = mc.newInstance(MethodDescriptor.ofConstructor(syntheticBean.creatorClass));
+                LocalVar creator = bc.localVar("creator",
+                        bc.new_(ConstructorDesc.of(syntheticBean.creatorClass)));
 
                 // | Object instance = creator.create(lookup, params);
-                ResultHandle[] args = { lookup, params };
-                ResultHandle instance = mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(SyntheticBeanCreator.class,
-                        "create", Object.class, Instance.class, Parameters.class), creator, args);
+                Expr instance = bc.invokeInterface(MethodDesc.of(SyntheticBeanCreator.class,
+                        "create", Object.class, Instance.class, Parameters.class), creator, lookup, params);
 
                 // | return instance;
-                mc.returnValue(instance);
+                bc.return_(instance);
             });
             if (syntheticBean.disposerClass != null) {
-                bean.destroyer(mc -> { // generated method signature: void(Object, CreationalContext)
-                    // | CreationalContextImpl creationalContextImpl = (CreationalContextImpl) creationalContext;
-                    ResultHandle creationalContextImpl = mc.checkCast(mc.getMethodParam(1), CreationalContextImpl.class);
-                    // | Instance<Object> lookup = InstanceImpl.forSynthesis(creationalContext, isDependent);
-                    ResultHandle lookup = mc.invokeStaticMethod(MethodDescriptor.ofMethod(InstanceImpl.class,
-                            "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
-                            creationalContextImpl, mc.load(false)); // looking up InjectionPoint in disposer is invalid
+                bean.destroyer(dg -> {
+                    BlockCreator bc = dg.destroyMethod();
 
-                    // | Map<String, Object> paramsMap = this.params;
-                    // the generated bean class has a "params" field filled with all the data
-                    ResultHandle paramsMap = mc.readInstanceField(
-                            FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                            mc.getThis());
+                    // | CreationalContextImpl creationalContextImpl = (CreationalContextImpl) creationalContext;
+                    LocalVar creationalContextImpl = bc.localVar("creationalContextImpl",
+                            bc.cast(dg.creationalContext(), CreationalContextImpl.class));
+                    // | Instance<Object> lookup = InstanceImpl.forSynthesis(creationalContext, isDependent);
+                    // last argument is `false` because looking up `InjectionPoint` in disposer is invalid
+                    LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
+                            "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
+                            creationalContextImpl, Const.of(false)));
+
                     // | Parameters params = new ParametersImpl(paramsMap);
-                    ResultHandle params = mc.newInstance(MethodDescriptor.ofConstructor(ParametersImpl.class, Map.class),
-                            paramsMap);
+                    LocalVar params = bc.localVar("params",
+                            bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), dg.paramsMap()));
 
                     // | SyntheticBeanDisposer disposer = new ConfiguredSyntheticBeanDisposer();
-                    ResultHandle disposer = mc.newInstance(MethodDescriptor.ofConstructor(syntheticBean.disposerClass));
+                    LocalVar disposer = bc.localVar("disposer",
+                            bc.new_(ConstructorDesc.of(syntheticBean.disposerClass)));
 
                     // | disposer.dispose(instance, lookup, params);
-                    ResultHandle[] args = { mc.getMethodParam(0), lookup, params };
-                    mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(SyntheticBeanDisposer.class, "dispose",
-                            void.class, Object.class, Instance.class, Parameters.class), disposer, args);
+                    bc.invokeInterface(MethodDesc.of(SyntheticBeanDisposer.class, "dispose", void.class,
+                            Object.class, Instance.class, Parameters.class),
+                            disposer, dg.destroyedInstance(), lookup, params);
 
                     // | creationalContextImpl.release()
-                    mc.invokeVirtualMethod(MethodDescriptor.ofMethod(CreationalContextImpl.class, "release", void.class),
+                    bc.invokeVirtual(MethodDesc.of(CreationalContextImpl.class, "release", void.class),
                             creationalContextImpl);
 
-                    // return type is void
-                    mc.returnValue(null);
+                    // return type is `void`
+                    bc.return_();
                 });
             }
             // the generated classes need to see the `creatorClass` and the `disposerClass`,
@@ -491,27 +492,20 @@ public class ExtensionsEntryPoint {
                     .async(syntheticObserver.isAsync)
                     .transactionPhase(syntheticObserver.transactionPhase);
             configureParams(observer, syntheticObserver.params);
-            observer.notify(mc -> { // generated method signature: void(EventContext)
-                // | SyntheticObserver instance = new ConfiguredEventConsumer();
-                ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(syntheticObserver.implementationClass));
+            observer.notify(ng -> {
+                BlockCreator bc = ng.notifyMethod();
 
-                // | Map<String, Object> paramsMap = this.params;
-                // the generated observer class has a "params" field filled with all the data
-                ResultHandle paramsMap = mc.readInstanceField(
-                        FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                        mc.getThis());
+                // | SyntheticObserver instance = new ConfiguredEventConsumer();
+                Expr instance = bc.new_(syntheticObserver.implementationClass);
 
                 // | Parameters params = new ParametersImpl(paramsMap);
-                ResultHandle params = mc.newInstance(MethodDescriptor.ofConstructor(ParametersImpl.class, Map.class),
-                        paramsMap);
+                Expr params = bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), ng.paramsMap());
 
                 // | instance.observe(eventContext, params);
-                ResultHandle[] args = { mc.getMethodParam(0), params };
-                mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(SyntheticObserver.class, "observe",
-                        void.class, EventContext.class, Parameters.class), instance, args);
+                bc.invokeInterface(MethodDesc.of(SyntheticObserver.class, "observe",
+                        void.class, EventContext.class, Parameters.class), instance, ng.eventContext(), params);
 
-                // return type is void
-                mc.returnValue(null);
+                bc.return_();
             });
             // the generated classes need to see the `implementationClass`, so if it is
             // an application class, the generated classes are forced to also be application

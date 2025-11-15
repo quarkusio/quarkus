@@ -66,7 +66,24 @@ public class CompressionScanner implements MethodScanner {
         } else {
             handler.setProduces(null);
         }
-        return List.of(new FixedHandlerChainCustomizer(handler, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+
+        // for streaming, we need to have the handler apply earlier, because streaming short-circuits the rests of the handlers
+        return List.of(
+                new FixedHandlerChainCustomizer(handler, isStream(produces) ? HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE
+                        : HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+    }
+
+    private static boolean isStream(String[] produces) {
+        boolean isStream = false;
+        if (produces != null) {
+            for (String produce : produces) {
+                if (produce.startsWith("text/event-stream")) {
+                    isStream = true;
+                    break;
+                }
+            }
+        }
+        return isStream;
     }
 
 }

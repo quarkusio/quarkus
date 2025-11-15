@@ -199,12 +199,10 @@ public class SetCommandsTest extends DatasourceTestBase {
         sets.sadd(key, person1);
         SScanCursor<Person> cursor = sets.sscan(key);
 
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
 
         List<Person> list = cursor.next();
 
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(list).hasSize(1).containsExactly(person1);
     }
@@ -213,12 +211,10 @@ public class SetCommandsTest extends DatasourceTestBase {
     void sscanEmpty() {
         SScanCursor<Person> cursor = sets.sscan(key);
 
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
 
         List<Person> list = cursor.next();
 
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(list).isEmpty();
     }
@@ -227,7 +223,6 @@ public class SetCommandsTest extends DatasourceTestBase {
     void sscanEmptyAsIterable() {
         SScanCursor<Person> cursor = sets.sscan(key);
 
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
 
         Iterable<Person> iterable = cursor.toIterable();
@@ -240,12 +235,10 @@ public class SetCommandsTest extends DatasourceTestBase {
         sets.sadd(key, person1);
         SScanCursor<Person> cursor = sets.sscan(key, new ScanArgs().count(3));
 
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
 
         List<Person> list = cursor.next();
 
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(list).hasSize(1).containsExactly(person1);
 

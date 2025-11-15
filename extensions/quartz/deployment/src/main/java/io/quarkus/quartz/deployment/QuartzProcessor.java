@@ -62,9 +62,9 @@ import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
-import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzSchedulerImpl;
 import io.quarkus.quartz.runtime.QuartzSupport;
+import io.quarkus.quartz.runtime.jdbc.JDBCDataSource;
 import io.quarkus.quartz.runtime.jdbc.QuarkusDBv8Delegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusHSQLDBDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusMSSQLDelegate;
@@ -122,8 +122,8 @@ public class QuartzProcessor {
             if (config.clustered()) {
                 throw new ConfigurationException("Clustered jobs configured with unsupported job store option");
             }
-
-            return new QuartzJDBCDriverDialectBuildItem(Optional.empty());
+            // No DB storage, the driver can stay empty, and we don't need data sources either
+            return new QuartzJDBCDriverDialectBuildItem(Optional.empty(), null);
         }
 
         if (capabilities.isMissing(Capability.AGROAL)) {
@@ -162,29 +162,45 @@ public class QuartzProcessor {
                     throw new ConfigurationException(message);
                 }
             }
+            // A custom delegate implementation, we don't need to check datasources
+            return new QuartzJDBCDriverDialectBuildItem(driverDelegate, null);
         } else {
-            Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
-                    .filter(i -> config.dataSourceName().isPresent() ? config.dataSourceName().get().equals(i.getName())
-                            : i.isDefault())
-                    .findFirst();
+            if (config.deferDatasourceCheck()) {
+                // if defer is set to true and there is a DS name, throw an exception
+                if (config.dataSourceName().isPresent()) {
+                    String message = String.format(
+                            "Quartz datasource resolution can be either deferred to runtime or specified at build time but not both. Related properties are quarkus.quartz.defer-datasource-check=%s and quarkus.quartz.datasource=%s",
+                            config.deferDatasourceCheck(), config.dataSourceName());
+                    throw new ConfigurationException(message);
+                }
+                // Defer driver resolution to runtime
+                List<JDBCDataSource> dataSources = new ArrayList<>();
+                for (JdbcDataSourceBuildItem jdbcDataSourceBuildItem : jdbcDataSourceBuildItems) {
+                    dataSources.add(new JDBCDataSource(jdbcDataSourceBuildItem.getName(), jdbcDataSourceBuildItem.isDefault(),
+                            jdbcDataSourceBuildItem.getDbKind()));
+                }
+                return new QuartzJDBCDriverDialectBuildItem(Optional.empty(), dataSources);
+            } else {
+                // Perform driver resolution at build time
+                Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
+                        .filter(i -> config.dataSourceName().isPresent() ? config.dataSourceName().get().equals(i.getName())
+                                : i.isDefault())
+                        .findFirst();
 
-            if (!selectedJdbcDataSourceBuildItem.isPresent()) {
-                String message = String.format(
-                        "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
-                        config.dataSourceName().isPresent() ? config.dataSourceName().get() : "default");
-                throw new ConfigurationException(message);
+                if (!selectedJdbcDataSourceBuildItem.isPresent()) {
+                    String message = String.format(
+                            "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
+                            config.dataSourceName().isPresent() ? config.dataSourceName().get() : "default");
+                    throw new ConfigurationException(message);
+                }
+                return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(selectedJdbcDataSourceBuildItem.get())),
+                        null);
             }
-            driverDelegate = Optional.of(guessDriver(selectedJdbcDataSourceBuildItem));
         }
-        return new QuartzJDBCDriverDialectBuildItem(driverDelegate);
     }
 
-    private String guessDriver(Optional<JdbcDataSourceBuildItem> jdbcDataSource) {
-        if (!jdbcDataSource.isPresent()) {
-            return QuarkusStdJDBCDelegate.class.getName();
-        }
-
-        String dataSourceKind = jdbcDataSource.get().getDbKind();
+    private String guessDriver(JdbcDataSourceBuildItem jdbcDataSource) {
+        String dataSourceKind = jdbcDataSource.getDbKind();
         if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
             return QuarkusPostgreSQLDelegate.class.getName();
         }
@@ -203,7 +219,7 @@ public class QuartzProcessor {
 
     @BuildStep
     List<ReflectiveClassBuildItem> reflectiveClasses(QuartzBuildTimeConfig config,
-            QuartzJDBCDriverDialectBuildItem driverDialect) {
+            QuartzJDBCDriverDialectBuildItem driverDialect, List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
 
         if (config.serializeJobData()) {
@@ -250,12 +266,23 @@ public class QuartzProcessor {
             reflectiveClasses.add(ReflectiveClassBuildItem.builder(Connection.class)
                     .reason(getClass().getName()).methods()
                     .fields().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get())
-                    .reason(getClass().getName())
-                    .methods().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
-                    .reason(getClass().getName())
-                    .methods().fields().build());
+            if (driverDialect.getDriver().isPresent()) {
+                // build time datasource resolution
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get())
+                        .reason(getClass().getName())
+                        .methods().build());
+            } else {
+                // deferred datasource resolution, register all DB kinds we can derive from configuration
+                for (JdbcDataSourceBuildItem jdbcDataSourceBuildItem : jdbcDataSourceBuildItems) {
+                    reflectiveClasses.add(ReflectiveClassBuildItem.builder(guessDriver(jdbcDataSourceBuildItem))
+                            .reason(getClass().getName())
+                            .methods().build());
+                }
+                reflectiveClasses
+                        .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
+                                .reason(getClass().getName())
+                                .methods().fields().build());
+            }
         }
 
         reflectiveClasses
@@ -331,7 +358,7 @@ public class QuartzProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void quartzSupportBean(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig,
+    public void quartzSupportBean(
             QuartzRecorder recorder,
             QuartzJDBCDriverDialectBuildItem driverDialect,
             List<ScheduledBusinessMethodItem> scheduledMethods,
@@ -347,9 +374,8 @@ public class QuartzProcessor {
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
                 .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
                 .setRuntimeInit()
-                .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver(),
+                .supplier(recorder.quartzSupportSupplier(driverDialect.getDriver(), driverDialect.getDataSources(),
                         nonconcurrentMethods))
                 .done());
     }
-
 }

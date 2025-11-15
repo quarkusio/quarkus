@@ -7,13 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.mockito.Mockito;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.impl.EventBean;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.MockitoConfig;
@@ -90,7 +93,9 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
                             + fieldType.getTypeName() + ". Offending field is " + field.getName() + " of test class "
                             + testInstance.getClass());
         }
-        if (!beanManager.isNormalScope(handle.getBean().getScope())) {
+        InjectableBean<?> bean = handle.getBean();
+        if (!(bean instanceof EventBean)
+                && !beanManager.isNormalScope(bean.getScope())) {
             throw new IllegalStateException(
                     "Invalid use of " + annotationType.getTypeName()
                             + " - the injected bean does not declare a CDI normal scope but: "
@@ -108,6 +113,10 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             if (beanManager.isQualifier(fieldAnnotation.annotationType())) {
                 qualifiers.add(fieldAnnotation);
             }
+        }
+        if (qualifiers.isEmpty()) {
+            // Add @Default as if @InjectMock was a normal @Inject
+            qualifiers.add(Default.Literal.INSTANCE);
         }
         return qualifiers.toArray(new Annotation[0]);
     }

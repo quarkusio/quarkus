@@ -190,10 +190,16 @@ public class DevModeClient {
                         resp.set(content);
                         return true;
                     } catch (Exception e) {
-                        LOG.error(
-                                "An error occurred when DevModeClient accessed " + path
-                                        + ". It might be a normal testing behavior but logging the exception for information",
-                                e);
+                        var sb = new StringBuilder();
+                        sb.append("DevModeClient failed to accessed ").append(path)
+                                .append(". It might be a normal testing behavior but logging the messages for information: ")
+                                .append(e.getLocalizedMessage());
+                        var cause = e.getCause();
+                        while (cause != null) {
+                            sb.append(": ").append(cause.getLocalizedMessage());
+                            cause = cause.getCause();
+                        }
+                        LOG.error(sb);
                         return false;
                     }
                 });

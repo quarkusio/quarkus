@@ -2,6 +2,8 @@ package io.quarkus.cli;
 
 import java.util.Map;
 
+import io.quarkus.cli.common.BuildToolContext;
+import io.quarkus.cli.common.BuildToolDelegatingCommand;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
@@ -9,7 +11,7 @@ import picocli.CommandLine;
 public class Run extends BuildToolDelegatingCommand {
 
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:run",
-            BuildTool.GRADLE, "quarkusRun");
+            BuildTool.GRADLE, "quarkusRun", BuildTool.GRADLE_KOTLIN_DSL, "quarkusRun");
 
     @CommandLine.Option(names = { "--target" }, description = "Run target.")
     String target;

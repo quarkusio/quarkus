@@ -30,7 +30,7 @@ class BookRepositoryResource {
         LOGGER.infov(
             "Using BookRepository[database={0}, collection={1}]",
             databaseName,
-            collectionName
+            collectionName,
         )
     }
 
@@ -84,7 +84,7 @@ class BookRepositoryResource {
         @QueryParam("author") author: String?,
         @QueryParam("title") title: String?,
         @QueryParam("dateFrom") dateFrom: String?,
-        @QueryParam("dateTo") dateTo: String?
+        @QueryParam("dateTo") dateTo: String?,
     ): Book? {
         return if (author != null) {
             bookRepository.find("{'author': ?1,'bookTitle': ?2}", author, title!!).firstResult()
@@ -93,10 +93,9 @@ class BookRepositoryResource {
                 .find(
                     "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
                     LocalDate.parse(dateFrom),
-                    LocalDate.parse(dateTo)
+                    LocalDate.parse(dateTo),
                 )
-                .firstResult()
-                ?: throw NotFoundException()
+                .firstResult() ?: throw NotFoundException()
     }
 
     @GET
@@ -105,13 +104,13 @@ class BookRepositoryResource {
         @QueryParam("author") author: String?,
         @QueryParam("title") title: String?,
         @QueryParam("dateFrom") dateFrom: String?,
-        @QueryParam("dateTo") dateTo: String?
+        @QueryParam("dateTo") dateTo: String?,
     ): Book? {
         return if (author != null) {
             bookRepository
                 .find(
                     "{'author': :author,'bookTitle': :title}",
-                    Parameters.with("author", author).and("title", title)
+                    Parameters.with("author", author).and("title", title),
                 )
                 .firstResult()
         } else
@@ -119,7 +118,7 @@ class BookRepositoryResource {
                 .find(
                     "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
                     Parameters.with("dateFrom", LocalDate.parse(dateFrom))
-                        .and("dateTo", LocalDate.parse(dateTo))
+                        .and("dateTo", LocalDate.parse(dateTo)),
                 )
                 .firstResult()
     }

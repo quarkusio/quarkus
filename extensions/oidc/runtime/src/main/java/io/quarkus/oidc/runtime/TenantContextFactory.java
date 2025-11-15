@@ -79,10 +79,6 @@ final class TenantContextFactory {
         if (OidcUtils.DEFAULT_TENANT_ID.equals(tenantId)) {
             throw new ConfigurationException("Dynamic tenant ID cannot be same as the default tenant ID: " + tenantId);
         }
-        if (oidcConfig.logout().backchannel().path().isPresent()) {
-            throw new ConfigurationException(
-                    "BackChannel Logout is currently not supported for dynamic tenants");
-        }
         return createTenantContext(oidcConfig, false, tenantId)
                 .onFailure().transform(new Function<Throwable, Throwable>() {
                     @Override
@@ -461,8 +457,8 @@ final class TenantContextFactory {
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         WebClient client = WebClient.create(mutinyVertx, options);
 
-        Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
-        Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
+        Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcUtils.getOidcRequestFilters(oidcConfig);
+        Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcUtils.getOidcResponseFilters(oidcConfig);
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled().orElse(true)) {

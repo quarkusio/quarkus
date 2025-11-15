@@ -1,0 +1,28 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.enforcing.deps</groupId>
+  <artifactId>test-bom-with-exclusion</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+
+  <name>Test BOM With Exclusion</name>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.enforcing.conditional</groupId>
+        <artifactId>dev-mode-only-lib</artifactId>
+        <version>9.4.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.enforcing.deps</groupId>
+            <artifactId>simple-dependency</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

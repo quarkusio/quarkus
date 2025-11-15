@@ -14,6 +14,7 @@ import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
@@ -167,5 +168,17 @@ public class FileTestCase {
             Assertions.fail();
         } catch (IllegalArgumentException x) {
         }
+    }
+
+    @EnabledIfSystemProperty(named = "test-resteasy-reactive-large-files", matches = "true")
+    @Test
+    public void testWithLargeFile() {
+        RestAssured.given()
+                .get("/providers/file/large-path-rest-response")
+                .then()
+                .statusCode(200)
+                .contentType("application/octet-stream")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "large-file")
+                .header(HttpHeaders.CONTENT_LENGTH, "1073741824");
     }
 }

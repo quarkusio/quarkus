@@ -4,7 +4,6 @@ import io.quarkus.arc.Arc
 import io.smallrye.reactive.messaging.Invoker
 import io.vertx.core.Vertx
 import java.util.concurrent.CompletableFuture
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
 
@@ -12,14 +11,20 @@ abstract class AbstractSubscribingCoroutineInvoker(private val beanInstance: Any
 
     override fun invoke(vararg args: Any?): CompletableFuture<Any?> {
         val coroutineScope = Arc.container().instance(ApplicationCoroutineScope::class.java).get()
-        val dispatcher: CoroutineDispatcher =
+        val dispatcher =
             Vertx.currentContext()?.let(::VertxDispatcher)
                 ?: throw IllegalStateException(
                     "No Vertx context found. Consider using @NonBlocking on the caller method, or make sure the upstream emits items on the Vert.x context"
                 )
 
         return coroutineScope
-            .async(context = dispatcher) { invokeBean(beanInstance, args) }
+            .async(context = dispatcher) {
+                try {
+                    invokeBean(beanInstance, args)
+                } finally {
+                    dispatcher.cleanup()
+                }
+            }
             .asCompletableFuture()
     }
 

@@ -9,7 +9,7 @@
         {
             "category": "Data1",
             "timeout": 95,
-            "test-modules": "jpa-h2, jpa-h2-embedded, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
+            "test-modules": "jpa-h2, jpa-h2-embedded, jpa-mariadb, jpa-mssql, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
             "os-name": "ubuntu-latest"
         },
         {
@@ -32,8 +32,8 @@
         },
         {
             "category": "Data5",
-            "timeout": 70,
-            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema",
+            "timeout": 75,
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb",
             "os-name": "ubuntu-latest"
         },
         {
@@ -51,7 +51,7 @@
         {
             "category": "Build tools and DevTools",
             "timeout": 75,
-            "test-modules": "maven, gradle, devtools-registry-client",
+            "test-modules": "maven, gradle, devtools-registry-client, compose-devservices",
             "os-name": "ubuntu-latest"
         },
         {
@@ -92,8 +92,8 @@
         },
         {
             "category": "Cache",
-            "timeout": 75,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
+            "timeout": 80,
+            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, redis-devservices, infinispan-cache, cache-multiple-backends",
             "os-name": "ubuntu-latest"
         },
         {
@@ -111,13 +111,13 @@
         {
             "category": "Misc2",
             "timeout": 75,
-            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some, locales/default, jaxp, jaxb",
+            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, native-image-annotations, locales/all, locales/some, locales/default, jaxp, jaxb",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc3",
             "timeout": 80,
-            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak,  picocli-native",
+            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak,  command-mode, picocli-native",
             "os-name": "ubuntu-latest"
         },
         {

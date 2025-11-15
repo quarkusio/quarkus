@@ -392,38 +392,34 @@ public class KeyCommandsTest extends DatasourceTestBase {
     void scan() {
         values.set(key, Person.person7);
         KeyScanCursor<String> cursor = keys.scan();
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
         assertThat(cursor.next()).containsExactly(key);
         assertThat(cursor.hasNext()).isFalse();
-        assertThat(cursor.cursorId()).isEqualTo(0);
     }
 
     @Test
     void scanEmpty() {
         KeyScanCursor<String> cursor = keys.scan();
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
         assertThat(cursor.next()).isEmpty();
         assertThat(cursor.hasNext()).isFalse();
-        assertThat(cursor.cursorId()).isEqualTo(0);
     }
 
     @Test
     void scanIterableEmpty() {
         KeyScanCursor<String> cursor = keys.scan();
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
         assertThat(cursor.toIterable()).isEmpty();
         assertThat(cursor.hasNext()).isFalse();
-        assertThat(cursor.cursorId()).isEqualTo(0);
     }
 
     @Test
     void scanWithArgs() {
         values.set(key, Person.person7);
         KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(10));
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
         assertThat(cursor.next()).containsExactly(key);
         assertThat(cursor.hasNext()).isFalse();
-        assertThat(cursor.cursorId()).isEqualTo(0);
     }
 
     @Test
@@ -446,7 +442,6 @@ public class KeyCommandsTest extends DatasourceTestBase {
 
         KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(12));
 
-        assertThat(cursor.cursorId()).isNotEqualTo(0);
         assertThat(cursor.hasNext()).isTrue();
 
         Set<String> check = new HashSet<>(cursor.next());
@@ -481,10 +476,9 @@ public class KeyCommandsTest extends DatasourceTestBase {
         Set<String> expect = new HashSet<>();
         populateMany(expect);
         KeyScanCursor<String> cursor = keys.scan(new KeyScanArgs().count(200).match(key + "*"));
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
+        assertThat(cursor.hasNext()).isTrue();
         assertThat(cursor.next()).hasSize(expect.size());
         assertThat(cursor.hasNext()).isFalse();
-        assertThat(cursor.cursorId()).isEqualTo(0);
     }
 
     void populateMany(Set<String> expect) {

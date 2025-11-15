@@ -1,9 +1,7 @@
 package io.quarkus.cli.plugin;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,7 +10,6 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -22,6 +19,7 @@ import io.quarkus.devtools.exec.Executable;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.fs.util.ZipUtils;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class JBangSupport {
 
@@ -92,7 +90,7 @@ public class JBangSupport {
     }
 
     public File getExecutable() {
-        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find and install jbang!"));
+        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find and install JBang"));
     }
 
     public Path getWorkingDirectory() {
@@ -104,38 +102,12 @@ public class JBangSupport {
     }
 
     public List<String> execute(String... args) {
-        try {
-            List<String> command = new ArrayList<>();
-            command.add(getExecutable().getAbsolutePath());
-            for (String arg : args) {
-                command.add(arg);
-            }
-            List<String> lines = new ArrayList<>();
-            try {
-                Process process = new ProcessBuilder()
-                        .directory(workingDirectory.toFile())
-                        .command(command)
-                        .start();
-
-                try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
-                        BufferedReader reader = new BufferedReader(isr)) {
-                    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                        //Remove ansi escape codes
-                        lines.add(line.replaceAll("\u001B\\[[;\\d]*m", ""));
-                    }
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                process.waitFor();
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return lines;
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        // todo: configurable line limit?
+        return ProcessBuilder.newBuilder(getExecutable().toPath())
+                .arguments(args)
+                .output()
+                .processWith(br -> br.lines().limit(100000).map(s -> s.replaceAll("\u001B\\[[;\\d]*m", "")).toList())
+                .run();
     }
 
     public Optional<String> version() {
@@ -158,7 +130,7 @@ public class JBangSupport {
     public boolean promptForInstallation() {
         // We don't want to prompt users for input when running tests.
         if (interactiveMode
-                && Prompt.yesOrNo(true, "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
+                && Prompt.yesOrNo(true, "JBang is needed to list/run JBang plugins, would you like to install it now?")) {
             return true;
         }
         return false;
@@ -180,7 +152,7 @@ public class JBangSupport {
             return true;
         }
         if (!isInstallable()) {
-            output.warn("JBang is not installable!");
+            output.warn("JBang is not installable");
             return false;
         }
         if (promptForInstallation()) {
@@ -188,7 +160,7 @@ public class JBangSupport {
                 installJBang();
                 return true;
             } catch (Exception e) {
-                output.warn("Failed to install jbang!");
+                output.warn("Failed to install JBang");
                 return false;
             }
         } else {
@@ -203,7 +175,7 @@ public class JBangSupport {
             dir = dir.map(Path::getParent);
         }
         return dir.map(d -> d.resolve(".jbang"))
-                .orElseThrow(() -> new IllegalStateException("Failed to determinte .jbang directory!"));
+                .orElseThrow(() -> new IllegalStateException("Failed to determine .jbang directory"));
     }
 
     private void installJBang() {
@@ -212,13 +184,13 @@ public class JBangSupport {
             Path downloadDir = Files.createTempDirectory("jbang-download-");
 
             if (!downloadDir.toFile().exists() && !downloadDir.toFile().mkdirs()) {
-                throw new IOException("Failed to create jbang download directory: " + downloadDir.toAbsolutePath().toString());
+                throw new IOException("Failed to create JBang download directory: " + downloadDir.toAbsolutePath().toString());
             }
 
             Path downloadFile = downloadDir.resolve("jbang.zip");
             Path installDir = getInstallationDir();
             if (!installDir.toFile().exists() && !installDir.toFile().mkdirs()) {
-                throw new IOException("Failed to create jbang install directory: " + installDir.toAbsolutePath().toString());
+                throw new IOException("Failed to create JBang install directory: " + installDir.toAbsolutePath().toString());
             }
             HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
             HttpRequest request = HttpRequest.newBuilder()

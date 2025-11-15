@@ -13,6 +13,6 @@ metadata:
   categories:
     - "data"
     - "reactive"
-  status: "preview"
+  status: "stable"
   config:
   - "quarkus.redis."

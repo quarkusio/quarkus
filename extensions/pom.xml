@@ -16,6 +16,7 @@
     <modules>
         <module>virtual-threads</module>
         <module>tls-registry</module>
+        <module>proxy-registry</module>
 
         <!-- Plumbing -->
         <module>arc</module>
@@ -36,6 +37,7 @@
 
         <!-- HTTP -->
         <module>vertx-http</module>
+        <module>devui</module>
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>
@@ -199,7 +201,6 @@
         <module>flyway-oracle</module>
         <module>flyway-mysql</module>
         <module>flyway-mssql</module>
-        <module>flyway-derby</module>
         <module>flyway-db2</module>
         <module>liquibase</module>
 
@@ -225,7 +226,7 @@
 
         <!-- JMS -->
         <module>jms-spi</module>
-
+        <module>assistant</module>
     </modules>
 
     <build>

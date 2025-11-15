@@ -50,7 +50,7 @@ public class WorkspaceModulePom {
                 parentPom = parentDir.resolve(WorkspaceLoader.POM_XML);
             }
         }
-        return parentPom != null && Files.exists(parentPom) ? parentPom : null;
+        return parentPom != null && Files.exists(parentPom) ? parentPom.normalize().toAbsolutePath() : null;
     }
 
     void process(Consumer<WorkspaceModulePom> consumer) {

@@ -6,12 +6,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
+@Disabled("See https://github.com/quarkusio/quarkus/pull/48171")
 public class LiveReloadManagementTest {
 
     private static final String APP_PROPS = """

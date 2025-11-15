@@ -1,10 +1,6 @@
 package io.quarkus.arc.processor;
 
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
-import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
+import static io.quarkus.arc.processor.Reproducibility.orderedBeans;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,7 +8,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,16 +22,16 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.impl.ContextInstances;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.Switch.StringSwitch;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.FieldVar;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.StaticFieldVar;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class ContextInstancesGenerator extends AbstractGenerator {
 
@@ -57,278 +55,316 @@ public class ContextInstancesGenerator extends AbstractGenerator {
     }
 
     Collection<Resource> generate(DotName scope) {
-        List<BeanInfo> beans = new BeanStream(beanDeployment.getBeans()).withScope(scope).collect();
         ResourceClassOutput classOutput = new ResourceClassOutput(true, generateSources);
-        String generatedName = scopeToGeneratedName.get(scope);
-        reflectionRegistration.registerMethod(generatedName, MethodDescriptor.INIT);
 
-        ClassCreator contextInstances = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(ContextInstances.class).build();
+        Gizmo gizmo = gizmo(classOutput);
 
-        // Add ContextInstanceHandle and Lock fields for every bean
-        // The name of the field is a generated index
-        // For example:
-        // private static final AtomicReferenceFieldUpdater<ContextInstances, ContextInstanceHandle> LAZY_1L_UPDATER;
-        // private volatile ContextInstanceHandle 1;
-        // private volatile Lock 1l;
-        Map<String, InstanceAndLock> idToFields = new HashMap<>();
-        int fieldIndex = 0;
-        for (BeanInfo bean : beans) {
-            String beanIdx = "" + fieldIndex++;
-            FieldCreator handleField = contextInstances.getFieldCreator(beanIdx, ContextInstanceHandle.class)
-                    .setModifiers(ACC_PRIVATE | ACC_VOLATILE);
-            FieldCreator lockField = contextInstances.getFieldCreator(beanIdx + "l", Lock.class)
-                    .setModifiers(ACC_PRIVATE | ACC_VOLATILE);
-            FieldCreator atomicLockField = contextInstances.getFieldCreator("LAZY_" + beanIdx + "L_UPDATER",
-                    AtomicReferenceFieldUpdater.class)
-                    .setModifiers(ACC_PRIVATE | ACC_FINAL | ACC_STATIC);
-            idToFields.put(bean.getIdentifier(),
-                    new InstanceAndLock(handleField.getFieldDescriptor(), lockField.getFieldDescriptor(),
-                            atomicLockField.getFieldDescriptor()));
-        }
-
-        implementStaticConstructor(contextInstances, idToFields);
-        Map<String, MethodDescriptor> lazyLocks = implementLazyLocks(contextInstances, idToFields);
-
-        MethodCreator constructor = contextInstances.getMethodCreator(MethodDescriptor.INIT, "V");
-        constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
-        constructor.returnVoid();
-
-        implementComputeIfAbsent(contextInstances, beans, idToFields, lazyLocks);
-        implementGetIfPresent(contextInstances, beans, idToFields);
-        List<MethodDescriptor> remove = implementRemove(contextInstances, beans, idToFields, lazyLocks);
-        implementGetAllPresent(contextInstances, idToFields);
-        implementRemoveEach(contextInstances, remove);
-
-        contextInstances.close();
+        createContextInstances(gizmo, scope);
 
         return classOutput.getResources();
     }
 
-    private static void implementStaticConstructor(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
-        // Add a static initializer to initialize the AtomicReferenceFieldUpdater fields
-        // static {
-        //   LAZY_1L_UPDATER = AtomicReferenceFieldUpdater.newUpdater(ContextInstances.class, Lock.class, "1l");
-        // }
-        MethodCreator staticConstructor = contextInstances.getMethodCreator(MethodDescriptor.CLINIT, void.class)
-                .setModifiers(ACC_STATIC);
+    private void createContextInstances(Gizmo gizmo, DotName scope) {
+        String generatedName = scopeToGeneratedName.get(scope);
+        reflectionRegistration.registerMethod(generatedName, Methods.INIT);
 
-        MethodDescriptor newLockUpdater = MethodDescriptor.ofMethod(AtomicReferenceFieldUpdater.class, "newUpdater",
+        List<BeanInfo> beans = new BeanStream(beanDeployment.getBeans()).withScope(scope).collect();
+
+        MethodDesc newUpdater = MethodDesc.of(AtomicReferenceFieldUpdater.class, "newUpdater",
                 AtomicReferenceFieldUpdater.class, Class.class, Class.class, String.class);
 
-        for (InstanceAndLock fields : idToFields.values()) {
-            ResultHandle updater = staticConstructor.invokeStaticMethod(newLockUpdater,
-                    staticConstructor.loadClass(contextInstances.getClassName()),
-                    staticConstructor.loadClass(Lock.class),
-                    staticConstructor.load(fields.lock.getName()));
-            staticConstructor.writeStaticField(fields.lockUpdater, updater);
-        }
-        staticConstructor.returnVoid();
+        gizmo.class_(generatedName, cc -> {
+            cc.implements_(ContextInstances.class);
+
+            Map<String, BeanFields> beanFields = new TreeMap<>();
+            int fieldIndex = 0;
+            // We need to iterate the beans in order for the field names to be deterministic
+            for (BeanInfo bean : orderedBeans(beans)) {
+                String beanIdx = "" + fieldIndex++;
+
+                // add these fields for each bean:
+                // - `private volatile ContextInstanceHandle h<idx>`
+                // - `private volatile Lock l<idx>`
+                // - `private static final AtomicReferenceFieldUpdater<ContextInstances, ContextInstanceHandle> L<idx>_UPDATER`
+                FieldDesc handleField = cc.field("h" + beanIdx, fc -> {
+                    fc.private_();
+                    fc.volatile_();
+                    fc.setType(ContextInstanceHandle.class);
+                });
+                FieldDesc lockField = cc.field("l" + beanIdx, fc -> {
+                    fc.private_();
+                    fc.volatile_();
+                    fc.setType(Lock.class);
+                });
+                StaticFieldVar lockUpdaterField = cc.staticField("L" + beanIdx + "_UPDATER", fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(AtomicReferenceFieldUpdater.class);
+                    fc.setInitializer(bc -> {
+                        bc.yield(bc.invokeStatic(newUpdater, Const.of(cc.type()), Const.of(Lock.class),
+                                Const.of("l" + beanIdx)));
+                    });
+                });
+
+                beanFields.put(bean.getIdentifier(), new BeanFields(handleField, lockField, lockUpdaterField));
+            }
+
+            cc.defaultConstructor();
+
+            Map<String, MethodDesc> lazyLocks = generateLazyLocks(cc, beanFields);
+            generateComputeIfAbsent(cc, beanFields, lazyLocks);
+            generateGetIfPresent(cc, beanFields);
+            generateGetAllPresent(cc, beanFields);
+            List<MethodDesc> remove = generateRemove(cc, beanFields, lazyLocks);
+            generateRemoveEach(cc, remove);
+        });
     }
 
-    private static Map<String, MethodDescriptor> implementLazyLocks(ClassCreator contextInstances,
-            Map<String, InstanceAndLock> idToFields) {
-        MethodDescriptor atomicReferenceFieldUpdaterCompareAndSet = MethodDescriptor.ofMethod(
-                AtomicReferenceFieldUpdater.class, "compareAndSet",
+    private Map<String, MethodDesc> generateLazyLocks(ClassCreator cc, Map<String, BeanFields> beanFields) {
+        MethodDesc updaterCas = MethodDesc.of(AtomicReferenceFieldUpdater.class, "compareAndSet",
                 boolean.class, Object.class, Object.class, Object.class);
-        // generated lazy lock initializers methods
-        // private Lock lazy1l() {
-        //   Lock lock = this.1l;
-        //   if (lock != null) {
-        //     return lock;
-        //   }
-        //   lock = new ReentrantLock();
-        //   if (LAZY_1L_UPDATER.compareAndSet(this, null, lock)) {
-        //       return lock;
-        //   }
-        //   return this.1l;
-        // }
-        Map<String, MethodDescriptor> lazyLockMethods = new HashMap<>(idToFields.size());
-        for (var namedFields : idToFields.entrySet()) {
-            var fields = namedFields.getValue();
-            MethodCreator lazyLockMethod = contextInstances.getMethodCreator("lazy" + fields.lock.getName(), Lock.class)
-                    .setModifiers(ACC_PRIVATE);
-            ResultHandle lock = lazyLockMethod.readInstanceField(fields.lock, lazyLockMethod.getThis());
-            lazyLockMethod
-                    .ifNotNull(lock).trueBranch()
-                    .returnValue(lock);
-            ResultHandle newLock = lazyLockMethod.newInstance(MethodDescriptor.ofConstructor(ReentrantLock.class));
-            ResultHandle updated = lazyLockMethod.invokeVirtualMethod(atomicReferenceFieldUpdaterCompareAndSet,
-                    lazyLockMethod.readStaticField(fields.lockUpdater), lazyLockMethod.getThis(),
-                    lazyLockMethod.loadNull(), newLock);
-            lazyLockMethod
-                    .ifTrue(updated).trueBranch()
-                    .returnValue(newLock);
-            lazyLockMethod.returnValue(lazyLockMethod.readInstanceField(fields.lock, lazyLockMethod.getThis()));
-            lazyLockMethods.put(namedFields.getKey(), lazyLockMethod.getMethodDescriptor());
-        }
-        return lazyLockMethods;
-    }
 
-    private void implementGetAllPresent(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
-        MethodCreator getAllPresent = contextInstances.getMethodCreator("getAllPresent", Set.class)
-                .setModifiers(ACC_PUBLIC);
-        // ContextInstanceHandle<?> copy1 = this.1;
-        // Set<ContextInstanceHandle<?>> ret = new HashSet<>();
-        // if (copy1 != null) {
-        //    ret.add(copy1);
-        // }
-        // return ret;
-        List<ResultHandle> results = new ArrayList<>(idToFields.size());
-        for (InstanceAndLock fields : idToFields.values()) {
-            results.add(getAllPresent.readInstanceField(fields.instance, getAllPresent.getThis()));
-        }
-        ResultHandle ret = getAllPresent.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        for (ResultHandle result : results) {
-            getAllPresent.ifNotNull(result).trueBranch().invokeInterfaceMethod(MethodDescriptors.SET_ADD, ret, result);
-        }
-        getAllPresent.returnValue(ret);
-    }
-
-    private void implementRemoveEach(ClassCreator contextInstances, List<MethodDescriptor> removeInstances) {
-        MethodCreator removeEach = contextInstances.getMethodCreator("removeEach", void.class, Consumer.class)
-                .setModifiers(ACC_PUBLIC);
-        // ContextInstanceHandle<?> copy1 = remove1();
-        // if (action != null)
-        //    if (copy1 != null) {
-        //       consumer.accept(copy1);
-        //    }
-        // }
-
-        List<ResultHandle> results = new ArrayList<>(removeInstances.size());
-        for (MethodDescriptor removeInstance : removeInstances) {
-            // invoke remove method for every instance handle field
-            results.add(removeEach.invokeVirtualMethod(removeInstance, removeEach.getThis()));
-        }
-        BytecodeCreator actionIsNotNull = removeEach.ifNotNull(removeEach.getMethodParam(0)).trueBranch();
-        for (ResultHandle result : results) {
-            BytecodeCreator isNotNull = actionIsNotNull.ifNotNull(result).trueBranch();
-            isNotNull.invokeInterfaceMethod(MethodDescriptors.CONSUMER_ACCEPT, removeEach.getMethodParam(0), result);
-        }
-        removeEach.returnVoid();
-    }
-
-    private List<MethodDescriptor> implementRemove(ClassCreator contextInstances, List<BeanInfo> beans,
-            Map<String, InstanceAndLock> idToFields, Map<String, MethodDescriptor> lazyLocks) {
-        MethodCreator remove = contextInstances
-                .getMethodCreator("remove", ContextInstanceHandle.class, String.class)
-                .setModifiers(ACC_PUBLIC);
-
-        StringSwitch strSwitch = remove.stringSwitch(remove.getMethodParam(0));
-        // https://github.com/quarkusio/gizmo/issues/164
-        strSwitch.fallThrough();
-        List<MethodDescriptor> removeMethods = new ArrayList<>(beans.size());
-        for (BeanInfo bean : beans) {
-            InstanceAndLock fields = idToFields.get(bean.getIdentifier());
-            FieldDescriptor instanceField = fields.instance;
-            // There is a separate remove method for every instance handle field
-            // To eliminate large stack map table in the bytecode
-            MethodCreator removeHandle = contextInstances.getMethodCreator("r" + instanceField.getName(),
-                    ContextInstanceHandle.class).setModifiers(ACC_PRIVATE);
-            // ContextInstanceHandle<?> copy = this.1;
-            // if (copy == null) {
-            //  return null;
+        Map<String, MethodDesc> result = new HashMap<>(beanFields.size());
+        for (Map.Entry<String, BeanFields> namedFields : beanFields.entrySet()) {
+            String beanId = namedFields.getKey();
+            BeanFields fields = namedFields.getValue();
+            // private Lock lazyl<idx>() {
+            //   if (this.l<idx> != null) {
+            //     return this.l<idx>;
+            //   }
+            //   Lock newLock = new ReentrantLock();
+            //   if (L<idx>_UPDATER.compareAndSet(this, null, newLock)) {
+            //       return newLock;
+            //   }
+            //   return this.l<idx>;
             // }
-            // Lock lock = lazy1l();
-            // lock.lock();
-            // copy = this.1;
-            // this.1 = null;
-            // lock.unlock();
-            // return copy;
-            ResultHandle copy = removeHandle.readInstanceField(instanceField, removeHandle.getThis());
-            removeHandle.ifNull(copy).trueBranch()
-                    .returnValue(removeHandle.loadNull());
-            ResultHandle lock = removeHandle.invokeVirtualMethod(lazyLocks.get(bean.getIdentifier()), removeHandle.getThis());
-            removeHandle.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
-            copy = removeHandle.readInstanceField(instanceField, removeHandle.getThis());
-            removeHandle.writeInstanceField(instanceField, removeHandle.getThis(), removeHandle.loadNull());
-            removeHandle.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-            removeHandle.returnValue(copy);
-            removeMethods.add(removeHandle.getMethodDescriptor());
-            strSwitch.caseOf(bean.getIdentifier(), bc -> {
-                bc.returnValue(bc.invokeVirtualMethod(removeHandle.getMethodDescriptor(), bc.getThis()));
+            MethodDesc desc = cc.method("lazy" + fields.lock().name(), mc -> {
+                mc.private_();
+                mc.returning(Lock.class);
+                mc.body(b0 -> {
+                    FieldVar lock = cc.this_().field(fields.lock());
+                    b0.ifNotNull(lock, b1 -> {
+                        b1.return_(lock);
+                    });
+                    LocalVar newLock = b0.localVar("newLock", b0.new_(ReentrantLock.class));
+                    Expr casResult = b0.invokeVirtual(updaterCas, fields.lockUpdater(),
+                            cc.this_(), Const.ofNull(Lock.class), newLock);
+                    b0.if_(casResult, b1 -> {
+                        b1.return_(newLock);
+                    });
+                    b0.return_(lock);
+                });
             });
+            result.put(beanId, desc);
         }
-        strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
+        return result;
+    }
+
+    private void generateComputeIfAbsent(ClassCreator cc, Map<String, BeanFields> beanFields,
+            Map<String, MethodDesc> lazyLocks) {
+        Map<String, MethodDesc> computeMethodsByBean = new HashMap<>();
+        for (Map.Entry<String, BeanFields> idToFields : beanFields.entrySet()) {
+            String beanId = idToFields.getKey();
+            BeanFields fields = idToFields.getValue();
+            // There is a separate compute method for every bean instance field
+            MethodDesc desc = cc.method("c" + fields.instance().name(), mc -> {
+                mc.returning(ContextInstanceHandle.class);
+                ParamVar supplier = mc.parameter("supplier", Supplier.class);
+                mc.body(b0 -> {
+                    // ContextInstanceHandle<?> copy = this.h<idx>;
+                    // if (copy != null) {
+                    //    return copy;
+                    // }
+                    // Lock lock = lazyl<idx>();
+                    // lock.lock();
+                    // try {
+                    //   copy = this.h<idx>;
+                    //   if (copy != null) {
+                    //      return copy;
+                    //   }
+                    //   copy = supplier.get();
+                    //   this.h<idx> = copy;
+                    //   return copy;
+                    // } finally {
+                    //   lock.unlock();
+                    // }
+                    LocalVar copy = b0.localVar("copy", cc.this_().field(fields.instance()));
+                    b0.ifNotNull(copy, b1 -> {
+                        b1.return_(copy);
+                    });
+                    LocalVar lock = b0.localVar("lock", b0.invokeVirtual(lazyLocks.get(beanId), cc.this_()));
+                    b0.locked(lock, b1 -> {
+                        b1.set(copy, cc.this_().field(fields.instance()));
+                        b1.ifNotNull(copy, b2 -> {
+                            b2.return_(copy);
+                        });
+                        b1.set(copy, b1.invokeInterface(MethodDescs.SUPPLIER_GET, supplier));
+                        b1.set(cc.this_().field(fields.instance()), copy);
+                        b1.return_(copy);
+                    });
+                });
+            });
+            computeMethodsByBean.put(beanId, desc);
+        }
+
+        cc.method("computeIfAbsent", mc -> {
+            mc.returning(ContextInstanceHandle.class);
+            ParamVar rtBeanId = mc.parameter("beanId", String.class);
+            ParamVar supplier = mc.parameter("supplier", Supplier.class);
+            mc.body(b0 -> {
+                b0.return_(b0.switch_(ContextInstanceHandle.class, rtBeanId, sc -> {
+                    for (String btBeanId : beanFields.keySet()) {
+                        sc.caseOf(btBeanId, b1 -> {
+                            b1.return_(b1.invokeVirtual(computeMethodsByBean.get(btBeanId), cc.this_(), supplier));
+                        });
+                    }
+                    sc.default_(b1 -> {
+                        b1.throw_(IllegalArgumentException.class, "Unknown bean identifier");
+                    });
+                }));
+            });
+        });
+    }
+
+    private void generateGetIfPresent(ClassCreator cc, Map<String, BeanFields> beanFields) {
+        cc.method("getIfPresent", mc -> {
+            mc.returning(ContextInstanceHandle.class);
+            ParamVar rtBeanId = mc.parameter("beanId", String.class);
+            mc.body(b0 -> {
+                b0.return_(b0.switch_(ContextInstanceHandle.class, rtBeanId, sc -> {
+                    for (Map.Entry<String, BeanFields> idToFields : beanFields.entrySet()) {
+                        String btBeanId = idToFields.getKey();
+                        BeanFields fields = idToFields.getValue();
+                        sc.caseOf(btBeanId, b1 -> {
+                            b1.yield(cc.this_().field(fields.instance()));
+                        });
+                    }
+                    sc.default_(b1 -> {
+                        b1.throw_(IllegalArgumentException.class, "Unknown bean identifier");
+                    });
+                }));
+            });
+        });
+    }
+
+    private void generateGetAllPresent(ClassCreator cc, Map<String, BeanFields> beanFields) {
+        cc.method("getAllPresent", mc -> {
+            mc.returning(Set.class);
+            mc.body(b0 -> {
+                // ContextInstanceHandle<?> h<idx> = this.h<idx>;
+                // Set<ContextInstanceHandle<?>> result = new HashSet<>();
+                // if (h<idx> != null) {
+                //    result.add(h<idx>);
+                // }
+                // return result;
+                List<LocalVar> handles = new ArrayList<>(beanFields.size());
+                for (BeanFields fields : beanFields.values()) {
+                    handles.add(b0.localVar(cc.this_().field(fields.instance)));
+                }
+                LocalVar result = b0.localVar("result", b0.new_(HashSet.class));
+                for (LocalVar handle : handles) {
+                    b0.ifNotNull(handle, b1 -> {
+                        b1.withSet(result).add(handle);
+                    });
+                }
+                b0.return_(result);
+            });
+        });
+    }
+
+    private List<MethodDesc> generateRemove(ClassCreator cc, Map<String, BeanFields> beanFields,
+            Map<String, MethodDesc> lazyLocks) {
+
+        // There is a separate remove method for every instance handle field
+        // To eliminate large stack map table in the bytecode
+        List<MethodDesc> removeMethods = new ArrayList<>(beanFields.size());
+        Map<String, MethodDesc> removeMethodsByBean = new HashMap<>();
+        for (Map.Entry<String, BeanFields> idToFields : beanFields.entrySet()) {
+            String beanId = idToFields.getKey();
+            BeanFields fields = idToFields.getValue();
+            FieldDesc instanceField = fields.instance;
+            MethodDesc desc = cc.method("r" + instanceField.name(), mc -> {
+                mc.returning(ContextInstanceHandle.class);
+                mc.body(b0 -> {
+                    // ContextInstanceHandle<?> copy = this.h<idx>;
+                    // if (copy == null) {
+                    //   return null;
+                    // }
+                    // Lock lock = lazyl<idx>();
+                    // lock.lock();
+                    // try {
+                    //   copy = this.h<idx>;
+                    //   this.h<idx> = null;
+                    // } finally {
+                    //   lock.unlock();
+                    // }
+                    // return copy;
+                    LocalVar copy = b0.localVar("copy", cc.this_().field(instanceField));
+                    b0.ifNull(copy, b1 -> {
+                        b1.return_(Const.ofNull(ContextInstanceHandle.class));
+                    });
+                    LocalVar lock = b0.localVar("lock", b0.invokeVirtual(lazyLocks.get(beanId), cc.this_()));
+                    b0.locked(lock, b1 -> {
+                        b1.set(copy, cc.this_().field(instanceField));
+                        b1.set(cc.this_().field(instanceField), Const.ofNull(ContextInstanceHandle.class));
+                    });
+                    b0.return_(copy);
+                });
+            });
+            removeMethods.add(desc);
+            removeMethodsByBean.put(beanId, desc);
+        }
+
+        cc.method("remove", mc -> {
+            mc.returning(ContextInstanceHandle.class);
+            ParamVar rtBeanId = mc.parameter("beanId", String.class);
+            mc.body(b0 -> {
+                b0.return_(b0.switch_(ContextInstanceHandle.class, rtBeanId, sc -> {
+                    for (String btBeanId : beanFields.keySet()) {
+                        sc.caseOf(btBeanId, b1 -> {
+                            b1.return_(b1.invokeVirtual(removeMethodsByBean.get(btBeanId), cc.this_()));
+                        });
+                    }
+                    sc.default_(b1 -> {
+                        b1.throw_(IllegalArgumentException.class, "Unknown bean identifier");
+                    });
+                }));
+            });
+        });
+
         return removeMethods;
     }
 
-    private void implementGetIfPresent(ClassCreator contextInstances, List<BeanInfo> beans,
-            Map<String, InstanceAndLock> idToFields) {
-        MethodCreator getIfPresent = contextInstances
-                .getMethodCreator("getIfPresent", ContextInstanceHandle.class, String.class)
-                .setModifiers(ACC_PUBLIC);
-
-        StringSwitch strSwitch = getIfPresent.stringSwitch(getIfPresent.getMethodParam(0));
-        // https://github.com/quarkusio/gizmo/issues/164
-        strSwitch.fallThrough();
-        for (BeanInfo bean : beans) {
-            strSwitch.caseOf(bean.getIdentifier(), bc -> {
-                bc.returnValue(bc.readInstanceField(idToFields.get(bean.getIdentifier()).instance, bc.getThis()));
+    private void generateRemoveEach(ClassCreator cc, List<MethodDesc> removeInstances) {
+        cc.method("removeEach", mc -> {
+            mc.returning(void.class);
+            ParamVar action = mc.parameter("action", Consumer.class);
+            mc.body(b0 -> {
+                // ContextInstanceHandle<?> copy<idx> = rh<idx>();
+                // if (action != null)
+                //    if (copy<idx> != null) {
+                //       action.accept(copy<idx>);
+                //    }
+                // }
+                int counter = 0;
+                List<LocalVar> results = new ArrayList<>(removeInstances.size());
+                for (MethodDesc removeInstance : removeInstances) {
+                    // invoke remove method for every instance handle field
+                    results.add(b0.localVar("copy" + counter, b0.invokeVirtual(removeInstance, cc.this_())));
+                    counter++;
+                }
+                b0.ifNotNull(action, b1 -> {
+                    for (LocalVar result : results) {
+                        b1.ifNotNull(result, b2 -> {
+                            b2.invokeInterface(MethodDescs.CONSUMER_ACCEPT, action, result);
+                        });
+                    }
+                });
+                b0.return_();
             });
-        }
-        strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
+        });
     }
 
-    private void implementComputeIfAbsent(ClassCreator contextInstances, List<BeanInfo> beans,
-            Map<String, InstanceAndLock> idToFields, Map<String, MethodDescriptor> lazyLocks) {
-        MethodCreator computeIfAbsent = contextInstances
-                .getMethodCreator("computeIfAbsent", ContextInstanceHandle.class, String.class, Supplier.class)
-                .setModifiers(ACC_PUBLIC);
-
-        StringSwitch strSwitch = computeIfAbsent.stringSwitch(computeIfAbsent.getMethodParam(0));
-        // https://github.com/quarkusio/gizmo/issues/164
-        strSwitch.fallThrough();
-        for (BeanInfo bean : beans) {
-            InstanceAndLock fields = idToFields.get(bean.getIdentifier());
-            // There is a separate compute method for every bean instance field
-            MethodCreator compute = contextInstances.getMethodCreator("c" + fields.instance.getName(),
-                    ContextInstanceHandle.class, Supplier.class).setModifiers(ACC_PRIVATE);
-            // ContextInstanceHandle<?> copy = this.1;
-            // if (copy != null) {
-            //    return copy;
-            // }
-            // Lock lock = lazy1l();
-            // lock.lock();
-            // copy = this.1;
-            // if (copy != null) {
-            //    lock.unlock();
-            //    return copy;
-
-            // try {
-            //    copy = supplier.get();
-            //    this.1 = copy;
-            //    lock.unlock();
-            //    return copy;
-            // } catch(Throwable t) {
-            //    lock.unlock();
-            //    throw t;
-            // }
-            ResultHandle copy = compute.readInstanceField(fields.instance, compute.getThis());
-            compute.ifNotNull(copy).trueBranch().returnValue(copy);
-            ResultHandle lock = compute.invokeVirtualMethod(lazyLocks.get(bean.getIdentifier()), compute.getThis());
-            compute.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
-            copy = compute.readInstanceField(fields.instance, compute.getThis());
-            BytecodeCreator nonNullCopy = compute.ifNotNull(copy).trueBranch();
-            nonNullCopy.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-            nonNullCopy.returnValue(copy);
-            TryBlock tryBlock = compute.tryBlock();
-            copy = tryBlock.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET, compute.getMethodParam(0));
-            tryBlock.writeInstanceField(fields.instance, compute.getThis(), copy);
-            tryBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-            tryBlock.returnValue(copy);
-            CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-            catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-            catchBlock.throwException(catchBlock.getCaughtException());
-
-            strSwitch.caseOf(bean.getIdentifier(), bc -> {
-                bc.returnValue(bc.invokeVirtualMethod(compute.getMethodDescriptor(), bc.getThis(), bc.getMethodParam(1)));
-            });
-        }
-        strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
+    record BeanFields(FieldDesc instance, FieldDesc lock, StaticFieldVar lockUpdater) {
     }
-
-    record InstanceAndLock(FieldDescriptor instance, FieldDescriptor lock, FieldDescriptor lockUpdater) {
-    }
-
 }

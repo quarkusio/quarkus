@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.opentelemetry.deployment;
 
 import java.util.Locale;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 
 import jakarta.enterprise.inject.Instance;
@@ -11,6 +12,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logmanager.Level;
+import org.objectweb.asm.ClassVisitor;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -20,19 +22,23 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeRecorder;
 import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
 @BuildSteps(onlyIf = {
         MicrometerProcessor.MicrometerEnabled.class,
         OpenTelemetryEnabled.class,
         MicrometerOtelBridgeProcessor.OtlpMetricsExporterEnabled.class })
 public class MicrometerOtelBridgeProcessor {
+
+    private static final String UNSUPPORTED_READ_LOGGER_CLASS_NAME = "io.opentelemetry.instrumentation.micrometer.v1_5.UnsupportedReadLogger";
 
     @BuildStep
     public void disableOTelAutoInstrumentedMetrics(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigProducer) {
@@ -55,12 +61,29 @@ public class MicrometerOtelBridgeProcessor {
     }
 
     @BuildStep
+    BytecodeTransformerBuildItem silenceWarning() {
+        return new BytecodeTransformerBuildItem.Builder().setClassToTransform(UNSUPPORTED_READ_LOGGER_CLASS_NAME)
+                .setCacheable(true).setVisitorFunction(
+                        new BiFunction<>() {
+                            @Override
+                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                                ClassTransformer transformer = new ClassTransformer(UNSUPPORTED_READ_LOGGER_CLASS_NAME);
+                                transformer.removeMethod(
+                                        MethodDescriptor.ofMethod(UNSUPPORTED_READ_LOGGER_CLASS_NAME, "<clinit>", void.class));
+                                return transformer.applyTo(classVisitor);
+                            }
+                        })
+                .build();
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createBridgeBean(OTelRuntimeConfig otelRuntimeConfig,
+    void createBridgeBean(
+            OTelBuildConfig oTelBuildConfig,
             MicrometerOtelBridgeRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
 
-        if (otelRuntimeConfig.sdkDisabled()) {
+        if (!oTelBuildConfig.enabled()) {
             return; // No point in creating the bridge if the SDK is disabled
         }
 
@@ -71,7 +94,7 @@ public class MicrometerOtelBridgeProcessor {
                 .scope(Singleton.class)
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(OpenTelemetry.class.getName())) }, null))
-                .createWith(recorder.createBridge(otelRuntimeConfig))
+                .createWith(recorder.createBridge())
                 .done());
     }
 

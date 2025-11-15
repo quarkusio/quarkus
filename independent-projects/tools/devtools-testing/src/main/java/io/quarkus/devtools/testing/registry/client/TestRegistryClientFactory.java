@@ -15,8 +15,8 @@ public class TestRegistryClientFactory implements RegistryClientFactory {
         if (instance != null) {
             return instance;
         }
-        if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader) {
-            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(() -> instance = null);
+        if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader qcl) {
+            qcl.addCloseTask(() -> instance = null);
         }
         return instance = new TestRegistryClientFactory(env);
     }

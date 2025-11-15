@@ -11,7 +11,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteCla
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -82,7 +81,7 @@ public final class OracleMetadataOverrides {
 
     @BuildStep
     void runtimeInitializeDriver(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) {
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeReinitialized) {
         //These re-implement all the "--initialize-at-build-time" arguments found in the native-image.properties :
 
         // Override: the original metadata marks the drivers as "runtime initialized" but this makes it incompatible with
@@ -112,9 +111,9 @@ public final class OracleMetadataOverrides {
 
         // Needs to be REinitialized to avoid problems when also using the Elasticsearch Java client
         // See https://github.com/quarkusio/quarkus/issues/31624#issuecomment-1457706253
-        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+        runtimeReinitialized.produce(new RuntimeInitializedClassBuildItem(
                 "oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource"));
-        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+        runtimeReinitialized.produce(new RuntimeInitializedClassBuildItem(
                 "oracle.jdbc.driver.BlockSource$ThreadedCachingBlockSource$BlockReleaser"));
 
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.xa.client.OracleXADataSource"));

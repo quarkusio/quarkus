@@ -36,6 +36,11 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public Optional<List<String>> additionalBuildArgsAppend() {
+        return Optional.empty();
+    }
+
+    @Override
     public boolean enableHttpUrlHandler() {
         return false;
     }
@@ -46,33 +51,8 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public boolean enableAllSecurityServices() {
-        return false;
-    }
-
-    @Override
-    public boolean inlineBeforeAnalysis() {
-        return false;
-    }
-
-    @Override
-    public boolean enableJni() {
-        return false;
-    }
-
-    @Override
     public boolean headless() {
         return false;
-    }
-
-    @Override
-    public Optional<String> userLanguage() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<String> userCountry() {
-        return Optional.empty();
     }
 
     @Override
@@ -111,22 +91,12 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public boolean cleanupServer() {
-        return false;
-    }
-
-    @Override
     public boolean enableIsolates() {
         return false;
     }
 
     @Override
     public boolean enableFallbackImages() {
-        return false;
-    }
-
-    @Override
-    public boolean enableServer() {
         return false;
     }
 
@@ -183,11 +153,6 @@ public class TestNativeConfig implements NativeConfig {
     @Override
     public Optional<List<MonitoringOption>> monitoring() {
         return Optional.empty();
-    }
-
-    @Override
-    public boolean fullStackTraces() {
-        return false;
     }
 
     @Override

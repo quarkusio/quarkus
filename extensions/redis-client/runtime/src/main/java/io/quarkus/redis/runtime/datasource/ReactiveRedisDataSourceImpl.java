@@ -78,20 +78,31 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
-    public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> function) {
-        nonNull(function, "function");
+    public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx) {
+        nonNull(tx, "tx");
         return redis.connect()
                 .onItem().transformToUni(connection -> {
                     ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
                     TransactionHolder th = new TransactionHolder();
                     return connection.send(Request.cmd(Command.MULTI))
-                            .chain(x -> function.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
-                            .chain(ignored -> {
-                                if (!th.discarded()) {
-                                    return connection.send(Request.cmd(Command.EXEC));
-                                } else {
+                            .chain(x -> tx.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
+                            .onItemOrFailure().transformToUni((x, failure) -> {
+                                if (failure != null) {
+                                    if (th.discarded()) {
+                                        return Uni.createFrom().failure(failure);
+                                    }
+                                    return connection.send(Request.cmd(Command.DISCARD))
+                                            .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                                if (failure2 != null) {
+                                                    failure.addSuppressed(failure2);
+                                                }
+                                                return Uni.createFrom().failure(failure);
+                                            });
+                                }
+                                if (th.discarded()) {
                                     return Uni.createFrom().nullItem();
                                 }
+                                return connection.send(Request.cmd(Command.EXEC));
                             })
                             .onTermination().call(connection::close)
                             .map(r -> toTransactionResult(r, th));
@@ -99,9 +110,9 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
-    public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> function,
+    public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx,
             String... keys) {
-        nonNull(function, "function");
+        nonNull(tx, "tx");
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         return redis.connect()
@@ -110,17 +121,25 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
                     TransactionHolder th = new TransactionHolder();
                     return watch(connection, keys) // WATCH keys
                             .chain(() -> connection.send(Request.cmd(Command.MULTI))
-                                    .chain(x -> function
+                                    .chain(x -> tx
                                             .apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
                                     .onItemOrFailure().transformToUni((x, failure) -> {
-                                        if (!th.discarded() && failure == null) {
-                                            return connection.send(Request.cmd(Command.EXEC));
-                                        } else {
-                                            if (!th.discarded()) {
-                                                return connection.send(Request.cmd(Command.DISCARD));
+                                        if (failure != null) {
+                                            if (th.discarded()) {
+                                                return Uni.createFrom().failure(failure);
                                             }
+                                            return connection.send(Request.cmd(Command.DISCARD))
+                                                    .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                                        if (failure2 != null) {
+                                                            failure.addSuppressed(failure2);
+                                                        }
+                                                        return Uni.createFrom().failure(failure);
+                                                    });
+                                        }
+                                        if (th.discarded()) {
                                             return Uni.createFrom().nullItem();
                                         }
+                                        return connection.send(Request.cmd(Command.EXEC));
                                     })
                                     .onTermination().call(connection::close)
                                     .map(r -> toTransactionResult(r, th)));
@@ -138,32 +157,48 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
-    public <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTxBlock,
+    public <I> Uni<OptimisticLockingTransactionResult<I>> withTransaction(Function<ReactiveRedisDataSource, Uni<I>> preTx,
             BiFunction<I, ReactiveTransactionalRedisDataSource, Uni<Void>> tx, String... watchedKeys) {
         nonNull(tx, "tx");
         notNullOrEmpty(watchedKeys, "watchedKeys");
         doesNotContainNull(watchedKeys, "watchedKeys");
-        nonNull(preTxBlock, "preTxBlock");
+        nonNull(preTx, "preTx");
 
         return redis.connect()
                 .onItem().transformToUni(connection -> {
                     ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
                     TransactionHolder th = new TransactionHolder();
                     return watch(connection, watchedKeys) // WATCH keys
-                            .chain(x -> preTxBlock.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
+                            .chain(x -> preTx.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
+                            .onFailure().recoverWithUni(failure -> {
+                                return connection.send(Request.cmd(Command.UNWATCH))
+                                        .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                            if (failure2 != null) {
+                                                failure.addSuppressed(failure2);
+                                            }
+                                            return Uni.createFrom().failure(failure);
+                                        });
+                            })
                             .chain(input -> connection.send(Request.cmd(Command.MULTI))
                                     .chain(x -> tx
                                             .apply(input, new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
                                     .onItemOrFailure().transformToUni((x, failure) -> {
-                                        if (!th.discarded() && failure == null) {
-                                            return connection.send(Request.cmd(Command.EXEC));
-                                        } else {
-                                            if (!th.discarded()) {
-                                                return connection.send(Request.cmd(Command.DISCARD))
-                                                        .replaceWithNull();
+                                        if (failure != null) {
+                                            if (th.discarded()) {
+                                                return Uni.createFrom().failure(failure);
                                             }
+                                            return connection.send(Request.cmd(Command.DISCARD))
+                                                    .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                                        if (failure2 != null) {
+                                                            failure.addSuppressed(failure2);
+                                                        }
+                                                        return Uni.createFrom().failure(failure);
+                                                    });
+                                        }
+                                        if (th.discarded()) {
                                             return Uni.createFrom().nullItem();
                                         }
+                                        return connection.send(Request.cmd(Command.EXEC));
                                     })
                                     .onTermination().call(connection::close)
                                     .map(r -> toTransactionResult(r, input, th)));
@@ -175,7 +210,7 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
             // Discarded
             return TransactionResultImpl.DISCARDED;
         }
-        return new TransactionResultImpl(th.discarded(), th.map(response));
+        return th.toResult(response);
     }
 
     public static <I> OptimisticLockingTransactionResult<I> toTransactionResult(Response response, I input,
@@ -184,19 +219,18 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
             // Discarded
             return OptimisticLockingTransactionResultImpl.discarded(input);
         }
-        return new OptimisticLockingTransactionResultImpl<>(th.discarded(), input, th.map(response));
+        return th.toOptimisticLockingResult(input, response);
     }
 
     @Override
     public Uni<Response> execute(String command, String... args) {
         nonNull(command, "command");
-        return execute(CommandMap.normalize(Command.create(command)), args);
+        return execute(Command.create(command), args);
     }
 
     @Override
     public Uni<Response> execute(Command command, String... args) {
         nonNull(command, "command");
-        command = CommandMap.normalize(command);
         Request request = Request.cmd(command);
         for (String arg : args) {
             request.arg(arg);
@@ -207,7 +241,6 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Uni<Response> execute(io.vertx.redis.client.Command command, String... args) {
         nonNull(command, "command");
-        command = CommandMap.normalize(command);
         Request request = Request.newInstance(io.vertx.redis.client.Request.cmd(command));
         for (String arg : args) {
             request.arg(arg);

@@ -2,12 +2,12 @@ package io.quarkus.restclient.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.junit.jupiter.api.Test;
@@ -17,6 +17,7 @@ import io.quarkus.restclient.config.key.SharedOneConfigKeyRestClient;
 import io.quarkus.restclient.config.key.SharedThreeConfigKeyRestClient;
 import io.quarkus.restclient.config.key.SharedTwoConfigKeyRestClient;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
@@ -70,6 +71,7 @@ class RestClientConfigTest {
         assertEquals(1, restClientsConfig.clients().size());
         assertTrue(restClientsConfig.clients().containsKey(ConfigKeyRestClient.class.getName()));
         verifyConfig(restClientsConfig.getClient(ConfigKeyRestClient.class));
+        assertTrue(restClientsConfig.getClient(ConfigKeyRestClient.class).disableDefaultMapper());
     }
 
     @Test
@@ -126,6 +128,7 @@ class RestClientConfigTest {
                         }.configBuilder(builder);
                     }
                 })
+                .withSources(new PropertiesConfigSource(Map.of("microprofile.rest.client.disable.default.mapper", "true"), ""))
                 .build();
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
@@ -148,6 +151,7 @@ class RestClientConfigTest {
         assertTrue(clientConfig.proxyAddress().isPresent());
         assertTrue(clientConfig.queryParamStyle().isPresent());
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
+        assertThat(clientConfig.disableDefaultMapper()).isTrue();
     }
 
     @Test
@@ -309,19 +313,6 @@ class RestClientConfigTest {
         assertEquals(2, restClientConfigThree.headers().size());
         assertEquals("one", restClientConfigThree.headers().get("two"));
         assertEquals("two", restClientConfigThree.headers().get("one"));
-    }
-
-    @Test
-    void buildTimeConfig() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsBuildTimeConfig.class)
-                .build();
-        assertNotNull(config);
-
-        RestClientsBuildTimeConfig buildTimeConfig = config.getConfigMapping(RestClientsBuildTimeConfig.class)
-                .get(List.of(new RegisteredRestClient(ConfigKeyRestClient.class, "key")));
-
-        assertFalse(buildTimeConfig.clients().get(ConfigKeyRestClient.class.getName()).removesTrailingSlash());
     }
 
     @Test

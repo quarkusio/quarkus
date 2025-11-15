@@ -10,21 +10,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
+import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.hibernate.tool.schema.SourceType;
 import org.hibernate.tool.schema.TargetType;
-import org.hibernate.tool.schema.internal.DefaultSchemaFilter;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.ContributableMatcher;
 import org.hibernate.tool.schema.spi.ExceptionHandler;
 import org.hibernate.tool.schema.spi.ExecutionOptions;
 import org.hibernate.tool.schema.spi.SchemaDropper;
-import org.hibernate.tool.schema.spi.SchemaFilter;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.hibernate.tool.schema.spi.SchemaMigrator;
@@ -49,10 +49,10 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             .synchronizedMap(new IdentityHashMap<>());
 
     @Override
-    public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory,
-            SessionFactoryServiceRegistry serviceRegistry) {
+    public void integrate(Metadata metadata, BootstrapContext bootstrapContext,
+            SessionFactoryImplementor sessionFactory) {
         String name = defaultName(sessionFactory);
-        metadataMap.put(name, new Holder(metadata, sessionFactory, serviceRegistry));
+        metadataMap.put(name, new Holder(metadata, sessionFactory, sessionFactory.getServiceRegistry()));
         nameCache.put(sessionFactory, name);
     }
 
@@ -186,9 +186,9 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
     static class Holder {
         final Metadata metadata;
         final SessionFactoryImplementor sessionFactory;
-        final SessionFactoryServiceRegistry serviceRegistry;
+        final ServiceRegistryImplementor serviceRegistry;
 
-        Holder(Metadata metadata, SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
+        Holder(Metadata metadata, SessionFactoryImplementor sessionFactory, ServiceRegistryImplementor serviceRegistry) {
             this.metadata = metadata;
             this.sessionFactory = sessionFactory;
             this.serviceRegistry = serviceRegistry;
@@ -220,11 +220,6 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
                     log.error("Failed to recreate schema", exception);
                 }
             };
-        }
-
-        @Override
-        public SchemaFilter getSchemaFilter() {
-            return DefaultSchemaFilter.INSTANCE;
         }
     }
 

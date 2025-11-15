@@ -53,7 +53,7 @@ This is the most common way to output metrics from Micrometer and the default wa
 .pom.xml
 ----
 <dependency>
-    <groupId>io.quarkiverse.micrometer.registry</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
 </dependency>
 ----
@@ -61,7 +61,7 @@ This is the most common way to output metrics from Micrometer and the default wa
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkiverse.micrometer.registry:quarkus-micrometer-registry-prometheus")
+implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
 ----
 
 ==== Using the Micrometer OTLP registry
@@ -185,6 +185,12 @@ Each dashboard is tuned for the specific application setup. The available dashbo
 Some panels in the dashboards might take a few minutes to show accurate data when their values are calculated over a sliding  time window.
 ====
 
+==== Custom dashboards
+
+Users can add their own Grafana dashboards aka their configuration. All you need to do is to place a `grafana-dashboard-[your name].json` into a `META-INF/grafana` directory in your application, and LGTM DevResource will pick this up automatically, and include this dashboard configuration in the overall Grafana dashboards yaml configuration.
+
+e.g. /META-INF/grafana/grafana-dashboard-my-simple-prometheus-dashboard.json configuration file creates `My Simple Promeheus Dashboard` titled dashboard
+
 === Additional configuration
 
 This extension will configure your `quarkus-opentelemetry` and `quarkus-micrometer-registry-otlp` extensions to send data to the OTel Collector bundled with the Grafana OTel LGTM image.
@@ -196,6 +202,20 @@ If you don't want all the hassle with Dev Services (e.g. lookup and re-use of ex
 quarkus.observability.enabled=false
 quarkus.observability.dev-resources=true
 ----
+
+By default Quarkus lets Testcontainers expose random ports for Grafana and OTel, but you can force the usage of user-side fixed ports via setting the ports yourself - but then be aware of port conflicts.
+
+[source,properties]
+----
+quarkus.observability.lgtm.grafana-port=3001
+quarkus.observability.lgtm.otel-grpc-port=5317
+quarkus.observability.lgtm.otel-http-port=5318
+----
+
+[NOTE]
+====
+Internal container ports stay the same; e.g. 3000 for Grafana, 4317 for OTel gRPC, 4318 for OTel HTTP, etc
+====
 
 === Tests
 

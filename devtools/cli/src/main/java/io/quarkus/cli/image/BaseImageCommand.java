@@ -3,8 +3,8 @@ package io.quarkus.cli.image;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.BuildToolContext;
-import io.quarkus.cli.BuildToolDelegatingCommand;
+import io.quarkus.cli.common.BuildToolContext;
+import io.quarkus.cli.common.BuildToolDelegatingCommand;
 import picocli.CommandLine;
 
 public class BaseImageCommand extends BuildToolDelegatingCommand implements Callable<Integer> {

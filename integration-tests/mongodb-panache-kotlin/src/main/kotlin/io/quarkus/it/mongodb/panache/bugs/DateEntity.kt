@@ -15,7 +15,7 @@ class DateEntity(
     var dateDate: Date = Date(),
     var localDate: LocalDate = LocalDate.now(),
     var localDateTime: LocalDateTime = LocalDateTime.now(),
-    var instant: Instant = Instant.now()
+    var instant: Instant = Instant.now(),
 ) : PanacheMongoEntity() {
     companion object : PanacheMongoCompanion<DateEntity>
 }

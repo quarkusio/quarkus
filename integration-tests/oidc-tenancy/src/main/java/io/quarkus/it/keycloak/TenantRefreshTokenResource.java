@@ -30,6 +30,7 @@ public class TenantRefreshTokenResource {
         return "userName: " + idToken.getName()
                 + ", idToken: " + (idToken.getRawToken() != null)
                 + ", accessToken: " + (accessToken.getRawToken() != null)
+                + ", accessTokenLongStringClaim: " + accessToken.getClaim("longstring")
                 + ", refreshToken: " + (refreshToken.getToken() != null);
     }
 

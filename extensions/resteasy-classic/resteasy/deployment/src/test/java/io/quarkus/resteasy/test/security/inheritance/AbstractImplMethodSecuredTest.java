@@ -21,7 +21,6 @@ import static io.quarkus.resteasy.test.security.inheritance.SubPaths.SUB_IMPL_ON
 import static io.quarkus.resteasy.test.security.inheritance.SubPaths.SUB_IMPL_ON_INTERFACE;
 import static io.quarkus.resteasy.test.security.inheritance.SubPaths.SUB_IMPL_ON_PARENT;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;

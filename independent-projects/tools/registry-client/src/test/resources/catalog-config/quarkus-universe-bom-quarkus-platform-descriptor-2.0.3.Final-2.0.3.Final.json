@@ -7296,8 +7296,8 @@
         "gradle-plugin-version" : "2.0.3.Final",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "3.3.2",
-        "gradle-wrapper-version" : "6.9"
+        "maven-wrapper-version" : "3.3.4",
+        "gradle-wrapper-version" : "9.1.0"
       }
     },
     "codestarts-artifacts" : [ "io.quarkus:quarkus-project-core-extension-codestarts::jar:2.0.3.Final" ],

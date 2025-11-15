@@ -4,14 +4,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.spi.Converter;
 import org.eclipse.microprofile.openapi.OASConfig;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.Converters;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
-import io.smallrye.openapi.api.OpenApiConfig.OperationIdStrategy;
+import io.smallrye.config.common.utils.StringUtil;
+import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.SmallRyeOASConfig;
 
 /**
@@ -20,8 +19,6 @@ import io.smallrye.openapi.api.SmallRyeOASConfig;
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final long serialVersionUID = 1L;
     private static final Map<String, String> RELOCATIONS = relocations();
-    private static final Converter<OperationIdStrategy> OPERATION_ID_STRATEGY_CONVERTER = Converters
-            .getImplicitConverter(OperationIdStrategy.class);
 
     public OpenApiConfigMapping() {
         super(RELOCATIONS);
@@ -31,13 +28,35 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
         ConfigValue configValue = super.getValue(context, name);
 
-        // Special case for enum. The converter run after the interceptors, so we have to do this here.
+        /*
+         * Special case for operationId strategy that supports both enumerated values or a FQCN.
+         * The converter run after the interceptors, so we have to do this here.
+         */
         if (configValue != null && name.equals(SmallRyeOASConfig.OPERATION_ID_STRAGEGY)) {
-            String correctValue = OPERATION_ID_STRATEGY_CONVERTER.convert(configValue.getValue()).toString();
+            String correctValue = convertOperationIdStrategy(configValue.getValue());
             configValue = configValue.withValue(correctValue);
         }
 
         return configValue;
+    }
+
+    private static String convertOperationIdStrategy(String value) {
+        final String trimmedValue = value.trim();
+
+        if (trimmedValue.isEmpty()) {
+            return null;
+        }
+
+        switch (StringUtil.skewer(trimmedValue)) {
+            case "method":
+                return OpenApiConfig.OperationIdStrategy.METHOD;
+            case "class-method":
+                return OpenApiConfig.OperationIdStrategy.CLASS_METHOD;
+            case "package-class-method":
+                return OpenApiConfig.OperationIdStrategy.PACKAGE_CLASS_METHOD;
+            default:
+                return trimmedValue;
+        }
     }
 
     private static Map<String, String> relocations() {

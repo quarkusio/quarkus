@@ -17,6 +17,6 @@ public class main implements Runnable {
 
     @Override
     public void run() {
-        System.out.printf("Hello %s, go go commando!\n", name);
+        System.out.printf("Hello %s, go go commando!%n", name);
     }
 }

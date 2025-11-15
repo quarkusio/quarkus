@@ -51,7 +51,7 @@ Add the following dependencies to your project:
 </dependency>
 <dependency>
     <groupId>com.blazebit</groupId>
-    <artifactId>blaze-persistence-integration-hibernate-6.2</artifactId>
+    <artifactId>blaze-persistence-integration-hibernate-7.1</artifactId>
     <scope>runtime</scope>
 </dependency>
 ----
@@ -60,7 +60,7 @@ Add the following dependencies to your project:
 .Using Gradle
 ----
 implementation("com.blazebit:blaze-persistence-integration-quarkus-3")
-runtimeOnly("com.blazebit:blaze-persistence-integration-hibernate-6.2")
+runtimeOnly("com.blazebit:blaze-persistence-integration-hibernate-7.1")
 ----
 
 The use in native images requires a dependency on the entity view annotation processor that may be extracted into a separate `native` profile:

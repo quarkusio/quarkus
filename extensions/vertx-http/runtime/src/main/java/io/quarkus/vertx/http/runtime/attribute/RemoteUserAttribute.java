@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -11,6 +12,7 @@ public class RemoteUserAttribute implements ExchangeAttribute {
 
     public static final String REMOTE_USER_SHORT = "%u";
     public static final String REMOTE_USER = "%{REMOTE_USER}";
+    public static final String VERTX_USER_NAME = "username";
 
     public static final ExchangeAttribute INSTANCE = new RemoteUserAttribute();
 
@@ -20,11 +22,15 @@ public class RemoteUserAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        QuarkusHttpUser sc = (QuarkusHttpUser) exchange.user();
-        if (sc == null) {
+        User user = exchange.user();
+        if (user == null) {
             return null;
         }
-        return sc.getSecurityIdentity().getPrincipal().getName();
+        if (user instanceof QuarkusHttpUser quarkusUser) {
+            return quarkusUser.getSecurityIdentity().getPrincipal().getName();
+        } else {
+            return user.principal().getString(VERTX_USER_NAME);
+        }
     }
 
     @Override

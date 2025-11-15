@@ -22,7 +22,7 @@ public class BeanMetadataProvider implements InjectableReferenceProvider<Injecta
 
     @Override
     public InjectableBean<?> get(CreationalContext<InjectableBean<?>> creationalContext) {
-        return Arc.container().bean(beanId);
+        return Arc.requireContainer().bean(beanId);
     }
 
 }

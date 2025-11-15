@@ -4,17 +4,23 @@ import static io.quarkus.it.keycloak.BearerTokenStepUpAuthenticationTest.getAcce
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +35,7 @@ import org.htmlunit.util.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -97,6 +104,56 @@ public class BearerTokenAuthorizationTest {
         }
     }
 
+    @Test
+    public void testFormPostLogoutWebApp() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
+
+            // First RP initiated form-post logout check
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant/tenant-web-app/form-post-logout").toURL()));
+            // Session cookie must be null
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+
+            assertEquals(200, webResponse.getStatusCode());
+            String formPostLogout = webResponse.getContentAsString();
+            assertTrue(formPostLogout.startsWith("<html>"));
+            assertTrue(formPostLogout.contains("<form method=\"post\" action=\"http://localhost:8081/oidc/form-post-logout\""));
+            assertTrue(formPostLogout.endsWith("</html>"));
+            // Re-login
+            webClient.getOptions().setRedirectEnabled(true);
+            webClient.getCookieManager().clearCookies();
+
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
+            // Session cookie must not be null
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
+
+            // Complete RP initiated form-post logout
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/form-post-logout");
+            assertEquals("alice, you have been logged out with the form post logout", page.getBody().asNormalizedText());
+            // Session cookie must be null
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
     private static void checkHealth() {
         RestAssured.when().get("http://localhost:8081/q/health/ready").then().statusCode(404);
     }
@@ -154,14 +211,19 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getButtonByName("login").click();
 
-            assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
-                    page.getBody().asNormalizedText());
-
             Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertNotNull(sessionCookie);
-            assertNotNull(getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh"));
+
+            Set<Cookie> atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertEquals(3, atSessionCookies.size());
+
             Cookie rtCookie = getSessionRtCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertNotNull(rtCookie);
+
+            assertEquals("userName: alice, idToken: true, accessToken: true, accessTokenLongStringClaim: "
+                    + getAccessTokenLongStringClaim(atSessionCookies)
+                    + ", refreshToken: true",
+                    page.getBody().asNormalizedText());
 
             // Wait till the session expires - which should cause the first and also last token refresh request,
             // id and access tokens should have new values, refresh token value should remain the same.
@@ -174,16 +236,20 @@ public class BearerTokenAuthorizationTest {
                     .loadWebResponse(new WebRequest(
                             URI.create("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user")
                                     .toURL()));
-            assertEquals("userName: alice, idToken: true, accessToken: true, refreshToken: true",
-                    webResponse.getContentAsString());
 
             Cookie sessionCookie2 = getSessionCookie(webClient, "tenant-web-app-refresh");
             assertNotNull(sessionCookie2);
             assertEquals(sessionCookie2.getValue(), sessionCookie.getValue());
-            assertNotNull(getSessionAtCookie(webClient, "tenant-web-app-refresh"));
+            atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertEquals(3, atSessionCookies.size());
             Cookie rtCookie2 = getSessionRtCookie(webClient, "tenant-web-app-refresh");
             assertNotNull(rtCookie2);
             assertEquals(rtCookie2.getValue(), rtCookie.getValue());
+
+            assertEquals("userName: alice, idToken: true, accessToken: true, accessTokenLongStringClaim: "
+                    + getAccessTokenLongStringClaim(atSessionCookies)
+                    + ", refreshToken: true",
+                    webResponse.getContentAsString());
 
             //Verify all the cookies are cleared after the session timeout
             webClient.getCache().clear();
@@ -205,11 +271,29 @@ public class BearerTokenAuthorizationTest {
                     });
 
             assertNull(getSessionCookie(webClient, "tenant-web-app-refresh"));
-            assertNull(getSessionAtCookie(webClient, "tenant-web-app-refresh"));
+            atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertEquals(0, atSessionCookies.size());
             assertNull(getSessionRtCookie(webClient, "tenant-web-app-refresh"));
 
             webClient.getCookieManager().clearCookies();
         }
+    }
+
+    private String getAccessTokenLongStringClaim(Set<Cookie> atSessionCookies) {
+        StringBuilder sb = new StringBuilder();
+        for (Cookie c : atSessionCookies) {
+            sb.append(c.getValue());
+        }
+        String jwt = sb.toString();
+
+        JsonObject claims = OidcUtils.decodeJwtContent(jwt);
+        String longString = claims.getString("longstring");
+
+        byte[] array = new byte[5000];
+        Arrays.fill(array, (byte) 1);
+        assertEquals(longString, Base64.getEncoder().encodeToString(array));
+
+        return longString;
     }
 
     @Test
@@ -227,6 +311,11 @@ public class BearerTokenAuthorizationTest {
             webClient.getCookieManager().clearCookies();
         }
         RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("1"));
+    }
+
+    @Test
+    public void testOidcClientMultipleAudiences() throws IOException {
+        RestAssured.when().get("/oidc-client/multiple-audiences").then().body(equalTo("audience1,audience2"));
     }
 
     @Test
@@ -988,6 +1077,47 @@ public class BearerTokenAuthorizationTest {
                 .body(equalTo("alice:service"));
     }
 
+    @Test
+    void testBearerTokenAuthenticationRequestFilter() {
+        // reset current state
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/oidc/opaque-token-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+        RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200);
+        RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200);
+
+        String opaqueToken2 = getOpaqueAccessToken2FromSimpleOidc();
+        RestAssured.given().auth().oauth2(opaqueToken2)
+                .when().get("/tenant-introspection/tenant-introspection-required-claims")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice, required_claim:1"));
+
+        // assert and reset current state
+        RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200)
+                .body(is("tenant-introspection-required-claims"));
+        RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200)
+                .body(is(""));
+
+        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc();
+        RestAssured.given().auth().oauth2(opaqueToken3)
+                .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
+                .then()
+                // introspection called fails
+                .statusCode(401);
+
+        // assert and reset current state
+        RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200)
+                .body(is("tenant-introspection-multiple-required-claims"));
+        RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200)
+                .body(is("tenant-introspection-multiple-required-claims"));
+
+        // reset state
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/oidc/opaque-token-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
+    }
+
     private String getAccessToken(String userName, String clientId) {
         return getAccessToken(userName, clientId, clientId);
     }
@@ -1078,8 +1208,27 @@ public class BearerTokenAuthorizationTest {
         return parts.length == 2 ? parts[1] : null;
     }
 
-    private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session_at" + (tenantId == null ? "_Default_test" : "_" + tenantId));
+    private Set<Cookie> getSessionAtCookie(WebClient webClient, String tenantId) {
+        String baseName = "q_session_at" + (tenantId == null ? "_Default_test" : "_" + tenantId)
+                + OidcUtils.SESSION_COOKIE_CHUNK;
+        Set<Cookie> atSessionCookies = new TreeSet<>(new Comparator<Cookie>() {
+
+            @Override
+            public int compare(Cookie c1, Cookie c2) {
+                int lastUnderscoreIndex1 = c1.getName().lastIndexOf("_");
+                int lastUnderscoreIndex2 = c2.getName().lastIndexOf("_");
+                Integer pos1 = Integer.valueOf(c1.getName().substring(lastUnderscoreIndex1 + 1));
+                Integer pos2 = Integer.valueOf(c2.getName().substring(lastUnderscoreIndex2 + 1));
+                return pos1.compareTo(pos2);
+            }
+
+        });
+        for (Cookie c : webClient.getCookieManager().getCookies()) {
+            if (c.getName().startsWith(baseName)) {
+                atSessionCookies.add(c);
+            }
+        }
+        return atSessionCookies;
     }
 
     private Cookie getSessionRtCookie(WebClient webClient, String tenantId) {

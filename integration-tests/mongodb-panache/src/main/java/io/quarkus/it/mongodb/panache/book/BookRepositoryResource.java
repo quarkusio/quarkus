@@ -77,6 +77,12 @@ public class BookRepositoryResource {
         return bookRepository.findByIdOptional(new ObjectId(id)).orElseThrow(() -> new NotFoundException());
     }
 
+    @POST
+    @Path("/ids")
+    public List<Book> findByIdsBooks(List<String> ids) {
+        return bookRepository.findByIds(ids.stream().map(ObjectId::new).toList());
+    }
+
     @GET
     @Path("/search/{author}")
     public List<BookShortView> getBooksByAuthor(@PathParam("author") String author) {

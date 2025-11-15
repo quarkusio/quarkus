@@ -54,7 +54,7 @@ public class MultiplePersistenceUnitsResourceInjectionEntityManagerTest {
     public void testUserInInventoryEntityManager() {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unable to locate persister");
+                .hasMessageContaining("Unknown entity type");
     }
 
     @Test

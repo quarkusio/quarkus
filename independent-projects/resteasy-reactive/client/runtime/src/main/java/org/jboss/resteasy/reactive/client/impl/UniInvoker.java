@@ -50,9 +50,14 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
                 // be very defensive here as things could have been nulled out when the application is being torn down
                 RestClientRequestContext restClientRequestContext = restClientRequestContextRef.get();
                 if (restClientRequestContext != null) {
+                    restClientRequestContext.setUserCanceled();
+
                     HttpClientRequest httpClientRequest = restClientRequestContext.getHttpClientRequest();
                     if (httpClientRequest != null) {
+                        // if there is already an HTTP request in flight, cancel it
                         httpClientRequest.reset();
+                    } else {
+                        // by having already done setUserCanceled, Quarkus knows to reset the request when it finally gets created
                     }
                 }
             }

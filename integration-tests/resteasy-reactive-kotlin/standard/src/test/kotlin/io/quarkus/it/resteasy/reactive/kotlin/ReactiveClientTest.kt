@@ -20,7 +20,7 @@ class ReactiveClientTest {
                     "$.size()",
                     CoreMatchers.`is`(1),
                     "[0].capital",
-                    CoreMatchers.`is`("foo-capital")
+                    CoreMatchers.`is`("foo-capital"),
                 )
             }
     }

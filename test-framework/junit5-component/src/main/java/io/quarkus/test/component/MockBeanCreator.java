@@ -2,6 +2,7 @@ package io.quarkus.test.component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
@@ -17,6 +18,9 @@ public class MockBeanCreator implements BeanCreator<Object> {
     private static final Logger LOG = Logger.getLogger(MockBeanCreator.class);
 
     private static final Map<String, Function<SyntheticCreationalContext<?>, ?>> createFunctions = new HashMap<>();
+
+    // test class -> id generator
+    private static final Map<String, AtomicInteger> idGenerators = new HashMap<>();
 
     @Override
     public Object create(SyntheticCreationalContext<Object> context) {
@@ -34,12 +38,17 @@ public class MockBeanCreator implements BeanCreator<Object> {
         return Mockito.mock(implementationClass);
     }
 
-    static void registerCreate(String key, Function<SyntheticCreationalContext<?>, ?> create) {
+    static String registerCreate(String testClass, Function<SyntheticCreationalContext<?>, ?> create) {
+        AtomicInteger id = idGenerators.computeIfAbsent(testClass, k -> new AtomicInteger());
+        String key = testClass + id.incrementAndGet();
+        // we rely on deterministic registration which means that mock configurators are processed in the same order during build and also when a test is executed
         createFunctions.put(key, create);
+        return key;
     }
 
     static void clear() {
         createFunctions.clear();
+        idGenerators.clear();
     }
 
 }

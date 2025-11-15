@@ -3,7 +3,7 @@
 package io.quarkus.it.panache.reactive.kotlin
 
 import io.quarkus.hibernate.reactive.panache.Panache
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheEntityBase
 import io.quarkus.hibernate.reactive.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
@@ -83,7 +83,7 @@ class TestEndpoint {
 
     @GET
     @Path("8254")
-    @ReactiveTransactional
+    @WithTransaction
     fun testBug8254(): Uni<String> {
         val owner = CatOwner("8254")
         return owner
@@ -127,7 +127,7 @@ class TestEndpoint {
 
     @GET
     @Path("9025")
-    @ReactiveTransactional
+    @WithTransaction
     fun testBug9025(): Uni<String> {
         val apple = Fruit("apple", "red")
         val orange = Fruit("orange", "orange")
@@ -140,7 +140,7 @@ class TestEndpoint {
 
     @GET
     @Path("9036")
-    @ReactiveTransactional
+    @WithTransaction
     fun testBug9036(): Uni<String> {
         return Person.deleteAll()
             .flatMap { Person().persist<Person>() }
@@ -203,7 +203,7 @@ class TestEndpoint {
 
     @GET
     @Path("composite")
-    @ReactiveTransactional
+    @WithTransaction
     fun testCompositeKey(): Uni<String> {
         val obj = ObjectWithCompositeId()
         obj.part1 = "part1"
@@ -249,7 +249,7 @@ class TestEndpoint {
 
     @GET
     @Path("model")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModel(): Uni<String> {
         return Person.findAll()
             .list()
@@ -549,7 +549,7 @@ class TestEndpoint {
 
     @GET
     @Path("model1")
-    @ReactiveTransactional
+    @WithTransaction
     @Suppress("CAST_NEVER_SUCCEEDS")
     fun testModel1(): Uni<String> {
         return Person.count()
@@ -574,7 +574,7 @@ class TestEndpoint {
 
     @GET
     @Path("model2")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModel2(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -590,7 +590,7 @@ class TestEndpoint {
 
     @GET
     @Path("projection1")
-    @ReactiveTransactional
+    @WithTransaction
     fun testProjection(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -635,7 +635,7 @@ class TestEndpoint {
 
     @GET
     @Path("projection2")
-    @ReactiveTransactional
+    @WithTransaction
     fun testProjection2(): Uni<String> {
         val ownerName = "Julie"
         val catName = "Bubulle"
@@ -650,7 +650,7 @@ class TestEndpoint {
                 assertEquals(ownerName, cat?.ownerName)
                 Cat.find(
                         "select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
-                        with("name", catName)
+                        with("name", catName),
                     )
                     .project(CatProjectionBean::class.java)
                     .singleResult()
@@ -670,7 +670,7 @@ class TestEndpoint {
                 // The spaces at the beginning are intentional
                 Cat.find(
                         "   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
-                        with("name", catName)
+                        with("name", catName),
                     )
                     .project(CatProjectionBean::class.java)
             }
@@ -688,7 +688,7 @@ class TestEndpoint {
                 Cat.find(
                         "   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where " +
                             "name = :name group by name  ",
-                        with("name", catName)
+                        with("name", catName),
                     )
                     .project(CatProjectionBean::class.java)
             }
@@ -718,7 +718,7 @@ class TestEndpoint {
 
     @GET
     @Path("model3")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModel3(): Uni<String> {
         return Person.count()
             .flatMap { count ->
@@ -740,7 +740,7 @@ class TestEndpoint {
 
     @GET
     @Path("model-dao")
-    @ReactiveTransactional
+    @WithTransaction
     fun testModelDao(): Uni<String> {
         return personDao
             .findAll()
@@ -878,7 +878,7 @@ class TestEndpoint {
                             personDao.list(
                                 "#Person.getByName",
                                 Sort.by("name"),
-                                with("name", "stef")
+                                with("name", "stef"),
                             )
                         }
                     }
@@ -952,7 +952,7 @@ class TestEndpoint {
                                 assertEquals(1, persons.size)
                                 Person.update(
                                     "#Person.updateNameById",
-                                    with("name", "stef2").and("id", persons[0].id).map()
+                                    with("name", "stef2").and("id", persons[0].id).map(),
                                 )
                             }
                             .flatMap { count ->
@@ -963,7 +963,7 @@ class TestEndpoint {
                                 assertEquals(1, persons.size)
                                 Person.update(
                                     "#Person.updateNameById",
-                                    with("name", "stef3").and("id", persons[0].id)
+                                    with("name", "stef3").and("id", persons[0].id),
                                 )
                             }
                             .flatMap { count ->
@@ -975,7 +975,7 @@ class TestEndpoint {
                                 Person.update(
                                     "#Person.updateNameById.ordinal",
                                     "stef",
-                                    persons[0].id!!
+                                    persons[0].id!!,
                                 )
                             }
                             .flatMap { count ->
@@ -1007,7 +1007,7 @@ class TestEndpoint {
                                     assertEquals(1, persons.size)
                                     Person.delete(
                                         "#Person.deleteById",
-                                        with("id", personToDelete.id).map()
+                                        with("id", personToDelete.id).map(),
                                     )
                                 }
                                 .flatMap { count ->
@@ -1028,7 +1028,7 @@ class TestEndpoint {
                                     assertEquals(1, persons.size)
                                     Person.delete(
                                         "#Person.deleteById",
-                                        with("id", personToDelete.id)
+                                        with("id", personToDelete.id),
                                     )
                                 }
                                 .flatMap { count ->
@@ -1204,7 +1204,7 @@ class TestEndpoint {
 
     @GET
     @Path("testSortByNullPrecedence")
-    @ReactiveTransactional
+    @WithTransaction
     fun testSortByNullPrecedence(): Uni<String> {
         return Person.deleteAll()
             .flatMap {
@@ -1526,14 +1526,14 @@ class TestEndpoint {
             .flatMap {
                 Person.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                    "stefp1"
+                    "stefp1",
                 )
             }
             .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1552,7 +1552,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1569,7 +1569,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "set name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1651,14 +1651,14 @@ class TestEndpoint {
             .flatMap {
                 personDao.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                    "stefp1"
+                    "stefp1",
                 )
             }
             .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1673,14 +1673,14 @@ class TestEndpoint {
             .flatMap {
                 personDao.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                    "stefp1"
+                    "stefp1",
                 )
             }
             .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1697,7 +1697,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "set name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1714,7 +1714,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1744,6 +1744,6 @@ class TestEndpoint {
     enum class PersistTest {
         Iterable,
         Variadic,
-        Stream
+        Stream,
     }
 }

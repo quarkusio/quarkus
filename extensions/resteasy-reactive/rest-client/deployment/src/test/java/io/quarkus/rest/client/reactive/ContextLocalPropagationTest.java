@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -33,11 +34,19 @@ public class ContextLocalPropagationTest {
                     "http://localhost:${quarkus.http.test-port:8081}");
 
     @Test
-    void testQueryParamsWithPrimitiveArrays() {
+    void testClientFilterSeesParentContext() {
         when().get("test/invokeClient")
                 .then()
                 .statusCode(200)
                 .body(is("test/foo/bar"));
+    }
+
+    @Test
+    void testClientUniInheritsParentContext() {
+        when().get("test/client-inherits-context")
+                .then()
+                .statusCode(200)
+                .body(is("test/set-in-parent"));
     }
 
     @Path("test")
@@ -58,9 +67,23 @@ public class ContextLocalPropagationTest {
             return result + "/" + fromRequest.orElse("none") + "/" + fromResponse.orElse("none");
         }
 
+        @Path("client-inherits-context")
+        @GET
+        public Uni<String> clientInheritsContext() {
+            ContextLocals.put("parent-value", "set-in-parent");
+            return client.getUni()
+                    .map(result -> result + "/" + ContextLocals.get("parent-value").orElse("none"));
+        }
+
         @Path("toClient")
         @GET
         public String toClient() {
+            return "test";
+        }
+
+        @Path("toClient2")
+        @GET
+        public String toClient2() {
             return "test";
         }
     }
@@ -74,6 +97,10 @@ public class ContextLocalPropagationTest {
         @GET
         @Path("toClient")
         String get();
+
+        @GET
+        @Path("toClient2")
+        Uni<String> getUni();
     }
 
     public static class RequestFilter implements ClientRequestFilter {

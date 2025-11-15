@@ -30,7 +30,8 @@ public class OidcDevJsonRpcService {
                 props.isIntrospectionIsAvailable(), props.getKeycloakAdminUrl(),
                 props.getKeycloakRealms(), props.isSwaggerIsAvailable(), props.isGraphqlIsAvailable(), props.getSwaggerUiPath(),
                 props.getGraphqlUiPath(),
-                props.isAlwaysLogoutUserInDevUiOnReload(), props.getPropertiesStateId());
+                props.isAlwaysLogoutUserInDevUiOnReload(), props.getPropertiesStateId(),
+                props.getLogoutPath(), props.getReadSessionCookiePath());
     }
 
     public Uni<String> exchangeCodeForTokens(String tokenUrl, String clientId, String clientSecret,

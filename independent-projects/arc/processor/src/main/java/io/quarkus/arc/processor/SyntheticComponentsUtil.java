@@ -1,9 +1,9 @@
 package io.quarkus.arc.processor;
 
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 
 import java.lang.annotation.Annotation;
+import java.lang.constant.ClassDesc;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,11 +13,14 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.Reflection2Gizmo;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 final class SyntheticComponentsUtil {
     private static final String FIELD_NAME_PARAMS = "params";
@@ -25,177 +28,181 @@ final class SyntheticComponentsUtil {
     /**
      * Adds the {@code params} field to given class and adds constructor code to initialize the field.
      *
-     * @param classCreator class to which the {@code params} field will be added
-     * @param constructor constructor in which the {@code params} field will be initialized
+     * @param cc class to which the {@code params} field will be added
+     * @param bc constructor in which the {@code params} field will be initialized
      * @param params the parameter map, will be "copied" to the {@code params} field
      * @param annotationLiterals to allow creating annotation literals
      * @param beanArchiveIndex to find annotation types when generating annotation literal classes
      */
-    static void addParamsFieldAndInit(ClassCreator classCreator, MethodCreator constructor, Map<String, Object> params,
-            AnnotationLiteralProcessor annotationLiterals, IndexView beanArchiveIndex) {
+    static void addParamsFieldAndInit(io.quarkus.gizmo2.creator.ClassCreator cc, BlockCreator bc,
+            Map<String, Object> params, AnnotationLiteralProcessor annotationLiterals, IndexView beanArchiveIndex) {
 
-        FieldCreator field = classCreator.getFieldCreator(FIELD_NAME_PARAMS, Map.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        FieldDesc paramsField = cc.field(FIELD_NAME_PARAMS, fc -> {
+            fc.private_();
+            fc.final_();
+            fc.setType(Map.class);
+        });
 
-        ResultHandle paramsHandle;
+        LocalVar tccl = bc.localVar("tccl", bc.invokeVirtual(MethodDescs.THREAD_GET_TCCL, bc.currentThread()));
+
+        LocalVar paramsVar;
         if (params.isEmpty()) {
-            paramsHandle = constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
+            paramsVar = bc.localVar("params", bc.mapOf());
         } else {
-            paramsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            paramsVar = bc.localVar("params", bc.new_(HashMap.class));
             for (Map.Entry<String, Object> entry : params.entrySet()) {
-                ResultHandle valHandle = null;
-                if (entry.getValue() instanceof Boolean) {
-                    valHandle = constructor.load(((Boolean) entry.getValue()).booleanValue());
-                } else if (entry.getValue() instanceof boolean[]) {
-                    boolean[] array = (boolean[]) entry.getValue();
-                    valHandle = constructor.newArray(boolean.class, array.length);
+                LocalVar value;
+                if (entry.getValue() instanceof Boolean val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof boolean[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(boolean.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Byte) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Byte.class, byte.class),
-                            constructor.load(((Byte) entry.getValue()).byteValue()));
-                } else if (entry.getValue() instanceof byte[]) {
-                    byte[] array = (byte[]) entry.getValue();
-                    valHandle = constructor.newArray(byte.class, array.length);
+                } else if (entry.getValue() instanceof Byte val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof byte[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(byte.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Short) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Short.class, short.class),
-                            constructor.load(((Short) entry.getValue()).shortValue()));
-                } else if (entry.getValue() instanceof short[]) {
-                    short[] array = (short[]) entry.getValue();
-                    valHandle = constructor.newArray(short.class, array.length);
+                } else if (entry.getValue() instanceof Short val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof short[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(short.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Integer) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class),
-                            constructor.load(((Integer) entry.getValue()).intValue()));
-                } else if (entry.getValue() instanceof int[]) {
-                    int[] array = (int[]) entry.getValue();
-                    valHandle = constructor.newArray(int.class, array.length);
+                } else if (entry.getValue() instanceof Integer val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof int[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(int.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Long) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Long.class, long.class),
-                            constructor.load(((Long) entry.getValue()).longValue()));
-                } else if (entry.getValue() instanceof long[]) {
-                    long[] array = (long[]) entry.getValue();
-                    valHandle = constructor.newArray(long.class, array.length);
+                } else if (entry.getValue() instanceof Long val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof long[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(long.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Float) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Float.class, float.class),
-                            constructor.load(((Float) entry.getValue()).floatValue()));
-                } else if (entry.getValue() instanceof float[]) {
-                    float[] array = (float[]) entry.getValue();
-                    valHandle = constructor.newArray(float.class, array.length);
+                } else if (entry.getValue() instanceof Float val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof float[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(float.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Double) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Double.class, double.class),
-                            constructor.load(((Double) entry.getValue()).doubleValue()));
-                } else if (entry.getValue() instanceof double[]) {
-                    double[] array = (double[]) entry.getValue();
-                    valHandle = constructor.newArray(double.class, array.length);
+                } else if (entry.getValue() instanceof Double val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof double[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(double.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Character) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Character.class, char.class),
-                            constructor.load(((Character) entry.getValue()).charValue()));
-                } else if (entry.getValue() instanceof char[]) {
-                    char[] array = (char[]) entry.getValue();
-                    valHandle = constructor.newArray(char.class, array.length);
+                } else if (entry.getValue() instanceof Character val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof char[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(char.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof String) {
-                    valHandle = constructor.load((String) entry.getValue());
-                } else if (entry.getValue() instanceof String[]) {
-                    String[] array = (String[]) entry.getValue();
-                    valHandle = constructor.newArray(String.class, array.length);
+                } else if (entry.getValue() instanceof String val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof String[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(String.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Enum) {
-                    valHandle = constructor.load((Enum<?>) entry.getValue());
-                } else if (entry.getValue() instanceof Enum[]) {
-                    Enum<?>[] array = (Enum<?>[]) entry.getValue();
+                } else if (entry.getValue() instanceof Enum<?> val) {
+                    value = bc.localVar("value", Const.of(val));
+                } else if (entry.getValue() instanceof Enum<?>[] array) {
                     // most commonly, all values in the array are of the same type, in which case we create an array
                     // of that type; otherwise, we create an array of Enum, which is the least upper bound
                     Class<?> arrayElementClass = array.length == 0 ? Enum.class : array[0].getDeclaringClass();
-                    for (Enum<?> value : array) {
-                        if (!arrayElementClass.equals(value.getDeclaringClass())) {
+                    for (Enum<?> enumVal : array) {
+                        if (!arrayElementClass.equals(enumVal.getDeclaringClass())) {
                             arrayElementClass = Enum.class;
                             break;
                         }
                     }
-                    valHandle = constructor.newArray(arrayElementClass, array.length);
+                    value = bc.localVar("value", bc.newEmptyArray(arrayElementClass, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.load(array[i]));
+                        bc.set(value.elem(i), Const.of(array[i]));
                     }
-                } else if (entry.getValue() instanceof Class) {
-                    valHandle = constructor.loadClassFromTCCL((Class<?>) entry.getValue());
-                } else if (entry.getValue() instanceof Class[]) {
-                    Class<?>[] array = (Class<?>[]) entry.getValue();
-                    valHandle = constructor.newArray(Class.class, array.length);
+                } else if (entry.getValue() instanceof Class<?> val) {
+                    value = bc.localVar("value", loadClassFromTCCL(val, tccl, bc));
+                } else if (entry.getValue() instanceof Class<?>[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(Class.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.loadClassFromTCCL(array[i]));
+                        bc.set(value.elem(i), loadClassFromTCCL(array[i], tccl, bc));
                     }
-                } else if (entry.getValue() instanceof ClassInfo) {
-                    valHandle = constructor.loadClassFromTCCL(((ClassInfo) entry.getValue()).name().toString());
-                } else if (entry.getValue() instanceof ClassInfo[]) {
-                    ClassInfo[] array = (ClassInfo[]) entry.getValue();
-                    valHandle = constructor.newArray(Class.class, array.length);
+                } else if (entry.getValue() instanceof ClassInfo val) {
+                    value = bc.localVar("value", loadClassFromTCCL(classDescOf(val), tccl, bc));
+                } else if (entry.getValue() instanceof ClassInfo[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(Class.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i, constructor.loadClassFromTCCL(array[i].name().toString()));
+                        bc.set(value.elem(i), loadClassFromTCCL(classDescOf(array[i]), tccl, bc));
                     }
-                } else if (entry.getValue() instanceof AnnotationInstance) {
-                    AnnotationInstance annotationInstance = (AnnotationInstance) entry.getValue();
-                    ClassInfo annotationClass = beanArchiveIndex.getClassByName(annotationInstance.name());
-                    valHandle = annotationLiterals.create(constructor, annotationClass, annotationInstance);
-                } else if (entry.getValue() instanceof AnnotationInstance[]) {
-                    AnnotationInstance[] array = (AnnotationInstance[]) entry.getValue();
+                } else if (entry.getValue() instanceof AnnotationInstance val) {
+                    ClassInfo annotationClass = beanArchiveIndex.getClassByName(val.name());
+                    value = bc.localVar("value", annotationLiterals.create(bc, annotationClass, val));
+                } else if (entry.getValue() instanceof AnnotationInstance[] array) {
                     // most commonly, all values in the array are of the same type, in which case we create an array
                     // of that type; otherwise, we create an array of Annotation, which is the least upper bound
-                    String arrayElementClass = array.length == 0 ? Annotation.class.getName() : array[0].name().toString();
-                    for (AnnotationInstance value : array) {
-                        if (!arrayElementClass.equals(value.name().toString())) {
-                            arrayElementClass = Annotation.class.getName();
+                    ClassDesc arrayElementClass = array.length == 0
+                            ? ClassDesc.of(Annotation.class.getName())
+                            : classDescOf(array[0].name());
+                    for (AnnotationInstance annVal : array) {
+                        if (!arrayElementClass.equals(classDescOf(annVal.name()))) {
+                            arrayElementClass = ClassDesc.of(Annotation.class.getName());
                             break;
                         }
                     }
-                    valHandle = constructor.newArray(arrayElementClass, array.length);
+
+                    value = bc.localVar("value", bc.newEmptyArray(arrayElementClass, array.length));
                     for (int i = 0; i < array.length; i++) {
                         AnnotationInstance annotationInstance = array[i];
                         ClassInfo annotationClass = beanArchiveIndex.getClassByName(annotationInstance.name());
-                        ResultHandle elementHandle = annotationLiterals.create(constructor, annotationClass,
-                                annotationInstance);
-                        constructor.writeArrayValue(valHandle, i, elementHandle);
+                        bc.set(value.elem(i), annotationLiterals.create(bc, annotationClass, annotationInstance));
                     }
-                } else if (entry.getValue() instanceof InvokerInfo) {
-                    InvokerInfo invoker = (InvokerInfo) entry.getValue();
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(invoker.getClassName()));
-                } else if (entry.getValue() instanceof InvokerInfo[]) {
-                    InvokerInfo[] array = (InvokerInfo[]) entry.getValue();
-                    valHandle = constructor.newArray(Invoker.class, array.length);
+                } else if (entry.getValue() instanceof InvokerInfo val) {
+                    value = bc.localVar("value", bc.new_(val.getClassDesc()));
+                } else if (entry.getValue() instanceof InvokerInfo[] array) {
+                    value = bc.localVar("value", bc.newEmptyArray(Invoker.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        constructor.writeArrayValue(valHandle, i,
-                                constructor.newInstance(MethodDescriptor.ofConstructor(array[i].getClassName())));
+                        bc.set(value.elem(i), bc.new_(array[i].getClassDesc()));
                     }
+                } else {
+                    throw new IllegalArgumentException("Unsupported parameter type: " + entry.getValue());
                 }
 
-                constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, paramsHandle,
-                        constructor.load(entry.getKey()), valHandle);
+                bc.withMap(paramsVar).put(Const.of(entry.getKey()), value);
             }
         }
 
-        constructor.writeInstanceField(field.getFieldDescriptor(), constructor.getThis(), paramsHandle);
+        bc.set(cc.this_().field(paramsField), paramsVar);
+    }
+
+    private static Expr loadClassFromTCCL(Class<?> clazz, Var tccl, BlockCreator bc) {
+        return loadClassFromTCCL(Reflection2Gizmo.classDescOf(clazz), tccl, bc);
+    }
+
+    private static Expr loadClassFromTCCL(ClassDesc clazz, Var tccl, BlockCreator bc) {
+        if (clazz.isPrimitive()) {
+            return Const.of(clazz);
+        }
+
+        String desc = clazz.descriptorString();
+        String className = desc.substring(1, desc.length() - 1).replace('/', '.');
+
+        if (className.startsWith("java.")) {
+            return Const.of(clazz);
+        }
+
+        return bc.invokeStatic(
+                MethodDesc.of(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                Const.of(className), Const.of(false), tccl);
     }
 }

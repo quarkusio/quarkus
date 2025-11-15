@@ -40,10 +40,7 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
     public void dynamicCredentials(RabbitMQRecorder recorder,
             RabbitMQBuildTimeConfig rabbitMQBuildTimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults) {
-
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(Identifier.class).build());
 
         if (rabbitMQBuildTimeConfig.credentialsProvider().isPresent()) {
             String credentialsProvider = rabbitMQBuildTimeConfig.credentialsProvider().get();

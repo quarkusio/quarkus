@@ -75,10 +75,13 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
         String body = extractable.asString();
         assertContainsValue(body, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
         assertContainsValue(body, "part-with-filename", MediaType.TEXT_PLAIN, "filename=\"file.txt\"");
-        assertContainsValue(body, "part-with-filename", MediaType.TEXT_PLAIN, "filename=\"file2.txt\"");
+        assertContainsValue(body, "part-with-filename", MediaType.TEXT_PLAIN, "filename=\"file2.txt\"",
+                "extra-header: extra-value");
         assertContainsValue(body, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
-        assertContainsValue(body, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
-        assertContainsValue(body, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
+        assertContainsValue(body, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS,
+                "extra-header: extra-value");
+        assertContainsValue(body, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE,
+                "extra-header: extra-value");
         assertContainsValue(body, "values", MediaType.TEXT_PLAIN, "[one, two]");
 
         assertThat(extractable.header("Content-Type")).contains("boundary=");
@@ -181,5 +184,13 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
         assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_PART, name))
                 && line.contains(String.format(EXPECTED_CONTENT_TYPE_PART, contentType))
                 && line.contains(value.toString()));
+    }
+
+    private void assertContainsValue(String response, String name, String contentType, Object value, String header) {
+        String[] lines = response.split("--");
+        assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_PART, name))
+                && line.contains(String.format(EXPECTED_CONTENT_TYPE_PART, contentType))
+                && line.contains(value.toString())
+                && line.contains(header));
     }
 }

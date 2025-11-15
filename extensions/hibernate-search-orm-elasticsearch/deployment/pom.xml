@@ -35,7 +35,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+            <artifactId>quarkus-hibernate-search-orm-elasticsearch-dev</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -70,7 +74,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <artifactId>quarkus-devui-test-spi</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -166,6 +170,7 @@
                                             <cluster.deprecation_indexing.enabled>false</cluster.deprecation_indexing.enabled>
                                             <indices.lifecycle.history_index_enabled>false</indices.lifecycle.history_index_enabled>
                                             <slm.history_index_enabled>false</slm.history_index_enabled>
+                                            <ingest.geoip.downloader.enabled>false</ingest.geoip.downloader.enabled>
                                         </env>
                                         <ports>
                                             <port>9200:9200</port>

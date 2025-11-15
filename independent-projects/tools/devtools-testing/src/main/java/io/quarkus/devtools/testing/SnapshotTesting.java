@@ -85,7 +85,8 @@ public class SnapshotTesting {
             final String fileUrlStr = jarUrlStr.substring("jar:".length(),
                     jarUrlStr.length() - ("!/" + SNAPSHOTS_DIR_NAME).length());
             final Path p = Path.of(URI.create(fileUrlStr));
-            return snapshotsBaseRoot = new MultiRootPathTree(PathTree.ofDirectoryOrArchive(p), srcTree);
+            final PathTree jarPathTree = PathTree.ofDirectoryOrArchive(p);
+            return snapshotsBaseRoot = srcTree == null ? jarPathTree : new MultiRootPathTree(jarPathTree, srcTree);
         } else {
             throw new IllegalStateException("Unexpected URL protocol in " + url);
         }

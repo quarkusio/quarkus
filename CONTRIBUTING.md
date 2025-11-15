@@ -7,6 +7,9 @@ fixes, documentation, examples... But first, read this page (including the small
 <!-- toc -->
 
 - [Legal](#legal)
+  * [License](#license)
+  * [Developer Certificate of Origin (DCO)](#developer-certificate-of-origin-dco)
+  * [Compliance with Laws and Regulations](#compliance-with-laws-and-regulations)
 - [Reporting an issue](#reporting-an-issue)
 - [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
   * [Using snapshots](#using-snapshots)
@@ -29,11 +32,15 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Gitpod](#gitpod)
 - [Build](#build)
   * [Workflow tips](#workflow-tips)
+    + [Using mvnd](#using-mvnd)
+    + [Using aliases](#using-aliases)
+      - [Justfile](#justfile)
     + [Building all modules of an extension](#building-all-modules-of-an-extension)
     + [Building a single module of an extension](#building-a-single-module-of-an-extension)
     + [Building with relocations](#building-with-relocations)
     + [Running a single test](#running-a-single-test)
-      - [Maven Invoker tests](#maven-invoker-tests)
+    + [Running integration tests](#running-integration-tests)
+    + [Maven Invoker tests](#maven-invoker-tests)
   * [Build with multiple threads](#build-with-multiple-threads)
   * [Don't build any test modules](#dont-build-any-test-modules)
     + [Automatic incremental build](#automatic-incremental-build)
@@ -46,7 +53,6 @@ fixes, documentation, examples... But first, read this page (including the small
 - [Release your own version](#release-your-own-version)
 - [Documentation](#documentation)
   * [Building the documentation](#building-the-documentation)
-  * [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
 - [Usage](#usage)
     + [With Maven](#with-maven)
     + [With Gradle](#with-gradle)
@@ -56,20 +62,37 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Descriptions](#descriptions)
   * [Update dependencies to extensions](#update-dependencies-to-extensions)
   * [Check security vulnerabilities](#check-security-vulnerabilities)
+  * [External Maven repositories](#external-maven-repositories)
+- [LLM Usage Policy](#llm-usage-policy)
+  * [Acceptable Use of LLMs](#acceptable-use-of-llms)
+  * [Unacceptable Use](#unacceptable-use)
+  * [Consequences](#consequences)
+  * [If in Doubt](#if-in-doubt)
 - [The small print](#the-small-print)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
 <!-- tocstop -->
+
 <small><i><a href='https://github.com/jonschlinkert/markdown-toc'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Legal
+
+### License
 
 All original contributions to Quarkus are licensed under the
 [ASL - Apache License](https://www.apache.org/licenses/LICENSE-2.0), version 2.0 or later, or, if another license is
 specified as governing the file or directory being modified, such other license.
 
+### Developer Certificate of Origin (DCO)
+
 All contributions are subject to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/). The DCO
 text is also included verbatim in the [dco.txt](dco.txt) file in the root directory of the repository.
+
+### Compliance with Laws and Regulations
+
+All contributions must comply with applicable laws and regulations, including U.S. export control and sanctions restrictions.
+For background, see the Linux Foundation’s guidance:
+[Navigating Global Regulations and Open Source: US OFAC Sanctions](https://www.linuxfoundation.org/blog/navigating-global-regulations-and-open-source-us-ofac-sanctions).
 
 ## Reporting an issue
 
@@ -83,7 +106,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on <https://s01.oss.sonatype.org/content/repositories/snapshots>
+* either use the snapshots we publish daily on <https://central.sonatype.com/repository/maven-snapshots>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -93,7 +116,7 @@ the [Build section](#build) and the [Usage section](#usage).
 
 Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add <https://s01.oss.sonatype.org/content/repositories/snapshots> as a Maven repository **and** a plugin
+Then just add <https://central.sonatype.com/repository/maven-snapshots> as a Maven repository **and** a plugin
 repository in your `settings xml` (which should be placed in the `.m2` directory within your home directory):
 
 ```xml
@@ -107,7 +130,7 @@ repository in your `settings xml` (which should be placed in the `.m2` directory
             <repositories>
                 <repository>
                     <id>quarkus-snapshots-repository</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -119,7 +142,7 @@ repository in your `settings xml` (which should be placed in the `.m2` directory
             <pluginRepositories>
                 <pluginRepository>
                     <id>quarkus-snapshots-plugin-repository</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -136,7 +159,7 @@ repository in your `settings xml` (which should be placed in the `.m2` directory
 </settings>
 ```
 
-You can check the last publication date here: <https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/>.
+You can check the last publication date here: <https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/io/quarkus/quarkus-core/999-SNAPSHOT/>.
 
 ### Building main
 
@@ -241,7 +264,7 @@ javadoc...).
 Be sure to test your pull request in:
 
 1. Java mode
-2. Native mode
+2. Native mode (with `-Dnative`)
 
 Also, make sure that any native tests you add will actually get executed on CI.
 In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
@@ -549,7 +572,18 @@ this is by executing the following command:
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
 
-##### Maven Invoker tests
+#### Running integration tests
+
+By default, in the Quarkus codebase, all tests ending in *IT are skipped, even with the verify goal.
+This means most `@QuarkusIntegrationTest` tests in the Quarkus codebase only run when `-Dnative` is added to the command line.
+Even using the `verify` goal and adding `-DskipITs=false` is not enough to run these tests.
+Only `-Dnative` will trigger them.
+Note that this is a behaviour difference to what's [documented externally](https://quarkus.io/guides/getting-started-testing#quarkus-integration-test).
+
+Why the different behaviour? Quarkus builds are _long_, and running every integration test twice would make them even longer.
+In most cases, coverage in the native build is sufficient.
+
+#### Maven Invoker tests
 
 For testing some scenarios, Quarkus uses the [Maven Invoker](https://maven.apache.org/shared/maven-invoker/) to run
 tests. For these cases, to run a single test, one needs to use the `invoker.test` property along with the name of the
@@ -820,6 +854,13 @@ repositories {
 }
 ```
 
+**Note**  Use the following definition in `repositories` section when using daily snapshot builds instead of local builds:
+```gradle
+    maven {
+        url 'https://central.sonatype.com/repository/maven-snapshots/'
+    }
+```
+
 ### MicroProfile TCK's
 
 Quarkus has a TCK module in `tcks` where all the MicroProfile TCK's are set up for you to run if you wish. These include
@@ -888,6 +929,54 @@ long as the extension artifact is still present in your local Maven repository.
 When adding a new extension or updating the dependencies of an existing one,
 it is recommended to run in the extension directory the [OWASP Dependency Check](https://jeremylong.github.io/DependencyCheck) with `mvn -Dowasp-check`
 so that known security vulnerabilities in the extension dependencies can be detected early.
+
+### External Maven repositories
+
+The Quarkus Platform build is using the `--ignore-transitive-repositories` option from Maven.
+It ignores remote repositories introduced by transitive dependencies.
+
+This option is used to make sure we know when one of our dependencies relies on a repository that is not Maven Central.
+
+When a dependency relies on an external repository that is not Maven Central, we have to be extra careful:
+
+- First discuss it with the Quarkus Core team as it is something we want to avoid
+- If everyone agrees it is something we should allow in this specific case:
+  - Add the repository to the Quarkus module requiring the external repository (for instance, a specific extension runtime module) - don't add it to the root `pom.xml`
+  - Make sure you declare Maven Central first in the added `<repositories>` element so that we only download dependencies that are not in Maven Central from the external repository - see existing examples in the code base
+  - Add a `.mvn/rrf/groupId-<REPOSITORY-ID>.txt` file containing the list of authorized ``groupIds`` for this repository (one per line) - see existing examples in the code base
+  - Make sure you can fully run the build with an empty Maven local repository using `./mvnw -Dquickly -Dmaven.repo.local=/tmp/my-temp-local-repository`
+
+## LLM Usage Policy
+
+At Quarkus, we welcome tools that help developers become more productive — including Large Language Models (LLMs) and Agents like ChatGPT, GitHub Copilot, and others.
+
+However, recent patterns of use have led to increased moderation burden, low-value contributions, and reduced community signal. To ensure a healthy and productive community, the following expectations apply:
+
+### Acceptable Use of LLMs
+
+- LLMs may be used to **assist your development** — e.g. drafting code, writing documentation, proposing fixes — as long as **you understand, validate**, and **take responsibility for the results.**
+- You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an Agent/LLM "spit out."
+- You may use Agents/LLMs to help you **write better**, but not to **post more**.
+
+### Unacceptable Use
+
+- Submitting code, tests, comments, or issues that appear to be **copied directly from an LLM with little or no human oversight** is **not acceptable**.
+- Posting **large volumes of low-effort suggestions, vague issues, or links with no context** — even if technically accurate — is considered spam.
+- Submitting **AI-generated tests that do not validate actual behavior** or meaningfully cover functionality is not helpful and will be rejected.
+- Using bots, agents, or automated tools to open PRs, file issues, or post content **without human authorship and responsibility** is not allowed.
+
+### Consequences
+
+- We may close issues, PRs, or discussions that violate this policy without detailed explanation.
+- Repeated violations may result in temporary or permanent restrictions from participating in the project.
+
+### If in Doubt
+
+If you're unsure whether your use of Agent/LLMs is acceptable — ask! We're happy to help contributors learn how to use AI tools effectively **without creating noise**.
+
+> This isn’t about banning AI — it’s about keeping Quarkus collaborative, human-driven, and focused on quality.
+
+
 
 ## The small print
 

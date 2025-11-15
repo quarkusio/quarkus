@@ -15,20 +15,19 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.virtual.threads.VirtualThreads;
-import io.quarkus.virtual.threads.VirtualThreadsConfig;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 
 public class VirtualThreadsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void setup(VirtualThreadsConfig config, VirtualThreadsRecorder recorder,
+    public void setup(VirtualThreadsRecorder recorder,
             ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<SyntheticBeanBuildItem> producer) {
         beans.produce(new AdditionalBeanBuildItem(VirtualThreads.class));
-        recorder.setupVirtualThreads(config, shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
+        recorder.setupVirtualThreads(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
         producer.produce(
                 SyntheticBeanBuildItem.configure(ExecutorService.class)
                         .addType(Executor.class)
@@ -38,5 +37,4 @@ public class VirtualThreadsProcessor {
                         .supplier(recorder.getCurrentSupplier())
                         .done());
     }
-
 }

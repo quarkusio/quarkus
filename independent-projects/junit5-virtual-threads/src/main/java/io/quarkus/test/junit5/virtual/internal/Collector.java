@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.smallrye.common.annotation.SuppressForbidden;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordingStream;
 
@@ -38,6 +39,7 @@ public class Collector implements Consumer<RecordedEvent> {
         recordingStream.onEvent(this);
     }
 
+    @SuppressForbidden(reason = "java.util.logging is authorized here")
     public void init() {
         long begin = System.nanoTime();
         CountDownLatch latch = new CountDownLatch(1);
@@ -65,6 +67,7 @@ public class Collector implements Consumer<RecordedEvent> {
         }
     }
 
+    @SuppressForbidden(reason = "java.util.logging is authorized here")
     public void start() {
         CountDownLatch latch = new CountDownLatch(1);
         String id = UUID.randomUUID().toString();
@@ -95,6 +98,7 @@ public class Collector implements Consumer<RecordedEvent> {
         }
     }
 
+    @SuppressForbidden(reason = "java.util.logging is authorized here")
     public List<RecordedEvent> stop() {
         CountDownLatch latch = new CountDownLatch(1);
         String id = UUID.randomUUID().toString();
@@ -123,6 +127,7 @@ public class Collector implements Consumer<RecordedEvent> {
         }
     }
 
+    @SuppressForbidden(reason = "java.util.logging is authorized here")
     public void shutdown() {
         CountDownLatch latch = new CountDownLatch(1);
         var begin = System.nanoTime();

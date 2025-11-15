@@ -139,7 +139,7 @@ public class SetSectionHelper implements SectionHelper {
 
         @Override
         public Scope initializeBlock(Scope previousScope, BlockInfo block) {
-            if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
+            if (block.isMainBlock()) {
                 Scope newScope = new Scope(previousScope);
                 for (Entry<String, String> e : block.getParameters().entrySet()) {
                     String key = e.getKey();

@@ -37,7 +37,6 @@ import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.util.JavaVersionUtil;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class QuarkusAugmentor {
@@ -91,7 +90,7 @@ public class QuarkusAugmentor {
     }
 
     public BuildResult run() throws Exception {
-        if (!JavaVersionUtil.isJava17OrHigher()) {
+        if (!(Runtime.version().major() >= 17)) {
             throw new IllegalStateException("Quarkus applications require Java 17 or higher to build");
         }
         long start = System.nanoTime();
@@ -161,7 +160,7 @@ public class QuarkusAugmentor {
             BuildResult buildResult = execBuilder.execute();
             String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
                     + "ms";
-            if (launchMode == LaunchMode.NORMAL) {
+            if (launchMode.isProduction()) {
                 log.info(message);
                 if (Boolean.parseBoolean(System.getProperty("quarkus.debug.dump-build-metrics"))) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
@@ -171,7 +170,7 @@ public class QuarkusAugmentor {
                 log.debug(message);
 
                 // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container permissions)
-                if ((launchMode == LaunchMode.DEVELOPMENT) && !LaunchMode.isRemoteDev()) {
+                if (launchMode.isDev() && !launchMode.isRemoteDev()) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
                 }
             }

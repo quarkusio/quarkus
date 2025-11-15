@@ -4,7 +4,6 @@ import static io.quarkus.deployment.util.AsmUtil.getLoadOpcode;
 import static io.quarkus.deployment.util.AsmUtil.unboxIfRequired;
 import static io.quarkus.gizmo.Gizmo.ASM_API_VERSION;
 import static io.quarkus.panache.common.deployment.PanacheConstants.DOTNAME_GENERATE_BRIDGE;
-import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ARRAYLENGTH;
@@ -25,10 +24,11 @@ import static org.objectweb.asm.Type.getType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -52,6 +52,7 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * kotlinc compiles default methods in to the implementing classes, so we need to elide them first, and then we can
@@ -67,10 +68,11 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     protected final Function<String, Type> argMapper;
     protected final ClassInfo classInfo;
     protected final ByteCodeType entityUpperBound;
+    // These are type arguments to the Panache base entity/repo, not to the current or intermediate type
     protected final Map<String, ByteCodeType> typeArguments = new HashMap<>();
     private final ByteCodeType baseType;
-    private final Map<String, MethodInfo> definedMethods = new TreeMap<>();
-
+    private final Set<String> userMethods = new HashSet<>();
+    private final Set<String> baseTypeMethods = new HashSet<>();
     private final Map<String, String> erasures = new HashMap<>();
     private final IndexView indexView;
     protected List<PanacheMethodCustomizer> methodCustomizers;
@@ -100,10 +102,20 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                     ? byteCodeType.get()
                     : null;
         };
+        loadBaseTypeMethods();
+    }
 
-        collectMethods(classInfo);
-        filterNonOverrides();
-
+    /**
+     * This loads the signatures of every base type method that requires a bridge
+     */
+    private void loadBaseTypeMethods() {
+        for (MethodInfo method : indexView.getClassByName(baseType.dotName()).methods()) {
+            String descriptor = method.descriptor(type -> typeArguments.getOrDefault(type, OBJECT).get());
+            AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
+            if (bridge != null) {
+                baseTypeMethods.add(method.name() + "/" + descriptor);
+            }
+        }
     }
 
     public static List<ByteCodeType> recursivelyFindEntityTypeArguments(IndexView indexView, DotName clazz,
@@ -216,27 +228,6 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         }
     }
 
-    private void collectMethods(ClassInfo classInfo) {
-        if (classInfo != null && !classInfo.name().equals(baseType.dotName())) {
-            classInfo.methods()
-                    .forEach(method -> {
-                        String descriptor = method.descriptor(m -> {
-                            ByteCodeType byteCodeType = typeArguments.get(m);
-                            return byteCodeType != null ? byteCodeType.get() : OBJECT.get();
-                        });
-                        MethodInfo prior = definedMethods.put(method.name() + descriptor, method);
-                        if (prior != null && !isBridgeMethod(method)) {
-                            throw new IllegalStateException(format("Should not run in to duplicate " +
-                                    "mappings: \n\t%s\n\t%s\n\t%s", method, descriptor, prior));
-                        }
-                    });
-            DotName superName = classInfo.superName();
-            if (superName != null) {
-                collectMethods(indexView.getClassByName(superName));
-            }
-        }
-    }
-
     private String desc(String name) {
         String s = name.replace(".", "/");
         return s.startsWith("[") ? s : "L" + s + ";";
@@ -280,6 +271,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 "(Ljava/lang/Object;Ljava/lang/String;)V", false);
     }
 
+    @SuppressForbidden(reason = "Using Type#toString() is what we want here")
     private void emitNullCheck(MethodVisitor mv, Type returnType) {
         Label label = addLabel();
         mv.visitInsn(DUP);
@@ -309,16 +301,6 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     private Label endLabel() {
         return labels.get(labels.size() - 1);
-    }
-
-    private void filterNonOverrides() {
-        new ArrayList<>(definedMethods.values())
-                .forEach(method -> {
-                    AnnotationInstance generateBridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
-                    if (generateBridge != null) {
-                        definedMethods.remove(method.name() + method.descriptor());
-                    }
-                });
     }
 
     private void generate(MethodInfo method) {
@@ -458,10 +440,6 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         mv.visitInsn(AsmUtil.getReturnInstruction(returnType));
     }
 
-    private boolean isBridgeMethod(MethodInfo method) {
-        return (method.flags() & ACC_BRIDGE) != ACC_BRIDGE;
-    }
-
     private org.objectweb.asm.Type asmType(Type methodParameter) {
         org.objectweb.asm.Type parameter;
         if (methodParameter.kind() == Type.Kind.TYPE_VARIABLE) {
@@ -529,23 +507,15 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
             String[] exceptions) {
-
-        MethodInfo methodInfo = definedMethods.entrySet().stream()
-                .filter(e -> e.getKey().equals(name + descriptor))
-                .map(e -> e.getValue())
-                .findFirst()
-                .orElse(null);
-        if (methodInfo != null && !methodInfo.hasAnnotation(DOTNAME_GENERATE_BRIDGE)) {
-            return super.visitMethod(access, name, descriptor, signature, exceptions);
-        } else if (name.contains("$")) {
-            //some agents such as jacoco add new methods, they generally have $ in the name
-            return super.visitMethod(access, name, descriptor, signature, exceptions);
-        } else if (name.equals(CTOR_METHOD_NAME) || name.equals(CLINIT_METHOD_NAME)) {
-            //Arc can add no-args constructors to support intercepted beans
-            // Logging with Panache can add a class initializer
-            return super.visitMethod(access, name, descriptor, signature, exceptions);
+        // Kotlinc or something will add bridge methods for the base type methods, these are not user methods
+        // so we filter them out since we add them back in visitEnd()
+        String sig = name + "/" + descriptor;
+        if ((access & Opcodes.ACC_BRIDGE) != 0
+                && baseTypeMethods.contains(sig)) {
+            return null;
         }
-        return null;
+        userMethods.add(sig);
+        return super.visitMethod(access, name, descriptor, signature, exceptions);
     }
 
     @Override
@@ -553,14 +523,14 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         for (MethodInfo method : indexView.getClassByName(baseType.dotName()).methods()) {
             String descriptor = method.descriptor(type -> typeArguments.getOrDefault(type, OBJECT).get());
             AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
-            if (!definedMethods.containsKey(method.name() + descriptor) && bridge != null) {
+            if (!userMethods.contains(method.name() + "/" + descriptor) && bridge != null) {
                 generate(method);
                 if (needsJvmBridge(method)) {
                     String bridgeDescriptor = bridgeMethodDescriptor(method, type -> {
                         ByteCodeType mapped = typeArguments.get(type);
                         return mapped != null ? mapped.get() : null;
                     });
-                    if (!definedMethods.containsKey(method.name() + bridgeDescriptor)) {
+                    if (!userMethods.contains(method.name() + "/" + bridgeDescriptor)) {
                         generateBridge(method, bridgeDescriptor);
                     }
 

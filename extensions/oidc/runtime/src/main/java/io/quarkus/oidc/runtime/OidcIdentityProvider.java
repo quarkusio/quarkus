@@ -6,7 +6,6 @@ import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutin
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -463,7 +462,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     String errorMessage = "Token and UserInfo do not have matching `sub` claims";
                     return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
                 }
-
+                final String principalClaim = resolvedContext.oidcConfig().token().principalClaim().orElse(null);
+                if (principalClaim != null && !tokenJson.containsKey(principalClaim) && userInfo != null
+                        && userInfo.contains(principalClaim)) {
+                    tokenJson.put(principalClaim, userInfo.getString(principalClaim));
+                }
                 JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
                         userInfo);
                 SecurityIdentity securityIdentity = validateAndCreateIdentity(requestData, tokenCred,
@@ -512,12 +515,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     principalName = result.introspectionResult.getSubject();
                 }
                 userName = principalName != null ? principalName : "";
-
-                Set<String> scopes = result.introspectionResult.getScopes();
-                if (scopes != null) {
-                    builder.addRoles(scopes);
-                    OidcUtils.addTokenScopesAsPermissions(builder, scopes);
-                }
+                OidcUtils.setIntrospectionScopes(builder, result.introspectionResult);
             }
             builder.setPrincipal(new Principal() {
                 @Override

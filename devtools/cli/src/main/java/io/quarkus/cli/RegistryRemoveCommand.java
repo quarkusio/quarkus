@@ -10,7 +10,7 @@ import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistryConfig;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "remove", header = "Remove a Quarkus extension registry", description = "%n"
+@CommandLine.Command(name = "remove", aliases = "rm", header = "Remove a Quarkus extension registry", description = "%n"
         + "This command will remove a Quarkus extension registry from the registry client configuration.")
 public class RegistryRemoveCommand extends BaseRegistryCommand {
 

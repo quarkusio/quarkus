@@ -38,7 +38,6 @@ import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -56,9 +55,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.pg.client.PgPoolCreator;
-import io.quarkus.reactive.pg.client.runtime.DataSourcesReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.reactive.pg.client.runtime.PgPoolSupport;
 import io.quarkus.reactive.pg.client.runtime.PostgreSQLServiceBindingConverter;
@@ -66,6 +63,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
+import io.vertx.pgclient.spi.PgDriver;
 import io.vertx.sqlclient.Pool;
 
 class ReactivePgClientProcessor {
@@ -99,10 +97,8 @@ class ReactivePgClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
@@ -116,8 +112,7 @@ class ReactivePgClientProcessor {
                 continue;
             }
 
-            createPool(recorder, vertx, eventLoopCount, shutdown, pgPool, syntheticBeans, dataSourceName,
-                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig);
+            createPool(recorder, vertx, eventLoopCount, shutdown, pgPool, syntheticBeans, dataSourceName);
 
             pgPoolNamesBuilder.add(dataSourceName);
         }
@@ -193,6 +188,11 @@ class ReactivePgClientProcessor {
     }
 
     @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", PgDriver.class.getName()));
+    }
+
+    @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
@@ -209,18 +209,10 @@ class ReactivePgClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<PgPoolBuildItem> pgPool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig) {
+            String dataSourceName) {
 
         Function<SyntheticCreationalContext<PgPool>, PgPool> poolFunction = recorder.configurePgPool(vertx.getVertx(),
-                eventLoopCount.getEventLoopCount(),
-                dataSourceName,
-                dataSourcesRuntimeConfig,
-                dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactivePostgreSQLConfig,
-                shutdown);
+                eventLoopCount.getEventLoopCount(), dataSourceName, shutdown);
         pgPool.produce(new PgPoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator pgPoolBeanConfigurator = SyntheticBeanBuildItem.configure(PgPool.class)

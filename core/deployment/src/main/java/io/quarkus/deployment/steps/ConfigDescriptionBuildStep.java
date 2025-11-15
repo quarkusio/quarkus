@@ -6,7 +6,6 @@ import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -15,17 +14,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.logging.Level;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
-import io.quarkus.deployment.configuration.matching.ConfigPatternMap;
-import io.quarkus.deployment.configuration.matching.Container;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.config.ConfigMappingInterface.LeafProperty;
@@ -48,73 +41,10 @@ public class ConfigDescriptionBuildStep {
             }
         });
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
-        processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc, BUILD_TIME);
-        processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc, BUILD_AND_RUN_TIME_FIXED);
-        processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc, RUN_TIME);
         processMappings(config.getReadResult().getBuildTimeMappings(), ret, javadoc, BUILD_TIME);
         processMappings(config.getReadResult().getBuildTimeRunTimeMappings(), ret, javadoc, BUILD_AND_RUN_TIME_FIXED);
         processMappings(config.getReadResult().getRunTimeMappings(), ret, javadoc, RUN_TIME);
         return ret;
-    }
-
-    private void processConfig(ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret, Properties javadoc,
-            ConfigPhase configPhase) {
-        for (String childName : patterns.childNames()) {
-            ConfigPatternMap<Container> child = patterns.getChild(childName);
-            processConfigChild(childName, child, ret, javadoc, configPhase);
-        }
-    }
-
-    private void processConfigChild(String name, ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret,
-            Properties javadoc, ConfigPhase configPhase) {
-
-        Iterable<String> childNames = patterns.childNames();
-        if (childNames.iterator().hasNext()) {
-            for (String childName : childNames) {
-                ConfigPatternMap<Container> child = patterns.getChild(childName);
-                processConfigChild(name + "." + childName, child, ret, javadoc, configPhase);
-            }
-        } else {
-            patterns.forEach(new Consumer<Container>() {
-                @Override
-                public void accept(Container node) {
-                    Field field = node.findField();
-                    ConfigItem configItem = field.getAnnotation(ConfigItem.class);
-                    final ConfigProperty configProperty = field.getAnnotation(ConfigProperty.class);
-                    String defaultDefault;
-                    final Class<?> valueClass = field.getType();
-
-                    EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(valueClass, field.getGenericType());
-
-                    if (valueClass == boolean.class) {
-                        defaultDefault = "false";
-                    } else if (valueClass.isPrimitive() && valueClass != char.class) {
-                        defaultDefault = "0";
-                    } else {
-                        defaultDefault = null;
-                    }
-                    String defVal = defaultDefault;
-                    if (configItem != null) {
-                        final String itemDefVal = configItem.defaultValue();
-                        if (!itemDefVal.equals(ConfigItem.NO_DEFAULT)) {
-                            defVal = itemDefVal;
-                        }
-                    } else if (configProperty != null) {
-                        final String propDefVal = configProperty.defaultValue();
-                        if (!propDefVal.equals(ConfigProperty.UNCONFIGURED_VALUE)) {
-                            defVal = propDefVal;
-                        }
-                    }
-                    String javadocKey = field.getDeclaringClass().getName().replace('$', '.') + '.' + field.getName();
-                    ret.add(new ConfigDescriptionBuildItem(name,
-                            defVal,
-                            javadoc.getProperty(javadocKey),
-                            effectiveConfigTypeAndValues.typeName(),
-                            effectiveConfigTypeAndValues.allowedValues(),
-                            configPhase));
-                }
-            });
-        }
     }
 
     private void processMappings(List<ConfigClass> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
@@ -127,8 +57,7 @@ public class ConfigDescriptionBuildStep {
                 Method method = property.getMethod();
 
                 String defaultValue = null;
-                if (property instanceof PrimitiveProperty) {
-                    PrimitiveProperty primitiveProperty = (PrimitiveProperty) property;
+                if (property instanceof PrimitiveProperty primitiveProperty) {
                     if (primitiveProperty.hasDefaultValue()) {
                         defaultValue = primitiveProperty.getDefaultValue();
                     } else if (primitiveProperty.getPrimitiveType() == boolean.class) {
@@ -136,8 +65,7 @@ public class ConfigDescriptionBuildStep {
                     } else if (primitiveProperty.getPrimitiveType() != char.class) {
                         defaultValue = "0";
                     }
-                } else if (property instanceof LeafProperty) {
-                    LeafProperty leafProperty = (LeafProperty) property;
+                } else if (property instanceof LeafProperty leafProperty) {
                     if (leafProperty.hasDefaultValue()) {
                         defaultValue = leafProperty.getDefaultValue();
                     }

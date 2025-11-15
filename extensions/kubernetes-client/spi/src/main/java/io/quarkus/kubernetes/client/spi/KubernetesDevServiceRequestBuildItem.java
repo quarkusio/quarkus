@@ -6,7 +6,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * BuildItem managing the Kubernetes DevService Request information for the extension consuming it
  */
 public final class KubernetesDevServiceRequestBuildItem extends SimpleBuildItem {
-    private String flavor;
+    private final String flavor;
 
     public KubernetesDevServiceRequestBuildItem(String flavor) {
         this.flavor = flavor;

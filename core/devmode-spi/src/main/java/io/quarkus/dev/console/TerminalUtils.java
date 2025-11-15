@@ -1,8 +1,8 @@
 package io.quarkus.dev.console;
 
 import java.io.Console;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.jboss.logging.Logger;
 
 public class TerminalUtils {
 
@@ -20,7 +20,7 @@ public class TerminalUtils {
         try {
             return (boolean) Console.class.getMethod("isTerminal").invoke(console);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to invoke System.console().isTerminal() via Reflection API", e);
+            LOGGER.error("Failed to invoke System.console().isTerminal() via Reflection API", e);
             return false;
         }
     }

@@ -59,7 +59,8 @@ public abstract class AbstractRedisTokenStateManagerTest {
 
             textPage = loginForm.getButtonByName("login").click();
 
-            assertEquals("alice, access token: true, access_token_expires_in: true, refresh_token: true",
+            assertEquals(
+                    "alice, access token: true, access_token_expires_in: true, access_token_scope: true, refresh_token: true",
                     textPage.getContent());
 
             assertTokenStateCount(1);

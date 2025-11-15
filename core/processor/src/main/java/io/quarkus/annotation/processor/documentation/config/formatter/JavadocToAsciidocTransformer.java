@@ -105,8 +105,7 @@ public final class JavadocToAsciidocTransformer {
         Map<Integer, String> inlineTagsReplacements = new TreeMap<>();
 
         for (JavadocDescriptionElement javadocDescriptionElement : parsedJavadoc.getDescription().getElements()) {
-            if (javadocDescriptionElement instanceof JavadocInlineTag) {
-                JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
+            if (javadocDescriptionElement instanceof JavadocInlineTag inlineTag) {
                 String content = inlineTag.getContent().trim();
                 switch (inlineTag.getType()) {
                     case CODE:

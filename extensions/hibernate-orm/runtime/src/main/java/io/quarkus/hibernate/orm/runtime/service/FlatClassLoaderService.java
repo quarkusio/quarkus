@@ -93,8 +93,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public <T> T generateProxy(InvocationHandler handler, Class... interfaces) {
+    public <T> T generateProxy(InvocationHandler handler, Class<?>... interfaces) {
         throw new AssertionFailure("Not implemented! generateProxy(InvocationHandler handler, Class... interfaces)");
     }
 

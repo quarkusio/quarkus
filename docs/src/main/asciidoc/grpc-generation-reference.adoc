@@ -348,6 +348,8 @@ The next table lists the different variants of the `protoc` and plugin artifacts
 
 Because of the packaging of `protoc` and the plugin (using classifier), it's not possible to exclude undesired platforms individually.
 
+WARNING: When using https://en.wikipedia.org/wiki/AArch64[AArch64] on macOS be aware of this https://github.com/grpc/grpc-java/issues/11844[issue]: meaning that the macOS https://en.wikipedia.org/wiki/X86[x86_64] protoc and macOS aarch_64 protoc are the `same` - both are macOS x86_64. So you need to enable https://en.wikipedia.org/wiki/Rosetta_(software)[Rosetta] (`softwareupdate --install-rosetta`) on your ARM based macOS if you want to generate protobuf classes.
+
 You can, however, exclude the `protoc` dependency altogether and use the `quarkus.grpc.protoc-path` system property to configure the path to the `protoc` executable installed on your machine.
 Thus, you don't need to download any `protoc` variants:
 

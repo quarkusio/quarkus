@@ -23,7 +23,7 @@ public class ComposeLocator {
 
     public static Optional<ContainerAddress> locateContainer(DevServicesComposeProjectBuildItem composeProject,
             List<String> images, int port, LaunchMode launchMode, boolean useSharedNetwork) {
-        if (launchMode != LaunchMode.NORMAL) {
+        if (launchMode.isDevServicesSupported()) {
             return composeProject.locate(images, port)
                     .map(runningContainer -> {
                         String serviceName = getServiceName(runningContainer);
@@ -48,7 +48,7 @@ public class ComposeLocator {
 
     public static List<RunningContainer> locateContainer(DevServicesComposeProjectBuildItem composeProject,
             List<String> images, LaunchMode launchMode) {
-        if (launchMode != LaunchMode.NORMAL) {
+        if (launchMode.isDevServicesSupported()) {
             return composeProject.locate(images);
         }
         return Collections.emptyList();

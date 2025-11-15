@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.banner.BannerConfig;
 import io.quarkus.builder.BuildResult;
+import io.quarkus.deployment.dev.testing.TestConfig.Mode;
 import io.quarkus.deployment.steps.BannerProcessor;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.runtime.BannerRecorder;
@@ -33,6 +34,9 @@ public class TestHandler implements BiConsumer<Object, BuildResult> {
                                 return config.getOptionalValue("quarkus.banner.enabled", Boolean.class).orElse(true);
                             }
                         })), banner).getBannerSupplier());
-        Logger.getLogger("io.quarkus.test").info("Quarkus continuous testing mode started");
+        if (!config.getOptionalValue("quarkus.test.continuous-testing", Mode.class).orElse(Mode.PAUSED)
+                .equals(Mode.DISABLED)) {
+            Logger.getLogger("io.quarkus.test").info("Quarkus continuous testing mode started");
+        }
     }
 }

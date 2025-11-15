@@ -24,6 +24,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterUtil;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
+import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -107,26 +108,34 @@ public final class VertxGrpcSender implements GrpcSender {
     }
 
     @Override
+    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     public CompletableResultCode shutdown() {
         if (!isShutdown.compareAndSet(false, true)) {
             logger.log(Level.FINE, "Calling shutdown() multiple times.");
             return shutdownResult;
         }
 
-        client.close()
-                .onSuccess(
-                        new Handler<>() {
-                            @Override
-                            public void handle(Void event) {
-                                shutdownResult.succeed();
-                            }
-                        })
-                .onFailure(new Handler<>() {
-                    @Override
-                    public void handle(Throwable event) {
-                        shutdownResult.fail();
-                    }
-                });
+        try {
+            client.close()
+                    .onSuccess(
+                            new Handler<>() {
+                                @Override
+                                public void handle(Void event) {
+                                    shutdownResult.succeed();
+                                }
+                            })
+                    .onFailure(new Handler<>() {
+                        @Override
+                        public void handle(Throwable event) {
+                            shutdownResult.fail();
+                        }
+                    });
+        } catch (RejectedExecutionException e) {
+            internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
+            // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
+            // which we need to handle
+            shutdownResult.fail();
+        }
         return shutdownResult;
     }
 
@@ -169,10 +178,11 @@ public final class VertxGrpcSender implements GrpcSender {
                         }, onFailureCallback);
     }
 
+    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
         String message = "Failed to export "
                 + type
-                + "s. The request could not be executed. Full error message: "
+                + ". The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
         logger.log(Level.WARNING, message);
         onError.accept(t);
@@ -339,6 +349,7 @@ public final class VertxGrpcSender implements GrpcSender {
                         }
                     }
 
+                    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
                     private void logUnimplemented(Logger logger, String type, String fullErrorMessage) {
                         String envVar;
                         switch (type) {

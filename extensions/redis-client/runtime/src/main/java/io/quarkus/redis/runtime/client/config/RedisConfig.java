@@ -11,10 +11,9 @@ import io.smallrye.config.WithParentName;
 @ConfigMapping(prefix = "quarkus.redis")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface RedisConfig {
-
-    public final static String REDIS_CONFIG_ROOT_NAME = "redis";
-    public final static String HOSTS_CONFIG_NAME = "hosts";
-    public static final String DEFAULT_CLIENT_NAME = "<default>";
+    String REDIS_CONFIG_ROOT_NAME = "redis";
+    String HOSTS_CONFIG_NAME = "hosts";
+    String DEFAULT_CLIENT_NAME = "<default>";
 
     /**
      * The default redis client

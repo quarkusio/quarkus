@@ -127,7 +127,7 @@ quarkus.datasource.password = connor
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation = drop-and-create
+quarkus.hibernate-orm.schema-management.strategy = drop-and-create
 ----
 
 == Solution 1: using the active record pattern
@@ -222,6 +222,9 @@ List<Person> allPersons = Person.listAll();
 
 // finding a specific person by ID
 person = Person.findById(personId);
+
+// finding specific persons by their IDs
+List<Person> personsById = Person.findByIds(List.of(personId1, personId2));
 
 // finding a specific person by ID via an Optional
 Optional<Person> optional = Person.findByIdOptional(personId);
@@ -440,6 +443,9 @@ List<Person> allPersons = personRepository.listAll();
 
 // finding a specific person by ID
 person = personRepository.findById(personId);
+
+// finding specific persons by their IDs
+List<Person> personsById = personRepository.findByIds(List.of(personId1, personId2);
 
 // finding a specific person by ID via an Optional
 Optional<Person> optional = personRepository.findByIdOptional(personId);
@@ -978,6 +984,47 @@ PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.we
 ----
 ====
 
+If you need to have multiple constructors in your DTO, you must annotate the constructor intended to generate a SELECT clause with @ProjectedConstructor:
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
+
+@RegisterForReflection
+public class PersonName {
+    public final String name;
+
+    @ProjectedConstructor // <1>
+    public PersonName(String name) {
+        this.name = name;
+    }
+
+    public PersonName(String name, String otherField) {
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+<1> This will use your annotated constructor to create the query. (`select new PersonName(name) from ...`)
+
+[WARNING]
+====
+If a DTO used in a projection has multiple constructors and is not properly annotated, it may lead to *unexpected behavior*.
+
+The constructor resolution process follows this order:
+
+1. Look for a constructor annotated with `@ProjectedConstructor`
+This is the most explicit and preferred way to indicate which constructor should be used.
+2. Look for parameters annotated with `@ProjectedFieldName`
+3. Use the first non-parameterless constructor
+If no annotations are found.
+4. Fallback to the first constructor it finds, this could lead to multiple problems or inconsistencies.
+====
+
 == Multiple Persistence Units
 
 The support for multiple persistence units is described in detail in xref:hibernate-orm.adoc#multiple-persistence-units[the Hibernate ORM guide].
@@ -1117,6 +1164,7 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 
 == Mocking
 
+[[mocking_active_record]]
 === Using the active record pattern
 
 If you are using the active record pattern you cannot use Mockito directly as it does not support mocking static methods,

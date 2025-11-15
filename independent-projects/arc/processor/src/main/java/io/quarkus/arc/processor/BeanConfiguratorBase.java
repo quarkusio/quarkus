@@ -31,10 +31,11 @@ import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  * This construct is not thread-safe.
@@ -52,8 +53,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected Boolean alternative;
     protected final List<StereotypeInfo> stereotypes;
     protected String name;
-    protected Consumer<MethodCreator> creatorConsumer;
-    protected Consumer<MethodCreator> destroyerConsumer;
+    protected Consumer<CreateGeneration> creatorConsumer;
+    protected Consumer<DestroyGeneration> destroyerConsumer;
     protected boolean defaultBean;
     protected boolean removable;
     protected Type providerType;
@@ -63,7 +64,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected final Set<TypeAndQualifiers> injectionPoints;
     protected Integer startupPriority;
     protected InterceptionProxyInfo interceptionProxy;
-    protected Consumer<MethodCreator> checkActiveConsumer;
+    protected Consumer<CheckActiveGeneration> checkActiveConsumer;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -345,6 +346,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     /**
      * Initialize the bean eagerly at application startup.
      * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
      * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
      * any always active bean, eager initialization is skipped to prevent needless failures.
      *
@@ -353,11 +356,13 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      */
     public THIS startup(int priority) {
         this.startupPriority = priority;
-        return self();
+        return unremovable();
     }
 
     /**
      * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
      * <p>
      * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
      * any always active bean, eager initialization is skipped to prevent needless failures.
@@ -430,13 +435,12 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     }
 
     public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {
-        return creator(mc -> {
+        return creator(cg -> {
+            BlockCreator bc = cg.createMethod();
+
             // return new FooBeanCreator().create(syntheticCreationalContext)
-            ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClazz));
-            ResultHandle ret = mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanCreator.class, "create", Object.class, SyntheticCreationalContext.class),
-                    creatorHandle, mc.getMethodParam(0));
-            mc.returnValue(ret);
+            MethodDesc createDesc = MethodDesc.of(BeanCreator.class, "create", Object.class, SyntheticCreationalContext.class);
+            bc.return_(bc.invokeInterface(createDesc, bc.new_(creatorClazz), cg.syntheticCreationalContext()));
         });
     }
 
@@ -448,32 +452,27 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      * Furthermore, the consumer can also read the instance field of name {@code params} and type {@link Map}. This map holds
      * all parameters set via one of the {@code BeanConfigurator#param()} methods.
      *
-     * @param methodCreatorConsumer
-     * @return self
      */
-    public THIS creator(Consumer<MethodCreator> methodCreatorConsumer) {
-        this.creatorConsumer = methodCreatorConsumer;
+    public THIS creator(Consumer<CreateGeneration> creatorConsumer) {
+        this.creatorConsumer = creatorConsumer;
         return cast(this);
     }
 
     public <U extends T> THIS destroyer(Class<? extends BeanDestroyer<U>> destroyerClazz) {
-        return destroyer(mc -> {
+        return destroyer(dg -> {
+            BlockCreator bc = dg.destroyMethod();
+
             // new FooBeanDestroyer().destroy(instance, context, params)
-            ResultHandle paramsHandle = mc.readInstanceField(
-                    FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                    mc.getThis());
-            ResultHandle destoyerHandle = mc.newInstance(MethodDescriptor.ofConstructor(destroyerClazz));
-            ResultHandle[] params = { mc.getMethodParam(0), mc.getMethodParam(1), paramsHandle };
-            mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", void.class, Object.class, CreationalContext.class,
-                            Map.class),
-                    destoyerHandle, params);
-            mc.returnValue(null);
+            MethodDesc destroyDesc = MethodDesc.of(BeanDestroyer.class, "destroy", void.class, Object.class,
+                    CreationalContext.class, Map.class);
+            bc.invokeInterface(destroyDesc, bc.new_(destroyerClazz), dg.destroyedInstance(),
+                    dg.creationalContext(), dg.paramsMap());
+            bc.return_();
         });
     }
 
-    public THIS destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
-        this.destroyerConsumer = methodCreatorConsumer;
+    public THIS destroyer(Consumer<DestroyGeneration> destroyerConsumer) {
+        this.destroyerConsumer = destroyerConsumer;
         return cast(this);
     }
 
@@ -483,11 +482,11 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      * @see #checkActive(Consumer)
      */
     public THIS checkActive(Class<? extends Supplier<ActiveResult>> checkActiveClazz) {
-        return checkActive(mc -> {
+        return checkActive(cag -> {
+            BlockCreator bc = cag.checkActiveMethod();
+
             // return new FooActiveResultSupplier().get()
-            ResultHandle supplierHandle = mc.newInstance(MethodDescriptor.ofConstructor(checkActiveClazz));
-            mc.returnValue(mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
-                    supplierHandle));
+            bc.return_(bc.invokeInterface(MethodDescs.SUPPLIER_GET, bc.new_(checkActiveClazz)));
         });
     }
 
@@ -503,8 +502,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      *
      * @return the procedure that generates the bytecode for checking whether this bean is active or not
      */
-    public THIS checkActive(Consumer<MethodCreator> methodCreatorConsumer) {
-        this.checkActiveConsumer = methodCreatorConsumer;
+    public THIS checkActive(Consumer<CheckActiveGeneration> checkActiveConsumer) {
+        this.checkActiveConsumer = checkActiveConsumer;
         return cast(this);
     }
 
@@ -533,4 +532,88 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         addQualifier(qualifier);
     }
 
+    public interface CreateGeneration {
+        /**
+         * {@return the generated class of the synthetic bean}
+         * This class contains the generated {@code create} method.
+         *
+         * @see #createMethod()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code create} method}
+         * This method is supposed to contain the creation logic.
+         */
+        BlockCreator createMethod();
+
+        /**
+         * {@return the field on the {@link #beanClass()} that contains the parameter map}
+         */
+        default Var paramsMap() {
+            ClassCreator cc = beanClass();
+            return cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
+        }
+
+        /**
+         * {@return the parameter of the generated creation method that contains the {@link SyntheticCreationalContext}}
+         *
+         * @see #createMethod()
+         */
+        Var syntheticCreationalContext();
+    }
+
+    public interface DestroyGeneration {
+        /**
+         * {@return the generated class of the synthetic bean}
+         * This class contains the generated {@code destroy} method.
+         *
+         * @see #destroyMethod()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code destroy} method}
+         * This method is supposed to contain the destruction logic.
+         */
+        BlockCreator destroyMethod();
+
+        /**
+         * {@return the field on the {@link #beanClass()} that contains the parameter map}
+         */
+        default Var paramsMap() {
+            ClassCreator cc = beanClass();
+            return cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
+        }
+
+        /**
+         * {@return the parameter of the generated destruction method that contains the destroyed instance}
+         *
+         * @see #destroyMethod()
+         */
+        Var destroyedInstance();
+
+        /**
+         * {@return the parameter of the generated destruction method that contains the {@link CreationalContext}}
+         *
+         * @see #destroyMethod()
+         */
+        Var creationalContext();
+    }
+
+    public interface CheckActiveGeneration {
+        /**
+         * {@return the generated class of the synthetic bean}
+         * This class contains the generated {@code checkActive} method.
+         *
+         * @see #checkActiveMethod()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code checkActive} method}
+         * This method is supposed to contain the logic to determine whether the bean is active or not.
+         */
+        BlockCreator checkActiveMethod();
+    }
 }

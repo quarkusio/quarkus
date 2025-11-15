@@ -82,7 +82,7 @@ final class ContextDataMap implements Map<String, Object> {
         final AbstractMap.SimpleImmutableEntry<String, Object> firstEntry = new AbstractMap.SimpleImmutableEntry<>(
                 ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS, interceptorBindings);
         if (delegate == null) {
-            return Collections.singleton(firstEntry);
+            return Set.of(firstEntry);
         } else {
             Set<Map.Entry<String, Object>> entries = new HashSet<>(delegate.size() + 1);
             entries.addAll(delegate.entrySet());
@@ -107,7 +107,7 @@ final class ContextDataMap implements Map<String, Object> {
     @Override
     public Set<String> keySet() {
         if (delegate == null) {
-            return Collections.singleton(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
+            return Set.of(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         } else {
             Set<String> set = new HashSet<>(delegate.size() + 1);
             set.addAll(delegate.keySet());
@@ -145,7 +145,7 @@ final class ContextDataMap implements Map<String, Object> {
     @Override
     public Collection<Object> values() {
         if (delegate == null) {
-            return Collections.singleton(interceptorBindings);
+            return Set.of(interceptorBindings);
         } else {
             List<Object> list = new ArrayList<>(delegate.size() + 1);
             list.addAll(delegate.values());

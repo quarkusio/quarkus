@@ -178,7 +178,16 @@ public interface LogRuntimeConfig {
          * If file logging should be enabled
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If file logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.file.enabled} instead
+         */
+        // when dropping this property also adjust OpenTelemetryLogHandler
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          * The log format
@@ -269,11 +278,20 @@ public interface LogRuntimeConfig {
     }
 
     interface ConsoleConfig {
+
         /**
          * If console logging should be enabled
          */
         @WithDefault("true")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If console logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.console.enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          * If console logging should go to {@link System#err} instead of {@link System#out}.
@@ -294,18 +312,6 @@ public interface LogRuntimeConfig {
         @WithDefault("ALL")
         @WithConverter(LevelConverter.class)
         Level level();
-
-        /**
-         * If the console logging should be in color. If undefined, Quarkus takes
-         * best guess based on the operating system and environment.
-         * Note that this value is ignored if an extension is present that takes
-         * control of console formatting (e.g., an XML or JSON-format extension).
-         * <p>
-         * This has been deprecated and replaced with <code>quarkus.console.color</code>,
-         * as Quarkus now provides more console-based functionality than just logging.
-         */
-        @Deprecated
-        Optional<Boolean> color();
 
         /**
          * Specify how much the colors should be darkened.
@@ -331,7 +337,15 @@ public interface LogRuntimeConfig {
          * If syslog logging should be enabled
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If syslog logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.syslog.enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          *
@@ -372,8 +386,8 @@ public interface LogRuntimeConfig {
         /**
          * If enabled, the message being sent is prefixed with the size of the message
          */
-        @WithDefault("false")
-        boolean useCountingFraming();
+        @WithDefault("protocol-dependent")
+        CountingFraming useCountingFraming();
 
         /**
          * Set to {@code true} to truncate the message if it exceeds maximum length
@@ -420,6 +434,20 @@ public interface LogRuntimeConfig {
          * Syslog async logging config
          */
         AsyncConfig async();
+
+        /**
+         * Syslog counting framing type used for smarter handling of counting framing value.
+         * <p>
+         * If {@link CountingFraming#PROTOCOL_DEPENDENT} is used, the counting framing will be {@code true}, when the
+         * {@link Protocol#TCP} or {@link Protocol#SSL_TCP} is used. Otherwise {@code false}.
+         * <p>
+         * More information in <a href="http://tools.ietf.org/html/rfc6587#section-3.4.1">http://tools.ietf.org/html/rfc6587</a>
+         */
+        enum CountingFraming {
+            TRUE,
+            FALSE,
+            PROTOCOL_DEPENDENT
+        }
     }
 
     interface SocketConfig {
@@ -428,7 +456,15 @@ public interface LogRuntimeConfig {
          * If socket logging should be enabled
          */
         @WithDefault("false")
-        boolean enable();
+        boolean enabled();
+
+        /**
+         * If socket logging should be enabled
+         *
+         * @deprecated use {@code quarkus.log.socket.enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
 
         /**
          *
@@ -493,11 +529,25 @@ public interface LogRuntimeConfig {
     interface AsyncConfig {
 
         /**
+         * Whether to log asynchronously
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Whether to log asynchronously
+         *
+         * @deprecated use {@code .enabled} instead
+         */
+        @Deprecated(since = "3.26", forRemoval = true)
+        Optional<Boolean> enable();
+
+        /**
          * Indicates whether to log asynchronously
          */
         @WithParentName
-        @WithDefault("false")
-        boolean enable();
+        @Deprecated(forRemoval = true, since = "3.24")
+        Optional<Boolean> legacyEnable();
 
         /**
          * The queue length to use before flushing writing

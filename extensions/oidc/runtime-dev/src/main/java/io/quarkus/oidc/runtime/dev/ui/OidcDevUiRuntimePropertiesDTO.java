@@ -37,12 +37,15 @@ public class OidcDevUiRuntimePropertiesDTO {
     private final String graphqlUiPath;
     private final boolean alwaysLogoutUserInDevUiOnReload;
     private final String propertiesStateId;
+    private final String logoutPath;
+    private final String readSessionCookiePath;
 
     OidcDevUiRuntimePropertiesDTO(String authorizationUrl, String tokenUrl, String logoutUrl, Config config, int httpPort,
             String oidcProviderName, String oidcApplicationType, String oidcGrantType,
             boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms,
             boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath,
-            String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId) {
+            String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId,
+            String logoutPath, String readSessionCookiePath) {
         this.clientId = new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY).get(config);
         this.clientSecret = new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "").get(config);
         this.authorizationUrl = new OidcConfigPropertySupplier(AUTHORIZATION_PATH_CONFIG_KEY, authorizationUrl, true)
@@ -65,6 +68,8 @@ public class OidcDevUiRuntimePropertiesDTO {
         this.graphqlUiPath = graphqlUiPath;
         this.alwaysLogoutUserInDevUiOnReload = alwaysLogoutUserInDevUiOnReload;
         this.propertiesStateId = propertiesStateId;
+        this.logoutPath = logoutPath;
+        this.readSessionCookiePath = readSessionCookiePath;
     }
 
     public String getClientId() {
@@ -149,5 +154,13 @@ public class OidcDevUiRuntimePropertiesDTO {
 
     public String getPropertiesStateId() {
         return propertiesStateId;
+    }
+
+    public String getLogoutPath() {
+        return logoutPath;
+    }
+
+    public String getReadSessionCookiePath() {
+        return readSessionCookiePath;
     }
 }

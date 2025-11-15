@@ -46,9 +46,9 @@ public class QuarkusGradleUtils {
     }
 
     public static Path mergeClassesDirs(Collection<Path> classesDirs, File tmpDir, boolean populated, boolean test) {
-        List<Path> existingClassesDirs = classesDirs.stream().filter(p -> Files.exists(p)).toList();
+        List<Path> existingClassesDirs = classesDirs.stream().filter(Files::exists).toList();
 
-        if (existingClassesDirs.size() == 0) {
+        if (existingClassesDirs.isEmpty()) {
             return null;
         }
 

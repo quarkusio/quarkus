@@ -136,9 +136,12 @@
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.hibernate.orm</groupId>
-                            <artifactId>hibernate-jpamodelgen</artifactId>
+                            <artifactId>hibernate-processor</artifactId>
                         </path>
                     </annotationProcessorPaths>
+                    <annotationProcessors>
+                        <annotationProcessor>org.hibernate.processor.HibernateProcessor</annotationProcessor>
+                    </annotationProcessors>
                 </configuration>
             </plugin>
         </plugins>

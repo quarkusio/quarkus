@@ -12,7 +12,14 @@
 
     <artifactId>quarkus-devtools-base-codestarts</artifactId>
     <name>Quarkus - Dev tools - Base Codestarts</name>
+
     <build>
+        <!--
+           | NOTE: the resources include Gradle wrapper 8.14.
+           |       This version of the wrapper is used to generate projects targeting Quarkus 3.25 and earlier.
+           |       Starting from 3.26.4, the tooling codestart moved from the base codestarts to the project core
+           |       codestarts (referenced from the platform metadata).
+        -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -22,6 +29,15 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <configuration>
+                        <propertiesEncoding>UTF-8</propertiesEncoding>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
-
 </project>

@@ -1,6 +1,5 @@
 package io.quarkus.runtime.configuration;
 
-import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigFactory;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -17,7 +16,7 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
             final ClassLoader classLoader) {
         if (config == null) {
             // Remember the config so that we can uninstall it when "setConfig" is next called
-            config = ConfigUtils.configBuilder(true, true, LaunchMode.NORMAL).build();
+            config = ConfigUtils.configBuilder().build();
         }
         return config;
     }

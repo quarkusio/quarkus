@@ -8,6 +8,8 @@ import java.lang.reflect.Type;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.client.handlers.VertxClientInputStream;
+import org.jboss.resteasy.reactive.common.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
@@ -18,6 +20,19 @@ import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 public class ClientResponseImpl extends ResponseImpl {
 
     RestClientRequestContext restClientRequestContext;
+
+    @Override
+    public boolean bufferEntity() {
+        // we don't want to buffer these as they could lead to blocking the event loop
+        InputStream entityStream = getEntityStream();
+        if (entityStream == null) {
+            return false;
+        }
+        if (VertxClientInputStream.class.equals(entityStream.getClass()) && !BlockingOperationSupport.isBlockingAllowed()) {
+            return true;
+        }
+        return super.bufferEntity();
+    }
 
     @SuppressWarnings({ "unchecked" })
     protected <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
@@ -41,9 +56,6 @@ public class ClientResponseImpl extends ResponseImpl {
         try {
             if (buffered) {
                 entityStream.reset();
-            } else if (consumed) {
-                throw new IllegalStateException(
-                        "Entity stream has already been read and is not buffered: call Response.bufferEntity()");
             }
         } catch (IOException e) {
             throw new ProcessingException(e);

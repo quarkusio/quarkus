@@ -27,7 +27,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -56,7 +56,7 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 /**
  * Processor that starts the Compose dev services.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class ComposeDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(ComposeDevServicesProcessor.class);
@@ -162,12 +162,12 @@ public class ComposeDevServicesProcessor {
     @BuildStep
     public DevServicesResultBuildItem toDevServicesResult(DevServicesComposeProjectBuildItem composeBuildItem) {
         if (composeBuildItem.getProject() != null) {
-            return new DevServicesResultBuildItem(
-                    "Compose Dev Services",
-                    String.format("Project: %s, Services: %s", composeBuildItem.getProject(),
-                            String.join(", ", composeBuildItem.getComposeServices().keySet())),
-                    null,
-                    composeBuildItem.getConfig());
+            return DevServicesResultBuildItem.discovered()
+                    .name("Compose Dev Services")
+                    .description(String.format("Project: %s, Services: %s", composeBuildItem.getProject(),
+                            String.join(", ", composeBuildItem.getComposeServices().keySet())))
+                    .config(composeBuildItem.getConfig())
+                    .build();
         }
         return null;
     }
@@ -196,6 +196,9 @@ public class ComposeDevServicesProcessor {
         ComposeFiles composeFiles = new ComposeFiles(cfg.files);
         String projectName = (PROJECT_PREFIX + "-" + appName).toLowerCase();
         if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT && !cfg.reuseProjectForTests) {
+            if (composeFiles.getProjectName() != null) {
+                projectName = composeFiles.getProjectName();
+            }
             projectName = projectName + "-" + RandomStringUtils.insecure().nextAlphabetic(6).toLowerCase();
         } else {
             if (cfg.project != null) {
@@ -203,6 +206,11 @@ public class ComposeDevServicesProcessor {
             } else if (composeFiles.getProjectName() != null) {
                 projectName = composeFiles.getProjectName();
             }
+        }
+
+        if (composeFiles.getServiceDefinitions().isEmpty()) {
+            log.info("No service definitions specified");
+            return null;
         }
 
         ComposeProject.Builder builder = new ComposeProject.Builder(composeFiles, getComposeExecutable())

@@ -1,8 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import jakarta.enterprise.event.Observes;
-
-import io.quarkus.runtime.ShutdownEvent;
 import io.vertx.core.Vertx;
 
 public class BackChannelLogoutTokenCache {
@@ -27,7 +24,7 @@ public class BackChannelLogoutTokenCache {
         return cache.containsKey(token);
     }
 
-    void shutdown(@Observes ShutdownEvent event, Vertx vertx) {
+    void shutdown(Vertx vertx) {
         cache.stopTimer(vertx);
     }
 }

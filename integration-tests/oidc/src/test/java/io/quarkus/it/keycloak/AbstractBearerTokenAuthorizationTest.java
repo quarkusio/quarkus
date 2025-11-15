@@ -10,6 +10,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.client.KeycloakTestClient.Tls;
 import io.restassured.RestAssured;
@@ -149,7 +150,8 @@ public abstract class AbstractBearerTokenAuthorizationTest {
         RestAssured.given().auth().oauth2("123")
                 .when().get("/api/users/me").then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("Bearer"));
+                .header("WWW-Authenticate", equalTo("Bearer resource_metadata=\"https://localhost:8081"
+                        + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH + "\""));
     }
 
     //see https://github.com/quarkusio/quarkus/issues/5809
@@ -187,7 +189,8 @@ public abstract class AbstractBearerTokenAuthorizationTest {
                 .when().get("/bearer-only")
                 .then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("Bearer"));
+                .header("WWW-Authenticate", equalTo("Bearer resource_metadata=\"https://localhost:8081"
+                        + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH + "\""));
     }
 
     @Test

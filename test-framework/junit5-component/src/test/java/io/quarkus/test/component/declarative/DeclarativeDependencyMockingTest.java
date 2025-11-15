@@ -12,6 +12,7 @@ import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.component.TestConfigProperty;
 import io.quarkus.test.component.beans.Charlie;
 import io.quarkus.test.component.beans.MyComponent;
+import io.quarkus.test.component.beans.MyOtherComponent;
 
 @QuarkusComponentTest
 @TestConfigProperty(key = "foo", value = "BAR")
@@ -20,6 +21,9 @@ public class DeclarativeDependencyMockingTest {
     @Inject
     MyComponent myComponent;
 
+    @Inject
+    MyOtherComponent myOtherComponent;
+
     @InjectMock
     Charlie charlie;
 
@@ -27,6 +31,7 @@ public class DeclarativeDependencyMockingTest {
     public void testPing1() {
         Mockito.when(charlie.ping()).thenReturn("foo");
         assertEquals("foo and BAR", myComponent.ping());
+        assertEquals("foo", myOtherComponent.ping());
     }
 
     @Test

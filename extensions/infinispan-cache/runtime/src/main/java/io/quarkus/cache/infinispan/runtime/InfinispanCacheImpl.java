@@ -3,18 +3,21 @@ package io.quarkus.cache.infinispan.runtime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.impl.protocol.Codec27;
 import org.infinispan.commons.util.NullValue;
-import org.infinispan.commons.util.concurrent.CompletionStages;
 import org.reactivestreams.FlowAdapters;
 
 import io.quarkus.arc.Arc;
@@ -81,78 +84,65 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
 
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
-        return Uni.createFrom()
-                .completionStage(() -> CompletionStages.handleAndCompose(remoteCache.getAsync(key), (v1, ex1) -> {
-                    if (ex1 != null) {
-                        return CompletableFuture.failedFuture(ex1);
-                    }
+        Context context = Vertx.currentContext();
+        Executor executor = duplicateContextExecutor(context);
 
+        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
+            @Override
+            public CompletionStage<V> get() {
+                return remoteCache.getAsync(key);
+            }
+        })
+                .emitOn(executor)
+                .flatMap(v1 -> {
                     if (v1 != null) {
-                        return CompletableFuture.completedFuture(decodeNull(v1));
+                        return Uni.createFrom()
+                                .completionStage(new Supplier<CompletionStage<V>>() {
+                                    @Override
+                                    public CompletionStage<V> get() {
+                                        return CompletableFuture.completedFuture(InfinispanCacheImpl.this.decodeNull(v1));
+                                    }
+                                })
+                                .emitOn(executor);
                     }
 
                     CompletableFuture<V> resultAsync = new CompletableFuture<>();
                     CompletableFuture<V> computedValue = computationResults.putIfAbsent(key, resultAsync);
+
                     if (computedValue != null) {
-                        return computedValue;
+                        return Uni.createFrom().completionStage(computedValue).emitOn(executor);
                     }
+
+                    if (context != null) {
+                        return Uni.createFrom().completionStage(new Supplier<CompletionStage<? extends V>>() {
+                            @Override
+                            public CompletionStage<? extends V> get() {
+                                return context.executeBlocking(new Callable<V>() {
+                                    @Override
+                                    public V call() throws Exception {
+                                        return valueLoader.apply(key);
+                                    }
+                                }).toCompletionStage()
+                                        .thenComposeAsync(newValue -> {
+                                            InfinispanCacheImpl.this.putIfAbsentInInfinispan(key, newValue, resultAsync,
+                                                    executor);
+                                            return resultAsync;
+                                        }, executor);
+                            }
+                        });
+                    }
+
                     V newValue = valueLoader.apply(key);
-                    remoteCache
-                            .putIfAbsentAsync(key, encodeNull(newValue), lifespan, TimeUnit.MILLISECONDS, maxIdle,
-                                    TimeUnit.MILLISECONDS)
-                            .whenComplete((existing, ex2) -> {
-                                if (ex2 != null) {
-                                    resultAsync.completeExceptionally((Throwable) ex2);
-                                } else if (existing == null) {
-                                    resultAsync.complete(newValue);
-                                } else {
-                                    resultAsync.complete(decodeNull(existing));
-                                }
-                                computationResults.remove(key);
-                            });
-                    return resultAsync;
-                }));
+                    putIfAbsentInInfinispan(key, newValue, resultAsync, executor);
+                    return Uni.createFrom().completionStage(resultAsync).emitOn(executor);
+                });
     }
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         Context context = Vertx.currentContext();
-
-        return Uni.createFrom().completionStage(CompletionStages.handleAndCompose(remoteCache.getAsync(key), (v1, ex1) -> {
-            if (ex1 != null) {
-                return CompletableFuture.failedFuture(ex1);
-            }
-
-            if (v1 != null) {
-                return CompletableFuture.completedFuture(decodeNull(v1));
-            }
-
-            CompletableFuture<V> resultAsync = new CompletableFuture<>();
-            CompletableFuture<V> computedValue = computationResults.putIfAbsent(key, resultAsync);
-            if (computedValue != null) {
-                return computedValue;
-            }
-            valueLoader.apply(key).convert().toCompletionStage()
-                    .whenComplete((newValue, ex2) -> {
-                        if (ex2 != null) {
-                            resultAsync.completeExceptionally(ex2);
-                            computationResults.remove(key);
-                        } else {
-                            remoteCache.putIfAbsentAsync(key, encodeNull(newValue), lifespan, TimeUnit.MILLISECONDS, maxIdle,
-                                    TimeUnit.MILLISECONDS).whenComplete((existing, ex3) -> {
-                                        if (ex3 != null) {
-                                            resultAsync.completeExceptionally((Throwable) ex3);
-                                        } else if (existing == null) {
-                                            resultAsync.complete(newValue);
-                                        } else {
-                                            resultAsync.complete(decodeNull(existing));
-                                        }
-                                        computationResults.remove(key);
-                                    });
-                        }
-                    });
-            return resultAsync;
-        })).emitOn(new Executor() {
+        Executor executor = duplicateContextExecutor(context);
+        return Uni.createFrom().completionStage(getFromInfinispanAsync(key, valueLoader, executor)).emitOn(new Executor() {
             // We need make sure we go back to the original context when the cache value is computed.
             // Otherwise, we would always emit on the context having computed the value, which could
             // break the duplicated context isolation.
@@ -194,17 +184,105 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                     }
                 }
             }
-        });
+        }).emitOn(executor);
+    }
+
+    private static Executor duplicateContextExecutor(Context context) {
+        Executor executor = new Executor() {
+            @Override
+            public void execute(Runnable r) {
+                if (context == null)
+                    r.run();
+                else
+                    context.runOnContext(x -> r.run());
+            }
+        };
+        return executor;
+    }
+
+    private <K, V> CompletionStage<V> getFromInfinispanAsync(K key, Function<K, Uni<V>> valueLoader, Executor executor) {
+        return remoteCache.getAsync(key)
+                .exceptionallyAsync(ex -> ex, executor)
+                .thenApplyAsync(new Function() {
+                    @Override
+                    public Object apply(Object v1) {
+                        if (v1 != null) {
+                            return CompletableFuture.completedFuture(InfinispanCacheImpl.this.decodeNull(v1));
+                        }
+
+                        CompletableFuture<V> resultAsync = new CompletableFuture<>();
+                        CompletableFuture<V> computedValue = computationResults.putIfAbsent(key, resultAsync);
+
+                        if (computedValue != null) {
+                            return computedValue;
+                        }
+
+                        valueLoader.apply(key)
+                                .convert().toCompletionStage()
+                                .whenCompleteAsync(new BiConsumer<V, Throwable>() {
+                                    @Override
+                                    public void accept(V newValue, Throwable ex2) {
+                                        if (ex2 != null) {
+                                            resultAsync.completeExceptionally(ex2);
+                                            computationResults.remove(key);
+                                        } else {
+                                            InfinispanCacheImpl.this.putIfAbsentInInfinispan(key, newValue, resultAsync,
+                                                    executor);
+                                        }
+                                    }
+                                }, executor);
+                        return resultAsync;
+                    }
+                }, executor).thenComposeAsync(new Function() {
+                    @Override
+                    public Object apply(Object c) {
+                        return c;
+                    }
+                }, executor);
+
+    }
+
+    private <K, V> void putIfAbsentInInfinispan(K key, V newValue, CompletableFuture<V> resultAsync, Executor executor) {
+        remoteCache.putIfAbsentAsync(
+                key,
+                encodeNull(newValue),
+                lifespan, TimeUnit.MILLISECONDS,
+                maxIdle, TimeUnit.MILLISECONDS).whenCompleteAsync(new BiConsumer<Object, Throwable>() {
+                    @Override
+                    public void accept(Object existing, Throwable ex) {
+                        try {
+                            if (ex != null) {
+                                resultAsync.completeExceptionally(ex);
+                            } else if (existing == null) {
+                                resultAsync.complete(newValue);
+                            } else {
+                                resultAsync.complete(InfinispanCacheImpl.this.decodeNull(existing));
+                            }
+                        } finally {
+                            computationResults.remove(key);
+                        }
+                    }
+                }, executor);
     }
 
     @Override
     public Uni<Void> invalidate(Object key) {
-        return Uni.createFrom().completionStage(() -> remoteCache.removeAsync(key));
+        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Void>>() {
+            @Override
+            public CompletionStage<Void> get() {
+                return remoteCache.removeAsync(key);
+            }
+        });
     }
 
     @Override
     public Uni<Void> invalidateAll() {
-        return Uni.createFrom().completionStage(() -> remoteCache.clearAsync());
+        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Void>>() {
+            @Override
+            public CompletionStage<Void> get() {
+                return remoteCache.clearAsync();
+            }
+        });
     }
 
     @Override

@@ -12,6 +12,8 @@ import jakarta.enterprise.lang.model.types.Type;
 
 import org.jboss.jandex.DotName;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> extends AnnotationTargetImpl implements Type {
     final JandexType jandexType;
 
@@ -108,6 +110,7 @@ abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> extends Annota
     }
 
     @Override
+    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
     public String toString() {
         return jandexType.toString();
     }

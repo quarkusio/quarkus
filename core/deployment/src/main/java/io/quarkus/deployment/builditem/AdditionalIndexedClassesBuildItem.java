@@ -1,6 +1,5 @@
 package io.quarkus.deployment.builditem;
 
-import java.util.Collections;
 import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -18,7 +17,7 @@ public final class AdditionalIndexedClassesBuildItem extends MultiBuildItem {
     }
 
     public AdditionalIndexedClassesBuildItem(String classToIndex) {
-        this.classesToIndex = Collections.singleton(classToIndex);
+        this.classesToIndex = Set.of(classToIndex);
     }
 
     public Set<String> getClassesToIndex() {

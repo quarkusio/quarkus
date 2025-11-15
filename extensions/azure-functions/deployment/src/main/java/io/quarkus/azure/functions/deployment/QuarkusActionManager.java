@@ -6,11 +6,6 @@ import com.microsoft.azure.toolkit.lib.common.action.AzureActionManager;
 
 public class QuarkusActionManager extends AzureActionManager {
 
-    public static void register() {
-        final QuarkusActionManager am = new QuarkusActionManager();
-        register(am);
-    }
-
     @Override
     public <D> void registerAction(Action<D> action) {
     }

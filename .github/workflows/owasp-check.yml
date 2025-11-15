@@ -16,12 +16,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 1
         ref: main
     - name: Setup Java JDK
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         java-version: 17
@@ -51,7 +51,7 @@ jobs:
     - name: Perform OWASP Dependency Check Report
       run: ./mvnw -Dowasp-report
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: dependency-check-report
         path: target/dependency-check-report.html

@@ -19,8 +19,8 @@ public class CompositeExchangeAttribute implements ExchangeAttribute {
     @Override
     public String readAttribute(RoutingContext exchange) {
         final StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < attributes.length; ++i) {
-            final String val = attributes[i].readAttribute(exchange);
+        for (ExchangeAttribute attribute : attributes) {
+            final String val = attribute.readAttribute(exchange);
             if (val != null) {
                 sb.append(val);
             }

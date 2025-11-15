@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.test.args;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.net.URI;
 
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.websockets.next.Connection;
+import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
@@ -51,6 +54,11 @@ public class ConnectionArgumentTest {
 
         @Inject
         WebSocketConnection c;
+
+        @OnOpen
+        void connect(Connection connection) {
+            assertInstanceOf(WebSocketConnection.class, connection);
+        }
 
         @OnTextMessage
         Uni<Void> process(WebSocketConnection connection, String message) throws InterruptedException {

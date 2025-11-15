@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -29,10 +28,14 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -54,9 +57,13 @@ public class StartupActionImpl implements StartupAction {
     private final String mainClassName;
     private final String applicationClassName;
     private final Map<String, String> devServicesProperties;
+    private volatile boolean devServicesStarted = false;
+    private final List<DevServicesResultBuildItem> devServicesResults;
+    private final List<DevServicesCustomizerBuildItem> devServicesCustomizers;
     private final String devServicesNetworkId;
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
+    private final DevServicesRegistryBuildItem devServicesRegistry;
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
@@ -66,6 +73,10 @@ public class StartupActionImpl implements StartupAction {
         this.devServicesProperties = extractDevServicesProperties(buildResult);
         this.devServicesNetworkId = extractDevServicesNetworkId(buildResult);
         this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
+
+        devServicesResults = buildResult.consumeMulti(DevServicesResultBuildItem.class);
+        devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
+        devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
@@ -99,6 +110,9 @@ public class StartupActionImpl implements StartupAction {
      * of the JVM will exit when the app stops.
      */
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
+        // Start dev services that weren't started in the augmentation phase
+        ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
@@ -189,6 +203,7 @@ public class StartupActionImpl implements StartupAction {
     }
 
     private void doClose() {
+        devServicesStarted = false;
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
@@ -206,6 +221,10 @@ public class StartupActionImpl implements StartupAction {
 
     @Override
     public int runMainClassBlocking(String... args) throws Exception {
+        // Start dev services that weren't started in the augmentation phase
+        ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
@@ -276,10 +295,30 @@ public class StartupActionImpl implements StartupAction {
         RuntimeOverrideConfigSource.setConfig(runtimeClassLoader, config);
     }
 
+    private void ensureDevServicesStarted() {
+        if (devServicesStarted) {
+            return;
+        }
+        devServicesStarted = true;
+        if (devServicesRegistry != null) {
+            QuarkusClassLoader augmentClassLoader = curatedApplication.getAugmentClassLoader();
+            if (augmentClassLoader == null) {
+                throw new IllegalStateException("Dev services cannot be started without an augmentation class loader.");
+            }
+            devServicesRegistry.startAll(devServicesResults, devServicesCustomizers, augmentClassLoader);
+
+            devServicesProperties.putAll(devServicesRegistry.getConfigForAllRunningServices());
+        }
+    }
+
     /**
      * Runs the application, and returns a handle that can be used to shut it down.
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
+        // Start dev services that weren't started in the augmentation phase
+        ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
@@ -307,7 +346,9 @@ public class StartupActionImpl implements StartupAction {
 
             Method start = appClass.getMethod("start", String[].class);
             Object application = appClass.getDeclaredConstructor().newInstance();
+
             start.invoke(application, (Object) args);
+
             Closeable closeTask = (Closeable) application;
             return new RunningQuarkusApplicationImpl(new Closeable() {
                 @Override
@@ -370,12 +411,14 @@ public class StartupActionImpl implements StartupAction {
     }
 
     @Override
-    public Map<String, String> getDevServicesProperties() {
+    public Map<String, String> getOrInitialiseDevServicesProperties() {
+        ensureDevServicesStarted();
         return devServicesProperties;
     }
 
     @Override
-    public String getDevServicesNetworkId() {
+    public String getOrInitialiseDevServicesNetworkId() {
+        ensureDevServicesStarted();
         return devServicesNetworkId;
     }
 
@@ -411,28 +454,28 @@ public class StartupActionImpl implements StartupAction {
 
     private static Map<String, byte[]> extractGeneratedResources(BuildResult buildResult, boolean applicationClasses) {
         Map<String, byte[]> data = new HashMap<>();
+        String debugClassesDir = BootstrapDebug.debugClassesDir();
+        String debugSourcesDir = BootstrapDebug.debugSourcesDir();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
                 data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
-                var debugClassesDir = BootstrapDebug.debugClassesDir();
                 if (debugClassesDir != null) {
                     try {
                         File debugPath = new File(debugClassesDir);
                         if (!debugPath.exists()) {
                             debugPath.mkdir();
                         }
-                        File classFile = new File(debugPath, i.getName() + ".class");
+                        File classFile = new File(debugPath, i.internalName() + ".class");
                         classFile.getParentFile().mkdirs();
                         try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                             classWriter.write(i.getClassData());
                         }
                         log.infof("Wrote %s", classFile.getAbsolutePath());
                     } catch (Exception t) {
-                        log.errorf(t, "Failed to write debug class files %s", i.getName());
+                        log.errorf(t, "Failed to write debug class file for %s", i.binaryName());
                     }
                 }
 
-                String debugSourcesDir = BootstrapDebug.debugSourcesDir();
                 if (debugSourcesDir != null) {
                     try {
                         if (i.getSource() != null) {
@@ -440,16 +483,15 @@ public class StartupActionImpl implements StartupAction {
                             if (!debugPath.exists()) {
                                 debugPath.mkdir();
                             }
-                            File sourceFile = new File(debugPath, i.getName() + ".zig");
+                            File sourceFile = new File(debugPath, i.internalName() + ".zig");
                             sourceFile.getParentFile().mkdirs();
-                            Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
-                                    StandardOpenOption.CREATE);
+                            Files.writeString(sourceFile.toPath(), i.getSource(), StandardOpenOption.CREATE);
                             log.infof("Wrote source %s", sourceFile.getAbsolutePath());
                         } else {
-                            log.infof("Source not available: %s", i.getName());
+                            log.infof("Source not available: %s", i.binaryName());
                         }
                     } catch (Exception t) {
-                        log.errorf(t, "Failed to write debug source file %s", i.getName());
+                        log.errorf(t, "Failed to write debug source file for %s", i.binaryName());
                     }
                 }
             }

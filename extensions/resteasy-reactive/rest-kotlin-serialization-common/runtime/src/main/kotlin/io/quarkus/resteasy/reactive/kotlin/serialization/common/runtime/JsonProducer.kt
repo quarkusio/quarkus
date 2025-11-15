@@ -23,7 +23,7 @@ class JsonProducer {
     @DefaultBean
     fun defaultJson(
         configuration: KotlinSerializationConfig,
-        @All customizers: java.util.List<JsonBuilderCustomizer>
+        @All customizers: java.util.List<JsonBuilderCustomizer>,
     ) = Json {
         allowSpecialFloatingPointValues = configuration.json().allowSpecialFloatingPointValues()
         allowStructuredMapKeys = configuration.json().allowStructuredMapKeys()
@@ -53,7 +53,7 @@ class JsonProducer {
     private fun loadStrategy(
         jsonBuilder: JsonBuilder,
         strategy: String,
-        jsonProducer: JsonProducer
+        jsonProducer: JsonProducer,
     ) {
         val strategyProperty: KMutableProperty1<JsonBuilder, JsonNamingStrategy> =
             (JsonBuilder::class.memberProperties.find { member -> member.name == "namingStrategy" }
@@ -69,7 +69,7 @@ class JsonProducer {
                 jsonProducer.extractBuiltIn(strategy)
             } else {
                 jsonProducer.loadStrategyClass(strategy)
-            }
+            },
         )
     }
 
@@ -88,7 +88,7 @@ class JsonProducer {
         } catch (e: ReflectiveOperationException) {
             throw IllegalArgumentException(
                 "Error loading naming strategy:  ${strategy.substringAfter('.')}",
-                e
+                e,
             )
         }
     }

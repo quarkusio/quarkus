@@ -194,6 +194,12 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "data")
     private String data;
 
+    /**
+     * Whether to refresh the local extension catalog cache before searching for the recommended Quarkus extension versions
+     */
+    @Parameter(property = "refresh", defaultValue = "false")
+    boolean refresh;
+
     @Component
     QuarkusWorkspaceProvider workspaceProvider;
 
@@ -223,15 +229,7 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        ExtensionCatalogResolver catalogResolver;
-        try {
-            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                    ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
-                    : ExtensionCatalogResolver.empty();
-        } catch (RegistryResolutionException e) {
-            // fall back to the default platform
-            catalogResolver = ExtensionCatalogResolver.empty();
-        }
+        ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver(mvn, log);
         ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
                 mvn, log);
 
@@ -343,6 +341,24 @@ public class CreateProjectMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "The project was created but (some of) the requested extensions couldn't be added.");
         }
+    }
+
+    private ExtensionCatalogResolver getExtensionCatalogResolver(MavenArtifactResolver mvn, MojoMessageWriter log) {
+        if (!QuarkusProjectHelper.isRegistryClientEnabled()) {
+            return ExtensionCatalogResolver.empty();
+        }
+        ExtensionCatalogResolver catalogResolver;
+        try {
+            catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvn, log);
+            if (refresh) {
+                getLog().debug("Clearing local extension catalog cache");
+                catalogResolver.clearRegistryCache();
+            }
+        } catch (RegistryResolutionException e) {
+            // fall back to the default platform
+            catalogResolver = ExtensionCatalogResolver.empty();
+        }
+        return catalogResolver;
     }
 
     static ExtensionCatalog resolveExtensionsCatalog(AbstractMojo mojo, String groupId, String artifactId, String version,

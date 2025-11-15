@@ -169,4 +169,9 @@ final class AsciidocFormatter extends AbstractFormatter {
 
         return baseGuideUrl + "#" + reference;
     }
+
+    @Override
+    protected String escapeDefaultValue(String defaultValue) {
+        return "`+++" + defaultValue + "+++`";
+    }
 }

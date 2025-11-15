@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -51,12 +50,15 @@ public class OraclePoolRecorder {
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
     private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+    private final RuntimeValue<DataSourcesReactiveOracleConfig> reactiveOracleRuntimeConfig;
 
-    @Inject
-    public OraclePoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+    public OraclePoolRecorder(
+            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
+            final RuntimeValue<DataSourcesReactiveOracleConfig> reactiveOracleRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
         this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+        this.reactiveOracleRuntimeConfig = reactiveOracleRuntimeConfig;
     }
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
@@ -77,21 +79,16 @@ public class OraclePoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<OraclePool>, OraclePool> configureOraclePool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig,
-            ShutdownContext shutdown) {
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public OraclePool apply(SyntheticCreationalContext<OraclePool> context) {
                 OraclePool pool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
-                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveOracleConfig.dataSources().get(dataSourceName).reactive().oracle(),
+                        runtimeConfig.getValue().dataSources().get(dataSourceName),
+                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
+                        reactiveOracleRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().oracle(),
                         context);
 
                 shutdown.addShutdownTask(pool::close);
@@ -122,20 +119,19 @@ public class OraclePoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         OracleConnectOptions oracleConnectOptions = toOracleConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveOracleConfig);
-        Supplier<Future<OracleConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(oracleConnectOptions),
+        Supplier<Future<OracleConnectOptions>> databasesSupplier = toDatabasesSupplier(List.of(oracleConnectOptions),
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<OracleConnectOptions>> toDatabasesSupplier(Vertx vertx,
-            List<OracleConnectOptions> oracleConnectOptions,
+    private Supplier<Future<OracleConnectOptions>> toDatabasesSupplier(List<OracleConnectOptions> oracleConnectOptions,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<OracleConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, oracleConnectOptions,
+            supplier = new ConnectOptionsSupplier<>(credentialsProvider, name, oracleConnectOptions,
                     OracleConnectOptions::new);
         } else {
             supplier = Utils.roundRobinSupplier(oracleConnectOptions);
@@ -208,7 +204,7 @@ public class OraclePoolRecorder {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             if (user != null) {

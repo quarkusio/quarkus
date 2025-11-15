@@ -28,7 +28,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.faulttolerance.api.ApplyFaultTolerance;

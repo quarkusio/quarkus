@@ -43,6 +43,30 @@ public class GeneratedValueResource {
                 e -> assertThat(e.generated).isNotNull(),
                 e -> assertThat(e.generatedColumn).isNotNull());
 
+        var entity2 = new EntityWithCustomIdGeneratorType();
+        assertThat(entity2.id).isNull();
+        em.persist(entity2);
+        em.flush();
+        assertThat(entity2.id).isEqualTo(MyCustomIdGenerator.STUB_VALUE);
+
+        var entity3 = new EntityWithCustomValueGeneratorType();
+        assertThat(entity3.customGenerated).isNull();
+        em.persist(entity3);
+        em.flush();
+        assertThat(entity3.customGenerated).isEqualTo(MyCustomValueGenerator.STUB_VALUE);
+
+        var entity4 = new EntityWithCustomGenericGeneratorReferencedAsClass();
+        assertThat(entity4.id).isNull();
+        em.persist(entity4);
+        em.flush();
+        assertThat(entity4.id).isEqualTo(MyCustomGenericGeneratorReferencedAsClass.STUB_VALUE);
+
+        var entity5 = new EntityWithCustomGenericGeneratorReferencedAsClassName();
+        assertThat(entity5.id).isNull();
+        em.persist(entity5);
+        em.flush();
+        assertThat(entity5.id).isEqualTo(MyCustomGenericGeneratorReferencedAsClassName.STUB_VALUE);
+
         return "OK";
     }
 }

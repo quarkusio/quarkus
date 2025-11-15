@@ -6,9 +6,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import io.quarkus.cli.BuildToolContext;
-import io.quarkus.cli.BuildToolDelegatingCommand;
 import io.quarkus.cli.Deploy;
+import io.quarkus.cli.common.BuildToolContext;
+import io.quarkus.cli.common.BuildToolDelegatingCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.ParentCommand;
 

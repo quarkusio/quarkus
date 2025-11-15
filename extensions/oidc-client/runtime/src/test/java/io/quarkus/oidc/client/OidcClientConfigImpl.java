@@ -47,6 +47,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         GRANT_OPTIONS,
         CLIENT_ENABLED,
         SCOPES,
+        AUDIENCE,
         REFRESH_TOKEN_TIME_SKEW,
         ACCESS_TOKEN_EXPIRES_IN,
         ACCESS_TOKEN_EXPIRY_SKEW,
@@ -91,7 +92,8 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_ASSERTION,
         CREDENTIALS_JWT_AUDIENCE,
         CREDENTIALS_JWT_TOKEN_ID,
-        JWT_BEARER_TOKEN_PATH
+        JWT_BEARER_TOKEN_PATH,
+        REFRESH_INTERVAL
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -328,6 +330,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     }
 
     @Override
+    public Optional<List<String>> audience() {
+        invocationsRecorder.put(ConfigMappingMethods.AUDIENCE, true);
+        return Optional.empty();
+    }
+
+    @Override
     public Optional<Duration> refreshTokenTimeSkew() {
         invocationsRecorder.put(ConfigMappingMethods.REFRESH_TOKEN_TIME_SKEW, true);
         return Optional.empty();
@@ -403,6 +411,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     public Map<String, String> headers() {
         invocationsRecorder.put(ConfigMappingMethods.HEADERS, true);
         return Map.of();
+    }
+
+    @Override
+    public Optional<Duration> refreshInterval() {
+        invocationsRecorder.put(ConfigMappingMethods.REFRESH_INTERVAL, true);
+        return Optional.empty();
     }
 
     @Override

@@ -14,8 +14,10 @@ import io.grpc.NameResolver;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 @TargetClass(className = "io.grpc.netty.ProtocolNegotiators")
+@SuppressForbidden(reason = "Use original class logging implementation")
 final class Target_io_grpc_netty_ProtocolNegotiators {
 
     @Substitute

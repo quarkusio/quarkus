@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.KnownCompatibleBeanArchiveBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -69,9 +70,7 @@ import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
-import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -80,6 +79,7 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.config.Converters;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
@@ -171,7 +171,7 @@ public class SmallRyeGraphQLProcessor {
     private static final List<String> SUPPORTED_WEBSOCKET_SUBPROTOCOLS = List.of(SUBPROTOCOL_GRAPHQL_WS,
             SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
 
-    private static final int GRAPHQL_WEBSOCKET_HANDLER_ORDER = (-1 * FilterBuildItem.AUTHORIZATION) + 1;
+    private static final int GRAPHQL_WEBSOCKET_HANDLER_ORDER = (-1 * SecurityHandlerPriorities.AUTHORIZATION) + 1;
 
     private static final String GRAPHQL_MEDIA_TYPE = "application/graphql+json";
 
@@ -367,8 +367,7 @@ public class SmallRyeGraphQLProcessor {
         if (graphQLDevUILogBuildItem.isPresent()) {
             publisher = Optional.of(graphQLDevUILogBuildItem.get().getPublisher());
         }
-        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig,
-                publisher);
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, publisher);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
@@ -838,7 +837,6 @@ public class SmallRyeGraphQLProcessor {
     void registerGraphQLUiHandler(
             BuildProducer<RouteBuildItem> routeProducer,
             SmallRyeGraphQLRecorder recorder,
-            SmallRyeGraphQLRuntimeConfig runtimeConfig,
             LaunchModeBuildItem launchMode,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeGraphQLConfig graphQLConfig,
@@ -856,7 +854,7 @@ public class SmallRyeGraphQLProcessor {
                     .produce(new SmallRyeGraphQLBuildItem(result.getFinalDestination(), graphQLUiPath));
 
             Handler<RoutingContext> handler = recorder.uiHandler(result.getFinalDestination(),
-                    graphQLUiPath, result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
+                    graphQLUiPath, result.getWebRootConfigurations(), shutdownContext);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui().rootPath())
                     .displayOnNotFoundPage("GraphQL UI")
@@ -882,6 +880,15 @@ public class SmallRyeGraphQLProcessor {
             additionalIndexedClasses
                     .produce(new AdditionalIndexedClassesBuildItem("io.quarkus.panache.common.Sort$NullPrecedence"));
         }
+    }
+
+    // This build step can be removed after Quarkus updated to any version newer than 2.14.1
+    // See also https://github.com/smallrye/smallrye-graphql/pull/2299
+    @BuildStep
+    void registerKnownSpecializationAnnotation(
+            BuildProducer<KnownCompatibleBeanArchiveBuildItem> compatArchiveProducer) {
+        compatArchiveProducer.produce(KnownCompatibleBeanArchiveBuildItem.builder("io.smallrye", "smallrye-graphql-cdi")
+                .addReason(KnownCompatibleBeanArchiveBuildItem.Reason.SPECIALIZES_ANNOTATION).build());
     }
 
     // In dev mode, when you click on the logo, you should go to Dev UI

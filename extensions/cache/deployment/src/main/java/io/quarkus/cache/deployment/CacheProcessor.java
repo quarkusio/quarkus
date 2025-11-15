@@ -54,7 +54,6 @@ import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
-import io.quarkus.cache.deployment.spi.CacheManagerInfoBuildItem;
 import io.quarkus.cache.deployment.spi.CacheTypeBuildItem;
 import io.quarkus.cache.runtime.CacheBuildConfig;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
@@ -104,7 +103,6 @@ class CacheProcessor {
     @BuildStep
     void validateCacheAnnotationsAndProduceCacheNames(CombinedIndexBuildItem combinedIndex,
             List<AdditionalCacheNameBuildItem> additionalCacheNames,
-            List<io.quarkus.cache.deployment.AdditionalCacheNameBuildItem> additionalCacheNamesDeprecated,
             BuildProducer<ValidationErrorBuildItem> validationErrors,
             BuildProducer<CacheNamesBuildItem> cacheNames, BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
 
@@ -172,9 +170,6 @@ class CacheProcessor {
 
         // Finally, additional cache names provided by other extensions must be added to the cache names collection.
         for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
-            names.add(additionalCacheName.getName());
-        }
-        for (io.quarkus.cache.deployment.AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNamesDeprecated) {
             names.add(additionalCacheName.getName());
         }
         cacheNames.produce(new CacheNamesBuildItem(names));
@@ -277,6 +272,7 @@ class CacheProcessor {
                 .scope(ApplicationScoped.class)
                 .supplier(cacheManagerSupplier)
                 .setRuntimeInit()
+                .startup()
                 .done();
     }
 

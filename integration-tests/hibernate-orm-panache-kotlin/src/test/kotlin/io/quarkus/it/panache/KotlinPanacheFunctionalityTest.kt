@@ -57,7 +57,7 @@ open class KotlinPanacheFunctionalityTest {
         // hence no 'persistence'-attribute
         Assertions.assertEquals(
             "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
-            personAsString
+            personAsString,
         )
     }
 

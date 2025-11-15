@@ -42,7 +42,7 @@ class KotlinReactiveMongoOperations :
     override fun createUpdate(
         collection: ReactiveMongoCollection<*>,
         entityClass: Class<*>,
-        docUpdate: Bson
+        docUpdate: Bson,
     ) = ReactivePanacheUpdateImpl(this, entityClass, docUpdate, collection)
 
     /**

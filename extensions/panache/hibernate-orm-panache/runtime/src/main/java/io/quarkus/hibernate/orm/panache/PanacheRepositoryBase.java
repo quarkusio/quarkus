@@ -162,6 +162,18 @@ public interface PanacheRepositoryBase<Entity, Id> {
     }
 
     /**
+     * Find entities of this type by their IDs.
+     *
+     * @param ids the IDs of the entities to find.
+     * @return a list containing the entities found, with null elements representing missing entities, with the list ordered by
+     *         the positions of their ids in the given list of identifiers.
+     */
+    @GenerateBridge
+    default <T extends PanacheEntityBase> List<T> findByIds(List<?> ids) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
      * Find entities using a query, with optional indexed parameters.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}

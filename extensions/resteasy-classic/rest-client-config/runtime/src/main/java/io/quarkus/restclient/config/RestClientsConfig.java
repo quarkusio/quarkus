@@ -1,12 +1,10 @@
 package io.quarkus.restclient.config;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -57,40 +55,80 @@ public interface RestClientsConfig {
     Optional<String> multipartPostEncoderMode();
 
     /**
+     * The name of the proxy configuration to use; ignored if {@code quarkus.rest-client.proxy-address} is set.
+     * <p>
+     * If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.
+     * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+     * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown
+     * at runtime.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * Use the value {@code none} to disable using the default configuration defined via {@code quarkus.proxy.*}.
+     * <p>
+     * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+     */
+    Optional<String> proxyConfigurationName();
+
+    /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
      * (or IP address) and port for requests of clients to use.
      * <p>
      * Can be overwritten by client-specific settings.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
     /**
      * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<String> proxyUser();
 
     /**
      * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword JVM settings.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<String> proxyPassword();
 
     /**
      * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
      * Please note that unlike the JVM settings, this property is empty by default.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
      * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
      */
     Optional<String> nonProxyHosts();
+
+    /**
+     * Proxy connection timeout.
+     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     *
+     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
+     */
+    @ConfigDocDefault("10s")
+    Optional<Duration> proxyConnectTimeout();
 
     /**
      * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
@@ -187,19 +225,6 @@ public interface RestClientsConfig {
     Optional<String> providers();
 
     /**
-     * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of a CDI
-     * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such
-     * as"ApplicationScoped").
-     * <p>
-     * Default scope for the rest-client extension is "Dependent" (which is the spec-compliant behavior).
-     * <p>
-     * Default scope for the rest-client-reactive extension is "ApplicationScoped".
-     * <p>
-     * Can be overwritten by client-specific settings.
-     */
-    Optional<String> scope();
-
-    /**
      * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
      * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
      * <p>
@@ -277,6 +302,14 @@ public interface RestClientsConfig {
     boolean http2();
 
     /**
+     * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("64K")
+    Optional<MemorySize> http2UpgradeMaxContentLength();
+
+    /**
      * Configures two different things:
      * <ul>
      * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
@@ -347,7 +380,7 @@ public interface RestClientsConfig {
          * <li>{@code none} - no additional logging</li>
          * </ul>
          *
-         * This property is applicable to reactive REST clients only.
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
         Optional<String> scope();
 
@@ -356,7 +389,7 @@ public interface RestClientsConfig {
          * <p>
          * By default, set to 100.
          * <p>
-         * This property is applicable to reactive REST clients only.
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
         @WithDefault("100")
         Integer bodyLimit();
@@ -366,7 +399,7 @@ public interface RestClientsConfig {
         /**
          * The max HTTP chunk size (8096 bytes by default).
          * <p>
-         * This property is applicable to reactive REST clients only.
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          *
          * @deprecated Use {@code quarkus.rest-client.max-chunk-size} instead
          */
@@ -425,8 +458,7 @@ public interface RestClientsConfig {
          * url.
          * The override is done using the REST Client class name configuration syntax.
          * <p>
-         * This property is not applicable to the RESTEasy Client, only the Quarkus Rest client (formerly RESTEasy Reactive
-         * client).
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
          */
         Optional<String> overrideUri();
 
@@ -465,33 +497,71 @@ public interface RestClientsConfig {
         Optional<String> multipartPostEncoderMode();
 
         /**
+         * The name of the proxy configuration to use; ignored if {@code quarkus.rest-client."client".proxy-address} is set.
+         * <p>
+         * If not set and {@code quarkus.rest-client.proxy-configuration-name} or the default proxy configuration
+         * ({@code quarkus.proxy.*}) is set, then the first valid of them will get effective.
+         * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+         * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be
+         * thrown at runtime.
+         * <p>
+         * Use the value {@code none} to disable using the default configuration defined via
+         * {@code quarkus.rest-client.proxy-configuration-name} or {@code quarkus.proxy.*}.
+         * <p>
+         * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+         */
+        Optional<String> proxyConfigurationName();
+
+        /**
          * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
          * (or IP address) and port for requests of this client to use.
          * <p>
          * Use `none` to disable proxy
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
         /**
          * Proxy username.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<String> proxyUser();
 
         /**
          * Proxy password.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<String> proxyPassword();
 
         /**
-         * Hosts to access without proxy
+         * Hosts to access without proxy.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
          * <p>
          * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
          */
         Optional<String> nonProxyHosts();
+
+        /**
+         * Proxy connection timeout.
+         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         *
+         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
+         */
+        @ConfigDocDefault("10s")
+        Optional<Duration> proxyConnectTimeout();
 
         /**
          * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
@@ -614,6 +684,14 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
+         * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("64K")
+        Optional<MemorySize> http2UpgradeMaxContentLength();
+
+        /**
          * Configures two different things:
          * <ul>
          * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
@@ -632,7 +710,7 @@ public interface RestClientsConfig {
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
-        Optional<Boolean> enableCompression();
+        Optional<Boolean> enableResponseDecompression();
 
         /**
          * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
@@ -651,23 +729,18 @@ public interface RestClientsConfig {
         /**
          * If set to {@code true}, then this REST Client will not the default exception mapper which
          * always throws an exception if HTTP response code >= 400.
+         * <p>
+         * This property is only taken into account if the REST Client returns {@code jakarta.ws.rs.core.Response} or
+         * {@code org.jboss.resteasy.reactive.RestResponse}
+         * <p>
          * This property is not applicable to the RESTEasy Client.
          */
-        @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
+        @WithDefault("false")
         Boolean disableDefaultMapper();
 
         /**
          * Logging configuration.
          */
         Optional<RestClientLoggingConfig> logging();
-    }
-
-    class RestClientKeysProvider implements Supplier<Iterable<String>> {
-        static List<String> KEYS = new ArrayList<>();
-
-        @Override
-        public Iterable<String> get() {
-            return KEYS;
-        }
     }
 }

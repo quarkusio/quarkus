@@ -1,6 +1,5 @@
 package io.quarkus.grpc.client.bd;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;

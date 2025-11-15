@@ -28,7 +28,7 @@ public class EventProvider<T> implements InjectableReferenceProvider<Event<T>> {
 
     @Override
     public Event<T> get(CreationalContext<Event<T>> creationalContext) {
-        return new EventImpl<>(eventType, eventQualifiers, injectionPoint);
+        return ArcContainerImpl.instance().getEvent(eventType, eventQualifiers, injectionPoint);
     }
 
 }

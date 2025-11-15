@@ -1,11 +1,12 @@
 package io.quarkus.deployment.configuration;
 
+import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isApplicationClass;
 import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -22,6 +23,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -37,15 +39,17 @@ import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 
 public class ConfigMappingUtils {
-
     public static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
 
     private ConfigMappingUtils() {
+        throw new UnsupportedOperationException();
     }
 
+    // Used for application Mappings and MP ConfigProperties
     public static void processConfigClasses(
+            ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
@@ -60,50 +64,58 @@ public class ConfigMappingUtils {
                 continue;
             }
 
-            Class<?> configClass = toClass(target.asClass().name());
-            String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
+            // Ignore scanned classes from the processor.
+            // Usually they are not available in Jandex, but there are cases where extensions have jandex to their
+            // own classes, or user applications adding @ConfigRoot to generate documentation. In that case, it would
+            // generate duplicates.
+            ConfigClass configClass = configClass(
+                    toClass(target.asClass().name()),
+                    Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse(""));
+            if (configItem.getReadResult().getAllMappingsByClass().containsKey(configClass.getType())) {
+                continue;
+            }
             Kind configClassKind = getConfigClassType(instance);
-            processConfigClass(configClass(configClass, prefix), configClassKind, true, combinedIndex,
-                    generatedClasses, reflectiveClasses, reflectiveMethods, configClasses, additionalConstrainedClasses);
+            processConfigClass(configClass, configClassKind, combinedIndex, generatedConfigClasses, reflectiveClasses,
+                    reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
     }
 
     public static void processConfigMapping(
+            ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
-        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
-                additionalConstrainedClasses, CONFIG_MAPPING_NAME);
+        processConfigClasses(configItem, combinedIndex, generatedConfigClasses, reflectiveClasses, reflectiveMethods,
+                configClasses, additionalConstrainedClasses, CONFIG_MAPPING_NAME);
     }
 
     public static void processExtensionConfigMapping(
             ConfigClass configClass,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigClass(configClass, Kind.MAPPING, false, combinedIndex, generatedClasses, reflectiveClasses,
+        processConfigClass(configClass, Kind.MAPPING, combinedIndex, generatedConfigClasses, reflectiveClasses,
                 reflectiveMethods, configClasses, additionalConstrainedClasses);
     }
 
     private static void processConfigClass(
             ConfigClass configClassWithPrefix,
             Kind configClassKind,
-            boolean isApplicationClass,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            Map<String, GeneratedClassBuildItem> generatedConfigClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        Class<?> configClass = configClassWithPrefix.getKlass();
+        Class<?> configClass = configClassWithPrefix.getType();
         String prefix = configClassWithPrefix.getPrefix();
 
         List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
@@ -114,8 +126,9 @@ public class ConfigMappingUtils {
             generatedClassesNames.add(mappingMetadata.getClassName());
             // This is the generated implementation of the mapping by SmallRye Config.
             byte[] classBytes = mappingMetadata.getClassBytes();
-            generatedClasses.produce(new GeneratedClassBuildItem(isApplicationClass, mappingMetadata.getClassName(),
-                    classBytes));
+            generatedConfigClasses.put(mappingMetadata.getClassName(),
+                    new GeneratedClassBuildItem(isApplicationClass(configClass.getName()), mappingMetadata.getClassName(),
+                            classBytes));
             additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
                     classBytes));
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName())
@@ -123,6 +136,8 @@ public class ConfigMappingUtils {
                     .build());
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
                     mappingMetadata.getClassName(), "getProperties", new String[0]));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
+                    mappingMetadata.getClassName(), "getSecrets", new String[0]));
 
             configComponentInterfaces.add(mappingMetadata.getInterfaceType());
 
@@ -191,9 +206,9 @@ public class ConfigMappingUtils {
         }
     }
 
+    @Deprecated(forRemoval = true, since = "3.25")
     public static Object newInstance(Class<?> configClass) {
         if (configClass.isAnnotationPresent(ConfigMapping.class)) {
-            // TODO - radcortez - mapping classes cannot be initialized like this.
             return ReflectUtil.newInstance(ConfigMappingLoader.ensureLoaded(configClass).implementation());
         } else {
             return ReflectUtil.newInstance(configClass);
@@ -222,7 +237,7 @@ public class ConfigMappingUtils {
         DotName configIfaceName = DotName.createSimple(configClass.getName());
         ClassInfo configIfaceInfo = index.getClassByName(configIfaceName);
         if ((configIfaceInfo == null) || configIfaceInfo.interfaceNames().isEmpty()) {
-            return Collections.singleton(Type.create(configIfaceName, Type.Kind.CLASS));
+            return Set.of(Type.create(configIfaceName, Type.Kind.CLASS));
         }
 
         Set<DotName> allIfaces = new HashSet<>();

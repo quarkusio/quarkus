@@ -16,31 +16,29 @@ public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
     private final byte[] key;
     private final Type typeOfValue;
     private long cursor;
+    private boolean initial;
     private final List<String> extra = new ArrayList<>();
 
     public <K> ZScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfValue,
             List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
-        this.cursor = INITIAL_CURSOR_ID;
+        this.cursor = 0;
+        this.initial = true;
         this.typeOfValue = typeOfValue;
         this.extra.addAll(extra);
     }
 
     @Override
     public boolean hasNext() {
-        return cursor != 0;
+        return initial || cursor != 0;
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> next() {
-        RedisCommand cmd = RedisCommand.of(Command.ZSCAN);
-        long pos = cursor == INITIAL_CURSOR_ID ? 0 : cursor;
-        cmd.put(key);
-        cmd.put(Long.toString(pos));
-        cmd.putAll(extra);
-        return execute(cmd)
-                .invoke(response -> cursor = response.get(0).toLong())
+        initial = false;
+        return execute(RedisCommand.of(Command.ZSCAN).put(key).put(Long.toUnsignedString(cursor)).putAll(extra))
+                .invoke(response -> cursor = Long.parseUnsignedLong(response.get(0).toString()))
                 .map(response -> {
                     Response array = response.get(1);
                     V value = null;

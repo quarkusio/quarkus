@@ -27,11 +27,9 @@ public class RestClientOverrideRuntimeConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(EchoResource.class, EchoClient.class, RestClientBuildTimeConfigSource.class,
-                            RestClientRunTimeConfigSource.class)
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.restclient.configuration.RestClientBuildTimeConfigSource",
-                            "io.quarkus.restclient.configuration.RestClientRunTimeConfigSource"));
+                    .addClasses(EchoResource.class, EchoClient.class, RestClientBuildTimeConfigBuilderCustomizer.class)
+                    .addAsServiceProvider("io.smallrye.config.SmallRyeConfigBuilderCustomizer",
+                            "io.quarkus.restclient.configuration.RestClientBuildTimeConfigBuilderCustomizer"));
 
     @Inject
     @RestClient
@@ -44,12 +42,12 @@ public class RestClientOverrideRuntimeConfigTest {
     @Test
     void overrideConfig() {
         // Build time property recording
-        Optional<ConfigSource> specifiedDefaultValues = config.getConfigSource("DefaultValuesConfigSource");
-        assertTrue(specifiedDefaultValues.isPresent());
-        assertTrue(specifiedDefaultValues.get().getPropertyNames()
+        Optional<ConfigSource> runtimeValues = config.getConfigSource("Runtime Values");
+        assertTrue(runtimeValues.isPresent());
+        assertTrue(runtimeValues.get().getPropertyNames()
                 .contains("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
         assertEquals("http://nohost",
-                specifiedDefaultValues.get().getValue("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
+                runtimeValues.get().getValue("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
         assertTrue(StreamSupport.stream(config.getPropertyNames().spliterator(), false).anyMatch(
                 property -> property.equals("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url")));
 
@@ -59,11 +57,11 @@ public class RestClientOverrideRuntimeConfigTest {
         ConfigValue quarkusValue = config
                 .getConfigValue("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
         assertEquals(mpValue.getValue(), quarkusValue.getValue());
-        assertEquals(RestClientRunTimeConfigSource.class.getName(), quarkusValue.getConfigSourceName());
+        assertEquals("RestClientRuntimeConfigSource", quarkusValue.getConfigSourceName());
         // There is no relocate for MP names, so it keeps the same name
-        assertEquals(mpValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
+        assertEquals("io.quarkus.restclient.configuration.EchoClient/mp-rest/url", mpValue.getName());
         // We use the Quarkus name, because that is the one that has priority
-        assertEquals(quarkusValue.getName(), "quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
+        assertEquals("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url", quarkusValue.getName());
 
         assertTrue(restClientsConfig.clients().containsKey("io.quarkus.restclient.configuration.EchoClient"));
         Optional<String> url = restClientsConfig.clients().get("io.quarkus.restclient.configuration.EchoClient").url();
@@ -80,7 +78,7 @@ public class RestClientOverrideRuntimeConfigTest {
         Set<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false).collect(toSet());
         // MP/mp-rest/url - This one exists at build time
         assertTrue(properties.contains("BT-MP/mp-rest/url"));
-        assertEquals("from-mp", config.getRawValue("BT-MP/mp-rest/url"));
+        assertEquals("from-mp", config.getConfigValue("BT-MP/mp-rest/url").getValue());
         // quarkus.rest-client.MP.url - Is not set, and it is not recorded
         assertFalse(properties.contains("quarkus.rest-client.BT-MP.url"));
 

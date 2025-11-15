@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive.runtime;
 import java.net.URI;
 import java.net.URL;
 import java.security.KeyStore;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
+import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig.ProxyType;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.runtime.context.ClientHeadersFactoryContextResolver;
 import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
@@ -124,6 +126,18 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder nonProxyHosts(String nonProxyHosts) {
         delegate.nonProxyHosts(nonProxyHosts);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder proxyConnectTimeout(Duration connectTimeout) {
+        delegate.proxyConnectTimeout(connectTimeout);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder proxyType(ProxyType proxyType) {
+        delegate.proxyType(proxyType);
         return this;
     }
 

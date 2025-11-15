@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.qute.trace.TemplateEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -36,16 +38,19 @@ class TemplateImpl implements Template {
     final SectionNode root;
     private final List<ParameterDeclaration> parameterDeclarations;
     private final LazyValue<Map<String, Fragment>> fragments;
+    private final Optional<URI> source;
 
     // The initial capacity of the StringBuilder used to render the template
     final Capacity capacity;
 
-    TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant) {
+    TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant,
+            Optional<URI> source) {
         this.engine = engine;
         this.root = root;
         this.templateId = templateId;
         this.generatedId = generatedId;
         this.variant = variant;
+        this.source = source;
         // Note that param declarations can be removed if placed on a standalone line
         this.parameterDeclarations = ImmutableList.copyOf(root.getParameterDeclarations());
         // Use a lazily initialized map to avoid unnecessary performance costs during parsing
@@ -124,6 +129,11 @@ class TemplateImpl implements Template {
         return root;
     }
 
+    @Override
+    public Optional<URI> getSource() {
+        return source;
+    }
+
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
         if (section.name.equals(Parser.ROOT_HELPER_NAME)) {
             // Initialize the lazy map for root sections only
@@ -149,7 +159,7 @@ class TemplateImpl implements Template {
                         for (TemplateNode fragmentNode : fragmentNodes) {
                             FragmentSectionHelper helper = (FragmentSectionHelper) ((SectionNode) fragmentNode).helper;
                             Fragment fragment = new FragmentImpl(engine, (SectionNode) fragmentNode, helper.getIdentifier(),
-                                    engine.generateId(), variant);
+                                    engine.generateId(), variant, source);
                             fragments.put(helper.getIdentifier(), fragment);
                         }
                         return fragments;
@@ -273,6 +283,11 @@ class TemplateImpl implements Template {
             ResolutionContext rootContext = new ResolutionContextImpl(data,
                     engine.getEvaluator(), null, this);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
+            TemplateEvent event = engine.traceManager != null ? new TemplateEvent(this, engine) : null;
+            if (event != null) {
+                // Notify trace listeners that template rendering has started.
+                engine.getTraceManager().fireStartTemplate(event);
+            }
             // Async resolution
             root.resolve(rootContext).whenComplete((r, t) -> {
                 if (t != null) {
@@ -296,6 +311,11 @@ class TemplateImpl implements Template {
                         }
 
                     }
+                }
+                if (event != null) {
+                    // Notify trace listeners that template rendering has ended.
+                    event.done();
+                    engine.getTraceManager().fireEndTemplate(event);
                 }
             });
             return result;
@@ -374,8 +394,8 @@ class TemplateImpl implements Template {
     class FragmentImpl extends TemplateImpl implements Fragment {
 
         FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
-                Optional<Variant> variant) {
-            super(engine, root, fragmentId, generatedId, variant);
+                Optional<Variant> variant, Optional<URI> sourcePath) {
+            super(engine, root, fragmentId, generatedId, variant, sourcePath);
         }
 
         @Override

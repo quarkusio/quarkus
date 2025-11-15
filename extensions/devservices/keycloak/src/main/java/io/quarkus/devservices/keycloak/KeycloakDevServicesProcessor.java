@@ -49,8 +49,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -82,7 +82,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class KeycloakDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(KeycloakDevServicesProcessor.class);
@@ -543,7 +543,7 @@ public class KeycloakDevServicesProcessor {
 
             if (useSharedNetwork) {
                 if (keycloakX) {
-                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "http://" + hostName + ":" + KEYCLOAK_PORT);
+                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, (isHttps() ? "https://" : "http://") + hostName + ":" + KEYCLOAK_PORT);
                 } else {
                     addEnv(KEYCLOAK_WILDFLY_FRONTEND_URL, "http://localhost:" + fixedExposedPort.getAsInt());
                 }
@@ -859,6 +859,7 @@ public class KeycloakDevServicesProcessor {
         realm.setAccessTokenLifespan(600);
         realm.setSsoSessionMaxLifespan(600);
         realm.setRefreshTokenMaxReuse(10);
+        realm.setRequiredActions(List.of());
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
@@ -907,6 +908,8 @@ public class KeycloakDevServicesProcessor {
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(realmRoles);
+        user.setEmailVerified(true);
+        user.setRequiredActions(List.of());
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

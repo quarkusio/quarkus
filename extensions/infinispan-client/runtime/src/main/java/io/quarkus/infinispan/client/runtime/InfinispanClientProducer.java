@@ -20,7 +20,6 @@ import jakarta.inject.Singleton;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.RemoteCounterManagerFactory;
-import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.ClusterConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
@@ -360,6 +359,9 @@ public class InfinispanClientProducer {
             if (runtimeCacheConfig.nearCacheUseBloomFilter().isPresent()) {
                 builder.remoteCache(cacheName).nearCacheUseBloomFilter(runtimeCacheConfig.nearCacheUseBloomFilter().get());
             }
+            if (runtimeCacheConfig.transactionMode().isPresent()) {
+                builder.remoteCache(cacheName).transactionMode(runtimeCacheConfig.transactionMode().get());
+            }
         }
 
         for (Map.Entry<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster : infinispanClientRuntimeConfig
@@ -369,8 +371,7 @@ public class InfinispanClientProducer {
             ClusterConfigurationBuilder clusterConfigurationBuilder = builder.addCluster(backupCluster.getKey());
             clusterConfigurationBuilder.addClusterNodes(backupClusterConfig.hosts());
             if (backupClusterConfig.clientIntelligence().isPresent()) {
-                clusterConfigurationBuilder.clusterClientIntelligence(
-                        ClientIntelligence.valueOf(backupClusterConfig.clientIntelligence().get()));
+                clusterConfigurationBuilder.clusterClientIntelligence(backupClusterConfig.clientIntelligence().get());
             }
         }
 

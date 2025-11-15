@@ -18,5 +18,9 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>quarkus-agroal</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-assistant-dev</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -12,15 +12,18 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class SmallRyeJwtOidcWebAppTest {
 
+    final KeycloakTestClient client = new KeycloakTestClient();
+
     @Test
     public void testGetUserNameWithBearerToken() {
-        RestAssured.given().auth().oauth2(KeycloakRealmResourceManager.getAccessToken("alice"))
+        RestAssured.given().auth().oauth2(client.getAccessToken("alice"))
                 .when().get("/protected")
                 .then()
                 .statusCode(200)
@@ -37,7 +40,7 @@ public class SmallRyeJwtOidcWebAppTest {
 
     @Test
     public void testGetUserNameWithCookieToken() {
-        RestAssured.given().header("Cookie", "Bearer=" + KeycloakRealmResourceManager.getAccessToken("alice"))
+        RestAssured.given().header("Cookie", "Bearer=" + client.getAccessToken("alice"))
                 .when().get("/protected")
                 .then()
                 .statusCode(200)
@@ -74,7 +77,7 @@ public class SmallRyeJwtOidcWebAppTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();

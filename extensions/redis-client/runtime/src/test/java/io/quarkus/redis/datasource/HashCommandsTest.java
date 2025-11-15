@@ -284,11 +284,9 @@ public class HashCommandsTest extends DatasourceTestBase {
         hash.hset(key, "one", Person.person0);
         HashScanCursor<String, Person> cursor = hash.hscan(key);
 
-        assertThat(cursor.cursorId()).isEqualTo(-1L);
         assertThat(cursor.hasNext()).isTrue();
         Map<String, Person> next = cursor.next();
 
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(next).containsExactly(entry("one", Person.person0));
         assertThat(cursor.hasNext()).isFalse();
     }
@@ -297,11 +295,10 @@ public class HashCommandsTest extends DatasourceTestBase {
     void hscanEmpty() {
         HashScanCursor<String, Person> cursor = hash.hscan(key);
 
-        assertThat(cursor.cursorId()).isEqualTo(-1L);
         assertThat(cursor.hasNext()).isTrue();
         Map<String, Person> next = cursor.next();
 
-        assertThat(cursor.cursorId()).isEqualTo(0);
+        assertThat(cursor.hasNext()).isFalse();
         assertThat(next).isEmpty();
     }
 
@@ -324,11 +321,9 @@ public class HashCommandsTest extends DatasourceTestBase {
         hash.hset(key, "three", Person.person2);
         HashScanCursor<String, Person> cursor = hash.hscan(key, new ScanArgs().count(3));
 
-        assertThat(cursor.cursorId()).isEqualTo(-1L);
         assertThat(cursor.hasNext()).isTrue();
         Map<String, Person> next = cursor.next();
 
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(next).containsExactly(entry("one", Person.person0), entry("two", Person.person1),
                 entry("three", Person.person2));
         assertThat(cursor.hasNext()).isFalse();

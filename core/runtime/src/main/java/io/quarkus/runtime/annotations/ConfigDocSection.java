@@ -10,14 +10,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * A marker indicating that the configuration item {@link ConfigItem} should be generated as a section.
- * The section will be generated only if the configuration item type is annotated with {@link ConfigGroup}
+ * A marker indicating that the configuration member documentation must be generated as a section.
  */
 @Documented
 @Retention(RUNTIME)
 @Target({ FIELD, PARAMETER, METHOD })
 public @interface ConfigDocSection {
-
     /**
      * If we should generate a specific file for this section.
      * <p>

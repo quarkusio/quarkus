@@ -10,7 +10,8 @@ import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.logging.Logger;
+
+import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,4 +135,19 @@ public class GrafanaClient {
         LOG.info("Traces: " + tempoResult);
         return tempoResult;
     }
+
+    public String dashboard(String uid) {
+        AtomicReference<String> ref = new AtomicReference<>();
+        handle(
+                "/api/dashboards/uid/" + uid,
+                HttpRequest.Builder::GET,
+                HttpResponse.BodyHandlers.ofString(),
+                (r, b) -> {
+                    ref.set(b);
+                });
+        String result = ref.get();
+        LOG.info("Dashboard: " + result);
+        return result;
+    }
+
 }

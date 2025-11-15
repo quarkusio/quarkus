@@ -31,9 +31,14 @@ export class QwcContainerImageBuild extends LitElement {
     }
 
     static styles = css`
+      :host {
+        padding-left: 5px;
+        padding-right: 5px;
+        display: flex;
+        flex-direction: column;
+       }
       .report {
         margin-top: 1em;
-        width: 80%;
       }
     `;
 
@@ -46,7 +51,7 @@ export class QwcContainerImageBuild extends LitElement {
         
         this.builders = [];
         if(builderTypes){
-            this.builders = builderTypes.list;
+            this.builders = builderTypes;
         }
 
         this.types = [];

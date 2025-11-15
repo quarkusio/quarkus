@@ -1,7 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy;
 
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
 
 import java.io.IOException;
 
@@ -27,7 +26,8 @@ public class OpenTelemetryClassicServerFilter implements ContainerRequestFilter 
     public void filter(ContainerRequestContext requestContext) throws IOException {
         Span localRootSpan = LocalRootSpan.current();
 
-        localRootSpan.setAttribute(CODE_NAMESPACE, resourceInfo.getResourceClass().getName());
-        localRootSpan.setAttribute(CODE_FUNCTION, resourceInfo.getResourceMethod().getName());
+        localRootSpan.setAttribute(CODE_FUNCTION_NAME,
+                resourceInfo.getResourceClass().getName() + "." +
+                        resourceInfo.getResourceMethod().getName());
     }
 }

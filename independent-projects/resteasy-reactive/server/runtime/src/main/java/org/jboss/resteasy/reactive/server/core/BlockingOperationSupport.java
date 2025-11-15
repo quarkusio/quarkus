@@ -1,5 +1,9 @@
 package org.jboss.resteasy.reactive.server.core;
 
+/**
+ * @deprecated This class has been replaced by {@link org.jboss.resteasy.reactive.common.core.BlockingOperationSupport}
+ */
+@Deprecated(forRemoval = true, since = "3.27")
 public class BlockingOperationSupport {
 
     private static volatile IOThreadDetector ioThreadDetector;

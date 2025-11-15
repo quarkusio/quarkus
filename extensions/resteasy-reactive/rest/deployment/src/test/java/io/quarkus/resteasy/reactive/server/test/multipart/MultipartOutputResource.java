@@ -11,6 +11,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 
 @Path("/multipart/output")
@@ -57,15 +58,17 @@ public class MultipartOutputResource {
     @Path("/with-form-data")
     @Produces(MediaType.MULTIPART_FORM_DATA)
     public RestResponse<MultipartFormDataOutput> withFormDataOutput() {
+        QuarkusMultivaluedHashMap<String, Object> headers = new QuarkusMultivaluedHashMap<>();
+        headers.putSingle("extra-header", "extra-value");
         MultipartFormDataOutput form = new MultipartFormDataOutput();
         form.addFormData("name", RESPONSE_NAME, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("part-with-filename", RESPONSE_FILENAME, MediaType.TEXT_PLAIN_TYPE, "file.txt");
-        form.addFormData("part-with-filename", RESPONSE_FILENAME, MediaType.TEXT_PLAIN_TYPE, "file2.txt");
+        form.addFormData("part-with-filename", RESPONSE_FILENAME, MediaType.TEXT_PLAIN_TYPE, "file2.txt", headers);
         form.addFormData("custom-surname", RESPONSE_SURNAME, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE)
-                .getHeaders().putSingle("extra-header", "extra-value");
+                .getHeaders().putAll(headers);
         form.addFormData("values", RESPONSE_VALUES, MediaType.TEXT_PLAIN_TYPE);
-        form.addFormData("active", RESPONSE_ACTIVE, MediaType.TEXT_PLAIN_TYPE);
+        form.addFormData("active", RESPONSE_ACTIVE, MediaType.TEXT_PLAIN_TYPE, headers);
         return RestResponse.ResponseBuilder.ok(form).header("foo", "bar").build();
     }
 

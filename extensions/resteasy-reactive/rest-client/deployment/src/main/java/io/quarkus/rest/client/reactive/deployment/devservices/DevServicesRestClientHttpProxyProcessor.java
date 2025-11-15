@@ -1,11 +1,8 @@
 package io.quarkus.rest.client.reactive.deployment.devservices;
 
-import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,23 +17,21 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.exception.UncheckedException;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem;
 import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
 import io.quarkus.restclient.config.RegisteredRestClient;
-import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildConfig;
-import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.restclient.config.deployment.RestClientsBuildTimeConfigBuildItem;
 import io.smallrye.config.SmallRyeConfig;
 
-@BuildSteps(onlyIfNot = IsNormal.class)
+@BuildSteps(onlyIf = IsDevServicesSupportedByLaunchMode.class)
 public class DevServicesRestClientHttpProxyProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesRestClientHttpProxyProcessor.class);
@@ -56,29 +51,16 @@ public class DevServicesRestClientHttpProxyProcessor {
 
     @BuildStep
     public void determineRequiredProxies(
-            RestClientsBuildTimeConfig clientsConfig,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            ResourceScanningResultBuildItem resourceScanningResultBuildItem,
-            List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
+            RestClientsBuildTimeConfigBuildItem restClientBuildTimeConfig,
             BuildProducer<RestClientHttpProxyBuildItem> producer) {
 
-        List<RegisteredRestClient> registeredRestClients = new ArrayList<>(
-                toRegisteredRestClients(registeredRestClientBuildItems));
-        resourceScanningResultBuildItem.getResult().getClientInterfaces().forEach((restClient, path) -> {
-            if (registeredRestClients.stream()
-                    .noneMatch(registeredRestClient -> registeredRestClient.getFullName().equals(restClient.toString()))) {
-                registeredRestClients.add(new RegisteredRestClient(restClient.toString(), restClient.withoutPackagePrefix()));
-            }
-            ;
-        });
-
-        Map<String, RestClientBuildConfig> configs = clientsConfig.get(registeredRestClients).clients();
+        Map<String, RestClientBuildConfig> configs = restClientBuildTimeConfig.getRestClientsBuildTimeConfig().clients();
         if (configs.isEmpty()) {
             return;
         }
 
-        SmallRyeConfig config = clientsConfig.getConfig(registeredRestClients);
-        for (RegisteredRestClient registeredRestClient : registeredRestClients) {
+        SmallRyeConfig config = restClientBuildTimeConfig.getConfig();
+        for (RegisteredRestClient registeredRestClient : restClientBuildTimeConfig.getRestClients()) {
             String restClient = registeredRestClient.getFullName();
 
             RestClientBuildConfig restClientBuildConfig = configs.get(restClient);
@@ -87,7 +69,7 @@ public class DevServicesRestClientHttpProxyProcessor {
                 continue;
             }
 
-            // TODO - DevServices - We should do this, because we are querying runtime configuration
+            // TODO - DevServices - We shouldn't do this, because we are querying runtime configuration
             Optional<String> baseUri = oneOf(
                     config.getOptionalValue("quarkus.rest-client." + "\"" + restClient + "\"" + ".uri", String.class),
                     config.getOptionalValue("quarkus.rest-client." + "\"" + restClient + "\"" + ".url", String.class));
@@ -200,9 +182,11 @@ public class DevServicesRestClientHttpProxyProcessor {
             }
 
             devServicePropertiesProducer.produce(
-                    new DevServicesResultBuildItem("rest-client-" + bi.getClassName() + "-proxy",
-                            null,
-                            Map.of(urlKeyName, urlKeyValue)));
+                    DevServicesResultBuildItem.discovered()
+                            .feature(Feature.REST_CLIENT)
+                            .description("rest-client-" + bi.getClassName() + "-proxy")
+                            .config(Map.of(urlKeyName, urlKeyValue))
+                            .build());
         }
 
         closeBuildItem.addCloseTask(new CloseTask(runningProxies, providerCloseables, runningProviders), true);

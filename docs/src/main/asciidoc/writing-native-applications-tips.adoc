@@ -39,22 +39,19 @@ Other resources should be declared explicitly.
 
 ==== Using the `quarkus.native.resources.includes` configuration property
 
-To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
-and its counterpart to exclude resources `quarkus.native.resources.excludes`.
+To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property.
+The configuration property supports glob patterns.
 
-Both configuration properties support glob patterns.
-
-For instance, having the following properties in your `application.properties`:
+For instance, having the following property in your `application.properties`:
 
 [source,properties]
 ----
 quarkus.native.resources.includes=foo/**,bar/**/*.txt
-quarkus.native.resources.excludes=foo/private/**
 ----
 
 will include:
 
-* all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
+* all files in the `foo/` directory and its subdirectories,
 * all text files in the `bar/` directory and its subdirectories.
 
 ==== Using a configuration file
@@ -260,6 +257,28 @@ public class MyReflectionConfiguration {
 ====
 Note that the order of the specified proxy interfaces is significant. For more information, see link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Proxy.html[Proxy javadoc].
 ====
+
+=== Registering resource bundles and resource files
+
+Resource bundles can be registered to be included in the native image by using `@RegisterResourceBundle`:
+
+[source,java]
+----
+@RegisterResourceBundle(bundleName = "messages")
+@RegisterResourceBundle(bundleName = "errors", moduleName = "foo")
+public class NativeConfiguration {
+}
+----
+
+Other resources files can be registered to be included in the native image by using `@RegisterResources`:
+
+[source,java]
+----
+@RegisterResources(globs = ["path1/level*/**", "path2/level5/**"])
+@RegisterResources(globs = ["**.txt"])
+public class NativeConfiguration {
+}
+----
 
 [[delay-class-init-in-your-app]]
 === Delaying class initialization

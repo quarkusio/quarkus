@@ -79,7 +79,7 @@ public class MavenProjectCreateForPlatformTest extends RegistryClientBuilderTest
     @Test
     void testCreateForPlatformWithUpstream() throws Exception {
 
-        final CliDriver.Result createResult = run(workDir(), "create", "create-for-platform",
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "create-for-platform",
                 "-P com.acme.quarkus.platform:acme-supersonic-bom:8.0.0", "-x supersonic,subatomic");
         createResult.echoSystemOut();
         createResult.echoSystemErr();

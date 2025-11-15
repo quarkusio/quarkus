@@ -12,7 +12,7 @@ import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBui
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 
 // this class is present in the `arc/deployment` module, because it has to be present always
-// and cannot be in the `core/deployment` module, as it depends on `quarkus-vertx-http-dev-ui-spi`
+// and cannot be in the `core/deployment` module, as it depends on `quarkus-devui-deployment-spi`
 public class JsonRpcMethodsProcessor {
     @BuildStep
     ExecutionModelAnnotationsAllowedBuildItem jsonRpcMethods(List<JsonRPCProvidersBuildItem> rpcProviders) {

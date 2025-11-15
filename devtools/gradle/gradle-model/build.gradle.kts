@@ -14,6 +14,12 @@ java {
     withJavadocJar()
 }
 
+// to generate reproducible jars
+tasks.withType<Jar>().configureEach {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+
 publishing {
     publications.create<MavenPublication>("maven") {
         artifactId = "quarkus-gradle-model"

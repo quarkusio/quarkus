@@ -756,7 +756,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     @GenerateBridge
     fun update(
         update: String,
-        vararg params: Any?
+        vararg params: Any?,
     ): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 
@@ -775,7 +775,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     @GenerateBridge
     fun update(
         update: String,
-        params: Map<String, Any?>
+        params: Map<String, Any?>,
     ): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 
@@ -794,7 +794,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     @GenerateBridge
     fun update(
         update: String,
-        params: Parameters
+        params: Parameters,
     ): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 

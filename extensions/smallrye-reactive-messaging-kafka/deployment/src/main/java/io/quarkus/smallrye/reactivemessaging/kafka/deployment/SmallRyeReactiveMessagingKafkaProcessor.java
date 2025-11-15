@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -41,6 +42,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
@@ -122,8 +124,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
 
     static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
-        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing",
-                channelName.contains(".") ? "\"" + channelName + "\"" : channelName, propertyName);
+        if ((channelName.charAt(0) != '"' || channelName.charAt(channelName.length() - 1) != '"')
+                && channelName.contains(".")) {
+            channelName = "\"" + channelName + "\"";
+        }
+        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing", channelName, propertyName);
     }
 
     @BuildStep
@@ -169,8 +174,14 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     public void additionalJpaModel(BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME));
-        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME));
+        // Only added to persistence units actually using this class, using Jandex-based discovery,
+        // so we pass empty sets of PUs.
+        // The build items tell the Hibernate extension to process the classes at build time:
+        // add to Jandex index, bytecode enhancement, proxy generation, ...
+        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME,
+                Set.of()));
+        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME,
+                Set.of()));
     }
 
     /**
@@ -194,24 +205,24 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!buildTimeConfig.enableGracefulShutdownInDevAndTestMode()) {
-                List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
-                List<AnnotationInstance> outgoings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING);
-                List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
-                List<AnnotationInstance> annotations = new ArrayList<>();
-                annotations.addAll(incomings);
-                annotations.addAll(outgoings);
-                annotations.addAll(channels);
-                for (AnnotationInstance annotation : annotations) {
-                    String channelName = annotation.value().asString();
-                    if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
-                        continue;
-                    }
-                    String key = getChannelPropertyKey(channelName, "graceful-shutdown", true);
-                    discoveryState.ifNotYetConfigured(key, () -> {
-                        defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, "false"));
-                    });
-                }
+                disableGracefulShutdown(channelsManagedByConnectors, defaultConfigProducer, discoveryState);
             }
+        }
+    }
+
+    void disableGracefulShutdown(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
+            DefaultSerdeDiscoveryState discoveryState) {
+        for (ConnectorManagedChannelBuildItem managed : channelsManagedByConnectors) {
+            String channelName = managed.getName();
+            boolean incoming = managed.getDirection() == ChannelDirection.INCOMING;
+            if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, incoming, channelName)) {
+                continue;
+            }
+            String key = getChannelPropertyKey(channelName, incoming ? "graceful-shutdown" : "close-timeout", incoming);
+            discoveryState.ifNotYetConfigured(key, () -> {
+                defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, incoming ? "false" : "0"));
+            });
         }
     }
 
@@ -879,7 +890,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
             // Check if already generated
-            result = alreadyGeneratedDeserializers.get(type.toString());
+            result = alreadyGeneratedDeserializers.get(type.name().toString());
             if (result == null) {
                 String clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
@@ -888,7 +899,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         ReflectiveClassBuildItem.builder(clazz)
                                 .reason(getClass().getName())
                                 .methods().build());
-                alreadyGeneratedDeserializers.put(type.toString(), result);
+                alreadyGeneratedDeserializers.put(type.name().toString(), result);
                 // if the channel has a DLQ config generate a serializer as well
                 if (hasDLQConfig(channelName, discovery.getConfig())) {
                     Result serializer = serializerFor(discovery, type, generatedClass, reflection, alreadyGeneratedSerializers);
@@ -918,7 +929,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
             // Check if already generated
-            result = alreadyGeneratedSerializers.get(type.toString());
+            result = alreadyGeneratedSerializers.get(type.name().toString());
             if (result == null) {
                 String clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
@@ -928,7 +939,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                                 .reason(getClass().getName())
                                 .methods().build());
                 result = Result.of(clazz);
-                alreadyGeneratedSerializers.put(type.toString(), result);
+                alreadyGeneratedSerializers.put(type.name().toString(), result);
             }
         }
 

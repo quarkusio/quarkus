@@ -3,6 +3,7 @@ package io.quarkus.rest.client.reactive;
 import java.net.URI;
 import java.net.URL;
 import java.security.KeyStore;
+import java.time.Duration;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +20,7 @@ import org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
+import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig.ProxyType;
 import io.quarkus.rest.client.reactive.runtime.QuarkusRestClientBuilderImpl;
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
 import io.quarkus.tls.TlsConfiguration;
@@ -225,6 +227,22 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder
      */
     QuarkusRestClientBuilder nonProxyHosts(String nonProxyHosts);
+
+    /**
+     * Specifies the connect timeout for the proxy connection
+     *
+     * @param connectTimeout proxy connect timeout.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder proxyConnectTimeout(Duration connectTimeout);
+
+    /**
+     * Specifies the proxy type for the proxy connection.
+     *
+     * @param proxyType proxy type
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder proxyType(ProxyType proxyType);
 
     /**
      * Specifies the URI formatting style to use when multiple query parameter values are passed to the client.

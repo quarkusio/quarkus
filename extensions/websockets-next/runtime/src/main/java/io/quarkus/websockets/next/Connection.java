@@ -2,6 +2,8 @@ package io.quarkus.websockets.next;
 
 import java.time.Instant;
 
+import javax.net.ssl.SSLSession;
+
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
@@ -31,6 +33,12 @@ public interface Connection extends Sender {
      * @return {@code true} if the HTTP connection is encrypted via SSL/TLS
      */
     boolean isSecure();
+
+    /**
+     * @return {@link SSLSession} associated with the underlying socket, or {@code null} if connection is not secure.
+     * @see #isSecure()
+     */
+    SSLSession sslSession();
 
     /**
      * @return {@code true} if the WebSocket is closed
@@ -88,6 +96,12 @@ public interface Connection extends Sender {
      * @return the handshake request
      */
     HandshakeRequest handshakeRequest();
+
+    /**
+     *
+     * @return the subprotocol selected by the handshake
+     */
+    String subprotocol();
 
     /**
      *

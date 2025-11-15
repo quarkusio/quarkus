@@ -16,7 +16,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 public class OidcClientConfig extends OidcClientCommonConfig implements io.quarkus.oidc.client.runtime.OidcClientConfig {
 
     public OidcClientConfig() {
-
+        this.refreshInterval = Optional.empty();
     }
 
     public OidcClientConfig(io.quarkus.oidc.client.runtime.OidcClientConfig mapping) {
@@ -24,6 +24,7 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
         id = mapping.id();
         clientEnabled = mapping.clientEnabled();
         scopes = mapping.scopes();
+        audience = mapping.audience();
         refreshTokenTimeSkew = mapping.refreshTokenTimeSkew();
         accessTokenExpiresIn = mapping.accessTokenExpiresIn();
         accessTokenExpirySkew = mapping.accessTokenExpirySkew();
@@ -32,6 +33,7 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
         grantOptions = mapping.grantOptions();
         earlyTokensAcquisition = mapping.earlyTokensAcquisition();
         headers = mapping.headers();
+        refreshInterval = mapping.refreshInterval();
     }
 
     /**
@@ -49,6 +51,11 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
      * List of access token scopes
      */
     public Optional<List<String>> scopes = Optional.empty();
+
+    /**
+     * List of access token audiences
+     */
+    Optional<List<String>> audience = Optional.empty();
 
     /**
      * Refresh token time skew.
@@ -78,6 +85,8 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
 
     public Grant grant = new Grant();
 
+    private final Optional<Duration> refreshInterval;
+
     @Override
     public Optional<String> id() {
         return id;
@@ -91,6 +100,11 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public Optional<List<String>> scopes() {
         return scopes;
+    }
+
+    @Override
+    public Optional<List<String>> audience() {
+        return audience;
     }
 
     @Override
@@ -131,6 +145,11 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public Map<String, String> headers() {
         return headers;
+    }
+
+    @Override
+    public Optional<Duration> refreshInterval() {
+        return refreshInterval;
     }
 
     public static class Grant implements io.quarkus.oidc.client.runtime.OidcClientConfig.Grant {

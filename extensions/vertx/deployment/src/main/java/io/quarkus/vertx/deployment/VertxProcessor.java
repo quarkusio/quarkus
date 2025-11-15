@@ -40,7 +40,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -50,6 +50,7 @@ import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -59,7 +60,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.deployment.spi.EventConsumerInvokerCustomizerBuildItem;
@@ -89,12 +90,13 @@ class VertxProcessor {
     VertxBuildItem build(CoreVertxBuildItem vertx, VertxEventBusConsumerRecorder recorder,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             BuildProducer<ServiceStartBuildItem> serviceStart,
             List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes,
             RecorderContext recorderContext) {
         List<EventConsumerInfo> messageConsumerConfigurations = new ArrayList<>();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
             ConsumeEvent annotation = annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
                     .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
@@ -259,11 +261,11 @@ class VertxProcessor {
     NativeImageConfigBuildItem reinitializeClassesForNetty() {
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
 
-        builder.addRuntimeReinitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
-                .addRuntimeReinitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
+        builder.addRuntimeInitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
+                .addRuntimeInitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
-            builder.addRuntimeReinitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
+            builder.addRuntimeInitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
         }
 
         return builder.build();

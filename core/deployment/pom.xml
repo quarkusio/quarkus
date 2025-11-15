@@ -31,6 +31,10 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wildfly.common</groupId>
             <artifactId>wildfly-common</artifactId>
         </dependency>
@@ -39,8 +43,24 @@
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo2</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>jandex-gizmo2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-os</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-process</artifactId>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
@@ -85,10 +105,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-utilities</artifactId>
         </dependency>
         <dependency>
             <!-- We don't want the annotation processor to run
@@ -203,8 +219,6 @@
                                         <exclude>com.google.code.findbugs:jsr305</exclude>
                                         <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
                                         <exclude>com.google.guava:listenablefuture</exclude>
-                                        <!-- let's avoid having commons-io crawling into quarkus-core -->
-                                        <exclude>commons-io:commons-io</exclude>
                                     </excludes>
                                 </bannedDependencies>
                             </rules>
@@ -273,4 +287,23 @@
             </build>
         </profile>
     </profiles>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>gradle</id>
+            <name>Gradle releases repository</name>
+            <url>https://repo.gradle.org/artifactory/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>

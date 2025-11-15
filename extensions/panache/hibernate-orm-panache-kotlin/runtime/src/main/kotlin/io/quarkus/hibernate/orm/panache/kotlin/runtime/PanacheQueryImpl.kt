@@ -16,7 +16,7 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
         hqlQuery: String?,
         originalQuery: String?,
         orderBy: String?,
-        paramsArrayOrMap: Any?
+        paramsArrayOrMap: Any?,
     ) {
         delegate =
             CommonPanacheQueryImpl(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)

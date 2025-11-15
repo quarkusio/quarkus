@@ -1,7 +1,6 @@
 package io.quarkus.oidc.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
@@ -43,7 +42,7 @@ public class CodeFlowManagementInterfaceDevModeTest {
                                     quarkus.management.auth.permission.code-flow.policy=authenticated
                                     quarkus.management.auth.permission.code-flow.auth-mechanism=code
                                     quarkus.log.category."org.htmlunit".level=ERROR
-                                    quarkus.log.file.enable=true
+                                    quarkus.log.file.enabled=true
                                     """),
                             "application.properties"));
 
@@ -59,7 +58,7 @@ public class CodeFlowManagementInterfaceDevModeTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            TextPage textPage = loginForm.getInputByName("login").click();
+            TextPage textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", textPage.getContent());
 

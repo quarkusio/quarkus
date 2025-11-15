@@ -18,7 +18,7 @@ public class StrictRenderingTest {
             fail();
         } catch (TemplateException expected) {
             assertEquals(
-                    "Rendering error in template [hero1] line 1: Property \"nams\" not found on the base object \"io.quarkus.qute.StrictRenderingTest$Hero\" in expression {hero.nams}",
+                    "Rendering error in template [hero1:1]: Property \"nams\" not found on the base object \"io.quarkus.qute.StrictRenderingTest$Hero\" in expression {hero.nams}",
                     expected.getMessage());
         }
         try {
@@ -26,7 +26,7 @@ public class StrictRenderingTest {
             fail();
         } catch (TemplateException expected) {
             assertEquals(
-                    "Rendering error in template [hero2] line 1: Property \"nams\" not found on the base object \"io.quarkus.qute.StrictRenderingTest$Hero\" in expression {hero.nams}",
+                    "Rendering error in template [hero2:1]: Property \"nams\" not found on the base object \"io.quarkus.qute.StrictRenderingTest$Hero\" in expression {hero.nams}",
                     expected.getMessage());
         }
         assertEquals(

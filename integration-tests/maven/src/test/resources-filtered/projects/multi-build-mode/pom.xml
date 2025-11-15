@@ -16,7 +16,6 @@
     <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
     <commons.collections.version>4.4</commons.collections.version>
-    <commons.io.version>1.3.2</commons.io.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -34,7 +33,7 @@
     <!-- insert test dependencies here -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
+      <artifactId>quarkus-rest</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -55,7 +54,6 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>\${commons.io.version}</version>
       <optional>true</optional>
     </dependency>
   </dependencies>

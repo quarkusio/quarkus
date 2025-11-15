@@ -18,7 +18,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -43,7 +43,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
  * Starts a Pulsar broker as dev service if needed.
  * It uses https://hub.docker.com/r/apachepulsar/pulsar as image.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class PulsarDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(PulsarDevServicesProcessor.class);

@@ -29,8 +29,7 @@ public class ConstructorPropertiesProcessor {
 
     private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {
         AnnotationTarget annotationTarget = instance.target();
-        if (annotationTarget instanceof MethodInfo) {
-            MethodInfo methodInfo = (MethodInfo) annotationTarget;
+        if (annotationTarget instanceof MethodInfo methodInfo) {
             String classname = methodInfo.declaringClass().toString();
             reflectiveClass.produce(asReflectiveClassBuildItem(classname));
         }

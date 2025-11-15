@@ -159,6 +159,13 @@ quarkus:
     port: 8082
 ----
 
+[IMPORTANT]
+====
+An `application.yaml` file must exist (even if empty) in the exact location of the profile-aware
+(`application-{profile}.yaml`) file to be included in the configuration to ensure a consistent order when
+loading the files.
+====
+
 == Expressions
 
 The YAML format also supports xref:config-reference.adoc#property-expressions[property expressions], by using the same format as Java properties:
@@ -197,18 +204,17 @@ The values from this file override any values from the regular `application.yaml
 
 The MicroProfile Config specification defines configuration properties as an arbitrary `.`-delimited string.
 However, structured formats such as YAML only support a subset of the possible configuration namespace.
-For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
+For example, consider the two configuration properties `one.two` and `one.two.three`.
 One property is the prefix of another, so it might not be immediately evident how to specify both keys in your YAML configuration.
 
 This is solved by using `~` as a `null` key to represent any YAML property that is a prefix of another one:
 
 [source,yaml]
 ----
-quarkus:
-  http:
-    cors:
-      ~: true
-      methods: GET,PUT,POST
+one:
+  two:
+    ~: 12
+    three: 123
 ----
 
 YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration properties.

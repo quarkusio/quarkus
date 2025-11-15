@@ -2,12 +2,10 @@ package io.quarkus.devtools.exec;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessUtil;
 
 public class Executable {
 
@@ -15,7 +13,7 @@ public class Executable {
         String path = null;
         String executable = base;
 
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             executable = base + ".cmd";
             path = findExecutable(executable);
             if (path == null) {
@@ -28,13 +26,11 @@ public class Executable {
         }
         if (path == null)
             return null;
-        return new File(path, executable);
+        return new File(path);
     }
 
     public static String findExecutable(String exec) {
-        return Stream.of(System.getenv("PATH").split(Pattern.quote(File.pathSeparator))).map(Paths::get)
-                .map(path -> path.resolve(exec).toFile()).filter(File::exists).findFirst().map(File::getParent)
-                .orElse(null);
+        return ProcessUtil.pathOfCommand(Path.of(exec)).map(Object::toString).orElse(null);
     }
 
     public static File findExecutable(String name, String errorMessage, MessageWriter output) {
@@ -50,7 +46,7 @@ public class Executable {
         if (projectRoot == null) {
             return null;
         }
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             for (String name : windows) {
                 File wrapper = new File(projectRoot + File.separator + name);
                 if (wrapper.isFile())

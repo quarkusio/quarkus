@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.BasicWebSocketConnector;
+import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
@@ -35,6 +36,8 @@ public class BasicConnectorContextTest {
 
     static final Set<String> THREADS = ConcurrentHashMap.newKeySet();
 
+    static final Set<String> MESSAGES = ConcurrentHashMap.newKeySet();
+
     static final CountDownLatch CLOSED_LATCH = new CountDownLatch(2);
 
     @Test
@@ -46,10 +49,14 @@ public class BasicConnectorContextTest {
                     String thread = Thread.currentThread().getName();
                     THREADS.add(thread);
                     MESSAGE_LATCH.countDown();
+                    MESSAGES.add(m);
                 })
                 .onClose((c, cr) -> {
                     CLOSED_LATCH.countDown();
                 })
+                .customizeOptions(((connectOptions, clientOptions) -> {
+                    connectOptions.addHeader("Foo", "Eric");
+                }))
                 .baseUri(uri);
         WebSocketClientConnection conn1 = connector.connectAndAwait();
         WebSocketClientConnection conn2 = connector.connectAndAwait();
@@ -67,6 +74,8 @@ public class BasicConnectorContextTest {
         conn2.closeAndAwait();
         assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
         assertTrue(CLOSED_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(MESSAGES.stream().allMatch("Hello Eric!"::equals),
+                () -> "Expected messages equal to 'Hello Eric!', but got " + MESSAGES);
     }
 
     @WebSocket(path = "/end")
@@ -75,8 +84,8 @@ public class BasicConnectorContextTest {
         static final CountDownLatch CLOSED_LATCH = new CountDownLatch(1);
 
         @OnOpen
-        String open() {
-            return "Hello!";
+        String open(HandshakeRequest handshakeRequest) {
+            return "Hello " + handshakeRequest.header("Foo") + "!";
         }
 
         @OnClose

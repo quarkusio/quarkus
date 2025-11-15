@@ -4,7 +4,7 @@ import java.util.List;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.vertx.runtime.jackson.JsonArrayDeserializer;
@@ -19,15 +19,15 @@ public class VertxJsonProcessor {
 
     @BuildStep
     void nativeSupport(List<ReinitializeVertxJsonBuildItem> reinitializeVertxJson,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassProducer,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeReinitializedClassProducer,
             BuildProducer<ServiceProviderBuildItem> serviceProviderBuildItemBuildProducer) {
         if (reinitializeVertxJson.isEmpty()) {
             return;
         }
         runtimeReinitializedClassProducer
-                .produce(new RuntimeReinitializedClassBuildItem(io.vertx.core.json.Json.class.getName()));
+                .produce(new RuntimeInitializedClassBuildItem(io.vertx.core.json.Json.class.getName()));
         runtimeReinitializedClassProducer
-                .produce(new RuntimeReinitializedClassBuildItem("io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec"));
+                .produce(new RuntimeInitializedClassBuildItem("io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec"));
         serviceProviderBuildItemBuildProducer
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath(JsonFactory.class.getName()));
     }

@@ -73,7 +73,6 @@ import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
 import io.quarkus.mongodb.runtime.MongoReactiveContextProvider;
 import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
-import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
 import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
@@ -338,7 +337,6 @@ public class MongoClientProcessor {
             BeanRegistrationPhaseBuildItem registrationPhase,
             List<MongoClientNameBuildItem> mongoClientNames,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
-            MongodbConfig mongodbConfig,
             List<MongoUnremovableClientsBuildItem> mongoUnremovableClientsBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             VertxBuildItem vertxBuildItem) {
@@ -368,12 +366,12 @@ public class MongoClientProcessor {
         }
 
         if (createDefaultBlockingMongoClient) {
-            syntheticBeanBuildItemBuildProducer.produce(createBlockingSyntheticBean(recorder, mongodbConfig,
+            syntheticBeanBuildItemBuildProducer.produce(createBlockingSyntheticBean(recorder,
                     makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients(),
                     MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
         }
         if (createDefaultReactiveMongoClient) {
-            syntheticBeanBuildItemBuildProducer.produce(createReactiveSyntheticBean(recorder, mongodbConfig,
+            syntheticBeanBuildItemBuildProducer.produce(createReactiveSyntheticBean(recorder,
                     makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients(),
                     MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
         }
@@ -381,18 +379,18 @@ public class MongoClientProcessor {
         for (MongoClientNameBuildItem mongoClientName : mongoClientNames) {
             // named blocking client
             syntheticBeanBuildItemBuildProducer
-                    .produce(createBlockingSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
+                    .produce(createBlockingSyntheticBean(recorder, makeUnremovable, mongoClientName.getName(),
                             mongoClientName.isAddQualifier()));
             // named reactive client
             syntheticBeanBuildItemBuildProducer
-                    .produce(createReactiveSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
+                    .produce(createReactiveSyntheticBean(recorder, makeUnremovable, mongoClientName.getName(),
                             mongoClientName.isAddQualifier()));
         }
 
-        recorder.performInitialization(mongodbConfig, vertxBuildItem.getVertx());
+        recorder.performInitialization(vertxBuildItem.getVertx());
     }
 
-    private SyntheticBeanBuildItem createBlockingSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,
+    private SyntheticBeanBuildItem createBlockingSyntheticBean(MongoClientRecorder recorder,
             boolean makeUnremovable, String clientName, boolean addMongoClientQualifier) {
 
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
@@ -400,13 +398,13 @@ public class MongoClientProcessor {
                 .scope(ApplicationScoped.class)
                 // pass the runtime config into the recorder to ensure that the DataSource related beans
                 // are created after runtime configuration has been set up
-                .supplier(recorder.mongoClientSupplier(clientName, mongodbConfig))
+                .supplier(recorder.mongoClientSupplier(clientName))
                 .setRuntimeInit();
 
         return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, false);
     }
 
-    private SyntheticBeanBuildItem createReactiveSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,
+    private SyntheticBeanBuildItem createReactiveSyntheticBean(MongoClientRecorder recorder,
             boolean makeUnremovable, String clientName, boolean addMongoClientQualifier) {
 
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
@@ -414,7 +412,7 @@ public class MongoClientProcessor {
                 .scope(ApplicationScoped.class)
                 // pass the runtime config into the recorder to ensure that the DataSource related beans
                 // are created after runtime configuration has been set up
-                .supplier(recorder.reactiveMongoClientSupplier(clientName, mongodbConfig))
+                .supplier(recorder.reactiveMongoClientSupplier(clientName))
                 .setRuntimeInit();
 
         return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, true);

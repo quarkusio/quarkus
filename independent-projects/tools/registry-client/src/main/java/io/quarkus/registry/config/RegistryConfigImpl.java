@@ -307,11 +307,17 @@ public class RegistryConfigImpl implements RegistryConfig {
 
         @JsonAnySetter
         public Builder setExtra(String name, Object value) {
-            if (extra == null) {
-                extra = new HashMap<>();
-            }
-            extra.put(name, value);
+            mutableExtra().put(name, value);
             return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <V> V computeExtraIfAbsent(String name, Function<String, ? extends V> func) {
+            return (V) mutableExtra().computeIfAbsent(name, func);
+        }
+
+        private Map<String, Object> mutableExtra() {
+            return extra == null ? extra = new HashMap<>(4) : extra;
         }
 
         @Override

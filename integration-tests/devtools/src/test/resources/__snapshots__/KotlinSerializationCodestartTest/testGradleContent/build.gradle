@@ -21,8 +21,8 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-group 'org.test'
-version '1.0.0-codestart'
+group = 'org.test'
+version = '1.0.0-codestart'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -31,6 +31,7 @@ java {
 
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    jvmArgs "--add-opens", "java.base/java.lang=ALL-UNNAMED"
 }
 allOpen {
     annotation("jakarta.ws.rs.Path")

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
@@ -27,6 +28,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
@@ -118,6 +120,17 @@ public abstract class MultiplePlatformBomsTestBase {
                 .execute();
     }
 
+    protected QuarkusCommandOutcome createProject(Path projectDir, List<ArtifactCoords> preferredBoms, List<String> extensions)
+            throws Exception {
+        return new CreateProject(
+                getQuarkusProject(projectDir, preferredBoms))
+                .groupId("org.acme")
+                .artifactId("acme-app")
+                .version("0.0.1-SNAPSHOT")
+                .extensions(new HashSet<>(extensions))
+                .execute();
+    }
+
     protected List<ArtifactCoords> toPlatformExtensionCoords(String... artifactIds) {
         return toPlatformExtensionCoords(Arrays.asList(artifactIds));
     }
@@ -131,7 +144,7 @@ public abstract class MultiplePlatformBomsTestBase {
     }
 
     protected List<ArtifactCoords> toPlatformBomCoords(String... artifactIds) {
-        return toPlatformBomCoords(Arrays.asList(artifactIds));
+        return toPlatformBomCoords(List.of(artifactIds));
     }
 
     protected List<ArtifactCoords> toPlatformBomCoords(final List<String> extraBoms) {
@@ -149,24 +162,44 @@ public abstract class MultiplePlatformBomsTestBase {
 
     protected void assertModel(final Path projectDir, final List<ArtifactCoords> expectedBoms,
             final List<ArtifactCoords> expectedExtensions, String platformVersion) throws IOException {
+        assertModel(projectDir, expectedBoms, expectedExtensions, Map.of(PLATFORM_VERSION_POM_PROP, platformVersion));
+    }
+
+    protected void assertModel(final Path projectDir, final List<ArtifactCoords> expectedBoms,
+            final List<ArtifactCoords> expectedExtensions,
+            Map<String, String> expectedProperties) throws IOException {
         final Model model = ModelUtils.readModel(projectDir.resolve("pom.xml"));
-        assertThat(model.getProperties().getProperty(PLATFORM_GROUP_ID_POM_PROP)).isEqualTo(getMainPlatformKey());
-        assertThat(model.getProperties().getProperty(PLATFORM_ARTIFACT_ID_POM_PROP)).isEqualTo("quarkus-bom");
-        assertThat(model.getProperties().getProperty(PLATFORM_VERSION_POM_PROP)).isEqualTo(platformVersion);
+
+        var expectedPlatformGroupId = expectedProperties == null ? null : expectedProperties.get(PLATFORM_GROUP_ID_POM_PROP);
+        if (expectedPlatformGroupId == null) {
+            expectedPlatformGroupId = getMainPlatformKey();
+        }
+        assertThat(model.getProperties().getProperty(PLATFORM_GROUP_ID_POM_PROP)).isEqualTo(expectedPlatformGroupId);
+
+        var expectedPlatformArtifactId = expectedProperties == null ? null
+                : expectedProperties.get(PLATFORM_ARTIFACT_ID_POM_PROP);
+        if (expectedPlatformArtifactId == null) {
+            expectedPlatformArtifactId = ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID;
+        }
+        assertThat(model.getProperties().getProperty(PLATFORM_ARTIFACT_ID_POM_PROP)).isEqualTo(expectedPlatformArtifactId);
+
+        var expectedPlatformVersion = expectedProperties == null ? null : expectedProperties.get(PLATFORM_VERSION_POM_PROP);
+        assertThat(expectedPlatformVersion).isNotNull();
+        assertThat(model.getProperties().getProperty(PLATFORM_VERSION_POM_PROP)).isEqualTo(expectedPlatformVersion);
 
         final List<ArtifactCoords> actualBoms = model.getDependencyManagement().getDependencies().stream()
                 .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
                         d.getVersion()))
                 .collect(Collectors.toList());
-        // TODO the order should be predictable
-        assertThat(actualBoms).containsAll(expectedBoms);
-        assertThat(expectedBoms).containsAll(actualBoms);
+        assertThat(actualBoms).containsExactlyElementsOf(expectedBoms);
         //assertThat(model.getDependencyManagement().getDependencies().size()).isEqualTo(expectedBoms.size());
 
         // TODO the order should be predictable
         assertThat(model.getDependencies().stream()
                 .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
                 .collect(Collectors.toSet())).containsAll(expectedExtensions);
+
+        assertThat(model.getProperties()).containsAllEntriesOf(expectedProperties);
     }
 
     ArtifactCoords platformExtensionCoords(String artifactId) {
@@ -189,6 +222,12 @@ public abstract class MultiplePlatformBomsTestBase {
             throws RegistryResolutionException {
         return QuarkusProjectHelper.getProject(projectDir,
                 QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog(stream), BuildTool.MAVEN);
+    }
+
+    protected QuarkusProject getQuarkusProject(Path projectDir, List<ArtifactCoords> preferredBoms)
+            throws RegistryResolutionException {
+        return QuarkusProjectHelper.getProject(projectDir,
+                QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog(preferredBoms), BuildTool.MAVEN);
     }
 
     static Path newProjectDir(String name) {

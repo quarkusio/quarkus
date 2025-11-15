@@ -3,6 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
 import static io.quarkus.redis.runtime.datasource.Validation.positive;
+import static io.quarkus.redis.runtime.datasource.Validation.validateTimeout;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
@@ -22,7 +23,6 @@ import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.helpers.ParameterValidation;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Response;
 
@@ -67,7 +67,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(group, "group");
         notNullOrBlank(consumer, "consumer");
-        ParameterValidation.validate(minIdleTime, "minIdleTime");
+        validateTimeout(minIdleTime, "minIdleTime");
         notNullOrBlank(start, "start");
         positive(count, "count");
         RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM)
@@ -82,7 +82,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(group, "group");
         notNullOrBlank(consumer, "consumer");
-        ParameterValidation.validate(minIdleTime, "minIdleTime");
+        validateTimeout(minIdleTime, "minIdleTime");
         notNullOrBlank(start, "start");
         RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM)
                 .put(marshaller.encode(key))
@@ -96,7 +96,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(group, "group");
         notNullOrBlank(consumer, "consumer");
-        ParameterValidation.validate(minIdleTime, "minIdleTime");
+        validateTimeout(minIdleTime, "minIdleTime");
         notNullOrBlank(start, "start");
         positive(count, "count");
         RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM)
@@ -115,7 +115,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(group, "group");
         notNullOrBlank(consumer, "consumer");
-        ParameterValidation.validate(minIdleTime, "minIdleTime");
+        validateTimeout(minIdleTime, "minIdleTime");
         notNullOrEmpty(id, "id");
         doesNotContainNull(id, "id");
 
@@ -132,7 +132,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(group, "group");
         notNullOrBlank(consumer, "consumer");
-        ParameterValidation.validate(minIdleTime, "minIdleTime");
+        validateTimeout(minIdleTime, "minIdleTime");
         nonNull(args, "args");
         notNullOrEmpty(id, "id");
         doesNotContainNull(id, "id");

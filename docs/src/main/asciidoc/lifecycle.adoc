@@ -340,4 +340,37 @@ This feature can be enabled by setting the build-time property `quarkus.shutdown
 The delay can then be configured by setting the runtime property `quarkus.shutdown.delay`.
 It is not set by default, thus no delay is applied.
 
+[[pre_shutdown_annotation]]
+=== Using `@ShutdownDelayInitiated` to execute a business method of a CDI bean when Quarkus shutdown delay initiates
+
+
+The `@io.quarkus.runtime.ShutdownDelayInitiated` annotation is used to mark a business method of a CDI bean that should be executed when the shutdown delay initiates.
+The annotated method must be non-private and non-static and declare no arguments. Furthermore, `quarkus.shutdown.delay-enabled` configuration needs to be set to `true`.
+
+The behavior is similar to a declaration of a `ShutdownDelayInitiatedEvent` observer.
+The following examples are functionally equivalent.
+
+[source,java]
+----
+import io.quarkus.runtime.ShutdownDelayInitiated;
+import io.quarkus.runtime.ShutdownDelayInitiatedEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+class ObservingBean1 {
+   void onPreShutdown(@Observes ShutdownDelayInitiatedEvent event) {
+      // place the logic here
+   }
+}
+
+@ApplicationScoped
+class ObservingBean2 {
+
+   @ShutdownDelayInitiated
+   void preShutdown() {
+      // place the logic here
+   }
+}
+----
+
 include::{includes}/duration-format-note.adoc[]

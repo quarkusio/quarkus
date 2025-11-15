@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -23,6 +24,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.input.TeeInputStream;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -30,9 +33,12 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandHandler;
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 
 public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.InitContext> {
+    private static final Logger log = Logger.getLogger(RunCommandLauncher.class);
 
     Process quarkusProcess = null;
     private List<String> args;
@@ -111,11 +117,20 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
 
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
         if (needsLogFile) {
-            if (logFilePath == null)
-                logFile = PropertyTestUtil.getLogFilePath();
+            if (logFilePath == null) {
+                SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+                logFile = logRuntimeConfig.file().path().toPath();
+            }
             System.out.println("Creating Logfile for custom extension run: " + logFile.toString());
-            Files.deleteIfExists(logFile);
-            Files.createDirectories(logFile.getParent());
+            try {
+                Files.deleteIfExists(logFile);
+                if (logFile.getParent() != null) {
+                    Files.createDirectories(logFile.getParent());
+                }
+            } catch (FileSystemException e) {
+                log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
+            }
             FileOutputStream logOutputStream = new FileOutputStream(logFile.toFile(), true);
             quarkusProcess = new ProcessBuilder(args)
                     .directory(workingDir.toFile())

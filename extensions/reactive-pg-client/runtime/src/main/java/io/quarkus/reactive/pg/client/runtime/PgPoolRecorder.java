@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Inject;
 
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
@@ -50,17 +49,22 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class PgPoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final TypeLiteral<Instance<PgPoolCreator>> PG_POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
     private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+    private final RuntimeValue<DataSourcesReactivePostgreSQLConfig> reactivePostgreRuntimeConfig;
 
-    @Inject
-    public PgPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+    public PgPoolRecorder(
+            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
+            final RuntimeValue<DataSourcesReactivePostgreSQLConfig> reactivePostgreRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
         this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+        this.reactivePostgreRuntimeConfig = reactivePostgreRuntimeConfig;
     }
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
@@ -81,21 +85,16 @@ public class PgPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<PgPool>, PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
-            ShutdownContext shutdown) {
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public PgPool apply(SyntheticCreationalContext<PgPool> context) {
                 PgPool pgPool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
-                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactivePostgreSQLConfig.dataSources().get(dataSourceName).reactive().postgresql(),
+                        runtimeConfig.getValue().dataSources().get(dataSourceName),
+                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
+                        reactivePostgreRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().postgresql(),
                         context);
 
                 shutdown.addShutdownTask(pgPool::close);
@@ -126,19 +125,19 @@ public class PgPoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig);
-        Supplier<Future<PgConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, pgConnectOptionsList,
+        Supplier<Future<PgConnectOptions>> databasesSupplier = toDatabasesSupplier(pgConnectOptionsList,
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<PgConnectOptions>> toDatabasesSupplier(Vertx vertx, List<PgConnectOptions> pgConnectOptionsList,
+    private Supplier<Future<PgConnectOptions>> toDatabasesSupplier(List<PgConnectOptions> pgConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<PgConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, pgConnectOptionsList,
+            supplier = new ConnectOptionsSupplier<>(credentialsProvider, name, pgConnectOptionsList,
                     PgConnectOptions::new);
         } else {
             supplier = Utils.roundRobinSupplier(pgConnectOptionsList);
@@ -207,7 +206,7 @@ public class PgPoolRecorder {
                 String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
                 CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
                 String name = dataSourceRuntimeConfig.credentialsProvider().get();
-                Map<String, String> credentials = credentialsProvider.getCredentials(name);
+                Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
                 String user = credentials.get(USER_PROPERTY_NAME);
                 String password = credentials.get(PASSWORD_PROPERTY_NAME);
                 if (user != null) {
@@ -218,7 +217,8 @@ public class PgPoolRecorder {
                 }
             }
 
-            pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
+            pgConnectOptions.setCachePreparedStatements(
+                    dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
             if (dataSourceReactivePostgreSQLConfig.pipeliningLimit().isPresent()) {
                 pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit().getAsInt());

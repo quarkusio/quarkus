@@ -1,6 +1,8 @@
 package io.quarkus.spring.web.resteasy.reactive.test;
 
 import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -13,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 public class ResponseStatusAndExceptionHandlerTest {
 
@@ -29,6 +33,12 @@ public class ResponseStatusAndExceptionHandlerTest {
     @Test
     public void testResponseStatusOnException() {
         when().get("/exception2").then().statusCode(202);
+    }
+
+    @Test
+    public void testExceptionHandlingWithHttpRequest() {
+        when().get("/exception3").then().statusCode(400)
+                .body(containsString("Request GET /exception3 failed")).header("X-Error-Reason", is("IllegalArgument"));
     }
 
     @RestController
@@ -50,6 +60,13 @@ public class ResponseStatusAndExceptionHandlerTest {
             myException.setStackTrace(EMPTY_STACK_TRACE);
             throw myException;
         }
+
+        @GetMapping("/exception3")
+        public String throwIllegalArgumentException() {
+            IllegalArgumentException illegalArgumentException = new IllegalArgumentException();
+            illegalArgumentException.setStackTrace(EMPTY_STACK_TRACE);
+            throw illegalArgumentException;
+        }
     }
 
     @RestControllerAdvice
@@ -58,6 +75,16 @@ public class ResponseStatusAndExceptionHandlerTest {
         @ExceptionHandler(RuntimeException.class)
         public ResponseEntity<Object> handleException(Exception ex) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<Object> handleBadRequestException(Exception ex, HttpServerRequest request,
+                HttpServerResponse response) {
+            String body = String.format(
+                    "Request %s %s failed",
+                    request.method().name(), request.uri());
+            response.putHeader("X-Error-Reason", "IllegalArgument");
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         }
     }
 

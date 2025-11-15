@@ -14,6 +14,7 @@ public final class ValidationSupport {
     private ValidationSupport() {
     }
 
+    @SuppressWarnings("unused") // this is called by transformed code
     public static ValidatorFactory buildDefaultValidatorFactory() {
         ArcContainer container = Arc.container();
         if (container == null) {

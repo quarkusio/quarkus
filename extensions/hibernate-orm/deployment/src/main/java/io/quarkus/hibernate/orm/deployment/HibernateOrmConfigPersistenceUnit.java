@@ -74,7 +74,8 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * [NOTE]
      * ====
-     * Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
+     * Quarkus supports files with SQL statements or comments spread over multiple lines,
+     * or `.zip` files containing those files.
      * Each SQL statement must be terminated by a semicolon.
      * ====
      *
@@ -303,12 +304,41 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
+         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
+         *             or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         *
          * @asciidoclet
          */
-        Optional<@WithConverter(TrimmedStringConverter.class) String> storageEngine();
+        @WithConverter(TrimmedStringConverter.class)
+        @Deprecated
+        Optional<String> storageEngine();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for MariaDB
+         */
+        MySQLDialectConfig mariadb();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for MySQL
+         */
+        MySQLDialectConfig mysql();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for Oracle
+         */
+        OracleDialectConfig oracle();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for Microsoft SQLServer
+         */
+        SqlServerDialectConfig mssql();
 
         default boolean isAnyPropertySet() {
-            return dialect().isPresent() || storageEngine().isPresent();
+            return dialect().isPresent() || storageEngine().isPresent()
+                    || mysql().isAnyPropertySet()
+                    || oracle().isAnyPropertySet()
+                    || mssql().isAnyPropertySet()
+                    || mariadb().isAnyPropertySet();
         }
     }
 
@@ -326,6 +356,51 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Optimizer configuration.
          */
         Id id();
+
+        Duration duration();
+
+        /**
+         * The preferred JDBC type to use for storing {@link java.time.Instant} values.
+         * <p>
+         * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+         * <p>
+         * Can also specify the name of the SqlTypes constant field,
+         * for example, `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=TIMESTAMP`
+         * or `quarkus.hibernate-orm.mapping.type.preferred_instant_jdbc_type=INSTANT`.
+         *
+         * @asciidoclet
+         */
+        @WithName("instant.preferred-jdbc-type")
+        @ConfigDocDefault("TIMESTAMP")
+        Optional<@WithConverter(TrimmedStringConverter.class) String> instantPreferredJdbcType();
+
+        /**
+         * The preferred JDBC type to use for storing boolean values.
+         * <p>
+         * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+         * <p>
+         * Can also specify the name of the SqlTypes constant field,
+         * for example, `quarkus.hibernate-orm.mapping.type.boolean_jdbc_type=BIT`.
+         *
+         * @asciidoclet
+         */
+        @WithName("boolean.preferred-jdbc-type")
+        @ConfigDocDefault("BOOLEAN")
+        Optional<@WithConverter(TrimmedStringConverter.class) String> booleanPreferredJdbcType();
+
+        /**
+         * The preferred JDBC type to use for storing {@link java.util.UUID} values.
+         * <p>
+         * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+         * <p>
+         * Can also specify the name of the SqlTypes constant field,
+         * for example, `quarkus.hibernate-orm.mapping.type.uuid_jdbc_type=CHAR`.
+         *
+         * @asciidoclet
+         */
+        @WithName("uuid.preferred-jdbc-type")
+        @ConfigDocDefault("UUID")
+        Optional<@WithConverter(TrimmedStringConverter.class) String> UUIDPreferredJdbcType();
 
         @ConfigGroup
         interface Timezone {
@@ -406,9 +481,31 @@ public interface HibernateOrmConfigPersistenceUnit {
             }
         }
 
+        @ConfigGroup
+        interface Duration {
+
+            /**
+             * The preferred JDBC type to use for storing {@link java.time.Duration} values.
+             * <p>
+             * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
+             * <p>
+             * Can also specify the name of the SqlTypes constant field,
+             * for example, `quarkus.hibernate-orm.mapping.type.preferred_jdbc_type=INTERVAL_SECOND`.
+             *
+             * @asciidoclet
+             */
+            @WithName("preferred-jdbc-type")
+            @ConfigDocDefault("INTERVAL_SECOND")
+            Optional<@WithConverter(TrimmedStringConverter.class) String> durationPreferredJdbcType();
+        }
+
         default boolean isAnyPropertySet() {
-            return timezone().timeZoneDefaultStorage().isPresent()
-                    || id().optimizer().idOptimizerDefault().isPresent();
+            return timezone().timeZoneDefaultStorage().isPresent() ||
+                    id().optimizer().idOptimizerDefault().isPresent() ||
+                    duration().durationPreferredJdbcType().isPresent() ||
+                    instantPreferredJdbcType().isPresent() ||
+                    booleanPreferredJdbcType().isPresent() ||
+                    UUIDPreferredJdbcType().isPresent();
         }
 
     }
@@ -485,6 +582,19 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         @WithDefault("true")
         boolean inClauseParameterPadding();
+
+        /**
+         * When limits cannot be applied on the database side,
+         * trigger an exception instead of attempting badly-performing in-memory result set limits.
+         *
+         * When pagination is used in combination with a fetch join applied to a collection or many-valued association,
+         * the limit must be applied in-memory instead of on the database.
+         * This should be avoided as it typically has terrible performance characteristics.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("false")
+        boolean failOnPaginationOverCollectionFetch();
 
         default boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize() != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE

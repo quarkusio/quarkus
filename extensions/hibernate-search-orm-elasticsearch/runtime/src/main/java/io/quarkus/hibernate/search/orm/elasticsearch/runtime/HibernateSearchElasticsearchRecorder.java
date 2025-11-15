@@ -1,19 +1,19 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import static io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchConfigUtil.addConfig;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
-import jakarta.enterprise.inject.literal.NamedLiteral;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -35,13 +35,16 @@ import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
 import org.hibernate.search.util.common.reflect.spi.ValueHandleFactory;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchConfigHandler;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementHandler;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.mapping.QuarkusHibernateOrmSearchMappingConfigurer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.Handler;
@@ -49,10 +52,18 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
+    private final HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
+    private final RuntimeValue<HibernateSearchElasticsearchRuntimeConfig> runtimeConfig;
+
+    public HibernateSearchElasticsearchRecorder(
+            final HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
+            final RuntimeValue<HibernateSearchElasticsearchRuntimeConfig> runtimeConfig) {
+        this.buildTimeConfig = buildTimeConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             HibernateSearchOrmElasticsearchMapperContext mapperContext,
-            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             Set<String> rootAnnotationMappedClassNames,
             List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
         Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
@@ -76,21 +87,21 @@ public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchOrmElasticsearchMapperContext mapperContext,
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
-        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.persistenceUnits()
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.getValue()
+                .persistenceUnits()
                 .get(mapperContext.persistenceUnitName);
         return new HibernateSearchIntegrationRuntimeInitListener(mapperContext, puConfig,
                 integrationRuntimeInitListeners);
     }
 
-    public void checkNoExplicitActiveTrue(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
-        for (var entry : runtimeConfig.persistenceUnits().entrySet()) {
+    public void checkNoExplicitActiveTrue() {
+        for (var entry : runtimeConfig.getValue().persistenceUnits().entrySet()) {
             var config = entry.getValue();
             if (config.active().orElse(false)) {
                 var puName = entry.getKey();
                 String enabledPropertyKey = HibernateSearchElasticsearchRuntimeConfig.extensionPropertyKey("enabled");
-                String activePropertyKey = HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(puName, "active");
+                String activePropertyKey = mapperPropertyKey(puName, "active");
                 throw new ConfigurationException(
                         "Hibernate Search activated explicitly for persistence unit '" + puName
                                 + "', but the Hibernate Search extension was disabled at build time."
@@ -109,49 +120,50 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationRuntimeInitInactiveListener();
     }
 
-    public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
-            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<ActiveResult> checkActiveSupplier(String persistenceUnitName) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                Optional<Boolean> active = runtimeConfig.getValue().persistenceUnits().get(persistenceUnitName).active();
+                if (active.isPresent() && !active.get()) {
+                    return ActiveResult.inactive(String.format(Locale.ROOT,
+                            "Hibernate Search for persistence unit '%s' was deactivated through configuration properties."
+                                    + " To activate Hibernate Search, set configuration property '%s' to 'true'",
+                            persistenceUnitName, mapperPropertyKey(persistenceUnitName, "active")));
+                }
+
+                var puBean = Arc.container().select(Session.class, PersistenceUnitUtil.qualifier(persistenceUnitName))
+                        .getHandle().getBean();
+                var puActive = puBean.checkActive();
+                if (!puActive.value()) {
+                    return ActiveResult.inactive(String.format(Locale.ROOT,
+                            "Hibernate Search for persistence unit '%s' was deactivated automatically because the persistence unit was deactivated.",
+                            persistenceUnitName),
+                            puActive);
+                }
+
+                return ActiveResult.active();
+            }
+        };
+    }
+
+    public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName) {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
-                        .persistenceUnits().get(persistenceUnitName);
-                if (puRuntimeConfig != null && !puRuntimeConfig.active().orElse(true)) {
-                    throw new IllegalStateException(
-                            "Cannot retrieve the SearchMapping for persistence unit " + persistenceUnitName
-                                    + ": Hibernate Search was deactivated through configuration properties");
-                }
-                SessionFactory sessionFactory;
-                if (isDefaultPersistenceUnit) {
-                    sessionFactory = Arc.container().instance(SessionFactory.class).get();
-                } else {
-                    sessionFactory = Arc.container().instance(
-                            SessionFactory.class, NamedLiteral.of(persistenceUnitName)).get();
-                }
+                SessionFactory sessionFactory = Arc.container()
+                        .instance(SessionFactory.class, PersistenceUnitUtil.qualifier(persistenceUnitName)).get();
                 return Search.mapping(sessionFactory);
             }
         };
     }
 
-    public Supplier<SearchSession> searchSessionSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
-            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchSession> searchSessionSupplier(String persistenceUnitName) {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
-                        .persistenceUnits().get(persistenceUnitName);
-                if (puRuntimeConfig != null && !puRuntimeConfig.active().orElse(true)) {
-                    throw new IllegalStateException(
-                            "Cannot retrieve the SearchSession for persistence unit " + persistenceUnitName
-                                    + ": Hibernate Search was deactivated through configuration properties");
-                }
-                Session session;
-                if (isDefaultPersistenceUnit) {
-                    session = Arc.container().instance(Session.class).get();
-                } else {
-                    session = Arc.container().instance(
-                            Session.class, NamedLiteral.of(persistenceUnitName)).get();
-                }
+                Session session = Arc.container().instance(Session.class, PersistenceUnitUtil.qualifier(persistenceUnitName))
+                        .get();
                 return Search.session(session);
             }
         };

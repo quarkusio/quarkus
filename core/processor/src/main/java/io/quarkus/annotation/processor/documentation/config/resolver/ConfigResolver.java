@@ -2,11 +2,11 @@ package io.quarkus.annotation.processor.documentation.config.resolver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.lang.model.element.TypeElement;
@@ -72,7 +72,7 @@ public class ConfigResolver {
         for (DiscoveryConfigRoot discoveryConfigRoot : configCollector.getConfigRoots()) {
             ConfigRoot configRoot = new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix(),
                     discoveryConfigRoot.getOverriddenDocPrefix(), discoveryConfigRoot.getOverriddenDocFileName());
-            Map<String, ConfigSection> existingRootConfigSections = new HashMap<>();
+            Map<String, ConfigSection> existingRootConfigSections = new TreeMap<>();
 
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
 
@@ -243,8 +243,7 @@ public class ConfigResolver {
     }
 
     public static String getType(TypeMirror typeMirror) {
-        if (typeMirror instanceof DeclaredType) {
-            DeclaredType declaredType = (DeclaredType) typeMirror;
+        if (typeMirror instanceof DeclaredType declaredType) {
             TypeElement typeElement = (TypeElement) declaredType.asElement();
             return typeElement.getQualifiedName().toString();
         }

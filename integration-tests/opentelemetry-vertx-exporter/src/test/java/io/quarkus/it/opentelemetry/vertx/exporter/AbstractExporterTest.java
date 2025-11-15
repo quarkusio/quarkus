@@ -1,6 +1,7 @@
 package io.quarkus.it.opentelemetry.vertx.exporter;
 
-import static io.opentelemetry.semconv.ResourceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_NAME;
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -30,7 +31,6 @@ import io.opentelemetry.proto.metrics.v1.Sum;
 import io.opentelemetry.proto.trace.v1.ResourceSpans;
 import io.opentelemetry.proto.trace.v1.ScopeSpans;
 import io.opentelemetry.proto.trace.v1.Span;
-import io.opentelemetry.semconv.ResourceAttributes;
 
 public abstract class AbstractExporterTest {
 
@@ -79,7 +79,7 @@ public abstract class AbstractExporterTest {
                                 .build())
                 .contains(
                         KeyValue.newBuilder()
-                                .setKey(ResourceAttributes.WEBENGINE_NAME.getKey())
+                                .setKey(WEBENGINE_NAME.getKey())
                                 .setValue(AnyValue.newBuilder()
                                         .setStringValue("Quarkus").build())
                                 .build());

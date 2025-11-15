@@ -104,7 +104,7 @@ class MongodbPanacheMockingTest {
         // bridge call
         Assertions.assertEquals(
             false,
-            (realPersonRepository as PanacheMongoRepositoryBase<Person, Long>).deleteById(0L)
+            (realPersonRepository as PanacheMongoRepositoryBase<Person, Long>).deleteById(0L),
         )
     }
 }

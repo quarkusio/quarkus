@@ -3,7 +3,7 @@ package io.quarkus.cli.image;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.cli.BuildToolContext;
+import io.quarkus.cli.common.BuildToolContext;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
@@ -13,7 +13,7 @@ public class Push extends BaseImageCommand {
 
     protected static final String QUARKUS_CONTAINER_IMAGE_EXTENSION = "io.quarkus:quarkus-container-image";
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-push",
-            BuildTool.GRADLE, "imagePush");
+            BuildTool.GRADLE, "imagePush", BuildTool.GRADLE_KOTLIN_DSL, "imagePush");
 
     private static final String QUARKUS_CONTAINER_IMAGE_BUILD = "quarkus.container-image.build";
     private static final String QUARKUS_CONTAINER_IMAGE_USERNAME = "quarkus.container-image.username";

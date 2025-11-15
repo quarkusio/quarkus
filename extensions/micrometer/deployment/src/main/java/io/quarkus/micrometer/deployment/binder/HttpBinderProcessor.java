@@ -19,9 +19,6 @@ import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
-import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 
 /**
  * Avoid directly referencing optional dependencies
@@ -42,8 +39,8 @@ public class HttpBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return mConfig.checkBinderEnabledWithDefault(mConfig.binder().vertx())
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpServer());
+            return mConfig.isEnabled(mConfig.binder().vertx())
+                    && mConfig.isEnabled(mConfig.binder().httpServer());
         }
     }
 
@@ -52,7 +49,7 @@ public class HttpBinderProcessor {
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(REST_CLIENT_REQUEST_FILTER)
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpClient());
+                    && mConfig.isEnabled(mConfig.binder().httpClient());
         }
     }
 
@@ -60,13 +57,10 @@ public class HttpBinderProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem enableHttpBinders(MicrometerRecorder recorder,
             MicrometerConfig buildTimeConfig,
-            HttpServerConfig serverConfig,
-            HttpClientConfig clientConfig,
-            VertxConfig vertxConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        boolean clientEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder().httpClient());
-        boolean serverEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder().httpServer());
+        boolean clientEnabled = buildTimeConfig.isEnabled(buildTimeConfig.binder().httpClient());
+        boolean serverEnabled = buildTimeConfig.isEnabled(buildTimeConfig.binder().httpServer());
 
         if (clientEnabled || serverEnabled) {
             // Protect from uri tag flood
@@ -79,8 +73,7 @@ public class HttpBinderProcessor {
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .unremovable()
-                .runtimeValue(recorder.configureHttpMetrics(serverEnabled, clientEnabled,
-                        serverConfig, clientConfig, vertxConfig))
+                .runtimeValue(recorder.configureHttpMetrics(serverEnabled, clientEnabled))
                 .done();
     }
 

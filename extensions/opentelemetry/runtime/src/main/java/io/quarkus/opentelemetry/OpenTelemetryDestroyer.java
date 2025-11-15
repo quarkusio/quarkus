@@ -18,10 +18,9 @@ public class OpenTelemetryDestroyer implements BeanDestroyer<OpenTelemetry> {
     @Override
     public void destroy(OpenTelemetry openTelemetry, CreationalContext<OpenTelemetry> creationalContext,
             Map<String, Object> params) {
-        if (openTelemetry instanceof OpenTelemetrySdk) {
+        if (openTelemetry instanceof OpenTelemetrySdk openTelemetrySdk) {
             // between flush and shutdown we will wait shutdown-wait-time, at the most.
             var waitTime = getShutdownWaitTime().dividedBy(4);
-            var openTelemetrySdk = ((OpenTelemetrySdk) openTelemetry);
             openTelemetrySdk.getSdkLoggerProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
             openTelemetrySdk.getSdkTracerProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
             openTelemetrySdk.getSdkMeterProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
@@ -31,8 +30,7 @@ public class OpenTelemetryDestroyer implements BeanDestroyer<OpenTelemetry> {
 
     public static Duration getShutdownWaitTime() {
         var config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        var waitTime = config.getOptionalValue("quarkus.otel.experimental.shutdown-wait-time", Duration.class)
+        return config.getOptionalValue("quarkus.otel.experimental.shutdown-wait-time", Duration.class)
                 .orElse(Duration.ofSeconds(2));
-        return waitTime;
     }
 }

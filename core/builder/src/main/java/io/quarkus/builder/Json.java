@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -230,8 +228,7 @@ public final class Json {
         public void appendTo(Appendable appendable) throws IOException {
             appendable.append(ARRAY_START);
             int idx = 0;
-            for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
-                Object value = iterator.next();
+            for (Object value : values) {
                 if (isIgnored(value)) {
                     continue;
                 }
@@ -346,8 +343,7 @@ public final class Json {
         public void appendTo(Appendable appendable) throws IOException {
             appendable.append(OBJECT_START);
             int idx = 0;
-            for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {
-                Entry<String, Object> entry = iterator.next();
+            for (Entry<String, Object> entry : properties.entrySet()) {
                 if (isIgnored(entry.getValue())) {
                     continue;
                 }
@@ -368,8 +364,7 @@ public final class Json {
 
         @Override
         void add(JsonValue element) {
-            if (element instanceof JsonMember) {
-                final JsonMember member = (JsonMember) element;
+            if (element instanceof JsonMember member) {
                 final String attribute = member.attribute().value();
                 final JsonValue value = member.value();
                 if (value instanceof JsonString) {

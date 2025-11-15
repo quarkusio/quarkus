@@ -11,13 +11,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeTarget;
 
 public class ClassComparisonUtil {
     private static final Set<DotName> IGNORED_ANNOTATIONS = Set.of(
@@ -130,10 +130,12 @@ public class ClassComparisonUtil {
         }
         List<AnnotationInstance> method1 = new ArrayList<>();
         Map<Integer, List<AnnotationInstance>> params1 = new HashMap<>();
-        methodMap(a, method1, params1);
+        Map<Integer, List<AnnotationInstance>> paramTypes1 = new HashMap<>();
+        methodMap(a, method1, params1, paramTypes1);
         List<AnnotationInstance> method2 = new ArrayList<>();
         Map<Integer, List<AnnotationInstance>> params2 = new HashMap<>();
-        methodMap(b, method2, params2);
+        Map<Integer, List<AnnotationInstance>> paramTypes2 = new HashMap<>();
+        methodMap(b, method2, params2, paramTypes2);
         if (!compareAnnotations(method1, method2)) {
             return false;
         }
@@ -146,21 +148,38 @@ public class ClassComparisonUtil {
                 return false;
             }
         }
+        for (Map.Entry<Integer, List<AnnotationInstance>> entry : paramTypes1.entrySet()) {
+            List<AnnotationInstance> other = paramTypes2.get(entry.getKey());
+            if (!compareAnnotations(other, entry.getValue())) {
+                return false;
+            }
+        }
         return true;
     }
 
     private static void methodMap(Collection<AnnotationInstance> b, List<AnnotationInstance> method2,
-            Map<Integer, List<AnnotationInstance>> params2) {
+            Map<Integer, List<AnnotationInstance>> params2, Map<Integer, List<AnnotationInstance>> paramTypes2) {
         for (AnnotationInstance i : b) {
-            if (i.target().kind() == AnnotationTarget.Kind.METHOD) {
-                method2.add(i);
-            } else {
-                int index = i.target().asMethodParameter().position();
-                List<AnnotationInstance> instances = params2.get(index);
-                if (instances == null) {
-                    params2.put(index, instances = new ArrayList<>());
-                }
-                instances.add(i);
+            int index;
+            switch (i.target().kind()) {
+                case METHOD:
+                    method2.add(i);
+                    break;
+                case METHOD_PARAMETER:
+                    index = i.target().asMethodParameter().position();
+                    params2.computeIfAbsent(index, k -> new ArrayList<>()).add(i);
+                    break;
+                case TYPE:
+                    TypeTarget.Usage usage = i.target().asType().usage();
+                    if (usage == TypeTarget.Usage.METHOD_PARAMETER) {
+                        index = i.target().asType().asMethodParameterType().position();
+                        paramTypes2.computeIfAbsent(index, k -> new ArrayList<>()).add(i);
+                    } else {
+                        throw new IllegalArgumentException("Unsupported type annotation usage: " + usage);
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported annotation target kind: " + i.target().kind());
             }
         }
     }

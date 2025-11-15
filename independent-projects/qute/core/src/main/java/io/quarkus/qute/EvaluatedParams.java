@@ -141,9 +141,10 @@ public final class EvaluatedParams {
      */
     public boolean parameterTypesMatch(boolean varargs, Class<?>[] types) throws InterruptedException, ExecutionException {
         // Check the number of parameters and replace the last param type with component type if needed
+        Class<?> componentType = null;
         if (types.length == results.length) {
             if (varargs) {
-                types[types.length - 1] = types[types.length - 1].getComponentType();
+                componentType = boxType(types[types.length - 1].getComponentType());
             }
         } else {
             if (varargs) {
@@ -151,8 +152,7 @@ public final class EvaluatedParams {
                 if (diff > 1) {
                     return false;
                 } else if (diff < 1) {
-                    Class<?> varargsType = types[types.length - 1];
-                    types[types.length - 1] = varargsType.getComponentType();
+                    componentType = boxType(types[types.length - 1].getComponentType());
                 }
                 // if diff == 1 then vargs may be empty and we need to compare the result types
             } else {
@@ -165,7 +165,11 @@ public final class EvaluatedParams {
             Object result = getResult(i);
             if (result != null) {
                 Class<?> resultClass = boxType(result.getClass());
-                if (!paramType.isAssignableFrom(resultClass)) {
+                if (!paramType.isAssignableFrom(resultClass)
+                        // For varargs we also try to match the component type
+                        && (componentType == null
+                                || i < (types.length - 1)
+                                || !componentType.isAssignableFrom(resultClass))) {
                     return false;
                 }
             }
@@ -178,14 +182,30 @@ public final class EvaluatedParams {
 
     public Object getVarargsResults(int numberOfParameters, Class<?> componentType)
             throws InterruptedException, ExecutionException {
+        // For varargs we want to skip all previous args
         int skip = numberOfParameters - 1;
-        if (skip < 0) {
+        if (skip < 0 || skip >= results.length) {
             return Array.newInstance(componentType, 0);
         }
+        Object result = null;
+        int capacity = results.length - skip;
+        if (numberOfParameters == results.length) {
+            // If there is exactly one non-skipped argument
+            // test if it's not a matching array
+            result = getResult(skip);
+            Class<?> resultClass = result.getClass();
+            if (resultClass.isArray() && resultClass.getComponentType().equals(componentType)) {
+                return result;
+            }
+            skip++;
+        }
+        Object array = Array.newInstance(componentType, capacity);
         int idx = 0;
-        Object array = Array.newInstance(componentType, results.length - skip);
+        if (result != null) {
+            Array.set(array, idx++, result);
+        }
         for (int i = skip; i < results.length; i++) {
-            Object result = getResult(i);
+            result = getResult(i);
             Array.set(array, idx++, result);
         }
         return array;

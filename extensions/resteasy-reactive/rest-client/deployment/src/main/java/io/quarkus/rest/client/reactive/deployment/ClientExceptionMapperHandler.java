@@ -39,14 +39,14 @@ class ClientExceptionMapperHandler {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final ResultHandle[] EMPTY_RESULT_HANDLES_ARRAY = new ResultHandle[0];
-    private static final MethodDescriptor GET_INVOKED_METHOD =
-            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getInvokedMethod", Method.class);
-    private static final MethodDescriptor GET_URI =
-            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getUri", URI.class);
-    private static final MethodDescriptor GET_PROPERTIES =
-            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getProperties", Map.class);
-    private static final MethodDescriptor GET_REQUEST_HEADERS_AS_MAP =
-            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getRequestHeadersAsMap", MultivaluedMap.class);
+    private static final MethodDescriptor GET_INVOKED_METHOD = MethodDescriptor.ofMethod(RestClientRequestContext.class,
+            "getInvokedMethod", Method.class);
+    private static final MethodDescriptor GET_URI = MethodDescriptor.ofMethod(RestClientRequestContext.class, "getUri",
+            URI.class);
+    private static final MethodDescriptor GET_PROPERTIES = MethodDescriptor.ofMethod(RestClientRequestContext.class,
+            "getProperties", Map.class);
+    private static final MethodDescriptor GET_REQUEST_HEADERS_AS_MAP = MethodDescriptor.ofMethod(RestClientRequestContext.class,
+            "getRequestHeadersAsMap", MultivaluedMap.class);
     private final ClassOutput classOutput;
 
     ClientExceptionMapperHandler(ClassOutput classOutput) {
@@ -121,16 +121,19 @@ class ClientExceptionMapperHandler {
                 if (paramTypeName.equals(ResteasyReactiveDotNames.RESPONSE)) {
                     targetMethodParamHandle = toThrowable.getMethodParam(0);
                 } else if (paramTypeName.equals(DotNames.METHOD)) {
-                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_INVOKED_METHOD, toThrowable.getMethodParam(1));
+                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_INVOKED_METHOD,
+                            toThrowable.getMethodParam(1));
                 } else if (paramTypeName.equals(DotNames.URI)) {
                     targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_URI, toThrowable.getMethodParam(1));
                 } else if (isMapStringToObject(paramType)) {
                     targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_PROPERTIES, toThrowable.getMethodParam(1));
                 } else if (isMultivaluedMapStringToString(paramType)) {
-                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_REQUEST_HEADERS_AS_MAP, toThrowable.getMethodParam(1));
+                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_REQUEST_HEADERS_AS_MAP,
+                            toThrowable.getMethodParam(1));
                 } else {
-                    String message = "Unsupported parameter type used in " + DotNames.CLIENT_EXCEPTION_MAPPER + ". See the Javadoc of the annotation for the supported types."
-                    + " Offending instance is '" + targetMethod.declaringClass().name().toString() + "#"
+                    String message = "Unsupported parameter type used in " + DotNames.CLIENT_EXCEPTION_MAPPER
+                            + ". See the Javadoc of the annotation for the supported types."
+                            + " Offending instance is '" + targetMethod.declaringClass().name().toString() + "#"
                             + targetMethod.name() + "'";
                     throw new IllegalStateException(message);
                 }

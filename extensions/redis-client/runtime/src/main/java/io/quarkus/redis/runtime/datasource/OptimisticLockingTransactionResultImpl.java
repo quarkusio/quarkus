@@ -11,21 +11,28 @@ public class OptimisticLockingTransactionResultImpl<I> implements OptimisticLock
 
     private final List<Object> results = new ArrayList<>();
     private final boolean discarded;
+    private final boolean hasErrors;
     private final I input;
 
-    public OptimisticLockingTransactionResultImpl(boolean discarded, I input, List<Object> res) {
+    public OptimisticLockingTransactionResultImpl(boolean discarded, boolean hasErrors, I input, List<Object> res) {
         this.results.addAll(res);
         this.discarded = discarded;
+        this.hasErrors = hasErrors;
         this.input = input;
     }
 
     public static <I> OptimisticLockingTransactionResult<I> discarded(I input) {
-        return new OptimisticLockingTransactionResultImpl<>(true, input, Collections.emptyList());
+        return new OptimisticLockingTransactionResultImpl<>(true, false, input, Collections.emptyList());
     }
 
     @Override
     public boolean discarded() {
         return discarded;
+    }
+
+    @Override
+    public boolean hasErrors() {
+        return hasErrors;
     }
 
     @Override

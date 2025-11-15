@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+@Deprecated(forRemoval = true)
 public class PropertyTestUtil {
 
     private static final String LOG_FILE_PATH_PROPERTY = "quarkus.log.file.path";

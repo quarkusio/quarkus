@@ -229,6 +229,11 @@ class VirtualThreadExtensionTest {
         @Override
         public void publishDirectory(String name, ThrowingConsumer<Path> action) {
         }
+
+        @Override
+        public Store getStore(StoreScope scope, Namespace namespace) {
+            return null;
+        }
     }
 
     private static class TestCollector extends Collector {

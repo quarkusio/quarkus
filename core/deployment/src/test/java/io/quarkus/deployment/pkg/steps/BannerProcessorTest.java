@@ -4,7 +4,6 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +42,7 @@ public class BannerProcessorTest {
             try (final FileSystem fs = ZipUtils.newFileSystem(zipPath)) {
                 Path classFile = fs.getPath(fromClassNameToResourceName(MyBannerProcessor.class.getName()));
                 Files.createDirectories(classFile.getParent());
-                Files.write(classFile, "".getBytes(StandardCharsets.UTF_8));
+                Files.writeString(classFile, "");
             }
 
             try (FileSystem fs = ZipUtils.newFileSystem(zipPath)) {

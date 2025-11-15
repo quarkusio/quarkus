@@ -44,10 +44,10 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.runtime.logging.JBossVersion;
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestConfigUtil;
@@ -168,11 +168,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 setState(extensionContext, state);
             } catch (Throwable e) {
                 try {
-                    Path appLogPath = PropertyTestUtil.getLogFilePath();
-                    File appLogFile = appLogPath.toFile();
+                    LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                            .getConfigMapping(LogRuntimeConfig.class);
+                    File appLogFile = logRuntimeConfig.file().path();
                     if (appLogFile.exists() && (appLogFile.length() > 0)) {
                         System.err.println("Failed to launch the application. The application logs can be found at: "
-                                + appLogPath.toAbsolutePath());
+                                + appLogFile.getAbsolutePath());
                     }
                 } catch (IllegalStateException ignored) {
 
@@ -197,10 +198,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
-        ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
-                isDockerLaunch);
-        devServicesProps = devServicesLaunchResult.properties();
-        containerNetworkId = devServicesLaunchResult.networkId();
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -208,10 +205,17 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             Class<?> requiredTestClass = context.getRequiredTestClass();
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
+
+            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+            // prepare dev services after profile and properties have been determined
+            ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
+                    isDockerLaunch);
+
+            devServicesProps = devServicesLaunchResult.properties();
+            containerNetworkId = devServicesLaunchResult.networkId();
             for (String devServicesProp : devServicesProps.keySet()) {
                 sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
             }
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
                     copyEntriesFromProfile(testProfileAndProperties.testProfile,
@@ -256,9 +260,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
             context.getStore(ExtensionContext.Namespace.GLOBAL).put(
                     QuarkusIntegrationTestExtension.class.getName() + ".systemProps",
-                    new ExtensionContext.Store.CloseableResource() {
+                    new AutoCloseable() {
                         @Override
-                        public void close() throws Throwable {
+                        public void close() throws Exception {
                             for (Map.Entry<String, String> i : old.entrySet()) {
                                 old.put(i.getKey(), System.getProperty(i.getKey()));
                                 if (i.getValue() == null) {

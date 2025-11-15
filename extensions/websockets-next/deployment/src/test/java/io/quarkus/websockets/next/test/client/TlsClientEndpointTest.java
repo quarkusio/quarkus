@@ -1,6 +1,10 @@
 package io.quarkus.websockets.next.test.client;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -10,6 +14,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 import jakarta.inject.Inject;
 
@@ -25,6 +32,7 @@ import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketClient;
 import io.quarkus.websockets.next.WebSocketClientConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
@@ -53,20 +61,39 @@ public class TlsClientEndpointTest {
     URI uri;
 
     @Test
-    void testClient() throws InterruptedException, URISyntaxException {
+    void testClient() throws InterruptedException, SSLPeerUnverifiedException, URISyntaxException {
         assertClient(uri);
         URI wssUri = new URI("wss", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
                 uri.getFragment());
         assertClient(wssUri);
     }
 
-    void assertClient(URI uri) throws InterruptedException, URISyntaxException {
+    void assertClient(URI uri) throws InterruptedException, SSLPeerUnverifiedException {
         WebSocketClientConnection connection = connector
                 .baseUri(uri)
                 // The value will be encoded automatically
                 .pathParam("name", "Lu=")
                 .connectAndAwait();
         assertTrue(connection.isSecure());
+        assertNotNull(connection.sslSession());
+        assertNull(connection.sslSession().getLocalPrincipal());
+        assertNull(connection.sslSession().getLocalCertificates());
+        assertNotNull(connection.sslSession().getPeerPrincipal());
+        assertNotNull(connection.sslSession().getPeerCertificates());
+
+        assertTrue(ServerEndpoint.openedLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(ServerEndpoint.CONNECTION_REF.get().isSecure());
+        assertNotNull(ServerEndpoint.CONNECTION_REF.get().sslSession());
+        assertNotNull(ServerEndpoint.CONNECTION_REF.get().sslSession().getLocalPrincipal());
+        assertNotNull(ServerEndpoint.CONNECTION_REF.get().sslSession().getLocalCertificates());
+        assertThrows(SSLPeerUnverifiedException.class,
+                () -> ServerEndpoint.CONNECTION_REF.get().sslSession().getPeerPrincipal());
+        assertThrows(SSLPeerUnverifiedException.class,
+                () -> ServerEndpoint.CONNECTION_REF.get().sslSession().getPeerCertificates());
+        assertEquals(connection.sslSession().getPeerPrincipal(),
+                ServerEndpoint.CONNECTION_REF.get().sslSession().getLocalPrincipal());
+        assertArrayEquals(connection.sslSession().getPeerCertificates(),
+                ServerEndpoint.CONNECTION_REF.get().sslSession().getLocalCertificates());
 
         assertEquals("Lu=", connection.pathParam("name"));
         connection.sendTextAndAwait("Hi!");
@@ -86,10 +113,16 @@ public class TlsClientEndpointTest {
     @WebSocket(path = "/endpoint/{name}")
     public static class ServerEndpoint {
 
+        static final AtomicReference<WebSocketConnection> CONNECTION_REF = new AtomicReference<>();
+
+        static volatile CountDownLatch openedLatch = new CountDownLatch(1);
+
         static volatile CountDownLatch closedLatch = new CountDownLatch(1);
 
         @OnOpen
-        String open(@PathParam String name) {
+        String open(@PathParam String name, WebSocketConnection connection) {
+            CONNECTION_REF.set(connection);
+            openedLatch.countDown();
             return "Hello " + name + "!";
         }
 
@@ -104,6 +137,8 @@ public class TlsClientEndpointTest {
         }
 
         static void reset() {
+            CONNECTION_REF.set(null);
+            openedLatch = new CountDownLatch(1);
             closedLatch = new CountDownLatch(1);
         }
 

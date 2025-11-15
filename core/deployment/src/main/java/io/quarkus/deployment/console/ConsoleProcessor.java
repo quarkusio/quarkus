@@ -5,9 +5,7 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -40,6 +38,7 @@ import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.dev.console.QuarkusConsole;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class ConsoleProcessor {
 
@@ -67,7 +66,7 @@ public class ConsoleProcessor {
             return ConsoleInstalledBuildItem.INSTANCE;
         }
         consoleInstalled = true;
-        if (config.console().orElse(consoleConfig.enabled())) {
+        if (consoleConfig.enabled()) {
             ConsoleHelper.installConsole(config, consoleConfig, launchModeBuildItem.isTest());
             ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
             //note that this bit needs to be refactored so it is no longer tied to continuous testing
@@ -185,13 +184,8 @@ public class ConsoleProcessor {
                         log.debug("Unable to determine proper launch command for IDE: " + ide);
                         return;
                     }
-                    List<String> command = new ArrayList<>();
-                    command.add(effectiveCommand);
-                    command.addAll(args);
-                    log.debugf("Opening IDE with %s", command);
-                    new ProcessBuilder(command).redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                            .redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(10,
-                                    TimeUnit.SECONDS);
+                    log.debugf("Opening IDE with %s %s", effectiveCommand, args);
+                    ProcessBuilder.exec(effectiveCommand, args);
                 } catch (Exception e) {
                     log.error("Failed to open IDE", e);
                 }

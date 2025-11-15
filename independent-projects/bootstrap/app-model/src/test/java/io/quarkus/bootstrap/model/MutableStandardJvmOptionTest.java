@@ -47,4 +47,12 @@ public class MutableStandardJvmOptionTest {
                         "--add-opens", "java.base/java.util=ALL-UNNAMED");
     }
 
+    @Test
+    public void testCliArgumentSingleAddOpens() {
+        assertThat(MutableStandardJvmOption.newInstance("add-opens")
+                .addValue("java.base/java.util=ALL-UNNAMED")
+                .toCliOptions())
+                .containsExactly("--add-opens=java.base/java.util=ALL-UNNAMED");
+    }
+
 }

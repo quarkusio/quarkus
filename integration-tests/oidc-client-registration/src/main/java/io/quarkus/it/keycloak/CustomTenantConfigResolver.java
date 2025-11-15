@@ -103,25 +103,36 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         } else if (routingContext.request().path().endsWith("/protected/tenant")) {
             return Uni.createFrom().item(createTenantConfig("registered-client-tenant", tenantRegClientOnStartup.metadata()));
         } else if (routingContext.request().path().endsWith("/protected/dynamic")) {
-            // New client registration done dynamically at the request time,
-            // using the same registration endpoint used to register a default client at startup
-            OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig.builder()
-                    .registrationPath(authServerUrl + "/clients-registrations/openid-connect")
-                    .metadata("Dynamic Client", "http://localhost:8081/protected/dynamic")
-                    .build();
+            if (regClientDynamically == null) {
+                // New client registration done dynamically at the request time,
+                // using the same registration endpoint used to register a default client at startup
+                OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig.builder()
+                        .registrationPath(authServerUrl + "/clients-registrations/openid-connect")
+                        .metadata("Dynamic Client", "http://localhost:8081/protected/dynamic")
+                        .build();
 
-            return clientRegs.newClientRegistration(clientRegConfig)
-                    .onItem().transformToUni(cfg -> cfg.registeredClient())
-                    .onItem().transform(r -> registeredClientDynamically(r));
+                return clientRegs.newClientRegistration(clientRegConfig)
+                        .onItem().transformToUni(cfg -> cfg.registeredClient())
+                        .onItem().transform(r -> registeredClientDynamically(r));
+            } else {
+                return Uni.createFrom()
+                        .item(createTenantConfig("registered-client-dynamically", regClientDynamically.metadata()));
+            }
         } else if (routingContext.request().path().endsWith("/protected/dynamic-tenant")) {
-            // New client registration done dynamically at the request time, using a new configured
-            // an OIDC tenant specific registration endpoint
-            OidcClientRegistration tenantClientReg = clientRegs.getClientRegistration("dynamic-tenant");
-            ClientMetadata metadata = createMetadata("http://localhost:8081/protected/dynamic-tenant",
-                    "Dynamic Tenant Client");
+            if (regClientDynamicTenant == null) {
+                // New client registration done dynamically at the request time, using a new configured
+                // an OIDC tenant specific registration endpoint
 
-            return tenantClientReg.registerClient(metadata)
-                    .onItem().transform(r -> registeredClientDynamicTenant(r));
+                OidcClientRegistration tenantClientReg = clientRegs.getClientRegistration("dynamic-tenant");
+                ClientMetadata metadata = createMetadata("http://localhost:8081/protected/dynamic-tenant",
+                        "Dynamic Tenant Client");
+
+                return tenantClientReg.registerClient(metadata)
+                        .onItem().transform(r -> registeredClientDynamicTenant(r));
+            } else {
+                return Uni.createFrom()
+                        .item(createTenantConfig("registered-client-dynamic-tenant", regClientDynamicTenant.metadata()));
+            }
         } else if (routingContext.request().path().endsWith("/protected/multi1")) {
             return Uni.createFrom().item(createTenantConfig("registered-client-multi1",
                     regClientsMulti.get("/protected/multi1").metadata()));

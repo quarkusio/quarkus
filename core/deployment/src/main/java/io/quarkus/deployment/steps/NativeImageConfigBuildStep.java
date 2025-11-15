@@ -10,7 +10,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
@@ -23,7 +22,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
@@ -42,21 +40,16 @@ class NativeImageConfigBuildStep {
             List<JniBuildItem> jniBuildItems,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
-            List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
             List<InlineBeforeAnalysisBuildItem> inlineBeforeAnalysisBuildItems,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath) {
         for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
             for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
-            }
-            for (String i : nativeImageConfigBuildItem.getRuntimeReinitializedClasses()) {
-                runtimeReinit.produce(new RuntimeReinitializedClassBuildItem(i));
             }
             for (Map.Entry<String, String> e : nativeImageConfigBuildItem.getNativeImageSystemProperties().entrySet()) {
                 nativeImage.produce(new NativeImageSystemPropertyBuildItem(e.getKey(), e.getValue()));
@@ -75,10 +68,6 @@ class NativeImageConfigBuildStep {
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
-
-        if (!enableAllSecurityServicesBuildItems.isEmpty()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
-        }
 
         if (!inlineBeforeAnalysisBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
@@ -104,13 +93,13 @@ class NativeImageConfigBuildStep {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void reinitHostNameUtil(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitClass) {
+    void reinitHostNameUtil(BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitClass) {
         // certain libraries like JBoss logging internally use this class to determine the hostname
         // of the system. This HostName class computes and stores the hostname as a static field in a class,
         // so we reinitialize this to re-compute the field (and other related fields) during native application's
         // runtime
-        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
-        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("io.smallrye.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeInitializedClassBuildItem("org.wildfly.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeInitializedClassBuildItem("io.smallrye.common.net.HostName"));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

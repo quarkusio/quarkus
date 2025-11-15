@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
@@ -25,6 +26,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -55,19 +57,18 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
             OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerOptions httpServerOptions) {
-        super(registry, "http.server", null);
+        super(registry, "http.server", commonTags(httpServerOptions));
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
-
         activeRequests = new LongAdder();
+
+        Tags commonTags = commonTags(httpServerOptions);
+
         Gauge.Builder<LongAdder> activeRequestsBuilder = Gauge
                 .builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
                 .tag("url.scheme", httpServerOptions.isSsl() ? "https" : "http");
-        // we add a port tag (the one the application should actually bind to on the network host,
-        // not the public one which we can't know easily) only if it's not random
-        if (httpServerOptions.getPort() > 0) {
-            activeRequestsBuilder
-                    .tag("server.port", "" + httpServerOptions.getPort());
+        for (Tag commonTag : commonTags) {
+            activeRequestsBuilder.tag(commonTag.getKey(), commonTag.getValue());
         }
         activeRequestsBuilder.register(registry);
 
@@ -86,6 +87,16 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 .description("HTTP server response push counter")
                 .withRegistry(registry);
         // not dev-mode changeable -----ˆ
+    }
+
+    private static Tags commonTags(HttpServerOptions httpServerOptions) {
+        Tags result = Tags.empty();
+        // we add a port tag (the one the application should actually bind to on the network host,
+        // not the public one which we can't know easily) only if it's not random
+        if (httpServerOptions.getPort() > 0) {
+            result = result.and("server.port", "" + httpServerOptions.getPort());
+        }
+        return result;
     }
 
     private List<HttpServerMetricsTagsContributor> resolveHttpServerMetricsTagsContributors() {
@@ -126,7 +137,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             pushCounter
                     .withTags(Tags.of(
-                            HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode(),
+                            HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                                     config.isServerSuppress4xxErrors()),
                             VertxMetricsTags.method(method),
                             VertxMetricsTags.outcome(response),
@@ -183,7 +194,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     sample::stop,
                     requestsTimer.withTags(Tags.of(
                             VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, requestMetric.initialPath, 0, false),
+                            HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
                             Outcome.CLIENT_ERROR.asTag(),
                             HttpCommonTags.STATUS_RESET)),
                     requestMetric.request().context());
@@ -209,7 +220,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Sample sample = requestMetric.getSample();
             Tags allTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.request().method()),
-                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode(),
+                    HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                             config.isServerSuppress4xxErrors()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
@@ -248,7 +259,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             return websocketConnectionTimer
-                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.initialPath, 0, false)))
+                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false)))
                     .start();
         }
         return null;
@@ -269,5 +280,9 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     private record DefaultContext(HttpServerRequest request,
             HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
+        @Override
+        public <T> T requestContextLocalData(Object key) {
+            return ((HttpServerRequestInternal) request).context().getLocal(key);
+        }
     }
 }

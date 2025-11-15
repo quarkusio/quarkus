@@ -40,8 +40,8 @@ dependencies {
 {/}
 
 {#insert project}
-group '{project.group-id}'
-version '{project.version}'
+group = '{project.group-id}'
+version = '{project.version}'
 {/}
 
 {#insert java}
@@ -53,4 +53,5 @@ java {
 
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    jvmArgs "--add-opens", "java.base/java.lang=ALL-UNNAMED"
 }

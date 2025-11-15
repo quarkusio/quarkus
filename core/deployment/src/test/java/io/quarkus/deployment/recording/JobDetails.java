@@ -71,9 +71,8 @@ public class JobDetails {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof JobDetails))
+        if (!(o instanceof JobDetails that))
             return false;
-        JobDetails that = (JobDetails) o;
         return Objects.equals(className, that.className)
                 && Objects.equals(staticFieldName, that.staticFieldName)
                 && Objects.equals(methodName, that.methodName)

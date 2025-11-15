@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import jakarta.ws.rs.core.MediaType;
 
@@ -40,7 +41,16 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
-                                "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+                                "{\"access_token\":\"access_token_1\", \"expires_in\":6, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/tokens-exchange")
+                .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange"))
+                .withRequestBody(containing("subject_token=token_to_be_exchanged"))
+                .withRequestBody(containing("subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_exchanged\", \"expires_in\":4}")));
         server.stubFor(WireMock.post("/tokens-jwtbearer")
                 .withRequestBody(matching("grant_type=client_credentials&"
                         + "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&"
@@ -50,6 +60,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_jwt_bearer\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
+        server.stubFor(WireMock.post("/tokens-jwtbearer-forcenewtoken")
+                .withRequestBody(matching("grant_type=client_credentials&"
+                        + "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&"
+                        + "client_assertion=123456"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_jwt_bearer_always_new\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
         server.stubFor(WireMock.post("/tokens-jwtbearer-grant")
                 .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&"
                         + "assertion="))
@@ -89,7 +108,8 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                 .withHeader("X-Custom", matching("XCustomHeaderValue"))
                 .withHeader("GrantType", matching("password"))
                 .withHeader("client-id", containing("non-standard-response"))
-                .withRequestBody(matching("grant_type=password&username=alice&password=alice&extra_param=extra_param_value"))
+                .withRequestBody(matching(
+                        "grant_type=password&audience=audience1&username=alice&password=alice&extra_param=extra_param_value&custom_prop=custom_value"))
                 .willReturn(WireMock
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -102,7 +122,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
-                                "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")));
+                                "{\"access_token\":\"access_token_2\", \"expires_in\":6, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")));
 
         server.stubFor(WireMock.post("/tokens-without-expires-in")
                 .withRequestBody(matching("grant_type=client_credentials&client_id=quarkus-app&client_secret=secret"))
@@ -186,6 +206,25 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withBody(
                                 "{\"access_token\":\"access_token_2\", \"expires_in\":1, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")
                         .withFixedDelay(50)));
+
+        server.stubFor(WireMock.post("/tokens-refresh-test")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody("{\"access_token\":\"access_token_1\", \"expires_in\":3, " +
+                                "\"refresh_token\":\"refresh_token_1\", \"refresh_expires_in\": 100}")));
+        IntStream.range(0, 20).forEach(i -> {
+            int nextIndex = i + 1;
+            server.stubFor(WireMock.post("/tokens-refresh-test")
+                    .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_" + i))
+                    .willReturn(WireMock
+                            .aResponse()
+                            .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                            .withBody("{\"access_token\":\"access_token_" + nextIndex
+                                    + "\", \"expires_in\":3, \"refresh_token\":\"refresh_token_"
+                                    + nextIndex + "\", \"refresh_expires_in\":100}")));
+        });
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 

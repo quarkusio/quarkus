@@ -29,6 +29,22 @@ The default service name is `mongodb`.
 Sharing is enabled by default in dev mode, but disabled in test mode.
 You can disable the sharing with `quarkus.mongodb.devservices.shared=false`.
 
+[[Compose]]
+== Compose
+
+The MongoDB Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
+It relies on a `compose-devservices.yml`, such as:
+
+[source,yaml]
+----
+name: <application name>
+services:
+  mongo:
+    image: docker.io/mongo:7.0
+    ports:
+      - "27017"
+----
+
 == Configuration reference
 
 include::{generated-dir}/config/quarkus-mongodb-client_quarkus.mongodb.devservices.adoc[opts=optional, leveloffset=+1]

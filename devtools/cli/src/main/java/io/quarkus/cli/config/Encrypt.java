@@ -51,6 +51,10 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
             encryptionKey = encodeToString(generateEncryptionKey().getEncoded());
             generatedKey = true;
         } else {
+            if (encryptionKey.startsWith("\\\"") && encryptionKey.endsWith("\"\\")) {
+                encryptionKey = encryptionKey.substring(2, encryptionKey.length() - 2);
+            }
+
             if (encryptionKeyFormat.equals(KeyFormat.base64)) {
                 encryptionKey = encodeToString(encryptionKey.getBytes());
             }

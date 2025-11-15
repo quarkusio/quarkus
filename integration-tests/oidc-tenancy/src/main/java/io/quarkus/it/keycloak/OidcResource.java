@@ -1,9 +1,11 @@
 package io.quarkus.it.keycloak;
 
+import java.net.URI;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
@@ -16,13 +18,16 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -33,6 +38,7 @@ import io.smallrye.jwt.util.KeyUtils;
 
 @Path("oidc")
 public class OidcResource {
+    private static final Logger LOG = Logger.getLogger(OidcResource.class);
 
     @Context
     UriInfo ui;
@@ -242,7 +248,7 @@ public class OidcResource {
     public String token(@FormParam("grant_type") String grantType, @FormParam("client_id") String clientId) {
         if ("authorization_code".equals(grantType)) {
             return "{\"id_token\": \"" + jwt(clientId, null, "1") + "\"," +
-                    "\"access_token\": \"" + jwt(clientId, null, "1") + "\"," +
+                    "\"access_token\": \"" + largeJwt(clientId, "1") + "\"," +
                     "   \"token_type\": \"Bearer\"," +
                     "   \"refresh_token\": \"123456789\"," +
                     "   \"expires_in\": 300 }";
@@ -252,7 +258,7 @@ public class OidcResource {
 
             if (refreshEndpointCallCount++ == 0) {
                 // first refresh token request, check the original ID token is used
-                return "{\"access_token\": \"" + jwt(clientId, null, "1") + "\"," +
+                return "{\"access_token\": \"" + largeJwt(clientId, "1") + "\"," +
                         "   \"token_type\": \"Bearer\"," +
                         "   \"expires_in\": 300 }";
             } else {
@@ -260,6 +266,20 @@ public class OidcResource {
                 // quarkus-oidc should redirect the user to authenticate again if refreshing the token fails
                 throw new BadRequestException();
             }
+        } else {
+            // unexpected grant request
+            throw new BadRequestException();
+        }
+    }
+
+    @POST
+    @Path("oidc-client-tokens")
+    @Produces("application/json")
+    public String oidcClientToken(@FormParam("grant_type") String grantType, @FormParam("audience") String audiences) {
+        if ("client_credentials".equals(grantType)) {
+            Set<String> audSet = new HashSet<>(Arrays.asList(audiences.split(" ")));
+            return "{\"access_token\": \"" + jwtWithMultipleAudiences(audSet) + "\"," +
+                    "   \"expires_in\": 300 }";
         } else {
             // unexpected grant request
             throw new BadRequestException();
@@ -369,6 +389,16 @@ public class OidcResource {
         return rotate;
     }
 
+    @POST
+    @Path("form-post-logout")
+    public Response formPostLogout(@FormParam("id_token_hint") String idTokenHint,
+            @FormParam("post_logout_redirect_uri") String postLogoutRedirectUri) throws Exception {
+        String userName = OidcUtils.decodeJwtContent(idTokenHint).getString("upn");
+        LOG.infof("OIDC provider: logging the user out using the form post logout. post logout redirect URI: %s",
+                postLogoutRedirectUri);
+        return Response.seeOther(URI.create(postLogoutRedirectUri + "?username=" + userName)).build();
+    }
+
     private String jwt(String audience, String subject, String kid) {
         return jwt(audience, subject, kid, false);
     }
@@ -395,7 +425,11 @@ public class OidcResource {
         }
 
         if (acr != null && !acr.isEmpty()) {
-            builder.claim("acr", Arrays.asList(acr.split(",")));
+            if (acr.endsWith("_string")) {
+                builder.claim("acr", acr);
+            } else {
+                builder.claim("acr", Arrays.asList(acr.split(",")));
+            }
         }
 
         if (authTime != null && !authTime.isEmpty()) {
@@ -403,6 +437,27 @@ public class OidcResource {
         }
 
         return builder.jws().keyId(kid)
+                .sign(key.getPrivateKey());
+    }
+
+    private String largeJwt(String audience, String kid) {
+        byte[] array = new byte[5000];
+        Arrays.fill(array, (byte) 1);
+        JwtClaimsBuilder builder = Jwt.claim("typ", "Bearer")
+                .upn("alice")
+                .preferredUserName("alice")
+                .groups("user")
+                .claim("longstring",
+                        Base64.getEncoder().encodeToString(array))
+                .expiresIn(Duration.ofSeconds(4))
+                .audience(audience);
+
+        return builder.jws().keyId(kid)
+                .sign(key.getPrivateKey());
+    }
+
+    private String jwtWithMultipleAudiences(Set<String> audience) {
+        return Jwt.audience(audience)
                 .sign(key.getPrivateKey());
     }
 }

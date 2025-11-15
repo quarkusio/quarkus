@@ -89,7 +89,7 @@ class PathTreeVisit implements PathVisit {
     @Override
     public String getRelativePath(String separator) {
         if (relativePath == null) {
-            return PathTreeUtils.asString(baseDir.relativize(current), separator);
+            return PathTreeUtils.asString(relativize(baseDir, current), separator);
         }
         if (!current.getFileSystem().getSeparator().equals(separator)) {
             return relativePath.replace(current.getFileSystem().getSeparator(), separator);
@@ -127,5 +127,18 @@ class PathTreeVisit implements PathVisit {
             current = baseDir.resolve(mrEntry.getValue());
             visitor.visitPath(this);
         }
+    }
+
+    /**
+     * In this particular setup, we are sure the current path is inside the baseDir.
+     * We also don't expect any {@code ..} or {@code .} in the path.
+     * Thus why we are using a simplified approach as UnixPath#relativize() is actually quite slow
+     * when you have a lot of elements in the classpath.
+     */
+    private static Path relativize(Path baseDir, Path current) {
+        if (baseDir.equals(current)) {
+            return current.getFileSystem().getPath("");
+        }
+        return current.subpath(baseDir.getNameCount(), current.getNameCount());
     }
 }

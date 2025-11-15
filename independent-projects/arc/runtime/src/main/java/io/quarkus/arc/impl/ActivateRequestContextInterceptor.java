@@ -35,7 +35,7 @@ public class ActivateRequestContextInterceptor {
     }
 
     private CompletionStage<?> invokeStage(InvocationContext ctx) {
-        ManagedContext requestContext = Arc.container().requestContext();
+        ManagedContext requestContext = Arc.requireContainer().requestContext();
         if (requestContext.isActive()) {
             return proceedWithStage(ctx);
         }
@@ -66,7 +66,7 @@ public class ActivateRequestContextInterceptor {
 
     private Multi<?> invokeMulti(InvocationContext ctx) {
         return Multi.createFrom().deferred(() -> {
-            ManagedContext requestContext = Arc.container().requestContext();
+            ManagedContext requestContext = Arc.requireContainer().requestContext();
             if (requestContext.isActive()) {
                 return proceedWithMulti(ctx);
             }
@@ -93,7 +93,7 @@ public class ActivateRequestContextInterceptor {
 
     private Uni<?> invokeUni(InvocationContext ctx) {
         return Uni.createFrom().deferred(() -> {
-            ManagedContext requestContext = Arc.container().requestContext();
+            ManagedContext requestContext = Arc.requireContainer().requestContext();
             if (requestContext.isActive()) {
                 return proceedWithUni(ctx);
             }
@@ -119,7 +119,7 @@ public class ActivateRequestContextInterceptor {
     }
 
     private Object invoke(InvocationContext ctx) throws Exception {
-        ManagedContext requestContext = Arc.container().requestContext();
+        ManagedContext requestContext = Arc.requireContainer().requestContext();
         if (requestContext.isActive()) {
             return ctx.proceed();
         }

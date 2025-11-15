@@ -3,9 +3,11 @@ package io.quarkus.it.amazon.lambda;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import jakarta.ws.rs.core.MediaType;
 
@@ -327,5 +329,52 @@ public class AmazonLambdaSimpleTestCase {
                 .get("/hello/proxyRequestContext")
                 .then()
                 .statusCode(204);
+    }
+
+    @Test
+    public void testSingleCookieByEvent() {
+        APIGatewayV2HTTPEvent request = request("/cookies/one/value1");
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("cookies.size()", equalTo(1))
+                .body("cookies[0]", containsString("cookie1=value1"))
+                .body("headers.'Set-Cookie'", equalTo(null));
+    }
+
+    @Test
+    public void testMultipleCookiesByEvent() {
+        APIGatewayV2HTTPEvent request = request("/cookies/two/value1/value2");
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("cookies.size()", equalTo(2))
+                .body("cookies", hasItems(containsString("cookie1=value1"), containsString("cookie2=value2")))
+                .body("headers.'Set-Cookie'", equalTo(null));
+    }
+
+    @Test
+    public void testMultipleCookiesDirectHttp() {
+        List<String> cookies = given()
+                .when()
+                .get("/cookies/two/value1/value2")
+                .then()
+                .statusCode(200)
+                .extract()
+                .headers()
+                .getValues("Set-Cookie");
+        Assertions.assertEquals(2, cookies.size());
+        Assertions.assertTrue(cookies.stream().anyMatch(s -> s.contains("cookie1=value1")));
+        Assertions.assertTrue(cookies.stream().anyMatch(s -> s.contains("cookie2=value2")));
     }
 }

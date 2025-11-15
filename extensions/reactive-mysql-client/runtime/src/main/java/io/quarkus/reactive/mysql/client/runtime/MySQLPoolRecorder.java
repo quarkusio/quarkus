@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Inject;
 
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
@@ -51,17 +50,22 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class MySQLPoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final TypeLiteral<Instance<MySQLPoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
     private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+    private final RuntimeValue<DataSourcesReactiveMySQLConfig> reactiveMySQLRuntimeConfig;
 
-    @Inject
-    public MySQLPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+    public MySQLPoolRecorder(
+            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
+            final RuntimeValue<DataSourcesReactiveMySQLConfig> reactiveMySQLRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
         this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+        this.reactiveMySQLRuntimeConfig = reactiveMySQLRuntimeConfig;
     }
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
@@ -82,21 +86,16 @@ public class MySQLPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig,
-            ShutdownContext shutdown) {
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public MySQLPool apply(SyntheticCreationalContext<MySQLPool> context) {
                 MySQLPool pool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
-                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveMySQLConfig.dataSources().get(dataSourceName).reactive().mysql(),
+                        runtimeConfig.getValue().dataSources().get(dataSourceName),
+                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
+                        reactiveMySQLRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().mysql(),
                         context);
 
                 shutdown.addShutdownTask(pool::close);
@@ -128,20 +127,19 @@ public class MySQLPoolRecorder {
                 dataSourceReactiveMySQLConfig);
         List<MySQLConnectOptions> mySQLConnectOptions = toMySQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
-        Supplier<Future<MySQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, mySQLConnectOptions,
+        Supplier<Future<MySQLConnectOptions>> databasesSupplier = toDatabasesSupplier(mySQLConnectOptions,
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, mySQLConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<MySQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
-            List<MySQLConnectOptions> mySQLConnectOptions,
+    private Supplier<Future<MySQLConnectOptions>> toDatabasesSupplier(List<MySQLConnectOptions> mySQLConnectOptions,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<MySQLConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, mySQLConnectOptions,
+            supplier = new ConnectOptionsSupplier<>(credentialsProvider, name, mySQLConnectOptions,
                     MySQLConnectOptions::new);
         } else {
             supplier = Utils.roundRobinSupplier(mySQLConnectOptions);
@@ -216,7 +214,7 @@ public class MySQLPoolRecorder {
                 String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
                 CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
                 String name = dataSourceRuntimeConfig.credentialsProvider().get();
-                Map<String, String> credentials = credentialsProvider.getCredentials(name);
+                Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
                 String user = credentials.get(USER_PROPERTY_NAME);
                 String password = credentials.get(PASSWORD_PROPERTY_NAME);
                 if (user != null) {
@@ -227,7 +225,9 @@ public class MySQLPoolRecorder {
                 }
             }
 
-            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
+            mysqlConnectOptions
+                    .setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements()
+                            .orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
             dataSourceReactiveMySQLConfig.charset().ifPresent(mysqlConnectOptions::setCharset);
             dataSourceReactiveMySQLConfig.collation().ifPresent(mysqlConnectOptions::setCollation);

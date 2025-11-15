@@ -197,8 +197,13 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
     private Map<String, ArtifactSources> sourcesSets = new HashMap<>();
     private List<Dependency> directDepConstraints;
     private List<Dependency> directDeps;
-    private Collection<String> testClasspathDependencyExclusions = List.of();
-    private Collection<String> additionalTestClasspathElements = List.of();
+
+    /*
+     * NOTE: we can't use List.of() methods because Gradle will fail to deserialize them.
+     * See "Configuration cache error with Java11 collections #26942" https://github.com/gradle/gradle/issues/26942
+     */
+    private Collection<String> testClasspathDependencyExclusions = Collections.emptyList();
+    private Collection<String> additionalTestClasspathElements = Collections.emptyList();
     private WorkspaceModule parent;
 
     private DefaultWorkspaceModule() {

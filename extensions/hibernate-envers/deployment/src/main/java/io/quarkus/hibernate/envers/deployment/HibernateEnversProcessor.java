@@ -3,6 +3,7 @@ package io.quarkus.hibernate.envers.deployment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -28,16 +29,30 @@ public final class HibernateEnversProcessor {
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
         return Arrays.asList(
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"));
+                // These are added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor,
+                // so we pass empty sets of PUs.
+                // The build items tell the Hibernate extension to process the classes at build time:
+                // add to Jandex index, bytecode enhancement, proxy generation, ...
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity",
+                        Set.of()),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
+                        Set.of()),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping",
+                        Set.of()),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping",
+                        Set.of()));
     }
 
     @BuildStep
     public void registerEnversReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             HibernateEnversBuildTimeConfig buildTimeConfig) {
+        // This is necessary because these classes are added to the model conditionally at static init,
+        // so they don't get processed by HibernateOrmProcessor and in particular don't get reflection enabled.
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 "org.hibernate.envers.DefaultRevisionEntity",
-                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity")
+                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
+                "org.hibernate.envers.RevisionMapping",
+                "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping")
                 .reason(getClass().getName())
                 .methods().build());
 

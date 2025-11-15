@@ -89,6 +89,14 @@ public interface DevServicesBuildTimeConfig {
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScriptPath();
 
     /**
+     * The paths to SQL scripts to be loaded from the classpath and applied to the Dev Service database using the SYS privileged
+     * user.
+     * Not all databases provide a privileged user. In these cases, the property is ignored.
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     */
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initPrivilegedScriptPath();
+
+    /**
      * The volumes to be mapped to the container.
      * <p>
      * The map key corresponds to the host location; the map value is the container location.

@@ -18,6 +18,6 @@ public class AuthenticationFailedExceptionMapper {
     public Uni<Response> handle(RoutingContext routingContext, AuthenticationFailedException exception) {
         addAuthenticationFailureToEvent(exception, routingContext);
         return SecurityExceptionMapperUtil.handleWithAuthenticator(routingContext,
-                LaunchMode.isDev() ? exception.getMessage() : null);
+                LaunchMode.current().isDev() ? exception.getMessage() : null);
     }
 }

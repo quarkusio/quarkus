@@ -1,5 +1,8 @@
 package io.quarkus.micrometer.deployment.export;
 
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.Matchers.is;
+
 import java.util.Set;
 
 import jakarta.inject.Inject;
@@ -12,7 +15,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.quarkus.test.QuarkusUnitTest;
-import io.restassured.RestAssured;
 
 public class PrometheusEnabledTest {
     @RegisterExtension
@@ -23,6 +25,7 @@ public class PrometheusEnabledTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .overrideConfigKey("quarkus.http.enable-compression", "true")
             .withEmptyApplication();
 
     @Inject
@@ -49,16 +52,22 @@ public class PrometheusEnabledTest {
     @Test
     public void metricsEndpoint() {
         // RestAssured prepends /app for us
-        RestAssured.given()
+        given()
                 .accept("application/json")
                 .get("/q/metrics")
                 .then()
                 .log().all()
                 .statusCode(406);
 
-        RestAssured.given()
+        given()
                 .get("/q/metrics")
                 .then()
                 .statusCode(200);
+
+        given().header("Accept-Encoding", "gzip")
+                .get("/q/metrics")
+                .then()
+                .statusCode(200)
+                .header("content-encoding", is("gzip"));
     }
 }

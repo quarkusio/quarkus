@@ -15,14 +15,20 @@ public class IsPodmanWorking extends IsContainerRuntimeWorking {
     public IsPodmanWorking(boolean silent) {
         super(List.of(
                 new TestContainersStrategy(silent),
-                new DockerHostStrategy(),
-                new PodmanBinaryStrategy()));
+                new DockerHostStrategy(silent),
+                new PodmanBinaryStrategy(silent)));
     }
 
     private static class PodmanBinaryStrategy implements Strategy {
+        private final boolean silent;
+
+        public PodmanBinaryStrategy(boolean silent) {
+            this.silent = silent;
+        }
+
         @Override
         public Result get() {
-            if (ContainerRuntimeUtil.detectContainerRuntime(false, ContainerRuntime.PODMAN) != UNAVAILABLE) {
+            if (ContainerRuntimeUtil.detectContainerRuntime(false, silent, ContainerRuntime.PODMAN) != UNAVAILABLE) {
                 return Result.AVAILABLE;
             } else {
                 return Result.UNKNOWN;

@@ -5,12 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +17,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformBomsTestBase {
@@ -60,7 +60,7 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
 
         enableRegistryClient();
 
-        // install 1.0.0 version which is not recommended by the registry any more
+        // install 1.0.0 version which is not recommended by the registry anymore
         installNotRecommendedVersion("1.0.1", "1.0.0", "acme-foo-bom");
         installNotRecommendedVersion("1.0.1", "1.0.0", "acme-baz-bom");
         installNotRecommendedVersion("1.0.1", "1.0.0", "quarkus-bom");
@@ -104,13 +104,12 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
     @Test
     public void test() throws Exception {
         final ExtensionCatalog catalog = ExtensionCatalogResolver.builder().build().resolveExtensionCatalog(
-                Collections.singletonList(ArtifactCoords.fromString(MAIN_PLATFORM_KEY + ":acme-baz-bom::pom:1.0.0")));
-        assertThat(Arrays.asList(new ArtifactCoords[] {
+                List.of(ArtifactCoords.fromString(MAIN_PLATFORM_KEY + ":acme-baz-bom::pom:1.0.0")));
+        assertThat(List.of(
                 ArtifactCoords.fromString("io.quarkus:quarkus-core:1.1.2"),
                 ArtifactCoords.fromString(MAIN_PLATFORM_KEY + ":acme-foo:1.0.0"),
                 ArtifactCoords.fromString(MAIN_PLATFORM_KEY + ":acme-baz:1.0.0"),
-                ArtifactCoords.fromString("org.acme:acme-quarkus-other:5.5.5")
-        })).isEqualTo(
-                catalog.getExtensions().stream().map(e -> e.getArtifact()).collect(Collectors.toList()));
+                ArtifactCoords.fromString("org.acme:acme-quarkus-other:5.5.5"))).isEqualTo(
+                        catalog.getExtensions().stream().map(Extension::getArtifact).collect(Collectors.toList()));
     }
 }

@@ -1,0 +1,145 @@
+package io.quarkus.hibernate.reactive.panache;
+
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
+import java.util.Map;
+import java.util.function.Supplier;
+
+import org.hibernate.reactive.mutiny.Mutiny;
+
+import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
+import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations;
+import io.quarkus.panache.common.Parameters;
+import io.smallrye.mutiny.Uni;
+
+/**
+ * @deprecated
+ *             This class is a copy of the original {@code io.quarkus.hibernate.reactive.panache.Panache} class
+ *             from the Java hibernate-orm-panache module.
+ *
+ *             Since this Kotlin module no longer depends on the Java module, there are now two copies of this class:
+ *             one under {@code io.quarkus.hibernate.reactive.panache.kotlin.Panache}, which you should use,
+ *             and this one, which is provided only to maintain backward compatibility.
+ *
+ *             This class will be removed in the future.
+ */
+@Deprecated(since = "3.30.0")
+public class Panache {
+
+    /**
+     * Obtains a {@link Uni} within the scope of the default reactive session.
+     * If a default reactive session exists then it is reused.
+     * If it does not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
+     *
+     * @param <T>
+     * @param uniSupplier
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withSession(Supplier<Uni<T>> uniSupplier) {
+        return SessionOperations.withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> uniSupplier.get());
+    }
+
+    /**
+     * Obtains a {@link Uni} within the scope of the default reactive session.
+     * If a default reactive session exists then it is reused.
+     * If it does not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
+     *
+     * @param <T>
+     * @param uniSupplier
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withSession(String persistenceUnitName, Supplier<Uni<T>> uniSupplier) {
+        return SessionOperations.withSession(persistenceUnitName, s -> uniSupplier.get());
+    }
+
+    /**
+     * Returns the current {@link Mutiny.Session}
+     *
+     * @return the current {@link Mutiny.Session}
+     */
+    public static Uni<Mutiny.Session> getSession() {
+        return SessionOperations.getSession();
+    }
+
+    /**
+     * Performs the given work within the scope of a database transaction, automatically flushing the session,
+     * in the default persistence unit.
+     * The transaction will be rolled back if the work completes with an uncaught exception, or if
+     * {@link Mutiny.Transaction#markForRollback()} is called.
+     *
+     * @param <T> The function's return type
+     * @param work The function to execute in the new transaction
+     * @return the result of executing the function
+     * @see Panache#currentTransaction()
+     */
+    public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
+        return withTransaction(DEFAULT_PERSISTENCE_UNIT_NAME, work);
+    }
+
+    /**
+     * Performs the given work within the scope of a database transaction, automatically flushing the session.
+     * The transaction will be rolled back if the work completes with an uncaught exception, or if
+     * {@link Mutiny.Transaction#markForRollback()} is called.
+     *
+     * @param <T> The function's return type
+     * @param persistenceUnitName The persistence unit of the entity being used
+     * @param work The function to execute in the new transaction
+     * @return the result of executing the function
+     * @see Panache#currentTransaction()
+     */
+    public static <T> Uni<T> withTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
+        return SessionOperations.withTransaction(persistenceUnitName, () -> work.get());
+    }
+
+    /**
+     * Executes a database update operation and return the number of rows operated on.
+     *
+     * @param query a normal HQL query
+     * @param params optional list of indexed parameters
+     * @return the number of rows operated on.
+     */
+    public static Uni<Integer> executeUpdate(String query, Object... params) {
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params);
+    }
+
+    /**
+     * Executes a database update operation and return the number of rows operated on.
+     *
+     * @param query a normal HQL query
+     * @param params {@link Map} of named parameters
+     * @return the number of rows operated on.
+     */
+    public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params);
+    }
+
+    /**
+     * Executes a database update operation and return the number of rows operated on.
+     *
+     * @param query a normal HQL query
+     * @param params {@link Parameters} of named parameters
+     * @return the number of rows operated on.
+     */
+    public static Uni<Integer> executeUpdate(String query, Parameters params) {
+        return KotlinJpaOperations.INSTANCE.executeUpdate(query, params.map());
+    }
+
+    /**
+     * Flush all pending changes to the database.
+     *
+     * @return void
+     */
+    public static Uni<Void> flush() {
+        return getSession().flatMap(session -> session.flush());
+    }
+
+    /**
+     * Returns the current transaction, if any, or <code>null</code>.
+     *
+     * @return the current transaction, if any, or <code>null</code>.
+     * @see Panache#withTransaction(Supplier)
+     */
+    public static Uni<Mutiny.Transaction> currentTransaction() {
+        return getSession().map(session -> session.currentTransaction());
+    }
+}

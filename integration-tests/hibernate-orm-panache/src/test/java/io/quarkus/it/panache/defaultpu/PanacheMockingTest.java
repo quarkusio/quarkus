@@ -1,6 +1,7 @@
 package io.quarkus.it.panache.defaultpu;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
@@ -30,7 +31,7 @@ public class PanacheMockingTest {
     public void setup() {
         SelectionQuery mockQuery = Mockito.mock(SelectionQuery.class);
         Mockito.doNothing().when(session).persist(Mockito.any());
-        Mockito.when(session.createSelectionQuery(Mockito.anyString(), Mockito.any())).thenReturn(mockQuery);
+        Mockito.when(session.createSelectionQuery(Mockito.anyString(), Mockito.<Class<?>> any())).thenReturn(mockQuery);
         Mockito.when(mockQuery.getSingleResult()).thenReturn(0l);
     }
 
@@ -188,6 +189,16 @@ public class PanacheMockingTest {
         // bridge call
         Assertions.assertEquals(Optional.empty(),
                 ((PanacheRepositoryBase) realPersonRepository).findByIdOptional(0l, LockModeType.NONE));
+
+        // normal method call
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(List.of(0l)));
+        // bridge call
+        Assertions.assertEquals(Collections.emptyList(), ((PanacheRepositoryBase) realPersonRepository).findByIds(List.of(0l)));
+        // normal method call
+        Assertions.assertEquals(Collections.emptyList(), realPersonRepository.findByIds(List.of(0l)));
+        // bridge call
+        Assertions.assertEquals(Collections.emptyList(),
+                ((PanacheRepositoryBase) realPersonRepository).findByIds(List.of(0l)));
 
         // normal method call
         Assertions.assertEquals(false, realPersonRepository.deleteById(0l));

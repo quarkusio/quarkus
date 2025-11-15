@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.hibernate.orm.deployment.ClassNames;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -41,8 +42,7 @@ public class HibernateReactiveCdiProcessor {
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
-            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
-            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
+            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
             boolean isReactive = persistenceUnitDescriptor.isReactive();
 
             if (isReactive) {
@@ -52,7 +52,15 @@ public class HibernateReactiveCdiProcessor {
                         // See https://github.com/quarkusio/quarkus/issues/16437
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .setRuntimeInit();
+                        .setRuntimeInit()
+                        // Note persistence units _actually_ get started a bit earlier, each in its own thread. See JPAConfig#startAll.
+                        // This startup() call is only necessary in order to trigger Arc's usage checks (fail startup if bean injected when a PU is inactive).
+                        .startup()
+                        .checkActive(recorder.checkActiveSupplier(persistenceUnitName,
+                                persistenceUnitDescriptor.getConfig().getDataSource(),
+                                persistenceUnitDescriptor.getConfig().getEntityClassNames()))
+                        .createWith(recorder.mutinySessionFactory(persistenceUnitName))
+                        .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)));
 
                 for (DotName exposedType : MUTINY_SESSION_FACTORY_EXPOSED_TYPES) {
                     configurator.addType(exposedType);
@@ -62,13 +70,12 @@ public class HibernateReactiveCdiProcessor {
 
                 if (isDefaultPU) {
                     configurator.addQualifier(Default.class);
+                } else {
+                    configurator.addQualifier().annotation(ClassNames.QUARKUS_PERSISTENCE_UNIT)
+                            .addValue("value", persistenceUnitName).done();
                 }
 
-                syntheticBeanBuildItemBuildProducer
-                        .produce(configurator
-                                .createWith(recorder.mutinySessionFactory(persistenceUnitName))
-                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                                .done());
+                syntheticBeanBuildItemBuildProducer.produce(configurator.done());
             }
 
         }

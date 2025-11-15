@@ -15,8 +15,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'quarkus-annotation-processor-multi-module-build'
-
-include ':common'
-include ':application'
+rootProject.name = 'annotation-processor-simple-module'
 

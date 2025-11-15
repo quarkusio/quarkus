@@ -42,7 +42,7 @@ jobs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
@@ -52,7 +52,7 @@ jobs:
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -174,14 +174,14 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
@@ -191,7 +191,7 @@ jobs:
             LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
           path: |
@@ -199,7 +199,7 @@ jobs:
             !**/build/tmp/**
           retention-days: 5
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"

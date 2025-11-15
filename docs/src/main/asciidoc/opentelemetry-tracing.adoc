@@ -194,24 +194,9 @@ Hit `CTRL+C` or type `q` to stop the application.
 
 === JDBC
 
-The https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/jdbc/library[JDBC instrumentation] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your build file:
+The https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/jdbc/library[JDBC instrumentation] bundled with this extension will add a span for each JDBC queries done by your application.
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.opentelemetry.instrumentation</groupId>
-    <artifactId>opentelemetry-jdbc</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.opentelemetry.instrumentation:opentelemetry-jdbc")
-----
-
-As it uses a dedicated JDBC datasource wrapper, you must enable telemetry for your datasource:
+As it uses a dedicated JDBC datasource wrapper, you must enable telemetry for your datasource with the `quarkus.datasource.jdbc.telemetry` property, as in the following example:
 
 [source, properties]
 ----

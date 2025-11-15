@@ -69,7 +69,6 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
@@ -195,7 +194,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             System.clearProperty("test.url");
             QuarkusTestProfile profileInstance = AppMakerHelper.getQuarkusTestProfile(profile);
             if (profileInstance != null) {
-                shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, profileInstance));
+                Runnable configCleaner = AppMakerHelper.setExtraPropertiesRestorably(profile, profileInstance);
+                shutdownTasks.add(configCleaner);
             }
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
 
@@ -212,8 +212,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile(profileInstance,
                             startupAction.getClassLoader()),
                     profileInstance != null && profileInstance.disableGlobalTestResources(),
-                    startupAction.getDevServicesProperties(),
-                    Optional.ofNullable(startupAction.getDevServicesNetworkId()),
+                    startupAction.getOrInitialiseDevServicesProperties(),
+                    Optional.ofNullable(startupAction.getOrInitialiseDevServicesNetworkId()),
                     testClassLocation);
             TestResourceUtil.TestResourceManagerReflections.initReflectively(testResourceManager, profile);
             Map<String, String> properties = TestResourceUtil.TestResourceManagerReflections
@@ -636,7 +636,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     }
                 }
             }
-            PropertyTestUtil.setLogFileProperty();
             try {
                 state = doJavaStart(extensionContext, selectedProfile);
                 setState(extensionContext, state);
@@ -1189,7 +1188,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    class FailedCleanup implements ExtensionContext.Store.CloseableResource {
+    class FailedCleanup implements AutoCloseable {
         @Override
         public void close() {
             shutdownHangDetection();

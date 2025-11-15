@@ -55,7 +55,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
                 public SmallRyeConfig apply(final LaunchMode launchMode) {
                     LaunchMode current = LaunchMode.current();
                     LaunchMode.set(launchMode);
-                    SmallRyeConfig config = ConfigUtils.configBuilder(false, true, mode)
+                    SmallRyeConfig config = ConfigUtils.configBuilder()
                             .withCustomizers(new TestConfigCustomizer(mode))
                             .build();
                     LaunchMode.set(current);

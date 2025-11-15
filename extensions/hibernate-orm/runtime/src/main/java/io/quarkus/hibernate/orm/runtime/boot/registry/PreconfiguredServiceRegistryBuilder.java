@@ -8,9 +8,10 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
+import org.hibernate.bytecode.internal.ProxyFactoryFactoryInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
@@ -37,7 +38,7 @@ import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
@@ -48,6 +49,7 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolverInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
+import io.quarkus.hibernate.orm.runtime.service.internalcache.QuarkusInternalCacheFactoryInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -127,16 +129,18 @@ public class PreconfiguredServiceRegistryBuilder {
     }
 
     private BootstrapServiceRegistry buildEmptyBootstrapServiceRegistry() {
+        final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
         // N.B. support for custom IntegratorProvider injected via Properties (as
         // instance) removed
 
         // N.B. support for custom StrategySelector is not implemented yet
 
-        final StrategySelectorImpl strategySelector = new StrategySelectorImpl(FlatClassLoaderService.INSTANCE);
+        // A non-empty selector is needed in order to support ID generators that retrieve a naming strategy -- at runtime!
+        var strategySelector = QuarkusStrategySelectorBuilder.buildRuntimeSelector(providedClassLoaderService);
 
         return new BootstrapServiceRegistryImpl(true,
-                FlatClassLoaderService.INSTANCE,
+                providedClassLoaderService,
                 strategySelector, // new MirroringStrategySelector(),
                 new MirroringIntegratorService(integrators));
     }
@@ -156,18 +160,17 @@ public class PreconfiguredServiceRegistryBuilder {
 
         //References to this object need to be injected in both the initiator for BytecodeProvider and for
         //the registered ProxyFactoryFactoryInitiator
-        QuarkusRuntimeProxyFactoryFactory statefulProxyFactory = new QuarkusRuntimeProxyFactoryFactory(
+        QuarkusRuntimeProxyFactoryFactory preGeneratedProxyFactory = new QuarkusRuntimeProxyFactoryFactory(
                 rs.getProxyClassDefinitions());
 
         //Enforces no bytecode enhancement will happen at runtime,
         //but allows use of proxies generated at build time
-        serviceInitiators.add(new QuarkusRuntimeBytecodeProviderInitiator(statefulProxyFactory));
+        serviceInitiators.add(new QuarkusRuntimeBytecodeProviderInitiator(preGeneratedProxyFactory));
 
         //Routes to the standard implementation, but w/o allowing configuration options to override it
         serviceInitiators.add(QuarkusMutationExecutorServiceInitiator.INSTANCE);
 
-        //Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
-        serviceInitiators.add(new QuarkusRuntimeProxyFactoryFactoryInitiator(statefulProxyFactory));
+        serviceInitiators.add(ProxyFactoryFactoryInitiator.INSTANCE);
 
         // Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator :
         // not used
@@ -244,6 +247,9 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // Default implementation
         serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
+
+        // Custom Quarkus implementation: overrides the internal cache to leverage Caffeine
+        serviceInitiators.add(QuarkusInternalCacheFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

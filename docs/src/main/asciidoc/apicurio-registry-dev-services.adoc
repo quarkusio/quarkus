@@ -79,3 +79,19 @@ You can select any 2.x version from https://hub.docker.com/r/apicurio/apicurio-r
 ----
 quarkus.apicurio-registry.devservices.image-name=apicurio/apicurio-registry-mem:latest-snapshot
 ----
+
+[[Compose]]
+== Compose
+
+The Apicurio Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
+It relies on a `compose-devservices.yml`, such as:
+
+[source,yaml]
+----
+name: <application name>
+services:
+  apicurio:
+    image: apicurio/apicurio-registry-mem:2.4.2.Final
+    ports:
+      - "8080"
+----

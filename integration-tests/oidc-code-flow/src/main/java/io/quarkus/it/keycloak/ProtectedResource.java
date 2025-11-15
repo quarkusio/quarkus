@@ -24,8 +24,8 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/web-app")
@@ -36,7 +36,7 @@ public class ProtectedResource {
     SecurityIdentity identity;
 
     @Inject
-    SecurityIdentityAssociation securityIdentityAssociation;
+    CurrentIdentityAssociation securityIdentityAssociation;
 
     @Inject
     Principal principal;
@@ -101,6 +101,30 @@ public class ProtectedResource {
     @Path("configMetadataScopes")
     public String configMetadataScopes() {
         return configMetadata.getSupportedScopes().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataResponseTypes")
+    public String configMetadataResponseTypes() {
+        return configMetadata.getSupportedResponseTypes().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataSubjectTypes")
+    public String configMetadataSubjectTypes() {
+        return configMetadata.getSupportedSubjectTypes().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataIdTokenSigningAlgorithms")
+    public String configMetadataIdTokenSigningAlgorithms() {
+        return configMetadata.getSupportedIdTokenSigningAlgorithms().stream().collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("configMetadataCodeChallengeMethods")
+    public String configMetadataCodeChallengeMethods() {
+        return configMetadata.getSupportedCodeChallengeMethods().stream().collect(Collectors.joining(","));
     }
 
     @GET
@@ -283,6 +307,18 @@ public class ProtectedResource {
     @Path("refresh/tenant-listener/callback")
     public String getRefreshTokenTenantListenerCallback() {
         return getRefreshToken();
+    }
+
+    @GET
+    @Path("refresh/tenant-restore-query-keep-redirect-params")
+    public String getTenantRestoreQueryKeepRedirectParams(@QueryParam("context") String context) {
+        return getRefreshToken() + ";context=" + context;
+    }
+
+    @GET
+    @Path("refresh/tenant-restore-query-keep-redirect-params/callback")
+    public String getTenantRestoreQueryKeepRedirectParamsCallback() {
+        throw new InternalServerErrorException("This method must not be invoked");
     }
 
     @GET

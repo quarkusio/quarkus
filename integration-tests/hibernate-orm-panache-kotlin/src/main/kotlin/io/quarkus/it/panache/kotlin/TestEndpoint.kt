@@ -1,5 +1,7 @@
 package io.quarkus.it.panache.kotlin
 
+import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
@@ -19,16 +21,15 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElements
 import jakarta.xml.bind.annotation.XmlTransient
-import java.lang.UnsupportedOperationException
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.UUID
+import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.hibernate.jpa.QueryHints
+import org.hibernate.query.SemanticException
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.fail
 
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and in
@@ -49,7 +50,7 @@ class TestEndpoint {
         }
         Assertions.assertThrows(
             NoResultException::class.java,
-            { Person.find("name = ?1", UUID.randomUUID().toString()).singleResult() }
+            { Person.find("name = ?1", UUID.randomUUID().toString()).singleResult() },
         )
 
         var persons: List<Person> = Person.findAll().list()
@@ -77,7 +78,7 @@ class TestEndpoint {
         Assertions.assertEquals(1, Person.count("name = ?1", "stef"))
         Assertions.assertEquals(
             1,
-            Person.count("name = :name", Parameters.with("name", "stef").map())
+            Person.count("name = :name", Parameters.with("name", "stef").map()),
         )
         Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef")))
         Assertions.assertEquals(1, Person.count("name", "stef"))
@@ -161,14 +162,14 @@ class TestEndpoint {
         Assertions.assertEquals(person, byId)
         Assertions.assertEquals(
             "Person(id=${person.id}, name=${person.name}, status=${person.status})",
-            byId.toString()
+            byId.toString(),
         )
 
         byId = person.id?.let { Person.findById(it, LockModeType.PESSIMISTIC_READ) }
         Assertions.assertEquals(person, byId)
         Assertions.assertEquals(
             "Person(id=${person.id}, name=${person.name}, status=${person.status})",
-            byId.toString()
+            byId.toString(),
         )
         Assertions.assertNotNull(person.dogs.toString())
 
@@ -183,7 +184,7 @@ class TestEndpoint {
         person = makeSavedPerson()
         Assertions.assertEquals(
             1,
-            Dog.delete("owner = :owner", Parameters.with("owner", person).map())
+            Dog.delete("owner = :owner", Parameters.with("owner", person).map()),
         )
         Assertions.assertEquals(1, Person.delete("name", "stef"))
         person = makeSavedPerson()
@@ -245,14 +246,14 @@ class TestEndpoint {
         var updateByIndexParameter: Int =
             Person.update(
                 "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                "stefp1"
+                "stefp1",
             )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
         var updateByNamedParameter: Int =
             Person.update(
                 "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -268,7 +269,7 @@ class TestEndpoint {
         updateByNamedParameter =
             Person.update(
                 "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -283,7 +284,7 @@ class TestEndpoint {
         updateByNamedParameter =
             Person.update(
                 "set name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -298,7 +299,7 @@ class TestEndpoint {
         updateByNamedParameter =
             Person.update(
                 "name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -313,7 +314,7 @@ class TestEndpoint {
         updateByNamedParameter =
             Person.update(
                 "name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2")
+                Parameters.with("pName", "stefp2"),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -326,7 +327,7 @@ class TestEndpoint {
         Assertions.assertThrows(
             PanacheQueryException::class.java,
             { Person.update(" ") },
-            "PanacheQueryException should have thrown"
+            "PanacheQueryException should have thrown",
         )
     }
 
@@ -337,14 +338,14 @@ class TestEndpoint {
         var updateByIndexParameter: Int =
             personRepository.update(
                 "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                "stefp1"
+                "stefp1",
             )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
         var updateByNamedParameter: Int =
             personRepository.update(
                 "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -356,14 +357,14 @@ class TestEndpoint {
         updateByIndexParameter =
             personRepository.update(
                 "from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                "stefp1"
+                "stefp1",
             )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
         updateByNamedParameter =
             personRepository.update(
                 "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -379,7 +380,7 @@ class TestEndpoint {
         updateByNamedParameter =
             personRepository.update(
                 "set name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -395,7 +396,7 @@ class TestEndpoint {
         updateByNamedParameter =
             personRepository.update(
                 "name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map()
+                Parameters.with("pName", "stefp2").map(),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -411,7 +412,7 @@ class TestEndpoint {
         updateByNamedParameter =
             personRepository.update(
                 "name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2")
+                Parameters.with("pName", "stefp2"),
             )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
@@ -424,7 +425,7 @@ class TestEndpoint {
         Assertions.assertThrows(
             PanacheQueryException::class.java,
             { personRepository.update(" ") },
-            "PanacheQueryException should have thrown"
+            "PanacheQueryException should have thrown",
         )
     }
 
@@ -564,11 +565,11 @@ class TestEndpoint {
         Assertions.assertEquals(1, personRepository.count("name = ?1", "stef"))
         Assertions.assertEquals(
             1,
-            personRepository.count("name = :name", Parameters.with("name", "stef").map())
+            personRepository.count("name = :name", Parameters.with("name", "stef").map()),
         )
         Assertions.assertEquals(
             1,
-            personRepository.count("name = :name", Parameters.with("name", "stef"))
+            personRepository.count("name = :name", Parameters.with("name", "stef")),
         )
         Assertions.assertEquals(1, personRepository.count("name", "stef"))
 
@@ -665,13 +666,13 @@ class TestEndpoint {
         person = makeSavedPerson()
         Assertions.assertEquals(
             1,
-            dogDao.delete("owner = :owner", Parameters.with("owner", person).map())
+            dogDao.delete("owner = :owner", Parameters.with("owner", person).map()),
         )
         Assertions.assertEquals(1, personRepository.delete("name", "stef"))
         person = makeSavedPerson()
         Assertions.assertEquals(
             1,
-            dogDao.delete("owner = :owner", Parameters.with("owner", person))
+            dogDao.delete("owner = :owner", Parameters.with("owner", person)),
         )
         Assertions.assertEquals(1, personRepository.delete("name", "stef"))
 
@@ -797,7 +798,7 @@ class TestEndpoint {
     internal enum class PersistTest {
         Iterable,
         Variadic,
-        Stream
+        Stream,
     }
 
     private fun testPersistDao(persistTest: PersistTest) {
@@ -938,7 +939,7 @@ class TestEndpoint {
             AccessorEntity::class.java,
             "setBool",
             Void.TYPE,
-            Boolean::class.javaPrimitiveType!!
+            Boolean::class.javaPrimitiveType!!,
         )
         checkMethod(AccessorEntity::class.java, "setC", Void.TYPE, Char::class.javaPrimitiveType!!)
         checkMethod(AccessorEntity::class.java, "setS", Void.TYPE, Short::class.javaPrimitiveType!!)
@@ -949,7 +950,7 @@ class TestEndpoint {
             AccessorEntity::class.java,
             "setD",
             Void.TYPE,
-            Double::class.javaPrimitiveType!!
+            Double::class.javaPrimitiveType!!,
         )
         checkMethod(AccessorEntity::class.java, "setT", Void.TYPE, Any::class.java)
         checkMethod(AccessorEntity::class.java, "setT2", Void.TYPE, Any::class.java)
@@ -976,7 +977,7 @@ class TestEndpoint {
         klass: Class<*>,
         name: String,
         returnType: Class<*>?,
-        vararg params: Class<*>
+        vararg params: Class<*>,
     ) {
         val method = klass.getMethod(name, *params)
         Assertions.assertEquals(returnType, method.returnType)
@@ -1210,6 +1211,169 @@ class TestEndpoint {
             Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()
         Assertions.assertNotNull(withSpace)
         Assertions.assertEquals(mark.name, withSpace?.projectedName)
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-constructor-annotation")
+    @Transactional
+    fun testProjectedConstructor(): String {
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructorWithConstructorAnnotation {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            @ProjectedConstructor constructor(name: String) : this(name, null)
+        }
+
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructor {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(name: String) : this(name, null)
+        }
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val annotatedConstructor =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructorWithConstructorAnnotation::class.java)
+                .firstResult()
+        Assertions.assertNotNull(annotatedConstructor)
+        Assertions.assertEquals(mark.name, annotatedConstructor?.name)
+
+        val semanticException =
+            Assertions.assertThrowsExactly(SemanticException::class.java) {
+                Person.find("name = ?1", "Mark")
+                    .project(MyProjectionDoubleConstructor::class.java)
+                    .firstResult()
+            }
+        Assertions.assertEquals(
+            "Could not interpret path expression 'fakeParameter'",
+            semanticException.message,
+        )
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-projected-field-name")
+    @Transactional
+    fun testConstructorWithProjectedFieldNameProjection(): String {
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructorWithConstructorAnnotation {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(@ProjectedFieldName("name") name: String) : this(name, null)
+        }
+
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructor {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(name: String) : this(name, null)
+        }
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val annotatedConstructor =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructorWithConstructorAnnotation::class.java)
+                .firstResult()
+        Assertions.assertNotNull(annotatedConstructor)
+        Assertions.assertEquals(mark.name, annotatedConstructor?.name)
+
+        val semanticException =
+            Assertions.assertThrowsExactly(SemanticException::class.java) {
+                Person.find("name = ?1", "Mark")
+                    .project(MyProjectionDoubleConstructor::class.java)
+                    .firstResult()
+            }
+        Assertions.assertEquals(
+            "Could not interpret path expression 'fakeParameter'",
+            semanticException.message,
+        )
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("projection-no-arguments-constructor")
+    @Transactional
+    fun testConstructorWithNoArgsProjection(): String {
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructorWithConstructorAnnotation {
+            val name: String = "Mark"
+
+            constructor()
+
+            constructor(name: String) : this()
+        }
+
+        @RegisterForReflection
+        @Suppress("unused")
+        class MyProjectionDoubleConstructor {
+            val name: String
+
+            constructor(name: String, fakeParameter: Any?) {
+                this.name = name
+            }
+
+            constructor(name: String) : this(name, null)
+        }
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val annotatedConstructor =
+            Person.find("name = ?1", "Mark")
+                .project(MyProjectionDoubleConstructorWithConstructorAnnotation::class.java)
+                .firstResult()
+        Assertions.assertNotNull(annotatedConstructor)
+        Assertions.assertEquals(mark.name, annotatedConstructor?.name)
+
+        val semanticException =
+            Assertions.assertThrowsExactly(SemanticException::class.java) {
+                Person.find("name = ?1", "Mark")
+                    .project(MyProjectionDoubleConstructor::class.java)
+                    .firstResult()
+            }
+        Assertions.assertEquals(
+            "Could not interpret path expression 'fakeParameter'",
+            semanticException.message,
+        )
 
         Person.deleteAll()
 

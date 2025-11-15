@@ -9,19 +9,26 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 
 public class TransactionResultImpl implements TransactionResult {
 
-    public static final TransactionResult DISCARDED = new TransactionResultImpl(true, Collections.emptyList());
+    public static final TransactionResult DISCARDED = new TransactionResultImpl(true, false, Collections.emptyList());
 
     private final List<Object> results = new ArrayList<>();
     private final boolean discarded;
+    private final boolean hasErrors;
 
-    public TransactionResultImpl(boolean discarded, List<Object> res) {
+    public TransactionResultImpl(boolean discarded, boolean hasErrors, List<Object> res) {
         this.results.addAll(res);
         this.discarded = discarded;
+        this.hasErrors = hasErrors;
     }
 
     @Override
     public boolean discarded() {
         return discarded;
+    }
+
+    @Override
+    public boolean hasErrors() {
+        return hasErrors;
     }
 
     @Override

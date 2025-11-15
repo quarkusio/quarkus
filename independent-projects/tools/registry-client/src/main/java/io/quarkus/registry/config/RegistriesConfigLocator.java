@@ -6,7 +6,10 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
+
+import io.quarkus.registry.Constants;
 
 /**
  * A helper class set utility methods to locate the registry client configuration file
@@ -21,6 +24,7 @@ public class RegistriesConfigLocator {
 
     static final String QUARKUS_REGISTRIES = "QUARKUS_REGISTRIES";
     static final String QUARKUS_REGISTRY_ENV_VAR_PREFIX = "QUARKUS_REGISTRY_";
+    static final String RECOMMEND_STREAMS_FROM_ = "RECOMMEND_STREAMS_FROM_";
 
     /**
      * Locate the registry client configuration file and deserialize it.
@@ -176,18 +180,31 @@ public class RegistriesConfigLocator {
 
             final String envvarPrefix = getEnvVarPrefix(registryId);
             for (Map.Entry<String, String> var : map.entrySet()) {
-                if (!var.getKey().startsWith(envvarPrefix)) {
+                final String envvarName = var.getKey();
+                if (!envvarName.startsWith(envvarPrefix)) {
                     continue;
                 }
-                if (isEnvVarOption(var.getKey(), envvarPrefix, "UPDATE_POLICY")) {
+                if (isEnvVarOption(envvarName, envvarPrefix, "UPDATE_POLICY")) {
                     builder.setUpdatePolicy(var.getValue());
-
-                } else if (isEnvVarOption(var.getKey(), envvarPrefix, "REPO_URL")) {
+                } else if (isEnvVarOption(envvarName, envvarPrefix, "REPO_URL")) {
                     builder.setMaven(RegistryMavenConfig.builder()
                             .setRepository(RegistryMavenRepoConfig.builder()
                                     .setUrl(var.getValue())
                                     .build())
                             .build());
+                } else if (isEnvVarOption(envvarName, envvarPrefix, "OFFERING")) {
+                    builder.setExtra(Constants.OFFERING, var.getValue());
+                } else if (isEnvVarOption(envvarName, envvarPrefix, RECOMMEND_STREAMS_FROM_)) {
+                    // the format for recommend-streams-from is
+                    // QUARKUS_REGISTRY_<REGISTRY_ID>_RECOMMEND_STREAMS_FROM_<PLATFORM_KEY>=<STREAM_ID>
+                    int i = envvarPrefix.length() + RECOMMEND_STREAMS_FROM_.length();
+                    final StringBuilder platformKey = new StringBuilder(envvarName.length() - i);
+                    while (i < envvarName.length()) {
+                        final char ch = envvarName.charAt(i++);
+                        platformKey.append(ch == '_' ? '.' : Character.toLowerCase(ch));
+                    }
+                    builder.computeExtraIfAbsent(Constants.RECOMMEND_STREAMS_FROM, RegistriesConfigLocator::newMap)
+                            .put(platformKey.toString(), var.getValue());
                 }
             }
 
@@ -204,7 +221,8 @@ public class RegistriesConfigLocator {
     }
 
     private static String getEnvVarPrefix(String registryId) {
-        final StringBuilder buf = new StringBuilder(QUARKUS_REGISTRY_ENV_VAR_PREFIX);
+        final StringBuilder buf = new StringBuilder(QUARKUS_REGISTRY_ENV_VAR_PREFIX.length() + registryId.length() + 1)
+                .append(QUARKUS_REGISTRY_ENV_VAR_PREFIX);
         for (int i = 0; i < registryId.length(); ++i) {
             final char c = registryId.charAt(i);
             if (c == '.') {
@@ -214,5 +232,9 @@ public class RegistriesConfigLocator {
             }
         }
         return buf.append('_').toString();
+    }
+
+    private static Map<String, String> newMap(String key) {
+        return new HashMap<>(1);
     }
 }

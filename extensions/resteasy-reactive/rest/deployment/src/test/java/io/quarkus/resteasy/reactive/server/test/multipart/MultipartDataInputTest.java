@@ -85,7 +85,7 @@ public class MultipartDataInputTest {
                     assertThat(i.size).isEqualTo(status.length());
                     assertThat(i.fileName).isNullOrEmpty();
                     assertThat(i.isFileItem).isFalse();
-                    assertThat(i.headers).contains(entry("Content-Type", List.of("text/plain; charset=US-ASCII")));
+                    assertThat(i.headers).contains(entry("Content-Type", List.of("text/plain")));
                 });
                 assertThat(l).filteredOn(i -> i.name.equals("htmlFile")).singleElement().satisfies(i -> {
                     assertThat(i.size).isEqualTo(Files.size(HTML_FILE.toPath()));

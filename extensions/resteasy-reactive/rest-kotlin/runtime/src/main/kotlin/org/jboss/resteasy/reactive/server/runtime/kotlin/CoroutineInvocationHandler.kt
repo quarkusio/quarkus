@@ -14,7 +14,7 @@ private val logger = LoggerFactory.getLogger(CoroutineInvocationHandler::class.j
 
 class CoroutineInvocationHandler(
     private val invoker: EndpointInvoker,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
 ) : ServerRestHandler {
 
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
@@ -47,7 +47,7 @@ class CoroutineInvocationHandler(
                     val result =
                         invoker.invokeCoroutine(
                             requestContext.endpointInstance,
-                            requestContext.parameters
+                            requestContext.parameters,
                         )
                     done.set(true)
                     if (result != Unit) {

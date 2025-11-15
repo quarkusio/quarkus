@@ -12,6 +12,7 @@ class TestImperativeEntity : PanacheMongoEntity {
     var ctp = 1
 
     constructor() {}
+
     constructor(title: String, category: String, description: String) {
         this.title = title
         this.category = category

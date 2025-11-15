@@ -100,6 +100,27 @@ registries:
 - registry.acme.org
 ----
 
+=== Limiting extension catalog to an offering
+
+NOTE: This feature was introduced in Quarkus 3.26.0 and will be evolving in the upcoming versions.
+
+As described in link:{quarkus-home-url}/guides/extension-metadata#extension-offerings[Extension offering metadata], extensions may be associated with a one or more offerings delivered and supported by a dedicated team or an organization.
+
+A Quarkus extension registry client may be configured to limit the extension catalog provided by the registry to a specific offering. For example, with the following configuration, assuming `registry.acme.org` provides extensions associated with multiple offerings, only those extensions associated with `acme-cloud` offering will be returned by the registry client:
+
+[source,yaml,subs=attributes+]
+----
+registries:
+- registry.acme.org:
+    offering: acme-cloud <1>
+- registry.quarkus.io
+----
+<1> limits the extension catalog provided by `registry.acme.org` to the extensions that make up the `acme-cloud` offering.
+
+NOTE: If an offering is not configured, the complete catalog of extensions returned by the registry will be provided to the user.
+
+Only one offering can be configured per registry at this point.
+
 === Adjusting the registry cache update policy
 
 Usually, a Quarkus extension registry will be implemented as a Maven snapshot repository. The platform and extension catalogs resolved from the registry as Maven artifacts will be cached in the user's local Maven repository. The platform and extension catalogs are actually `SNAPSHOT` artifacts that are periodically checked for updates by the registry client. The default registry interval to check for updates matches the default value of the Maven's `updatePolicy` for https://maven.apache.org/settings.html#repositories[snapshot repositories] and is `daily`. This default can be overridden in the registry configuration, for example:
@@ -193,3 +214,62 @@ image:registry-nexus-repository.png[Nexus Repository Proxy]
 - Set the `Remote Storage` URL to `https://registry.quarkus.io/maven`
 
 image:registry-nexus3-repository.png[Nexus Repository Proxy]
+
+==== Environment Variables
+
+Applications using a registry client can be configured using environment variables.
+
+`QUARKUS_REGISTRIES` environment variable can be used to specify which registries should be enabled as a comma-separated list of registry IDs.
+For example
+----
+QUARKUS_REGISTRIES=registry.acme.org,registry.quarkus.io
+----
+That alone will be enough to initialize a registry client to pull extension catalogs from two registries using their default configurations.
+
+Certain registry options could be initialized with their specific environment variables. Each such option will have the following environment variable prefix:
+----
+QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_
+----
+where `<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>` is a registry ID with each character converted to uppercase and a `.` replaced with `_`. For example, `REGISTRY_ACME_ORG`.
+
+Below are examples of various options that can be configured following this approach.
+
+===== Repository URL
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_REPO_URL=<REPO_URL>`
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_REPO_URL=https://internal.registry.acme.org/maven
+----
+
+===== Update policy
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_UPDATE_POLICY=<UPDATE_POLICY>`
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_UPDATE_POLICY=always
+----
+
+===== Offering
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_OFFERING=<OFFERING>`
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_OFFERING=acme-magic
+----
+
+===== Recommend Streams From
+
+Set the oldest acceptable stream value per platform. Streams older than the configured values will be ignored by the client.
+
+`QUARKUS_REGISTRY_<UPPERCASED_AND_UNDERSCORED_REGISTRY_ID>_RECOMMEND_STREAMS_FROM_<UPPERCASED_AND_UNDERSCORED_PLATFORM_KEY>=<STREAM_ID>`
+
+Where `UPPERCASED_AND_UNDERSCORED_PLATFORM_KEY` is a platform key with each character converted to uppercase and a `.` replaced with `_`. For example, `IO_QUARKUS_PLATFORM`.
+
+Example:
+----
+QUARKUS_REGISTRY_REGISTRY_ACME_ORG_RECOMMEND_STREAMS_FROM_IO_QUARKUS_PLATFORM=3.27
+----

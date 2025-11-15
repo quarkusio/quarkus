@@ -138,11 +138,13 @@ public @interface TemplateExtension {
     int priority() default DEFAULT_PRIORITY;
 
     /**
-     * If not empty a namespace resolver is generated instead.
+     * If not empty then a namespace resolver is generated.
      * <p>
-     * Template extension methods that share the same namespace and are declared on the same class are grouped in one resolver
-     * and ordered by {@link #priority()}. The first matching extension method is used to resolve an expression. Template
-     * extension methods declared on different classes cannot share the same namespace.
+     * Multiple extension methods declared on the same class can share the same namespace. However, extension methods declared
+     * on different classes cannot share the same namespace.
+     * <p>
+     * It's recommended to specify the {@link #priority()} if multiple extension methods that share the same namespace also
+     * match the same property/method name and parameters.
      *
      * @return the namespace
      * @see NamespaceResolver#getNamespace()

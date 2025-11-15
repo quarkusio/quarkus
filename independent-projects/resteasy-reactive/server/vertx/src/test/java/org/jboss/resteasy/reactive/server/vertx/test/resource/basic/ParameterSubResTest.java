@@ -22,6 +22,7 @@ import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.Par
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ParameterSubResRootImpl;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ParameterSubResSub;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ParameterSubResSubImpl;
+import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ParameterSubResSubImpl2;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.RequestScopedObject;
 import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -65,6 +66,7 @@ public class ParameterSubResTest {
                     war.addClass(RequestScopedObject.class);
                     war.addClass(ParameterSubResSub.class);
                     war.addClass(ParameterSubResSubImpl.class);
+                    war.addClass(ParameterSubResSubImpl2.class);
                     war.addClasses(ParameterSubResRootImpl.class, ParameterSubResGenericSub.class);
                     return war;
                 }
@@ -108,6 +110,30 @@ public class ParameterSubResTest {
     public void testSubResourceOptions() throws Exception {
         Response response = client.target(generateURL("/path/sub/fred")).request().options();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    @DisplayName("Test Sub Resource with null path handler")
+    public void testSubResourceWithNullPathHandler() throws Exception {
+        Response response = client.target(generateURL("/path/sub2")).request().get();
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        Assertions.assertEquals("Boo2", response.readEntity(String.class), "Wrong content of response");
+    }
+
+    @Test
+    @DisplayName("Test Sub Resource with null path handler - HEAD")
+    public void testSubResourceWithNullPathHandlerHead() throws Exception {
+        try (Response response = client.target(generateURL("/path/sub2")).request().head()) {
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        }
+    }
+
+    @Test
+    @DisplayName("Test Sub Resource with null path handler - OPTIONS")
+    public void testSubResourceWithNullPathHandlerOptions() throws Exception {
+        try (Response response = client.target(generateURL("/path/sub2")).request().options()) {
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        }
     }
 
     @Test

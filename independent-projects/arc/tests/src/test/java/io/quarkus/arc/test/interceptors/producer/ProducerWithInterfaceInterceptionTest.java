@@ -31,9 +31,11 @@ public class ProducerWithInterfaceInterceptionTest {
     @Test
     public void test() {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
-        assertEquals("intercepted1: hello1", nonbean.hello1());
-        assertEquals("intercepted1: intercepted2: hello2", nonbean.hello2());
+        assertEquals("intercepted1: hello1_foobar", nonbean.hello1());
+        assertEquals("intercepted1: intercepted2: hello2_foobar", nonbean.hello2());
         assertEquals("intercepted2: hello3", nonbean.hello3());
+        assertEquals("hello4_foobar", nonbean.hello4());
+        assertEquals("hello5", nonbean.hello5());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -80,17 +82,36 @@ public class ProducerWithInterfaceInterceptionTest {
         default String hello3() {
             return "hello3";
         }
+
+        @NoClassInterceptors
+        String hello4();
+
+        @NoClassInterceptors
+        default String hello5() {
+            return "hello5";
+        };
     }
 
     static class MyNonbeanImpl implements MyNonbean {
+        private final String value;
+
+        MyNonbeanImpl(String value) {
+            this.value = value;
+        }
+
         @Override
         public String hello1() {
-            return "hello1";
+            return "hello1_" + value;
         }
 
         @Override
         public String hello2() {
-            return "hello2";
+            return "hello2_" + value;
+        }
+
+        @Override
+        public String hello4() {
+            return "hello4_" + value;
         }
     }
 
@@ -98,7 +119,7 @@ public class ProducerWithInterfaceInterceptionTest {
     static class MyProducer {
         @Produces
         MyNonbean produce(InterceptionProxy<MyNonbean> proxy) {
-            return proxy.create(new MyNonbeanImpl());
+            return proxy.create(new MyNonbeanImpl("foobar"));
         }
     }
 }

@@ -45,6 +45,10 @@ public class LoopSectionHelper implements SectionHelper {
         this.engine = context.getEngine();
     }
 
+    public String getMetadataPrefix() {
+        return metadataPrefix;
+    }
+
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {

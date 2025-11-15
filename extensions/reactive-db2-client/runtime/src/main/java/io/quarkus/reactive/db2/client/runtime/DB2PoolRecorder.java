@@ -20,7 +20,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -50,18 +49,23 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class DB2PoolRecorder {
 
+    private static final boolean SUPPORTS_CACHE_PREPARED_STATEMENTS = true;
+
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
     private static final TypeLiteral<Instance<DB2PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
     private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+    private final RuntimeValue<DataSourcesReactiveDB2Config> reactiveDB2RuntimeConfig;
 
-    @Inject
-    public DB2PoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+    public DB2PoolRecorder(
+            RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
+            RuntimeValue<DataSourcesReactiveDB2Config> reactiveDB2RuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
         this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+        this.reactiveDB2RuntimeConfig = reactiveDB2RuntimeConfig;
     }
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
@@ -82,21 +86,16 @@ public class DB2PoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
-            ShutdownContext shutdown) {
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public DB2Pool apply(SyntheticCreationalContext<DB2Pool> context) {
                 DB2Pool db2Pool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
-                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveDB2Config.dataSources().get(dataSourceName).reactive().db2(),
+                        runtimeConfig.getValue().dataSources().get(dataSourceName),
+                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
+                        reactiveDB2RuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().db2(),
                         context);
 
                 shutdown.addShutdownTask(db2Pool::close);
@@ -127,19 +126,19 @@ public class DB2PoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config);
-        Supplier<Future<DB2ConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(db2ConnectOptions),
+        Supplier<Future<DB2ConnectOptions>> databasesSupplier = toDatabasesSupplier(List.of(db2ConnectOptions),
                 dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(Vertx vertx, List<DB2ConnectOptions> db2ConnectOptionsList,
+    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(List<DB2ConnectOptions> db2ConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<DB2ConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, db2ConnectOptionsList,
+            supplier = new ConnectOptionsSupplier<>(credentialsProvider, name, db2ConnectOptionsList,
                     DB2ConnectOptions::new);
         } else {
             supplier = Utils.roundRobinSupplier(db2ConnectOptionsList);
@@ -213,7 +212,7 @@ public class DB2PoolRecorder {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             if (user != null) {
@@ -224,7 +223,8 @@ public class DB2PoolRecorder {
             }
         }
 
-        connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
+        connectOptions.setCachePreparedStatements(
+                dataSourceReactiveRuntimeConfig.cachePreparedStatements().orElse(SUPPORTS_CACHE_PREPARED_STATEMENTS));
 
         connectOptions.setSsl(dataSourceReactiveDB2Config.ssl());
 

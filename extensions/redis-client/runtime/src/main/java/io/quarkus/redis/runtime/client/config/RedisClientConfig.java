@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.vertx.redis.client.ProtocolVersion;
 import io.vertx.redis.client.RedisClientType;
+import io.vertx.redis.client.RedisClusterTransactions;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
 import io.vertx.redis.client.RedisTopology;
@@ -147,15 +148,22 @@ public interface RedisClientConfig {
     Optional<ProtocolVersion> preferredProtocolVersion();
 
     /**
-     * The TTL of the hash slot cache. A hash slot cache is used by the clustered Redis client
-     * to prevent constantly sending {@code CLUSTER SLOTS} commands to the first statically
-     * configured cluster node.
-     * <p>
-     * This setting is only meaningful in case of a clustered Redis client and has no effect
-     * otherwise.
+     * @deprecated use {@code quarkus.redis.topology-cache-ttl}
      */
+    @Deprecated(forRemoval = true, since = "3.30")
     @WithDefault("1s")
     Duration hashSlotCacheTtl();
+
+    /**
+     * The TTL of the topology cache. A topology cache is used by a clustered Redis client
+     * and a sentinel Redis client to prevent constantly sending topology discovery commands
+     * ({@code CLUSTER SLOTS} or {@code SENTINEL ...}).
+     * <p>
+     * This setting is only meaningful in case of a clustered Redis client and a sentinel
+     * Redis client and has no effect otherwise.
+     */
+    @WithDefault("1s")
+    Optional<Duration> topologyCacheTtl();
 
     /**
      * Whether automatic failover is enabled. This only makes sense for sentinel clients
@@ -185,6 +193,25 @@ public interface RedisClientConfig {
      */
     @ConfigDocDefault("discover")
     Optional<RedisTopology> topology();
+
+    /**
+     * How transactions are handled in a cluster. This only makes sense for cluster clients
+     * and is ignored otherwise.
+     * <p>
+     * By default, transactions in cluster are disabled and transaction commands fail.
+     * <p>
+     * When set to {@code single-node}, Redis transactions are supported in the cluster, but only
+     * when they target a single node. The {@code MULTI} command is queued and is only issued when
+     * the next command is executed. This next command binds the connection to the corresponding
+     * node of the Redis cluster (so it should have keys, otherwise the target node is random).
+     * All subsequent commands are targeted to that node. If some of the subsequent commands have
+     * a key that belongs to another node, the command will fail on the server side. If {@code WATCH}
+     * is used before {@code MULTI}, its key(s) determine to which node the connection is bound and
+     * the subsequent {@code MULTI} is not queued. If {@code WATCH} keys belong to multiple nodes,
+     * the command fails on the client side.
+     */
+    @ConfigDocDefault("disabled")
+    Optional<RedisClusterTransactions> clusterTransactions();
 
     /**
      * TCP config.

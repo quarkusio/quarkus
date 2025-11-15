@@ -20,6 +20,7 @@ import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
+import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -29,7 +30,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  * property names provided by each source. This also applies to the REST Client, but since the names are known to
  * Quarkus, the REST Client configuration could be loaded even for sources that don't provide a list of property
  * names. To achieve such behaviour, we use {@link io.smallrye.config.WithKeys} and
- * {@link io.quarkus.restclient.config.RestClientsConfig.RestClientKeysProvider} to provide the REST Client keys.
+ * {@link RestClientKeysProvider} to provide the REST Client keys.
  * <p>
  * The REST Client configuration looks up the following names in order:
  *
@@ -55,19 +56,9 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
     private static final String REST_CLIENT_PREFIX = "quarkus.rest-client.";
 
-    private final boolean runtime;
-
-    public AbstractRestClientConfigBuilder() {
-        this.runtime = true;
-        RestClientsConfig.RestClientKeysProvider.KEYS.clear();
-    }
-
-    public AbstractRestClientConfigBuilder(boolean runtime) {
-        this.runtime = runtime;
-    }
-
     @Override
     public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
+        RestClientKeysProvider.KEYS.clear();
         List<RegisteredRestClient> restClients = getRestClients();
 
         Map<String, String> quarkusFallbacks = new HashMap<>();
@@ -75,9 +66,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         Map<String, List<String>> relocates = new HashMap<>();
 
         for (RegisteredRestClient restClient : restClients) {
-            if (runtime) {
-                RestClientsConfig.RestClientKeysProvider.KEYS.add(restClient.getFullName());
-            }
+            RestClientKeysProvider.KEYS.add(restClient.getFullName());
 
             String quotedFullName = "\"" + restClient.getFullName() + "\"";
             String quotedSimpleName = "\"" + restClient.getSimpleName() + "\"";
@@ -175,6 +164,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                 return new Relocates(relocates);
             }
         });
+        builder.withInterceptors(new RenameConfigFallbackInterceptor(), new RenameConfigRelocateInterceptor());
         return builder;
     }
 
@@ -287,6 +277,10 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         public String apply(final String name) {
             int indexOfRestClient = indexOfRestClient(name);
             if (indexOfRestClient != -1) {
+                int disableDefaultMapper = name.indexOf(".disable-default-mapper", indexOfRestClient);
+                if (disableDefaultMapper != -1) {
+                    return "microprofile.rest.client.disable.default.mapper";
+                }
                 for (Map.Entry<String, String> entry : names.entrySet()) {
                     String original = entry.getKey();
                     String target = entry.getValue();
@@ -427,5 +421,39 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             return 20;
         }
         return -1;
+    }
+
+    private static class RenameConfigFallbackInterceptor extends FallbackConfigSourceInterceptor {
+        private static final Function<String, String> COMPRESSION_FALLBACK = name -> {
+            if (name.startsWith("quarkus.rest-client")) {
+                int index = name.indexOf(".enable-response-decompression");
+                if (index == -1) { // not the property we care about
+                    return name;
+                }
+                return name.substring(0, index) + ".enable-compression";
+            }
+            return name;
+        };
+
+        public RenameConfigFallbackInterceptor() {
+            super(COMPRESSION_FALLBACK);
+        }
+    }
+
+    private static class RenameConfigRelocateInterceptor extends RelocateConfigSourceInterceptor {
+        private static final Function<String, String> COMPRESSION_RELOCATION = name -> {
+            if (name.startsWith("quarkus.rest-client")) {
+                int index = name.indexOf(".enable-compression");
+                if (index == -1) { // not the property we care about
+                    return name;
+                }
+                return name.substring(0, index) + ".enable-response-decompression";
+            }
+            return name;
+        };
+
+        public RenameConfigRelocateInterceptor() {
+            super(COMPRESSION_RELOCATION);
+        }
     }
 }

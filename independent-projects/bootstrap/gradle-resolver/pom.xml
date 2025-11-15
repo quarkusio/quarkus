@@ -98,7 +98,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -132,7 +131,15 @@
 
     <repositories>
         <repository>
-            <id>gradle-dependencies</id>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>gradle</id>
             <name>Gradle releases repository</name>
             <url>https://repo.gradle.org/artifactory/libs-releases</url>
             <snapshots>

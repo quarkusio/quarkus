@@ -1,12 +1,14 @@
 package io.quarkus.hibernate.reactive.panache;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
 import java.util.Map;
 import java.util.function.Supplier;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations;
+import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
@@ -18,15 +20,29 @@ import io.smallrye.mutiny.Uni;
 public class Panache {
 
     /**
-     * Obtains a {@link Uni} within the scope of a reactive session. If a reactive session exists then it is reused. If it
-     * does not exist not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
+     * Obtains a {@link Uni} within the scope of the default reactive session.
+     * If a default reactive session exists then it is reused.
+     * If it does not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
      *
      * @param <T>
      * @param uniSupplier
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withSession(Supplier<Uni<T>> uniSupplier) {
-        return SessionOperations.withSession(s -> uniSupplier.get());
+        return SessionOperations.withSession(DEFAULT_PERSISTENCE_UNIT_NAME, s -> uniSupplier.get());
+    }
+
+    /**
+     * Obtains a {@link Uni} within the scope of the default reactive session.
+     * If a default reactive session exists then it is reused.
+     * If it does not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
+     *
+     * @param <T>
+     * @param uniSupplier
+     * @return a new {@link Uni}
+     */
+    public static <T> Uni<T> withSession(String persistenceUnitName, Supplier<Uni<T>> uniSupplier) {
+        return SessionOperations.withSession(persistenceUnitName, s -> uniSupplier.get());
     }
 
     /**
@@ -39,7 +55,8 @@ public class Panache {
     }
 
     /**
-     * Performs the given work within the scope of a database transaction, automatically flushing the session.
+     * Performs the given work within the scope of a database transaction, automatically flushing the session,
+     * in the default persistence unit.
      * The transaction will be rolled back if the work completes with an uncaught exception, or if
      * {@link Mutiny.Transaction#markForRollback()} is called.
      *
@@ -49,7 +66,22 @@ public class Panache {
      * @see Panache#currentTransaction()
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return SessionOperations.withTransaction(() -> work.get());
+        return withTransaction(DEFAULT_PERSISTENCE_UNIT_NAME, work);
+    }
+
+    /**
+     * Performs the given work within the scope of a database transaction, automatically flushing the session.
+     * The transaction will be rolled back if the work completes with an uncaught exception, or if
+     * {@link Mutiny.Transaction#markForRollback()} is called.
+     *
+     * @param <T> The function's return type
+     * @param persistenceUnitName The persistence unit of the entity being used
+     * @param work The function to execute in the new transaction
+     * @return the result of executing the function
+     * @see Panache#currentTransaction()
+     */
+    public static <T> Uni<T> withTransaction(String persistenceUnitName, Supplier<Uni<T>> work) {
+        return SessionOperations.withTransaction(persistenceUnitName, () -> work.get());
     }
 
     /**
@@ -60,7 +92,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Object... params) {
-        return AbstractJpaOperations.executeUpdate(query, params);
+        return JpaOperations.INSTANCE.executeUpdate(query, params);
     }
 
     /**
@@ -71,7 +103,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
-        return AbstractJpaOperations.executeUpdate(query, params);
+        return JpaOperations.INSTANCE.executeUpdate(query, params);
     }
 
     /**
@@ -82,7 +114,7 @@ public class Panache {
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
-        return AbstractJpaOperations.executeUpdate(query, params.map());
+        return JpaOperations.INSTANCE.executeUpdate(query, params.map());
     }
 
     /**

@@ -6,10 +6,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.build.BaseBuildCommand;
-import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.BuildOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.build.BuildSystemRunner;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;

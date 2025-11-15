@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.extest.runtime.config.TestMappingRunTime;
 import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 
 public class RecorderRuntimeConfigTest {
@@ -31,19 +30,19 @@ public class RecorderRuntimeConfigTest {
     @Test
     void runtimeConfig() {
         // Make sure we get the recorded property with the highest priority (the profile property with test)
-        assertEquals("from-application", config.getRawValue("recorded.property"));
-        assertEquals("from-application", config.getRawValue("recorded.profiled.property"));
-        assertEquals("from-application", config.getRawValue("quarkus.mapping.rt.record-profiled"));
+        assertEquals("from-application", config.getConfigValue("recorded.property").getValue());
+        assertEquals("from-application", config.getConfigValue("recorded.profiled.property").getValue());
+        assertEquals("from-application", config.getConfigValue("quarkus.mapping.rt.record-profiled").getValue());
         assertTrue(mappingRunTime.recordProfiled().isPresent());
         assertEquals("from-application", mappingRunTime.recordProfiled().get());
 
         // Make sure that when we merge all the defaults, we override the non-profiled name
-        Optional<ConfigSource> configSource = config.getConfigSource("DefaultValuesConfigSource");
+        Optional<ConfigSource> configSource = config.getConfigSource("Runtime Values");
         assertTrue(configSource.isPresent());
-        DefaultValuesConfigSource defaultValuesConfigSource = (DefaultValuesConfigSource) configSource.get();
-        assertEquals("from-application", defaultValuesConfigSource.getValue("%test.recorded.profiled.property"));
-        assertEquals("recorded", defaultValuesConfigSource.getValue("recorded.profiled.property"));
-        assertEquals("from-application", defaultValuesConfigSource.getValue("%test.quarkus.mapping.rt.record-profiled"));
-        assertEquals("recorded", defaultValuesConfigSource.getValue("quarkus.mapping.rt.record-profiled"));
+        ConfigSource runtimeValues = configSource.get();
+        assertEquals("from-application", runtimeValues.getValue("%test.recorded.profiled.property"));
+        assertEquals("recorded", runtimeValues.getValue("recorded.profiled.property"));
+        assertEquals("from-application", runtimeValues.getValue("%test.quarkus.mapping.rt.record-profiled"));
+        assertEquals("recorded", runtimeValues.getValue("quarkus.mapping.rt.record-profiled"));
     }
 }

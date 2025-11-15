@@ -66,7 +66,7 @@ public class NamespaceResolversTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{charlie:name}", null, "alpha.html").render())
                 .withMessage(
-                        "Rendering error in template [alpha.html] line 1: No namespace resolver found for [charlie] in expression {charlie:name}")
+                        "Rendering error in template [alpha.html:1]: No namespace resolver found for [charlie] in expression {charlie:name}")
                 .hasFieldOrProperty("code");
     }
 

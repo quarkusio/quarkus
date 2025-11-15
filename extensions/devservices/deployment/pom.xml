@@ -13,6 +13,8 @@
     <name>Quarkus - DevServices - Deployment</name>
 
     <dependencies>
+        <!-- Do NOT add the devservices runtime module as a dependency, or it will cause execution-time failures in some modules that provide dev services.
+        See https://github.com/quarkusio/quarkus/pull/49025 for more details, and https://github.com/quarkusio/quarkus/pull/49026 for the remediation. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devservices-common</artifactId>

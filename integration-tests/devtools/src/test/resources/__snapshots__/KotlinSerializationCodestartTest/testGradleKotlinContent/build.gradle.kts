@@ -35,6 +35,7 @@ java {
 
 tasks.withType<Test> {
     systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
 }
 allOpen {
     annotation("jakarta.ws.rs.Path")

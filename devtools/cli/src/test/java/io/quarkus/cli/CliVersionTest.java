@@ -18,6 +18,7 @@ public class CliVersionTest {
                 "Version output for command aliases should be the same.");
 
         CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "--version");
+        result2.echoSystemOut();
         Assertions.assertEquals(result.stdout, result2.stdout, "Version output for command aliases should be the same.");
     }
 }

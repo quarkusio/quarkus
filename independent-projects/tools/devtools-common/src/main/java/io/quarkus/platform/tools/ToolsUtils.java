@@ -8,7 +8,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
@@ -21,6 +23,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.CatalogMergeUtility;
+import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.util.PlatformArtifacts;
@@ -84,6 +87,30 @@ public class ToolsUtils {
             buf.append('.').append(parts[i++]);
         }
         return buf.toString();
+    }
+
+    /**
+     * Returns the number of occurrences of a character in a string.
+     * If the string argument is null, the method will return zero.
+     *
+     * @param str a string to search in
+     * @param ch a character look for
+     * @return number of occurrences of the character in string
+     */
+    public static int countOf(String str, int ch) {
+        if (str == null || str.isEmpty()) {
+            return 0;
+        }
+        int i = str.indexOf(ch);
+        if (i < 0) {
+            return 0;
+        }
+        int count = 0;
+        while (i >= 0) {
+            ++count;
+            i = str.indexOf(ch, i + 1);
+        }
+        return count;
     }
 
     public static ExtensionCatalog resolvePlatformDescriptorDirectly(String bomGroupId, String bomArtifactId, String bomVersion,
@@ -170,7 +197,7 @@ public class ToolsUtils {
                         final OriginPreference originPreference = new OriginPreference(registryPreference, 1, 1, ++memberIndex,
                                 1);
                         Map<String, Object> metadata = new HashMap<>(memberCatalog.getMetadata());
-                        metadata.put("origin-preference", originPreference);
+                        metadata.put(Constants.REGISTRY_CLIENT_ORIGIN_PREFERENCE, originPreference);
                         ExtensionCatalog.Mutable mutableMemberCatalog = memberCatalog.mutable();
                         mutableMemberCatalog.setMetadata(metadata);
                         catalogs.add(mutableMemberCatalog.build());
@@ -235,7 +262,27 @@ public class ToolsUtils {
     @SuppressWarnings("unchecked")
     public static Map<String, Object> readProjectData(ExtensionCatalog catalog) {
         Map<Object, Object> map = (Map<Object, Object>) catalog.getMetadata().getOrDefault("project", Map.of());
-        return (Map<String, Object>) map.getOrDefault("codestart-data", Map.of());
+        Map<String, Object> projectData = (Map<String, Object>) map.getOrDefault("codestart-data", Map.of());
+
+        // fix the dockerfile entries for Platform < 3.23.1
+        if (!projectData.containsKey("tooling-dockerfiles.dockerfile.jvm.from-template")) {
+            projectData = projectData.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            e -> {
+                                if (!e.getKey().startsWith("dockerfile.")) {
+                                    return e.getKey();
+                                }
+                                String key = e.getKey();
+                                if ("dockerfile.native-micro".equals(key)) {
+                                    key += ".from";
+                                }
+
+                                return "tooling-dockerfiles." + key;
+                            },
+                            Entry::getValue, (v1, v2) -> v1));
+        }
+
+        return projectData;
     }
 
     public static String requireProperty(Properties props, String name) {

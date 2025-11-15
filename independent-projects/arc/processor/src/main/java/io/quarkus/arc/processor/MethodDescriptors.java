@@ -50,10 +50,7 @@ import io.quarkus.arc.impl.RemovedBeanImpl;
 import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
 
-/**
- *
- * @author Martin Kouba
- */
+@Deprecated(forRemoval = true, since = "3.30")
 public final class MethodDescriptors {
 
     public static final MethodDescriptor FIXED_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(
@@ -240,6 +237,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor SETS_OF = MethodDescriptor.ofMethod(Sets.class, "of", Set.class, Object[].class);
 
     public static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
+
+    public static final MethodDescriptor ARC_REQUIRE_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "requireContainer",
+            ArcContainer.class);
 
     public static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
             InjectableBean.class, String.class);

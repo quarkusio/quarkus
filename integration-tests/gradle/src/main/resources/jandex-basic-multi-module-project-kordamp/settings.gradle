@@ -12,6 +12,7 @@ pluginManagement {
 
     plugins {
         id 'io.quarkus' version "${quarkusPluginVersion}"
+        id 'org.kordamp.gradle.jandex' version "${kordampJandexVersion}"
     }
 }
 

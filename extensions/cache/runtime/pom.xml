@@ -32,10 +32,6 @@
             <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-cache-runtime-spi</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
             <optional>true</optional>

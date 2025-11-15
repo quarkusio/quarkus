@@ -138,7 +138,7 @@ public static class MyApplication extends Application {
 ----
 
 This will cause all rest endpoints to be resolve relative to `/api`, so the endpoint above with `@Path("rest")` would
-be accessible at `/api/rest/`. You can also set the `quarkus.rest.path` build time property to set the root path if you
+be accessible at `/api/rest/`. You can also set the <<quarkus-rest-common_quarkus-rest-path,`quarkus.rest.path`>> build time property to set the root path if you
 don't want to use an annotation.
 
 === Declaring endpoints: HTTP methods
@@ -778,6 +778,34 @@ public class Endpoint {
 NOTE: You can also use the Jakarta REST type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
 not strongly typed to your entity.
 
+==== Responding with files
+
+When a file needs to be returned, the following code ensures that Quarkus properly streams the file contents to the client.
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
+
+@Path("")
+public class Endpoint {
+
+    @Path("file")
+    @GET
+    public RestResponse<java.nio.file.Path> largePathRestResponse() throws IOException {
+        java.nio.file.Path path = ...
+
+        return RestResponse.ResponseBuilder.ok(path)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "some-file-name")
+                .build();
+    }
+}
+----
+
 ==== Using annotations
 
 Alternatively, if you only need to set the status code and / or HTTP headers with static values, you can use `@org.jboss.resteasy.reactive.ResponseStatus` and /or `ResponseHeader` respectively.
@@ -916,6 +944,15 @@ See <<execution-model,Execution Model documentation>> for more information.
 
 The link:{jdkapi}/java/util/concurrent/CompletionStage.html[`CompletionStage`] return
 type is also supported.
+
+==== Request cancellation
+
+Async endpoints that return `Uni` support request cancellation, which means that if the underlying HTTP connection is closed for whatever reason,
+the request pipeline defined by the returned `Uni` is also cancelled. This can be very useful in avoiding unnecessary work on the server
+when the client isn't going to use the response anyway.
+
+If instead of cancelling the pipeline, it should be completed regardless of the state of the HTTP connection, Quarkus REST provides the `org.jboss.resteasy.reactive.server.Cancellable` annotation
+which can be applied to REST classes or methods to control the cancellation behavior.
 
 === Streaming support
 
@@ -1652,7 +1689,7 @@ This feature is introduced as a Technology Preview and is disabled by default.
 By eliminating reliance on reflection during deserialization, applications can achieve better performance and reduced memory consumption, particularly for native applications where reflection can introduce overhead.
 If you implement this feature, run tests to assess its effect on your applications.
 
-To enable this feature, set the following configuration property to `true`:
+To enable this feature, set the <<quarkus-rest-jackson_quarkus-rest-jackson-optimization-enable-reflection-free-serializers,`quarkus.rest.jackson.optimization.enable-reflection-free-serializers`>> configuration property to `true`:
 
 `quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true`.
 
@@ -3374,3 +3411,9 @@ In addition to the Server side, Quarkus REST comes with a new MicroProfile REST 
 Please note that the `quarkus-resteasy-client` extension may not be used with Quarkus REST, use `quarkus-rest-client` instead.
 
 See the xref:rest-client.adoc[REST Client Guide] for more information about the REST client.
+
+[[rest-configuration-reference]]
+== Quarkus REST Configuration Reference
+
+include::{generated-dir}/config/quarkus-rest-common_quarkus.rest.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-rest-jackson.adoc[leveloffset=+1, opts=optional]

@@ -1,15 +1,12 @@
 package io.quarkus.mongodb.panache.common.reactive.runtime;
 
+import static com.mongodb.client.model.Filters.in;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseNameFromResolver;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,10 +22,7 @@ import org.bson.conversions.Bson;
 import org.jboss.logging.Logger;
 
 import com.mongodb.ReadPreference;
-import com.mongodb.client.model.InsertOneModel;
-import com.mongodb.client.model.ReplaceOneModel;
-import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -384,6 +378,20 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         }
         return collection.find(new Document(ID, id)).collect().first()
                 .onItem().transform(Optional::ofNullable);
+    }
+
+    public <Entity, ID> Uni<List<Entity>> findByIds(Class<?> entityClass, List<ID> ids) {
+        ReactiveMongoCollection collection = mongoCollection(entityClass);
+
+        var nonNullIds = ids.stream()
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (Panache.getCurrentSession() != null) {
+            return collection.find(Panache.getCurrentSession(), in(ID, nonNullIds)).collect().asList();
+        }
+
+        return collection.find(in(ID, nonNullIds)).collect().asList();
     }
 
     public QueryType find(Class<?> entityClass, String query, Object... params) {

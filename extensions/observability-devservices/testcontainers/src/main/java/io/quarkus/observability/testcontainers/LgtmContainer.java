@@ -1,6 +1,8 @@
 package io.quarkus.observability.testcontainers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -17,7 +19,7 @@ import io.quarkus.observability.common.config.AbstractGrafanaConfig;
 import io.quarkus.observability.common.config.LgtmComponent;
 import io.quarkus.observability.common.config.LgtmConfig;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
 
 @SuppressWarnings("resource")
 public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
@@ -102,13 +104,25 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         this.scrapingRequired = scrapingRequired;
         // always expose both -- since the LGTM image already does that as well
         addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
+        config.otelGrpcPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_GRPC_EXPORTER_PORT));
+        config.otelHttpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_HTTP_EXPORTER_PORT));
 
         Optional<Set<LgtmComponent>> logging = config.logging();
         logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
 
+        String dashboards = GrafanaUtils.consumeGrafanaResources(
+                DASHBOARDS_CONFIG,
+                s -> {
+                    withCopyFileToContainer(
+                            MountableFile.forClasspathResource(GrafanaUtils.META_INF_GRAFANA + "/" + s),
+                            "/otel-lgtm/" + s);
+                    log.infof("Adding custom Grafana dashboard config: %s", s);
+                });
+
         // Replacing bundled dashboards with our own
-        addFileToContainer(DASHBOARDS_CONFIG.getBytes(),
+        addFileToContainer(dashboards.getBytes(StandardCharsets.UTF_8),
                 "/otel-lgtm/grafana/conf/provisioning/dashboards/grafana-dashboards.yaml");
+
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-prometheus.json"),
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-prometheus.json");
@@ -181,7 +195,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
             // On Linux, you can’t automatically resolve host.docker.internal,
             // you need to provide the following run flag when you start the container:
             //--add-host=host.docker.internal:host-gateway
-            if (OS.determineOS() == OS.LINUX) {
+            if (OS.current() == OS.LINUX) {
                 withCreateContainerCmdModifier(cmd -> cmd
                         .getHostConfig()
                         .withExtraHosts("host.docker.internal:host-gateway"));
@@ -225,6 +239,16 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         @Override
         public Optional<Boolean> forceScraping() {
             return Optional.empty();
+        }
+
+        @Override
+        public OptionalInt otelGrpcPort() {
+            return OptionalInt.empty();
+        }
+
+        @Override
+        public OptionalInt otelHttpPort() {
+            return OptionalInt.empty();
         }
 
         @Override

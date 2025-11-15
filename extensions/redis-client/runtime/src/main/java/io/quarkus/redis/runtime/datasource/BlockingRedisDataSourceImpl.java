@@ -73,7 +73,18 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
         try {
             connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
-            ds.accept(source);
+            try {
+                ds.accept(source);
+            } catch (Exception e) {
+                if (!source.discarded()) {
+                    try {
+                        connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
+                    } catch (Exception e2) {
+                        e.addSuppressed(e2);
+                    }
+                }
+                throw e;
+            }
             if (!source.discarded()) {
                 Response response = connection.send((Request.cmd(Command.EXEC))).await().atMost(timeout);
                 return toTransactionResult(response, th);
@@ -101,23 +112,31 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
             }
             connection.send(cmd).await().atMost(timeout);
             connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
-
-            ds.accept(source);
+            try {
+                ds.accept(source);
+            } catch (Exception e) {
+                if (!source.discarded()) {
+                    try {
+                        connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
+                    } catch (Exception e2) {
+                        e.addSuppressed(e2);
+                    }
+                }
+                throw e;
+            }
             if (!source.discarded()) {
                 Response response = connection.send(Request.cmd(Command.EXEC)).await().atMost(timeout);
-                // exec produce null is the transaction has been discarded
                 return toTransactionResult(response, th);
             } else {
                 return toTransactionResult(null, th);
             }
-
         } finally {
             connection.closeAndAwait();
         }
     }
 
     @Override
-    public <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTxBlock,
+    public <I> OptimisticLockingTransactionResult<I> withTransaction(Function<RedisDataSource, I> preTx,
             BiConsumer<I, TransactionalRedisDataSource> tx, String... watchedKeys) {
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
@@ -132,21 +151,37 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
                 cmd.arg(watchedKey);
             }
             connection.send(cmd).await().atMost(timeout);
-
-            I input = preTxBlock
-                    .apply(new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, connection, timeout));
-
+            I input = null;
+            try {
+                input = preTx.apply(
+                        new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, connection, timeout));
+            } catch (Exception e) {
+                try {
+                    connection.send(Request.cmd(Command.UNWATCH)).await().atMost(timeout);
+                } catch (Exception e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
             connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
-
-            tx.accept(input, source);
+            try {
+                tx.accept(input, source);
+            } catch (Exception e) {
+                if (!source.discarded()) {
+                    try {
+                        connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
+                    } catch (Exception e2) {
+                        e.addSuppressed(e2);
+                    }
+                }
+                throw e;
+            }
             if (!source.discarded()) {
                 Response response = connection.send(Request.cmd(Command.EXEC)).await().atMost(timeout);
-                // exec produce null is the transaction has been discarded
                 return toTransactionResult(response, input, th);
             } else {
                 return toTransactionResult(null, input, th);
             }
-
         } finally {
             connection.closeAndAwait();
         }

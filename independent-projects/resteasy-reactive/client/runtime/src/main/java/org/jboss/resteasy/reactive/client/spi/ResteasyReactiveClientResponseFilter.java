@@ -2,12 +2,13 @@ package org.jboss.resteasy.reactive.client.spi;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.client.ClientResponseFilter;
+
+import org.jboss.resteasy.reactive.client.impl.PreservesThreadClientResponseFilter;
 
 /**
  * An extension interface implemented by client response filters used by REST Client Reactive.
  */
-public interface ResteasyReactiveClientResponseFilter extends ClientResponseFilter {
+public interface ResteasyReactiveClientResponseFilter extends PreservesThreadClientResponseFilter {
 
     /**
      * Filter method called after a response has been provided for a request (either by a request filter or when the HTTP

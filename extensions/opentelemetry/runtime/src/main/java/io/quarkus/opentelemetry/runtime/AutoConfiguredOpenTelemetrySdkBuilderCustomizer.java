@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime;
 
+import static io.opentelemetry.sdk.internal.ScopeConfiguratorBuilder.nameEquals;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
@@ -25,6 +26,8 @@ import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
+import io.opentelemetry.sdk.metrics.internal.MeterConfig;
+import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
@@ -258,20 +261,34 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         @Override
         public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
-            if (oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
-                builder.addMeterProviderCustomizer(
-                        new BiFunction<SdkMeterProviderBuilder, ConfigProperties, SdkMeterProviderBuilder>() {
-                            @Override
-                            public SdkMeterProviderBuilder apply(SdkMeterProviderBuilder metricProvider,
-                                    ConfigProperties configProperties) {
+            builder.addMeterProviderCustomizer(
+                    new BiFunction<SdkMeterProviderBuilder, ConfigProperties, SdkMeterProviderBuilder>() {
+                        @Override
+                        public SdkMeterProviderBuilder apply(SdkMeterProviderBuilder meterProviderBuilder,
+                                ConfigProperties configProperties) {
+
+                            if (oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
+
                                 if (clock.isUnsatisfied()) {
                                     throw new IllegalStateException("No Clock bean found");
                                 }
-                                metricProvider.setClock(clock.get());
-                                return metricProvider;
+                                meterProviderBuilder.setClock(clock.get());
+                            } else {
+                                // disable batch exporter metrics if metrics disabled
+                                // In the future we can inject scopes here.
+                                Set<String> dropInstrumentationScopes = Set.of(
+                                        "io.opentelemetry.sdk.trace",
+                                        "io.opentelemetry.sdk.logs");
+                                for (String target : dropInstrumentationScopes) {
+                                    SdkMeterProviderUtil.addMeterConfiguratorCondition(
+                                            meterProviderBuilder,
+                                            nameEquals(target),
+                                            MeterConfig.disabled());
+                                }
                             }
-                        });
-            }
+                            return meterProviderBuilder;
+                        }
+                    });
         }
     }
 

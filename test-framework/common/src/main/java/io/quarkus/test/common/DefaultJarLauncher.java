@@ -7,6 +7,7 @@ import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,9 +17,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 
 public class DefaultJarLauncher implements JarArtifactLauncher {
+    private static final Logger log = Logger.getLogger(DefaultJarLauncher.class);
 
     private static final String JAVA_HOME_SYS = "java.home";
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
@@ -63,13 +70,15 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     public void start() throws IOException {
         start(new String[0], true);
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
-        var logFile = PropertyTestUtil.getLogFilePath();
+        LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                .getConfigMapping(LogRuntimeConfig.class);
         if (startedFunction != null) {
             IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
-                    waitTimeSeconds, logFile);
+                    waitTimeSeconds, logRuntimeConfig.file().path().toPath());
             isSsl = result.isSsl();
         } else {
-            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
+                    waitTimeSeconds);
             updateConfigForPort(result.getPort());
             isSsl = result.isSsl();
         }
@@ -94,7 +103,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     }
 
     public void start(String[] programArgs, boolean handleIo) throws IOException {
-
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         List<String> args = new ArrayList<>();
@@ -109,9 +119,9 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
             // in the main module, since those tests hit the application itself
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }
-        Path logFile = PropertyTestUtil.getLogFilePath();
-        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
-        args.add("-Dquarkus.log.file.enable=true");
+        File logPath = logRuntimeConfig.file().path();
+        args.add("-Dquarkus.log.file.path=" + logPath.getAbsolutePath());
+        args.add("-Dquarkus.log.file.enabled=true");
         args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
             args.add("-Dquarkus.profile=" + testProfile);
@@ -125,8 +135,14 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
-        Files.deleteIfExists(logFile);
-        Files.createDirectories(logFile.getParent());
+        try {
+            Files.deleteIfExists(logPath.toPath());
+            if (logPath.getParent() != null) {
+                Files.createDirectories(logPath.toPath().getParent());
+            }
+        } catch (FileSystemException e) {
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+        }
 
         if (handleIo) {
             quarkusProcess = LauncherUtil.launchProcessAndDrainIO(args, env);

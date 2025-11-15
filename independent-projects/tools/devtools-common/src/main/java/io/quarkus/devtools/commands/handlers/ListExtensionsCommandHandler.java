@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.registry.Constants;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 
@@ -41,6 +43,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
     private static final String ID_FORMAT = "%-1s %s";
     private static final String CONCISE_FORMAT = "%-1s %-50s %s";
     private static final String ORIGINS_FORMAT = "%-1s %-50s %-50s %-25s %s";
+    private static final String SUPPORT_SCOPE_FORMAT = "%-1s %-50s %-50s %-25s %s";
     private static final String FULL_FORMAT = "%-1s %-50s %-60s %-25s %s";
 
     @Override
@@ -97,6 +100,10 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             case "full":
                 currentFormatter = this::fullFormatter;
                 log.info(String.format(FULL_FORMAT, "✬", "ArtifactId", "Extension", "Version", "Guide"));
+                break;
+            case "support-scope":
+                currentFormatter = this::offeringsFormatter;
+                log.info(String.format(SUPPORT_SCOPE_FORMAT, "✬", "ArtifactId", "Extension Name", "Version", "Support scope"));
                 break;
         }
 
@@ -173,6 +180,26 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
                     "",
                     "",
                     origins.get(i)));
+        }
+    }
+
+    private void offeringsFormatter(MessageWriter writer, DisplayData data) {
+        List<String> supportScopes = data.getSupportScopes();
+        writer.info(String.format(SUPPORT_SCOPE_FORMAT,
+                data.isPlatform(),
+                data.trimToFit(50, data.getExtensionArtifactId()),
+                data.trimToFit(50, data.getExtensionName()),
+                data.getVersion(),
+                supportScopes.isEmpty() ? "" : supportScopes.get(0)));
+
+        // If there is more than one support scopes, list the others
+        for (int i = 1; i < supportScopes.size(); i++) {
+            writer.info(String.format(SUPPORT_SCOPE_FORMAT,
+                    "",
+                    "",
+                    "",
+                    "",
+                    supportScopes.get(i)));
         }
     }
 
@@ -263,6 +290,40 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             } else {
                 return s;
             }
+        }
+
+        List<String> getSupportScopes() {
+            final String selectedSupportKey = getRegistryUserSelectedSupportKey();
+            if (selectedSupportKey == null) {
+                return List.of();
+            }
+            var value = e.getMetadata().get(selectedSupportKey);
+            if (value == null) {
+                return null;
+            }
+            if (value instanceof Collection<?> col) {
+                if (col.isEmpty()) {
+                    return List.of();
+                }
+                if (col.size() == 1) {
+                    return List.of(String.valueOf(col.iterator().next()));
+                }
+                final List<String> result = new ArrayList<>(col.size());
+                for (var i : col) {
+                    result.add(String.valueOf(i));
+                }
+                Collections.sort(result);
+                return result;
+            }
+            return List.of(value.toString());
+        }
+
+        String getRegistryUserSelectedSupportKey() {
+            var supportKey = e.getMetadata().get(Constants.REGISTRY_CLIENT_USER_SELECTED_SUPPORT_KEY);
+            if (supportKey == null) {
+                return null;
+            }
+            return supportKey.toString();
         }
     }
 }

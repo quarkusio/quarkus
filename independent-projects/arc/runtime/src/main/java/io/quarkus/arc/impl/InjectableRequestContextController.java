@@ -17,13 +17,13 @@ public class InjectableRequestContextController implements RequestContextControl
     private final AtomicBoolean isActivator;
 
     public InjectableRequestContextController() {
-        this.requestContext = Arc.container().requestContext();
+        this.requestContext = Arc.requireContainer().requestContext();
         this.isActivator = new AtomicBoolean(false);
     }
 
     @Override
     public boolean activate() {
-        if (Arc.container().getActiveContext(RequestScoped.class) != null) {
+        if (Arc.requireContainer().getActiveContext(RequestScoped.class) != null) {
             return false;
         }
         requestContext.activate();
@@ -33,7 +33,7 @@ public class InjectableRequestContextController implements RequestContextControl
 
     @Override
     public void deactivate() throws ContextNotActiveException {
-        if (Arc.container().getActiveContext(RequestScoped.class) == null) {
+        if (Arc.requireContainer().getActiveContext(RequestScoped.class) == null) {
             throw new ContextNotActiveException(RequestScoped.class.getName());
         }
         if (isActivator.compareAndSet(true, false)) {

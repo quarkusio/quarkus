@@ -38,6 +38,7 @@
         <module>reactive-routes-virtual-threads</module>
         <module>security-webauthn-virtual-threads</module>
         <module>metrics-virtual-threads</module>
+        <module>graphql-virtual-threads</module>
     </modules>
 
     <build>
@@ -77,13 +78,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <configuration>
-                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>net.revelc.code</groupId>

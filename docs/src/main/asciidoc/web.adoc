@@ -83,9 +83,9 @@ Here is a simple example of a Qute template:
 
 === Model-View-Controller (MVC)
 
-The MVC approach is also made very easy with Quarkus thanks to https://docs.quarkiverse.io/quarkus-renarde/dev/index.html[the Renarde extension], a Rails-like framework using Qute.
+The MVC approach is also made very easy with Quarkus thanks to Qute.
 
-Associated with the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], the road is open to build modern web applications for all your needs. Here is what a simple Renarde controller looks like:
+Associated with the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], the road is open to build modern web applications for all your needs.
 
 .src/main/java/rest/Todos.java
 [source,java]
@@ -155,7 +155,7 @@ public class Todos extends Controller {
 }
 ----
 
-NOTE: Check out https://www.youtube.com/watch?v=JNmHNSmK180[Quarkus Insights Episode #178]. First part is a hands-on demonstration of creating a CMS with Renarde. You can also give it a try using https://github.com/quarkusio/quarkus-web-lab[the web-lab repo]).
+NOTE: Check out https://www.youtube.com/watch?v=JNmHN5mK180[Quarkus Insights Episode #178]. You can also give it a try using https://github.com/quarkusio/quarkus-web-lab[the web-lab repo].
 
 == Single Page Applications
 

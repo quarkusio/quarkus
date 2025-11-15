@@ -42,6 +42,7 @@ import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoConfigurationException;
 import com.mongodb.MongoCredential;
+import com.mongodb.MongoDriverInformation;
 import com.mongodb.MongoException;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadConcernLevel;
@@ -82,7 +83,8 @@ import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 public class MongoClients {
 
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
-
+    private static final MongoDriverInformation DRIVER_INFORMATION = MongoDriverInformation
+            .builder(MongoDriverInformation.builder().build()).driverName("quarkus").build();
     private final MongodbConfig mongodbConfig;
     private final MongoClientSupport mongoClientSupport;
     private final Instance<CodecProvider> codecProviders;
@@ -126,7 +128,7 @@ public class MongoClients {
     public MongoClient createMongoClient(String clientName) throws MongoException {
         MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
                 false);
-        MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
+        MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration, DRIVER_INFORMATION);
         mongoclients.put(clientName, client);
         return client;
     }
@@ -136,7 +138,7 @@ public class MongoClients {
         MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
                 true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
-                .create(mongoConfiguration);
+                .create(mongoConfiguration, DRIVER_INFORMATION);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
         reactiveMongoClients.put(clientName, reactive);
         return reactive;
@@ -525,7 +527,7 @@ public class MongoClients {
             String beanName = config.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = config.credentialsProvider().get();
-            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            Map<String, String> credentials = credentialsProvider.getCredentialsAsync(name).await().indefinitely();
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
             return new UsernamePassword(user, password.toCharArray());

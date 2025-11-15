@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: data,getting-started,reactive
 :topics: data,database,datasource,sql,jdbc,reactive
-:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 Use a unified configuration model to define data sources for Java Database Connectivity (JDBC) and Reactive drivers.
 
@@ -27,7 +27,7 @@ The `quarkus-jdbc-\*` and `quarkus-reactive-*-client` extensions provide build t
 
 For more information about consuming and using a reactive datasource, see the Quarkus xref:reactive-sql-clients.adoc[Reactive SQL clients] guide.
 
-Additionally, refer to the Quarkus xref:hibernate-orm.adoc[Hibernate ORM] guide for information on consuming and using a JDBC datasource.
+Additionally, refer to the Quarkus xref:hibernate-orm.adoc[Hibernate ORM] guide for information about consuming and using a JDBC datasource.
 
 
 == Get started with configuring `datasources` in Quarkus
@@ -64,9 +64,6 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 . Add the correct JDBC extension for the database of your choice.
 
 * `quarkus-jdbc-db2`
-* `quarkus-jdbc-derby`
-+
-include::_includes/snip-note-derby.adoc[]
 * `quarkus-jdbc-h2`
 * `quarkus-jdbc-mariadb`
 * `quarkus-jdbc-mssql`
@@ -152,9 +149,6 @@ If the application operates with a single driver, this driver is detected automa
 Quarkus currently includes the following built-in database kinds:
 +
 * DB2: `db2`
-* Derby: `derby`
-+
-include::_includes/snip-note-derby.adoc[]
 * H2: `h2`
 * MariaDB: `mariadb`
 * Microsoft SQL Server: `mssql`
@@ -190,20 +184,17 @@ It is possible to use JDBC and a reactive driver simultaneously.
 
 JDBC is the most common database connection pattern, typically needed when used in combination with non-reactive Hibernate ORM.
 
-. To use a JDBC datasource, start with adding the necessary dependencies:
+. To use a JDBC datasource, start by adding the necessary dependencies:
 
 .. For use with a built-in JDBC driver, choose and add the Quarkus extension for your relational database driver from the list below:
 +
-* Derby - `quarkus-jdbc-derby`
-+
-include::_includes/snip-note-derby.adoc[]
 * H2 - `quarkus-jdbc-h2`
 +
 [NOTE]
 ====
-H2 and Derby databases can be configured to run in "embedded mode"; however, the Derby extension does not support compiling the embedded database engine into native executables.
+You can configure H2 databases to run in "embedded mode"
 
-Read <<in-memory-databases,Testing with in-memory databases>> for suggestions regarding integration testing.
+For suggestions regarding integration testing, see <<in-memory-databases,Testing with in-memory databases>> .
 ====
 * DB2 - `quarkus-jdbc-db2`
 * MariaDB - `quarkus-jdbc-mariadb`
@@ -225,9 +216,8 @@ For example, to add the PostgreSQL driver dependency:
 [NOTE]
 ====
 Using a built-in JDBC driver extension automatically includes the Agroal extension, which is the JDBC connection pool implementation applicable for custom and built-in JDBC drivers.
-However, for custom drivers, Agroal needs to be added explicitly.
+However, for custom drivers, you must add Agroal explicitly.
 ====
-
 
 .. For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
 +
@@ -276,8 +266,7 @@ quarkus.datasource.username=scott
 quarkus.datasource.password=tiger
 ----
 
-For all the details about the JDBC configuration options and configuring other aspects,
-such as the connection pool size, refer to the <<jdbc-configuration,JDBC configuration reference>> section.
+For details about JDBC configuration options and configuring other aspects, such as the connection pool size, refer to the <<jdbc-configuration,JDBC configuration reference>> section.
 
 ===== Consuming the datasource
 
@@ -303,7 +292,7 @@ Because this behavior is unexpected and can lead to data loss, an interceptor ro
 However, if you use XA transactions, the transaction manager handles the rollback.
 
 If the behavior introduced in 3.18 causes issues for your workload, disable it by setting the `-Dquarkus-oracle-no-automatic-rollback-on-connection-close` system property to `true`.
-Make sure to report your use case in our link:https://github.com/quarkusio/quarkus/issues[issue tracker] so we can adjust this behavior if needed, for example, with more permanent settings.
+Make sure to report your use case in the link:https://github.com/quarkusio/quarkus/issues[issue tracker] so we can adjust this behavior if needed, for example, with more permanent settings.
 
 
 [[reactive-datasource]]
@@ -452,11 +441,11 @@ If a datasource is not active:
 * The datasource does not attempt to connect to the database during application startup.
 * The datasource does not contribute a <<datasource-health-check,health check>>.
 * Static CDI injection points involving the datasource, such as `@Inject DataSource ds` or `@Inject Pool pool`, cause application startup to fail.
-* Dynamic retrieval of the datasource, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or by injecting an `Instance<DataSource>`, causes an exception to be thrown.
+* Dynamic retrieval of the datasource, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or an injected `Instance<DataSource>`, causes an exception to be thrown.
 * Other Quarkus extensions that consume the datasource may cause application startup to fail.
 +
 In this case, you must also deactivate those other extensions.
-To see an example of this scenario, refer to xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide].
+To see an example of this scenario, refer to xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide]. For Hibernate ORM, deactivation of the persistence unit is automatic when the datasource is inactive.
 
 This feature is especially useful when the application must select one datasource from a predefined set at runtime.
 
@@ -470,7 +459,7 @@ quarkus.datasource."pg".jdbc.url=jdbc:postgresql:///your_database
 
 quarkus.datasource."oracle".db-kind=oracle
 quarkus.datasource."oracle".active=false
-quarkus.datasource."oracle".jdbc.url=jdbc:oracle:///your_database
+quarkus.datasource."oracle".jdbc.url=jdbc:oracle:thin:@localhost:1521/your_database
 ----
 
 Setting `quarkus.datasource."pg".active=true` xref:config-reference.adoc#configuration-sources[at runtime] makes only the PostgreSQL datasource available.
@@ -680,11 +669,18 @@ You can override this by setting the `transactions` configuration property:
 * `quarkus.datasource.jdbc.transactions` for default unnamed datasource
 * `quarkus.datasource._<datasource-name>_.jdbc.transactions` for named datasource
 
-When a datasource is enabled for XA (by setting `quarkus.datasource[.optional name].jdbc.transactions to xa)` and the transaction recovery system is enabled (by setting the property `quarkus.transaction-manager.enable-recovery` to true) then the datasource is automatically registered for recovery. This is a safe default, but you can override this behaviour on a per-datasource basis by setting `quarkus.datasource.jdbc.enable-recovery`/`quarkus.datasource."datasource-name".jdbc.enable-recovery` to `false`. Only use this for advanced use cases and if you know recovery will not be necessary, otherwise it may result in data loss and/or data unavailability because resources may become locked indefinitely.
+When a datasource is configured for XA transactions by setting `quarkus.datasource[.optional name].jdbc.transactions=xa` and the transaction recovery system is enabled by using `quarkus.transaction-manager.enable-recovery=true`, the datasource is automatically registered for recovery.
+This is the preferred and safe default.
+You can override this behavior for individual datasources by setting `quarkus.datasource.jdbc.enable-recovery=false` or `quarkus.datasource."datasource-name".jdbc.enable-recovery=false`.
+
+[IMPORTANT]
+====
+Change this setting only in advanced use cases and only if you are certain recovery is not required.
+Incorrect configuration can lead to data loss, data unavailability, or both, due to resources remaining locked indefinitely.
+====
 
 For more information, see the <<configuration-reference,Configuration reference>> section below.
-
-To facilitate the storage of transaction logs in a database by using JDBC, see xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.
+To facilitate the storage of transaction logs in a database by using JDBC, see the xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.
 
 ==== Named datasources
 
@@ -695,7 +691,7 @@ You will usually specify the `db-kind` property or explicitly enable Dev Service
 [[in-memory-databases]]
 === Testing with in-memory databases
 
-Some databases like H2 and Derby are commonly used in the _embedded mode_ as a facility to run integration tests quickly.
+Some databases like H2 are commonly used in the _embedded mode_ as a facility to run integration tests quickly.
 
 The recommended approach is to use the database intended for production to get results as close as possible to a production environment.
 This is made easier by xref:databases-dev-services.adoc[Dev Services] because they require no configuration and start relatively quickly.
@@ -703,11 +699,8 @@ However, it is also possible to use JVM-powered databases for scenarios when the
 
 ==== Support and limitations
 
-Embedded databases (H2 and Derby) work in JVM mode.
+Embedded databases (H2) work in JVM mode.
 For native mode, the following limitations apply:
-
-* Derby cannot be embedded into the application in native mode.
-However, the Quarkus Derby extension allows native compilation of the Derby JDBC *client*, supporting *remote* connections.
 
 * Embedding H2 within your native image is not recommended.
 Consider using an alternative approach, for example, using a remote connection to a separate database instead.
@@ -718,14 +711,12 @@ ifndef::no-deprecated-test-resource[]
 . Add a dependency on the artifacts providing the additional tools that are under the following Maven coordinates:
 +
 * `io.quarkus:quarkus-test-h2` for H2
-* `io.quarkus:quarkus-test-derby` for Derby
 +
 This will allow you to test your application even when it is compiled into a native executable while the database will run as a JVM process.
 
 . Add the following specific annotation on any class in your integration tests for running integration tests in both JVM or native executables:
 +
 * `@QuarkusTestResource(H2DatabaseTestResource.class)`
-* `@QuarkusTestResource(DerbyDatabaseTestResource.class)`
 +
 This ensures that the test suite starts and terminates the managed database in a separate process as required for test execution.
 +
@@ -777,17 +768,6 @@ The following section gives an overview of each database URL and a link to the o
 Example:: `jdbc:db2://localhost:50000/MYDB:user=dbadm;password=dbadm;`
 
 For more information on URL syntax and additional supported options, see the link:https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052342.html[official documentation].
-
-==== Derby
-
-`jdbc:derby:[//serverName[:portNumber]/][memory:]databaseName[;property=value[;property=value]]`
-
-Example:: `jdbc:derby://localhost:1527/myDB`, `jdbc:derby:memory:myDB;create=true`
-
-Derby is an embedded database that can run as a server, based on a file, or can run completely in memory.
-All of these options are available as listed above.
-
-For more information, see the link:https://db.apache.org/derby/docs/10.8/devguide/cdevdvlp17453.html#cdevdvlp17453[official documentation].
 
 ==== H2
 
@@ -876,12 +856,6 @@ When using one of the built-in datasource kinds, the JDBC and Reactive drivers a
 a|* JDBC: `com.ibm.db2.jcc.DB2Driver`
 
 * XA: `com.ibm.db2.jcc.DB2XADataSource`
-
-|`derby`
-|`quarkus-jdbc-derby`
-a|* JDBC: `org.apache.derby.jdbc.ClientDriver`
-
-* XA: `org.apache.derby.jdbc.ClientXADataSource`
 
 |`h2`
 |`quarkus-jdbc-h2`

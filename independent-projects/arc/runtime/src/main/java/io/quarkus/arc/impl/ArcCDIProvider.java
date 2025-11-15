@@ -36,9 +36,7 @@ public class ArcCDIProvider implements CDIProvider {
         private final Instance<Object> instanceDelegate;
 
         public ArcCDI() {
-            this.instanceDelegate = Arc.container()
-                    .beanManager()
-                    .createInstance();
+            this.instanceDelegate = Arc.requireContainer().beanManager().createInstance();
         }
 
         @Override
@@ -93,8 +91,7 @@ public class ArcCDIProvider implements CDIProvider {
 
         @Override
         public BeanManager getBeanManager() {
-            return Arc.container()
-                    .beanManager();
+            return Arc.requireContainer().beanManager();
         }
 
         void destroy() {

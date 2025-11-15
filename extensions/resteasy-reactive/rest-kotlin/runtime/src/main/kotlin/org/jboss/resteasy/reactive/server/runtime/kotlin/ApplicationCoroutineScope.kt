@@ -34,7 +34,7 @@ class ApplicationCoroutineScope : CoroutineScope, AutoCloseable {
 class VertxDispatcher(
     private val vertxContext: Context,
     private val requestScope: ThreadSetupAction.ThreadState,
-    private val rrContext: ResteasyReactiveRequestContext
+    private val rrContext: ResteasyReactiveRequestContext,
 ) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         // context propagation for suspending functions is not enabled yet, will be handled later

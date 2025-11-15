@@ -147,7 +147,10 @@ public final class RunnerClassLoader extends ClassLoader {
     }
 
     private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
-        Class<?> loaded;
+        Class<?> loaded = findLoadedClass(name);
+        if (loaded != null) {
+            return loaded;
+        }
         try {
             return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
         } catch (LinkageError e) {

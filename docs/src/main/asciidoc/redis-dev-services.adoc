@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Redis
-:extension-status: preview
+:extension-status: stable
 include::_attributes.adoc[]
 :categories: data
 :summary: Start Redis automatically in dev and test modes.

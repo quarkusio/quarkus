@@ -4,7 +4,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.redis.datasource.ReactiveCursor;
 import io.quarkus.redis.datasource.set.ReactiveSScanCursor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -17,13 +16,15 @@ public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
     private final Type typeOfValue;
     private final Marshaller marshaller;
     private long cursor;
+    private boolean initial;
     private final List<String> extra = new ArrayList<>();
 
     public <K> SScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller,
             Type typeOfValue, List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
-        this.cursor = ReactiveCursor.INITIAL_CURSOR_ID;
+        this.cursor = 0;
+        this.initial = true;
         this.marshaller = marshaller;
         this.typeOfValue = typeOfValue;
         this.extra.addAll(extra);
@@ -31,18 +32,14 @@ public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
 
     @Override
     public boolean hasNext() {
-        return cursor != 0;
+        return initial || cursor != 0;
     }
 
     @Override
     public Uni<List<V>> next() {
-        long pos = cursor == INITIAL_CURSOR_ID ? 0 : cursor;
-        RedisCommand cmd = RedisCommand.of(Command.SSCAN);
-        cmd.put(key);
-        cmd.put(Long.toString(pos));
-        cmd.putAll(extra);
-        return execute(cmd)
-                .invoke(response -> cursor = response.get(0).toLong())
+        initial = false;
+        return execute(RedisCommand.of(Command.SSCAN).put(key).put(Long.toUnsignedString(cursor)).putAll(extra))
+                .invoke(response -> cursor = Long.parseUnsignedLong(response.get(0).toString()))
                 .map(response -> {
                     Response array = response.get(1);
                     List<V> list = new ArrayList<>();

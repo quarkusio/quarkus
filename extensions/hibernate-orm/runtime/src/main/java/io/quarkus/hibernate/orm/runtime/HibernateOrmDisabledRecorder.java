@@ -2,14 +2,20 @@ package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Set;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class HibernateOrmDisabledRecorder {
+    private final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig;
 
-    public void checkNoExplicitActiveTrue(HibernateOrmRuntimeConfig runtimeConfig) {
-        for (var entry : runtimeConfig.persistenceUnits().entrySet()) {
+    public HibernateOrmDisabledRecorder(final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public void checkNoExplicitActiveTrue() {
+        for (var entry : runtimeConfig.getValue().persistenceUnits().entrySet()) {
             var config = entry.getValue();
             if (config.active().isPresent() && config.active().get()) {
                 var puName = entry.getKey();

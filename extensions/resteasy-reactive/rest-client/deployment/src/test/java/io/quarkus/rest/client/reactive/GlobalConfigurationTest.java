@@ -54,7 +54,6 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.disableContextualErrorMessages()).isTrue();
 
         // global defaults for client specific properties:
-        assertThat(configRoot.scope().get()).isEqualTo("Singleton");
         assertThat(configRoot.proxyAddress().get()).isEqualTo("host:123");
         assertThat(configRoot.proxyUser().get()).isEqualTo("proxyUser");
         assertThat(configRoot.proxyPassword().get()).isEqualTo("proxyPassword");

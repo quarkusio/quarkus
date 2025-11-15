@@ -19,7 +19,12 @@ public class ParamDeclarationDefaultValueTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEnum.class)
                     .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.ParamDeclarationDefaultValueTest$MyEnum myEnum=MyEnum:BAR}{myEnum}"),
+                            """
+                                    {@io.quarkus.qute.deployment.typesafe.ParamDeclarationDefaultValueTest$MyEnum myEnum=MyEnum:BAR}
+                                    {@String name=null}
+                                    {myEnum}
+                                    {#if name != null}NOK!{/}
+                                    """),
                             "templates/myEnum.html"));
 
     @Inject
@@ -27,7 +32,7 @@ public class ParamDeclarationDefaultValueTest {
 
     @Test
     public void testDefaultValue() {
-        assertEquals("BAR", myEnum.render());
+        assertEquals("BAR", myEnum.render().strip());
     }
 
     @TemplateEnum

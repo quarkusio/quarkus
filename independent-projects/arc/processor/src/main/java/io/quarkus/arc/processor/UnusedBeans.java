@@ -31,8 +31,7 @@ final class UnusedBeans {
 
         Set<BeanInfo> unusedProducers = new HashSet<>();
         Set<BeanInfo> unusedButDeclaresProducer = new HashSet<>();
-        List<BeanInfo> producers = beans.stream().filter(BeanInfo::isProducer)
-                .collect(Collectors.toList());
+        List<BeanInfo> producers = beans.stream().filter(BeanInfo::isProducer).toList();
         // Collect all:
         // - injected beans; skip delegate injection points and injection points that resolve to a built-in bean
         // - Instance<> injection points
@@ -84,7 +83,7 @@ final class UnusedBeans {
             // Custom exclusions
             for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
                 if (exclusion.test(bean)) {
-                    LOG.debugf("Unremovable - excluded by %s: %s", exclusion.toString(), bean);
+                    LOG.debugf("Unremovable - excluded by %s: %s", exclusion, bean);
                     continue test;
                 }
             }

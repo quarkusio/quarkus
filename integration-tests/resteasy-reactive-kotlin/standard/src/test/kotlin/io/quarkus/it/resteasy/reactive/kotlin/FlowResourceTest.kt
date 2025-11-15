@@ -46,7 +46,7 @@ class FlowResourceTest {
                 .containsExactly(
                     "{\"name\":\"Barbados\",\"capital\":\"Bridgetown\"}",
                     "{\"name\":\"Mauritius\",\"capital\":\"Port Louis\"}",
-                    "{\"name\":\"Fiji\",\"capital\":\"Suva\"}"
+                    "{\"name\":\"Fiji\",\"capital\":\"Suva\"}",
                 )
         }
     }
@@ -62,7 +62,7 @@ class FlowResourceTest {
                 val collect = Collections.synchronizedList(ArrayList<String>())
                 eventSource.register(
                     { inboundSseEvent -> collect.add(inboundSseEvent.readData()) },
-                    { throwable -> res.completeExceptionally(throwable) }
+                    { throwable -> res.completeExceptionally(throwable) },
                 ) {
                     res.complete(collect)
                 }

@@ -11,6 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-liquibase-common</artifactId>
+    <name>Quarkus - Liquibase - Common</name>
     <version>999-SNAPSHOT</version>
 
     <dependencies>

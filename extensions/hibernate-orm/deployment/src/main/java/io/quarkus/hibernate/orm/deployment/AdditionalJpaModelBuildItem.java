@@ -14,7 +14,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *             See <a href="https://github.com/search?q=org%3Aquarkiverse%20AdditionalJpaModelBuildItem&type=code">here</a>
  *             for a full list.
  */
-@Deprecated
+@Deprecated(forRemoval = true, since = "3.3")
 public final class AdditionalJpaModelBuildItem extends MultiBuildItem {
 
     private final String className;

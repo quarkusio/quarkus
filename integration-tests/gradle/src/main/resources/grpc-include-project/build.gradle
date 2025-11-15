@@ -16,12 +16,12 @@ repositories {
 
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-rest'
     implementation 'io.quarkus:quarkus-grpc'
 }
 
-group 'org.acme'
-version '1.0.0-SNAPSHOT'
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17

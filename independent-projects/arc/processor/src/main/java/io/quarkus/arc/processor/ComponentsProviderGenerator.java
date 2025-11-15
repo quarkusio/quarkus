@@ -1,29 +1,33 @@
 package io.quarkus.arc.processor;
 
-import static java.util.stream.Collectors.toList;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static io.quarkus.arc.processor.Reproducibility.orderedBeans;
+import static io.quarkus.arc.processor.Reproducibility.orderedDecorators;
+import static io.quarkus.arc.processor.Reproducibility.orderedInterceptors;
+import static io.quarkus.arc.processor.Reproducibility.orderedObservers;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 
+import java.lang.constant.ClassDesc;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.objectweb.asm.Type;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
@@ -31,22 +35,26 @@ import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  *
  * @author Martin Kouba
  */
+// this must be on the entire class because of a single occurrence in `createAddRemovedBeansMethods()`,
+// because it appears in a deeply nested lambda and Forbidden APIs fails to attribute it to the declaring method
+@SuppressForbidden(reason = "Using Type.toString() to build an informative message")
 public class ComponentsProviderGenerator extends AbstractGenerator {
 
     static final String COMPONENTS_PROVIDER_SUFFIX = "_ComponentsProvider";
@@ -54,6 +62,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     static final String ADD_OBSERVERS = "addObservers";
     static final String ADD_REMOVED_BEANS = "addRemovedBeans";
     static final String ADD_BEANS = "addBeans";
+    private static final Comparator<BeanInfo> BEAN_INFO_COMPARATOR = Comparator.comparing(BeanInfo::getIdentifier);
+    private static final Comparator<ObserverInfo> OBSERVER_INFO_COMPARATOR = Comparator.comparing(ObserverInfo::getIdentifier);
 
     private final AnnotationLiteralProcessor annotationLiterals;
     private final boolean detectUnusedFalsePositives;
@@ -79,126 +89,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         ResourceClassOutput classOutput = new ResourceClassOutput(true, generateSources);
 
-        String generatedName = SETUP_PACKAGE + "." + name + COMPONENTS_PROVIDER_SUFFIX;
-        ClassCreator componentsProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(ComponentsProvider.class).build();
+        Gizmo gizmo = gizmo(classOutput);
 
-        MethodCreator getComponents = componentsProvider
-                .getMethodCreator("getComponents", Components.class, CurrentContextFactory.class)
-                .setModifiers(ACC_PUBLIC);
-
-        Map<BeanInfo, List<BeanInfo>> dependencyMap = initBeanDependencyMap(beanDeployment);
-
-        // Break bean processing into multiple addBeans() methods
-        // Map<String, InjectableBean<?>>
-        ResultHandle beanIdToBeanHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-        processBeans(componentsProvider, getComponents, beanIdToBeanHandle, dependencyMap, beanToGeneratedName,
-                beanDeployment);
-
-        // Break observers processing into multiple addObservers() methods
-        ResultHandle observersHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        processObservers(componentsProvider, getComponents, beanDeployment, beanIdToBeanHandle, observersHandle,
-                observerToGeneratedName);
-
-        // Custom contexts
-        ResultHandle contextsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        for (Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> e : beanDeployment
-                .getCustomContexts()
-                .entrySet()) {
-            for (Function<MethodCreator, ResultHandle> func : e.getValue()) {
-                ResultHandle contextHandle = func.apply(getComponents);
-                getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
-            }
-        }
-
-        // All interceptor bindings
-        ResultHandle interceptorBindings = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        for (ClassInfo binding : beanDeployment.getInterceptorBindings()) {
-            getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, interceptorBindings,
-                    getComponents.load(binding.name().toString()));
-        }
-
-        // Transitive interceptor bindings
-        ResultHandle transitiveBindingsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-        for (Entry<DotName, Set<AnnotationInstance>> entry : beanDeployment.getTransitiveInterceptorBindings().entrySet()) {
-            ResultHandle bindingsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (AnnotationInstance binding : entry.getValue()) {
-                // Create annotation literals first
-                ClassInfo bindingClass = beanDeployment.getInterceptorBinding(binding.name());
-                getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                        annotationLiterals.create(getComponents, bindingClass, binding));
-            }
-            getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, transitiveBindingsHandle,
-                    getComponents.loadClass(entry.getKey().toString()), bindingsHandle);
-        }
-
-        ResultHandle beansHandle = getComponents.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Map.class, "values", Collection.class),
-                beanIdToBeanHandle);
-
-        ResultHandle removedBeansSupplier;
-        if (detectUnusedFalsePositives) {
-            FunctionCreator removedBeansSupplierFun = getComponents.createFunction(Supplier.class);
-            BytecodeCreator removedBeansSupplierBytecode = removedBeansSupplierFun.getBytecode();
-            ResultHandle removedBeansList = removedBeansSupplierBytecode
-                    .newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-            ResultHandle typeCacheHandle = removedBeansSupplierBytecode
-                    .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            // Break removed beans processing into multiple addRemovedBeans() methods
-            // Generate static addRemovedBeans() methods
-            processRemovedBeans(componentsProvider, removedBeansSupplierBytecode, removedBeansList, typeCacheHandle,
-                    beanDeployment,
-                    classOutput);
-            removedBeansSupplierBytecode.returnValue(removedBeansList);
-            removedBeansSupplier = removedBeansSupplierFun.getInstance();
-        } else {
-            removedBeansSupplier = getComponents.newInstance(
-                    MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR,
-                    getComponents.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET));
-        }
-
-        // All qualifiers
-        ResultHandle qualifiers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
-            getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
-                    getComponents.load(qualifier.name().toString()));
-        }
-
-        // Qualifier non-binding members
-        ResultHandle qualifiersNonbindingMembers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-        for (Entry<DotName, Set<String>> entry : beanDeployment.getQualifierNonbindingMembers().entrySet()) {
-            ResultHandle nonbindingMembers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (String member : entry.getValue()) {
-                getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, nonbindingMembers,
-                        getComponents.load(member));
-            }
-            getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, qualifiersNonbindingMembers,
-                    getComponents.load(entry.getKey().toString()), nonbindingMembers);
-        }
-
-        ResultHandle contextInstances;
-        if (scopeToContextInstances.isEmpty()) {
-            contextInstances = getComponents.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
-        } else {
-            contextInstances = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            for (Entry<DotName, String> e : scopeToContextInstances.entrySet()) {
-                ResultHandle scope = getComponents.loadClass(e.getKey().toString());
-                FunctionCreator supplier = getComponents.createFunction(Supplier.class);
-                BytecodeCreator bytecode = supplier.getBytecode();
-                bytecode.returnValue(bytecode.newInstance(MethodDescriptor.ofConstructor(e.getValue())));
-                getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, contextInstances, scope, supplier.getInstance());
-            }
-        }
-
-        ResultHandle componentsHandle = getComponents.newInstance(
-                MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
-                        Set.class, Map.class, Supplier.class, Map.class, Set.class, Map.class),
-                beansHandle, observersHandle, contextsHandle, interceptorBindings, transitiveBindingsHandle,
-                removedBeansSupplier, qualifiersNonbindingMembers, qualifiers, contextInstances);
-        getComponents.returnValue(componentsHandle);
-
-        // Finally write the bytecode
-        componentsProvider.close();
+        createComponentsProvider(gizmo, name, beanDeployment, beanToGeneratedName, observerToGeneratedName,
+                scopeToContextInstances);
 
         List<Resource> resources = new ArrayList<>();
         for (Resource resource : classOutput.getResources()) {
@@ -206,19 +100,420 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             if (resource.getName().endsWith(COMPONENTS_PROVIDER_SUFFIX)) {
                 // We need to filter out nested classes and functions
                 resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
-                        (resource.getName().replace('/', '.')).getBytes(StandardCharsets.UTF_8), null));
+                        resource.getName().replace('/', '.').getBytes(StandardCharsets.UTF_8), null));
             }
         }
         return resources;
     }
 
-    private void processBeans(ClassCreator componentsProvider, MethodCreator getComponents, ResultHandle beanIdToBeanHandle,
-            Map<BeanInfo, List<BeanInfo>> dependencyMap,
-            Map<BeanInfo, String> beanToGeneratedName, BeanDeployment beanDeployment) {
+    private void createComponentsProvider(Gizmo gizmo, String name, BeanDeployment beanDeployment,
+            Map<BeanInfo, String> beanToGeneratedName, Map<ObserverInfo, String> observerToGeneratedName,
+            Map<DotName, String> scopeToContextInstances) {
 
+        CodeGenInfo info = preprocess(beanDeployment);
+
+        String generatedName = SETUP_PACKAGE + "." + name + COMPONENTS_PROVIDER_SUFFIX;
+
+        gizmo.class_(generatedName, cc -> {
+            cc.implements_(ComponentsProvider.class);
+
+            cc.defaultConstructor();
+
+            cc.method("getComponents", mc -> {
+                mc.returning(Components.class);
+                ParamVar currentContextFactory = mc.parameter("currentContextFactory", CurrentContextFactory.class);
+                mc.body(bc -> {
+                    // Break bean processing into multiple addBeans() methods
+                    // Map<String, InjectableBean<?>>
+                    LocalVar beanIdToBean = bc.localVar("beanIdToBean", bc.new_(HashMap.class));
+                    for (BeanGroup group : info.beanGroups()) {
+                        ClassMethodDesc desc = ClassMethodDesc.of(cc.type(), ADD_BEANS + group.id(),
+                                void.class, Map.class);
+                        bc.invokeVirtual(desc, cc.this_(), beanIdToBean);
+                    }
+                    LocalVar beans = bc.localVar("beans", bc.withMap(beanIdToBean).values());
+                    generateAddBeans(cc, info, beanToGeneratedName);
+
+                    // Break observers processing into multiple addObservers() methods
+                    // List<InjectableObserverMethod<?>
+                    LocalVar observers = bc.localVar("observers", bc.new_(ArrayList.class));
+                    for (ObserverGroup group : info.observerGroups()) {
+                        ClassMethodDesc desc = ClassMethodDesc.of(cc.type(), ADD_OBSERVERS + group.id(),
+                                void.class, Map.class, List.class);
+                        bc.invokeVirtual(desc, cc.this_(), beanIdToBean, observers);
+                    }
+                    generateAddObservers(cc, info, observerToGeneratedName);
+
+                    // Custom contexts
+                    // List<InjectableContext>
+                    ContextConfigurator.CreateGeneration createGeneration = new ContextConfigurator.CreateGeneration() {
+                        @Override
+                        public BlockCreator method() {
+                            return bc;
+                        }
+
+                        @Override
+                        public Var currentContextFactory() {
+                            return currentContextFactory;
+                        }
+                    };
+                    LocalVar contexts = bc.localVar("contexts", bc.new_(ArrayList.class));
+                    for (var creators : beanDeployment.getCustomContexts().values()) {
+                        for (Function<ContextConfigurator.CreateGeneration, Expr> creator : creators) {
+                            bc.withList(contexts).add(creator.apply(createGeneration));
+                        }
+                    }
+
+                    // All interceptor bindings
+                    // Set<String>
+                    LocalVar interceptorBindings = bc.localVar("interceptorBindings", bc.new_(HashSet.class));
+                    for (ClassInfo binding : beanDeployment.getInterceptorBindings()) {
+                        bc.withSet(interceptorBindings).add(Const.of(binding.name().toString()));
+                    }
+
+                    // Transitive interceptor bindings
+                    // Map<Class, Set<Annotation>>
+                    LocalVar transitiveBindings = bc.localVar("transitiveBindings", bc.new_(HashMap.class));
+                    beanDeployment.getTransitiveInterceptorBindings().forEach((binding, transitives) -> {
+                        LocalVar transitivesSet = bc.localVar("transitives", bc.new_(HashSet.class));
+                        for (AnnotationInstance transitive : transitives) {
+                            ClassInfo transitiveClass = beanDeployment.getInterceptorBinding(transitive.name());
+                            bc.withSet(transitivesSet).add(annotationLiterals.create(bc, transitiveClass, transitive));
+                        }
+                        bc.withMap(transitiveBindings).put(Const.of(classDescOf(binding)), transitivesSet);
+                    });
+
+                    // removed beans
+                    // Supplier<Collection<RemovedBean>>
+                    LocalVar removedBeansSupplier;
+                    if (detectUnusedFalsePositives) {
+                        removedBeansSupplier = bc.localVar("removedBeansSupplier", bc.lambda(Supplier.class, lc -> {
+                            lc.body(lbc -> {
+                                LocalVar removedBeans = lbc.localVar("removedBeans", lbc.new_(ArrayList.class));
+                                LocalVar typeCache = lbc.localVar("typeCache", lbc.new_(HashMap.class));
+                                // Break removed beans processing into multiple addRemovedBeans() methods
+                                for (RemovedBeanGroup group : info.removedBeans()) {
+                                    ClassMethodDesc desc = ClassMethodDesc.of(cc.type(), ADD_REMOVED_BEANS + group.id(),
+                                            void.class, List.class, Map.class);
+                                    lbc.invokeStatic(desc, removedBeans, typeCache);
+                                }
+                                lbc.return_(removedBeans);
+                            });
+                        }));
+                        generateAddRemovedBeans(cc, info);
+                    } else {
+                        removedBeansSupplier = bc.localVar("removedBeansSupplier",
+                                bc.new_(MethodDescs.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, bc.setOf()));
+                    }
+
+                    // All qualifiers
+                    // Set<String>
+                    LocalVar qualifiers = bc.localVar("qualifiers", bc.new_(HashSet.class));
+                    for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
+                        bc.withSet(qualifiers).add(Const.of(qualifier.name().toString()));
+                    }
+
+                    // Qualifier non-binding members
+                    LocalVar qualifiersNonbindingMembers = bc.localVar("qualifiersNonbindingMembers", bc.new_(HashMap.class));
+                    beanDeployment.getQualifierNonbindingMembers().forEach((qualifier, nonbindingMembers) -> {
+                        LocalVar nonbindingMembersSet = bc.localVar("nonbindingMembers", bc.new_(HashSet.class));
+                        for (String nonbindingMember : nonbindingMembers) {
+                            bc.withSet(nonbindingMembersSet).add(Const.of(nonbindingMember));
+                        }
+                        bc.withMap(qualifiersNonbindingMembers).put(Const.of(qualifier.toString()), nonbindingMembersSet);
+                    });
+
+                    // context instances
+                    LocalVar contextInstances;
+                    if (scopeToContextInstances.isEmpty()) {
+                        contextInstances = bc.localVar("contextInstances", bc.mapOf());
+                    } else {
+                        LocalVar contextInstancesFinal = bc.localVar("contextInstances", bc.new_(HashMap.class));
+                        scopeToContextInstances.forEach((scopeClass, contextClass) -> {
+                            Expr contextSupplier = bc.lambda(Supplier.class, lc -> {
+                                lc.body(lbc -> {
+                                    lbc.return_(lbc.new_(ConstructorDesc.of(ClassDesc.of(contextClass))));
+                                });
+                            });
+                            bc.withMap(contextInstancesFinal).put(Const.of(classDescOf(scopeClass)), contextSupplier);
+                        });
+                        contextInstances = contextInstancesFinal;
+                    }
+
+                    bc.return_(bc.new_(ConstructorDesc.of(Components.class, Collection.class, Collection.class,
+                            Collection.class, Set.class, Map.class, Supplier.class, Map.class, Set.class, Map.class),
+                            beans, observers, contexts, interceptorBindings, transitiveBindings,
+                            removedBeansSupplier, qualifiersNonbindingMembers, qualifiers, contextInstances));
+                });
+            });
+        });
+    }
+
+    private void generateAddBeans(ClassCreator cc, CodeGenInfo info, Map<BeanInfo, String> beanToGeneratedName) {
         Set<BeanInfo> processed = new HashSet<>();
-        BeanAdder beanAdder = new BeanAdder(componentsProvider, getComponents, processed, beanIdToBeanHandle,
-                beanToGeneratedName);
+
+        for (BeanGroup group : info.beanGroups()) {
+            cc.method(ADD_BEANS + group.id(), mc -> {
+                mc.private_();
+                mc.returning(void.class);
+                ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
+                mc.body(bc -> {
+                    for (BeanInfo bean : group.beans()) {
+                        ClassDesc beanType = beanToGeneratedName.containsKey(bean)
+                                ? ClassDesc.of(beanToGeneratedName.get(bean))
+                                : null;
+                        if (beanType == null) {
+                            throw new IllegalStateException("No bean type found for: " + bean);
+                        }
+
+                        List<InjectionPointInfo> injectionPoints = bean.getInjections()
+                                .stream()
+                                .flatMap(i -> i.injectionPoints.stream())
+                                .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip))
+                                .toList();
+                        List<ClassDesc> params = new ArrayList<>();
+                        List<Expr> args = new ArrayList<>();
+
+                        if (bean.isProducer()) {
+                            params.add(ClassDesc.of(Supplier.class.getName()));
+                            if (processed.contains(bean.getDeclaringBean())) {
+                                args.add(bc.withMap(beanIdToBean).get(Const.of(bean.getDeclaringBean().getIdentifier())));
+                            } else {
+                                // Declaring bean was not processed yet - use MapValueSupplier
+                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                        Const.of(bean.getDeclaringBean().getIdentifier())));
+                            }
+                        }
+                        for (InjectionPointInfo injectionPoint : injectionPoints) {
+                            params.add(ClassDesc.of(Supplier.class.getName()));
+                            if (processed.contains(injectionPoint.getResolvedBean())) {
+                                args.add(bc.withMap(beanIdToBean).get(
+                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                            } else {
+                                // Dependency was not processed yet - use MapValueSupplier
+                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                            }
+                        }
+                        if (bean.getDisposer() != null) {
+                            for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                                if (BuiltinBean.resolvesTo(injectionPoint)) {
+                                    continue;
+                                }
+                                params.add(ClassDesc.of(Supplier.class.getName()));
+                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                            }
+                        }
+                        for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
+                            params.add(ClassDesc.of(Supplier.class.getName()));
+                            if (processed.contains(interceptor)) {
+                                args.add(bc.withMap(beanIdToBean).get(Const.of(interceptor.getIdentifier())));
+                            } else {
+                                // Bound interceptor was not processed yet - use MapValueSupplier
+                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                        Const.of(interceptor.getIdentifier())));
+                            }
+                        }
+                        for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                            params.add(ClassDesc.of(Supplier.class.getName()));
+                            if (processed.contains(decorator)) {
+                                args.add(bc.withMap(beanIdToBean).get(Const.of(decorator.getIdentifier())));
+                            } else {
+                                // Bound decorator was not processed yet - use MapValueSupplier
+                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                        Const.of(decorator.getIdentifier())));
+                            }
+                        }
+
+                        // Foo_Bean bean = new Foo_Bean(bean3)
+                        Expr beanInstance = bc.new_(ConstructorDesc.of(beanType, params), args);
+                        // beans.put(id, bean)
+                        bc.withMap(beanIdToBean).put(Const.of(bean.getIdentifier()), beanInstance);
+
+                        processed.add(bean);
+                    }
+
+                    bc.return_();
+                });
+            });
+        }
+    }
+
+    private void generateAddObservers(ClassCreator cc, CodeGenInfo info, Map<ObserverInfo, String> observerToGeneratedName) {
+        for (ObserverGroup group : info.observerGroups()) {
+            cc.method(ADD_OBSERVERS + group.id(), mc -> {
+                mc.private_();
+                mc.returning(void.class);
+                ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
+                ParamVar observers = mc.parameter("observers", List.class);
+                mc.body(bc -> {
+                    for (ObserverInfo observer : group.observers()) {
+                        ClassDesc observerType = observerToGeneratedName.containsKey(observer)
+                                ? ClassDesc.of(observerToGeneratedName.get(observer))
+                                : null;
+                        if (observerType == null) {
+                            throw new IllegalStateException("No observer type found for: " + observerType);
+                        }
+                        List<ClassDesc> params = new ArrayList<>();
+                        List<Expr> args = new ArrayList<>();
+
+                        if (!observer.isSynthetic()) {
+                            List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
+                                    .filter(ip -> !BuiltinBean.resolvesTo(ip))
+                                    .toList();
+                            // declaring bean
+                            params.add(ClassDesc.of(Supplier.class.getName()));
+                            args.add(bc.withMap(beanIdToBean).get(Const.of(observer.getDeclaringBean().getIdentifier())));
+                            // injections
+                            for (InjectionPointInfo injectionPoint : injectionPoints) {
+                                params.add(ClassDesc.of(Supplier.class.getName()));
+                                args.add(bc.withMap(beanIdToBean).get(
+                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                            }
+                        }
+                        Expr observerInstance = bc.new_(ConstructorDesc.of(observerType, params), args);
+                        bc.withList(observers).add(observerInstance);
+                    }
+                    bc.return_();
+                });
+            });
+        }
+    }
+
+    private void generateAddRemovedBeans(ClassCreator cc, CodeGenInfo info) {
+        for (RemovedBeanGroup group : info.removedBeans()) {
+            cc.staticMethod(ADD_REMOVED_BEANS + group.id(), mc -> {
+                mc.public_(); // to allow access from an anonymous class
+                mc.returning(void.class);
+                ParamVar rtRemovedBeans = mc.parameter("removedBeans", List.class);
+                ParamVar typeCacheMap = mc.parameter("typeCache", Map.class);
+                mc.body(b0 -> {
+                    LocalVar tccl = b0.localVar("tccl",
+                            b0.invokeVirtual(MethodDescs.THREAD_GET_TCCL, b0.currentThread()));
+
+                    Map<AnnotationInstanceEquivalenceProxy, LocalVar> sharedQualifers = new HashMap<>();
+                    for (BeanInfo btRemovedBean : group.removedBeans()) {
+                        // Bean types
+                        LocalVar rtTypes = b0.localVar("types", b0.new_(HashSet.class));
+                        for (Type btType : btRemovedBean.getTypes()) {
+                            if (DotNames.OBJECT.equals(btType.name())) {
+                                // Skip java.lang.Object
+                                continue;
+                            }
+
+                            b0.try_(tc -> {
+                                tc.body(b1 -> {
+                                    try {
+                                        LocalVar rtType = RuntimeTypeCreator.of(b1)
+                                                .withCache(typeCacheMap)
+                                                .withTCCL(tccl)
+                                                .create(btType);
+                                        b1.withSet(rtTypes).add(rtType);
+                                    } catch (IllegalArgumentException e) {
+                                        throw new IllegalStateException("Unable to construct type for " + btRemovedBean
+                                                + ": " + e.getMessage());
+                                    }
+                                });
+                                tc.catch_(Throwable.class, "e", (b1, e) -> {
+                                    b1.invokeStatic(MethodDescs.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
+                                            Const.of(btType.toString()), e);
+                                });
+                            });
+                        }
+
+                        // Qualifiers
+                        LocalVar rtQualifiers;
+                        if (btRemovedBean.hasDefaultQualifiers() || btRemovedBean.getQualifiers().isEmpty()) {
+                            // No qualifiers or default qualifiers (@Any, @Default)
+                            rtQualifiers = b0.localVar("qualifiers", Const.ofNull(Set.class));
+                        } else {
+                            rtQualifiers = b0.localVar("qualifiers", b0.new_(HashSet.class));
+
+                            for (AnnotationInstance btQualifier : btRemovedBean.getQualifiers()) {
+                                if (DotNames.ANY.equals(btQualifier.name())) {
+                                    // Skip @Any
+                                    continue;
+                                }
+                                BuiltinQualifier btBuiltinQualifier = BuiltinQualifier.of(btQualifier);
+                                if (btBuiltinQualifier != null) {
+                                    // Use the literal instance for built-in qualifiers
+                                    b0.withSet(rtQualifiers).add(btBuiltinQualifier.getLiteralInstance());
+                                } else {
+                                    LocalVar rtSharedQualifier = sharedQualifers.get(btQualifier.createEquivalenceProxy());
+                                    if (rtSharedQualifier == null) {
+                                        // Create annotation literal first
+                                        ClassInfo btQualifierClass = btRemovedBean.getDeployment().getQualifier(
+                                                btQualifier.name());
+                                        LocalVar rtQualifier = b0.localVar("qualifier",
+                                                annotationLiterals.create(b0, btQualifierClass, btQualifier));
+                                        b0.withSet(rtQualifiers).add(rtQualifier);
+                                        sharedQualifers.put(btQualifier.createEquivalenceProxy(), rtQualifier);
+                                    } else {
+                                        b0.withSet(rtQualifiers).add(rtSharedQualifier);
+                                    }
+                                }
+                            }
+                        }
+
+                        InjectableBean.Kind kind;
+                        String description = null;
+                        if (btRemovedBean.isClassBean()) {
+                            // This is the default
+                            kind = null;
+                        } else if (btRemovedBean.isProducerField()) {
+                            kind = InjectableBean.Kind.PRODUCER_FIELD;
+                            description = btRemovedBean.getTarget().get().asField().declaringClass().name() + "#"
+                                    + btRemovedBean.getTarget().get().asField().name();
+                        } else if (btRemovedBean.isProducerMethod()) {
+                            kind = InjectableBean.Kind.PRODUCER_METHOD;
+                            description = btRemovedBean.getTarget().get().asMethod().declaringClass().name() + "#"
+                                    + btRemovedBean.getTarget().get().asMethod().name() + "()";
+                        } else {
+                            // unused interceptors/decorators are removed, but they are not treated
+                            // as unused beans and do not appear here
+                            kind = InjectableBean.Kind.SYNTHETIC;
+                        }
+
+                        Expr rtKind = kind != null
+                                ? Expr.staticField(FieldDesc.of(InjectableBean.Kind.class, kind.name()))
+                                : Const.ofNull(InjectableBean.Kind.class);
+                        Expr rtRemovedBean = b0.new_(MethodDescs.REMOVED_BEAN_IMPL, rtKind,
+                                description != null ? Const.of(description) : Const.ofNull(String.class),
+                                rtTypes, rtQualifiers);
+                        b0.withList(rtRemovedBeans).add(rtRemovedBean);
+                    }
+                    b0.return_();
+                });
+            });
+        }
+    }
+
+    record BeanGroup(int id, List<BeanInfo> beans) {
+    }
+
+    record ObserverGroup(int id, List<ObserverInfo> observers) {
+    }
+
+    record RemovedBeanGroup(int id, List<BeanInfo> removedBeans) {
+    }
+
+    record CodeGenInfo(List<BeanGroup> beanGroups, List<ObserverGroup> observerGroups,
+            List<RemovedBeanGroup> removedBeans) {
+    }
+
+    private CodeGenInfo preprocess(BeanDeployment deployment) {
+        List<BeanInfo> beans = preprocessBeans(deployment);
+        List<BeanGroup> beanGroups = Grouping.of(beans, 30, BeanGroup::new);
+        List<ObserverInfo> observers = orderedObservers(deployment.getObservers());
+        List<ObserverGroup> observerGroups = Grouping.of(observers, 30, ObserverGroup::new);
+        List<BeanInfo> removedBeans = orderedBeans(deployment.getRemovedBeans());
+        List<RemovedBeanGroup> removedBeanGroups = Grouping.of(removedBeans, 5, RemovedBeanGroup::new);
+        return new CodeGenInfo(beanGroups, observerGroups, removedBeanGroups);
+    }
+
+    private List<BeanInfo> preprocessBeans(BeanDeployment deployment) {
+        Map<BeanInfo, List<BeanInfo>> dependencyMap = initBeanDependencyMap(deployment);
 
         // - iterate over dependencyMap entries and process beans for which all dependencies were already processed
         // - when a bean is processed the map entry is removed
@@ -246,6 +541,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
         };
 
+        List<BeanInfo> result = new ArrayList<>();
+        Set<BeanInfo> processed = new HashSet<>();
+
         boolean stuck = false;
         while (!dependencyMap.isEmpty()) {
             if (stuck) {
@@ -253,70 +551,35 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
             stuck = true;
             // First try to process beans that are not dependencies
-            stuck = addBeans(beanAdder, dependencyMap, processed, isNotDependencyPredicate);
+            stuck = addBeans(result, dependencyMap, processed, isNotDependencyPredicate);
             if (stuck) {
                 // It seems we're stuck but we can try to process normal scoped beans that can prevent a circular dependency
-                stuck = addBeans(beanAdder, dependencyMap, processed, isNotProducerOrNormalScopedOrNotDependencyPredicate);
+                stuck = addBeans(result, dependencyMap, processed, isNotProducerOrNormalScopedOrNotDependencyPredicate);
                 if (stuck) {
-                    stuck = addBeans(beanAdder, dependencyMap, processed, isNormalScopedOrNotDependencyPredicate);
+                    stuck = addBeans(result, dependencyMap, processed, isNormalScopedOrNotDependencyPredicate);
                 }
             }
         }
+
         // Finally process beans and interceptors that are not dependencies
-        for (BeanInfo bean : beanDeployment.getBeans()) {
+        // We need to iterate in a deterministic order for build time reproducibility
+        for (BeanInfo bean : orderedBeans(deployment.getBeans())) {
             if (!processed.contains(bean)) {
-                beanAdder.addComponent(bean);
+                result.add(bean);
             }
         }
-        for (BeanInfo interceptor : beanDeployment.getInterceptors()) {
+        for (BeanInfo interceptor : orderedInterceptors(deployment.getInterceptors())) {
             if (!processed.contains(interceptor)) {
-                beanAdder.addComponent(interceptor);
+                result.add(interceptor);
             }
         }
-        for (BeanInfo decorator : beanDeployment.getDecorators()) {
+        for (BeanInfo decorator : orderedDecorators(deployment.getDecorators())) {
             if (!processed.contains(decorator)) {
-                beanAdder.addComponent(decorator);
+                result.add(decorator);
             }
         }
 
-        // Make sure the last addBeans() method is closed properly
-        beanAdder.close();
-    }
-
-    private IllegalStateException circularDependenciesNotSupportedException(Map<BeanInfo, List<BeanInfo>> beanToInjections) {
-        StringBuilder msg = new StringBuilder("Circular dependencies not supported: \n");
-        for (Map.Entry<BeanInfo, List<BeanInfo>> e : beanToInjections.entrySet()) {
-            msg.append("\t ");
-            msg.append(e.getKey());
-            msg.append(" injected into: ");
-            msg.append(e.getValue()
-                    .stream()
-                    .map(BeanInfo::getBeanClass).map(Object::toString)
-                    .collect(Collectors.joining(", ")));
-            msg.append("\n");
-        }
-        return new IllegalStateException(msg.toString());
-    }
-
-    private void processObservers(ClassCreator componentsProvider, MethodCreator getComponents, BeanDeployment beanDeployment,
-            ResultHandle beanIdToBeanHandle, ResultHandle observersHandle, Map<ObserverInfo, String> observerToGeneratedName) {
-        try (ObserverAdder observerAdder = new ObserverAdder(componentsProvider, getComponents, observerToGeneratedName,
-                beanIdToBeanHandle, observersHandle)) {
-            for (ObserverInfo observer : beanDeployment.getObservers()) {
-                observerAdder.addComponent(observer);
-            }
-        }
-    }
-
-    private void processRemovedBeans(ClassCreator componentsProvider, BytecodeCreator targetMethod,
-            ResultHandle removedBeansHandle, ResultHandle typeCacheHandle, BeanDeployment beanDeployment,
-            ClassOutput classOutput) {
-        try (RemovedBeanAdder removedBeanAdder = new RemovedBeanAdder(componentsProvider, targetMethod, removedBeansHandle,
-                typeCacheHandle, classOutput)) {
-            for (BeanInfo remnovedBean : beanDeployment.getRemovedBeans()) {
-                removedBeanAdder.addComponent(remnovedBean);
-            }
-        }
+        return result;
     }
 
     /**
@@ -354,14 +617,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
      * the key is a dependency and the value is a list of its dependants.
      */
     private Map<BeanInfo, List<BeanInfo>> initBeanDependencyMap(BeanDeployment beanDeployment) {
-        Function<BeanInfo, List<BeanInfo>> newArrayList = new Function<BeanInfo, List<BeanInfo>>() {
-            @Override
-            public List<BeanInfo> apply(BeanInfo b) {
-                return new ArrayList<>();
-            }
-        };
+        Function<BeanInfo, List<BeanInfo>> newArrayList = ignored -> new ArrayList<>();
 
-        Map<BeanInfo, List<BeanInfo>> beanToInjections = new HashMap<>();
+        // We need to iterate in a deterministic order for build time reproducibility
+        Map<BeanInfo, List<BeanInfo>> beanToInjections = new TreeMap<>(Reproducibility.BEAN_COMPARATOR);
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (bean.isProducer() && !bean.isStaticProducer()) {
                 // `static` producer doesn't depend on its declaring bean
@@ -413,14 +672,29 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         return beanToInjections;
     }
 
-    private boolean addBeans(BeanAdder beanAdder, Map<BeanInfo, List<BeanInfo>> beanToInjections,
+    private IllegalStateException circularDependenciesNotSupportedException(Map<BeanInfo, List<BeanInfo>> beanToInjections) {
+        StringBuilder msg = new StringBuilder("Circular dependencies not supported: \n");
+        for (Map.Entry<BeanInfo, List<BeanInfo>> e : beanToInjections.entrySet()) {
+            msg.append("\t ");
+            msg.append(e.getKey());
+            msg.append(" injected into: ");
+            msg.append(e.getValue()
+                    .stream()
+                    .map(BeanInfo::getBeanClass).map(Object::toString)
+                    .collect(Collectors.joining(", ")));
+            msg.append("\n");
+        }
+        return new IllegalStateException(msg.toString());
+    }
+
+    private boolean addBeans(List<BeanInfo> list, Map<BeanInfo, List<BeanInfo>> dependencyMap,
             Set<BeanInfo> processed, Predicate<BeanInfo> filter) {
         boolean stuck = true;
-        for (Iterator<BeanInfo> iterator = beanToInjections.keySet().iterator(); iterator.hasNext();) {
+        for (Iterator<BeanInfo> iterator = dependencyMap.keySet().iterator(); iterator.hasNext();) {
             BeanInfo bean = iterator.next();
             if (filter.test(bean)) {
                 iterator.remove();
-                beanAdder.addComponent(bean);
+                list.add(bean);
                 processed.add(bean);
                 stuck = false;
             }
@@ -436,429 +710,4 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
         return false;
     }
-
-    static class ObserverAdder extends ComponentAdder<ObserverInfo> {
-
-        private final Map<ObserverInfo, String> observerToGeneratedName;
-        private final ResultHandle beanIdToBeanHandle;
-        private final ResultHandle observersHandle;
-
-        ObserverAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod,
-                Map<ObserverInfo, String> observerToGeneratedName, ResultHandle beanIdToBeanHandle,
-                ResultHandle observersHandle) {
-            super(getComponentsMethod, componentsProvider);
-            this.observerToGeneratedName = observerToGeneratedName;
-            this.beanIdToBeanHandle = beanIdToBeanHandle;
-            this.observersHandle = observersHandle;
-        }
-
-        @Override
-        MethodCreator newAddMethod() {
-            return componentsProvider
-                    .getMethodCreator(ADD_OBSERVERS + group++, void.class, Map.class, List.class)
-                    .setModifiers(ACC_PRIVATE);
-        }
-
-        @Override
-        void invokeAddMethod() {
-            targetMethod.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(componentsProvider.getClassName(),
-                            addMethod.getMethodDescriptor().getName(), void.class, Map.class, List.class),
-                    targetMethod.getThis(), beanIdToBeanHandle, observersHandle);
-        }
-
-        @Override
-        void addComponentInternal(ObserverInfo observer) {
-            ResultHandle beanIdToBeanHandle = addMethod.getMethodParam(0);
-            ResultHandle observersHandle = addMethod.getMethodParam(1);
-
-            String observerType = observerToGeneratedName.get(observer);
-            List<ResultHandle> params = new ArrayList<>();
-            List<String> paramTypes = new ArrayList<>();
-
-            if (!observer.isSynthetic()) {
-                List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
-                        .filter(ip -> !BuiltinBean.resolvesTo(ip))
-                        .collect(toList());
-                // First param - declaring bean
-                params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        beanIdToBeanHandle, addMethod.load(observer.getDeclaringBean().getIdentifier())));
-                paramTypes.add(Type.getDescriptor(Supplier.class));
-                for (InjectionPointInfo injectionPoint : injectionPoints) {
-                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
-                    paramTypes.add(Type.getDescriptor(Supplier.class));
-                }
-            }
-            ResultHandle observerInstance = addMethod.newInstance(
-                    MethodDescriptor.ofConstructor(observerType, paramTypes.toArray(new String[0])),
-                    params.toArray(new ResultHandle[0]));
-            addMethod.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, observersHandle, observerInstance);
-        }
-
-    }
-
-    class RemovedBeanAdder extends ComponentAdder<BeanInfo> {
-
-        private final ResultHandle removedBeansHandle;
-        private final ResultHandle typeCacheHandle;
-        private ResultHandle tccl;
-        // Shared annotation literals for an individual addRemovedBeansX() method
-        private final Map<AnnotationInstanceKey, ResultHandle> sharedQualifers;
-
-        private final MapTypeCache typeCache;
-
-        public RemovedBeanAdder(ClassCreator componentsProvider, BytecodeCreator targetMethod,
-                ResultHandle removedBeansHandle, ResultHandle typeCacheHandle, ClassOutput classOutput) {
-            super(targetMethod, componentsProvider);
-            this.removedBeansHandle = removedBeansHandle;
-            this.typeCacheHandle = typeCacheHandle;
-            this.sharedQualifers = new HashMap<>();
-            this.typeCache = new MapTypeCache();
-        }
-
-        @Override
-        protected int groupLimit() {
-            return 5;
-        }
-
-        @Override
-        MethodCreator newAddMethod() {
-            // Clear the shared maps for each addRemovedBeansX() method
-            sharedQualifers.clear();
-
-            // static void addRemovedBeans1(List removedBeans, List typeCache)
-            MethodCreator addMethod = componentsProvider
-                    .getMethodCreator(ADD_REMOVED_BEANS + group++, void.class, List.class, Map.class)
-                    .setModifiers(ACC_STATIC);
-            // Get the TCCL - we will use it later
-            ResultHandle currentThread = addMethod
-                    .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
-            tccl = addMethod.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
-
-            typeCache.initialize(addMethod);
-
-            return addMethod;
-        }
-
-        @Override
-        void invokeAddMethod() {
-            // Static methods are invoked from within the generated supplier
-            targetMethod.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(componentsProvider.getClassName(),
-                            addMethod.getMethodDescriptor().getName(), void.class, List.class, Map.class),
-                    removedBeansHandle, typeCacheHandle);
-        }
-
-        @Override
-        void addComponentInternal(BeanInfo removedBean) {
-
-            ResultHandle removedBeansHandle = addMethod.getMethodParam(0);
-
-            // Bean types
-            ResultHandle typesHandle = addMethod.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (org.jboss.jandex.Type type : removedBean.getTypes()) {
-                if (DotNames.OBJECT.equals(type.name())) {
-                    // Skip java.lang.Object
-                    continue;
-                }
-
-                TryBlock tryBlock = addMethod.tryBlock();
-                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                catchBlock.invokeStaticInterfaceMethod(
-                        MethodDescriptors.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
-                        catchBlock.load(type.toString()), catchBlock.getCaughtException());
-                AssignableResultHandle typeHandle = tryBlock.createVariable(Object.class);
-                try {
-                    Types.getTypeHandle(typeHandle, tryBlock, type, tccl, typeCache);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalStateException(
-                            "Unable to construct the type handle for " + removedBean + ": " + e.getMessage());
-                }
-                tryBlock.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle, typeHandle);
-            }
-
-            // Qualifiers
-            ResultHandle qualifiersHandle;
-            if (removedBean.hasDefaultQualifiers() || removedBean.getQualifiers().isEmpty()) {
-                // No or default qualifiers (@Any, @Default)
-                qualifiersHandle = addMethod.loadNull();
-            } else {
-                qualifiersHandle = addMethod.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-
-                for (AnnotationInstance qualifierAnnotation : removedBean.getQualifiers()) {
-                    if (DotNames.ANY.equals(qualifierAnnotation.name())) {
-                        // Skip @Any
-                        continue;
-                    }
-                    BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-                    if (qualifier != null) {
-                        // Use the literal instance for built-in qualifiers
-                        addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
-                                qualifier.getLiteralInstance(addMethod));
-                    } else {
-                        ResultHandle sharedQualifier = sharedQualifers.get(new AnnotationInstanceKey(qualifierAnnotation));
-                        if (sharedQualifier == null) {
-                            // Create annotation literal first
-                            ClassInfo qualifierClass = removedBean.getDeployment().getQualifier(qualifierAnnotation.name());
-                            ResultHandle qualifierHandle = annotationLiterals.create(addMethod, qualifierClass,
-                                    qualifierAnnotation);
-                            addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
-                                    qualifierHandle);
-                            sharedQualifers.put(new AnnotationInstanceKey(qualifierAnnotation), qualifierHandle);
-                        } else {
-                            addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
-                                    sharedQualifier);
-                        }
-                    }
-                }
-            }
-
-            InjectableBean.Kind kind;
-            String description = null;
-            if (removedBean.isClassBean()) {
-                // This is the default
-                kind = null;
-            } else if (removedBean.isProducerField()) {
-                kind = InjectableBean.Kind.PRODUCER_FIELD;
-                description = removedBean.getTarget().get().asField().declaringClass().name() + "#"
-                        + removedBean.getTarget().get().asField().name();
-            } else if (removedBean.isProducerMethod()) {
-                kind = InjectableBean.Kind.PRODUCER_METHOD;
-                description = removedBean.getTarget().get().asMethod().declaringClass().name() + "#"
-                        + removedBean.getTarget().get().asMethod().name() + "()";
-            } else {
-                // Interceptors are never removed
-                kind = InjectableBean.Kind.SYNTHETIC;
-            }
-
-            ResultHandle kindHandle = kind != null ? addMethod.readStaticField(
-                    FieldDescriptor.of(InjectableBean.Kind.class, kind.toString(), InjectableBean.Kind.class))
-                    : addMethod.loadNull();
-            ResultHandle removedBeanHandle = addMethod.newInstance(MethodDescriptors.REMOVED_BEAN_IMPL,
-                    kindHandle, description != null ? addMethod.load(description) : addMethod.loadNull(),
-                    typesHandle,
-                    qualifiersHandle);
-            addMethod.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, removedBeansHandle, removedBeanHandle);
-        }
-
-    }
-
-    static class MapTypeCache implements Types.TypeCache {
-
-        private ResultHandle mapHandle;
-
-        @Override
-        public void initialize(MethodCreator method) {
-            this.mapHandle = method.getMethodParam(1);
-        }
-
-        @Override
-        public ResultHandle get(org.jboss.jandex.Type type, BytecodeCreator bytecode) {
-            return bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_GET, mapHandle, bytecode.load(type.toString()));
-        }
-
-        @Override
-        public void put(org.jboss.jandex.Type type, ResultHandle value, BytecodeCreator bytecode) {
-            bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, mapHandle, bytecode.load(type.toString()), value);
-        }
-
-    }
-
-    static class BeanAdder extends ComponentAdder<BeanInfo> {
-
-        private final Set<BeanInfo> processedBeans;
-        private final ResultHandle beanIdToBeanHandle;
-        private final Map<BeanInfo, String> beanToGeneratedName;
-
-        public BeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod, Set<BeanInfo> processed,
-                ResultHandle beanIdToBeanHandle, Map<BeanInfo, String> beanToGeneratedName) {
-            super(getComponentsMethod, componentsProvider);
-            this.processedBeans = processed;
-            this.beanIdToBeanHandle = beanIdToBeanHandle;
-            this.beanToGeneratedName = beanToGeneratedName;
-        }
-
-        @Override
-        MethodCreator newAddMethod() {
-            return componentsProvider.getMethodCreator(ADD_BEANS + group++, void.class, Map.class)
-                    .setModifiers(ACC_PRIVATE);
-        }
-
-        @Override
-        void invokeAddMethod() {
-            targetMethod.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(componentsProvider.getClassName(),
-                            addMethod.getMethodDescriptor().getName(), void.class, Map.class),
-                    targetMethod.getThis(), beanIdToBeanHandle);
-        }
-
-        @Override
-        void addComponentInternal(BeanInfo bean) {
-            ResultHandle beanIdToBeanHandle = addMethod.getMethodParam(0);
-            String beanType = beanToGeneratedName.get(bean);
-            if (beanType == null) {
-                throw new IllegalStateException("No bean type found for: " + bean);
-            }
-
-            List<InjectionPointInfo> injectionPoints = bean.getInjections().stream().flatMap(i -> i.injectionPoints.stream())
-                    .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip)).collect(toList());
-            List<ResultHandle> params = new ArrayList<>();
-            List<String> paramTypes = new ArrayList<>();
-
-            if (bean.isProducer()) {
-                if (processedBeans.contains(bean.getDeclaringBean())) {
-                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addMethod.load(bean.getDeclaringBean().getIdentifier())));
-                } else {
-                    // Declaring bean was not processed yet - use MapValueSupplier
-                    params.add(addMethod.newInstance(
-                            MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addMethod.load(bean.getDeclaringBean().getIdentifier())));
-                }
-                paramTypes.add(Type.getDescriptor(Supplier.class));
-            }
-            for (InjectionPointInfo injectionPoint : injectionPoints) {
-                if (processedBeans.contains(injectionPoint.getResolvedBean())) {
-                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
-                } else {
-                    // Dependency was not processed yet - use MapValueSupplier
-                    params.add(addMethod.newInstance(
-                            MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
-                }
-                paramTypes.add(Type.getDescriptor(Supplier.class));
-            }
-            if (bean.getDisposer() != null) {
-                for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                    if (BuiltinBean.resolvesTo(injectionPoint)) {
-                        continue;
-                    }
-                    params.add(addMethod.newInstance(
-                            MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
-                    paramTypes.add(Type.getDescriptor(Supplier.class));
-                }
-            }
-            for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-                if (processedBeans.contains(interceptor)) {
-                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addMethod.load(interceptor.getIdentifier())));
-                } else {
-                    // Bound interceptor was not processed yet - use MapValueSupplier
-                    params.add(addMethod.newInstance(
-                            MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addMethod.load(interceptor.getIdentifier())));
-                }
-                paramTypes.add(Type.getDescriptor(Supplier.class));
-            }
-            for (DecoratorInfo decorator : bean.getBoundDecorators()) {
-                if (processedBeans.contains(decorator)) {
-                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                            beanIdToBeanHandle, addMethod.load(decorator.getIdentifier())));
-                } else {
-                    // Bound decorator was not processed yet - use MapValueSupplier
-                    params.add(addMethod.newInstance(
-                            MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
-                            beanIdToBeanHandle, addMethod.load(decorator.getIdentifier())));
-                }
-                paramTypes.add(Type.getDescriptor(Supplier.class));
-            }
-
-            // Foo_Bean bean = new Foo_Bean(bean3)
-            ResultHandle beanInstance = addMethod.newInstance(
-                    MethodDescriptor.ofConstructor(beanType, paramTypes.toArray(new String[0])),
-                    params.toArray(new ResultHandle[0]));
-            // beans.put(id, bean)
-            final ResultHandle beanIdHandle = addMethod.load(bean.getIdentifier());
-            addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, beanIdToBeanHandle, beanIdHandle,
-                    beanInstance);
-        }
-
-    }
-
-    static abstract class ComponentAdder<T extends InjectionTargetInfo> implements AutoCloseable {
-
-        private static final int GROUP_LIMIT = 30;
-        protected int group;
-        private int componentsAdded;
-        protected MethodCreator addMethod;
-        protected final BytecodeCreator targetMethod;
-        protected final ClassCreator componentsProvider;
-
-        public ComponentAdder(BytecodeCreator getComponentsMethod, ClassCreator componentsProvider) {
-            this.group = 1;
-            this.targetMethod = getComponentsMethod;
-            this.componentsProvider = componentsProvider;
-        }
-
-        public void close() {
-            if (addMethod != null) {
-                addMethod.returnValue(null);
-            }
-        }
-
-        void addComponent(T component) {
-
-            if (addMethod == null || componentsAdded >= groupLimit()) {
-                if (addMethod != null) {
-                    addMethod.returnValue(null);
-                }
-                componentsAdded = 0;
-                // First add next addX() method
-                addMethod = newAddMethod();
-                // Invoke addX() inside the getComponents() method
-                invokeAddMethod();
-            }
-            componentsAdded++;
-
-            // Append component to the addX() method body
-            addComponentInternal(component);
-        }
-
-        abstract MethodCreator newAddMethod();
-
-        abstract void invokeAddMethod();
-
-        abstract void addComponentInternal(T component);
-
-        protected int groupLimit() {
-            return GROUP_LIMIT;
-        }
-
-    }
-
-    // This wrapper is needed because AnnotationInstance#equals() compares the annotation target
-    private static final class AnnotationInstanceKey {
-
-        private final AnnotationInstance annotationInstance;
-
-        AnnotationInstanceKey(AnnotationInstance annotationInstance) {
-            this.annotationInstance = annotationInstance;
-        }
-
-        @Override
-        public int hashCode() {
-            return annotationInstance.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            AnnotationInstanceKey other = (AnnotationInstanceKey) obj;
-            return annotationInstance.name().equals(other.annotationInstance.name())
-                    && annotationInstance.values().equals(other.annotationInstance.values());
-        }
-
-    }
-
 }

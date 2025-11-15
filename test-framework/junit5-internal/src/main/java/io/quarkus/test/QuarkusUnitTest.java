@@ -105,7 +105,6 @@ public class QuarkusUnitTest
     private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
 
-    private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private Consumer<List<LogRecord>> assertLogRecords;
 
@@ -264,8 +263,9 @@ public class QuarkusUnitTest
         return this;
     }
 
+    @Deprecated(forRemoval = true)
     public QuarkusUnitTest setLogFileName(String logFileName) {
-        this.logFileName = logFileName;
+        PropertyTestUtil.setLogFileProperty(logFileName);
         return this;
     }
 
@@ -389,23 +389,36 @@ public class QuarkusUnitTest
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        runExtensionMethod(invocationContext, extensionContext, false);
-        invocation.skip();
+        if (assertException == null) {
+            runExtensionMethod(invocationContext, extensionContext, false);
+            invocation.skip();
+        } else {
+            invocation.proceed();
+        }
     }
 
     @Override
     public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        runExtensionMethod(invocationContext, extensionContext, true);
-        invocation.skip();
+        if (assertException == null) {
+            runExtensionMethod(invocationContext, extensionContext, true);
+            invocation.skip();
+        } else {
+            invocation.proceed();
+        }
     }
 
     @Override
     public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
             ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        T result = (T) runExtensionMethod(invocationContext, extensionContext, false);
-        invocation.skip();
-        return result;
+        if (assertException == null) {
+            @SuppressWarnings("unchecked")
+            T result = (T) runExtensionMethod(invocationContext, extensionContext, false);
+            invocation.skip();
+            return result;
+        } else {
+            return invocation.proceed();
+        }
     }
 
     @Override
@@ -575,11 +588,6 @@ public class QuarkusUnitTest
         };
         timeoutTimer = new Timer("Test thread dump timer");
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
-        if (logFileName != null) {
-            PropertyTestUtil.setLogFileProperty(logFileName);
-        } else {
-            PropertyTestUtil.setLogFileProperty();
-        }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
 
         ExclusivityChecker.checkTestType(extensionContext, QuarkusUnitTest.class);
@@ -591,10 +599,10 @@ public class QuarkusUnitTest
             testResourceManager.start();
             TestResourceManager tm = testResourceManager;
             store.put(TestResourceManager.class.getName(), testResourceManager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
+            store.put(TestResourceManager.CLOSEABLE_NAME, new AutoCloseable() {
 
                 @Override
-                public void close() throws Throwable {
+                public void close() throws Exception {
                     tm.close();
                 }
             });

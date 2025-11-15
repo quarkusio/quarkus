@@ -25,7 +25,7 @@ public class SinglePersistenceUnitSchemaManagerTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
                     .addAsResource("application.properties"))
-            .overrideConfigKey("quarkus.hibernate-orm.database.generation", "none");
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "none");
     @Inject
     SchemaManager schemaManager;
 

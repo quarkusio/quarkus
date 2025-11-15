@@ -31,8 +31,7 @@ public class GenericArrayTypeImpl implements GenericArrayType {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof GenericArrayType) {
-            GenericArrayType that = (GenericArrayType) obj;
+        if (obj instanceof GenericArrayType that) {
             if (genericComponentType == null) {
                 return that.getGenericComponentType() == null;
             } else {

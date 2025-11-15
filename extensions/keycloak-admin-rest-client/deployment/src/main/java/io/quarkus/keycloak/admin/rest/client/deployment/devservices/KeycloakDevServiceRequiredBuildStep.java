@@ -2,8 +2,8 @@ package io.quarkus.keycloak.admin.rest.client.deployment.devservices;
 
 import java.util.Map;
 
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -12,7 +12,7 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.keycloak.admin.client.common.deployment.KeycloakAdminClientInjectionEnabled;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class,
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class,
         KeycloakAdminClientInjectionEnabled.class })
 public class KeycloakDevServiceRequiredBuildStep {
 

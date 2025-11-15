@@ -25,6 +25,7 @@
         <module>bom-descriptor-json</module>
         <module>maven</module>
         <module>gradle</module>
+        <module>cli-common</module>
         <module>cli</module>
         <module>config-doc-maven-plugin</module>
     </modules>

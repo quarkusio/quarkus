@@ -24,7 +24,6 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
 import io.quarkus.runtime.util.ClassPathUtils;
 
@@ -241,26 +240,46 @@ public final class PathTestHelper {
     private static Path getTestClassesDirOrNull(String testClassFileName, WorkspaceModule module) {
         ArtifactSources testSources = module.getTestSources();
         if (testSources != null) {
-            PathTree paths = testSources.getOutputTree();
-            var testClassesDir = paths.apply(testClassFileName, PathTestHelper::getRootOrNull);
-            if (testClassesDir != null) {
-                return testClassesDir;
+            final Path classLocation = getContainingRootIgnoringFiltersOrNull(testSources, testClassFileName);
+            if (classLocation != null) {
+                return classLocation;
             }
         }
         // If there were no test sources, this may be an application with multiple source sets; we need to search them all
         for (String classifier : module.getSourceClassifiers()) {
             final ArtifactSources sources = module.getSources(classifier);
             if (sources.isOutputAvailable()) {
-                PathTree paths = sources.getOutputTree();
-                var testClassesDir = paths.apply(testClassFileName, PathTestHelper::getRootOrNull);
-                if (testClassesDir != null) {
-                    return testClassesDir;
+                final Path classLocation = getContainingRootIgnoringFiltersOrNull(sources, testClassFileName);
+                if (classLocation != null) {
+                    return classLocation;
                 }
             }
         }
         // If we got to this point, fall back to the filesystem search
         // This happens for maven source set scenarios
         // TODO getSourceClassifiers() should return the source sets in the maven case, but currently does not - see BuildIT.testCustomTestSourceSets test
+        return null;
+    }
+
+    /**
+     * IMPORTANT: This method is meant to be called only for the application module's artifact sources,
+     * not dependency modules.
+     * <p/>
+     * This method will check whether a given resource path exists under the root directories of the artifact sources
+     * bypassing possible path filters.
+     * <p/>
+     * QuarkusTests are executed before the JARs are built and JAR path filters are not effective at this phase.
+     *
+     * @param artifactSources artifact sources
+     * @param testClassFileResource test class file resource name
+     * @return existing test class file or null, if the resource could not be found in the artifact sources
+     */
+    private static Path getContainingRootIgnoringFiltersOrNull(ArtifactSources artifactSources, String testClassFileResource) {
+        for (Path rootDir : artifactSources.getOutputTree().getRoots()) {
+            if (Files.exists(rootDir.resolve(testClassFileResource))) {
+                return rootDir;
+            }
+        }
         return null;
     }
 

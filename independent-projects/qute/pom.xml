@@ -38,18 +38,20 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.junit>5.12.2</version.junit>
-        <version.assertj>3.27.3</version.assertj>
-        <version.jandex>3.3.1</version.jandex>
-        <version.gizmo>1.9.0</version.gizmo>
+        <version.junit>5.13.4</version.junit>
+        <version.assertj>3.27.6</version.assertj>
+        <version.jandex>3.5.1</version.jandex>
+        <version.gizmo2>2.0.0.Beta8</version.gizmo2>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
-        <version.smallrye-common>2.12.0</version.smallrye-common>
-        <version.smallrye-mutiny>2.8.0</version.smallrye-mutiny>
+        <version.smallrye-common>2.13.9</version.smallrye-common>
+        <version.smallrye-mutiny>3.0.1</version.smallrye-mutiny>
+        <version.lsp4j>0.24.0</version.lsp4j>
     </properties>
 
     <modules>
         <module>core</module>
         <module>generator</module>
+        <module>debug</module>
     </modules>
 
     <dependencyManagement>
@@ -61,6 +63,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-bom</artifactId>
+                <version>${version.smallrye-mutiny}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
@@ -85,6 +95,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-debug</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${version.jboss-logging}</version>
@@ -95,14 +110,19 @@
                 <version>${version.jandex}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkus.gizmo</groupId>
-                <artifactId>gizmo</artifactId>
-                <version>${version.gizmo}</version>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-gizmo2</artifactId>
+                <version>${version.jandex}</version>
             </dependency>
             <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny</artifactId>
-                <version>${version.smallrye-mutiny}</version>
+                <groupId>io.quarkus.gizmo</groupId>
+                <artifactId>gizmo2</artifactId>
+                <version>${version.gizmo2}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.lsp4j</groupId>
+                <artifactId>org.eclipse.lsp4j.debug</artifactId>
+                <version>${version.lsp4j}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -167,17 +187,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

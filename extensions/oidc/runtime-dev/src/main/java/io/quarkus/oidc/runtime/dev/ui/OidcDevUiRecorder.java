@@ -22,13 +22,18 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
 public class OidcDevUiRecorder {
-
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
 
+    private final RuntimeValue<VertxHttpConfig> httpConfig;
+
+    public OidcDevUiRecorder(final RuntimeValue<VertxHttpConfig> httpConfig) {
+        this.httpConfig = httpConfig;
+    }
+
     public void createJsonRPCService(BeanContainer beanContainer,
-            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean, VertxHttpConfig httpConfig) {
+            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean) {
         OidcDevJsonRpcService jsonRpcService = beanContainer.beanInstance(OidcDevJsonRpcService.class);
-        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig);
+        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig.getValue());
     }
 
     public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(String authorizationUrl, String tokenUrl,
@@ -36,7 +41,7 @@ public class OidcDevUiRecorder {
             Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType, String oidcGrantType,
             boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms, boolean swaggerIsAvailable,
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload,
-            boolean discoverMetadata, String authServerUrl) {
+            boolean discoverMetadata, String authServerUrl, String devUiLogoutPath, String devUiReadSessionCookiePath) {
         if (discoverMetadata) {
             JsonObject metadata = discoverMetadata(authServerUrl);
             if (metadata != null) {
@@ -51,7 +56,8 @@ public class OidcDevUiRecorder {
                 new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
                         webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                         introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload));
+                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload,
+                        devUiLogoutPath, devUiReadSessionCookiePath));
     }
 
     public Handler<RoutingContext> readSessionCookieHandler() {

@@ -10,7 +10,6 @@ import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.client.impl.RestClientClosingTask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -19,12 +18,10 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.rest.client.reactive.deployment.AnnotationToRegisterIntoClientContextBuildItem;
 import io.quarkus.rest.client.reactive.jackson.ClientObjectMapper;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyReader;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
-import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.JacksonCleanupRestClientClosingTask;
 import io.quarkus.resteasy.reactive.jackson.common.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
 import io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx.VertxJsonArrayBasicMessageBodyWriter;
@@ -118,11 +115,5 @@ public class RestClientReactiveJacksonProcessor {
                                 .setBuiltin(true)
                                 .setRuntimeType(RuntimeType.CLIENT)
                                 .build());
-    }
-
-    @BuildStep
-    void nativeSupport(BuildProducer<ServiceProviderBuildItem> serviceProviderProducer) {
-        serviceProviderProducer.produce(new ServiceProviderBuildItem(RestClientClosingTask.class.getName(),
-                JacksonCleanupRestClientClosingTask.class.getName()));
     }
 }

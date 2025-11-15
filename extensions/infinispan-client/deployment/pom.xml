@@ -57,7 +57,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
         </dependency>
 
         <dependency>

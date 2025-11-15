@@ -18,6 +18,7 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
@@ -30,8 +31,13 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class SmallRyeGraphQLClientRecorder {
-
     private final Logger logger = Logger.getLogger(SmallRyeGraphQLClientRecorder.class);
+
+    private final RuntimeValue<GraphQLClientsConfig> runtimeConfig;
+
+    public SmallRyeGraphQLClientRecorder(final RuntimeValue<GraphQLClientsConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public <T> Function<SyntheticCreationalContext<T>, T> typesafeClientSupplier(Class<T> targetClassName) {
         return new Function<>() {
@@ -57,9 +63,9 @@ public class SmallRyeGraphQLClientRecorder {
         configBean.addTypesafeClientApis(classes);
     }
 
-    public void mergeClientConfigurations(GraphQLClientSupport support, GraphQLClientsConfig quarkusConfiguration) {
+    public void mergeClientConfigurations(GraphQLClientSupport support) {
         GraphQLClientsConfiguration upstreamConfigs = GraphQLClientsConfiguration.getInstance();
-        for (Map.Entry<String, GraphQLClientConfig> client : quarkusConfiguration.clients().entrySet()) {
+        for (Map.Entry<String, GraphQLClientConfig> client : runtimeConfig.getValue().clients().entrySet()) {
             // the raw config key provided in the config, this might be a short class name,
             // so translate that into the fully qualified name if applicable
             String rawConfigKey = client.getKey();
@@ -122,23 +128,17 @@ public class SmallRyeGraphQLClientRecorder {
                 .map(m -> new HashMap<String, Object>(m)).orElse(null));
         quarkusConfig.url().ifPresent(transformed::setUrl);
         transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols().orElse(new ArrayList<>()));
+
         resolveTlsConfigurationForRegistry(quarkusConfig)
-                .ifPresentOrElse(tlsConfiguration -> {
+                .ifPresent(tlsConfiguration -> {
                     transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
                     transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
                     transformed.setSslOptions(tlsConfiguration.getSSLOptions());
                     tlsConfiguration.getHostnameVerificationAlgorithm()
                             .ifPresent(transformed::setHostnameVerificationAlgorithm);
                     transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
-                }, () -> {
-                    // DEPRECATED
-                    quarkusConfig.keyStore().ifPresent(transformed::setKeyStore);
-                    quarkusConfig.keyStoreType().ifPresent(transformed::setKeyStoreType);
-                    quarkusConfig.keyStorePassword().ifPresent(transformed::setKeyStorePassword);
-                    quarkusConfig.trustStore().ifPresent(transformed::setTrustStore);
-                    quarkusConfig.trustStoreType().ifPresent(transformed::setTrustStoreType);
-                    quarkusConfig.trustStorePassword().ifPresent(transformed::setTrustStorePassword);
                 });
+
         quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
         quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
         quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
@@ -167,12 +167,24 @@ public class SmallRyeGraphQLClientRecorder {
         if (Arc.container() != null) {
             TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
             if (tlsConfigurationRegistry != null) {
-                if (tlsConfigurationRegistry.getDefault().isPresent()
-                        && (tlsConfigurationRegistry.getDefault().get().getTrustStoreOptions() != null
-                                || tlsConfigurationRegistry.getDefault().get().isTrustAll())) {
+                if (quarkusConfig.tlsConfigurationName().isPresent()) {
+                    // explicit TLS config
+                    Optional<TlsConfiguration> namedConfig = TlsConfiguration.from(tlsConfigurationRegistry,
+                            quarkusConfig.tlsConfigurationName());
+                    if (namedConfig.isEmpty()) {
+                        throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
+                                + "' was specified, but it does not exist.");
+                    }
+                    return namedConfig;
+                } else {
+                    // no explicit TLS config
                     return tlsConfigurationRegistry.getDefault();
                 }
-                return TlsConfiguration.from(tlsConfigurationRegistry, quarkusConfig.tlsConfigurationName());
+            } else {
+                if (quarkusConfig.tlsConfigurationName().isPresent()) {
+                    throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
+                            + "' was specified, but no TLS configuration registry could be found.");
+                }
             }
         }
         return Optional.empty();

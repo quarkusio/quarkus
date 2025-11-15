@@ -42,8 +42,8 @@ The following table provides an overview of the observability extensions availab
 |Extension |Logging |Metrics |Tracing |Profiling |Health Check|Events
 
 |xref:opentelemetry.adoc[quarkus-opentelemetry]
-|O
-|O
+|O, R
+|O, R
 |R
 |
 |

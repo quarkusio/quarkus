@@ -3,16 +3,18 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.inject.Inject;
 import jakarta.persistence.Cache;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
+import jakarta.persistence.spi.LoadState;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -23,6 +25,8 @@ import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.relational.SchemaManager;
 import org.jboss.logging.Logger;
 
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
@@ -33,6 +37,8 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -40,12 +46,13 @@ import io.quarkus.runtime.annotations.Recorder;
  */
 @Recorder
 public class HibernateOrmRecorder {
-
+    private final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig;
     private final PreGeneratedProxies proxyDefinitions;
     private final List<String> entities = new ArrayList<>();
 
-    @Inject
-    public HibernateOrmRecorder(PreGeneratedProxies proxyDefinitions) {
+    public HibernateOrmRecorder(final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig,
+            final PreGeneratedProxies proxyDefinitions) {
+        this.runtimeConfig = runtimeConfig;
         this.proxyDefinitions = proxyDefinitions;
     }
 
@@ -63,9 +70,9 @@ public class HibernateOrmRecorder {
         Hibernate.featureInit(enabled);
     }
 
-    public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+    public void setupPersistenceProvider(
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
-        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors);
+        PersistenceProviderSetup.registerRuntimePersistenceProvider(runtimeConfig.getValue(), integrationRuntimeDescriptors);
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
@@ -96,12 +103,56 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public Supplier<JPAConfig> jpaConfigSupplier(HibernateOrmRuntimeConfig config) {
-        return () -> new JPAConfig(config);
+    public Supplier<JPAConfig> jpaConfigSupplier() {
+        return () -> new JPAConfig(runtimeConfig.getValue());
     }
 
-    public void startAllPersistenceUnits(BeanContainer beanContainer) {
-        beanContainer.beanInstance(JPAConfig.class).startAll();
+    public void startAllPersistenceUnits(BeanContainer beanContainer, ShutdownContext shutdownContext) {
+        JPAConfig jpaConfig = beanContainer.beanInstance(JPAConfig.class);
+        // NOTE:
+        //  - We register the shutdown task before we start any PUs,
+        //    This way we'll be able to clean up even if one of the PUs fails to start while others already did.
+        //  - The step that starts the PUs returns the ServiceStartBuildItem, this in turn ensures that
+        //    the shutdown task that triggers the ShutdownEvent will be registered after this one,
+        //    and users will have access to the "ORM stuff" in their listeners.
+        shutdownContext.addShutdownTask(jpaConfig::shutdown);
+        jpaConfig.startAll();
+    }
+
+    public Supplier<ActiveResult> checkActiveSupplier(String persistenceUnitName, Optional<String> dataSourceName,
+            Set<String> entityClassNames, boolean isFromPersistenceXml) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                if (isFromPersistenceXml) {
+                    // We don't support inactive persistence units when they are defined through persistence.xml.
+                    // That's one of the many limitations.
+                    // See https://quarkus.io/guides/hibernate-orm#persistence-xml.
+                    return ActiveResult.active();
+                }
+
+                Optional<Boolean> active = runtimeConfig.getValue().persistenceUnits().get(persistenceUnitName).active();
+                if (active.isPresent() && !active.get()) {
+                    return ActiveResult.inactive(
+                            PersistenceUnitUtil.persistenceUnitInactiveReasonDeactivated(persistenceUnitName, dataSourceName));
+                }
+
+                if (entityClassNames.isEmpty() && dataSourceName.isPresent()) {
+                    // Persistence units are inactive when they have no entity and the corresponding datasource is inactive.
+                    var dataSourceBean = AgroalDataSourceUtil.dataSourceInstance(dataSourceName.get()).getHandle().getBean();
+                    var dataSourceActive = dataSourceBean.checkActive();
+                    if (!dataSourceActive.value()) {
+                        return ActiveResult.inactive(
+                                String.format(Locale.ROOT,
+                                        "Persistence unit '%s' was deactivated automatically because it doesn't include any entity type and its datasource '%s' was deactivated.",
+                                        persistenceUnitName, dataSourceName.get()),
+                                dataSourceActive);
+                    }
+                }
+
+                return ActiveResult.active();
+            }
+        };
     }
 
     public Function<SyntheticCreationalContext<SessionFactory>, SessionFactory> sessionFactorySupplier(
@@ -110,7 +161,7 @@ public class HibernateOrmRecorder {
             @Override
             public SessionFactory apply(SyntheticCreationalContext<SessionFactory> context) {
                 SessionFactory sessionFactory = context.getInjectedReference(JPAConfig.class)
-                        .getEntityManagerFactory(persistenceUnitName)
+                        .getEntityManagerFactory(persistenceUnitName, false)
                         .unwrap(SessionFactory.class);
 
                 return sessionFactory;
@@ -233,14 +284,16 @@ public class HibernateOrmRecorder {
         }
     }
 
-    public void doValidation(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, String puName) {
-        HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = hibernateOrmRuntimeConfig
+    public void doValidation(String puName) {
+        HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = runtimeConfig.getValue()
                 .persistenceUnits().get(puName);
         String schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit.database().generation().generation()
                 .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
 
-        //if hibernate is already managing the schema we don't do this
-        if (!"none".equals(schemaManagementStrategy)) {
+        boolean startsOffline = hibernateOrmRuntimeConfigPersistenceUnit.database().startOffline();
+
+        //if hibernate is already managing the schema or if we're in offline mode we don't do this
+        if (!"none".equals(schemaManagementStrategy) || startsOffline) {
             return;
         }
         new Thread(new Runnable() {
@@ -249,5 +302,30 @@ public class HibernateOrmRecorder {
                 SchemaManagementIntegrator.runPostBootValidation(puName);
             }
         }, "Hibernate post-boot validation thread for " + puName).start();
+    }
+
+    public BiPredicate<Object, String> attributeLoadedPredicate() {
+        return new IsAttributeLoadedPredicate();
+    }
+
+    private static class IsAttributeLoadedPredicate implements BiPredicate<Object, String> {
+        private final ProviderUtil providerUtil = new ProviderUtil();
+
+        @Override
+        public boolean test(Object entity, String attributeName) {
+            LoadState loadstate = providerUtil.isLoadedWithoutReference(entity, attributeName);
+            if (loadstate == LoadState.LOADED) {
+                return true;
+            } else if (loadstate == LoadState.NOT_LOADED) {
+                return false;
+            }
+            loadstate = providerUtil.isLoadedWithReference(entity, attributeName);
+            if (loadstate == LoadState.LOADED) {
+                return true;
+            } else if (loadstate == LoadState.NOT_LOADED) {
+                return false;
+            }
+            return true;
+        }
     }
 }

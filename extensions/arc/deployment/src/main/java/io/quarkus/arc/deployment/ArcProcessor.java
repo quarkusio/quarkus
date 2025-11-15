@@ -68,6 +68,7 @@ import io.quarkus.arc.runtime.LaunchModeProducer;
 import io.quarkus.arc.runtime.LoggerProducer;
 import io.quarkus.arc.runtime.appcds.JvmStartupOptimizerArchiveRecorder;
 import io.quarkus.arc.runtime.context.ArcContextProvider;
+import io.quarkus.arc.shutdown.ArcShutdownListener;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -89,11 +90,13 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
+import io.quarkus.deployment.shutdown.ShutdownBuildTimeConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -618,11 +621,12 @@ public class ArcProcessor {
     @Consume(ResourcesGeneratedPhaseBuildItem.class)
     @Record(STATIC_INIT)
     public ArcContainerBuildItem initializeContainer(ArcConfig config, ArcRecorder recorder,
-            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory)
+            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory,
+            LaunchModeBuildItem launchMode)
             throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
-                config.strictCompatibility());
+                config.strictCompatibility(), launchMode.isTest());
         return new ArcContainerBuildItem(container);
     }
 
@@ -756,6 +760,14 @@ public class ArcProcessor {
     void registerContextPropagation(ArcConfig config, BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
         if (config.contextPropagation().enabled()) {
             threadContextProvider.produce(new ThreadContextProviderBuildItem(ArcContextProvider.class));
+        }
+    }
+
+    @BuildStep
+    void registerPreShutdownListener(ShutdownBuildTimeConfig shutdownBuildTimeConfig,
+            BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer) {
+        if (shutdownBuildTimeConfig.delayEnabled()) {
+            shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(new ArcShutdownListener()));
         }
     }
 

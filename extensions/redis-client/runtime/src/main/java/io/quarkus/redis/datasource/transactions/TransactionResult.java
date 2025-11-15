@@ -14,6 +14,14 @@ public interface TransactionResult extends Iterable<Object> {
     boolean discarded();
 
     /**
+     * Checks if at least one command in the transaction ended with an error.
+     * Errors are represented as {@code Throwable}s in the list of results.
+     *
+     * @return {@code true} if at least one command in the transaction ended with an error
+     */
+    boolean hasErrors();
+
+    /**
      * Returns the number of responses.
      *
      * @return the number of responses
@@ -30,6 +38,7 @@ public interface TransactionResult extends Iterable<Object> {
     /**
      * Returns the response at the specified position in this {@link TransactionResult}.
      * It contains the result of the commands executed at the same position in the transaction.
+     * If that command ended with an error, the return value is a {@link Throwable}.
      *
      * @param index index of the element to return
      * @param <T> the expected type

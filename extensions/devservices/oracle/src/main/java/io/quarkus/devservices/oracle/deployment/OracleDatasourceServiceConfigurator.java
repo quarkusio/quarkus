@@ -36,7 +36,7 @@ public class OracleDatasourceServiceConfigurator implements DatasourceServiceCon
     }
 
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
-        return "jdbc:%s://@%s:%d/%s%s".formatted(
+        return "jdbc:%s:@%s:%d/%s%s".formatted(
                 getJdbcPrefix(),
                 containerAddress.getHost(),
                 containerAddress.getPort(),

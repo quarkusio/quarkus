@@ -29,12 +29,12 @@ public class ConfigBuilderTest {
 
     @Test
     void runTimeConfigBuilder() {
-        assertEquals("1234", config.getRawValue("additional.builder.property"));
+        assertEquals("1234", config.getConfigValue("additional.builder.property").getValue());
     }
 
     @Test
     void buildTimeConfigBuilder() {
         assertFalse(config.getConfigSource("BuildTimeConfigSource").isPresent());
-        assertEquals("1234", config.getRawValue("prop.recorded.from.btconfigsource"));
+        assertEquals("1234", config.getConfigValue("prop.recorded.from.btconfigsource").getValue());
     }
 }

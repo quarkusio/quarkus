@@ -13,7 +13,6 @@ public class RedisCommand {
     private final Request request;
 
     private RedisCommand(Command command) {
-        command = CommandMap.normalize(command);
         this.request = Request.cmd(command);
     }
 

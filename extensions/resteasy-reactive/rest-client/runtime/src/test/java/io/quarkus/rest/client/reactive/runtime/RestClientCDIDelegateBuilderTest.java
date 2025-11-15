@@ -25,6 +25,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,7 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).proxyUser("proxyUser1");
         verify(restClientBuilderMock).proxyPassword("proxyPassword1");
         verify(restClientBuilderMock).nonProxyHosts("nonProxyHosts1");
+        verify(restClientBuilderMock).proxyConnectTimeout(Duration.ofSeconds(20));
         verify(restClientBuilderMock).connectTimeout(100, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(101, MILLISECONDS);
         verify(restClientBuilderMock).userAgent("agent1");
@@ -188,6 +190,7 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).proxyUser("proxyUser2");
         verify(restClientBuilderMock).proxyPassword("proxyPassword2");
         verify(restClientBuilderMock).nonProxyHosts("nonProxyHosts2");
+        verify(restClientBuilderMock).proxyConnectTimeout(Duration.ofSeconds(30));
         verify(restClientBuilderMock).connectTimeout(200, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(201, MILLISECONDS);
         verify(restClientBuilderMock).userAgent("agent2");
@@ -215,6 +218,7 @@ class RestClientCDIDelegateBuilderTest {
         rootConfig.put("quarkus.rest-client.proxy-user", "proxyUser2");
         rootConfig.put("quarkus.rest-client.proxy-password", "proxyPassword2");
         rootConfig.put("quarkus.rest-client.non-proxy-hosts", "nonProxyHosts2");
+        rootConfig.put("quarkus.rest-client.proxy-connect-timeout", "30s");
         rootConfig.put("quarkus.rest-client.connect-timeout", "200");
         rootConfig.put("quarkus.rest-client.read-timeout", "201");
         rootConfig.put("quarkus.rest-client.user-agent", "agent2");
@@ -250,6 +254,7 @@ class RestClientCDIDelegateBuilderTest {
         clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-user", "proxyUser1");
         clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-password", "proxyPassword1");
         clientConfig.put("quarkus.rest-client." + restClientName + ".non-proxy-hosts", "nonProxyHosts1");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-connect-timeout", "20s");
         clientConfig.put("quarkus.rest-client." + restClientName + ".connect-timeout", "100");
         clientConfig.put("quarkus.rest-client." + restClientName + ".read-timeout", "101");
         clientConfig.put("quarkus.rest-client." + restClientName + ".user-agent", "agent1");

@@ -18,6 +18,8 @@ directly embedded in a hidden form input of server-side rendered HTML forms, or 
 
 The extension consists of a xref:rest.adoc[Quarkus REST (formerly RESTEasy Reactive)] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
+The CSRF prevention filter applies to requests using HTTP `POST`, `PUT`, `PATCH`, `DELETE` and other methods that can change the REST application state.
+
 == Creating the Project
 
 First, we need a new project.
@@ -323,6 +325,31 @@ quarkus.rest-csrf.verify-token=false
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-rest-csrf.adoc[leveloffset=+1, opts=optional]
+
+[[csrf-prevention-programmatic-set-up]]
+== Configuring the CSRF prevention programmatically
+
+When the `quarkus-rest-csrf` extension is used, the `io.quarkus.vertx.http.security.HttpSecurity` CDI event allows you to customize the CSRF prevention programmatically:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.CSRF;
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class CsrfProgrammaticConfig {
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.csrf(CSRF.builder()    <1>
+                .formFieldName("my-csrf-token")
+                .tokenSize(32)
+                .build());
+    }
+}
+----
+<1> Creates the CSRF prevention configuration builder provided by the `quarkus-rest-csrf` extension.
+If this extension is missing, call to the `CSRF.builder()` will fail.
 
 == References
 

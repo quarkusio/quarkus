@@ -31,11 +31,10 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
-import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsSupport;
 import io.quarkus.kafka.streams.runtime.graal.KafkaStreamsFeature;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -52,7 +51,7 @@ class KafkaStreamsProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
-            BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
+            BuildProducer<RuntimeInitializedClassBuildItem> reinitialized,
             LaunchModeBuildItem launchMode) {
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
@@ -216,8 +215,8 @@ class KafkaStreamsProcessor {
                 .produce(new JniRuntimeAccessBuildItem(true, false, false, RocksDBException.class, Status.class));
     }
 
-    private void enableLoadOfNativeLibs(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
-        reinitialized.produce(new RuntimeReinitializedClassBuildItem("org.rocksdb.RocksDB"));
+    private void enableLoadOfNativeLibs(BuildProducer<RuntimeInitializedClassBuildItem> reinitialized) {
+        reinitialized.produce(new RuntimeInitializedClassBuildItem("org.rocksdb.RocksDB"));
     }
 
     private boolean allDefaultSerdesAreDefinedInProperties(String defaultKeySerdeClass, String defaultValueSerdeClass) {
@@ -249,7 +248,7 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRocksDb(KafkaStreamsRecorder recorder, KafkaStreamsRuntimeConfig runtimeConfig) {
+    void loadRocksDb(KafkaStreamsRecorder recorder) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         recorder.loadRocksDb();

@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.transaction.TransactionScoped;
 import jakarta.transaction.UserTransaction;
 
+import org.hibernate.CallbackException;
 import org.hibernate.Interceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -128,7 +129,8 @@ public class TransactionScopedInterceptorTest {
         }
 
         @Override
-        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types) {
+        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types)
+                throws CallbackException {
             loadedIds.add(id);
             return false;
         }

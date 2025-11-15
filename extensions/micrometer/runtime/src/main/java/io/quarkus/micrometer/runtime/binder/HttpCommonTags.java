@@ -100,6 +100,8 @@ public class HttpCommonTags {
 
     private static boolean isTemplatedPath(String pathInfo, String initialPath) {
         // only include the path info if it has been matched to a template (initialPath != pathInfo) to avoid a metrics explosion with lots of entries
-        return initialPath != null && !Objects.equals(initialPath, pathInfo);
+        // /not-there/ must have the same behaviour as /not-there
+        return initialPath != null && !(Objects.equals(initialPath, pathInfo) ||
+                Objects.equals(initialPath, pathInfo + "/"));
     }
 }

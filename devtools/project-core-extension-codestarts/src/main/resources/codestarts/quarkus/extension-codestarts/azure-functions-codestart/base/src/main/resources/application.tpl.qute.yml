@@ -1,3 +1,5 @@
 quarkus:
   azure-functions:
     app-name: {project.artifact-id}-{gen-info.time}
+    runtime:
+      java-version: {java.version}

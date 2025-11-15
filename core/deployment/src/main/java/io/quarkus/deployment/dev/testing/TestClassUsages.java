@@ -85,8 +85,7 @@ public class TestClassUsages implements Serializable {
                     } else {
                         return FilterResult.excluded("Has no tests");
                     }
-                } else if (source instanceof MethodSource) {
-                    MethodSource ms = (MethodSource) source;
+                } else if (source instanceof MethodSource ms) {
                     ClassAndMethod cm = new ClassAndMethod(ms.getClassName(), testDescriptor.getUniqueId());
                     if (!classNames.containsKey(cm)) {
                         return FilterResult.included("No test information");

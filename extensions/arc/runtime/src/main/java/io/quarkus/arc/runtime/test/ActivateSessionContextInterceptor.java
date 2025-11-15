@@ -15,7 +15,7 @@ public class ActivateSessionContextInterceptor {
 
     @AroundInvoke
     public Object aroundInvoke(InvocationContext ctx) throws Exception {
-        ManagedContext sessionContext = Arc.container().sessionContext();
+        ManagedContext sessionContext = Arc.requireContainer().sessionContext();
         if (sessionContext.isActive()) {
             return ctx.proceed();
         }

@@ -13,10 +13,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.quarkus.qute.trace.ResolveEvent;
+
 public final class Results {
 
     public static final CompletedStage<Object> FALSE = CompletedStage.of(false);
     public static final CompletedStage<Object> TRUE = CompletedStage.of(true);
+    @SuppressWarnings("unchecked")
     public static final CompletedStage<Object> NULL = CompletedStage.NULL;
 
     private Results() {
@@ -43,18 +46,19 @@ public final class Results {
         return CompletedStage.of(NotFound.EMPTY);
     }
 
-    static CompletionStage<ResultNode> resolveAndProcess(List<TemplateNode> nodes, ResolutionContext context) {
+    static CompletionStage<ResultNode> resolveAndProcess(List<TemplateNode> nodes, ResolutionContext context,
+            EngineImpl engine) {
         int nodesCount = nodes.size();
         if (nodesCount == 1) {
             // Single node in the block
-            return resolveWith(nodes.get(0), context);
+            return resolveWith(nodes.get(0), context, engine);
         }
         @SuppressWarnings("unchecked")
         Supplier<ResultNode>[] allResults = new Supplier[nodesCount];
         List<CompletableFuture<ResultNode>> asyncResults = null;
         int idx = 0;
         for (TemplateNode templateNode : nodes) {
-            final CompletionStage<ResultNode> result = resolveWith(templateNode, context);
+            final CompletionStage<ResultNode> result = resolveWith(templateNode, context, engine);
             if (result instanceof CompletedStage) {
                 // No async computation needed
                 allResults[idx++] = (CompletedStage<ResultNode>) result;
@@ -99,7 +103,29 @@ public final class Results {
      * This method is trying to speed-up the resolve method which could become a virtual dispatch, harming
      * the performance of trivial implementations like TextNode::resolve, which is as simple as a field access.
      */
-    private static CompletionStage<ResultNode> resolveWith(TemplateNode templateNode, ResolutionContext context) {
+    private static CompletionStage<ResultNode> resolveWith(TemplateNode templateNode, ResolutionContext context,
+            EngineImpl engine) {
+        TraceManagerImpl traceManager = engine.traceManager;
+        if (traceManager == null) {
+            return doResolveWith(templateNode, context);
+        }
+
+        // Notify trace listeners before resolving the template node.
+        final ResolveEvent event = new ResolveEvent(templateNode, context, engine);
+        traceManager.fireBeforeResolveEvent(event);
+
+        return doResolveWith(templateNode, context).whenComplete((result, error) -> {
+            // Notify trace listeners after resolving the template node.
+            event.resolve(result, error);
+            traceManager.fireAfterResolveEvent(event);
+        });
+    }
+
+    /**
+     * This method is trying to speed-up the resolve method which could become a virtual dispatch, harming
+     * the performance of trivial implementations like TextNode::resolve, which is as simple as a field access.
+     */
+    private static CompletionStage<ResultNode> doResolveWith(TemplateNode templateNode, ResolutionContext context) {
         if (templateNode instanceof TextNode textNode) {
             return textNode.resolve(context);
         }

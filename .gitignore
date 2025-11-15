@@ -39,3 +39,6 @@ nb-configuration.xml
 .mvn/.develocity
 .mvn/.gradle-enterprise/
 .quarkus
+
+.goosehints
+.goose

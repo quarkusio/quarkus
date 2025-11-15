@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -18,15 +19,17 @@ import jakarta.inject.Inject;
 
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.OutputProvider;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
+import io.quarkus.cli.common.VersionHelper;
+import io.quarkus.cli.common.registry.RegistryClientMixin;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginListItem;
 import io.quarkus.cli.plugin.PluginListTable;
 import io.quarkus.cli.plugin.PluginManager;
 import io.quarkus.cli.plugin.PluginManagerSettings;
-import io.quarkus.cli.registry.RegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -61,10 +64,12 @@ import picocli.CommandLine.UnmatchedArgumentException;
         Version.class,
         CliPlugins.class,
         Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
-public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
+public class QuarkusCli implements QuarkusApplication, OutputProvider, Callable<Integer> {
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
     }
+
+    private static final Set<String> CATCH_ALL_COMMANDS = Set.of("create", "image", "extension", "ext", "plugin", "plug");
 
     @Inject
     CommandLine.IFactory factory;
@@ -125,7 +130,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             pluginCommandFactory.populateCommands(cmd, plugins);
             missingCommand.filter(m -> !plugins.containsKey(m)).ifPresent(m -> {
                 try {
-                    output.info("Command %s is not available, looking for available plugins ...", m);
+                    output.info("Unable to match command `%s`, looking for available plugins...", m);
                     Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                     if (installable.containsKey(m)) {
                         Plugin candidate = installable.get(m);
@@ -140,10 +145,10 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                             pluginCommandFactory.populateCommands(cmd, plugins);
                         }
                     } else {
-                        output.error("Command %s is missing and can't be installed.", m);
+                        output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
                     }
                 } catch (Exception e) {
-                    output.error("Command %s is missing and can't be installed.", m);
+                    output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
                 }
             });
         } catch (MutuallyExclusiveArgsException e) {
@@ -166,6 +171,12 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
         try {
             ParseResult currentParseResult = root.parseArgs(args);
+
+            // some commands are catch all and they will match always
+            if (CATCH_ALL_COMMANDS.contains(currentParseResult.commandSpec().name())) {
+                return Optional.empty();
+            }
+
             StringBuilder missingCommand = new StringBuilder();
 
             do {
@@ -188,6 +199,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
             return Optional.empty();
         } catch (UnmatchedArgumentException e) {
+            // the first element was matched so it's not missing
+            if (e.getCommandLine() != root) {
+                return Optional.empty();
+            }
+
             return Optional.of(args[0]);
         } catch (Exception e) {
             // For any other exceptions (e.g. MissingParameterException), we should just ignore.
@@ -207,7 +223,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        output.info("%n@|bold Quarkus CLI|@ version %s", Version.clientVersion());
+        output.info("%n@|bold Quarkus CLI|@ version %s", VersionHelper.clientVersion());
         output.info("");
         output.info("Create Quarkus projects with Maven, Gradle, or JBang.");
         output.info("Manage extensions and source registries.");

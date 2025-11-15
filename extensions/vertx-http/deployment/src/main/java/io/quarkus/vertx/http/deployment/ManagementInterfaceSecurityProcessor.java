@@ -17,7 +17,6 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.IsApplicationBasicAuthRequired;
-import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
@@ -85,9 +84,9 @@ public class ManagementInterfaceSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void initializeAuthMechanismHandler(Optional<ManagementAuthenticationHandlerBuildItem> managementAuthenticationHandler,
-            ManagementSecurityRecorder recorder, ManagementConfig managementConfig, BeanContainerBuildItem containerBuildItem) {
+            ManagementSecurityRecorder recorder, BeanContainerBuildItem containerBuildItem) {
         if (managementAuthenticationHandler.isPresent()) {
-            recorder.initializeAuthenticationHandler(managementAuthenticationHandler.get().handler, managementConfig,
+            recorder.initializeAuthenticationHandler(managementAuthenticationHandler.get().handler,
                     containerBuildItem.getValue());
         }
     }

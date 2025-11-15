@@ -3,8 +3,8 @@ package io.quarkus.redis.datasource.search;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
 import static io.quarkus.redis.runtime.datasource.Validation.positive;
+import static io.quarkus.redis.runtime.datasource.Validation.validateTimeout;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
-import static io.smallrye.mutiny.helpers.ParameterValidation.validate;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -180,7 +180,8 @@ public class CreateArgs implements RedisCommandExtraArguments {
      * @return the current {@code CreateArgs}
      */
     public CreateArgs temporary(Duration duration) {
-        this.temporary = validate(duration, "duration");
+        validateTimeout(duration, "duration");
+        this.temporary = duration;
         return this;
     }
 

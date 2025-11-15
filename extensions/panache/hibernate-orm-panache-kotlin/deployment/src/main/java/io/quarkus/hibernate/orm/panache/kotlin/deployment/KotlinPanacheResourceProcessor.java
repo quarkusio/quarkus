@@ -141,9 +141,15 @@ public final class KotlinPanacheResourceProcessor {
             }
         }
 
-        Map<String, Set<String>> collectedEntityToPersistenceUnits = new HashMap<>();
+        Map<String, Set<String>> collectedEntityToPersistenceUnits;
+        boolean incomplete;
         if (jpaModelPersistenceUnitMapping.isPresent()) {
             collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get().getEntityToPersistenceUnits();
+            incomplete = jpaModelPersistenceUnitMapping.get().isIncomplete();
+        } else {
+            collectedEntityToPersistenceUnits = new HashMap<>();
+            // This happens if there is no persistence unit, in which case we definitely know this metadata is complete.
+            incomplete = false;
         }
 
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
@@ -159,7 +165,7 @@ public final class KotlinPanacheResourceProcessor {
 
             panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
         }
-        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
+        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit, incomplete);
     }
 
     private void processRepositories(CombinedIndexBuildItem index,
@@ -211,7 +217,12 @@ public final class KotlinPanacheResourceProcessor {
     AdditionalJpaModelBuildItem produceModel() {
         // only useful for the index resolution: hibernate will register it to be transformed, but BuildMojo
         // only transforms classes from the application jar, so we do our own transforming
-        return new AdditionalJpaModelBuildItem("io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity");
+        return new AdditionalJpaModelBuildItem("io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity",
+                // Only added to persistence units actually using this class, using Jandex-based discovery,
+                // so we pass empty sets of PUs.
+                // The build items tell the Hibernate extension to process the classes at build time:
+                // add to Jandex index, bytecode enhancement, proxy generation, ...
+                Set.of());
     }
 
     @BuildStep

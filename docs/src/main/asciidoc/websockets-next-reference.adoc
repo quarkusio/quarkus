@@ -1070,6 +1070,101 @@ When you plan to use bearer access tokens during the opening WebSocket handshake
 * Use a custom WebSocket ticket system which supplies a random token with the HTML page which hosts the JavaScript WebSockets client which must provide this token during the initial handshake request as a query parameter.
 ====
 
+Before the bearer access token sent on the initial HTTP request expires, you can send a new bearer access token as part of a message and update current `SecurityIdentity` attached to the WebSocket server connection:
+
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketSecurity;
+import jakarta.inject.Inject;
+
+@Authenticated
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    record Metadata(String token) {}
+    record RequestDto(Metadata metadata, String message) {}
+
+    @Inject
+    SecurityIdentity securityIdentity;
+
+    @Inject
+    WebSocketSecurity webSocketSecurity;
+
+    @OnTextMessage
+    String echo(RequestDto request) {
+        if (request.metadata != null && request.metadata.token != null) {
+            webSocketSecurity.updateSecurityIdentity(request.metadata.token); <1>
+        }
+        String principalName = securityIdentity.getPrincipal().getName(); <2>
+        return request.message + " " + principalName;
+    }
+
+}
+----
+<1> Asynchronously update the `SecurityIdentity` attached to the WebSocket server connection.
+<2> The current `SecurityIdentity` instance is still available and can be used during the `SecurityIdentity` update.
+
+The xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] mechanism has builtin support for the `SecurityIdentity` update.
+If you use other authentication mechanisms, you must implement the `io.quarkus.security.identity.IdentityProvider` provider that supports the `io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest` authentication request.
+
+[IMPORTANT]
+====
+The new bearer access token must have the same `sub` claim value as the token used during the initial HTTP request.
+Please also make sure the `SecurityIdentity` is only updated when necessary and the WebSocket message with credentials do not appear in your application logs.
+Always use the `wss` protocol to enforce encrypted HTTP connection via TLS when sending credentials as part of the WebSocket message.
+====
+
+WebSocket client application have to send a new access token before previous one expires:
+
+[source,html]
+----
+<script type="module">
+    import Keycloak from 'https://cdn.jsdelivr.net/npm/keycloak-js@26.2.0/lib/keycloak.js'
+    const keycloak = new Keycloak({
+        url: 'http://localhost:39245',
+        realm: 'quarkus',
+        clientId: 'websockets-js-client'
+    });
+    function getToken() {
+        return keycloak.token
+    }
+
+    await keycloak
+        .init({onLoad: 'login-required'})
+        .then(() => console.log('User is now authenticated.'))
+        .catch(err => console.log('User is NOT authenticated.', err));
+
+    // open Web socket - reduced for brevity
+    let connectionOpened = true;
+    const subprotocols = [ "quarkus", encodeURI("quarkus-http-upgrade" + "#Authorization#Bearer " + getToken()) ]
+    const socket = new WebSocket("wss://" + location.host + "/chat/username", subprotocols);
+
+    setInterval(() => {
+        keycloak
+            .updateToken(15)
+            .then(result => {
+                if (result && connectionOpened) {
+                    console.log('Token updated, sending new token to the server')
+                    socket.send(JSON.stringify({
+                        metadata: {
+                            token: `${getToken()}`
+                        }
+                    }));
+                }
+            })
+            .catch(err => console.error(err))
+    }, 10000);
+</script>
+----
+
+Complete example is located in the `security-openid-connect-websockets-next-quickstart` link:{quickstarts-tree-url}/security-openid-connect-websockets-next-quickstart[directory].
+
 === Inspect and/or reject HTTP upgrade
 
 To inspect an HTTP upgrade, you must provide a CDI bean implementing the `io.quarkus.websockets.next.HttpUpgradeCheck` interface.
@@ -1196,21 +1291,25 @@ public class MyBean {
         WebSocketClientConnection connection = connector
             .baseUri(uri) <2>
             .pathParam("name", "Roxanne") <3>
+            .customizeOptions((connectOptions, clientOptions) -> {  <4>
+               // ...
+            })
             .connectAndAwait();
-        connection.sendTextAndAwait("Hi!"); <4>
+        connection.sendTextAndAwait("Hi!"); <5>
     }
 }
 ----
 <1> Inject the connector for `ClientEndpoint`.
 <2> If the base `URI` is not supplied we attempt to obtain the value from the config. The key consists of the client id and the `.base-uri` suffix.
 <3> Set the path param value. Throws `IllegalArgumentException` if the client endpoint path does not contain a parameter with the given name.
-<4> Use the connection to send messages, if needed.
+<4> Optionally, customize client and connection options not configurable with the connector API or Quarkus configuration.
+<5> Use the connection to send messages, if needed.
 
 NOTE: If an application attempts to inject a connector for a missing endpoint, an error is thrown.
 
 Connectors are not thread-safe and should not be used concurrently.
 Connectors should also not be reused. 
-If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+If you need to create multiple connections in a row you'll need to obtain a new connector instance programmatically using `Instance#get()`:
 
 [source, java]
 ----
@@ -1255,6 +1354,9 @@ public class MyBean {
             .onTextMessage((c, m) -> { <5>
                // ...
             })
+            .customizeOptions((connectOptions, clientOptions) -> {  <6>
+               // ...
+            })
             .connectAndAwait();
     }
 }
@@ -1264,6 +1366,7 @@ public class MyBean {
 <3> The additional path that should be appended to the base URI.
 <4> Set the execution model for callback handlers. By default, the callback may block the current thread. However in this case, the callback is executed on the event loop and may not block the current thread.
 <5> The lambda will be called for every text message sent from the server.
+<6> Optionally, customize client and connection options not configurable with the connector API or Quarkus configuration.
 
 The basic connector is closer to a low-level API and is reserved for advanced users.
 However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
@@ -1398,6 +1501,49 @@ class MyEndpoint {
 <1> `CoolService#isCool()` returns `Boolean` that is associated with the current connection.
 <2> The `TypedKey.forBoolean("isCool")` is the key used to obtain the data stored when the connection was created.
 
+===== Specify in connector
+
+In some scenarios you may wish to associate user data with a connection to be created by a <<client-connectors,connector>>. In this case, you can set values on the connector instance prior to obtaining the connection. This is particularly useful if you need to do something when the connection is opened and the necessary context cannot be otherwise inferred.
+
+.Connector
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @Inject
+    MyService service;
+
+    @Inject
+    Instance<WebSocketConnector<MyEndpoint>> connectorInstance;
+
+    public void openAndSendMessage(String internalId, String message) {
+        var externalId = service.getExternalId(internalId);
+        var connection = connectorInstance.get()
+            .pathParam("externalId", externalId)
+            .userData(TypedKey.forString("internalId"), internalId)
+            .connectAndAwait();
+        connection.sendTextAndAwait(message);
+    }
+}
+----
+
+.Endpoint
+[source,java]
+----
+@WebSocketClient(path = "/endpoint/{externalId}")
+class MyEndpoint {
+
+    @Inject
+    MyService service;
+
+    @OnOpen
+    void open(WebSocketClientConnection connection) {
+        var internalId = connection.userData().get(TypedKey.forString("internalId"));
+        service.doSomething(internalId);
+    }
+}
+----
 
 [[client-cdi-events]]
 ==== CDI events
@@ -1422,15 +1568,40 @@ class MyBean {
 
 === Configuring SSL/TLS
 
-To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]:
+To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]. This is typically done via configuration:
 
 [source, properties]
 ----
 quarkus.tls.my-ws-client.trust-store.p12.path=server-truststore.p12
 quarkus.tls.my-ws-client.trust-store.p12.password=secret
-
-quarkus.websockets-next.client.tls-configuration-name=my-ws-client # Reference the named configuration
 ----
+
+With a _named_ TLS configuration established, you can then configure the client to use it:
+
+[source, properties]
+----
+quarkus.websockets-next.client.tls-configuration-name=my-ws-client
+----
+
+Alternatively, you can supply the configuration name using the <<client-connectors,connector>>:
+
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @Inject
+    WebSocketConnector<MyEndpoint> connector;
+
+    public void connect() {
+        connector
+            .tlsConfigurationName("my-ws-client")
+            .connectAndAwait();
+    }
+}
+----
+
+A name supplied to the connector will override any statically configured name. This can be useful for establishing a default configuration which can be overridden at runtime as necessary.
 
 WARNING: When using the WebSocket client, using a _named_ configuration is required to avoid conflicts with other TLS configurations.
 The client will not use the default TLS configuration.

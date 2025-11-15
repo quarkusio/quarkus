@@ -11,8 +11,10 @@ import java.util.Date
 class BookDTO {
     var title: String? = null
         private set
+
     var author: String? = null
         private set
+
     var id: String? = null
     var transientDescription: String? = null
         private set
@@ -21,6 +23,7 @@ class BookDTO {
     private var creationDate: Date? = null
     var categories: List<String> = ArrayList()
         private set
+
     var details: BookDetail? = null
         private set
 

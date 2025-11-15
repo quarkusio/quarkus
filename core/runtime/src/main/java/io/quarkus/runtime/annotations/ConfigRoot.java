@@ -9,39 +9,37 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Indicate that the given item is a configuration root. Instances of classes with this annotation will
- * be made available to build steps or run time recorders, according to the {@linkplain #phase() phase} of the
- * value.
+ * A marker used in conjunction with {@link io.smallrye.config.ConfigMapping} by Quarkus Extensions to set the
+ * Quarkus {@link io.quarkus.runtime.annotations.ConfigPhase} of the mapping. The
+ * {@link io.smallrye.config.ConfigMapping#prefix()} must state the full path of the configuration namespace.
+ * <p>
+ * A Configuration Root is strictly bound by the configuration phase, and attempting to access a Configuration Root
+ * from outside its corresponding phase will result in an error. They dictate when its contained keys are read from
+ * the configuration, and when they are available to applications.
+ * <p>
+ * A Configuration Root works exactly as a {@link io.smallrye.config.ConfigMapping}. It can be retrieved
+ * programmatically via {@link io.smallrye.config.SmallRyeConfig#getConfigMapping(Class)} and injected via CDI.
+ * Additionally, Quarkus will automatically inject a Configuration Root in the following cases:
+ * <ul>
+ * <li>Methods annotated with <code>@BuildStep</code> and phase {@link io.quarkus.runtime.annotations.ConfigPhase#BUILD_TIME} or
+ * {@link io.quarkus.runtime.annotations.ConfigPhase#BUILD_AND_RUN_TIME_FIXED}</li>
+ * <li>Recorder constructors and phase {@link io.quarkus.runtime.annotations.ConfigPhase#BUILD_AND_RUN_TIME_FIXED}</li>
+ * <li>Recorder constructors and phase {@link io.quarkus.runtime.annotations.ConfigPhase#RUN_TIME} if wrapped in a
+ * {@link io.quarkus.runtime.RuntimeValue}</li>
+ * </ul>
+ * <p>
+ * All members of a Configuration root must be documented with a Javadoc.
+ * <p>
+ * This annotation can only be used on interfaces.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
 @Documented
 public @interface ConfigRoot {
     /**
-     * Determine the prefix key of the configuration root.
-     *
-     * @return the prefix key name
-     * @deprecated Use interface-based {@code @ConfigMapping} instead. When moving to {@code @ConfigMapping}, the prefix has to
-     *             be included in the {@code @ConfigMapping#prefix} together with the name.
-     */
-    @Deprecated(since = "3.19", forRemoval = true)
-    String prefix() default "quarkus";
-
-    /**
      * Determine the phase of this configuration root.
      *
      * @return the phase
      */
     ConfigPhase phase() default BUILD_TIME;
-
-    /**
-     * Determine the base key of the configuration root.
-     *
-     * @return the base key name
-     * @deprecated Use interface-based {@code @ConfigMapping} instead. Be careful, {@code @ConfigRoot(name = "extension")} may
-     *             be migrated to {@code @ConfigMapping(prefix = "quarkus.extension")}. If no name was defined, make sure to
-     *             define a prefix in {@code @ConfigMapping} as it's mandatory.
-     */
-    @Deprecated(since = "3.19", forRemoval = true)
-    String name() default ConfigItem.HYPHENATED_ELEMENT_NAME;
 }

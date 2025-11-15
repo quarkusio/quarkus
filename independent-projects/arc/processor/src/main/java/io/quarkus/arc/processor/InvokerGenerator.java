@@ -1,5 +1,11 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.gizmo2.Reflection2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
+
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -25,33 +31,31 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.JandexReflection;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.gizmo2.StringBuilderGen;
 import org.jboss.logging.Logger;
-import org.objectweb.asm.Opcodes;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InvokerCleanupTasks;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.StaticFieldVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class InvokerGenerator extends AbstractGenerator {
     private static final Logger LOGGER = Logger.getLogger(InvokerGenerator.class);
@@ -81,7 +85,9 @@ public class InvokerGenerator extends AbstractGenerator {
 
     Collection<Resource> generate(InvokerInfo invoker) {
         Function<String, Resource.SpecialType> specialTypeFunction = className -> {
-            if (className.equals(invoker.className) || className.equals(invoker.wrapperClassName)) {
+            if (className.equals(invoker.className)
+                    || className.equals(invoker.wrapperClassName)
+                    || className.equals(invoker.lazyClassName)) {
                 return Resource.SpecialType.INVOKER;
             }
             return null;
@@ -90,80 +96,87 @@ public class InvokerGenerator extends AbstractGenerator {
         ResourceClassOutput classOutput = new ResourceClassOutput(
                 applicationClassPredicate.test(invoker.targetBeanClass.name()), specialTypeFunction, generateSources);
 
-        createInvokerClass(classOutput, invoker);
-        createInvokerWrapperClass(classOutput, invoker);
-        createInvokerLazyClass(classOutput, invoker);
+        io.quarkus.gizmo2.Gizmo gizmo = gizmo(classOutput);
+
+        createInvokerLazyClass(gizmo, invoker);
+        createInvokerWrapperClass(gizmo, invoker);
+        createInvokerClass(gizmo, invoker);
 
         return classOutput.getResources();
     }
 
     // ---
 
-    private void createInvokerLazyClass(ClassOutput classOutput, InvokerInfo invoker) {
+    private void createInvokerLazyClass(io.quarkus.gizmo2.Gizmo gizmo, InvokerInfo invoker) {
         if (!invoker.usesLookup) {
             return;
         }
 
-        try (ClassCreator clazz = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(invoker.lazyClassName)
-                .interfaces(Invoker.class)
-                .build()) {
+        gizmo.class_(invoker.lazyClassName, cc -> {
+            cc.implements_(Invoker.class);
 
-            String invokerClass = invoker.wrapperClassName != null ? invoker.wrapperClassName : invoker.className;
+            cc.defaultConstructor();
 
-            MethodCreator invoke = clazz.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
-            ResultHandle delegateInvoker = invoke.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(invokerClass, "get", Invoker.class));
-            ResultHandle result = invoke.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Invoker.class, "invoke", Object.class, Object.class, Object[].class),
-                    delegateInvoker, invoke.getMethodParam(0), invoke.getMethodParam(1));
-            invoke.returnValue(result);
+            cc.method("invoke", mc -> {
+                mc.returning(Object.class);
+                ParamVar instance = mc.parameter("instance", Object.class);
+                ParamVar arguments = mc.parameter("arguments", Object[].class);
+                mc.body(bc -> {
+                    ClassDesc invokerClass = invoker.wrapperClassName != null
+                            ? ClassDesc.of(invoker.wrapperClassName)
+                            : ClassDesc.of(invoker.className);
 
-            LOGGER.debugf("LazyInvoker class generated: %s", clazz.getClassName());
-        }
+                    Expr delegate = bc.invokeStatic(ClassMethodDesc.of(invokerClass, "get", Invoker.class));
+                    Expr result = bc.invokeInterface(MethodDesc.of(Invoker.class, "invoke", Object.class,
+                            Object.class, Object[].class), delegate, instance, arguments);
+                    bc.return_(result);
+                });
+            });
+        });
     }
 
     // ---
 
-    private void createInvokerWrapperClass(ClassOutput classOutput, InvokerInfo invoker) {
+    private void createInvokerWrapperClass(io.quarkus.gizmo2.Gizmo gizmo, InvokerInfo invoker) {
         if (invoker.wrapperClassName == null) {
             return;
         }
 
-        try (ClassCreator clazz = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(invoker.wrapperClassName)
-                .interfaces(Invoker.class)
-                .build()) {
+        gizmo.class_(invoker.wrapperClassName, cc -> {
+            cc.implements_(Invoker.class);
 
-            FieldCreator delegate = clazz.getFieldCreator("delegate", Invoker.class)
-                    .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
+            FieldDesc delegate = cc.field("delegate", fc -> {
+                fc.private_();
+                fc.final_();
+                fc.setType(Invoker.class);
+            });
 
-            MethodCreator ctor = clazz.getMethodCreator(Methods.INIT, void.class)
-                    .setModifiers(Opcodes.ACC_PUBLIC);
-            ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Object.class, Methods.INIT, void.class), ctor.getThis());
-            ctor.writeInstanceField(delegate.getFieldDescriptor(), ctor.getThis(),
-                    ctor.invokeStaticMethod(MethodDescriptor.ofMethod(invoker.className, "get", Invoker.class)));
-            ctor.returnVoid();
+            ConstructorDesc ctor = cc.constructor(mc -> {
+                mc.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(Object.class), cc.this_());
+                    bc.set(cc.this_().field(delegate), bc.invokeStatic(
+                            ClassMethodDesc.of(ClassDesc.of(invoker.className), "get", Invoker.class)));
+                    bc.return_();
+                });
+            });
 
-            MethodCreator invoke = clazz.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
-            ResultHandle targetInstance = invoke.getMethodParam(0);
-            ResultHandle argumentsArray = invoke.getMethodParam(1);
-            ResultHandle delegateInvoker = invoke.readInstanceField(delegate.getFieldDescriptor(), invoke.getThis());
-            MethodInfo wrappingMethod = findWrapper(invoker);
-            ResultHandle result = invoker.invocationWrapper.clazz.isInterface()
-                    ? invoke.invokeStaticInterfaceMethod(wrappingMethod, targetInstance, argumentsArray, delegateInvoker)
-                    : invoke.invokeStaticMethod(wrappingMethod, targetInstance, argumentsArray, delegateInvoker);
-            if (wrappingMethod.returnType().kind() == Type.Kind.VOID) {
-                result = invoke.loadNull();
-            }
-            invoke.returnValue(result);
+            cc.method("invoke", mc -> {
+                mc.returning(Object.class);
+                ParamVar instance = mc.parameter("instance", Object.class);
+                ParamVar arguments = mc.parameter("arguments", Object[].class);
+                mc.body(bc -> {
+                    MethodInfo wrappingMethod = findWrapper(invoker);
+                    Expr result = bc.invokeStatic(methodDescOf(wrappingMethod), instance, arguments,
+                            cc.this_().field(delegate));
+                    if (wrappingMethod.returnType().kind() == Type.Kind.VOID) {
+                        result = Const.ofNull(Object.class);
+                    }
+                    bc.return_(result);
+                });
+            });
 
-            generateStaticGetMethod(clazz, ctor);
-
-            LOGGER.debugf("InvokerWrapper class generated: %s", clazz.getClassName());
-        }
+            generateStaticGetMethod(cc, ctor);
+        });
     }
 
     private MethodInfo findWrapper(InvokerInfo invoker) {
@@ -239,228 +252,421 @@ public class InvokerGenerator extends AbstractGenerator {
 
     // ---
 
-    private void createInvokerClass(ClassOutput classOutput, InvokerInfo invoker) {
-        MethodInfo targetMethod = invoker.method;
+    private void createInvokerClass(io.quarkus.gizmo2.Gizmo gizmo, InvokerInfo invoker) {
+        CodeGenInfo info = preprocess(invoker);
 
-        try (ClassCreator clazz = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(invoker.className)
-                .interfaces(Invoker.class)
-                .build()) {
+        gizmo.class_(invoker.className, cc -> {
+            cc.implements_(Invoker.class);
 
-            FieldCreator instance = clazz.getFieldCreator("INSTANCE", AtomicReference.class)
-                    .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
-
-            MethodCreator clinit = clazz.getMethodCreator(Methods.CLINIT, void.class)
-                    .setModifiers(Opcodes.ACC_STATIC);
-            clinit.writeStaticField(instance.getFieldDescriptor(),
-                    clinit.newInstance(MethodDescriptor.ofConstructor(AtomicReference.class)));
-            clinit.returnVoid();
-
-            MethodCreator ctor = clazz.getMethodCreator(Methods.INIT, void.class)
-                    .setModifiers(Opcodes.ACC_PUBLIC);
-            ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Object.class, Methods.INIT, void.class), ctor.getThis());
-
-            MethodCreator invoke = clazz.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
-
-            FinisherGenerator finisher = new FinisherGenerator(invoke);
-            LookupGenerator lookup = prepareLookup(invoke, invoker, ctor, clazz, classOutput);
-
-            ResultHandle targetInstance = null;
-            if (!Modifier.isStatic(targetMethod.flags())) {
-                Type instanceType = ClassType.create(invoker.targetBeanClass.name());
-                targetInstance = invoker.instanceLookup
-                        ? lookup.targetBeanInstance()
-                        : invoke.getMethodParam(0);
-                targetInstance = findAndInvokeTransformer(invoker.instanceTransformer, instanceType,
-                        invoker, targetInstance, invoke, finisher);
+            FieldDesc instanceSupplier;
+            FieldDesc[] argumentSuppliers = new FieldDesc[invoker.method.parametersCount()];
+            if (info.instanceLookup != null) {
+                instanceSupplier = cc.field("instance", fc -> {
+                    fc.private_();
+                    fc.final_();
+                    fc.setType(Supplier.class);
+                });
+            } else {
+                instanceSupplier = null;
+            }
+            for (int i = 0; i < info.argumentLookups.length; i++) {
+                if (info.argumentLookups[i] != null) {
+                    argumentSuppliers[i] = cc.field("arg" + i, fc -> {
+                        fc.private_();
+                        fc.final_();
+                        fc.setType(Supplier.class);
+                    });
+                }
             }
 
-            ResultHandle argumentsArray = invoke.getMethodParam(1);
-            ResultHandle[] unfoldedArguments = new ResultHandle[targetMethod.parametersCount()];
-            for (int i = 0; i < targetMethod.parametersCount(); i++) {
-                Type parameterType = targetMethod.parameterType(i);
-                ResultHandle originalArgument = invoker.argumentLookups[i]
-                        ? lookup.argumentBeanInstance(i)
-                        : invoke.readArrayValue(argumentsArray, i);
-                originalArgument = findAndInvokeTransformer(invoker.argumentTransformers[i], parameterType,
-                        invoker, originalArgument, invoke, finisher);
-                if (parameterType.kind() == Type.Kind.PRIMITIVE) {
-                    // if the transformer returned a primitive type, box it
-                    Type transformedType = transformerReturnType(invoker.argumentTransformers[i], parameterType, invoker);
-                    if (transformedType != null && transformedType.kind() == Type.Kind.PRIMITIVE) {
-                        originalArgument = invoke.checkCast(originalArgument,
-                                PrimitiveType.box(parameterType.asPrimitiveType()).name().toString());
+            ConstructorDesc ctor = cc.constructor(mc -> {
+                mc.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(Object.class), cc.this_());
+
+                    if (info.usesLookup) {
+                        LocalVar arc = bc.localVar("arc", bc.invokeStatic(MethodDescs.ARC_REQUIRE_CONTAINER));
+                        if (instanceSupplier != null) {
+                            Expr instanceBean = bc.invokeInterface(MethodDescs.ARC_CONTAINER_BEAN, arc,
+                                    Const.of(info.instanceLookup.getUserBean().getIdentifier()));
+                            bc.set(cc.this_().field(instanceSupplier), instanceBean);
+                        }
+                        for (int i = 0; i < argumentSuppliers.length; i++) {
+                            if (argumentSuppliers[i] != null) {
+                                ResolvedBean resolved = info.argumentLookups[i];
+                                if (resolved.isUserBean()) {
+                                    Expr argumentBean = bc.invokeInterface(MethodDescs.ARC_CONTAINER_BEAN, arc,
+                                            Const.of(resolved.getUserBean().getIdentifier()));
+                                    bc.set(cc.this_().field(argumentSuppliers[i]), argumentBean);
+                                } else {
+                                    BuiltinBean builtinBean = resolved.getBuiltinBean();
+                                    InjectionPointInfo injectionPoint = invoker.getInjectionPointForArgument(i);
+                                    builtinBean.getGenerator().generate(new GeneratorContext(beanDeployment,
+                                            invoker, injectionPoint, cc, bc, argumentSuppliers[i], annotationLiterals,
+                                            reflectionRegistration, injectionPointAnnotationsPredicate, null));
+                                }
+                            }
+                        }
                     }
 
-                    BranchResult ifNotNull = invoke.ifNotNull(originalArgument);
-                    AssignableResultHandle variable = invoke.createVariable(parameterType.descriptor());
-                    assignWithUnboxingAndWideningConversion(ifNotNull.trueBranch(), originalArgument, variable,
-                            parameterType.asPrimitiveType(), i);
-                    originalArgument = variable;
-                    ifNotNull.falseBranch().throwException(NullPointerException.class,
-                            "Argument " + i + " is null, " + parameterType + " expected");
-                }
-                unfoldedArguments[i] = originalArgument;
-            }
+                    bc.return_();
+                });
+            });
 
-            // lookups need to add to the constructor, so we need to finish it here
-            ctor.returnVoid();
+            cc.method("invoke", mc -> {
+                mc.returning(Object.class);
+                ParamVar instanceParam = mc.parameter("instance", Object.class);
+                ParamVar argumentsParam = mc.parameter("arguments", Object[].class);
+                mc.body(b0 -> {
+                    LocalVar cleanupTasks = info.usesCleanupTasks
+                            ? b0.localVar("cleanupTasks", b0.new_(InvokerCleanupTasks.class))
+                            : null;
 
-            if (lookup != null && invoker.argumentLookups.length > 0) {
-                // the specification requires that the arguments array has at least as many elements
-                // as the target method has parameters, even if some of them (or all of them)
-                // are looked up
-                //
-                // we check that by simply reading the last parameter's position in the arguments array, when:
-                // 1. some lookups are configured (otherwise the check would be duplicate)
-                // 2. the target method has parameters (otherwise the check would be meaningless)
-                invoke.readArrayValue(argumentsArray, invoker.argumentLookups.length - 1);
-            }
+                    LocalVar rootCC = info.usesLookup
+                            ? b0.localVar("cc", b0.new_(CreationalContextImpl.class, Const.ofNull(Contextual.class)))
+                            : null;
 
-            TryBlock tryBlock = invoke.tryBlock();
-            CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                    Var instance = null;
+                    if (!Modifier.isStatic(invoker.method.flags())) {
+                        instance = info.instanceLookup != null
+                                ? b0.localVar("instance", generateLookup(cc, b0, instanceSupplier, rootCC))
+                                : instanceParam;
+                        if (info.instanceTransformer != null) {
+                            instance = b0.localVar("transformedInstance",
+                                    generateTransformerCall(b0, info.instanceTransformer, instance, cleanupTasks));
+                        }
+                    }
+                    Var instanceFinal = instance;
 
-            if (finisher.wasCreated()) {
-                catchBlock.invokeVirtualMethod(MethodDescriptor.ofMethod(InvokerCleanupTasks.class, "finish", void.class),
-                        finisher.getOrCreate());
-            }
-            if (lookup != null) {
-                lookup.destroyIfNecessary(catchBlock, null);
-            }
+                    Var[] arguments = new Var[invoker.method.parametersCount()];
+                    for (int i = 0; i < invoker.method.parametersCount(); i++) {
+                        Type parameterType = invoker.method.parameterType(i);
+                        arguments[i] = info.argumentLookups[i] != null
+                                ? b0.localVar("arg" + i, generateLookup(cc, b0, argumentSuppliers[i], rootCC))
+                                : b0.localVar("arg" + i, argumentsParam.elem(i));
+                        if (info.argumentTransformers[i] != null) {
+                            arguments[i] = b0.localVar("transformedArg" + i,
+                                    generateTransformerCall(b0, info.argumentTransformers[i], arguments[i], cleanupTasks));
+                            if (info.argumentTransformers[i].method.returnType().kind() == Type.Kind.PRIMITIVE) {
+                                arguments[i] = b0.localVar("boxedArg" + i, b0.box(arguments[i]));
+                            }
+                        }
+                        if (parameterType.kind() == Type.Kind.PRIMITIVE) {
+                            LocalVar primitiveArg = b0.localVar("primitiveArg" + i,
+                                    Const.ofDefault(classDescOf(parameterType)));
+                            int finalI = i;
+                            b0.ifElse(b0.isNotNull(arguments[i]), b1 -> {
+                                unboxAndWiden(b1, arguments[finalI], primitiveArg,
+                                        invoker.method.parameterType(finalI).asPrimitiveType(), finalI);
+                            }, b1 -> {
+                                b1.throw_(NullPointerException.class, "Argument " + finalI + " is null, "
+                                        + invoker.method.parameterType(finalI) + " expected");
+                            });
+                            arguments[i] = primitiveArg;
+                        }
+                    }
 
-            if (invoker.exceptionTransformer != null) {
-                catchBlock.returnValue(
-                        findAndInvokeTransformer(invoker.exceptionTransformer, ClassType.create(Throwable.class),
-                                invoker, catchBlock.getCaughtException(), catchBlock, null));
+                    if (info.usesLookup && invoker.method.parametersCount() > 0) {
+                        // the specification requires that the arguments array has at least as many elements
+                        // as the target method has parameters, even if some of them (or all of them)
+                        // are looked up
+                        //
+                        // we check that by simply reading the last parameter's position in the arguments array, when:
+                        // 1. some lookups are configured (otherwise the check would be duplicate)
+                        // 2. the target method has parameters (otherwise the check would be meaningless)
+                        b0.get(argumentsParam.elem(invoker.method.parametersCount() - 1));
+                    }
+
+                    b0.try_(tc -> {
+                        tc.body(b1 -> {
+                            Expr result;
+                            MethodDesc methodDesc = methodDescOf(invoker.method);
+                            if (Modifier.isStatic(invoker.method.flags())) {
+                                result = b1.invokeStatic(methodDesc, arguments);
+                            } else if (invoker.method.declaringClass().isInterface()) {
+                                result = b1.invokeInterface(methodDesc, instanceFinal, arguments);
+                            } else {
+                                result = b1.invokeVirtual(methodDesc, instanceFinal, arguments);
+                            }
+                            boolean isVoid = invoker.method.returnType().kind() == Type.Kind.VOID;
+                            LocalVar resultVar = b1.localVar("result", isVoid ? Const.ofNull(Object.class) : result);
+
+                            if (cleanupTasks != null) {
+                                b1.invokeVirtual(MethodDesc.of(InvokerCleanupTasks.class, "finish", void.class), cleanupTasks);
+                            }
+
+                            if (rootCC != null) {
+                                b1.set(resultVar, generateCCRelease(b1, invoker, rootCC, resultVar));
+                            }
+
+                            if (info.returnValueTransformer != null) {
+                                b1.set(resultVar, generateTransformerCall(b1, info.returnValueTransformer, resultVar,
+                                        cleanupTasks));
+                            }
+
+                            b1.return_(resultVar);
+                        });
+                        tc.catch_(Throwable.class, "e", (b1, e) -> {
+                            if (cleanupTasks != null) {
+                                b1.invokeVirtual(MethodDesc.of(InvokerCleanupTasks.class, "finish", void.class), cleanupTasks);
+                            }
+
+                            if (rootCC != null) {
+                                // return value is always `null` here, so we can ignore it
+                                generateCCRelease(b1, invoker, rootCC, null);
+                            }
+
+                            if (invoker.exceptionTransformer != null) {
+                                b1.return_(generateTransformerCall(b1, info.exceptionTransformer, e, null));
+                            } else {
+                                b1.throw_(e);
+                            }
+                        });
+                    });
+                });
+            });
+
+            generateStaticGetMethod(cc, ctor);
+        });
+    }
+
+    private Expr generateLookup(ClassCreator cc, BlockCreator bc, FieldDesc supplierField, LocalVar rootCC) {
+        LocalVar injectableReferenceProvider = bc.localVar("injectableReferenceProvider",
+                bc.invokeInterface(MethodDescs.SUPPLIER_GET, cc.this_().field(supplierField)));
+        LocalVar creationalContext = bc.localVar("creationalContext",
+                bc.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD_CONTEXTUAL, injectableReferenceProvider, rootCC));
+        return bc.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET,
+                injectableReferenceProvider, creationalContext);
+    }
+
+    private Expr generateTransformerCall(BlockCreator bc, TransformerMethod transformerMethod, Var value,
+            LocalVar cleanupTasks) {
+        assert transformerMethod != null;
+        MethodDesc methodDesc = methodDescOf(transformerMethod.method);
+
+        if (Modifier.isStatic(transformerMethod.method.flags())) {
+            if (transformerMethod.usesCleanupTasks()) {
+                return bc.invokeStatic(methodDesc, value, cleanupTasks);
             } else {
-                catchBlock.throwException(catchBlock.getCaughtException());
+                return bc.invokeStatic(methodDesc, value);
             }
-
-            ResultHandle result;
-            boolean isInterface = invoker.method.declaringClass().isInterface();
-            if (Modifier.isStatic(targetMethod.flags())) {
-                result = isInterface
-                        ? tryBlock.invokeStaticInterfaceMethod(targetMethod, unfoldedArguments)
-                        : tryBlock.invokeStaticMethod(targetMethod, unfoldedArguments);
+        } else {
+            if (transformerMethod.method.declaringClass().isInterface()) {
+                return bc.invokeInterface(methodDesc, value);
             } else {
-                result = isInterface
-                        ? tryBlock.invokeInterfaceMethod(targetMethod, targetInstance, unfoldedArguments)
-                        : tryBlock.invokeVirtualMethod(targetMethod, targetInstance, unfoldedArguments);
+                return bc.invokeVirtual(methodDesc, value);
             }
-            if (targetMethod.returnType().kind() == Type.Kind.VOID) {
-                result = tryBlock.loadNull();
-            }
-            if (lookup != null) {
-                result = lookup.destroyIfNecessary(tryBlock, result);
-            }
-            result = findAndInvokeTransformer(invoker.returnValueTransformer, targetMethod.returnType(),
-                    invoker, result, tryBlock, null);
-            if (finisher.wasCreated()) {
-                tryBlock.invokeVirtualMethod(MethodDescriptor.ofMethod(InvokerCleanupTasks.class, "finish", void.class),
-                        finisher.getOrCreate());
-            }
-            tryBlock.returnValue(result);
-
-            generateStaticGetMethod(clazz, ctor);
-
-            LOGGER.debugf("Invoker class generated: %s", clazz.getClassName());
         }
     }
 
-    private static void generateStaticGetMethod(ClassCreator clazz, MethodCreator ctor) {
-        FieldCreator instance = clazz.getFieldCreator("INSTANCE", AtomicReference.class)
-                .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+    private Expr generateCCRelease(BlockCreator bc, InvokerInfo invoker, LocalVar rootCC, LocalVar returnValue) {
+        assert rootCC != null;
 
-        MethodCreator clinit = clazz.getMethodCreator(Methods.CLINIT, void.class)
-                .setModifiers(Opcodes.ACC_STATIC);
-        clinit.writeStaticField(instance.getFieldDescriptor(),
-                clinit.newInstance(MethodDescriptor.ofConstructor(AtomicReference.class)));
-        clinit.returnVoid();
-
-        MethodCreator get = clazz.getMethodCreator("get", Invoker.class).setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-        ResultHandle atomicReference = get.readStaticField(instance.getFieldDescriptor());
-        AssignableResultHandle resultInstance = get.createVariable(Invoker.class);
-        get.assign(resultInstance, get.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(AtomicReference.class, "get", Object.class), atomicReference));
-        BytecodeCreator isNull = get.ifNotNull(resultInstance).falseBranch();
-        isNull.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(AtomicReference.class, "compareAndSet", boolean.class, Object.class, Object.class),
-                atomicReference, isNull.loadNull(), isNull.newInstance(ctor.getMethodDescriptor()));
-        isNull.assign(resultInstance, isNull.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(AtomicReference.class, "get", Object.class), atomicReference));
-        get.returnValue(resultInstance);
+        // `returnValue` is `null` when the target method has thrown an exception;
+        // we're going to rethrow it, so we need to release the `CreationalContext` immediately
+        if (returnValue == null || !invoker.isAsynchronous()) {
+            bc.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, rootCC);
+            return returnValue;
+        } else {
+            ClassDesc asyncType = classDescOf(invoker.method.returnType());
+            return bc.invokeStatic(ClassMethodDesc.of(classDescOf(InvokerCleanupTasks.class), "deferRelease",
+                    MethodTypeDesc.of(asyncType, classDescOf(CreationalContext.class), asyncType)),
+                    rootCC, returnValue);
+        }
     }
 
-    private static void assignWithUnboxingAndWideningConversion(BytecodeCreator bytecode, ResultHandle value,
-            AssignableResultHandle target, PrimitiveType targetType, int argumentNumber) {
+    private void generateStaticGetMethod(ClassCreator cc, ConstructorDesc ctor) {
+        StaticFieldVar instance = cc.staticField("INSTANCE", fc -> {
+            fc.private_();
+            fc.final_();
+            fc.setType(AtomicReference.class);
+            fc.setInitializer(bc -> {
+                bc.yield(bc.new_(AtomicReference.class));
+            });
+        });
+
+        MethodDesc atomicReferenceGet = MethodDesc.of(AtomicReference.class, "get", Object.class);
+        MethodDesc atomicReferenceCAS = MethodDesc.of(AtomicReference.class, "compareAndSet", boolean.class,
+                Object.class, Object.class);
+
+        cc.staticMethod("get", mc -> {
+            mc.returning(Invoker.class);
+            mc.body(b0 -> {
+                LocalVar result = b0.localVar("result", b0.invokeVirtual(atomicReferenceGet, instance));
+                b0.ifNull(result, b1 -> {
+                    b1.invokeVirtual(atomicReferenceCAS, instance, Const.ofNull(Invoker.class), b1.new_(ctor));
+                    b1.set(result, b1.invokeVirtual(atomicReferenceGet, instance));
+                });
+                b0.return_(result);
+            });
+        });
+    }
+
+    private static void unboxAndWiden(BlockCreator b0, Var value, Var target, PrimitiveType targetType, int argumentNumber) {
+        LocalVar ok = b0.localVar("ok" + argumentNumber, Const.of(false));
 
         // unboxing conversion
-        {
-            ClassType possibleSourceType = PrimitiveType.box(targetType);
-            ResultHandle isInstance = bytecode.instanceOf(value, possibleSourceType.name().toString());
-            BranchResult ifNotInstanceOf = bytecode.ifFalse(isInstance);
-            ifNotInstanceOf.falseBranch().assign(target, value); // Gizmo emits unboxing conversion automatically
-            bytecode = ifNotInstanceOf.trueBranch();
+        b0.ifInstanceOf(value, classDescOf(PrimitiveType.box(targetType)), (b1, cast) -> {
+            b1.set(target, cast);
+            b1.set(ok, Const.of(true));
+        });
+        for (ClassType possibleType : WIDENING_CONVERSIONS_TO.get(targetType.primitive())) {
+            // unboxing + widening conversion
+            b0.ifInstanceOf(value, classDescOf(possibleType), (b1, cast) -> {
+                b1.set(target, cast);
+                b1.set(ok, Const.of(true));
+            });
         }
-        // widening conversions
-        for (ClassType possibleSourceType : WIDENING_CONVERSIONS_TO.get(targetType)) {
-            ResultHandle isInstance = bytecode.instanceOf(value, possibleSourceType.name().toString());
-            BranchResult ifNotInstanceOf = bytecode.ifFalse(isInstance);
-            BytecodeCreator unbox = ifNotInstanceOf.falseBranch();
-            AssignableResultHandle unboxed = unbox.createVariable(PrimitiveType.unbox(possibleSourceType).descriptor());
-            unbox.assign(unboxed, value); // Gizmo emits unboxing conversion automatically
-            ResultHandle widened = unbox.convertPrimitive(unboxed, JandexReflection.loadRawType(targetType));
-            unbox.assign(target, widened);
-            bytecode = ifNotInstanceOf.trueBranch();
-        }
-
-        ResultHandle message = Gizmo.newStringBuilder(bytecode)
-                .append("No method invocation conversion to ")
-                .append(targetType.name().toString())
-                .append(" exists for argument ")
-                .append("" + argumentNumber)
-                .append(": ")
-                .append(bytecode.invokeVirtualMethod(MethodDescriptors.OBJECT_GET_CLASS, value))
-                .append(", value ")
-                .append(value)
-                .callToString();
-        ResultHandle exception = bytecode.newInstance(
-                MethodDescriptor.ofConstructor(ClassCastException.class, String.class), message);
-        bytecode.throwException(exception);
+        b0.ifNot(ok, b1 -> {
+            b1.throw_(ClassCastException.class, StringBuilderGen.ofNew(b1)
+                    .append("No method invocation conversion to ")
+                    .append(targetType.name().toString())
+                    .append(" exists for argument ")
+                    .append("" + argumentNumber)
+                    .append(": ")
+                    .append(b1.withObject(value).getClass_())
+                    .append(", value ")
+                    .append(value)
+                    .toString_());
+        });
     }
 
-    private static final Map<PrimitiveType, Set<ClassType>> WIDENING_CONVERSIONS_TO = Map.of(
-            PrimitiveType.BOOLEAN, Set.of(),
-            PrimitiveType.BYTE, Set.of(),
-            PrimitiveType.SHORT, Set.of(ClassType.BYTE_CLASS),
-            PrimitiveType.INT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.CHARACTER_CLASS),
-            PrimitiveType.LONG, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
+    private static final Map<Primitive, Set<ClassType>> WIDENING_CONVERSIONS_TO = Map.of(
+            Primitive.BOOLEAN, Set.of(),
+            Primitive.BYTE, Set.of(),
+            Primitive.SHORT, Set.of(ClassType.BYTE_CLASS),
+            Primitive.INT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.CHARACTER_CLASS),
+            Primitive.LONG, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
                     ClassType.CHARACTER_CLASS),
-            PrimitiveType.FLOAT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
+            Primitive.FLOAT, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
                     ClassType.LONG_CLASS, ClassType.CHARACTER_CLASS),
-            PrimitiveType.DOUBLE, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
+            Primitive.DOUBLE, Set.of(ClassType.BYTE_CLASS, ClassType.SHORT_CLASS, ClassType.INTEGER_CLASS,
                     ClassType.LONG_CLASS, ClassType.FLOAT_CLASS, ClassType.CHARACTER_CLASS),
-            PrimitiveType.CHAR, Set.of());
+            Primitive.CHAR, Set.of());
 
-    static class FinisherGenerator {
-        private final MethodCreator method;
-        private ResultHandle finisher;
+    private record CodeGenInfo(
+            ResolvedBean instanceLookup,
+            ResolvedBean[] argumentLookups,
+            TransformerMethod instanceTransformer,
+            TransformerMethod[] argumentTransformers,
+            TransformerMethod returnValueTransformer,
+            TransformerMethod exceptionTransformer,
+            boolean usesLookup,
+            boolean usesCleanupTasks) {
+    }
 
-        FinisherGenerator(MethodCreator method) {
-            this.method = method;
+    private CodeGenInfo preprocess(InvokerInfo invoker) {
+        boolean usesLookup = false;
+        ResolvedBean instanceLookup = null;
+        if (invoker.instanceLookup) {
+            instanceLookup = ResolvedBean.of(invoker.targetBean);
+            usesLookup = true;
         }
 
-        ResultHandle getOrCreate() {
-            if (finisher == null) {
-                finisher = method.newInstance(MethodDescriptor.ofConstructor(InvokerCleanupTasks.class));
+        ResolvedBean[] argumentLookups = new ResolvedBean[invoker.argumentLookups.length];
+        for (int i = 0; i < invoker.argumentLookups.length; i++) {
+            if (invoker.argumentLookups[i]) {
+                InjectionPointInfo injectionPoint = invoker.getInjectionPointForArgument(i);
+                if (injectionPoint != null) {
+                    argumentLookups[i] = ResolvedBean.of(injectionPoint);
+                } else {
+                    throw new IllegalStateException("No injection point for argument " + i + " of " + invoker);
+                }
+                usesLookup = true;
             }
-            return finisher;
         }
 
-        boolean wasCreated() {
-            return finisher != null;
+        boolean usesCleanupTasks = false;
+        TransformerMethod instanceTransformer = null;
+        if (invoker.instanceTransformer != null) {
+            Type instanceType = ClassType.create(invoker.targetBeanClass.name());
+            instanceTransformer = findCandidates(invoker.instanceTransformer, instanceType, invoker).resolve();
+            usesCleanupTasks |= instanceTransformer.usesCleanupTasks();
         }
+
+        TransformerMethod[] argumentTransfomers = new TransformerMethod[invoker.argumentTransformers.length];
+        for (int i = 0; i < invoker.argumentTransformers.length; i++) {
+            if (invoker.argumentTransformers[i] != null) {
+                Type parameterType = invoker.method.parameterType(i);
+                argumentTransfomers[i] = findCandidates(invoker.argumentTransformers[i], parameterType, invoker).resolve();
+                usesCleanupTasks |= argumentTransfomers[i].usesCleanupTasks();
+            }
+        }
+
+        TransformerMethod returnValueTransformer = null;
+        if (invoker.returnValueTransformer != null) {
+            Type returnType = invoker.method.returnType();
+            returnValueTransformer = findCandidates(invoker.returnValueTransformer, returnType, invoker).resolve();
+            usesCleanupTasks |= returnValueTransformer.usesCleanupTasks();
+        }
+
+        TransformerMethod exceptionTransformer = null;
+        if (invoker.exceptionTransformer != null) {
+            ClassType throwableType = ClassType.create(Throwable.class);
+            exceptionTransformer = findCandidates(invoker.exceptionTransformer, throwableType, invoker).resolve();
+            usesCleanupTasks |= exceptionTransformer.usesCleanupTasks();
+        }
+
+        return new CodeGenInfo(instanceLookup, argumentLookups, instanceTransformer, argumentTransfomers,
+                returnValueTransformer, exceptionTransformer, usesLookup, usesCleanupTasks);
+    }
+
+    private TransformerMethodCandidates findCandidates(InvocationTransformer transformer, Type expectedType,
+            InvokerInfo invoker) {
+        assert transformer.kind != InvocationTransformerKind.WRAPPER;
+
+        ClassInfo clazz = beanArchiveIndex.getClassByName(transformer.clazz);
+
+        // static methods only from the given class
+        // instance methods also from superclasses and superinterfaces
+
+        // first, set up the worklist so that it contains the given class and all its superclasses
+        // next, as each class from the queue is processed, add its interfaces to the queue
+        // this is so that superclasses are processed before interfaces
+        Deque<ClassInfo> worklist = new ArrayDeque<>();
+        while (clazz != null) {
+            worklist.addLast(clazz);
+            clazz = clazz.superName() == null ? null : beanArchiveIndex.getClassByName(clazz.superName());
+        }
+
+        boolean originalClass = true;
+        Set<Methods.MethodKey> seenMethods = new HashSet<>();
+        while (!worklist.isEmpty()) {
+            ClassInfo current = worklist.removeFirst();
+
+            for (MethodInfo method : current.methods()) {
+                if (!transformer.method.equals(method.name())) {
+                    continue;
+                }
+
+                Methods.MethodKey key = new Methods.MethodKey(method);
+
+                if (Modifier.isStatic(method.flags()) && originalClass) {
+                    seenMethods.add(key);
+                } else {
+                    if (!Methods.isOverriden(key, seenMethods)) {
+                        seenMethods.add(key);
+                    }
+                }
+            }
+
+            for (DotName iface : current.interfaceNames()) {
+                worklist.addLast(beanArchiveIndex.getClassByName(iface));
+            }
+
+            originalClass = false;
+        }
+
+        List<TransformerMethod> matching = new ArrayList<>();
+        List<TransformerMethod> notMatching = new ArrayList<>();
+        for (Methods.MethodKey seenMethod : seenMethods) {
+            TransformerMethod candidate = new TransformerMethod(seenMethod.method, assignability);
+            if (candidate.matches(transformer, expectedType)) {
+                matching.add(candidate);
+            } else {
+                notMatching.add(candidate);
+            }
+        }
+        return new TransformerMethodCandidates(transformer, expectedType, matching, notMatching, invoker);
     }
 
     static class ResolvedBean {
@@ -512,277 +718,16 @@ public class InvokerGenerator extends AbstractGenerator {
         }
     }
 
-    static class LookupGenerator {
-        private final BeanDeployment beanDeployment;
-        private final AnnotationLiteralProcessor annotationLiterals;
-        private final ReflectionRegistration reflectionRegistration;
-        private final Predicate<DotName> injectionPointAnnotationsPredicate;
-
-        private final InvokerInfo invoker;
-
-        private final ResolvedBean targetBean;
-        private final ResolvedBean[] argumentBeans;
-
-        private final MethodCreator invokeMethod;
-        private final MethodCreator invokerConstructor;
-        private final ClassCreator invokerClass;
-        private final ClassOutput classOutput;
-
-        // in constructor
-        private ResultHandle arc;
-
-        // in `invoke()`
-        private ResultHandle rootCreationalContext;
-
-        LookupGenerator(BeanDeployment beanDeployment, AnnotationLiteralProcessor annotationLiterals,
-                ReflectionRegistration reflectionRegistration, Predicate<DotName> injectionPointAnnotationsPredicate,
-                InvokerInfo invoker, ResolvedBean targetBean, ResolvedBean[] argumentBeans, MethodCreator invokeMethod,
-                MethodCreator invokerConstructor, ClassCreator invokerClass, ClassOutput classOutput) {
-            this.beanDeployment = beanDeployment;
-            this.annotationLiterals = annotationLiterals;
-            this.reflectionRegistration = reflectionRegistration;
-            this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
-            this.invoker = invoker;
-
-            this.targetBean = targetBean;
-            this.argumentBeans = argumentBeans;
-
-            this.invokeMethod = invokeMethod;
-            this.invokerConstructor = invokerConstructor;
-            this.invokerClass = invokerClass;
-            this.classOutput = classOutput;
-        }
-
-        ResultHandle arc() {
-            if (arc == null) {
-                arc = invokerConstructor.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-            }
-            return arc;
-        }
-
-        ResultHandle rootCreationalContext() {
-            if (rootCreationalContext == null) {
-                rootCreationalContext = invokeMethod.newInstance(
-                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), invokeMethod.loadNull());
-            }
-            return rootCreationalContext;
-        }
-
-        // expected to be called at most once
-        ResultHandle targetBeanInstance() {
-            String name = "target";
-            FieldCreator field = invokerClass.getFieldCreator(name, Supplier.class)
-                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL);
-
-            // in constructor
-            ResultHandle bean = invokerConstructor.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
-                    arc(), invokerConstructor.load(targetBean.getUserBean().getIdentifier()));
-            invokerConstructor.writeInstanceField(field.getFieldDescriptor(), invokerConstructor.getThis(), bean);
-
-            // in `invoke()`
-            ResultHandle supplier = invokeMethod.readInstanceField(field.getFieldDescriptor(), invokeMethod.getThis());
-            ResultHandle injectableReferenceProvider = invokeMethod.invokeInterfaceMethod(
-                    MethodDescriptors.SUPPLIER_GET, supplier);
-            ResultHandle creationalContext = invokeMethod.invokeStaticMethod(
-                    MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL, injectableReferenceProvider, rootCreationalContext());
-            return invokeMethod.invokeInterfaceMethod(
-                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, injectableReferenceProvider, creationalContext);
-        }
-
-        // expected to be called at most once for each position
-        ResultHandle argumentBeanInstance(int position) {
-            String name = "arg" + position;
-            FieldCreator field = invokerClass.getFieldCreator(name, Supplier.class)
-                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL);
-
-            // in constructor
-            ResolvedBean resolved = argumentBeans[position];
-            if (resolved.isUserBean()) {
-                ResultHandle bean = invokerConstructor.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
-                        arc(), invokerConstructor.load(resolved.getUserBean().getIdentifier()));
-                invokerConstructor.writeInstanceField(field.getFieldDescriptor(), invokerConstructor.getThis(), bean);
-            } else {
-                BuiltinBean builtinBean = resolved.getBuiltinBean();
-                InjectionPointInfo injectionPoint = invoker.getInjectionPointForArgument(position);
-                builtinBean.getGenerator().generate(new GeneratorContext(classOutput, beanDeployment, injectionPoint,
-                        invokerClass, invokerConstructor, name, annotationLiterals, invoker, reflectionRegistration,
-                        injectionPointAnnotationsPredicate));
-            }
-
-            // in `invoke()`
-            ResultHandle supplier = invokeMethod.readInstanceField(field.getFieldDescriptor(), invokeMethod.getThis());
-            ResultHandle injectableReferenceProvider = invokeMethod.invokeInterfaceMethod(
-                    MethodDescriptors.SUPPLIER_GET, supplier);
-            ResultHandle creationalContext = invokeMethod.invokeStaticMethod(
-                    MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL, injectableReferenceProvider, rootCreationalContext());
-            return invokeMethod.invokeInterfaceMethod(
-                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, injectableReferenceProvider, creationalContext);
-        }
-
-        ResultHandle destroyIfNecessary(BytecodeCreator bytecode, ResultHandle returnValue) {
-            if (rootCreationalContext == null) {
-                return returnValue;
-            }
-
-            // `returnValue` is `null` when the target method has thrown an exception;
-            // we're going to rethrow it, so we need to release the `CreationalContext` immediately
-            if (returnValue != null && invoker.isAsynchronous()) {
-                String asyncType = invoker.method.returnType().name().toString();
-                return bytecode.invokeStaticMethod(MethodDescriptor.ofMethod(InvokerCleanupTasks.class,
-                        "deferRelease", asyncType, CreationalContext.class, asyncType),
-                        rootCreationalContext(), returnValue);
-            } else {
-                bytecode.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, rootCreationalContext());
-                return returnValue;
-            }
-        }
-    }
-
-    private LookupGenerator prepareLookup(MethodCreator invokeMethod, InvokerInfo invoker, MethodCreator invokerConstructor,
-            ClassCreator invokerClass, ClassOutput classOutput) {
-        boolean lookupUsed = invoker.instanceLookup;
-        for (boolean argumentLookup : invoker.argumentLookups) {
-            lookupUsed |= argumentLookup;
-        }
-
-        if (!lookupUsed) {
-            return null;
-        }
-
-        ResolvedBean targetInstance = null;
-        if (invoker.instanceLookup) {
-            targetInstance = ResolvedBean.of(invoker.targetBean);
-        }
-
-        ResolvedBean[] arguments = new ResolvedBean[invoker.argumentLookups.length];
-        for (int i = 0; i < invoker.argumentLookups.length; i++) {
-            if (invoker.argumentLookups[i]) {
-                InjectionPointInfo injectionPoint = invoker.getInjectionPointForArgument(i);
-                if (injectionPoint != null) {
-                    arguments[i] = ResolvedBean.of(injectionPoint);
-                } else {
-                    throw new IllegalStateException("No injection point for argument " + i + " of " + invoker);
-                }
-            }
-        }
-
-        return new LookupGenerator(beanDeployment, annotationLiterals, reflectionRegistration,
-                injectionPointAnnotationsPredicate, invoker, targetInstance, arguments, invokeMethod,
-                invokerConstructor, invokerClass, classOutput);
-    }
-
-    private ResultHandle findAndInvokeTransformer(InvocationTransformer transformer, Type expectedType,
-            InvokerInfo invoker, ResultHandle originalValue, BytecodeCreator bytecode, FinisherGenerator finisher) {
-        if (transformer == null) {
-            return originalValue;
-        }
-
-        CandidateMethods candidates = findCandidates(transformer, expectedType, invoker);
-        CandidateMethod transformerMethod = candidates.resolve();
-        MethodDescriptor transformerMethodDescriptor = MethodDescriptor.of(transformerMethod.method);
-
-        if (Modifier.isStatic(transformerMethod.method.flags())) {
-            ResultHandle[] arguments = new ResultHandle[transformerMethod.usesFinisher() ? 2 : 1];
-            arguments[0] = originalValue;
-            if (transformerMethod.usesFinisher()) {
-                arguments[1] = finisher.getOrCreate();
-            }
-
-            if (transformer.clazz.isInterface()) {
-                return bytecode.invokeStaticInterfaceMethod(transformerMethodDescriptor, arguments);
-            } else {
-                return bytecode.invokeStaticMethod(transformerMethodDescriptor, arguments);
-            }
-        } else {
-            if (transformer.clazz.isInterface()) {
-                return bytecode.invokeInterfaceMethod(transformerMethodDescriptor, originalValue);
-            } else {
-                return bytecode.invokeVirtualMethod(transformerMethodDescriptor, originalValue);
-            }
-        }
-    }
-
-    private Type transformerReturnType(InvocationTransformer transformer, Type expectedType, InvokerInfo invoker) {
-        if (transformer == null) {
-            return null;
-        }
-
-        CandidateMethods candidates = findCandidates(transformer, expectedType, invoker);
-        CandidateMethod transformerMethod = candidates.resolve();
-        return transformerMethod.method.returnType();
-    }
-
-    private CandidateMethods findCandidates(InvocationTransformer transformer, Type expectedType, InvokerInfo invoker) {
-        assert transformer.kind != InvocationTransformerKind.WRAPPER;
-
-        ClassInfo clazz = beanArchiveIndex.getClassByName(transformer.clazz);
-
-        // static methods only from the given class
-        // instance methods also from superclasses and superinterfaces
-
-        // first, set up the worklist so that it contains the given class and all its superclasses
-        // next, as each class from the queue is processed, add its interfaces to the queue
-        // this is so that superclasses are processed before interfaces
-        Deque<ClassInfo> worklist = new ArrayDeque<>();
-        while (clazz != null) {
-            worklist.addLast(clazz);
-            clazz = clazz.superName() == null ? null : beanArchiveIndex.getClassByName(clazz.superName());
-        }
-
-        boolean originalClass = true;
-        Set<Methods.MethodKey> seenMethods = new HashSet<>();
-        while (!worklist.isEmpty()) {
-            ClassInfo current = worklist.removeFirst();
-
-            for (MethodInfo method : current.methods()) {
-                if (!transformer.method.equals(method.name())) {
-                    continue;
-                }
-
-                Methods.MethodKey key = new Methods.MethodKey(method);
-
-                if (Modifier.isStatic(method.flags()) && originalClass) {
-                    seenMethods.add(key);
-                } else {
-                    if (!Methods.isOverriden(key, seenMethods)) {
-                        seenMethods.add(key);
-                    }
-                }
-            }
-
-            for (DotName iface : current.interfaceNames()) {
-                worklist.addLast(beanArchiveIndex.getClassByName(iface));
-            }
-
-            originalClass = false;
-        }
-
-        List<CandidateMethod> matching = new ArrayList<>();
-        List<CandidateMethod> notMatching = new ArrayList<>();
-        for (Methods.MethodKey seenMethod : seenMethods) {
-            CandidateMethod candidate = new CandidateMethod(seenMethod.method, assignability);
-            if (candidate.matches(transformer, expectedType)) {
-                matching.add(candidate);
-            } else {
-                notMatching.add(candidate);
-            }
-        }
-        return new CandidateMethods(transformer, expectedType, matching, notMatching, invoker);
-    }
-
-    static class CandidateMethods {
+    static class TransformerMethodCandidates {
         // most of the fields here are only used for providing a good error message
         final InvocationTransformer transformer;
         final Type expectedType;
-        final List<CandidateMethod> matching;
-        final List<CandidateMethod> notMatching;
+        final List<TransformerMethod> matching;
+        final List<TransformerMethod> notMatching;
         final InvokerInfo invoker;
 
-        CandidateMethods(InvocationTransformer transformer, Type expectedType,
-                List<CandidateMethod> matching, List<CandidateMethod> notMatching,
+        TransformerMethodCandidates(InvocationTransformer transformer, Type expectedType,
+                List<TransformerMethod> matching, List<TransformerMethod> notMatching,
                 InvokerInfo invoker) {
             this.transformer = transformer;
             this.expectedType = expectedType;
@@ -791,7 +736,8 @@ public class InvokerGenerator extends AbstractGenerator {
             this.invoker = invoker;
         }
 
-        CandidateMethod resolve() {
+        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+        TransformerMethod resolve() {
             if (matching.size() == 1) {
                 return matching.get(0);
             }
@@ -834,11 +780,11 @@ public class InvokerGenerator extends AbstractGenerator {
         }
     }
 
-    static class CandidateMethod {
+    static class TransformerMethod {
         final MethodInfo method;
-        final Assignability assignability;
+        private final Assignability assignability;
 
-        CandidateMethod(MethodInfo method, Assignability assignability) {
+        TransformerMethod(MethodInfo method, Assignability assignability) {
             this.method = method;
             this.assignability = assignability;
         }
@@ -853,7 +799,7 @@ public class InvokerGenerator extends AbstractGenerator {
                 boolean returnTypeOk = isAnyType(method.returnType()) || isSubtype(method.returnType(), expectedType);
                 if (Modifier.isStatic(method.flags())) {
                     return method.parametersCount() == 1 && returnTypeOk
-                            || method.parametersCount() == 2 && returnTypeOk && isFinisher(method.parameterType(1));
+                            || method.parametersCount() == 2 && returnTypeOk && isConsumerOfRunnable(method.parameterType(1));
                 } else {
                     return method.parametersCount() == 0 && returnTypeOk;
                 }
@@ -876,23 +822,18 @@ public class InvokerGenerator extends AbstractGenerator {
         }
 
         // if `matches()` returns `false`, there's no point in calling this method
-        boolean usesFinisher() {
+        boolean usesCleanupTasks() {
             return Modifier.isStatic(method.flags())
                     && method.parametersCount() == 2
-                    && isFinisher(method.parameterType(1));
+                    && isConsumerOfRunnable(method.parameterType(1));
         }
 
-        private boolean isFinisher(Type type) {
-            if (type.kind() == Type.Kind.CLASS) {
-                return type.name().equals(DotName.createSimple(Consumer.class));
-            } else if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                return type.name().equals(DotName.createSimple(Consumer.class))
-                        && type.asParameterizedType().arguments().size() == 1
-                        && type.asParameterizedType().arguments().get(0).kind() == Type.Kind.CLASS
-                        && type.asParameterizedType().arguments().get(0).name().equals(DotName.createSimple(Runnable.class));
-            } else {
-                return false;
-            }
+        private boolean isConsumerOfRunnable(Type type) {
+            return type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                    && type.name().equals(DotName.createSimple(Consumer.class))
+                    && type.asParameterizedType().arguments().size() == 1
+                    && type.asParameterizedType().arguments().get(0).kind() == Type.Kind.CLASS
+                    && type.asParameterizedType().arguments().get(0).name().equals(DotName.createSimple(Runnable.class));
         }
 
         private boolean isSubtype(Type a, Type b) {
@@ -917,7 +858,7 @@ public class InvokerGenerator extends AbstractGenerator {
         }
         if (t.kind() == Type.Kind.TYPE_VARIABLE) {
             TypeVariable typeVar = t.asTypeVariable();
-            return typeVar.bounds().isEmpty() || isAnyType(typeVar.bounds().get(0));
+            return typeVar.bounds().isEmpty() || typeVar.hasImplicitObjectBound() || isAnyType(typeVar.bounds().get(0));
         }
         return false;
     }

@@ -69,10 +69,9 @@ class BugResource {
                 dateTomorrow,
                 localDateTomorrow,
                 localDateTimeTomorrow,
-                instantTomorrow
+                instantTomorrow,
             )
-            .firstResult()
-            ?: return Response.status(404).build()
+            .firstResult() ?: return Response.status(404).build()
         return Response.ok().build()
     }
 

@@ -10,7 +10,6 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 
 /**
  * A marker build item that indicates, if any instances are provided during the build, the containers started by DevServices
@@ -79,19 +78,6 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
             DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return devServicesConfig.launchOnSharedNetwork() ||
-                (!devServicesSharedNetworkBuildItem.isEmpty()
-                        && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
-    }
-
-    /**
-     * @deprecated Please, use {@link DevServicesSharedNetworkBuildItem#isSharedNetworkRequired(DevServicesConfig, List)}
-     *             instead.
-     */
-    @Deprecated(forRemoval = true, since = "3.18")
-    public static boolean isSharedNetworkRequired(
-            GlobalDevServicesConfig globalDevServicesConfig,
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return globalDevServicesConfig.launchOnSharedNetwork ||
                 (!devServicesSharedNetworkBuildItem.isEmpty()
                         && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
     }

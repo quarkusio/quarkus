@@ -37,6 +37,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         this._ds = null;
         this._selectedDs = null;
         this._createDialogOpened = false;
+        this._updateDialogOpened = false;
         this._cleanDisabled = true;
     }    
     
@@ -64,7 +65,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     }
 
     _renderDataSourceTable() {
-        return html`${this._renderCreateDialog()}
+        return html`${this._renderCreateDialog()}${this._renderUpdateDialog()}
                 <vaadin-grid .items="${this._ds}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
                                         header="Name"
@@ -80,6 +81,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
 
     _actionRenderer(ds) {
         return html`${this._renderMigrationButtons(ds)}
+                    ${this._renderUpdateButton(ds)}
                     ${this._renderCreateButton(ds)}`;
     }
 
@@ -99,7 +101,16 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
                 `;
         }
     }
-    
+
+    _renderUpdateButton(ds) {
+        if(ds.hasMigrations){
+            return html`
+                <vaadin-button theme="small" @click=${() => this._showUpdateDialog(ds)} class="button" title="Create update migration file. Always manually review the created file as it can cause data loss">
+                    <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon> Generate Migration File
+                </vaadin-button>`;
+        }
+    }
+
     _renderCreateButton(ds) {
         if(ds.createPossible){
             return html`
@@ -117,6 +128,11 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         this._selectedDs = ds;
         this._createDialogOpened = true;
     }
+
+    _showUpdateDialog(ds){
+        this._selectedDs = ds;
+        this._updateDialogOpened = true;
+    }
         
     _renderCreateDialog(){    
         return html`<vaadin-dialog class="createDialog"
@@ -127,20 +143,46 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
                 ></vaadin-dialog>`;
     }
 
+    _renderUpdateDialog(){
+        return html`<vaadin-dialog class="updateDialog"
+                    header-title="Update"
+                    .opened="${this._updateDialogOpened}"
+                    @opened-changed="${(e) => (this._updateDialogOpened = e.detail.value)}"
+                    ${dialogRenderer(() => this._renderUpdateDialogForm(), "Update")}
+                ></vaadin-dialog>`;
+    }
+
     _renderCreateDialogForm(){
         let title = this._selectedDs.name + " Datasource";
         return html`<b>${title}</b></br>
             Set up an initial file from Hibernate ORM schema generation for Flyway migrations to work.<br/>
             If you say yes, an initial file in <code>db/migrations</code> will be <br/>
             created and you can then add additional migration files as documented. 
-            ${this._renderDialogButtons(this._selectedDs)}
+            ${this._renderCreateDialogButtons(this._selectedDs)}
         `;
     }
 
-    _renderDialogButtons(ds){
+    _renderUpdateDialogForm(){
+        let title = this._selectedDs.name + " Datasource";
+        return html`<b>${title}</b></br>
+            Create an incremental migration file from Hibernate ORM schema diff.<br/>
+            If you say yes, an additional file in <code>db/migrations</code> will be <br/>
+            created.
+            ${this._renderUpdateDialogButtons(this._selectedDs)}
+        `;
+    }
+
+    _renderCreateDialogButtons(ds){
         return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
                         <vaadin-button theme="secondary" @click=${() => this._create(this._selectedDs)}>Create</vaadin-button>
                         <vaadin-button theme="secondary error" @click=${this._cancelCreate}>Cancel</vaadin-button>
+                    </div>`;
+    }
+
+    _renderUpdateDialogButtons(ds){
+        return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
+                        <vaadin-button theme="secondary" @click=${() => this._update(this._selectedDs)}>Update</vaadin-button>
+                        <vaadin-button theme="secondary error" @click=${this._cancelUpdate}>Cancel</vaadin-button>
                     </div>`;
     }
 
@@ -168,9 +210,23 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         });
     }
 
+    _update(ds) {
+        this.jsonRpc.update({ds: ds.name}).then(jsonRpcResponse => {
+            this._showResultNotification(jsonRpcResponse.result);
+            this._selectedDs = null;
+            this._updateDialogOpened = false;
+            this.hotReload();
+        });
+    }
+
     _cancelCreate(){
         this._selectedDs = null;
         this._createDialogOpened = false;
+    }
+
+    _cancelUpdate(){
+        this._selectedDs = null;
+        this._updateDialogOpened = false;
     }
 
     _showResultNotification(response){

@@ -110,8 +110,11 @@ public class QuarkusBootstrapProvider implements Closeable {
      * @return raw POM
      */
     private static Model getRawModel(MavenProject mp) {
-        final Model model = mp.getOriginalModel();
+        Model model = mp.getOriginalModel();
         if (model.getDependencyManagement() == null) {
+            // clone the model to not modify the original model associated with the project,
+            // otherwise, the enforcer plugin may fail, for example
+            model = model.clone();
             // this could be the flatten plugin removing the dependencyManagement
             // in which case we set the effective dependency management to not lose the platform info
             model.setDependencyManagement(mp.getDependencyManagement());
@@ -265,7 +268,7 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             final ResolvedDependencyBuilder appArtifact = getApplicationArtifactBuilder(mojo);
             Set<ArtifactKey> reloadableModules = Set.of();
-            if (mode == LaunchMode.NORMAL) {
+            if (mode.isProduction()) {
                 // collect reloadable artifacts for remote-dev
                 final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
                 final Set<ArtifactKey> localProjectKeys = new HashSet<>(localProjects.size());
@@ -348,6 +351,11 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
+            // pass the project.build.outputTimestamp to Quarkus packaging subsystem
+            if (mojo.mavenProject().getProperties().containsKey("project.build.outputTimestamp")) {
+                effectiveProperties.putIfAbsent("quarkus.package.output-timestamp",
+                        mojo.mavenProject().getProperties().getProperty("project.build.outputTimestamp"));
+            }
 
             for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {
                 if (attribute.getValue() == null) {

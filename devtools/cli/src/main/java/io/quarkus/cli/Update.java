@@ -2,10 +2,9 @@ package io.quarkus.cli;
 
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.build.BaseBuildCommand;
-import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.TargetQuarkusVersionGroup;
-import io.quarkus.cli.update.RewriteGroup;
+import io.quarkus.cli.common.build.BuildSystemRunner;
+import io.quarkus.cli.common.update.RewriteGroup;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "update", aliases = { "up",

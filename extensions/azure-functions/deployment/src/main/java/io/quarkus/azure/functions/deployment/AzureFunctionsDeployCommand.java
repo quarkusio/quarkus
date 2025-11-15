@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -18,7 +19,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.azure.core.management.AzureEnvironment;
@@ -30,12 +30,10 @@ import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
 import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
-import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployFunctionAppTask;
-import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.Account;
 import com.microsoft.azure.toolkit.lib.auth.AuthConfiguration;
 import com.microsoft.azure.toolkit.lib.auth.AuthType;
@@ -43,7 +41,7 @@ import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.auth.AzureCloud;
 import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
-import com.microsoft.azure.toolkit.lib.common.logging.Log;
+import com.microsoft.azure.toolkit.lib.common.exception.AzureToolkitRuntimeException;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessage;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessager;
@@ -52,7 +50,6 @@ import com.microsoft.azure.toolkit.lib.common.model.Subscription;
 import com.microsoft.azure.toolkit.lib.common.operation.Operation;
 import com.microsoft.azure.toolkit.lib.common.operation.OperationBase;
 import com.microsoft.azure.toolkit.lib.common.operation.OperationThreadContext;
-import com.microsoft.azure.toolkit.lib.common.task.AzureTaskManager;
 import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 
 import io.quarkus.builder.BuildException;
@@ -84,7 +81,8 @@ public class AzureFunctionsDeployCommand {
             "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
             "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
-    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 17` and `Java 21`";
+    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(java )?[0-9]+", Pattern.CASE_INSENSITIVE);
+    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `17` or `21`";
 
     protected static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
 
@@ -110,16 +108,18 @@ public class AzureFunctionsDeployCommand {
         setCurrentOperation();
         AzureMessager.setDefaultMessager(new QuarkusAzureMessager());
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
-        QuarkusActionManager.register();
-        AzureTaskManager.register(new QuarkusAzureTaskManager());
         initAzureAppServiceClient(config);
 
-        final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
-                config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
-        Path outputDirectory = output.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
+        try {
+            final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
+                    config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
+            Path outputDirectory = output.getOutputDirectory();
+            Path functionStagingDir = outputDirectory.resolve(AZURE_FUNCTIONS).resolve(appName.getAppName());
 
-        deployArtifact(functionStagingDir, target);
+            deployArtifact(functionStagingDir, target);
+        } catch (AzureToolkitRuntimeException e) {
+            throw new DeploymentException("Unable to deploy Azure function: " + e.getMessage().replace("\\r\\n", "\n"), e);
+        }
         producer.produce(new DeployCommandActionBuildItem(AZURE_FUNCTIONS, true));
     }
 
@@ -131,7 +131,11 @@ public class AzureFunctionsDeployCommand {
             Method push = OperationThreadContext.class.getDeclaredMethod("pushOperation", Operation.class);
             push.setAccessible(true);
             OperationBase dummy = new OperationBase() {
-                @NotNull
+                @Override
+                public Object getSource() {
+                    return null;
+                }
+
                 @Override
                 public String getId() {
                     return "Quarkus";
@@ -142,13 +146,11 @@ public class AzureFunctionsDeployCommand {
                     throw new RuntimeException("Not Implmented");
                 }
 
-                @NotNull
                 @Override
                 public String getType() {
                     return "Quarkus";
                 }
 
-                @org.jetbrains.annotations.Nullable
                 @Override
                 public AzureString getDescription() {
                     return AzureString.fromString("Quarkus");
@@ -207,7 +209,7 @@ public class AzureFunctionsDeployCommand {
         }
         // java version
         if (StringUtils.isNotEmpty(config.runtime().javaVersion())
-                && JavaVersion.fromString(config.runtime().javaVersion()).isExpandedValue()) {
+                && !JAVA_VERSION_PATTERN.matcher(config.runtime().javaVersion()).matches()) {
             log.warn(format(EXPANDABLE_JAVA_VERSION_WARNING, config.runtime().javaVersion()));
         }
         // pricing tier
@@ -328,7 +330,7 @@ public class AzureFunctionsDeployCommand {
         final List<Subscription> subscriptions = Azure.az(IAzureAccount.class).account().getSelectedSubscriptions();
         final Subscription subscription = subscriptions.get(0);
         if (subscription != null) {
-            Log.info(format(SUBSCRIPTION_TEMPLATE, TextUtils.cyan(subscription.getName()),
+            log.info(format(SUBSCRIPTION_TEMPLATE, TextUtils.cyan(subscription.getName()),
                     TextUtils.cyan(subscription.getId())));
         }
     }
@@ -349,7 +351,7 @@ public class AzureFunctionsDeployCommand {
     }
 
     private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
-        return AppServiceConfigUtils.buildDefaultFunctionConfig(subscriptionId, resourceGroup, appName, JavaVersion.JAVA_11);
+        return AppServiceConfig.buildDefaultFunctionConfig(resourceGroup, appName);
     }
 
     private void deployArtifact(Path functionStagingDir, final FunctionAppBase<?, ?, ?> target) {

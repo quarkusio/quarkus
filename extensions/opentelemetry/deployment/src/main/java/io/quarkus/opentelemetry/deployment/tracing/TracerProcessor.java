@@ -43,8 +43,10 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -235,18 +237,20 @@ public class TracerProcessor {
                 .configure()
                 .beanClass(DotName.createSimple(TracerProducer.class.getName()))
                 .observedType(eventType.getObservedType())
-                .notify(mc -> {
+                .notify(ng -> {
+                    BlockCreator bc = ng.notifyMethod();
+
                     // Object event = eventContext.getEvent();
-                    ResultHandle eventContext = mc.getMethodParam(0);
-                    ResultHandle event = mc.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(EventContext.class, "getEvent", Object.class), eventContext);
+                    Var eventContext = ng.eventContext();
+                    Expr event = bc.invokeInterface(MethodDesc.of(EventContext.class, "getEvent", Object.class),
+                            eventContext);
                     // Call to SecurityEventUtil#addEvent or SecurityEventUtil#addAllEvents, that is:
                     // SecurityEventUtil.addAllEvents((SecurityEvent) event)
                     // SecurityEventUtil.addEvent((AuthenticationSuccessEvent) event)
                     // Method 'addEvent' is overloaded and accepts SecurityEventType#getObservedType
-                    mc.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityEventUtil.class, utilMethodName,
-                            void.class, eventType.getObservedType()), mc.checkCast(event, eventType.getObservedType()));
-                    mc.returnNull();
+                    bc.invokeStatic(MethodDesc.of(SecurityEventUtil.class, utilMethodName,
+                            void.class, eventType.getObservedType()), bc.cast(event, eventType.getObservedType()));
+                    bc.return_();
                 }));
     }
 

@@ -3,7 +3,6 @@ package io.quarkus.vertx.http.proxy.fakedns;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -116,10 +115,7 @@ public class DnsMessageEncoder {
 
         QuestionRecordEncoder encoder = new QuestionRecordEncoder();
 
-        Iterator<QuestionRecord> it = questions.iterator();
-
-        while (it.hasNext()) {
-            QuestionRecord question = it.next();
+        for (QuestionRecord question : questions) {
             encoder.put(byteBuffer, question);
         }
     }
@@ -129,11 +125,7 @@ public class DnsMessageEncoder {
             return;
         }
 
-        Iterator<ResourceRecord> it = records.iterator();
-
-        while (it.hasNext()) {
-            ResourceRecord record = it.next();
-
+        for (ResourceRecord record : records) {
             try {
                 put(byteBuffer, record);
             } catch (IOException ioe) {

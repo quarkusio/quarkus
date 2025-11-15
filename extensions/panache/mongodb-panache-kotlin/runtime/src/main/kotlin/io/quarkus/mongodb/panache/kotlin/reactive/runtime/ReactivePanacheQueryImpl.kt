@@ -16,7 +16,7 @@ class ReactivePanacheQueryImpl<Entity> : ReactivePanacheQuery<Entity> {
     internal constructor(
         collection: ReactiveMongoCollection<out Entity>?,
         mongoQuery: Bson?,
-        sort: Bson?
+        sort: Bson?,
     ) {
         delegate = CommonReactivePanacheQueryImpl(collection, mongoQuery, sort)
     }

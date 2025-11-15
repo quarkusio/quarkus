@@ -63,7 +63,7 @@ public class OpenTelemetryResourceTest {
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("GET /hello", server.getName());
         assertEquals("authservice", server.getResource().getAttribute(AttributeKey.stringKey("service.name")));
-        assertEquals(config.getRawValue("quarkus.uuid"),
+        assertEquals(config.getConfigValue("quarkus.uuid").getValue(),
                 server.getResource().getAttribute(AttributeKey.stringKey("service.instance.id")));
         assertNotNull(server.getResource().getAttribute(AttributeKey.stringKey("host.name")));
 

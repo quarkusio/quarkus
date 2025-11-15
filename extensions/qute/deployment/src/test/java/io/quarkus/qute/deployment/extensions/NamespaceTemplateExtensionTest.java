@@ -34,31 +34,31 @@ public class NamespaceTemplateExtensionTest {
     @Test
     public void testTemplateExtensions() {
         assertEquals("hello:1",
-                engine.parse("{str:format('%s:%s','hello', 1)}").render());
+                engine.parse("{string:format('%s:%s','hello', 1)}").render());
         assertEquals("1",
-                engine.parse("{str:format('%s',1)}").render());
+                engine.parse("{string:format('%s',1)}").render());
         assertEquals("olleh",
-                engine.parse("{str:reverse('hello')}").render());
+                engine.parse("{string:reverse('hello')}").render());
         try {
-            engine.parse("{str:reverse(null)}").render();
+            engine.parse("{string:reverse(null)}").render();
             fail();
         } catch (NullPointerException expected) {
         }
         assertEquals("foolish:olleh",
-                engine.parse("{str:foolish('hello')}").render());
+                engine.parse("{string:foolish('hello')}").render());
         assertEquals("ONE=ONE",
                 engine.parse("{MyEnum:ONE}={MyEnum:one}").render());
         assertEquals("IN_PROGRESS=0",
                 engine.parse("{txPhase:IN_PROGRESS}={txPhase:IN_PROGRESS.ordinal}").render());
         assertEquals("Quark!",
-                engine.parse("{str:quark}").render());
+                engine.parse("{string:quark}").render());
         assertEquals("QUARKUS!",
-                engine.parse("{str:quarkus}").render());
+                engine.parse("{string:quarkus}").render());
         assertEquals("openclosed",
                 engine.getTemplate("foo").render());
     }
 
-    @TemplateExtension(namespace = "str")
+    @TemplateExtension(namespace = "string")
     public static class StringExtensions {
 
         static String format(String fmt, Object... args) {
@@ -69,7 +69,7 @@ public class NamespaceTemplateExtensionTest {
             return new StringBuilder(val).reverse().toString();
         }
 
-        @TemplateExtension(namespace = "str", matchRegex = "foo.*", priority = 5)
+        @TemplateExtension(namespace = "string", matchRegex = "foo.*", priority = 5)
         static String foo(String name, String val) {
             return name + ":" + new StringBuilder(val).reverse().toString();
         }
@@ -78,7 +78,7 @@ public class NamespaceTemplateExtensionTest {
             return "Quark!";
         }
 
-        @TemplateExtension(namespace = "str", matchName = ANY, priority = 4)
+        @TemplateExtension(namespace = "string", matchName = ANY, priority = 4)
         static String quarkAny(String key) {
             return key.toUpperCase() + "!";
         }

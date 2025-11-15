@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -30,6 +31,9 @@ import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry;
+import io.quarkus.proxy.config.ProxyConfigurationRegistry.NoneReturnValue;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
@@ -148,13 +152,21 @@ public class RestClientCDIDelegateBuilder<T> {
                         : Optional.empty());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
-        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(), configRoot.enableCompression());
+        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableResponseDecompression(),
+                configRoot.enableCompression());
         if (enableCompressions.isPresent()) {
             builder.enableCompression(enableCompressions.get());
         }
 
         Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
+
+        Optional<MemorySize> http2UpgradeMaxContentLength = oneOf(restClientConfig.http2UpgradeMaxContentLength(),
+                configRoot.http2UpgradeMaxContentLength());
+        if (http2UpgradeMaxContentLength.isPresent()) {
+            builder.property(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH,
+                    (int) http2UpgradeMaxContentLength.get().asLongValue());
+        }
 
         Optional<Boolean> alpn = oneOf(restClientConfig.alpn(), configRoot.alpn());
         if (alpn.isPresent()) {
@@ -172,22 +184,44 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureProxy(QuarkusRestClientBuilder builder) {
-        Optional<String> maybeProxy = oneOf(restClientConfig.proxyAddress(), configRoot.proxyAddress());
-        if (maybeProxy.isEmpty()) {
-            return;
-        }
 
-        String proxyAddress = maybeProxy.get();
-        if (proxyAddress.equals("none")) {
-            builder.proxyAddress("none", 0);
+        final Optional<String> legacyProxy = oneOf(restClientConfig.proxyAddress(), configRoot.proxyAddress());
+        if (legacyProxy.isPresent()) {
+            String proxyAddress = legacyProxy.get();
+            if (proxyAddress.equals("none")) {
+                builder.proxyAddress("none", 0);
+            } else {
+                ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
+                builder.proxyAddress(hostAndPort.host, hostAndPort.port);
+
+                oneOf(restClientConfig.proxyUser(), configRoot.proxyUser()).ifPresent(builder::proxyUser);
+                oneOf(restClientConfig.proxyPassword(), configRoot.proxyPassword()).ifPresent(builder::proxyPassword);
+                oneOf(restClientConfig.nonProxyHosts(), configRoot.nonProxyHosts()).ifPresent(builder::nonProxyHosts);
+                oneOf(restClientConfig.proxyConnectTimeout(), configRoot.proxyConnectTimeout())
+                        .ifPresent(builder::proxyConnectTimeout);
+            }
         } else {
-            ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
-            builder.proxyAddress(hostAndPort.host, hostAndPort.port);
-
-            oneOf(restClientConfig.proxyUser(), configRoot.proxyUser()).ifPresent(builder::proxyUser);
-            oneOf(restClientConfig.proxyPassword(), configRoot.proxyPassword()).ifPresent(builder::proxyPassword);
-            oneOf(restClientConfig.nonProxyHosts(), configRoot.nonProxyHosts()).ifPresent(builder::nonProxyHosts);
+            /* Check the named proxy configurations */
+            final ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+            final Optional<String> proxyConfigurationName = restClientConfig.proxyConfigurationName()
+                    .or(() -> configRoot.proxyConfigurationName());
+            registry.getProxyConfig(proxyConfigurationName, NoneReturnValue.NONE_INSTANCE)
+                    .map(NamedProxyConfig::assertHttpType)
+                    .ifPresent(proxyConfig -> {
+                        builder.proxyAddress(proxyConfig.host().get(), proxyConfig.port().getAsInt());
+                        registry.getUsernamePassword(proxyConfig).ifPresent(creds -> {
+                            builder.proxyUser(creds.getUsername());
+                            builder.proxyPassword(creds.getPassword());
+                        });
+                        proxyConfig.nonProxyHosts().ifPresent(nonProxyHosts -> {
+                            if (!nonProxyHosts.isEmpty()) {
+                                builder.nonProxyHosts(nonProxyHosts.stream().collect(Collectors.joining(",")));
+                            }
+                        });
+                        proxyConfig.proxyConnectTimeout().ifPresent(builder::proxyConnectTimeout);
+                    });
         }
+
     }
 
     private void configureQueryParamStyle(QuarkusRestClientBuilder builder) {

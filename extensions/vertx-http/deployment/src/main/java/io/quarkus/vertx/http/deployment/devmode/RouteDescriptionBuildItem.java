@@ -1,8 +1,5 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
@@ -29,7 +26,7 @@ public final class RouteDescriptionBuildItem extends MultiBuildItem {
     }
 
     private String getMediaType(String[] all) {
-        return all.length == 0 ? null : Arrays.stream(all).collect(Collectors.joining(", "));
+        return all.length == 0 ? null : String.join(", ", all);
     }
 
 }

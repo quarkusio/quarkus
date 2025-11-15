@@ -18,6 +18,3 @@ pluginManagement {
 includeBuild 'nested'
 
 rootProject.name = 'included'
-
-include ':dependency'
-include ':included-quarkus'

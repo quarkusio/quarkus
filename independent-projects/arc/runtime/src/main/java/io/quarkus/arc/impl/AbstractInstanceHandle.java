@@ -60,7 +60,7 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
                 if (bean.getScope().equals(Dependent.class)) {
                     destroyInternal();
                 } else {
-                    InjectableContext context = Arc.container().getActiveContext(bean.getScope());
+                    InjectableContext context = Arc.requireContainer().getActiveContext(bean.getScope());
                     if (context == null) {
                         throw new ContextNotActiveException(
                                 "Cannot destroy instance of " + bean + " - no active context found for: " + bean.getScope());

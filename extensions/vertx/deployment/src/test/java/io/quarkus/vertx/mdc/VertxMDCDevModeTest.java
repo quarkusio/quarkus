@@ -30,10 +30,11 @@ public class VertxMDCDevModeTest {
             .withApplicationRoot(
                     (jar) -> jar.addClasses(JavaArchive.class, VerticleDeployer.class, InMemoryLogHandler.class,
                             InMemoryLogHandlerProducer.class)
-                            .add(new StringAsset("quarkus.log.file.enable=true\n" +
-                                    "quarkus.log.console.format=%d{HH:mm:ss} %-5p requestId=%X{requestId} [%c{2.}] (%t) %s%e%n\n"),
-                                    "application.properties"))
-            .setLogFileName("quarkus-mdc.log");
+                            .add(new StringAsset(
+                                    "quarkus.log.file.enabled=true\n" +
+                                            "quarkus.log.file.path=target/quarkus-mdc.log\n" +
+                                            "quarkus.log.console.format=%d{HH:mm:ss} %-5p requestId=%X{requestId} [%c{2.}] (%t) %s%e%n\n"),
+                                    "application.properties"));
 
     @Test
     void mdcDevMode() {

@@ -7,7 +7,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorFactory;
 
-import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
+import org.hibernate.validator.internal.util.actions.NewInstance;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -32,7 +32,7 @@ public class ArcConstraintValidatorFactoryImpl implements ConstraintValidatorFac
             }
             return instance;
         }
-        return NewInstance.action(key, "ConstraintValidator").run();
+        return NewInstance.action(key, "ConstraintValidator");
     }
 
     @Override

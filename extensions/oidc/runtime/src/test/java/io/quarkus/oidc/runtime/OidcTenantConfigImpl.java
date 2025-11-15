@@ -96,6 +96,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CODE_GRANT,
         AUTHENTICATION,
         CERTIFICATION_CHAIN,
+        RESOURCE_METADATA,
         LOGOUT,
         TOKEN,
         ROLES,
@@ -141,6 +142,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         AUTHENTICATION_COOKIE_PATH_HEADER,
         AUTHENTICATION_COOKIE_DOMAIN,
         AUTHENTICATION_COOKIE_SAME_SITE,
+        AUTHENTICATION_CACHE_CONTROL,
         AUTHENTICATION_ALLOW_MULTIPLE_CODE_FLOWS,
         AUTHENTICATION_FAIL_ON_MISSING_STATE_PARAM,
         AUTHENTICATION_FAIL_ON_UNRESOLVED_KID,
@@ -158,10 +160,15 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CERTIFICATION_CHAIN_TRUST_STORE_PASSWORD,
         CERTIFICATION_CHAIN_TRUST_STORE_CERT_ALIAS,
         CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE,
+        RESOURCE_METADATA_ENABLED,
+        RESOURCE_METADATA_RESOURCE,
+        RESOURCE_METADATA_AUTHORIZATION_SERVER,
+        RESOURCE_METADATA_FORCE_HTTPS_SCHEME,
         LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
         LOGOUT_CLEAR_SITE_DATA,
+        LOGOUT_MODE,
         LOGOUT_EXTRA_PARAMS,
         LOGOUT_BACK_CHANNEL,
         LOGOUT_FRONT_CHANNEL,
@@ -507,6 +514,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
+            public LogoutMode logoutMode() {
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_MODE, true);
+                return LogoutMode.QUERY;
+            }
+
+            @Override
             public Backchannel backchannel() {
                 invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL, true);
                 return new Backchannel() {
@@ -589,6 +602,36 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> trustStoreFileType() {
                 invocationsRecorder.put(ConfigMappingMethods.CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE, true);
                 return Optional.empty();
+            }
+        };
+    }
+
+    @Override
+    public ResourceMetadata resourceMetadata() {
+        invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA, true);
+        return new ResourceMetadata() {
+            @Override
+            public boolean enabled() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_ENABLED, true);
+                return false;
+            }
+
+            @Override
+            public Optional<String> resource() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_RESOURCE, true);
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> authorizationServer() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_AUTHORIZATION_SERVER, true);
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean forceHttpsScheme() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_FORCE_HTTPS_SCHEME, true);
+                return false;
             }
         };
     }
@@ -715,6 +758,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public CookieSameSite cookieSameSite() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_COOKIE_SAME_SITE, true);
                 return CookieSameSite.LAX;
+            }
+
+            @Override
+            public Optional<Set<CacheControl>> cacheControl() {
+                invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_CACHE_CONTROL, true);
+                return Optional.empty();
             }
 
             @Override

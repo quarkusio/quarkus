@@ -1338,6 +1338,22 @@ While adding test-specific configuration properties using `src/test/resources/ap
 is possible for unit tests, it's not possible for integration tests.
 ====
 
+=== Debugging `@QuarkusIntegrationTest`
+
+Debugging a failed `@QuarkusInterationTest` is trickier than debugging a `@QuarkusTest` because the Quarkus application
+is launched as a separate process.
+
+The test code itself can be easily debugged with any of the well known methods (like launching the test from the IDE, adding `-Dmaven.failsafe.debug` if the test is launched via Maven, etc.),
+but the application under test needs to have the necessary flags passed to it via `quarkus.test.arg-line` to enable debugging. For testing an application
+packaged as *jar*, you can use:
+
+[source,sh]
+----
+-Dquarkus.test.arg-line="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"
+----
+
+as an argument to Maven/Gradle when launching the test. This will make the application wait until a remote JVM debugger is connected to port `5005`.
+
 === Launching containers
 
 When `@QuarkusIntegrationTest` results in launching a container (because the application was built with `quarkus.container-image.build` set to `true`), the container is launched on a predictable container network. This facilitates writing integration tests that need to launch services to support the application.

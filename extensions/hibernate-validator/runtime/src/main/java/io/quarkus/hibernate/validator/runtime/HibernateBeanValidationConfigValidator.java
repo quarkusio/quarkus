@@ -8,7 +8,7 @@ import jakarta.validation.ValidatorFactory;
 
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
-import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorFactoryImpl;
+import org.hibernate.validator.constraintvalidation.spi.DefaultConstraintValidatorFactory;
 
 import io.smallrye.config.validator.BeanValidationConfigValidator;
 
@@ -24,7 +24,7 @@ public class HibernateBeanValidationConfigValidator implements BeanValidationCon
                 .ignoreXmlConfiguration()
                 .builtinConstraints(constraints)
                 .initializeBeanMetaData(classesToBeValidated)
-                .constraintValidatorFactory(new ConstraintValidatorFactoryImpl())
+                .constraintValidatorFactory(new DefaultConstraintValidatorFactory())
                 .traversableResolver(new TraverseAllTraversableResolver());
 
         ConfigValidatorHolder.initialize(configuration.buildValidatorFactory());

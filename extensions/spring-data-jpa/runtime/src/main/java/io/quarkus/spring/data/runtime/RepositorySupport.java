@@ -17,20 +17,15 @@ public final class RepositorySupport {
     public static List<?> findByIds(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass,
             Iterable<?> ids) {
         Objects.requireNonNull(ids);
-        List<Object> result = new ArrayList<>();
-        for (Object id : ids) {
-            Object byId = operations.findById(entityClass, id);
-            if (byId != null) {
-                result.add(byId);
-            }
-        }
-        return result;
-    }
 
-    public static List<?> findByIds(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass,
-            String idField, Iterable<Long> ids) {
-        Objects.requireNonNull(ids);
-        return operations.find(entityClass, String.format("%s in ?1", idField), ids).list();
+        List<Object> result = new ArrayList<>();
+        ids.forEach(result::add);
+
+        // Hibernate's findMultiple also returns null elements for non-found ids. we filter out null values here to stay consistent with the previous behavior.
+        return operations.findByIds(entityClass, new ArrayList<>(result))
+                .stream()
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public static void deleteAll(AbstractJpaOperations<PanacheQuery<?>> operations, Iterable<?> entities) {

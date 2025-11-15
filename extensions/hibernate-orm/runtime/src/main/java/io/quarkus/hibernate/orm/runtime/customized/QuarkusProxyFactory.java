@@ -4,6 +4,8 @@ import static org.hibernate.internal.CoreLogging.messageLogger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Locale;
 import java.util.Set;
 
 import org.hibernate.HibernateException;
@@ -57,8 +59,28 @@ public final class QuarkusProxyFactory implements ProxyFactory {
         this.componentIdType = componentIdType;
         ProxyDefinitions.ProxyClassDetailsHolder detailsHolder = proxyClassDefinitions.getProxyForClass(persistentClass);
         if (detailsHolder == null) {
-            throw new HibernateException("Could not lookup a pre-generated proxy class definition for entity '" + entityName
-                    + "'. Falling back to enforced eager mode for this entity!");
+            String reason = null;
+            // Some Envers entity classes are final, e.g. org.hibernate.envers.DefaultRevisionEntity
+            // There's nothing users can do about it, so let's not fail in those cases.
+            if (persistentClass.getName().startsWith("org.hibernate.")) {
+                reason = "this is a limitation of this particular Hibernate class.";
+            }
+            // See also ProxyBuildingHelper#isProxiable
+            else if (Modifier.isFinal(persistentClass.getModifiers())) {
+                reason = "this class is final. Your application might perform better if this class was non-final.";
+            }
+            if (reason != null) {
+                // This is caught and logged as a warning by Hibernate ORM.
+                throw new HibernateException(String.format(Locale.ROOT,
+                        "Could not lookup a pre-generated proxy class definition for entity '%s' (class='%s'): %s", entityName,
+                        persistentClass.getCanonicalName(), reason));
+            } else {
+                // This will fail bootstrap.
+                throw new IllegalStateException(String.format(Locale.ROOT,
+                        "Could not lookup a pre-generated proxy class definition for entity '%s' (class='%s')." +
+                                "This should not happen, please open an issue at https://github.com/quarkusio/quarkus/issues",
+                        entityName, persistentClass.getCanonicalName()));
+            }
         }
         this.overridesEquals = detailsHolder.isOverridesEquals();
         this.constructor = detailsHolder.getConstructor();
@@ -93,7 +115,9 @@ public final class QuarkusProxyFactory implements ProxyFactory {
             ((ProxyConfiguration) proxy).$$_hibernate_set_interceptor(interceptor);
             return proxy;
         } catch (Throwable t) {
-            String logMessage = LOG.bytecodeEnhancementFailed(entityName);
+            String logMessage = "Bytecode enhancement failed for class '" + entityName
+                    + "' (it might be due to the Java module system preventing Hibernate ORM from defining an enhanced class in the same package"
+                    + " - in this case, the class should be opened and exported to Hibernate ORM)";
             LOG.error(logMessage, t);
             throw new HibernateException(logMessage, t);
         }

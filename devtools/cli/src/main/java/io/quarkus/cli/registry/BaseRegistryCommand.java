@@ -4,6 +4,7 @@ import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.registry.RegistryClientMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 

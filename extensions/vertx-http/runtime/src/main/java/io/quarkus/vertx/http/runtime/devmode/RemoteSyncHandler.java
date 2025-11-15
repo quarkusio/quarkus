@@ -117,7 +117,6 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     .putHeader(QUARKUS_ERROR, "Unknown method " + event.method() + " this is not a valid remote dev request")
                     .setStatusCode(405).end();
         }
-
     }
 
     private void handleDev(HttpServerRequest event) {
@@ -139,7 +138,6 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                                 hotReplacementContext.setRemoteProblem(problem);
                             }
                             synchronized (RemoteSyncHandler.class) {
-
                                 RemoteSyncHandler.class.notifyAll();
                                 RemoteSyncHandler.class.wait(10000);
                                 if (checkForChanges) {

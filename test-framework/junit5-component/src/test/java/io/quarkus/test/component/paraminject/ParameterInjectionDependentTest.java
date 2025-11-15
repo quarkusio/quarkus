@@ -7,11 +7,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
 
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.component.QuarkusComponentTest;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusComponentTest
 public class ParameterInjectionDependentTest {
 

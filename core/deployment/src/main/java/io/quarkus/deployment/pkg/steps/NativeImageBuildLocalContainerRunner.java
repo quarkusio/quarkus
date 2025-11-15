@@ -27,6 +27,10 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
     }
 
     public static List<String> getVolumeAccessArguments(ContainerRuntime containerRuntime) {
+        if (containerRuntime.isUnavailable()) {
+            return List.of();
+        }
+
         final List<String> result = new ArrayList<>();
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
             if (containerRuntime.isDocker() && containerRuntime.isRootless()) {

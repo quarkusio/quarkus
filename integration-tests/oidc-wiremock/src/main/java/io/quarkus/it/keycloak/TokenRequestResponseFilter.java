@@ -10,10 +10,13 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
 
 @ApplicationScoped
 @Unremovable
@@ -26,8 +29,13 @@ public class TokenRequestResponseFilter implements OidcRequestFilter, OidcRespon
     @Override
     public void filter(OidcRequestContext rc) {
         final Instant now = Instant.now();
-        instants.put(rc.contextProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE), now);
+        String tenantId = rc.contextProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        instants.put(tenantId, now);
         rc.contextProperties().put("instant", now);
+        if ("code-flow-opaque-access-token".equals(tenantId)) {
+            rc.contextProperties().put(OidcRequestContextProperties.REQUEST_BODY,
+                    Buffer.buffer(rc.requestBody().toString() + "&opaque_token_param=opaque_token_value"));
+        }
     }
 
     @Override
@@ -43,6 +51,14 @@ public class TokenRequestResponseFilter implements OidcRequestFilter, OidcRespon
                         .equals(rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE))) {
             LOG.debug("Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken' in an instant: "
                     + instantsAreTheSame);
+        }
+        if (rc.requestProperties().get(OidcRequestContextProperties.REQUEST_BODY) != null) {
+            // Only the code-flow-opaque-access-token request customizes the request body
+            JsonObject body = rc.responseBody().toJsonObject();
+            String scope = body.getString("scope");
+            body.put("scope", scope.replace(",", " "));
+            rc.requestProperties().put(OidcRequestContextProperties.RESPONSE_BODY,
+                    Buffer.buffer(body.toString()));
         }
     }
 

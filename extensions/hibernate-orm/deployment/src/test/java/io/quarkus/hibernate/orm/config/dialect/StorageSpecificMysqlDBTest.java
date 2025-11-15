@@ -1,0 +1,36 @@
+package io.quarkus.hibernate.orm.config.dialect;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.builder.Version;
+import io.quarkus.hibernate.orm.MyEntity;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.test.QuarkusUnitTest;
+
+/**
+ * Test Mysql DB storage engine with MariaDB dialect
+ */
+public class StorageSpecificMysqlDBTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class)
+                    .addAsResource("application-start-offline-mariadb-dialect.properties", "application.properties"))
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-jdbc-mariadb-deployment", Version.getVersion())))
+            .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
+            .overrideConfigKey("quarkus.hibernate-orm.dialect.storage-engine", "")
+            .overrideConfigKey("quarkus.hibernate-orm.dialect.mysql.storage-engine", "innodb");
+
+    @Test
+    public void applicationStarts() {
+        assertThat(System.getProperty("hibernate.dialect.storage_engine")).isEqualTo("innodb");
+    }
+}

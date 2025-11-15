@@ -1,5 +1,8 @@
 package io.quarkus.devtools.testing.registry.client;
 
+import static io.quarkus.registry.Constants.OFFERING;
+import static io.quarkus.registry.Constants.RECOMMEND_STREAMS_FROM;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -111,6 +114,48 @@ public class TestRegistryClientBuilder {
         }
         externalCodestartBuilders.add(codestartBuilder);
         return codestartBuilder;
+    }
+
+    public TestRegistryClientBuilder installExternalPlatform(ExtensionCatalog platformCatalog) {
+        // install the BOM artifact
+        final ArtifactCoords bomCoords = platformCatalog.getBom();
+        final Model bomModel = initModel(bomCoords);
+        final List<Dependency> managedDeps = bomModel.getDependencyManagement().getDependencies();
+        for (Extension ext : platformCatalog.getExtensions()) {
+            final ArtifactCoords extCoords = ext.getArtifact();
+            final Dependency runtime = new Dependency();
+            runtime.setGroupId(extCoords.getGroupId());
+            runtime.setArtifactId(extCoords.getArtifactId());
+            runtime.setVersion(extCoords.getVersion());
+            managedDeps.add(runtime);
+            final Dependency deployment = new Dependency();
+            deployment.setGroupId(extCoords.getGroupId());
+            deployment.setArtifactId(extCoords.getArtifactId() + "-deployment");
+            deployment.setVersion(extCoords.getVersion());
+            managedDeps.add(deployment);
+        }
+        final Path bomFile = getTmpPath(bomCoords);
+        try {
+            ModelUtils.persistModel(bomFile, bomModel);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to persist BOM at " + bomFile, e);
+        }
+        install(bomCoords, bomFile);
+
+        // install the JSON descriptor
+        final ArtifactCoords jsonCoords = PlatformArtifacts.ensureCatalogArtifact(bomCoords);
+        final Path jsonFile = getTmpPath(jsonCoords);
+        try {
+            platformCatalog.persist(jsonFile);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to persist extension catalog " + jsonFile, e);
+        }
+        install(jsonCoords, jsonFile);
+
+        // install the extensions
+        installExtensionArtifacts(platformCatalog.getExtensions());
+
+        return this;
     }
 
     private void installExtensionArtifacts(Collection<Extension> extensions) {
@@ -234,7 +279,7 @@ public class TestRegistryClientBuilder {
     }
 
     private void configureRegistry(TestRegistryBuilder registry) {
-        registry.configure(getRegistryDir(baseDir, registry.config.getId()));
+        registry.configure(getRegistryDir(baseDir, registry.config.getId()), getResolver());
         config.addRegistry(registry.config);
     }
 
@@ -283,6 +328,17 @@ public class TestRegistryClientBuilder {
          */
         public TestRegistryBuilder external() {
             this.external = true;
+            return this;
+        }
+
+        /**
+         * Enables Maven resolver for platform descriptors that couldn't be resolved by the configured platforms
+         * for this registry.
+         *
+         * @return this instance
+         */
+        public TestRegistryBuilder enableMavenResolver() {
+            this.enableMavenResolver = true;
             return this;
         }
 
@@ -336,6 +392,30 @@ public class TestRegistryClientBuilder {
             return this;
         }
 
+        public TestRegistryBuilder setOffering(String offering) {
+            return setExtraOption(OFFERING, offering);
+        }
+
+        public TestRegistryBuilder setRecommendStreamsFrom(String platformKey, String streamId) {
+            Map<String, String> recommendStreamsFrom = (Map<String, String>) config.getExtra().get(RECOMMEND_STREAMS_FROM);
+            if (recommendStreamsFrom == null) {
+                recommendStreamsFrom = new HashMap<>(2);
+                setExtraOption(RECOMMEND_STREAMS_FROM, recommendStreamsFrom);
+            }
+            recommendStreamsFrom.put(platformKey, streamId);
+            return this;
+        }
+
+        private TestRegistryBuilder setExtraOption(String name, Object value) {
+            var extra = config.getExtra();
+            if (extra == null || extra.isEmpty()) {
+                extra = new HashMap<>(4);
+                config.setExtra(extra);
+            }
+            extra.put(name, value);
+            return this;
+        }
+
         public TestRegistryClientBuilder clientBuilder() {
             return parent;
         }
@@ -347,7 +427,7 @@ public class TestRegistryClientBuilder {
             memberCatalogs.add(member);
         }
 
-        private void configure(Path registryDir) {
+        private void configure(Path registryDir, MavenArtifactResolver resolver) {
             if (Files.exists(registryDir)) {
                 if (!Files.isDirectory(registryDir)) {
                     throw new IllegalStateException(registryDir + " exists and is not a directory");
@@ -365,6 +445,11 @@ public class TestRegistryClientBuilder {
                         TestRegistryClient.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
                 if (enableMavenResolver) {
                     config.setExtra("enable-maven-resolver", true);
+                    try {
+                        config.setExtra("test-local-maven-repo", resolver.getMavenContext().getLocalRepo());
+                    } catch (BootstrapMavenException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
 
@@ -628,11 +713,7 @@ public class TestRegistryClientBuilder {
             final TestPlatformCatalogMemberBuilder quarkusBom = newMember("quarkus-bom");
             quarkusBom.addExtension("io.quarkus", "quarkus-core", release.getQuarkusCoreVersion());
             Map<String, Object> metadata = quarkusBom.getProjectProperties();
-            metadata.put("maven-plugin-groupId", quarkusBom.extensions.getBom().getGroupId());
-            metadata.put("maven-plugin-artifactId", "quarkus-maven-plugin");
-            metadata.put("maven-plugin-version", quarkusBom.extensions.getBom().getVersion());
-            metadata.put("compiler-plugin-version", "3.8.1");
-            metadata.put("surefire-plugin-version", "3.0.0");
+            setMainPlatformProjectProperties(metadata, quarkusBom.extensions.getBom());
             return quarkusBom;
         }
 
@@ -667,6 +748,26 @@ public class TestRegistryClientBuilder {
             }
             metadata.put("members", members);
         }
+    }
+
+    /**
+     * Initializes basic project metadata for dev tools
+     *
+     * @param catalog platform catalog
+     */
+    public static void initMainPlatformMetadata(ExtensionCatalog catalog) {
+        Map<String, Object> metadata = catalog.getMetadata();
+        Map map = (Map) metadata.computeIfAbsent("project", k -> new HashMap<String, Object>());
+        map = (Map) map.computeIfAbsent("properties", k -> new HashMap<String, Object>());
+        setMainPlatformProjectProperties(map, catalog.getBom());
+    }
+
+    public static void setMainPlatformProjectProperties(Map<String, Object> metadata, ArtifactCoords bomCoords) {
+        metadata.put("maven-plugin-groupId", bomCoords.getGroupId());
+        metadata.put("maven-plugin-artifactId", "quarkus-maven-plugin");
+        metadata.put("maven-plugin-version", bomCoords.getVersion());
+        metadata.put("compiler-plugin-version", "3.8.1");
+        metadata.put("surefire-plugin-version", "3.0.0");
     }
 
     public static class TestPlatformCatalogMemberBuilder {
@@ -751,13 +852,20 @@ public class TestRegistryClientBuilder {
 
         public TestPlatformCatalogMemberBuilder addExtensionWithCodestart(String groupId, String artifactId, String version,
                 String codestart) {
+            return addExtensionWithMetadata(groupId, artifactId, version,
+                    codestart == null ? Map.of()
+                            : Map.of("codestart", Map.of("name", codestart, "languages", List.of("java"))));
+        }
+
+        public TestPlatformCatalogMemberBuilder addExtensionWithMetadata(String groupId, String artifactId, String version,
+                Map<String, Object> metadata) {
             final ArtifactCoords coords = ArtifactCoords.jar(groupId, artifactId, version);
             final Extension.Mutable e = Extension.builder()
                     .setArtifact(coords)
                     .setName(artifactId)
-                    .setOrigins(Collections.singletonList(extensions));
-            if (codestart != null) {
-                e.getMetadata().put("codestart", Map.of("name", codestart, "languages", List.of("java")));
+                    .setOrigins(List.of(extensions));
+            if (metadata != null) {
+                e.getMetadata().putAll(metadata);
             }
             extensions.addExtension(e);
 
@@ -891,7 +999,7 @@ public class TestRegistryClientBuilder {
         }
 
         private void persist(Path nonPlatformDir) {
-            codestarts.forEach(c -> c.persist());
+            codestarts.forEach(TestCodestartBuilder::persist);
             final Path json = getNonPlatformCatalogPath(nonPlatformDir, extensions.getQuarkusCoreVersion());
             try {
                 extensions.persist(json);
@@ -994,7 +1102,7 @@ public class TestRegistryClientBuilder {
         pom.setGroupId(coords.getGroupId());
         pom.setArtifactId(coords.getArtifactId());
         pom.setVersion(coords.getVersion());
-        pom.setPackaging("pom");
+        pom.setPackaging(ArtifactCoords.TYPE_POM);
         pom.setDependencyManagement(new DependencyManagement());
 
         final Dependency d = new Dependency();

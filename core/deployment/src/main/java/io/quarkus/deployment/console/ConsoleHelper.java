@@ -23,7 +23,7 @@ public class ConsoleHelper {
         //if there is no color we need a basic console
         //note that we never enable input for tests
         //surefire communicates of stdin, so this can mess with it
-        boolean inputSupport = !test && !config.disableConsoleInput().orElse(consoleConfig.disableInput());
+        boolean inputSupport = !test && !consoleConfig.disableInput();
         if (!inputSupport) {
             //note that in this case we don't hold onto anything from this class loader
             //which is important for the test suite
@@ -34,7 +34,7 @@ public class ConsoleHelper {
             new TerminalConnection(new Consumer<Connection>() {
                 @Override
                 public void accept(Connection connection) {
-                    if (connection.supportsAnsi() && !config.basicConsole().orElse(consoleConfig.basic())) {
+                    if (connection.supportsAnsi() && !consoleConfig.basic()) {
                         QuarkusConsole.INSTANCE = new AeshConsole(connection);
                     } else {
                         LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();

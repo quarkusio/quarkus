@@ -5,8 +5,8 @@ plugins{
 
 
 
-group 'io.quarkus.test.application'
-version '1.0-SNAPSHOT'
+group = 'io.quarkus.test.application'
+version = '1.0-SNAPSHOT'
 
 
 repositories {
@@ -16,13 +16,13 @@ repositories {
 
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     implementation 'io.quarkus:quarkus-resteasy'
     implementation ('org.acme.libs:libraryB')
     implementation ('org.acme.libs:libraryA')
     implementation ('org.acme.extensions:another-example-extension')
 
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
 }
 
 test {

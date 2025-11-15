@@ -61,8 +61,16 @@ class GreetingResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    fun marry(person: Person): Person {
+    fun postPerson(person: Person): Person {
         return Person(person.fullName.substringBefore(" ") + " Halpert")
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("many")
+    fun postPeople(people: List<Person>): Person {
+        return Person(people.firstOrNull()?.fullName?.substringBefore(" ") + " Halpert")
     }
 
     @GET

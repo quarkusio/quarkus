@@ -31,8 +31,10 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         private final Optional<Duration> accessTokenExpirySkew;
         private final Optional<Duration> refreshTokenTimeSkew;
         private final Optional<List<String>> scopes;
+        private final Optional<List<String>> audience;
         private final boolean clientEnabled;
         private final Optional<String> id;
+        private final Optional<Duration> refreshInterval;;
 
         private OidcClientConfigImpl(OidcClientConfigBuilder builder) {
             super(builder);
@@ -45,8 +47,10 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
             this.accessTokenExpirySkew = builder.accessTokenExpirySkew;
             this.refreshTokenTimeSkew = builder.refreshTokenTimeSkew;
             this.scopes = builder.scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.scopes));
+            this.audience = builder.audience.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.audience));
             this.clientEnabled = builder.clientEnabled;
             this.id = builder.id;
+            this.refreshInterval = builder.refreshInterval;
         }
 
         @Override
@@ -62,6 +66,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         @Override
         public Optional<List<String>> scopes() {
             return scopes;
+        }
+
+        @Override
+        public Optional<List<String>> audience() {
+            return audience;
         }
 
         @Override
@@ -103,6 +112,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         public Map<String, String> headers() {
             return headers;
         }
+
+        @Override
+        public Optional<Duration> refreshInterval() {
+            return refreshInterval;
+        }
     }
 
     /**
@@ -116,6 +130,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private boolean earlyTokensAcquisition;
     private final Map<String, Map<String, String>> grantOptions = new HashMap<>();
     private final List<String> scopes = new ArrayList<>();
+    private final List<String> audience = new ArrayList<>();
     private Grant grant;
     private boolean absoluteExpiresIn;
     private Optional<Duration> accessTokenExpiresIn;
@@ -123,6 +138,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Duration> refreshTokenTimeSkew;
     private boolean clientEnabled;
     private Optional<String> id;
+    private Optional<Duration> refreshInterval;
 
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
@@ -146,8 +162,12 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         this.refreshTokenTimeSkew = config.refreshTokenTimeSkew();
         this.clientEnabled = config.clientEnabled();
         this.id = config.id();
+        this.refreshInterval = config.refreshInterval();
         if (config.scopes().isPresent()) {
             this.scopes.addAll(config.scopes().get());
+        }
+        if (config.audience().isPresent()) {
+            this.audience.addAll(config.audience().get());
         }
     }
 
@@ -287,6 +307,30 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
+     * Adds scopes to the {@link OidcClientConfig#audience()}.
+     *
+     * @param scopes {@link OidcClientConfig#audience()}
+     * @return this builder
+     */
+    public OidcClientConfigBuilder audience(List<String> audience) {
+        Objects.requireNonNull(audience);
+        this.audience.addAll(audience);
+        return this;
+    }
+
+    /**
+     * Adds scopes to the {@link OidcClientConfig#audience()}.
+     *
+     * @param scopes {@link OidcClientConfig#audience()}
+     * @return this builder
+     */
+    public OidcClientConfigBuilder audience(String... audience) {
+        Objects.requireNonNull(audience);
+        this.audience.addAll(Arrays.asList(audience));
+        return this;
+    }
+
+    /**
      * @param clientEnabled {@link OidcClientConfig#clientEnabled()}
      * @return this builder
      */
@@ -328,6 +372,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public GrantBuilder grant() {
         return new GrantBuilder(this);
+    }
+
+    public OidcClientConfigBuilder refreshInterval(Duration refreshInterval) {
+        this.refreshInterval = Optional.ofNullable(refreshInterval);
+        return this;
     }
 
     /**

@@ -6,6 +6,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog-ext https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 
     <changeSet id="1" author="loic">
+      <preConditions onFail="WARN">
+        <ext:collectionExists name="test"/>
+      </preConditions>
 
         <ext:createCollection collectionName="Fruit"/>
 
@@ -19,5 +22,23 @@
         </ext:insertOne>
 
     </changeSet>
+
+  <changeSet id="2" author="RK">
+    <comment>use runCommand to execute arbitrary mongo commands.</comment>
+    <ext:runCommand>
+      <ext:command>
+        {
+        update: "fruit",
+        updates: [
+        {
+        q: {name: null},
+        u: {$set: {name: "unknown"}},
+        multi: true
+        }
+        ]
+        }
+      </ext:command>
+    </ext:runCommand>
+  </changeSet>
 
 </databaseChangeLog>

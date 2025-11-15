@@ -25,22 +25,28 @@ public class CompiledJavaVersionBuildStep {
     @BuildStep
     public CompiledJavaVersionBuildItem compiledJavaVersion(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         final ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
-        Integer majorVersion = getMajorJavaVersion(appArtifact);
-        if (majorVersion == null) {
-            // workspace info isn't available in prod builds though
-            for (ResolvedDependency module : curateOutcomeBuildItem.getApplicationModel()
-                    .getDependencies(DependencyFlags.WORKSPACE_MODULE)) {
-                majorVersion = getMajorJavaVersion(module);
-                if (majorVersion != null) {
-                    break;
+        try {
+            Integer majorVersion = getMajorJavaVersion(appArtifact);
+            if (majorVersion == null) {
+                // workspace info isn't available in prod builds though
+                for (ResolvedDependency module : curateOutcomeBuildItem.getApplicationModel()
+                        .getDependencies(DependencyFlags.WORKSPACE_MODULE)) {
+                    majorVersion = getMajorJavaVersion(module);
+                    if (majorVersion != null) {
+                        break;
+                    }
                 }
             }
-        }
-        if (majorVersion == null) {
-            log.debug("No .class files located");
+            if (majorVersion == null) {
+                log.debug("No .class files located");
+                return CompiledJavaVersionBuildItem.unknown();
+            }
+            return CompiledJavaVersionBuildItem.fromMajorJavaVersion(majorVersion);
+        } catch (Exception e) {
+            log.warn("Failed to parse major version", e);
             return CompiledJavaVersionBuildItem.unknown();
         }
-        return CompiledJavaVersionBuildItem.fromMajorJavaVersion(majorVersion);
+
     }
 
     private static Integer getMajorJavaVersion(ResolvedDependency artifact) {

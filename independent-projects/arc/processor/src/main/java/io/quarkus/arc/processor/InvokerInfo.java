@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.jboss.jandex.Type;
  * Opaque token that stands in for an invoker built using {@link InvokerBuilder}.
  *
  * @see #getClassName()
+ * @see #getClassDesc()
  */
 public class InvokerInfo implements InjectionTargetInfo {
     private final BeanDeployment beanDeployment;
@@ -94,7 +96,10 @@ public class InvokerInfo implements InjectionTargetInfo {
     /**
      * Returns the class name of the built invoker. It is guaranteed to have a {@code public}
      * zero-parameter constructor.
+     *
+     * @deprecated use {@link #getClassDesc()}
      */
+    @Deprecated(forRemoval = true, since = "3.30")
     public String getClassName() {
         if (lazyClassName != null) {
             return lazyClassName;
@@ -103,6 +108,14 @@ public class InvokerInfo implements InjectionTargetInfo {
         } else {
             return className;
         }
+    }
+
+    /**
+     * Returns the class of the built invoker. It is guaranteed to have a {@code public}
+     * zero-parameter constructor.
+     */
+    public ClassDesc getClassDesc() {
+        return ClassDesc.of(getClassName());
     }
 
     @Override

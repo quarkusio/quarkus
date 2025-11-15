@@ -1535,10 +1535,38 @@ This same SPI can also be used to provide a custom annotation that will substitu
 ==== Injecting Configuration into Recorders
 
 Configuration objects with phase `RUNTIME` or `BUILD_AND_RUNTIME_FIXED` can be injected into recorders via constructor
-injection. Just create a constructor that takes the configuration objects the recorder needs. If the recorder has multiple
-constructors you can annotate the one you want Quarkus to use with `@Inject`. If the recorder wants to inject runtime config
-but is also used at static init time then it needs to inject a `RuntimeValue<ConfigObject>`, this value will only be set
-when the runtime methods are being invoked.
+injection. The constructor requires a parameter for each configuration object type. If the Configuration object type is
+declared to be in the `RUNTIME` phase, it must be wrapped in a `RuntimeValue<>` type.
+
+[source%nowrap,java]
+----
+@ConfigMapping(prefix = "quarkus.btrt")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUNTIME_FIXED)
+public interface BuildAndRuntimeFixedConfig {
+
+}
+
+@ConfigMapping(prefix = "quarkus.rt")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface RuntimeConfig {
+
+}
+
+@Recorder
+class ExtensionRecorder {
+    private final BuildAndRuntimeFixedConfig buildAndRuntimeFixedConfig;
+    private final RuntimeValue<RuntimeConfig> runtimeConfig;
+
+    public ExtensionRecorder(
+            BuildAndRuntimeFixedConfig buildAndRuntimeFixedConfig,
+            RuntimeValue<RuntimeConfig> runtimeConfig) {
+        this.buildAndRuntimeFixedConfig = buildAndRuntimeFixedConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
+}
+----
+
+NOTE: If the recorder has multiple constructors you can annotate the one you want Quarkus to use with `@Inject`.
 
 ==== RecorderContext
 

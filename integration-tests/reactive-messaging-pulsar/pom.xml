@@ -20,6 +20,17 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-integration-test-grpc-proto3</artifactId>
+            <version>${project.version}</version> <!--kept here to not pollute the BOM-->
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-integration-test-grpc-proto4</artifactId>
+            <version>${project.version}</version> <!--kept here to not pollute the BOM-->
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-class-transformer</artifactId>
         </dependency>
         <dependency>
@@ -75,6 +86,12 @@
                     <artifactId>jakarta.xml.bind-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-grpc</artifactId>
+            <version>${project.version}</version> <!--kept here to not pollute the BOM-->
+            <scope>test</scope>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

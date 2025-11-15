@@ -654,10 +654,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     void zsscan() {
         setOfPlaces.zadd(key, 1.0, Place.crussol);
         ZScanCursor<Place> cursor = setOfPlaces.zscan(key);
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
         List<ScoredValue<Place>> values = cursor.next();
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(values.get(0)).isEqualTo(new ScoredValue<>(Place.crussol, 1.0));
     }
@@ -665,10 +663,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     void zsscanEmpty() {
         ZScanCursor<Place> cursor = setOfPlaces.zscan(key);
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
         List<ScoredValue<Place>> values = cursor.next();
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(values).isEmpty();
     }
@@ -676,11 +672,9 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     void zsscanEmptyAsIterable() {
         ZScanCursor<Place> cursor = setOfPlaces.zscan(key);
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
         Iterable<ScoredValue<Place>> iterable = cursor.toIterable();
         assertThat(iterable).isEmpty();
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
     }
 
@@ -690,10 +684,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         setOfPlaces.zadd(key, 2.0, Place.grignan);
         setOfPlaces.zadd(key, 3.0, Place.adhemar);
         ZScanCursor<Place> cursor = setOfPlaces.zscan(key, new ScanArgs().count(2));
-        assertThat(cursor.cursorId()).isEqualTo(Cursor.INITIAL_CURSOR_ID);
         assertThat(cursor.hasNext()).isTrue();
         List<ScoredValue<Place>> values = cursor.next();
-        assertThat(cursor.cursorId()).isEqualTo(0);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(values.get(0)).isEqualTo(new ScoredValue<>(Place.crussol, 1.0));
     }
@@ -710,7 +702,6 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         while (cursor.hasNext()) {
             values.addAll(cursor.next());
         }
-        assertThat(cursor.cursorId()).isEqualTo(0L);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(values).hasSize(100);
     }
@@ -727,7 +718,6 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         for (ScoredValue<String> scoredValue : cursor.toIterable()) {
             values.add(scoredValue);
         }
-        assertThat(cursor.cursorId()).isEqualTo(0L);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(values).hasSize(100);
     }
@@ -741,7 +731,6 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         while (cursor.hasNext()) {
             values.addAll(cursor.next());
         }
-        assertThat(cursor.cursorId()).isEqualTo(0L);
         assertThat(cursor.hasNext()).isFalse();
         assertThat(values).hasSize(100);
     }

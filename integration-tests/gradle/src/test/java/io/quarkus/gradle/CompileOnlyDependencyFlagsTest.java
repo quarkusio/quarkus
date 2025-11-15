@@ -20,17 +20,17 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.runtime.LaunchMode;
 
-public class CompileOnlyDependencyFlagsTest {
+public class CompileOnlyDependencyFlagsTest extends QuarkusGradleTestBase {
 
     @Test
     public void compileOnlyFlags() throws Exception {
-        var projectDir = QuarkusGradleTestBase.getProjectDir("compile-only-dependency-flags");
+        var projectDir = getProjectDir("compile-only-dependency-flags");
 
         final String componly = ArtifactCoords.jar("org.acme", "componly", "1.0.0-SNAPSHOT").toCompactCoords();
         final String common = ArtifactCoords.jar("org.acme", "common", "1.0.0-SNAPSHOT").toCompactCoords();
-        final String bootstrapResolver = ArtifactCoords
-                .jar("io.quarkus", "quarkus-bootstrap-maven-resolver", System.getProperty("project.version")).toCompactCoords();
-        var expectedCompileOnly = Set.of(componly, common, bootstrapResolver);
+        final String quarkusBootstrapDep = ArtifactCoords
+                .jar("io.quarkus", "quarkus-bootstrap-core", System.getProperty("project.version")).toCompactCoords();
+        var expectedCompileOnly = Set.of(componly, common, quarkusBootstrapDep);
 
         final Map<String, Map<String, Integer>> compileOnlyDeps;
         try (ProjectConnection connection = GradleConnector.newConnector()
@@ -67,7 +67,7 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.RELOADABLE,
                 DependencyFlags.WORKSPACE_MODULE,
                 DependencyFlags.DIRECT);
-        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
+        assertOnlyFlagsSet(quarkusBootstrapDep, compileOnly.get(quarkusBootstrapDep),
                 DependencyFlags.COMPILE_ONLY,
                 DependencyFlags.RUNTIME_CP,
                 DependencyFlags.DEPLOYMENT_CP,
@@ -84,7 +84,7 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.DIRECT);
         assertOnlyFlagsSet(componly, compileOnly.get(componly),
                 DependencyFlags.COMPILE_ONLY);
-        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
+        assertOnlyFlagsSet(quarkusBootstrapDep, compileOnly.get(quarkusBootstrapDep),
                 DependencyFlags.COMPILE_ONLY,
                 DependencyFlags.CLASSLOADER_PARENT_FIRST,
                 DependencyFlags.DEPLOYMENT_CP);
@@ -98,7 +98,7 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.DIRECT);
         assertOnlyFlagsSet(componly, compileOnly.get(componly),
                 DependencyFlags.COMPILE_ONLY);
-        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
+        assertOnlyFlagsSet(quarkusBootstrapDep, compileOnly.get(quarkusBootstrapDep),
                 DependencyFlags.COMPILE_ONLY,
                 DependencyFlags.CLASSLOADER_PARENT_FIRST,
                 DependencyFlags.DEPLOYMENT_CP);

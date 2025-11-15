@@ -584,7 +584,7 @@ Run the native tests using:
 ./gradlew testNative
 ----
 
-This task depends on `quarkusBuild`, so it will generate the native image before running the tests.
+This task depends on `quarkusBuild`, so it will generate the native image before running the native tests.
 
 [NOTE]
 ====
@@ -628,7 +628,7 @@ Those tests can be placed in a `src/integrationTest/java` directory and executed
 ./gradlew quarkusIntTest
 ----
 
-This task depends on both `test` and `quarkusBuild` tasks. The final artifact will be produced before running tests.
+This task depends on `quarkusBuild`, so it will generate the artifact before running the integration tests.
 
 == Using fast-jar
 
@@ -709,16 +709,8 @@ The Quarkus build uses the `prod` configuration profile:
 
 1. System properties (for example `./gradlew -Dquarkus.package.jar.type=fast-jar ...`)
 2. System environment (for example `QUARKUS_PACKAGE_JAR_TYPE=fast-jar ./gradlew ...`)
-3. Configuration via the `quarkus` extensions's `quarkusBuildProperties` For example:
-
-   quarkus {
-       quarkusBuildProperties {
-           set("package.jar.type", "uber-jar")
-       }
-   }
-
-4. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.jar.type=fast-jar`)
-5. Configuration from a project's `application.properties`, `application.yaml` and `application.yml` files, as well
+3. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.jar.type=fast-jar`)
+4. Configuration from a project's `application.properties`, `application.yaml` and `application.yml` files, as well
    as a project's `application-prod.properties`, `application-prod.yaml` and `application-prod.yml` files
 
 [WARNING]
@@ -931,3 +923,14 @@ The current state of compatibility is shown in the following table:
 |`addExtension`|❌
 |`removeExtension`|❌
 |====
+
+== Dependency resolver options
+
+=== Quarkus component variants
+
+`disableQuarkusComponentVariants` project property was introduced in Quarkus 3.25.1 to control whether Quarkus component variants should be added to certain dependencies of a project to enable xref:conditional-extension-dependencies.adoc[Quarkus conditional] and build time (deployment) dependencies. Quarkus component variants are enabled by default since 3.25.1.
+
+The approach to enable Quarkus conditional and extension build time (deployment) dependencies has changed in Quarkus 3.25.1 due to a few issues with the previous implementation.
+Specifically, the previous implementation would not apply relevant dependency exclusions to enabled conditional and deployment dependencies. It would also appear to leak devmode-only dependencies into non-devmode classpaths (such as test and prod) in some cases. These issues couldn't be fixed in a reasonable way in the previous implementation, which is why the Quarkus dependency resolution had to be re-implemented based on a different approach using link:https://docs.gradle.org/current/userguide/variant_aware_resolution.html[Gradle component variants].
+
+The previous implementation still remains available for now in case the new one appears to introduce not yet detected regressions and can be enabled by setting `disableQuarkusComponentVariants` project property to `true`.

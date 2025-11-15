@@ -19,10 +19,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -105,7 +108,10 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final boolean strictMode;
 
-    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode) {
+    // An event mock reference is shared by identical injection points
+    private final ConcurrentMap<TypeAndQualifiers, AtomicReference<Event<?>>> eventMocks;
+
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode, boolean testMode) {
         this.strictMode = strictMode;
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
@@ -123,6 +129,7 @@ public class ArcContainerImpl implements ArcContainer {
         Supplier<ContextInstances> requestContextInstances = null;
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
                 : currentContextFactory;
+        this.eventMocks = testMode ? new ConcurrentHashMap<>() : null;
 
         List<Components> components = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
@@ -331,18 +338,18 @@ public class ArcContainerImpl implements ArcContainer {
         if (bean == null) {
             return null;
         }
+        InjectionPoint injectionPoint = InjectionPointImpl.of(type, qualifiers);
         return new Supplier<InstanceHandle<T>>() {
             @Override
             public InstanceHandle<T> get() {
-                return beanInstanceHandle(bean, null);
+                return beanInstanceHandle(bean, null, injectionPoint, null);
             }
         };
     }
 
     @Override
     public <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
-        Objects.requireNonNull(bean);
-        return beanInstanceHandle(bean, null);
+        return beanInstanceHandle(Objects.requireNonNull(bean), null, InjectionPointImpl.EMPTY, null);
     }
 
     @Override
@@ -397,7 +404,7 @@ public class ArcContainerImpl implements ArcContainer {
         Set<InjectableBean<?>> resolvedBeans = beansByName.getValue(name);
         return resolvedBeans.size() != 1 ? EagerInstanceHandle.unavailable()
                 : (InstanceHandle<T>) beanInstanceHandle(resolvedBeans.iterator()
-                        .next(), null);
+                        .next(), null, InjectionPointImpl.EMPTY, null);
     }
 
     @Override
@@ -480,6 +487,9 @@ public class ArcContainerImpl implements ArcContainer {
             resolved.clear();
             running.set(false);
             InterceptedStaticMethods.clear();
+            if (eventMocks != null) {
+                eventMocks.clear();
+            }
 
             LOGGER.debugf("ArC DI container shut down");
         }
@@ -542,16 +552,16 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private <T> InstanceHandle<T> instanceHandle(Type type, Annotation... qualifiers) {
-        return beanInstanceHandle(getBean(type, qualifiers), null);
+        return beanInstanceHandle(getBean(type, qualifiers), null, InjectionPointImpl.of(type, qualifiers), null);
     }
 
     static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
-            boolean resetCurrentInjectionPoint, Consumer<T> destroyLogic) {
-        return beanInstanceHandle(bean, parentContext, resetCurrentInjectionPoint, destroyLogic, false);
+            InjectionPoint resetInjectionPoint, Consumer<T> destroyLogic) {
+        return beanInstanceHandle(bean, parentContext, resetInjectionPoint, destroyLogic, false);
     }
 
     static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
-            boolean resetCurrentInjectionPoint, Consumer<T> destroyLogic, boolean useParentCreationalContextDirectly) {
+            InjectionPoint resetInjectionPoint, Consumer<T> destroyLogic, boolean useParentCreationalContextDirectly) {
         if (bean != null) {
             if (parentContext == null && Dependent.class.equals(bean.getScope())) {
                 parentContext = new CreationalContextImpl<>(null);
@@ -563,24 +573,20 @@ public class ArcContainerImpl implements ArcContainer {
                 creationalContext = new CreationalContextImpl<>(bean);
             }
             InjectionPoint prev = null;
-            if (resetCurrentInjectionPoint) {
-                prev = InjectionPointProvider.setCurrent(creationalContext, CurrentInjectionPointProvider.EMPTY);
+            if (resetInjectionPoint != null) {
+                prev = InjectionPointProvider.setCurrent(creationalContext, resetInjectionPoint);
             }
             try {
                 return new EagerInstanceHandle<>(bean, bean.get(creationalContext), creationalContext, parentContext,
                         destroyLogic);
             } finally {
-                if (resetCurrentInjectionPoint) {
+                if (resetInjectionPoint != null) {
                     InjectionPointProvider.setCurrent(creationalContext, prev);
                 }
             }
         } else {
             return EagerInstanceHandle.unavailable();
         }
-    }
-
-    static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
-        return beanInstanceHandle(bean, parentContext, true, null);
     }
 
     @SuppressWarnings("unchecked")
@@ -1039,7 +1045,22 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public static ArcContainerImpl instance() {
-        return unwrap(Arc.container());
+        return unwrap(Arc.requireContainer());
+    }
+
+    <T> EventImpl<T> getEvent(Type eventType, Set<Annotation> eventQualifiers, InjectionPoint ip) {
+        if (eventMocks != null) {
+            AtomicReference<Event<?>> mock = eventMocks.computeIfAbsent(
+                    new TypeAndQualifiers(ip.getType(), ip.getQualifiers()),
+                    ArcContainerImpl::newEventMockReference);
+            return new MockableEventImpl<>(eventType, eventQualifiers, ip, mock);
+        } else {
+            return new EventImpl<>(eventType, eventQualifiers, ip);
+        }
+    }
+
+    private static AtomicReference<Event<?>> newEventMockReference(TypeAndQualifiers typeAndQualifiers) {
+        return new AtomicReference<>();
     }
 
     private static final class Resolvable {
@@ -1095,5 +1116,8 @@ public class ArcContainerImpl implements ArcContainer {
             return Arrays.equals(qualifiers, other.qualifiers);
         }
 
+    }
+
+    private record TypeAndQualifiers(Type requiredType, Set<Annotation> qualifiers) {
     }
 }

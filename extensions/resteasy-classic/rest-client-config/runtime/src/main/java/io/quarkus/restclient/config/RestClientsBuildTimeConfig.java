@@ -1,24 +1,17 @@
 package io.quarkus.restclient.config;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.ConfigValue;
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithKeys;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
@@ -30,7 +23,20 @@ public interface RestClientsBuildTimeConfig {
      */
     @WithParentName
     @WithDefaults
+    @WithKeys(RestClientKeysProvider.class)
+    @ConfigDocMapKey("client")
     Map<String, RestClientBuildConfig> clients();
+
+    /**
+     * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI
+     * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such as
+     * "ApplicationScoped").
+     * By default, this is not set which means the interface is not registered as a bean unless it is annotated with
+     * {@link RegisterRestClient}.
+     * If an interface is not annotated with {@link RegisterRestClient} and this property is set, then Quarkus will
+     * make the interface a bean of the configured scope.
+     */
+    Optional<String> scope();
 
     /**
      * If true, the extension will automatically remove the trailing slash in the paths if any.
@@ -41,16 +47,14 @@ public interface RestClientsBuildTimeConfig {
     boolean removesTrailingSlash();
 
     interface RestClientBuildConfig {
-
         /**
-         * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI scope
-         * annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such as
+         * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI
+         * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such as
          * "ApplicationScoped").
          * By default, this is not set which means the interface is not registered as a bean unless it is annotated with
          * {@link RegisterRestClient}.
-         * If an interface is not annotated with {@link RegisterRestClient} and this property is set, then Quarkus will make the
-         * interface
-         * a bean of the configured scope.
+         * If an interface is not annotated with {@link RegisterRestClient} and this property is set, then Quarkus will
+         * make the interface a bean of the configured scope.
          */
         Optional<String> scope();
 
@@ -87,72 +91,5 @@ public interface RestClientsBuildTimeConfig {
         @WithName("removes-trailing-slash")
         @WithDefault("true")
         boolean removesTrailingSlash();
-    }
-
-    /**
-     * Provides a new {@link RestClientsBuildTimeConfig} with the discovered registered REST Clients configuration
-     * only. This should be preferred once REST Clients are discovered and validated to keep only the required
-     * configuration.
-     * <p>
-     * This has to be done manually, because the {@link RestClientsBuildTimeConfig} is marked for
-     * {@link ConfigPhase#BUILD_TIME}, and the REST Clients are not known when the configuration starts.
-     *
-     * @param restClients the discovered registered REST Clients.
-     * @return a {@link RestClientsBuildTimeConfig} with the discovered registered REST Clients configuration only.
-     */
-    default RestClientsBuildTimeConfig get(List<RegisteredRestClient> restClients) {
-        return getConfig(restClients).getConfigMapping(RestClientsBuildTimeConfig.class);
-    }
-
-    default SmallRyeConfig getConfig(List<RegisteredRestClient> restClients) {
-        return new SmallRyeConfigBuilder()
-                .withSources(
-                        new ConfigSource() {
-                            final SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-                            final ConfigSource defaultsSource = getDefaultsSource();
-
-                            @Override
-                            public Set<String> getPropertyNames() {
-                                Set<String> properties = new HashSet<>();
-                                config.getPropertyNames().forEach(properties::add);
-                                return properties;
-                            }
-
-                            @Override
-                            public String getValue(final String propertyName) {
-                                ConfigValue configValue = config.getConfigValue(propertyName);
-                                if (configValue != null && !defaultsSource.getName().equals(configValue.getSourceName())) {
-                                    return configValue.getValue();
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            public String getName() {
-                                return "SmallRye Config";
-                            }
-
-                            private ConfigSource getDefaultsSource() {
-                                ConfigSource configSource = null;
-                                for (ConfigSource source : config.getConfigSources()) {
-                                    configSource = source;
-                                }
-                                return configSource;
-                            }
-                        })
-                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
-                    @Override
-                    public void configBuilder(final SmallRyeConfigBuilder builder) {
-                        new AbstractRestClientConfigBuilder(false) {
-                            @Override
-                            public List<RegisteredRestClient> getRestClients() {
-                                return restClients;
-                            }
-                        }.configBuilder(builder);
-                    }
-                })
-                .withMapping(RestClientsBuildTimeConfig.class)
-                .withMappingIgnore("quarkus.**")
-                .build();
     }
 }

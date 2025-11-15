@@ -27,7 +27,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -56,7 +56,7 @@ import io.quarkus.gizmo.Gizmo;
  */
 public class TestTracingProcessor {
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     LogCleanupFilterBuildItem handle() {
         return new LogCleanupFilterBuildItem("org.junit.platform.launcher.core.EngineDiscoveryOrchestrator", "0 containers");
     }
@@ -74,8 +74,12 @@ public class TestTracingProcessor {
     @Produce(ServiceStartBuildItem.class)
     void startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
-        if (TestSupport.instance().isEmpty() || config.continuousTesting() == TestConfig.Mode.DISABLED
-                || config.flatClassPath()) {
+        if (TestSupport.instance().isEmpty()) {
+            return;
+        }
+        TestSupport testSupport = TestSupport.instance().get();
+        testSupport.setConfig(config);
+        if ((config.continuousTesting() == TestConfig.Mode.DISABLED) || config.flatClassPath()) {
             return;
         }
         DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
@@ -86,11 +90,9 @@ public class TestTracingProcessor {
             return;
         }
         testingSetup = true;
-        TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
             testSupport.addListener(i.listener);
         }
-        testSupport.setConfig(config);
         testSupport.setTags(config.includeTags().orElse(Collections.emptyList()),
                 config.excludeTags().orElse(Collections.emptyList()));
         testSupport.setPatterns(config.includePattern().orElse(null),

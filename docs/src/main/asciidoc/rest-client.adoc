@@ -157,7 +157,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Map;
 import java.util.Set;
-import java util.Optional;
+import java.util.Optional;
 
 @Path("/extensions")
 @RegisterRestClient(configKey = "extensions-api")
@@ -466,7 +466,7 @@ The name of the property needs to follow a certain convention which is best disp
 [source,properties]
 ----
 # Your configuration properties
-quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api # // <1>
+quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api // <1>
 ----
 
 <1> Having this configuration means that all requests performed using `org.acme.rest.client.ExtensionsService` will use `https://stage.code.quarkus.io/api` as the base URL.
@@ -1334,7 +1334,7 @@ Alternatively, you can implement the `ResteasyReactiveClientRequestFilter` inter
 public class TestClientRequestFilter implements ResteasyReactiveClientRequestFilter {
 
     @Override
-    public void filter(ResteasyReactiveClientRequestFilter requestContext) {
+    public void filter(ResteasyReactiveClientRequestContext requestContext) {
         Providers providers = requestContext.getProviders();
         // ...
     }
@@ -1382,7 +1382,7 @@ public class MyResponseExceptionMapper implements ResponseExceptionMapper<Runtim
     @Override
     public RuntimeException toThrowable(Response response) {
         if (response.getStatus() == 500) {
-            throw new RuntimeException("The remote service responded with HTTP 500");
+            return new RuntimeException("The remote service responded with HTTP 500");
         }
         return null;
     }
@@ -1392,7 +1392,7 @@ public class MyResponseExceptionMapper implements ResponseExceptionMapper<Runtim
 `ResponseExceptionMapper` also defines the `getPriority` method which is used in order to determine the priority with which `ResponseExceptionMapper` implementations will be called (implementations with a lower value for `getPriority` will be invoked first).
 If `toThrowable` returns an exception, then that exception will be thrown. If `null` is returned, the next implementation of `ResponseExceptionMapper` in the chain will be called (if there is any).
 
-The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client.provider-autodiscovery` is not set to `false`).
+The class as written above, would not be automatically used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client.provider-autodiscovery` is not set to `false`).
 Alternatively, if the exception handling class should only apply to specific REST Client interfaces, you can either annotate the interfaces with `@RegisterProvider(MyResponseExceptionMapper.class)`, or register it using configuration using the `providers` property of the proper `quarkus.rest-client` configuration group.
 
 === Using @ClientExceptionMapper
@@ -1861,8 +1861,6 @@ To enable logging, add the `quarkus.rest-client.logging.scope` property to your 
 
 As HTTP messages can have large bodies, we limit the amount of body characters logged. The default limit is `100`, you can change it by specifying `quarkus.rest-client.logging.body-limit`.
 
-NOTE: REST Client is logging the traffic with level DEBUG and does not alter logger properties. You may need to adjust your logger configuration to use this feature.
-
 These configuration properties work globally for all clients injected by CDI.
 If you want configure logging for a specific declarative client, you should do it by specifying named "client" properties, also known as `quarkus.rest-client."client".logging.*` properties.
 
@@ -1874,9 +1872,6 @@ quarkus.rest-client.logging.scope=request-response
 quarkus.rest-client.logging.body-limit=50
 
 quarkus.rest-client.extensions-api.scope=all
-
-quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
-quarkus.log.console.level=DEBUG
 ----
 
 [TIP]

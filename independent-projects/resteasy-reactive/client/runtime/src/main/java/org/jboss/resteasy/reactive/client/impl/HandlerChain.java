@@ -96,7 +96,8 @@ class HandlerChain {
         result.add(clientSetResponseEntityRestHandler);
         result.add(new PreResponseFilterHandler());
         for (int i = 0; i < responseFilters.size(); i++) {
-            result.add(new ClientResponseFilterRestHandler(responseFilters.get(i)));
+            ClientResponseFilter filter = responseFilters.get(i);
+            result.add(new ClientResponseFilterRestHandler(filter, filter instanceof PreservesThreadClientResponseFilter));
         }
         result.add(clientResponseCompleteRestHandler);
         return result.toArray(EMPTY_REST_HANDLERS);
@@ -109,7 +110,7 @@ class HandlerChain {
         }
         List<ClientRestHandler> result = new ArrayList<>(1 + responseFilters.size());
         for (int i = 0; i < responseFilters.size(); i++) {
-            result.add(new ClientResponseFilterRestHandler(responseFilters.get(i)));
+            result.add(new ClientResponseFilterRestHandler(responseFilters.get(i), true));
         }
         result.add(clientErrorHandler);
         return result.toArray(EMPTY_REST_HANDLERS);

@@ -1,28 +1,27 @@
 package io.quarkus.it.keycloak;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.util.JsonSerialization;
 
+import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.restassured.RestAssured;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 
-public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
+public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
+
+    final KeycloakTestClient client = new KeycloakTestClient();
 
     @Override
     public Map<String, String> start() {
@@ -31,37 +30,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.setRevokeRefreshToken(true);
         realm.setRefreshTokenMaxReuse(0);
         realm.setAccessTokenLifespan(3);
+        realm.setRequiredActions(List.of());
 
         realm.getClients().add(createClient("quarkus-app"));
         realm.getUsers().add(createUser("alice", "user"));
         realm.getUsers().add(createUser("bob", "user"));
         realm.getUsers().add(createUser("john", "tester"));
 
-        try {
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                    .statusCode(201);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        client.createRealm(realm);
         return Collections.emptyMap();
-    }
-
-    private static String getAdminAccessToken() {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", "admin")
-                .param("password", "admin")
-                .param("client_id", "admin-cli")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/master/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
     }
 
     private static RealmRepresentation createRealm(String name) {
@@ -73,6 +50,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.setClients(new ArrayList<>());
         realm.setAccessTokenLifespan(3);
         realm.setSsoSessionMaxLifespan(3);
+        realm.setRequiredActions(List.of());
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
 
@@ -107,6 +85,8 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(Arrays.asList(realmRoles));
         user.setEmail(username + "@gmail.com");
+        user.setEmailVerified(true);
+        user.setRequiredActions(List.of());
 
         CredentialRepresentation credential = new CredentialRepresentation();
 
@@ -122,23 +102,11 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
     @Override
     public void stop() {
 
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
-                .when()
-                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
+        client.deleteRealm(KEYCLOAK_REALM);
     }
 
-    public static String getAccessToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+    @Override
+    public void setIntegrationTestContext(DevServicesContext context) {
+        client.setIntegrationTestContext(context);
     }
 }

@@ -1,94 +1,57 @@
 package io.quarkus.utilities;
 
+import io.smallrye.common.cpu.CPU;
+
 /**
  * Enum to classify the os.name system property
+ *
+ * @deprecated Use {@link io.smallrye.common.os.OS} and {@link io.smallrye.common.cpu.CPU} instead.
  */
+@Deprecated(forRemoval = true, since = "3.25")
 public enum OS {
     WINDOWS,
     LINUX,
     MAC,
     OTHER;
 
+    /**
+     * {@return the current OS (not {@code null})}
+     *
+     * @deprecated Use {@link io.smallrye.common.os.OS#current} instead.
+     */
+    @Deprecated(forRemoval = true, since = "3.25")
     public static OS determineOS() {
-        final String osName = System.getProperty("os.name").toLowerCase();
-        final OS os;
-        if (osName.contains("windows")) {
-            os = OS.WINDOWS;
-        } else if (osName.contains("linux")
-                || osName.contains("freebsd")
-                || osName.contains("unix")
-                || osName.contains("sunos")
-                || osName.contains("solaris")
-                || osName.contains("aix")) {
-            os = OS.LINUX;
-        } else if (osName.contains("mac os")) {
-            os = OS.MAC;
-        } else {
-            os = OS.OTHER;
-        }
-
-        return os;
+        return switch (io.smallrye.common.os.OS.current()) {
+            case WINDOWS -> WINDOWS;
+            case LINUX -> LINUX;
+            case MAC -> MAC;
+            default -> OTHER;
+        };
     }
 
-    // based on https://github.com/trustin/os-maven-plugin/blob/os-maven-plugin-1.6.2/src/main/java/kr/motd/maven/os/Detector.java
-    // by Trustin Heuiseung Lee (ASL 2.0)
+    /**
+     * Get a non-standard string for the current architecture.
+     * <b>NOTE: {@link CPU} should be used instead of these non-standard strings.</b>
+     *
+     * @return the string, or {@code null} if the architecture is unknown
+     * @deprecated Use {@link io.smallrye.common.cpu.CPU#host} instead (but beware of differing string values).
+     */
+    @Deprecated(forRemoval = true, since = "3.25")
     public static String getArchitecture() {
-        String arch = System.getProperty("os.arch");
-        if (arch.matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")) {
-            return "x86_64";
-        }
-        if (arch.matches("^(x8632|x86|i[3-6]86|ia32|x32)$")) {
-            return "x86_32";
-        }
-        if (arch.matches("^(ia64w?|itanium64)$")) {
-            return "itanium_64";
-        }
-        if ("ia64n".equals(arch)) {
-            return "itanium_32";
-        }
-        if (arch.matches("^(sparc|sparc32)$")) {
-            return "sparc_32";
-        }
-        if (arch.matches("^(sparcv9|sparc64)$")) {
-            return "sparc_64";
-        }
-        if (arch.matches("^(arm|arm32)$")) {
-            return "arm_32";
-        }
-        if ("aarch64".equals(arch)) {
-            return "aarch_64";
-        }
-        if (arch.matches("^(mips|mips32)$")) {
-            return "mips_32";
-        }
-        if (arch.matches("^(mipsel|mips32el)$")) {
-            return "mipsel_32";
-        }
-        if ("mips64".equals(arch)) {
-            return "mips_64";
-        }
-        if ("mips64el".equals(arch)) {
-            return "mipsel_64";
-        }
-        if (arch.matches("^(ppc|ppc32)$")) {
-            return "ppc_32";
-        }
-        if (arch.matches("^(ppcle|ppc32le)$")) {
-            return "ppcle_32";
-        }
-        if ("ppc64".equals(arch)) {
-            return "ppc_64";
-        }
-        if ("ppc64le".equals(arch)) {
-            return "ppcle_64";
-        }
-        if ("s390".equals(arch)) {
-            return "s390_32";
-        }
-        if ("s390x".equals(arch)) {
-            return "s390_64";
-        }
-
-        return null;
+        return switch (CPU.host()) {
+            case x64 -> "x86_64";
+            case x86 -> "x86_32";
+            case arm -> "arm_32";
+            case aarch64 -> "aarch_64";
+            case mips -> "mips_32";
+            case mipsel -> "mipsel_32";
+            case mips64 -> "mips_64";
+            case mips64el -> "mipsel_64";
+            case ppc32 -> "ppc_32";
+            case ppc32le -> "ppcle_32";
+            case ppc -> "ppc_64";
+            case ppcle -> "ppcle_64";
+            default -> null;
+        };
     }
 }

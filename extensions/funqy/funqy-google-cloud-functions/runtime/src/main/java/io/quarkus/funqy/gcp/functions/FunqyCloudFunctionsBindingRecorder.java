@@ -17,6 +17,7 @@ import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -29,6 +30,12 @@ public class FunqyCloudFunctionsBindingRecorder {
     private static ObjectMapper objectMapper;
     private static ObjectReader reader;
     private static ObjectWriter writer;
+
+    private final RuntimeValue<FunqyConfig> config;
+
+    public FunqyCloudFunctionsBindingRecorder(final RuntimeValue<FunqyConfig> config) {
+        this.config = config;
+    }
 
     public void init(BeanContainer bc) {
         beanContainer = bc;
@@ -50,12 +57,13 @@ public class FunqyCloudFunctionsBindingRecorder {
         FunctionConstructor.CONTAINER = bc;
     }
 
-    public void chooseInvoker(FunqyConfig config) {
+    public void chooseInvoker() {
         // this is done at Runtime so that we can change it with an environment variable.
-        if (config.export().isPresent()) {
-            invoker = FunctionRecorder.registry.matchInvoker(config.export().get());
+        if (config.getValue().export().isPresent()) {
+            invoker = FunctionRecorder.registry.matchInvoker(config.getValue().export().get());
             if (invoker == null) {
-                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export().get());
+                throw new RuntimeException(
+                        "quarkus.funqy.export does not match a function: " + config.getValue().export().get());
             }
         } else if (FunctionRecorder.registry.invokers().size() == 0) {
             throw new RuntimeException("There are no functions to process lambda");

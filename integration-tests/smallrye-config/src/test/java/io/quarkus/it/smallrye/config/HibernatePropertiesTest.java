@@ -2,7 +2,7 @@ package io.quarkus.it.smallrye.config;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.OK;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -29,7 +29,8 @@ public class HibernatePropertiesTest {
         @Override
         public void beforeAll(final ExtensionContext context) throws Exception {
             super.beforeAll(context);
-            assertTrue(inMemoryLogHandler.getRecords().isEmpty());
+            assertThat(inMemoryLogHandler.getRecords().stream().map(r -> String.format(r.getMessage(), r.getParameters())))
+                    .isEmpty();
         }
     };
 

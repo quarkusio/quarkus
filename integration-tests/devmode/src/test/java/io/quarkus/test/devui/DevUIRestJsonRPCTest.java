@@ -18,7 +18,7 @@ public class DevUIRestJsonRPCTest extends DevUIJsonRPCTest {
             .withApplicationRoot((jar) -> jar.addClass(MyResource.class));
 
     public DevUIRestJsonRPCTest() {
-        super("io.quarkus.quarkus-rest");
+        super("quarkus-rest");
     }
 
     @Test

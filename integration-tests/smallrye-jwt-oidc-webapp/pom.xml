@@ -15,14 +15,14 @@
     <description>Module that tests that Smallrye JWT and OIDC WebApp authentication can be combined</description>
 
     <properties>
-        <keycloak.url>http://localhost:8180/auth</keycloak.url>
-        <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
+        <keycloak.url>http://localhost:8180</keycloak.url>
+        <reactive-postgres.url>vertx-reactive:postgresql://:5431/oidc_db_token_state_manager_test</reactive-postgres.url>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-oracle-client</artifactId>
+            <artifactId>quarkus-reactive-pg-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,6 +33,11 @@
             <artifactId>angus-activation</artifactId>
         </dependency>
         <!-- test dependencies -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-client-common-synced</artifactId>
@@ -114,7 +119,7 @@
          </dependency>
          <dependency>
              <groupId>io.quarkus</groupId>
-             <artifactId>quarkus-reactive-oracle-client-deployment</artifactId>
+             <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
              <version>${project.version}</version>
              <type>pom</type>
              <scope>test</scope>
@@ -225,52 +230,25 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.legacy.image}</name>
-                                    <alias>quarkus-test-keycloak</alias>
+                                    <name>${postgres.image}</name>
+                                    <alias>postgresql-db</alias>
                                     <run>
-                                        <ports>
-                                            <port>8180:8080</port>
-                                        </ports>
                                         <env>
-                                            <KEYCLOAK_USER>admin</KEYCLOAK_USER>
-                                            <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
+                                            <POSTGRES_USER>oidc_db_token_state_manager_test_user</POSTGRES_USER>
+                                            <POSTGRES_PASSWORD>oidc_db_token_state_manager_test_pwd</POSTGRES_PASSWORD>
+                                            <POSTGRES_DB>oidc_db_token_state_manager_test</POSTGRES_DB>
                                         </env>
-                                        <log>
-                                            <prefix>Keycloak:</prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
-                                            <http>
-                                                <url>http://localhost:8180</url>
-                                            </http>
-                                            <time>100000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                                <image>
-                                    <name>${oracle.image}</name>
-                                    <run>
                                         <ports>
-                                            <port>1521:1521</port>
+                                            <port>5431:5432</port>
                                         </ports>
-                                        <env>
-                                            <ORACLE_PASSWORD>oidc_db_token_state_manager_test</ORACLE_PASSWORD>
-                                        </env>
-                                        <log>
-                                            <prefix>Oracle Database:</prefix>
-                                            <date>default</date>
-                                            <color>red</color>
-                                        </log>
                                         <wait>
-                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
-                                            <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
-                                            <time>60000</time>
-                                            <!-- leverage the healthcheck in the image we use -->
-                                            <healthy>yes</healthy>
-                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
-                                            <!--<log>DATABASE IS READY TO USE!</log>-->
+                                            <!-- For some reason, Postgres will tell us it's ready *twice*,
+                                            and that's the truth the second time only.
+                                            See https://github.com/fabric8io/docker-maven-plugin/issues/628
+                                            See also how the condition is configured in testcontainers:
+                                            https://github.com/testcontainers/testcontainers-java/blob/c64aab9fd5e3a452ee0faf793560327eb4da9841/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java#L52-L55 -->
+                                            <time>20000</time>
+                                            <log>(?s)ready to accept connections.*ready to accept connections</log>
                                         </wait>
                                     </run>
                                 </image>

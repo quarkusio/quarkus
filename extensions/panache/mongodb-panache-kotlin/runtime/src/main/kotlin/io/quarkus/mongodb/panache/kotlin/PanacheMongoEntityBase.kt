@@ -13,17 +13,17 @@ import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion
 abstract class PanacheMongoEntityBase {
 
     /** Persist this entity in the database. This will set its ID field if not already set. */
-    fun persist() {
+    open fun persist() {
         INSTANCE.persist(this)
     }
 
     /** Update this entity in the database. */
-    fun update() {
+    open fun update() {
         INSTANCE.update(this)
     }
 
     /** Persist this entity in the database or update it if it already exists. */
-    fun persistOrUpdate() {
+    open fun persistOrUpdate() {
         INSTANCE.persistOrUpdate(this)
     }
 
@@ -32,7 +32,7 @@ abstract class PanacheMongoEntityBase {
      *
      * @see [PanacheMongoCompanionBase.deleteAll]
      */
-    fun delete() {
+    open fun delete() {
         INSTANCE.delete(this)
     }
 }

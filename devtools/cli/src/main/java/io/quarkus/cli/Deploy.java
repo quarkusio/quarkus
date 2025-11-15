@@ -2,6 +2,7 @@ package io.quarkus.cli;
 
 import java.util.Map;
 
+import io.quarkus.cli.common.BuildToolDelegatingCommand;
 import io.quarkus.cli.deploy.Kind;
 import io.quarkus.cli.deploy.Knative;
 import io.quarkus.cli.deploy.Kubernetes;
@@ -16,7 +17,7 @@ import picocli.CommandLine;
 public class Deploy extends BuildToolDelegatingCommand {
 
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:deploy",
-            BuildTool.GRADLE, "deploy");
+            BuildTool.GRADLE, "deploy", BuildTool.GRADLE_KOTLIN_DSL, "deploy");
 
     @Override
     public Map<BuildTool, String> getActionMapping() {

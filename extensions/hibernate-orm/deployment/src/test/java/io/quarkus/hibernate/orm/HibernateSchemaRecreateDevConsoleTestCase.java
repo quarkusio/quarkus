@@ -26,7 +26,7 @@ public class HibernateSchemaRecreateDevConsoleTestCase extends DevUIJsonRPCTest 
                     .addAsResource("import.sql"));
 
     public HibernateSchemaRecreateDevConsoleTestCase() {
-        super("io.quarkus.quarkus-datasource");
+        super("quarkus-datasource");
     }
 
     @Test

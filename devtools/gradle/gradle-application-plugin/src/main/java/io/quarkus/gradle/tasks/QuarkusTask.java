@@ -16,10 +16,10 @@ import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
-    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.");
+    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.", "gradle.quarkus.");
 
     private final transient QuarkusPluginExtension extension;
     protected final File projectDir;
@@ -34,7 +34,7 @@ public abstract class QuarkusTask extends DefaultTask {
         setGroup("quarkus");
         this.extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
         this.projectDir = getProject().getProjectDir();
-        this.buildDir = getProject().getBuildDir();
+        this.buildDir = getProject().getLayout().getBuildDirectory().getAsFile().get();
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.
@@ -54,8 +54,8 @@ public abstract class QuarkusTask extends DefaultTask {
         WorkerExecutor workerExecutor = getWorkerExecutor();
 
         // Use process isolation by default, unless Gradle's started with its debugging system property or the
-        // system property `quarkus.gradle-worker.no-process` is set to `true`.
-        if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("quarkus.gradle-worker.no-process")) {
+        // system property `gradle.quarkus.gradle-worker.no-process` is set to `true`.
+        if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("gradle.quarkus.gradle-worker.no-process")) {
             return workerExecutor.classLoaderIsolation();
         }
 
@@ -74,7 +74,7 @@ public abstract class QuarkusTask extends DefaultTask {
             forkOptions.systemProperty("user.dir", userDir);
         }
 
-        String quarkusWorkerMaxHeap = System.getProperty("quarkus.gradle-worker.max-heap");
+        String quarkusWorkerMaxHeap = System.getProperty("gradle.quarkus.gradle-worker.max-heap");
         if (quarkusWorkerMaxHeap != null && forkOptions.getAllJvmArgs().stream().noneMatch(arg -> arg.startsWith("-Xmx"))) {
             forkOptions.jvmArgs("-Xmx" + quarkusWorkerMaxHeap);
         }
@@ -82,7 +82,7 @@ public abstract class QuarkusTask extends DefaultTask {
         // Pass all environment variables
         forkOptions.environment(System.getenv());
 
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             // On Windows, gRPC code generation is sometimes(?) unable to find "java.exe". Feels (not proven) that
             // the grpc code generation tool looks up "java.exe" instead of consulting the 'JAVA_HOME' environment.
             // Might be, that Gradle's process isolation "loses" some information down to the worker process, so add

@@ -9,6 +9,7 @@ import jakarta.enterprise.inject.Default;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -21,7 +22,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 
 @BuildSteps(onlyIf = HibernateSearchEnabled.class)
 public class HibernateSearchElasticsearchCdiProcessor {
@@ -29,29 +29,28 @@ public class HibernateSearchElasticsearchCdiProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void generateSearchBeans(HibernateSearchElasticsearchRecorder recorder,
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit : configuredPersistenceUnits) {
             String persistenceUnitName = persistenceUnit.getPersistenceUnitName();
 
-            boolean isDefaultPersistenceUnit = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
+            var checkActiveSupplier = recorder.checkActiveSupplier(persistenceUnitName);
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPersistenceUnit,
                             SearchMapping.class,
-                            recorder.searchMappingSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
+                            recorder.searchMappingSupplier(persistenceUnitName),
+                            checkActiveSupplier));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
-                            PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
                             SearchSession.class,
-                            recorder.searchSessionSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
+                            recorder.searchSessionSupplier(persistenceUnitName),
+                            checkActiveSupplier));
         }
     }
 
-    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName, boolean isDefaultPersistenceUnit,
-            Class<T> type, Supplier<T> supplier) {
+    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName,
+            Class<T> type, Supplier<T> supplier, Supplier<ActiveResult> checkActiveSupplier) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
                 // NOTE: this is using ApplicationScoped and not Singleton, by design, in order to be mockable
@@ -59,9 +58,13 @@ public class HibernateSearchElasticsearchCdiProcessor {
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .supplier(supplier)
-                .setRuntimeInit();
+                .setRuntimeInit()
+                // Note persistence units _actually_ get started a bit earlier, each in its own thread. See JPAConfig#startAll.
+                // This startup() call is only necessary in order to trigger Arc's usage checks (fail startup if bean injected when inactive).
+                .startup()
+                .checkActive(checkActiveSupplier);
 
-        if (isDefaultPersistenceUnit) {
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             configurator.addQualifier(Default.class);
         }
 

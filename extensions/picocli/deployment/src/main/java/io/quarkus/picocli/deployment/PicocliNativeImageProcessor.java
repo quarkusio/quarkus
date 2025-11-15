@@ -106,6 +106,8 @@ public class PicocliNativeImageProcessor {
         typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
                 .builder(type)
                 .source(PicocliNativeImageProcessor.class.getSimpleName())
+                .ignoreFieldPredicate(fi -> true)
+                .ignoreMethodPredicate(mi -> true)
                 .build()));
     }
 

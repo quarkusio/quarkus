@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -71,12 +70,8 @@ public final class AnnotationStore {
      * @return {@code true} if the specified target contains any of the specified annotations, {@code false} otherwise
      * @see #getAnnotations(AnnotationTarget)
      */
-    public boolean hasAnyAnnotation(AnnotationTarget target, Iterable<DotName> names) {
-        Set<DotName> set = new HashSet<>();
-        for (DotName name : names) {
-            set.add(name);
-        }
-        return delegate.hasAnyAnnotation(target.asDeclaration(), set);
+    public boolean hasAnyAnnotation(AnnotationTarget target, Set<DotName> names) {
+        return delegate.hasAnyAnnotation(target.asDeclaration(), names);
     }
 
 }

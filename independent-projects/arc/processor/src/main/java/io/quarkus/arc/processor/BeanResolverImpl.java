@@ -47,9 +47,9 @@ class BeanResolverImpl implements BeanResolver {
         List<BeanInfo> beans = findMatching(typeAndQualifiers);
         Set<BeanInfo> ret;
         if (beans.isEmpty()) {
-            ret = Collections.emptySet();
+            ret = Set.of();
         } else if (beans.size() == 1) {
-            ret = Collections.singleton(beans.get(0));
+            ret = Set.of(beans.get(0));
         } else {
             ret = new HashSet<>(beans);
         }

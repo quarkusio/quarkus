@@ -39,7 +39,8 @@ public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManage
                 .withBootstrapServers(
                         c -> String.format("SASL_PLAINTEXT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
                 .withKafkaConfigurationMap(Map.ofEntries(
-                        entry("listener.security.protocol.map", "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT"),
+                        entry("listener.security.protocol.map",
+                                "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,CONTROLLER:PLAINTEXT"),
                         entry("inter.broker.listener.name", "SASL_PLAINTEXT"),
                         entry("sasl.enabled.mechanisms", "GSSAPI"),
                         entry("sasl.mechanism.inter.broker.protocol", "GSSAPI"),

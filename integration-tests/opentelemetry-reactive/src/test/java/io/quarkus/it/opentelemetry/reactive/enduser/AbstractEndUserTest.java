@@ -1,6 +1,8 @@
 package io.quarkus.it.opentelemetry.reactive.enduser;
 
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
+import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ROLE;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -24,14 +26,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.opentelemetry.semconv.SemanticAttributes;
 import io.restassured.response.ValidatableResponse;
 
 public abstract class AbstractEndUserTest {
 
     private static final String HTTP_PERM_AUGMENTOR_ROLE = "HTTP-PERM-AUGMENTOR";
-    private static final String END_USER_ID_ATTR = SemanticAttributes.ENDUSER_ID.getKey();
-    private static final String END_USER_ROLE_ATTR = SemanticAttributes.ENDUSER_ROLE.getKey();
+    private static final String END_USER_ID_ATTR = ENDUSER_ID.getKey();
+    private static final String END_USER_ROLE_ATTR = ENDUSER_ROLE.getKey();
     private static final String READER_ROLE = "READER";
     private static final String WRITER_ROLE = "WRITER";
     private static final String WRITER_HTTP_PERM_ROLE = "WRITER-HTTP-PERM";

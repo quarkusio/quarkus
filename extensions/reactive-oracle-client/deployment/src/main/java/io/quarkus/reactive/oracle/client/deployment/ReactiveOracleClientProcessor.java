@@ -38,7 +38,6 @@ import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -55,9 +54,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.oracle.client.OraclePoolCreator;
-import io.quarkus.reactive.oracle.client.runtime.DataSourcesReactiveOracleConfig;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolRecorder;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolSupport;
 import io.quarkus.reactive.oracle.client.runtime.OracleServiceBindingConverter;
@@ -65,6 +62,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.oracleclient.OraclePool;
+import io.vertx.oracleclient.spi.OracleDriver;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveOracleClientProcessor {
@@ -87,10 +85,8 @@ class ReactiveOracleClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
@@ -104,8 +100,7 @@ class ReactiveOracleClientProcessor {
                 continue;
             }
 
-            createPool(recorder, vertx, eventLoopCount, shutdown, oraclePool, syntheticBeans, dataSourceName,
-                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactiveOracleConfig);
+            createPool(recorder, vertx, eventLoopCount, shutdown, oraclePool, syntheticBeans, dataSourceName);
 
             oraclePoolNamesBuilder.add(dataSourceName);
         }
@@ -161,6 +156,11 @@ class ReactiveOracleClientProcessor {
     }
 
     @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", OracleDriver.class.getName()));
+    }
+
+    @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
@@ -203,19 +203,10 @@ class ReactiveOracleClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<OraclePoolBuildItem> oraclePool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig) {
+            String dataSourceName) {
 
-        Function<SyntheticCreationalContext<OraclePool>, OraclePool> poolFunction = recorder.configureOraclePool(
-                vertx.getVertx(),
-                eventLoopCount.getEventLoopCount(),
-                dataSourceName,
-                dataSourcesRuntimeConfig,
-                dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveOracleConfig,
-                shutdown);
+        Function<SyntheticCreationalContext<OraclePool>, OraclePool> poolFunction = recorder
+                .configureOraclePool(vertx.getVertx(), eventLoopCount.getEventLoopCount(), dataSourceName, shutdown);
         oraclePool.produce(new OraclePoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator oraclePoolBeanConfigurator = SyntheticBeanBuildItem.configure(OraclePool.class)

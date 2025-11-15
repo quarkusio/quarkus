@@ -3,10 +3,10 @@ package io.quarkus.annotation.processor.documentation.config.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
@@ -25,7 +25,7 @@ public class ConfigRoot implements ConfigItemCollection {
 
     private final String overriddenDocFileName;
     private final List<AbstractConfigItem> items = new ArrayList<>();
-    private final Set<String> qualifiedNames = new HashSet<>();
+    private final Set<String> qualifiedNames = new TreeSet<>();
 
     public ConfigRoot(Extension extension, String prefix, String overriddenDocPrefix, String overriddenDocFileName) {
         this.extension = extension;

@@ -3,7 +3,6 @@ package io.quarkus.test.junit;
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
-import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,8 +42,10 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -54,6 +55,7 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class IntegrationTestUtil {
@@ -270,8 +272,8 @@ public final class IntegrationTestUtil {
             public void accept(String s, String s2) {
                 propertyMap.put(s, s2);
             }
-        }, DevServicesLauncherConfigResultBuildItem.class.getName(),
-                DevServicesNetworkIdBuildItem.class.getName());
+        }, DevServicesLauncherConfigResultBuildItem.class.getName(), DevServicesNetworkIdBuildItem.class.getName(),
+                DevServicesRegistryBuildItem.class.getName(), DevServicesCustomizerBuildItem.class.getName());
 
         networkId = propertyMap.get("quarkus.test.container.network");
         boolean manageNetwork = false;
@@ -303,33 +305,23 @@ public final class IntegrationTestUtil {
             ContainerRuntimeUtil.ContainerRuntime containerRuntime = detectContainerRuntime(true);
 
             try {
-                int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                        .command(containerRuntime.getExecutableName(), "network", "create",
-                                devServicesLaunchResult.networkId())
-                        .start().waitFor();
-                if (networkCreateResult > 0) {
-                    throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
-                            + "' completed unsuccessfully");
-                }
+                ProcessBuilder.exec(containerRuntime.getExecutableName(), "network", "create",
+                        devServicesLaunchResult.networkId());
                 // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
                 Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                                    .command(containerRuntime.getExecutableName(), "network", "rm",
-                                            devServicesLaunchResult.networkId())
-                                    .start()
-                                    .waitFor();
-                        } catch (InterruptedException | IOException ignored) {
-                            System.out.println(
-                                    "Unable to delete container network '" + devServicesLaunchResult.networkId() + "'");
+                            ProcessBuilder.exec(containerRuntime.getExecutableName(), "network", "rm",
+                                    devServicesLaunchResult.networkId());
+                        } catch (Exception e) {
+                            System.out.printf("Unable to delete container network '%s'", devServicesLaunchResult.networkId());
                         }
                     }
                 }));
             } catch (Exception e) {
-                throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
-                        + "' completed unsuccessfully");
+                throw new RuntimeException("Creating container network '%s' completed unsuccessfully"
+                        .formatted(devServicesLaunchResult.networkId()), e);
             }
         }
     }

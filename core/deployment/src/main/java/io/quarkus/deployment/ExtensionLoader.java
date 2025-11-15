@@ -1,5 +1,6 @@
 package io.quarkus.deployment;
 
+import static io.quarkus.deployment.ExtensionLoaderConfig.ReportRuntimeConfigAtDeployment.warn;
 import static io.quarkus.deployment.util.ReflectUtil.isBuildProducerOf;
 import static io.quarkus.deployment.util.ReflectUtil.isConsumerOf;
 import static io.quarkus.deployment.util.ReflectUtil.isListOf;
@@ -29,6 +30,7 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -83,7 +85,6 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.ConfigMappingUtils;
-import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -113,7 +114,6 @@ public final class ExtensionLoader {
     }
 
     private static final Logger loadLog = Logger.getLogger("io.quarkus.deployment");
-    private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
     @SuppressWarnings("unchecked")
     private static final Class<? extends BooleanSupplier>[] EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY = new Class[0];
 
@@ -138,12 +138,12 @@ public final class ExtensionLoader {
             throws IOException, ClassNotFoundException {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
-        final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, runtimeProperties,
+        final SmallRyeConfig src = reader.initConfiguration(buildSystemProps, runtimeProperties,
                 appModel.getPlatformProperties());
         // install globally
         QuarkusConfigFactory.setConfig(src);
         final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
-        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(readResult, launchMode, devModeType);
+        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(launchMode, devModeType);
 
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
         // BooleanSupplier factory
@@ -174,13 +174,6 @@ public final class ExtensionLoader {
         Map<Object, FieldDescriptor> rootFields = new IdentityHashMap<>();
         Map<Object, ConfigClass> mappingClasses = new IdentityHashMap<>();
         for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
-            // ConfigRoot
-            RootDefinition root = readResult.getAllRootsByClass().get(entry.getKey());
-            if (root != null) {
-                rootFields.put(entry.getValue(), root.getDescriptor());
-                continue;
-            }
-
             // ConfigMapping
             ConfigClass mapping = readResult.getAllMappingsByClass().get(entry.getKey());
             if (mapping != null) {
@@ -207,6 +200,7 @@ public final class ExtensionLoader {
                     }
                 };
 
+                // Load @ConfigMapping in recorded deployment code from Recorder
                 ObjectLoader mappingLoader = new ObjectLoader() {
                     @Override
                     public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
@@ -215,7 +209,7 @@ public final class ExtensionLoader {
                         ResultHandle config = body.invokeStaticMethod(getConfig);
                         MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",
                                 Object.class, Class.class, String.class);
-                        return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getKlass()),
+                        return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getType()),
                                 body.load(mapping.getPrefix()));
                     }
 
@@ -268,6 +262,8 @@ public final class ExtensionLoader {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
         }
 
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        ExtensionLoaderConfig extensionLoaderConfig = config.getConfigMapping(ExtensionLoaderConfig.class);
         EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
@@ -325,10 +321,9 @@ public final class ExtensionLoader {
                     consumingConfigPhases.add(phase);
 
                     if (phase.isAvailableAtBuild()) {
-                        ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getReadResult()
-                                .requireObjectForClass(parameterClass));
+                        ctorParamFns.add(buildContext -> config.getConfigMapping(parameterClass));
                         if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                            runTimeProxies.computeIfAbsent(parameterClass, readResult::requireObjectForClass);
+                            runTimeProxies.computeIfAbsent(parameterClass, config::getConfigMapping);
                         }
                     } else if (phase.isReadAtMain()) {
                         throw reportError(parameter, phase + " configuration cannot be consumed here");
@@ -406,13 +401,10 @@ public final class ExtensionLoader {
 
                 if (phase.isAvailableAtBuild()) {
                     stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                        final ConfigurationBuildItem configurationBuildItem = bc
-                                .consume(ConfigurationBuildItem.class);
-                        ReflectUtil.setFieldVal(field, o,
-                                configurationBuildItem.getReadResult().requireObjectForClass(fieldClass));
+                        ReflectUtil.setFieldVal(field, o, config.getConfigMapping(fieldClass));
                     });
                     if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                        runTimeProxies.computeIfAbsent(fieldClass, readResult::requireObjectForClass);
+                        runTimeProxies.computeIfAbsent(fieldClass, config::getConfigMapping);
                     }
                 } else if (phase.isReadAtMain()) {
                     throw reportError(field, phase + " configuration cannot be consumed here");
@@ -581,22 +573,30 @@ public final class ExtensionLoader {
                         methodConsumingConfigPhases.add(phase);
 
                         if (phase.isAvailableAtBuild()) {
-                            methodParamFns.add((bc, bri) -> {
-                                final ConfigurationBuildItem configurationBuildItem = bc
-                                        .consume(ConfigurationBuildItem.class);
-                                return configurationBuildItem.getReadResult().requireObjectForClass(parameterClass);
-                            });
+                            methodParamFns.add((bc, bri) -> config.getConfigMapping(parameterClass));
                             if (isRecorder && phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                                runTimeProxies.computeIfAbsent(parameterClass, readResult::requireObjectForClass);
+                                runTimeProxies.computeIfAbsent(parameterClass, config::getConfigMapping);
                             }
                         } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
-                                methodParamFns.add((bc, bri) -> {
-                                    final RunTimeConfigurationProxyBuildItem proxies = bc
-                                            .consume(RunTimeConfigurationProxyBuildItem.class);
-                                    return proxies.getProxyObjectFor(parameterClass);
-                                });
-                                runTimeProxies.computeIfAbsent(parameterClass, ConfigMappingUtils::newInstance);
+                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
+                                    methodParamFns.add((bc, bri) -> {
+                                        RunTimeConfigurationProxyBuildItem proxies = bc
+                                                .consume(RunTimeConfigurationProxyBuildItem.class);
+                                        return proxies.getProxyObjectFor(parameterClass);
+                                    });
+                                    loadLog.warn(reportError(parameter,
+                                            phase + " configuration should not be consumed in Build Steps, use RuntimeValue<"
+                                                    + parameter.getType().getTypeName()
+                                                    + "> in a @Recorder constructor instead")
+                                            .getMessage());
+                                    runTimeProxies.computeIfAbsent(parameterClass, ConfigMappingUtils::newInstance);
+                                } else {
+                                    throw reportError(parameter,
+                                            phase + " configuration cannot be consumed in Build Steps, use RuntimeValue<"
+                                                    + parameter.getType().getTypeName()
+                                                    + "> in a @Recorder constructor instead");
+                                }
                             } else {
                                 throw reportError(parameter,
                                         phase + " configuration cannot be consumed here unless the method is a @Recorder");
@@ -619,11 +619,12 @@ public final class ExtensionLoader {
                         for (var ctor : ctors) {
                             if (ctors.length == 1 || ctor.isAnnotationPresent(Inject.class)) {
                                 for (var type : ctor.getGenericParameterTypes()) {
-                                    Class<?> theType = null;
-                                    if (type instanceof ParameterizedType) {
-                                        ParameterizedType pt = (ParameterizedType) type;
+                                    Class<?> theType;
+                                    boolean isRuntimeValue = false;
+                                    if (type instanceof ParameterizedType pt) {
                                         if (pt.getRawType().equals(RuntimeValue.class)) {
                                             theType = (Class<?>) pt.getActualTypeArguments()[0];
+                                            isRuntimeValue = true;
                                         } else {
                                             throw new RuntimeException("Unknown recorder constructor parameter: " + type
                                                     + " in recorder " + parameter.getType());
@@ -634,14 +635,29 @@ public final class ExtensionLoader {
                                     ConfigRoot annotation = theType.getAnnotation(ConfigRoot.class);
                                     if (annotation != null) {
                                         if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                            // TODO - Check for runtime config is done in another place, we may want to make things more consistent. Rewrite once we disallow the injection of runtime objects in build steps
                                             methodConsumingConfigPhases.add(ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
                                         } else {
                                             methodConsumingConfigPhases.add(annotation.phase());
+                                            if (annotation.phase().isReadAtMain() && !isRuntimeValue) {
+                                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
+                                                    loadLog.warn(reportError(parameter, annotation.phase() + " configuration "
+                                                            + type.getTypeName()
+                                                            + " should be injected in a @Recorder constructor as a RuntimeValue<"
+                                                            + type.getTypeName() + ">").getMessage());
+                                                } else {
+                                                    throw reportError(parameter, annotation.phase() + " configuration "
+                                                            + type.getTypeName()
+                                                            + " can only be injected in a @Recorder constructor as a RuntimeValue<"
+                                                            + type.getTypeName() + ">");
+                                                }
+                                            }
                                         }
                                         if (annotation.phase().isReadAtMain()) {
+                                            // TODO - Remove once we disallow the injection of runtime objects in build steps
                                             runTimeProxies.computeIfAbsent(theType, ConfigMappingUtils::newInstance);
                                         } else {
-                                            runTimeProxies.computeIfAbsent(theType, readResult::requireObjectForClass);
+                                            runTimeProxies.computeIfAbsent(theType, config::getConfigMapping);
                                         }
                                     }
                                 }
@@ -835,8 +851,8 @@ public final class ExtensionLoader {
                                                         }
                                                         return runTimeProxies.get(s);
                                                     }
-                                                    if (s instanceof ParameterizedType) {
-                                                        ParameterizedType p = (ParameterizedType) s;
+                                                    // TODO - Remove once we disallow the injection of runtime objects in build steps
+                                                    if (s instanceof ParameterizedType p) {
                                                         if (p.getRawType() == RuntimeValue.class) {
                                                             Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
                                                             if (object == null) {
@@ -933,6 +949,9 @@ public final class ExtensionLoader {
             declaredMethods.addAll(getMethods(clazz.getSuperclass()));
             declaredMethods.addAll(asList(clazz.getDeclaredMethods()));
         }
+
+        declaredMethods.sort(MethodComparator.INSTANCE);
+
         return declaredMethods;
     }
 
@@ -952,6 +971,40 @@ public final class ExtensionLoader {
                     + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
+        }
+    }
+
+    private static class MethodComparator implements Comparator<Method> {
+
+        private static final MethodComparator INSTANCE = new MethodComparator();
+
+        @Override
+        public int compare(Method m1, Method m2) {
+            int compare = m1.getDeclaringClass().getName().compareTo(m2.getDeclaringClass().getName());
+            if (compare != 0) {
+                return compare;
+            }
+
+            compare = m1.getName().compareTo(m2.getName());
+            if (compare != 0) {
+                return compare;
+            }
+
+            Class<?>[] p1 = m1.getParameterTypes();
+            Class<?>[] p2 = m2.getParameterTypes();
+            compare = Integer.compare(p1.length, p2.length);
+            if (compare != 0) {
+                return compare;
+            }
+            for (int i = 0; i < p1.length; i++) {
+                compare = p1[i].getName().compareTo(p2[i].getName());
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+
+            // this shouldn't be useful, except if we have bridge methods, but let's be safe
+            return m1.getReturnType().getName().compareTo(m2.getReturnType().getName());
         }
     }
 }

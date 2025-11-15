@@ -2,7 +2,7 @@ package io.quarkus.cli.image;
 
 import java.util.Optional;
 
-import io.quarkus.cli.BuildToolContext;
+import io.quarkus.cli.common.BuildToolContext;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "podman", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Podman.", description = "%n"

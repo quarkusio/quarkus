@@ -1,12 +1,15 @@
 package io.quarkus.gradle;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Paths;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,11 +25,38 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "./gradlew";
     private static final String MAVEN_REPO_LOCAL = "maven.repo.local";
+    private static final String QUARKUS_TEST_GRADLE_WRAPPER_VERSION = "quarkus-test-gradle-wrapper-version";
 
     private Map<String, String> systemProps;
 
     private boolean configurationCacheEnable = true;
     private boolean noWatchFs = true;
+
+    @Override
+    protected File getProjectDir(String projectName) {
+        return getProjectDir(projectName, getTestProjectNameSuffix());
+    }
+
+    /**
+     * Returns a suffix for a test project directory name based on the requested Gradle wrapper version.
+     * If a Gradle wrapper version was not configured, the suffix will be null.
+     * Otherwise, it will be {@code -wrapper-${quarkus-test-gradle-wrapper-version}}.
+     *
+     * @return test project directory suffix or null
+     */
+    private static String getTestProjectNameSuffix() {
+        var wrapperVersion = getRequestedWrapperVersion();
+        return wrapperVersion == null ? null : "-wrapper-" + wrapperVersion;
+    }
+
+    /**
+     * Returns configured Gradle wrapper version for a test or null, in case it wasn't configured.
+     *
+     * @return configured Gradle wrapper version or null
+     */
+    private static String getRequestedWrapperVersion() {
+        return System.getProperty(QUARKUS_TEST_GRADLE_WRAPPER_VERSION);
+    }
 
     protected void setupTestCommand() {
 
@@ -61,9 +91,12 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
             throws IOException, InterruptedException {
         boolean isInCiPipeline = "true".equals(System.getenv("CI"));
 
+        // install a custom version of the wrapper, in case it's configured
+        installRequestedWrapper(projectDir);
+
         setupTestCommand();
         List<String> command = new ArrayList<>();
-        command.add(getGradleWrapperCommand());
+        command.add(getGradleWrapperCommand(projectDir));
         addSystemProperties(command);
 
         if (!isInCiPipeline && isDebuggerConnected()) {
@@ -87,7 +120,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
         File logOutput = new File(projectDir, "command-output.log");
 
-        System.out.println("$ " + String.join(" ", command));
+        logCommandLine(command);
         ProcessBuilder pb = new ProcessBuilder()
                 .directory(projectDir)
                 .command(command)
@@ -142,6 +175,65 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         return commandResult;
     }
 
+    private static void logCommandLine(List<String> command) {
+        System.out.println("$ " + String.join(" ", command));
+    }
+
+    private void installRequestedWrapper(File projectDir) {
+        String wrapperVersion = getRequestedWrapperVersion();
+        if (wrapperVersion == null) {
+            // no specific version was configured, the integration-test/gradle one will be used
+            return;
+        }
+        final String defaultWrapper = getGradleWrapperCommand(projectDir);
+
+        final List<String> command = List.of(defaultWrapper, "wrapper", "--gradle-version=" + wrapperVersion);
+        logCommandLine(command);
+
+        final ProcessBuilder pb = new ProcessBuilder()
+                .directory(projectDir)
+                .command(command)
+                .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                // Should prevent "fragmented" output (parts of stdout and stderr interleaved)
+                .redirectErrorStream(true);
+        try {
+            pb.start().waitFor();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to install Gradle wrapper", e);
+        }
+
+        assertGradleVersion(projectDir, wrapperVersion);
+    }
+
+    private void assertGradleVersion(File projectDir, String expectedGradleVersion) {
+        final String wrapper = getGradleWrapperCommand(projectDir);
+        final List<String> command = List.of(wrapper, "--version");
+        logCommandLine(command);
+
+        File output = new File(projectDir, "gradle-version.log");
+        final ProcessBuilder pb = new ProcessBuilder()
+                .directory(projectDir)
+                .command(command)
+                .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                // Should prevent "fragmented" output (parts of stdout and stderr interleaved)
+                .redirectErrorStream(true)
+                .redirectOutput(output);
+        try {
+            pb.start().waitFor();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to install Gradle wrapper", e);
+        }
+
+        final String versionOutput;
+        try {
+            versionOutput = Files.readString(output.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        System.out.println(versionOutput);
+        assertThat(versionOutput).contains("Gradle " + expectedGradleVersion);
+    }
+
     protected void setSystemProperty(String name, String value) {
         if (systemProps == null) {
             systemProps = new HashMap<>();
@@ -149,8 +241,23 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         systemProps.put(name, value);
     }
 
-    private String getGradleWrapperCommand() {
-        return Paths.get(getGradleWrapperName()).toAbsolutePath().toString();
+    /**
+     * Returns Gradle wrapper path for a given project directory.
+     * If the project directory contains a wrapper, the project wrapper will be preferred.
+     * Otherwise, integration-tests/gradle wrapper will be returned.
+     *
+     * @param projectDir project directory
+     * @return Gradle wrapper path
+     */
+    private String getGradleWrapperCommand(File projectDir) {
+        File wrapper = null;
+        if (projectDir != null) {
+            wrapper = new File(projectDir, getGradleWrapperName());
+        }
+        if (wrapper == null || !wrapper.exists()) {
+            wrapper = new File(getGradleWrapperName());
+        }
+        return wrapper.getAbsolutePath();
     }
 
     private String getGradleWrapperName() {

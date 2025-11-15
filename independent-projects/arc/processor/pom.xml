@@ -34,10 +34,23 @@
             <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>jandex-gizmo2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo2</artifactId>
         </dependency>
 
         <dependency>
@@ -61,7 +74,37 @@
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo2</artifactId>
+            <type>test-jar</type>
+        </dependency>
 
     </dependencies>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+                <executions>
+                    <execution>
+                        <id>verify-forbidden-apis</id>
+                        <configuration>
+                            <signaturesFiles>
+                                <signaturesFile>./banned-signatures.txt</signaturesFile>
+                            </signaturesFiles>
+                            <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                            <suppressAnnotations>
+                                <annotation>**.SuppressForbidden</annotation>
+                            </suppressAnnotations>
+                        </configuration>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

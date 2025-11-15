@@ -1,14 +1,21 @@
 import { LitElement, html, css} from 'lit';
+import { observeState } from 'lit-element-state'; 
+import { assistantState } from 'assistant-state'; 
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { notifier } from 'notifier';
 import { JsonRpc } from 'jsonrpc';
+import MarkdownIt from 'markdown-it';
 import '@vaadin/grid';
 import '@vaadin/text-field';
+import '@vaadin/dialog';
+import '@vaadin/progress-bar';
 
 /**
  * This component shows the scheduled methods.
  */
-export class QwcSchedulerScheduledMethods extends LitElement {
+export class QwcSchedulerScheduledMethods extends observeState(LitElement) {
     
     jsonRpc = new JsonRpc(this);
 
@@ -46,14 +53,26 @@ export class QwcSchedulerScheduledMethods extends LitElement {
         .scheduler {
             padding-right: 20px;
         }
-        
         `;
 
     static properties = {
          _scheduledMethods: {state: true},
          _filteredScheduledMethods: {state: true},
-         _schedulerRunning: {state: true}
+         _schedulerRunning: {state: true},
+         _selectedCron: {state: true},
+         _interpretDialogOpened: {state: true},
+         _interpretCronLoading: {state: true},
+         _interpretResult: {state: true}
     };
+    
+    constructor() {
+        super();
+        this._interpretDialogOpened = false;
+        this._interpretCronLoading = false
+        this._selectedCron = null;
+        this._interpretResult = null;
+        this.md = new MarkdownIt();
+    }
     
     connectedCallback() {
         super.connectedCallback();
@@ -118,9 +137,9 @@ export class QwcSchedulerScheduledMethods extends LitElement {
             >
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
             </vaadin-text-field>
-            `
+            `;
 
-        return html`
+        return html`${this._renderLoadingDialog()}${this._renderInterpretDialog()}
                 <div class="topBar">
                     ${searchBox}
                     ${schedulerButton}
@@ -166,7 +185,7 @@ export class QwcSchedulerScheduledMethods extends LitElement {
             }    
         }
         if (schedule.cron) {
-            trigger = schedule.cronConfig ? html`${trigger} <code>${schedule.cron}</code> configured as <code>${schedule.cronConfig}</code>` : html`${trigger} <code>${schedule.cron}</code>`;  
+            trigger = schedule.cronConfig ? html`${trigger} <code>${schedule.cron}</code> configured as <code>${schedule.cronConfig}</code> ${this._renderInterpretCron(schedule.cronConfig)}` : html`${trigger} <code>${schedule.cron}</code> ${this._renderInterpretCron(schedule.cron)}`;  
         } else {
             trigger = schedule.everyConfig ? html`${trigger} Every <code>${schedule.every}</code> configured as <code>${schedule.everyConfig}</code>` : html`${trigger} Every <code>${schedule.every}</code>`;
         }
@@ -179,6 +198,74 @@ export class QwcSchedulerScheduledMethods extends LitElement {
             trigger = schedule.delayedConfig ? html`${trigger} (delayed for <code>${schedule.delayed}</code> configured as <code>${schedule.delayedConfig}</code>)` : html`${trigger} (delayed for <code>${schedule.delayed}</code>)`;
         }
         return trigger;
+    }
+
+    _renderInterpretCron(cron){
+        if(assistantState.current.isConfigured){
+            if(!this._interpretCronLoading){
+                return html`<qui-assistant-button title="Interpret ${cron}" @click="${(e) => this._interpretCron(e, cron)}"></qui-assistant-button>`;
+            }
+        }
+    }
+    
+    _interpretCron(e, cron){
+        document.body.style.cursor = 'wait';
+        this._selectedCron = cron;
+        
+        
+        this._interpretCronLoading = true;
+        
+        this.jsonRpc.interpretCron({"cron": this._selectedCron}).then(jsonResponse => {
+            this._interpretCronLoading = false;
+            document.body.style.cursor = 'default';
+            this._interpretResult = jsonResponse.result.markdown;
+            this._interpretDialogOpened = true;
+            
+        });
+    }
+    
+    _renderLoadingDialog(){
+        return html`
+            <vaadin-dialog
+              .opened="${this._interpretCronLoading}"
+              @closed="${() => {
+                this._interpretCronLoading = false;
+              }}"
+              ${dialogRenderer(() => html`
+                            <label class="text-secondary" id="pblabel">Talking to the Dev Assistant ... please wait</label>
+                            <vaadin-progress-bar indeterminate aria-labelledby="pblabel"></vaadin-progress-bar>`, [])}
+            ></vaadin-dialog>`;
+    }
+    
+    _renderInterpretDialog(){
+        return html`
+            <vaadin-dialog
+              header-title="${`Interpret "${this._selectedCron}"`}"
+              .opened="${this._interpretDialogOpened}"
+              @closed="${() => {
+                this._closeInterpretDialog();
+              }}"
+              ${dialogRenderer(() => html`${this._renderInterpretDialogContents()}`, [])}
+              ${dialogHeaderRenderer(
+                () => html`
+                  <vaadin-button theme="tertiary" @click="${this._closeInterpretDialog}">
+                    <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                  </vaadin-button>
+                `,
+                []
+              )}
+            ></vaadin-dialog>`;
+    }
+
+    _closeInterpretDialog(){
+        this._interpretDialogOpened = false;
+        this._selectedCron = null;
+        this._interpretResult = null;
+    }
+
+    _renderInterpretDialogContents(){
+        const htmlContent = this.md.render(this._interpretResult);
+        return html`${unsafeHTML(htmlContent)}`;
     }
 
     _methodRenderer(scheduledMethod) {

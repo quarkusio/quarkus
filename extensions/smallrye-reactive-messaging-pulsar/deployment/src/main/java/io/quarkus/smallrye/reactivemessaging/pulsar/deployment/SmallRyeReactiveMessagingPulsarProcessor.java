@@ -190,7 +190,8 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.BoundRequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.ntlm.NtlmEngine")
-                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher");
+                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher")
+                .addRuntimeInitializedClass("com.google.protobuf.JavaFeaturesProto");
         if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.common.util.Backoff")) {
             nativeImageConfig
                     .addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");

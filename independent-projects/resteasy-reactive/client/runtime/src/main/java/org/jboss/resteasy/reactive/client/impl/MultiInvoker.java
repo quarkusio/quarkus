@@ -20,11 +20,14 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.parsetools.RecordParser;
+import io.vertx.core.parsetools.impl.RecordParserImpl;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
@@ -323,21 +326,31 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             GenericType<R> responseType,
             ResponseImpl response,
             HttpClientResponse vertxClientResponse) {
-        RecordParser parser = RecordParser.newDelimited("\n");
-        parser.handler(new Handler<Buffer>() {
+        Buffer delimiter = RecordParserImpl.latin1StringToBytes("\n");
+        RecordParser parser = RecordParser.newDelimited(delimiter);
+        AtomicReference<Promise> finalDelimiterHandled = new AtomicReference<>();
+        parser.handler(new Handler<>() {
             @Override
             public void handle(Buffer chunk) {
 
                 ByteArrayInputStream in = new ByteArrayInputStream(chunk.getBytes());
                 try {
-                    R item = restClientRequestContext.readEntity(in,
-                            responseType,
-                            response.getMediaType(),
-                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
-                            response.getMetadata());
-                    multiRequest.emit(item);
+                    if (chunk.length() > 0) {
+                        R item = restClientRequestContext.readEntity(in,
+                                responseType,
+                                response.getMediaType(),
+                                restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
+                                response.getMetadata());
+                        multiRequest.emit(item);
+                    }
                 } catch (IOException e) {
                     multiRequest.fail(e);
+                } finally {
+                    if (finalDelimiterHandled.get() != null) {
+                        // in this case we know that we have handled the last event, so we need to
+                        // signal completion so the Multi can be closed
+                        finalDelimiterHandled.get().complete();
+                    }
                 }
             }
         });
@@ -348,10 +361,25 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 multiRequest.fail(t);
             }
         });
-        vertxClientResponse.endHandler(new Handler<Void>() {
+        vertxClientResponse.endHandler(new Handler<>() {
             @Override
             public void handle(Void c) {
-                multiRequest.complete();
+                // Before closing the Multi, we need to make sure that the parser has emitted the last event.
+                // Recall that the parser is delimited, which means that won't emit an event until the delimiter is reached
+                // To force the parser to emit the last event we push a delimiter value and when we are sure that the Multi
+                // has pushed it down the pipeline, only then do we close it
+                Promise<Object> promise = Promise.promise();
+                promise.future().onComplete(new Handler<>() {
+                    @Override
+                    public void handle(AsyncResult<Object> event) {
+                        multiRequest.complete();
+                    }
+                });
+                finalDelimiterHandled.set(promise);
+
+                // this needs to happen after the promise has been set up, otherwise, the parser's handler could complete
+                // before the finalDelimiterHandled has been populated
+                parser.handle(delimiter);
             }
         });
 

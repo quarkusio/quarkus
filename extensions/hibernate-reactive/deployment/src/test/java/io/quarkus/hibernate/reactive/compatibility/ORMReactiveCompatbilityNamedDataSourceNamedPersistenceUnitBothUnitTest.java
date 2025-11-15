@@ -1,18 +1,21 @@
 package io.quarkus.hibernate.reactive.compatibility;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
 
-import org.junit.jupiter.api.Assertions;
+import jakarta.inject.Inject;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
 public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitTest extends CompatibilityUnitTestBase {
 
@@ -32,18 +35,23 @@ public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitT
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD)
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            // Hibernate Reactive doesn't support named persistence unit
-                            // so it will just notice the datasource is not configured!
-                            // We probably need a better error message when named persistence unit is supported
-                            "The datasource must be configured for Hibernate Reactive",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.hibernate\".level", "DEBUG");
+
+    @PersistenceUnit("named-pu")
+    Mutiny.SessionFactory namedMutinySessionFactory;
 
     @Test
-    public void test() {
-        // deployment exception should happen first
-        Assertions.fail();
+    @RunOnVertxContext
+    public void test(UniAsserter uniAsserter) {
+        testReactiveWorks(namedMutinySessionFactory, uniAsserter);
+    }
+
+    @Inject
+    @PersistenceUnit("named-pu")
+    SessionFactory namedPersistenceUnitSessionFactory;
+
+    @Test
+    public void testBlocking() {
+        testBlockingWorks(namedPersistenceUnitSessionFactory);
     }
 }

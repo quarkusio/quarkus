@@ -24,16 +24,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
-
     private static final Logger log = Logger.getLogger(DefaultDockerContainerLauncher.class);
 
     private int httpPort;
@@ -187,6 +189,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     @Override
     public void start() throws IOException {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
 
         final ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         containerRuntimeBinaryName = containerRuntime.getExecutableName();
@@ -275,12 +279,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerImage);
         args.addAll(programArgs);
 
-        final Path logFile = PropertyTestUtil.getLogFilePath();
+        final Path logPath = logRuntimeConfig.file().path().toPath();
         try {
-            Files.deleteIfExists(logFile);
-            Files.createDirectories(logFile.getParent());
+            Files.deleteIfExists(logPath);
+            if (logPath.getParent() != null) {
+                Files.createDirectories(logPath.getParent());
+            }
         } catch (FileSystemException e) {
-            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
         }
 
         log.infof("Executing \"%s\"", String.join(" ", args));
@@ -291,16 +297,16 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         // to mount /work/ directory to get quarkus.log.
         final Process containerProcess = new ProcessBuilder(args)
                 .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile()))
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
                 .start();
 
         if (startedFunction != null) {
             final IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, containerProcess,
-                    waitTimeSeconds, logFile);
+                    waitTimeSeconds, logPath);
             isSsl = result.isSsl();
         } else {
             log.info("Wait for server to start by capturing listening data...");
-            final ListeningAddress result = waitForCapturedListeningData(containerProcess, logFile, waitTimeSeconds);
+            final ListeningAddress result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
             log.infof("Server started on port %s", result.getPort());
             updateConfigForPort(result.getPort());
             isSsl = result.isSsl();

@@ -94,14 +94,8 @@ final class Target_org_bouncycastle_crypto_fips_RsaBlindedEngine {
 final class Target_org_bouncycastle_jcajce_provider_BouncyCastleFipsProvider {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
-    private SecureRandom entropySource;
-}
-
-@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.math.ec.ECPoint", onlyWith = BouncyCastleCryptoFips.class)
-final class Target_org_bouncycastle_math_ec_ECPoint {
-    @Alias //
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
-    private static SecureRandom testRandom;
+    // yes, typo on bcfips side.
+    private SecureRandom entopySource;
 }
 
 class BouncyCastleCryptoFips implements BooleanSupplier {

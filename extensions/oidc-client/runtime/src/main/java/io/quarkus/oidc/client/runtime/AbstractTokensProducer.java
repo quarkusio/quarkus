@@ -3,15 +3,15 @@ package io.quarkus.oidc.client.runtime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
 import io.smallrye.mutiny.Uni;
 
@@ -26,6 +26,8 @@ public abstract class AbstractTokensProducer {
     public OidcClientsConfig oidcClientsConfig;
     @Inject
     public OidcClientBuildTimeConfig oidcClientBuildTimeConfig;
+    @Inject
+    public Instance<OidcClientsImpl> oidcClientsInstance;
 
     final TokensHelper tokensHelper = new TokensHelper();
 
@@ -36,10 +38,10 @@ public abstract class AbstractTokensProducer {
                     + " skipping the token producer initialization");
             return;
         }
+        final OidcClientsImpl oidcClients = oidcClientsInstance.get();
         Optional<OidcClient> initializedClient = client();
         if (initializedClient.isEmpty()) {
             Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
-            OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
             if (clientId.isPresent()) {
                 // static named OidcClient
                 oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
@@ -54,6 +56,14 @@ public abstract class AbstractTokensProducer {
         }
 
         initTokens();
+        if (!isForceNewTokens()) {
+            oidcClients.registerTokenRefresh(oidcClient, new Supplier<Uni<Tokens>>() {
+                @Override
+                public Uni<Tokens> get() {
+                    return getTokens();
+                }
+            });
+        }
     }
 
     protected boolean isClientFeatureDisabled() {

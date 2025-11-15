@@ -33,7 +33,7 @@ public class NotRegisteredExtensionWithCodestartTest extends RegistryClientBuild
 
     @Test
     void test() throws Exception {
-        final CliDriver.Result createResult = run(workDir(), "create", "acme-outlaw-codestart",
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-outlaw-codestart",
                 "-x org.acme.quarkus:acme-outlaw:6.6.6");
         assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);

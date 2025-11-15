@@ -17,7 +17,7 @@ class ClientKotlinMessageBodyReader(private val json: Json) : MessageBodyReader<
         type: Class<*>?,
         generic: Type?,
         annotations: Array<out Annotation>?,
-        mediaType: MediaType?
+        mediaType: MediaType?,
     ) = true
 
     override fun readFrom(
@@ -26,7 +26,7 @@ class ClientKotlinMessageBodyReader(private val json: Json) : MessageBodyReader<
         annotations: Array<out Annotation>?,
         mediaType: MediaType?,
         httpHeaders: MultivaluedMap<String, String>?,
-        entityStream: InputStream
+        entityStream: InputStream,
     ): Any? {
         return if (StreamUtil.isEmpty(entityStream)) null
         else {

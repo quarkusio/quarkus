@@ -155,7 +155,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             throw new WebSocketClientException(e);
         }
 
-        Uni<WebSocket> websocket = Uni.createFrom().<WebSocket> emitter(e -> {
+        Uni<WebSocketOpen> websocketOpen = Uni.createFrom().<WebSocketOpen> emitter(e -> {
             // Create a new event loop context for each client, otherwise the current context is used
             // We want to avoid a situation where if multiple clients/connections are created in a row,
             // the same event loop is used and so writing/receiving messages is de-facto serialized
@@ -164,29 +164,39 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             context.dispatch(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
-                    client.setPlain(c);
-                    c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
-                        @Override
-                        public void handle(AsyncResult<WebSocket> r) {
-                            if (r.succeeded()) {
-                                e.complete(r.result());
-                            } else {
-                                e.fail(r.cause());
+                    try {
+                        WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                        client.setPlain(c);
+                        c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
+                            @Override
+                            public void handle(AsyncResult<WebSocket> r) {
+                                if (r.succeeded()) {
+                                    e.complete(new WebSocketOpen(newCleanupConsumer(c, context), r.result()));
+                                } else {
+                                    e.fail(r.cause());
+                                }
                             }
-                        }
-                    });
+                        });
+                    } catch (RuntimeException re) {
+                        e.fail(re);
+                    }
                 }
             });
         });
-        return websocket.map(ws -> {
+        return websocketOpen.map(wsOpen -> {
+            WebSocket ws = wsOpen.websocket();
             String clientId = BasicWebSocketConnector.class.getName();
             TrafficLogger trafficLogger = TrafficLogger.forClient(config);
-            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId, ws,
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId,
+                    ws,
                     codecs,
                     pathParams,
                     serverEndpointUri,
-                    headers, trafficLogger, null);
+                    headers,
+                    trafficLogger,
+                    userData,
+                    null,
+                    wsOpen.cleanup());
             if (trafficLogger != null) {
                 trafficLogger.connectionOpened(connection);
             }

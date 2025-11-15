@@ -69,7 +69,7 @@ public class BeanManagerImpl implements BeanManager {
             InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, null);
             try {
                 return ArcContainerImpl.beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx,
-                        false, null, true).get();
+                        null, null, true).get();
             } finally {
                 InjectionPointProvider.setCurrent(ctx, prev);
             }
@@ -93,7 +93,7 @@ public class BeanManagerImpl implements BeanManager {
             InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, ij);
             try {
                 return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx,
-                        false, null, true).get();
+                        null, null, true).get();
             } finally {
                 InjectionPointProvider.setCurrent(ctx, prev);
             }
@@ -223,7 +223,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Context getContext(Class<? extends Annotation> scopeType) {
-        Context context = Arc.container().getActiveContext(scopeType);
+        Context context = Arc.requireContainer().getActiveContext(scopeType);
         if (context == null) {
             throw new ContextNotActiveException("No active context found for: " + scopeType);
         }
@@ -233,7 +233,7 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Collection<Context> getContexts(Class<? extends Annotation> scopeType) {
-        return (Collection) Arc.container().getContexts(scopeType);
+        return (Collection) Arc.requireContainer().getContexts(scopeType);
     }
 
     @Override

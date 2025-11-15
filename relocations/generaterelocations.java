@@ -49,6 +49,7 @@ public class generaterelocations implements Runnable {
             "    <modelVersion>4.0.0</modelVersion>\n" + //
             "\n" + //
             "    <artifactId>%1$s</artifactId>\n" + //
+            "    <name>Quarkus - Relocations - %1$s</name>\n" + //
             "\n" + //
             "    <distributionManagement>\n" + //
             "        <relocation>\n" + //

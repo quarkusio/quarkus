@@ -18,6 +18,9 @@ public class FormDataWithAllUploads extends FormDataBase {
     @PartType(MediaType.TEXT_PLAIN)
     private Status status;
 
+    @RestForm
+    private String stringWithFilename;
+
     @RestForm(FileUpload.ALL)
     private List<FileUpload> uploads;
 

@@ -9,7 +9,7 @@ class TitleCase : JsonNamingStrategy {
     override fun serialNameForJson(
         descriptor: SerialDescriptor,
         elementIndex: Int,
-        serialName: String
+        serialName: String,
     ): String {
         return serialName[0].uppercase() + serialName.substring(1)
     }

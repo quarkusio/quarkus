@@ -84,8 +84,8 @@ When we phase out the legacy approach, these classes will be removed: we need to
 Given all the items presented above, the key for this transition to be a success is communication and planning.
 Here is the approach we recommend:
 
-- **Step 1** - Communicate first about where we introduced compatibility config classes and that people should consume the new config interface ASAP
-- **Step 2** - Communicate early about this upcoming transition
+* **Step 1** - Communicate first about where we introduced compatibility config classes and that people should consume the new config interface ASAP
+* **Step 2** - Communicate early about this upcoming transition
   - Blog post + post on quarkus-dev
   - Post in the Quarkiverse community discussions
   - Prepare a guide on how to do it. Make sure we add useful pointers with example pull requests.
@@ -93,12 +93,12 @@ Here is the approach we recommend:
   - Make sure we identify difficulties with potential solutions
   - Announce specific versions and dates for the tentative sunset so that people can schedule their work
   - Add a warning in applications using extensions leveraging legacy configuration classes
-- **Step 3** - In version X.Y (with at least two months between previous communication and release), throw an error in the extension annotation processor when legacy `@ConfigRoot` classes are detected
+* **Step 3** - In version X.Y (with at least two months between previous communication and release), throw an error in the extension annotation processor when legacy `@ConfigRoot` classes are detected
   - It will allow us to detect the overall status in Ecosystem CI (at least for public extensions)
   - Maybe provide a way to forcefully override this error for one version, and drop it in the next version
   - Keep the support for legacy `@ConfigRoot` classes in quarkus-core though as we want the extensions to still work until they are updated
   - Announce it via blog post + post on quarkus-dev
-- **Step 4 **- In version X.(Y + 2), if we are satisfied with the state of the Ecosystem, drop the legacy `@ConfigRoot` classes support from Quarkus entirely
+* **Step 4 **- In version X.(Y + 2), if we are satisfied with the state of the Ecosystem, drop the legacy `@ConfigRoot` classes support from Quarkus entirely
 
 == Proposed schedule
 

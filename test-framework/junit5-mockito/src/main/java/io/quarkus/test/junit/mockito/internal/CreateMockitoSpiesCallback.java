@@ -12,6 +12,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.callback.QuarkusTestAfterAllCallback;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
@@ -21,7 +22,7 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
 
     // Set is here because in nested tests, there are multiple states created before destruction is triggered
     // This field needs to be static because each implemented callback created a new instance of this class
-    private static Set<InjectableContext.ContextState> statesToDestroy = new HashSet<>();
+    private static final Set<InjectableContext.ContextState> statesToDestroy = new HashSet<>();
 
     @Override
     public void afterConstruct(Object testInstance) {
@@ -35,7 +36,14 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
                 InjectSpy injectSpyAnnotation = field.getAnnotation(InjectSpy.class);
+                InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
                 if (injectSpyAnnotation != null) {
+                    if (injectMockAnnotation != null) {
+                        cleanup();
+                        throw new IllegalArgumentException(
+                                "Fields cannot be annotated with both @InjectSpy and @InjectMock. Offending field is '"
+                                        + field.getDeclaringClass().getName() + "#" + field.getName() + "'");
+                    }
                     InstanceHandle<?> beanHandle = CreateMockitoMocksCallback.getBeanHandle(testInstance, field,
                             InjectSpy.class);
                     Object spy = createSpyAndSetTestField(testInstance, field, beanHandle,
@@ -72,6 +80,10 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
 
     @Override
     public void afterAll(QuarkusTestContext context) {
+        cleanup();
+    }
+
+    private static void cleanup() {
         if (!statesToDestroy.isEmpty()) {
             for (InjectableContext.ContextState state : statesToDestroy) {
                 Arc.container().requestContext().destroy(state);

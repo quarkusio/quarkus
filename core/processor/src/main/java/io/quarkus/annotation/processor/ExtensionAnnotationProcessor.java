@@ -15,7 +15,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
 
 import org.jboss.jdeparser.JDeparser;
@@ -43,22 +42,23 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
         boolean useConfigMapping = !Boolean
                 .parseBoolean(utils.processingEnv().getOptions().getOrDefault(Options.LEGACY_CONFIG_ROOT, "false"));
+
+        if (!useConfigMapping) {
+            throw new IllegalArgumentException(
+                    "Starting with Quarkus 3.25, legacy config classes (deprecated since Quarkus 3.19) are not supported anymore. "
+                            + "Please migrate the configuration of your extension to interfaces annotated with @ConfigMapping. See https://quarkus.io/guides/config-mappings#config-mappings for more information.");
+        }
+
         boolean debug = Boolean.getBoolean(DEBUG);
 
         ExtensionModule extensionModule = utils.extension().getExtensionModule();
 
-        Config config = new Config(extensionModule, useConfigMapping, debug);
-
-        if (!useConfigMapping) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Extension module " + extensionModule.artifactId()
-                    + " config implementation is deprecated. Please migrate to use @ConfigMapping: https://quarkus.io/guides/writing-extensions#configuration");
-        }
+        Config config = new Config(extensionModule, debug);
 
         List<ExtensionProcessor> extensionProcessors = new ArrayList<>();
         extensionProcessors.add(new ExtensionBuildProcessor());
 
-        boolean skipDocs = Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly");
-        boolean generateDoc = !skipDocs && !"false".equals(processingEnv.getOptions().get(Options.GENERATE_DOC));
+        boolean generateDoc = !"false".equals(processingEnv.getOptions().get(Options.GENERATE_DOC));
 
         // for now, we generate the old config doc by default but we will change this behavior soon
         if (generateDoc) {

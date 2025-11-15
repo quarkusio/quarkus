@@ -75,7 +75,7 @@ public class ConfigStaticInitCheckInterceptor {
             LOG.debugf("No config value found for %s - recording <null> value", propertyName);
         }
         if (configValues == null) {
-            configValues = Arc.container().instance(ConfigStaticInitValues.class).get();
+            configValues = Arc.requireContainer().instance(ConfigStaticInitValues.class).get();
         }
         configValues.recordConfigValue(injectionPoint, propertyName, value);
     }

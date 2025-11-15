@@ -8,11 +8,11 @@ import java.util.List;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.client.ClientResponseFilter;
 
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHandler;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
+import org.jboss.resteasy.reactive.client.impl.PreservesThreadClientResponseFilter;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.UnwrappableException;
@@ -20,7 +20,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
 import io.vertx.core.Context;
 
-public class MicroProfileRestClientResponseFilter implements ClientResponseFilter {
+public class MicroProfileRestClientResponseFilter implements PreservesThreadClientResponseFilter {
     private static final ClientRestHandler[] EMPTY_CLIENT_REST_HANDLERS = new ClientRestHandler[0];
     private final List<ResponseExceptionMapper<?>> exceptionMappers;
 
@@ -39,7 +39,8 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                 RestClientRequestContext restClientContext = ((ClientRequestContextImpl) requestContext)
                         .getRestClientRequestContext();
 
-                boolean requiresBlocking = RestClientRecorder.isClassBlocking(exceptionMapper.getClass());
+                boolean requiresBlocking = RestClientRecorder.isClassBlocking(exceptionMapper.getClass())
+                        || restClientContext.isJakartaResponseDownload();
                 if (Context.isOnEventLoopThread() && requiresBlocking) {
                     switchToWorkerThreadPoolAndRetry(restClientContext);
                     break;

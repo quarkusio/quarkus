@@ -23,7 +23,7 @@ public record CertificateRoleAttribute(Function<X509Certificate, Set<String>> ro
     private static final Logger log = Logger.getLogger(CertificateRoleAttribute.class);
     private static final String SAN_PREFIX = "SAN_";
 
-    CertificateRoleAttribute(String configValue, Map<String, Set<String>> roles) {
+    public CertificateRoleAttribute(String configValue, Map<String, Set<String>> roles) {
         this(of(configValue.toUpperCase(), Map.copyOf(roles)));
     }
 

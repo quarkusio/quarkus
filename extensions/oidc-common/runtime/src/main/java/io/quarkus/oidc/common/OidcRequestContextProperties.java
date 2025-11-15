@@ -9,6 +9,8 @@ public class OidcRequestContextProperties {
     public static String TOKEN = "token";
     public static String TOKEN_CREDENTIAL = "token_credential";
     public static String DISCOVERY_ENDPOINT = "discovery_endpoint";
+    public static String REQUEST_BODY = "request_body";
+    public static String RESPONSE_BODY = "response_body";
 
     private final Map<String, Object> properties;
 

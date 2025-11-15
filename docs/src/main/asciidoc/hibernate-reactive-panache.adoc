@@ -125,7 +125,7 @@ quarkus.datasource.password = connor
 quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost:5432/mydatabase
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation = drop-and-create
+quarkus.hibernate-orm.schema-management.strategy = drop-and-create
 ----
 
 == Solution 1: using the active record pattern
@@ -729,9 +729,53 @@ PanacheQuery<RaceWeight> query = Person.find("select new MyView(d.race, AVG(d.we
 ----
 ====
 
+If you need to have multiple constructors in your DTO, you must annotate the constructor intended to generate a SELECT clause with @ProjectedConstructor:
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
+
+@RegisterForReflection
+public class PersonName {
+    public final String name;
+
+    @ProjectedConstructor // <1>
+    public PersonName(String name) {
+        this.name = name;
+    }
+
+    public PersonName(String name, String otherField) {
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+<1> This will use your annotated constructor to create the query. (`select new PersonName(name) from ...`)
+
+[WARNING]
+====
+If a DTO used in a projection has multiple constructors and is not properly annotated, it may lead to *unexpected behavior*.
+
+The constructor resolution process follows this order:
+
+1. Look for a constructor annotated with `@ProjectedConstructor`
+This is the most explicit and preferred way to indicate which constructor should be used.
+2. Look for parameters annotated with `@ProjectedFieldName`
+3. Use the first non-parameterless constructor
+If no annotations are found.
+4. Fallback to the first constructor it finds, this could lead to multiple problems or inconsistencies.
+====
+
 == Multiple Persistence Units
 
-Hibernate Reactive in Quarkus currently does not support multiple persistence units.
+Hibernate Reactive with Panache supports multiple persistence units. 
+When using multiple persistence units, Panache automatically uses the correct persistence unit based on the entity's configuration.
+
+For configuration details on setting up multiple persistence units, refer to the xref:hibernate-orm.adoc#multiple-persistence-units[Multiple Persistence Units] section in the Hibernate ORM guide.
 
 [[transactions]]
 == Sessions and Transactions
@@ -742,6 +786,7 @@ For example, if a Panache entity method is invoked in a Jakarta REST resource me
 For other cases, there are both a declarative and a programmatic way to ensure the session is opened.
 You can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
 The method will be intercepted and the returned `Uni` will be triggered within a scope of a reactive session.
+If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithSession("my-persistence-unit")`. If not specified, the default persistence unit is used.
 Alternatively, you can use the `Panache.withSession()` method to achieve the same effect.
 
 NOTE: Note that a Panache entity may not be used from a blocking thread. See also xref:getting-started-reactive.adoc[Getting Started With Reactive] guide that explains the basics of reactive principles in Quarkus.
@@ -749,6 +794,7 @@ NOTE: Note that a Panache entity may not be used from a blocking thread. See als
 Also make sure to wrap methods that modify the database or involve multiple queries (e.g. `entity.persist()`) within a transaction.
 You can annotate a CDI business method that returns `Uni` with the `@WithTransaction` annotation.
 The method will be intercepted and the returned `Uni` is triggered within a transaction boundary.
+If you have multiple persistence units, you can specify which one to use by providing the persistence unit name as the annotation value: `@WithTransaction("my-persistence-unit")`. If not specified, the default persistence unit is used.
 Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
 
 IMPORTANT: You cannot use the `@Transactional` annotation with Hibernate Reactive for your transactions: you must use `@WithTransaction`, and your annotated method must return a `Uni` to be non-blocking.

@@ -162,6 +162,11 @@ public class IndexingUtil {
         if (classInfo == null) {
             log.debugf("Index class: %s", className);
             try (InputStream stream = IoUtil.readClass(classLoader, className)) {
+                if (stream == null) {
+                    throw new IllegalStateException(
+                            "Failed to index: " + className + ", class not present in class loader: " + classLoader);
+                }
+
                 ClassSummary summary = indexer.indexWithSummary(stream);
                 additionalIndex.add(summary.name());
                 superclassName = summary.superclassName();

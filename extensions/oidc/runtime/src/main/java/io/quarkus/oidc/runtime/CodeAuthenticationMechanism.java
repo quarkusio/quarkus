@@ -12,6 +12,7 @@ import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -28,6 +29,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.JavaScriptRequestChecker;
+import io.quarkus.oidc.LogoutUtils;
 import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.OidcRedirectFilter.OidcRedirectContext;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -38,7 +40,9 @@ import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CacheControl;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.LogoutMode;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -54,9 +58,7 @@ import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
-import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -907,7 +909,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                                 configContext.oidcConfig()));
                                             }
                                             if (finalUserQuery != null) {
-                                                finalUriWithoutQuery.append(!removeRedirectParams ? "" : "?");
+                                                finalUriWithoutQuery.append(!removeRedirectParams ? "&" : "?");
                                                 finalUriWithoutQuery.append(finalUserQuery);
                                             }
                                             String finalRedirectUri = finalUriWithoutQuery.toString();
@@ -992,8 +994,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getStateCookieEncryptionKey());
             } catch (Exception ex) {
-                LOG.errorf("State cookie value can not be decrypted for the %s tenant",
-                        configContext.oidcConfig().tenantId().get());
+                LOG.errorf("State cookie value for the %s tenant can not be decrypted: %s",
+                        configContext.oidcConfig().tenantId().get(), ex.getMessage());
                 throw new AuthenticationCompletionException(ex);
             }
             bean.setRestorePath(json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH));
@@ -1102,24 +1104,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
                                                     configContext.oidcConfig().tenantId().get(),
                                                     OidcUtils.MAX_COOKIE_VALUE_LENGTH);
-                                            for (int sessionIndex = 1,
-                                                    currentPos = 0; currentPos < cookieValue.length(); sessionIndex++) {
-                                                int nextPos = currentPos + OidcUtils.MAX_COOKIE_VALUE_LENGTH;
-                                                int nextValueUpperPos = nextPos < cookieValue.length() ? nextPos
-                                                        : cookieValue.length();
-                                                String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
-                                                // q_session_session_chunk_1, etc
-                                                String nextName = sessionName + OidcUtils.SESSION_COOKIE_CHUNK + sessionIndex;
-                                                LOG.debugf("Creating the %s session cookie chunk, size: %d", nextName,
-                                                        nextValue.length());
-                                                createCookie(context, configContext.oidcConfig(), nextName, nextValue,
-                                                        sessionMaxAge, true);
-                                                currentPos = nextPos;
-                                            }
+                                            OidcUtils.createChunkedCookie(context, configContext.oidcConfig(), sessionName,
+                                                    cookieValue, sessionMaxAge);
                                         } else {
-                                            createCookie(context, configContext.oidcConfig(), sessionName, cookieValue,
-                                                    sessionMaxAge, true);
+                                            OidcUtils.createSessionCookie(context, configContext.oidcConfig(), sessionName,
+                                                    cookieValue, sessionMaxAge);
                                         }
+
+                                        Set<CacheControl> cacheControl = configContext.oidcConfig().authentication()
+                                                .cacheControl()
+                                                .orElse(Set.of());
+                                        if (!cacheControl.isEmpty()) {
+                                            // Only 'no-store' is currently supported
+                                            context.response().putHeader(HttpHeaders.CACHE_CONTROL,
+                                                    cacheControl.iterator().next().directive());
+                                        }
+
                                         fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
                                         return null;
                                     }
@@ -1208,7 +1208,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
         String stateCookieNameSuffix = configContext.oidcConfig().authentication().allowMultipleCodeFlows() ? "_" + uuid : "";
-        createCookie(context, configContext.oidcConfig(),
+        OidcUtils.createCookie(context, configContext.oidcConfig(),
                 getStateCookieName(configContext.oidcConfig()) + stateCookieNameSuffix, cookieValue,
                 configContext.oidcConfig().authentication().stateCookieAge().toSeconds());
         return uuid;
@@ -1234,7 +1234,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 return OidcUtils.encryptJson(json, configContext.getStateCookieEncryptionKey());
             } catch (Exception ex) {
-                LOG.errorf("State containing the code verifier can not be encrypted: %s", ex.getMessage());
+                LOG.errorf("State cookie value for the %s tenant can not be encrypted: %s",
+                        configContext.oidcConfig().tenantId().get(), ex.getMessage());
                 throw new AuthenticationCompletionException(ex);
             }
         } else {
@@ -1247,24 +1248,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
         OidcUtils.removeCookie(context, configContext.oidcConfig(), getPostLogoutCookieName(configContext.oidcConfig()));
-        return createCookie(context, configContext.oidcConfig(), getPostLogoutCookieName(configContext.oidcConfig()),
+        return OidcUtils.createCookie(context, configContext.oidcConfig(), getPostLogoutCookieName(configContext.oidcConfig()),
                 UUID.randomUUID().toString(),
                 60 * 30).getValue();
-    }
-
-    static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            String name, String value, long maxAge) {
-        return createCookie(context, oidcConfig, name, value, maxAge, false);
-    }
-
-    static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            String name, String value, long maxAge, boolean sessionCookie) {
-        ServerCookie cookie = OidcUtils.createCookie(context, oidcConfig, name, value, maxAge);
-        if (sessionCookie) {
-            cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name()));
-        }
-        context.response().addCookie(cookie);
-        return cookie;
     }
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
@@ -1435,8 +1421,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String buildLogoutRedirectUri(TenantConfigContext configContext, String idToken, RoutingContext context) {
         String logoutPath = configContext.provider().getMetadata().getEndSessionUri();
+        Map<String, String> extraParams = configContext.oidcConfig().logout().extraParams();
         StringBuilder logoutUri = new StringBuilder(logoutPath);
-        if (idToken != null || configContext.oidcConfig().logout().postLogoutPath().isPresent()) {
+        if (idToken != null || configContext.oidcConfig().logout().postLogoutPath().isPresent()
+                || (extraParams != null && !extraParams.isEmpty())) {
             logoutUri.append("?");
         }
         if (idToken != null) {
@@ -1477,10 +1465,29 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .map(new Function<Void, Void>() {
                     @Override
                     public Void apply(Void t) {
-                        String logoutUri = buildLogoutRedirectUri(configContext, idToken, context);
-                        LOG.debugf("Logout uri: %s", logoutUri);
-                        throw new AuthenticationRedirectException(
-                                filterRedirect(context, configContext, logoutUri, Redirect.Location.OIDC_LOGOUT));
+                        if (configContext.oidcConfig().logout().logoutMode() == LogoutMode.QUERY) {
+                            String logoutUri = buildLogoutRedirectUri(configContext, idToken, context);
+                            LOG.debugf("Logout uri: %s", logoutUri);
+                            throw new AuthenticationRedirectException(
+                                    filterRedirect(context, configContext, logoutUri, Redirect.Location.OIDC_LOGOUT));
+                        } else {
+                            String postLogoutUrl = null;
+                            String postLogoutState = null;
+                            if (configContext.oidcConfig().logout().postLogoutPath().isPresent()) {
+                                postLogoutUrl = buildUri(context, isForceHttps(configContext.oidcConfig()),
+                                        configContext.oidcConfig().logout().postLogoutPath().get());
+                                postLogoutState = generatePostLogoutState(context, configContext);
+                            }
+
+                            String logoutUrl = filterRedirect(context, configContext,
+                                    configContext.provider().getMetadata().getEndSessionUri(), Redirect.Location.OIDC_LOGOUT);
+                            // Target URL is embedded in the form post payload
+                            String formPostLogout = LogoutUtils.createFormPostLogout(configContext.oidcConfig().logout(),
+                                    logoutUrl, idToken,
+                                    postLogoutUrl, postLogoutState);
+                            LOG.debugf("Initiating form post logout");
+                            throw new AuthenticationRedirectException(200, formPostLogout);
+                        }
                     }
                 });
     }

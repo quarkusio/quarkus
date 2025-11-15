@@ -75,6 +75,16 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
         super.connectedCallback();
         this.jsonRpc = new JsonRpc(this.extensionName);
         this.hotReload();
+        this._observer = this.jsonRpc.stateNotification().onNext(jsonRpcResponse => { 
+            if(jsonRpcResponse.result && jsonRpcResponse.result==="message"){
+                this.hotReload();
+            }
+        });
+    }
+
+    disconnectedCallback() { 
+        this._observer.cancel();
+        super.disconnectedCallback()
     }
 
     hotReload(){

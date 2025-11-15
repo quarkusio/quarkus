@@ -193,7 +193,7 @@ public class FrontendResource {
         return Jwt.claim("htm", "POST")
                 .claim("htu", getConfigMetadata(tenantId).getTokenUri())
                 .jws()
-                .header("typ", "dpop+jwt")
+                .type("dpop+jwt")
                 .jwk(keyPair.getPublic())
                 .sign(keyPair.getPrivate());
     }

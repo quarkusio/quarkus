@@ -21,9 +21,13 @@ public interface DatasourceServiceConfigurator {
 
     String getJdbcPrefix();
 
+    default String getParametersStartCharacter() {
+        return "?";
+    }
+
     default String getParameters(Map<String, String> labels) {
         String parameters = labels.get(Labels.COMPOSE_JDBC_PARAMETERS);
-        return StringUtil.isNullOrEmpty(parameters) ? "" : "?" + parameters;
+        return StringUtil.isNullOrEmpty(parameters) ? "" : getParametersStartCharacter() + parameters;
     }
 
 }

@@ -57,11 +57,11 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
-import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
@@ -73,11 +73,13 @@ import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
@@ -148,8 +150,11 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    FilterBuildItem cors(CORSRecorder recorder) {
-        return new FilterBuildItem(recorder.corsHandler(), FilterBuildItem.CORS);
+    FilterBuildItem cors(CORSRecorder recorder,
+            Optional<HttpSecurityConfigSetupCompleteBuildItem> httpSecurityConfigSetupCompleteBuildItem) {
+        RuntimeValue<CORSConfig> programmaticCorsConfig = httpSecurityConfigSetupCompleteBuildItem
+                .map(i -> i.programmaticCorsConfig).orElse(null);
+        return new FilterBuildItem(recorder.corsHandler(programmaticCorsConfig), SecurityHandlerPriorities.CORS);
     }
 
     @BuildStep
@@ -340,7 +345,6 @@ class VertxHttpProcessor {
             BodyHandlerBuildItem bodyHandlerBuildItem,
             List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
-            ShutdownConfig shutdownConfig,
             LiveReloadConfig lrc,
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
             ExecutorBuildItem executorBuildItem,
@@ -411,7 +415,7 @@ class VertxHttpProcessor {
             publisher = Optional.of(vertxDevUILogBuildItem.get().getPublisher());
         }
 
-        recorder.finalizeRouter(beanContainer.getValue(),
+        recorder.finalizeRouter(
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
                 vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
@@ -420,8 +424,10 @@ class VertxHttpProcessor {
                 httpRootPathBuildItem.getRootPath(),
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),
-                getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems), bodyHandlerBuildItem.getHandler(),
-                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy(),
+                getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems),
+                bodyHandlerBuildItem.getHandler(),
+                gracefulShutdownFilter,
+                executorBuildItem.getExecutorProxy(),
                 logBuildTimeConfig,
                 srcMainJava,
                 knowClasses,
@@ -456,7 +462,7 @@ class VertxHttpProcessor {
                     .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class).reason(getClass().getName()).build());
         }
         boolean startSocket = requireSocket.isPresent() ||
-                ((!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
+                ((!startVirtual || !launchMode.getLaunchMode().isProduction())
                         && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual()));
         recorder.startServer(vertx.getVertx(), shutdown,
                 launchMode.getLaunchMode(), startVirtual, startSocket,

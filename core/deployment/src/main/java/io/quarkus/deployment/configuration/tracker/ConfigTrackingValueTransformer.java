@@ -125,8 +125,8 @@ public class ConfigTrackingValueTransformer {
     public static String sha512(byte[] value) {
         final byte[] digest = getSHA512().digest(value);
         final StringBuilder sb = new StringBuilder(40);
-        for (int i = 0; i < digest.length; ++i) {
-            sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1, 3));
+        for (byte b : digest) {
+            sb.append(Integer.toHexString((b & 0xFF) | 0x100).substring(1, 3));
         }
         return sb.toString();
     }

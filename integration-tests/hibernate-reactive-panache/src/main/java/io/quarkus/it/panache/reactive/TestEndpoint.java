@@ -1729,6 +1729,7 @@ public class TestEndpoint {
                     Assertions.assertEquals("GARFIELD", catView.name);
                     Assertions.assertEquals("JoN ArBuCkLe", catView.ownerName);
                 })
+                .chain(() -> Cat.delete("name", catName))
                 .replaceWith("OK");
     }
 
@@ -1793,6 +1794,270 @@ public class TestEndpoint {
                     Assertions.assertEquals(1, count);
                     return "OK";
                 });
+    }
+
+    @WithTransaction
+    @GET
+    @Path("projection-constructor-annotation")
+    public Uni<String> testProjectedConstructor() {
+        String ownerName = "Julie";
+        String catName = "Bubulle";
+        Double catWeight = 8.5d;
+        CatOwner catOwner = new CatOwner(ownerName);
+        return catOwner.persist()
+                .chain(() -> new Cat(catName, catOwner, catWeight).persist())
+                .chain(() -> Cat.find("name", catName)
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class)
+                        .<CatDoubleConstructorWithConstructorAnnotation> firstResult())
+                .invoke(cat -> {
+                    Assertions.assertEquals(catName, cat.name);
+                    Assertions.assertNull(cat.ownerName);
+                })
+                .chain(() -> Cat.find("select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class)
+                        .<CatDoubleConstructorWithConstructorAnnotation> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                })
+                .chain(() -> Cat.find("#Cat.NameAndOwnerName",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class)
+                        .<CatDoubleConstructorWithConstructorAnnotation> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                })
+                .chain(() -> Cat.find("select 'fake_cat', 'fake_owner' from Cat c")
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class)
+                        .<CatDoubleConstructorWithConstructorAnnotation> firstResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals("fake_cat", catView.name);
+                    Assertions.assertEquals("fake_owner", catView.ownerName);
+                })
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT c.name, cast(null as string) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT   disTINct  c.name, cast(null as string) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                .invoke(() -> {
+                    PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
+                            () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner') from Cat c")
+                                    .project(CatDoubleConstructorWithConstructorAnnotation.class));
+                    Assertions.assertTrue(
+                            exception.getMessage()
+                                    .startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
+                })
+                .chain(() -> Cat
+                        .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                                Parameters.with("NamE", catName))
+                        .project(CatDoubleConstructorWithConstructorAnnotation.class)
+                        .<CatDoubleConstructorWithConstructorAnnotation> firstResult())
+                .invoke(catView -> {
+                    // Must keep the letter case
+                    Assertions.assertEquals("GARFIELD", catView.name);
+                    Assertions.assertEquals("JoN ArBuCkLe", catView.ownerName);
+                })
+                .chain(() -> Cat.delete("name", catName))
+                .replaceWith("OK");
+    }
+
+    @WithTransaction
+    @GET
+    @Path("projection-projected-field-name")
+    public Uni<String> testConstructorWithProjectedFieldNameProjection() {
+        String ownerName = "Julie";
+        String catName = "Bubulle";
+        Double catWeight = 8.5d;
+        CatOwner catOwner = new CatOwner(ownerName);
+        return catOwner.persist()
+                .chain(() -> new Cat(catName, catOwner, catWeight).persist())
+                .chain(() -> Cat.find("name", catName)
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class)
+                        .<CatDoubleConstructorWithProjectFieldNameAnnotation> firstResult())
+                .invoke(cat -> {
+                    Assertions.assertEquals(catName, cat.name);
+                    Assertions.assertNull(cat.ownerName);
+                })
+                .chain(() -> Cat.find("select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class)
+                        .<CatDoubleConstructorWithProjectFieldNameAnnotation> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                })
+                .chain(() -> Cat.find("#Cat.NameAndOwnerName",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class)
+                        .<CatDoubleConstructorWithProjectFieldNameAnnotation> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                })
+                .chain(() -> Cat.find("select 'fake_cat', 'fake_owner' from Cat c")
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class)
+                        .<CatDoubleConstructorWithProjectFieldNameAnnotation> firstResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals("fake_cat", catView.name);
+                    Assertions.assertEquals("fake_owner", catView.ownerName);
+                })
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT c.name, cast(null as string) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT   disTINct  c.name, cast(null as string) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                .invoke(() -> {
+                    PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
+                            () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner') from Cat c")
+                                    .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class));
+                    Assertions.assertTrue(
+                            exception.getMessage()
+                                    .startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
+                })
+                .chain(() -> Cat
+                        .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                                Parameters.with("NamE", catName))
+                        .project(CatDoubleConstructorWithProjectFieldNameAnnotation.class)
+                        .<CatDoubleConstructorWithProjectFieldNameAnnotation> firstResult())
+                .invoke(catView -> {
+                    // Must keep the letter case
+                    Assertions.assertEquals("GARFIELD", catView.name);
+                    Assertions.assertEquals("JoN ArBuCkLe", catView.ownerName);
+                })
+                .chain(() -> Cat.delete("name", catName))
+                .replaceWith("OK");
+    }
+
+    @WithTransaction
+    @GET
+    @Path("projection-no-arguments-constructor")
+    public Uni<String> testConstructorWithNoArgsProjection() {
+        String ownerName = "Julie";
+        String catName = "Bubulle";
+        Double catWeight = 8.5d;
+        CatOwner catOwner = new CatOwner(ownerName);
+        return catOwner.persist()
+                .chain(() -> new Cat(catName, catOwner, catWeight).persist())
+                .chain(() -> Cat.find("name", catName)
+                        .project(CatDoubleConstructorWithOneEmpty.class)
+                        .<CatDoubleConstructorWithOneEmpty> firstResult())
+                .invoke(cat -> {
+                    Assertions.assertEquals(catName, cat.name);
+                    Assertions.assertNull(cat.ownerName);
+                })
+                .chain(() -> Cat.find("select c.name, c.owner.name from Cat c where c.name = :name",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithOneEmpty.class)
+                        .<CatDoubleConstructorWithOneEmpty> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                })
+                .chain(() -> Cat.find("#Cat.NameAndOwnerName",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithOneEmpty.class)
+                        .<CatDoubleConstructorWithOneEmpty> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                })
+                .chain(() -> Cat.find("select 'fake_cat', 'fake_owner' from Cat c")
+                        .project(CatDoubleConstructorWithOneEmpty.class)
+                        .<CatDoubleConstructorWithOneEmpty> firstResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals("fake_cat", catView.name);
+                    Assertions.assertEquals("fake_owner", catView.ownerName);
+                })
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT c.name, cast(null as string) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithOneEmpty.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                // The spaces at the beginning are intentional
+                .replaceWith(() -> Cat.find(
+                        "   SELECT   disTINct  c.name, cast(null as string) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", catName))
+                        .project(CatDoubleConstructorWithOneEmpty.class))
+                .invoke(projectionQuery -> projectionQuery
+                        .firstResult()
+                        .invoke(catView -> {
+                            Assertions.assertEquals(catName, catView.name);
+                            Assertions.assertNull(catView.ownerName);
+                        })
+                        .replaceWith(() -> projectionQuery.count()
+                                .invoke(count -> Assertions.assertEquals(1L, count))))
+                .invoke(() -> {
+                    PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
+                            () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner') from Cat c")
+                                    .project(CatDoubleConstructorWithOneEmpty.class));
+                    Assertions.assertTrue(
+                            exception.getMessage()
+                                    .startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
+                })
+                .chain(() -> Cat
+                        .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                                Parameters.with("NamE", catName))
+                        .project(CatDoubleConstructorWithOneEmpty.class)
+                        .<CatDoubleConstructorWithOneEmpty> firstResult())
+                .invoke(catView -> {
+                    // Must keep the letter case
+                    Assertions.assertEquals("GARFIELD", catView.name);
+                    Assertions.assertEquals("JoN ArBuCkLe", catView.ownerName);
+                })
+                .chain(() -> Cat.delete("name", catName))
+                .replaceWith("OK");
     }
 
     @WithTransaction
@@ -2076,7 +2341,10 @@ public class TestEndpoint {
     @WithTransaction
     public Uni<String> testBug26308() {
         return testBug26308Query("from Person2 p left join fetch p.address")
-                .flatMap(p -> testBug26308Query("from Person2 p left join p.address"))
+                // This cannot work, see https://docs.jboss.org/hibernate/orm/7.0/migration-guide/migration-guide.html#create-query
+                //.flatMap(p -> testBug26308Query("from Person2 p left join p.address"))
+                // This must be used instead:
+                .flatMap(p -> testBug26308Query("from Person2 this left join this.address"))
                 .flatMap(p -> testBug26308Query("select p from Person2 p left join fetch p.address"))
                 .flatMap(p -> testBug26308Query("select p from Person2 p left join p.address"))
                 .flatMap(p -> testBug26308Query("from Person2 p left join fetch p.address select p"))

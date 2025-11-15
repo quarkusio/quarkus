@@ -2,11 +2,11 @@ package io.quarkus.opentelemetry.runtime.metrics.spi;
 
 import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.CDI_VALUE;
 
-import java.util.logging.Logger;
-
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
 
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
@@ -15,15 +15,17 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.NoopMetricExporter
 
 public class MetricsExporterCDIProvider implements ConfigurableMetricExporterProvider {
 
-    Logger log = Logger.getLogger(MetricsExporterCDIProvider.class.getName());
+    private static final Logger LOG = Logger.getLogger(MetricsExporterCDIProvider.class.getName());
 
     @Override
     public MetricExporter createExporter(ConfigProperties configProperties) {
         Instance<MetricExporter> exporters = CDI.current().select(MetricExporter.class, Any.Literal.INSTANCE);
-        log.fine("available exporters: " + exporters.stream()
-                .map(e -> e.getClass().getName())
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("none"));
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("available exporters: %s", exporters.stream()
+                    .map(e -> e.getClass().getName())
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse("none"));
+        }
         if (exporters.isUnsatisfied()) {
             return NoopMetricExporter.INSTANCE;
         } else {

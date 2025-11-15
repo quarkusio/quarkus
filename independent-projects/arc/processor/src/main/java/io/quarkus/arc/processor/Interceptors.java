@@ -70,7 +70,7 @@ final class Interceptors {
         checkInterceptorFieldsAndMethods(interceptorClass, beanDeployment);
 
         return new InterceptorInfo(interceptorClass, beanDeployment,
-                bindings.size() == 1 ? Collections.singleton(bindings.iterator().next())
+                bindings.size() == 1 ? Set.of(bindings.iterator().next())
                         : Collections.unmodifiableSet(bindings),
                 Injection.forBean(interceptorClass, null, beanDeployment, transformer, Injection.BeanType.INTERCEPTOR),
                 priority);

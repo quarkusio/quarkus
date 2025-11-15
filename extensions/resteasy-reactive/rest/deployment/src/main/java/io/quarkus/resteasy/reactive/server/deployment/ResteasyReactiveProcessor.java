@@ -132,6 +132,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -178,7 +179,6 @@ import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
-import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerRuntimeConfig;
 import io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -200,6 +200,7 @@ import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
+import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
@@ -226,6 +227,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -476,7 +478,8 @@ public class ResteasyReactiveProcessor {
             Capabilities capabilities,
             Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem,
             List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems,
-            List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems) {
+            List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems,
+            Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -660,27 +663,8 @@ public class ResteasyReactiveProcessor {
                     .setApplicationClassPredicate(applicationClassPredicate)
                     .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
                             .collect(Collectors.toUnmodifiableList()))
-                    .setTargetJavaVersion(new TargetJavaVersion() {
-
-                        private final Status result;
-
-                        {
-                            CompiledJavaVersionBuildItem.JavaVersion.Status status = compiledJavaVersionBuildItem
-                                    .getJavaVersion().isJava19OrHigher();
-                            if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE) {
-                                result = Status.FALSE;
-                            } else if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-                                result = Status.TRUE;
-                            } else {
-                                result = Status.UNKNOWN;
-                            }
-                        }
-
-                        @Override
-                        public Status isJava19OrHigher() {
-                            return result;
-                        }
-                    })
+                    .setTargetJavaVersion(
+                            determineTargetJavaVersion(compiledJavaVersionBuildItem, maybeTargetJavaVersionBuildItem))
                     .setIsDisabledCreator(new Function<>() {
                         @Override
                         public Supplier<Boolean> apply(ClassInfo classInfo) {
@@ -739,9 +723,13 @@ public class ResteasyReactiveProcessor {
 
             checkForDuplicateEndpoint(config, allServerMethods);
 
-            Function<Type, DotName> typeToReturnName = new Function<Type, DotName>() {
+            Function<MethodInfo, DotName> methodToReturnName = new Function<MethodInfo, DotName>() {
                 @Override
-                public DotName apply(Type type) {
+                public DotName apply(MethodInfo method) {
+                    var type = method.returnType();
+                    if (type.name().equals(DotName.OBJECT_NAME) && KotlinUtils.isKotlinSuspendMethod(method)) {
+                        type = KotlinUtils.getKotlinSuspendMethodResult(method);
+                    }
                     DotName typeName = type.name();
                     if (type.kind() == Type.Kind.CLASS) {
                         return typeName;
@@ -757,6 +745,19 @@ public class ResteasyReactiveProcessor {
                 }
             };
 
+            // Provides a predicate for filtering classes/methods that have annotations from one of the client
+            // packages. This only reduces the false positives as a "base" interface could be derived and
+            // client-related annotation applies. Although it seems unlikely that an endpoint without any
+            // client annotations violates the specification for server resources methods; this type of false
+            // positive would only mean needless processing as there would be no exception thrown.
+            Predicate<AnnotationInstance> knownClientAnnotation = new Predicate<AnnotationInstance>() {
+                public boolean test(AnnotationInstance ann) {
+                    return ann.name().packagePrefix().startsWith("io.quarkus.rest.client") ||
+                            ann.name().packagePrefix().startsWith("org.eclipse.microprofile.rest.client") ||
+                            ann.name().packagePrefix().startsWith("org.jboss.resteasy.reactive.client");
+                }
+            };
+
             Map<DotName, Set<DotName>> returnsBySubResources = new HashMap<>();
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
@@ -765,8 +766,16 @@ public class ResteasyReactiveProcessor {
                     MethodInfo method = instance.target().asMethod();
                     ClassInfo classInfo = method.declaringClass();
 
+                    // Reject known client interfaces (See predicate above)
+                    if (classInfo.asClass().declaredAnnotations().stream().anyMatch(knownClientAnnotation)
+                            || method.annotations().stream().anyMatch(knownClientAnnotation)
+                            || method.parameters().stream().flatMap(p -> p.annotations().stream())
+                                    .anyMatch(knownClientAnnotation)) {
+                        continue;
+                    }
+
                     returnsBySubResources.computeIfAbsent(classInfo.name(), ignored -> new HashSet<>())
-                            .add(typeToReturnName.apply(method.returnType()));
+                            .add(methodToReturnName.apply(method));
                 }
             }
             //sub resources can also have just a path annotation
@@ -776,8 +785,16 @@ public class ResteasyReactiveProcessor {
                     MethodInfo method = instance.target().asMethod();
                     ClassInfo classInfo = method.declaringClass();
 
+                    // Reject known client interfaces (See predicate above)
+                    if (classInfo.asClass().declaredAnnotations().stream().anyMatch(knownClientAnnotation)
+                            || method.annotations().stream().anyMatch(knownClientAnnotation)
+                            || method.parameters().stream().flatMap(p -> p.annotations().stream())
+                                    .anyMatch(knownClientAnnotation)) {
+                        continue;
+                    }
+
                     returnsBySubResources.computeIfAbsent(classInfo.name(), ignored -> new HashSet<>())
-                            .add(typeToReturnName.apply(method.returnType()));
+                            .add(methodToReturnName.apply(method));
                 }
             }
 
@@ -892,6 +909,35 @@ public class ResteasyReactiveProcessor {
         }
 
         handleDateFormatReflection(reflectiveClassBuildItemBuildProducer, index);
+    }
+
+    private static TargetJavaVersion determineTargetJavaVersion(CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
+            Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
+        if (maybeTargetJavaVersionBuildItem.isPresent()) {
+            return maybeTargetJavaVersionBuildItem.get().getTargetJavaVersion();
+        } else {
+            return new TargetJavaVersion() {
+
+                private final Status result;
+
+                {
+                    CompiledJavaVersionBuildItem.JavaVersion.Status status = compiledJavaVersionBuildItem
+                            .getJavaVersion().isJava19OrHigher();
+                    if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE) {
+                        result = Status.FALSE;
+                    } else if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+                        result = Status.TRUE;
+                    } else {
+                        result = Status.UNKNOWN;
+                    }
+                }
+
+                @Override
+                public Status isJava19OrHigher() {
+                    return result;
+                }
+            };
+        }
     }
 
     // TODO: this is really just a hackish way of allowing the use of @Mock so we might need something better
@@ -1588,7 +1634,7 @@ public class ResteasyReactiveProcessor {
         // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
         return new FilterBuildItem(
                 recorder.defaultAuthFailureHandler(deployment.getDeployment(), observabilityIntegrationBuildItem.isPresent()),
-                FilterBuildItem.AUTHENTICATION - 1);
+                SecurityHandlerPriorities.AUTHENTICATION - 1);
     }
 
     private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {
@@ -1673,13 +1719,12 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void runtimeConfiguration(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf,
             BuildProducer<HandlerConfigurationProviderBuildItem> producer) {
         if (deployment.isEmpty()) {
             return;
         }
         producer.produce(new HandlerConfigurationProviderBuildItem(RuntimeConfiguration.class,
-                recorder.runtimeConfiguration(deployment.get().getDeployment(), resteasyReactiveServerRuntimeConf)));
+                recorder.runtimeConfiguration(deployment.get().getDeployment())));
     }
 
     @BuildStep

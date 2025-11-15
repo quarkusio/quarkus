@@ -148,6 +148,11 @@ class SecurityConfigFilterTest {
         }
 
         @Override
+        public boolean autoAddOpenApiEndpoint() {
+            return false;
+        }
+
+        @Override
         public Optional<String> apiKeyParameterIn() {
             return Optional.ofNullable(apiKeyParameterIn);
         }
@@ -253,7 +258,7 @@ class SecurityConfigFilterTest {
         }
 
         @Override
-        public Optional<OperationIdStrategy> operationIdStrategy() {
+        public Optional<String> operationIdStrategy() {
             return Optional.empty();
         }
 

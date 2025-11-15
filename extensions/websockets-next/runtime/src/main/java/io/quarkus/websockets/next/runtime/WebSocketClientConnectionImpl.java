@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -19,13 +20,18 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
 
     private final WebSocket webSocket;
 
+    private final Consumer<WebSocketClientConnection> cleanup;
+
     WebSocketClientConnectionImpl(String clientId, WebSocket webSocket, Codecs codecs,
             Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers,
-            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
-        super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger,
-                sendingInterceptor);
+            TrafficLogger trafficLogger, Map<String, Object> userData, SendingInterceptor sendingInterceptor,
+            Consumer<WebSocketClientConnection> cleanup) {
+        super(Map.copyOf(pathParams), codecs,
+                new ClientHandshakeRequestImpl(serverEndpointUri, Objects.requireNonNull(webSocket), headers), trafficLogger,
+                new UserDataImpl(userData), sendingInterceptor);
         this.clientId = clientId;
-        this.webSocket = Objects.requireNonNull(webSocket);
+        this.webSocket = webSocket;
+        this.cleanup = cleanup;
     }
 
     @Override
@@ -48,6 +54,12 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
         return Objects.hash(identifier);
     }
 
+    protected void cleanup() {
+        if (cleanup != null) {
+            cleanup.accept(this);
+        }
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -60,13 +72,15 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
         return Objects.equals(identifier, other.identifier);
     }
 
-    private static class ClientHandshakeRequestImpl implements HandshakeRequest {
+    private static class ClientHandshakeRequestImpl extends HandshakeRequestBase implements HandshakeRequest {
 
         private final URI serverEndpointUrl;
+        private final WebSocket webSocket;
         private final Map<String, List<String>> headers;
 
-        ClientHandshakeRequestImpl(URI serverEndpointUrl, Map<String, List<String>> headers) {
+        ClientHandshakeRequestImpl(URI serverEndpointUrl, WebSocket webSocket, Map<String, List<String>> headers) {
             this.serverEndpointUrl = serverEndpointUrl;
+            this.webSocket = webSocket;
             Map<String, List<String>> copy = new HashMap<>();
             for (Entry<String, List<String>> e : headers.entrySet()) {
                 copy.put(e.getKey().toLowerCase(), List.copyOf(e.getValue()));
@@ -113,6 +127,16 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
         @Override
         public String query() {
             return serverEndpointUrl.getQuery();
+        }
+
+        @Override
+        public String localAddress() {
+            return formatSocketAddress(webSocket.localAddress());
+        }
+
+        @Override
+        public String remoteAddress() {
+            return formatSocketAddress(webSocket.remoteAddress());
         }
 
     }

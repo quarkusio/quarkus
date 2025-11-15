@@ -57,7 +57,6 @@ implementation("io.quarkus:quarkus-liquibase-mongodb")
 ----
 
 The Liquibase MongoDB extension support relies on the Quarkus MongoDB client config.
-For the time being, it does not support multiple clients.
 You need to add the MongoDB config to the `{config-file}` file
 in order to allow Liquibase to manage the schema.
 
@@ -115,6 +114,27 @@ YAML, JSON and XML formats are supported for the changeLog.
 
 Now you can start your application and Quarkus will run the Liquibase's update method according to your config.
 
+== Multiple Clients
+
+Liquibase MongoDB can be configured to support multiple clients.
+The properties are prefixed exactly the same way as named MongoDB clients. For example:
+
+[source,properties]
+----
+quarkus.liquibase-mongodb.users.change-log=db/users.xml
+quarkus.liquibase-mongodb.users.migrate-at-start=true
+
+quarkus.mongodb.users.database=users
+quarkus.mongodb.users.hosts=localhost:27017
+
+quarkus.liquibase-mongodb.inventory.change-log=db/inventory.xml
+quarkus.liquibase-mongodb.inventory.migrate-at-start=false
+
+quarkus.mongodb.inventory.connection-string=mongodb://localhost:27017/inventory
+----
+
+NOTE: The property `quarkus.liquibase-mongodb.[MongoDB client name].change-log` is the minimal configuration required for the extension to detect a new client setup.
+
 == Using the Liquibase object
 
 In case you are interested in using the `Liquibase` object directly, you can inject it as follows:
@@ -125,6 +145,7 @@ Quarkus will already have run the migrate operation.
 [source,java]
 ----
 import io.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbClient;
 
 @ApplicationScoped
 public class MigrationService {
@@ -132,23 +153,28 @@ public class MigrationService {
     @Inject
     LiquibaseMongodbFactory liquibaseMongodbFactory; <1>
 
+    @Inject
+    @LiquibaseMongodbClient("inventory") <2>
+    LiquibaseMongodbFactory liquibaseMongodbFactoryForInventory;
+
     public void checkMigration() {
         // Use the liquibase instance manually
         try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-            liquibase.dropAll(); <2>
+            liquibase.dropAll(); <3>
             liquibase.validate();
             liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
             // Get the list of liquibase change set statuses
-            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseFactory.createContexts(), liquibaseFactory.createLabels()); <3>
+            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseFactory.createContexts(), liquibaseFactory.createLabels()); <4>
         }
     }
 }
 ----
 <1> Inject the LiquibaseFactory object
-<2> Use the Liquibase instance directly
-<3> List of applied or not applied liquibase ChangeSets
+<2> Inject Liquibase MongoDB for named clients using the Quarkus `LiquibaseMongodbClient` qualifier
+<3> Use the Liquibase instance directly
+<4> List of applied or not applied liquibase ChangeSets
 
-== Liquibase Mongodb on Kubernetes
+== Liquibase MongoDB on Kubernetes
 
 Sometimes, it's helpful not to execute Liquibase initialization on each application startup. One such example is when deploying
 on Kubernetes, where it doesn't make sense to execute Liquibase on every single replica. Instead it's desirable to execute it

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -14,7 +15,6 @@ import java.util.Set;
 public final class DatabaseKind {
 
     public static final String DB2 = "db2";
-    public static final String DERBY = "derby";
     public static final String H2 = "h2";
     public static final String MARIADB = "mariadb";
     public static final String MSSQL = "mssql";
@@ -56,10 +56,6 @@ public final class DatabaseKind {
         return is(value, DB2);
     }
 
-    public static boolean isDerby(String value) {
-        return is(value, DERBY);
-    }
-
     public static boolean isH2(String value) {
         return is(value, H2);
     }
@@ -97,9 +93,8 @@ public final class DatabaseKind {
     private DatabaseKind() {
     }
 
-    private enum SupportedDatabaseKind {
+    public enum SupportedDatabaseKind {
         DB2(DatabaseKind.DB2),
-        DERBY(DatabaseKind.DERBY),
         H2(DatabaseKind.H2),
         MARIADB(DatabaseKind.MARIADB),
         MSSQL(DatabaseKind.MSSQL),
@@ -110,16 +105,30 @@ public final class DatabaseKind {
         private final String mainName;
         private final Set<String> aliases;
 
-        private SupportedDatabaseKind(String mainName) {
+        SupportedDatabaseKind(String mainName) {
             this.mainName = mainName;
             this.aliases = Collections.singleton(mainName);
         }
 
-        private SupportedDatabaseKind(String mainName, String... aliases) {
+        SupportedDatabaseKind(String mainName, String... aliases) {
             this.mainName = mainName;
             this.aliases = new HashSet<>();
             this.aliases.add(mainName);
             this.aliases.addAll(Arrays.asList(aliases));
+        }
+
+        public String getMainName() {
+            return mainName;
+        }
+
+        public static Optional<SupportedDatabaseKind> from(String name) {
+            String normalizedName = normalize(name);
+            for (SupportedDatabaseKind kind : values()) {
+                if (kind.getMainName().equals(normalizedName)) {
+                    return Optional.of(kind);
+                }
+            }
+            return Optional.empty();
         }
     }
 }

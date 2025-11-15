@@ -50,11 +50,14 @@ public class ConfluentRegistryAvroProcessor {
         Optional<ResolvedDependency> serde = findConfluentSerde(cp.getApplicationModel().getDependencies());
         if (serde.isPresent()) {
             String version = serde.get().getVersion();
+            NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
             if (version.startsWith("7.1") || version.startsWith("7.2")) {
                 // Only required for Confluent Serde 7.1.x and 7.2.x
-                config.produce(NativeImageConfigBuildItem.builder()
-                        .addRuntimeInitializedClass("io.confluent.kafka.schemaregistry.client.rest.utils.UrlList").build());
+                builder.addRuntimeInitializedClass("io.confluent.kafka.schemaregistry.client.rest.utils.UrlList");
             }
+            // Depends on org.apache.avro.reflect.ReflectData$AllowNull since v7.4.5
+            builder.addRuntimeInitializedClass("io.confluent.kafka.schemaregistry.avro.AvroSchemaUtils");
+            config.produce(builder.build());
         }
     }
 

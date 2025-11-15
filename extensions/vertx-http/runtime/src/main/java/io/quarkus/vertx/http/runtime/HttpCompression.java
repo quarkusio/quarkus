@@ -18,7 +18,7 @@ public enum HttpCompression {
     OFF,
     /**
      * Compression will be enabled if the response has the {@code Content-Type} header set and the value is listed in
-     * {@link VertxHttpConfig#compressMediaTypes}.
+     * {@link VertxHttpBuildTimeConfig#compressMediaTypes}.
      */
     UNDEFINED
 }

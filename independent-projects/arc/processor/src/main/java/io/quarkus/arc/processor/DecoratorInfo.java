@@ -17,7 +17,7 @@ import io.quarkus.arc.impl.Sets;
 public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo> {
 
     private final InjectionPointInfo delegateInjectionPoint;
-    private final Set<Type> decoratedTypes;
+    private final Set<Type> decoratedTypes; // interfaces only
 
     DecoratorInfo(AnnotationTarget target, BeanDeployment beanDeployment, InjectionPointInfo delegateInjectionPoint,
             Set<Type> decoratedTypes, List<Injection> injections, int priority) {

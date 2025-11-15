@@ -13,6 +13,11 @@ public interface Capability {
     String AGROAL = QUARKUS_PREFIX + ".agroal";
 
     /**
+     * An assistant implementation
+     */
+    String ASSISTANT = QUARKUS_PREFIX + ".assistant";
+
+    /**
      * JSR 365 compatible contexts and dependency injection
      */
     String CDI = QUARKUS_PREFIX + ".cdi";
@@ -111,6 +116,8 @@ public interface Capability {
     String HIBERNATE_REACTIVE = QUARKUS_PREFIX + ".hibernate.reactive";
     String HIBERNATE_VALIDATOR = QUARKUS_PREFIX + ".hibernate.validator";
     String OPENTELEMETRY_TRACER = QUARKUS_PREFIX + ".opentelemetry.tracer";
+    String OPENTELEMETRY_METRICS = QUARKUS_PREFIX + ".opentelemetry.metrics";
+    String OPENTELEMETRY_LOGS = QUARKUS_PREFIX + ".opentelemetry.logs";
 
     String OPENSHIFT = QUARKUS_PREFIX + ".openshift";
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";

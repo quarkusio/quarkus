@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 
@@ -106,6 +107,15 @@ public class Validation {
     static void validateLatitude(double latitude) {
         if (latitude < -85.05112878 || latitude > 85.05112878) {
             throw new IllegalArgumentException("The latitude must be in [85.05112878, 85.05112878]");
+        }
+    }
+
+    public static void validateTimeout(Duration value, String name) {
+        if (value == null) {
+            throw new IllegalArgumentException(String.format("`%s` must not be `null`", name));
+        }
+        if (value.isNegative()) {
+            throw new IllegalArgumentException(String.format("`%s` must be greater than or equal to zero", name));
         }
     }
 

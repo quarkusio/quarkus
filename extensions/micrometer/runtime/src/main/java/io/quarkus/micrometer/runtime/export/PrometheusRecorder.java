@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.micrometer.runtime.export.handlers.PrometheusHandler;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.Route;
@@ -14,9 +15,16 @@ import io.vertx.ext.web.RoutingContext;
 public class PrometheusRecorder {
     PrometheusHandler handler;
 
-    public PrometheusHandler getHandler() {
+    private final VertxHttpBuildTimeConfig vertxHttpBuildTimeConfig;
+
+    public PrometheusRecorder(VertxHttpBuildTimeConfig vertxHttpBuildTimeConfig) {
+        this.vertxHttpBuildTimeConfig = vertxHttpBuildTimeConfig;
+    }
+
+    public Handler<RoutingContext> getHandler() {
         if (handler == null) {
-            handler = new PrometheusHandler();
+            handler = new PrometheusHandler(vertxHttpBuildTimeConfig.enableCompression(),
+                    vertxHttpBuildTimeConfig.compressMediaTypes());
         }
 
         return handler;

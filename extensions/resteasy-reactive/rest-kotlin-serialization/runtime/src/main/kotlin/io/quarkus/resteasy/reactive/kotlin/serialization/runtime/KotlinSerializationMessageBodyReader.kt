@@ -20,38 +20,42 @@ class KotlinSerializationMessageBodyReader(private val json: Json) :
         type: Class<*>,
         genericType: Type,
         annotations: Array<Annotation>?,
-        mediaType: MediaType
+        mediaType: MediaType,
     ) = isReadable(mediaType, type)
 
     override fun isReadable(
         type: Class<*>,
         genericType: Type,
         lazyMethod: ResteasyReactiveResourceInfo,
-        mediaType: MediaType
+        mediaType: MediaType,
     ) = isReadable(mediaType, type)
 
     override fun readFrom(
         type: Class<Any>,
-        genericType: Type,
+        genericType: Type?,
         annotations: Array<out Annotation>,
         mediaType: MediaType,
         httpHeaders: MultivaluedMap<String, String>,
-        entityStream: InputStream
+        entityStream: InputStream,
     ): Any? {
-        return doReadFrom(type, entityStream)
+        return doReadFrom(determineType(type, genericType), entityStream)
     }
 
     override fun readFrom(
         type: Class<Any>,
-        genericType: Type,
+        genericType: Type?,
         mediaType: MediaType,
-        context: ServerRequestContext
+        context: ServerRequestContext,
     ): Any? {
-        return doReadFrom(type, context.inputStream)
+        return doReadFrom(determineType(type, genericType), context.inputStream)
+    }
+
+    private fun determineType(type: Class<Any>, genericType: Type?): Type {
+        return genericType ?: type
     }
 
     @ExperimentalSerializationApi
-    private fun doReadFrom(type: Class<Any>, entityStream: InputStream): Any? {
+    private fun doReadFrom(type: Type, entityStream: InputStream): Any? {
         return if (StreamUtil.isEmpty(entityStream)) null
         else {
             json.decodeFromStream(serializer(type), entityStream)

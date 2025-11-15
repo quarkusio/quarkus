@@ -20,7 +20,7 @@ public class EventBean extends BuiltInBean<Event<?>> {
     public Event<?> get(CreationalContext<Event<?>> creationalContext) {
         // Obtain current IP to get the required type and qualifiers
         InjectionPoint ip = InjectionPointProvider.getCurrent(creationalContext);
-        return new EventImpl<>(ip.getType(), ip.getQualifiers(), ip);
+        return ArcContainerImpl.instance().getEvent(ip.getType(), ip.getQualifiers(), ip);
     }
 
     @Override

@@ -18,7 +18,7 @@ import io.smallrye.config.WithName;
  * problem, but we need it for documentation purposes.
  * <br>
  * Relocation of the Config configurations to the Quarkus namespace is done in
- * {@link io.quarkus.runtime.configuration.ConfigUtils#configBuilder}.
+ * {@link io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer}.
  */
 @ConfigMapping(prefix = "quarkus")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)

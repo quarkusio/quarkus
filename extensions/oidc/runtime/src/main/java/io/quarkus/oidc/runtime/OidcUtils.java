@@ -25,6 +25,7 @@ import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
@@ -42,14 +43,20 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
 
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
@@ -74,6 +81,7 @@ import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -156,16 +164,21 @@ public final class OidcUtils {
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
             OidcTenantConfig oidcTenantConfig) {
+        return getSessionCookie(context, cookies, oidcTenantConfig, SESSION_COOKIE_NAME,
+                getSessionCookieName(oidcTenantConfig));
+    }
+
+    public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
+            OidcTenantConfig oidcTenantConfig, String defaultSessionCookieName, String sessionCookieName) {
         if (cookies.isEmpty()) {
             return null;
         }
-        final String sessionCookieName = getSessionCookieName(oidcTenantConfig);
 
         if (cookies.containsKey(sessionCookieName)) {
-            context.put(OidcUtils.SESSION_COOKIE_NAME, List.of(sessionCookieName));
+            context.put(defaultSessionCookieName, List.of(sessionCookieName));
             return cookies.get(sessionCookieName).getValue();
         } else {
-            final String sessionChunkPrefix = sessionCookieName + OidcUtils.SESSION_COOKIE_CHUNK;
+            final String sessionChunkPrefix = sessionCookieName + SESSION_COOKIE_CHUNK;
 
             SortedMap<String, String> sessionCookies = new TreeMap<>(new Comparator<String>() {
 
@@ -186,7 +199,7 @@ public final class OidcUtils {
                 }
             }
             if (!sessionCookies.isEmpty()) {
-                context.put(OidcUtils.SESSION_COOKIE_NAME, new ArrayList<String>(sessionCookies.keySet()));
+                context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
 
                 StringBuilder sessionCookieValue = new StringBuilder();
                 for (String value : sessionCookies.values()) {
@@ -350,9 +363,11 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         var vertxContext = getRoutingContextAttribute(request);
         setRoutingContextAttribute(builder, vertxContext);
-        OidcUtils.setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
-        setSecurityIdentityRoles(builder, config, rolesJson);
-        setSecurityIdentityPermissions(builder, config, rolesJson);
+        setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
+        if (rolesJson != null) {
+            setSecurityIdentityRoles(builder, config, rolesJson);
+            setSecurityIdentityPermissions(builder, config, rolesJson);
+        }
         setSecurityIdentityUserInfo(builder, userInfo);
         setSecurityIdentityIntrospection(builder, introspectionResult);
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
@@ -361,8 +376,24 @@ public final class OidcUtils {
         TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT);
         if (codeFlowAccessTokenResult != null) {
             builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
+            if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
+                setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult);
+                if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
+                    builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
+                }
+            }
         }
         return builder.build();
+    }
+
+    static void setIntrospectionScopes(QuarkusSecurityIdentity.Builder builder, TokenIntrospection introspectionResult) {
+        if (introspectionResult != null) {
+            Set<String> scopes = introspectionResult.getScopes();
+            if (scopes != null) {
+                builder.addRoles(scopes);
+                addTokenScopesAsPermissions(builder, scopes);
+            }
+        }
     }
 
     static void setSecurityIdentityPermissions(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
@@ -371,7 +402,7 @@ public final class OidcUtils {
     }
 
     static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
-        if (!scopes.isEmpty()) {
+        if (scopes != null && !scopes.isEmpty()) {
             builder.addPermissionsAsString(new HashSet<>(scopes));
         }
     }
@@ -915,5 +946,83 @@ public final class OidcUtils {
             }
         }
         return token;
+    }
+
+    public static boolean isDPoPScheme(String authorizationScheme) {
+        return OidcConstants.DPOP_SCHEME.equalsIgnoreCase(authorizationScheme);
+    }
+
+    public static String getRootPath(String configuredRootPath) {
+        // Prepend '/' if it is not present
+        String rootPath = OidcCommonUtils.prependSlash(configuredRootPath);
+        // Strip trailing '/' if the length is > 1
+        if (rootPath.length() > 1 && rootPath.endsWith("/")) {
+            rootPath = rootPath.substring(0, rootPath.length() - 1);
+        }
+        // if it is only '/' then return an empty value
+        return "/".equals(rootPath) ? "" : rootPath;
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters(OidcTenantConfig oidcTenantConfig) {
+        return OidcCommonUtils.getOidcRequestFilters(getAppliesTo(oidcTenantConfig));
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters(OidcTenantConfig oidcTenantConfig) {
+        return OidcCommonUtils.getOidcResponseFilters(getAppliesTo(oidcTenantConfig));
+    }
+
+    private static Predicate<Class<?>> getAppliesTo(OidcTenantConfig oidcTenantConfig) {
+        return new Predicate<>() {
+
+            private final String tenantId = oidcTenantConfig.tenantId().get();
+            private final boolean isBearerTokenAuthentication = OidcUtils.isServiceApp(oidcTenantConfig);
+            private final boolean isAuthorizationCodeFlow = OidcUtils.isWebApp(oidcTenantConfig);
+
+            @Override
+            public boolean test(Class<?> clazz) {
+                var tenantFeature = clazz.getAnnotation(TenantFeature.class);
+                if (tenantFeature != null && tenantFeature.value() != null) {
+                    boolean found = false;
+                    for (String id : tenantFeature.value()) {
+                        if (tenantId.equals(id)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        return false;
+                    }
+                }
+                if (clazz.getAnnotation(BearerTokenAuthentication.class) != null && !isBearerTokenAuthentication) {
+                    return false;
+                }
+                if (clazz.getAnnotation(AuthorizationCodeFlow.class) != null && !isAuthorizationCodeFlow) {
+                    return false;
+                }
+                return true;
+            }
+        };
+    }
+
+    static ServerCookie createSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig,
+            String name, String value, long maxAge) {
+        ServerCookie cookie = createCookie(context, oidcConfig, name, value, maxAge);
+        cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name()));
+        return cookie;
+    }
+
+    static void createChunkedCookie(RoutingContext context, OidcTenantConfig oidcConfig, String baseCookieName,
+            String cookieValue, long maxAge) {
+        for (int chunkIndex = 1, currentPos = 0; currentPos < cookieValue.length(); chunkIndex++) {
+            int nextPos = currentPos + MAX_COOKIE_VALUE_LENGTH;
+            int nextValueUpperPos = nextPos < cookieValue.length() ? nextPos
+                    : cookieValue.length();
+            String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
+            // q_session_session_chunk_1, etc
+            String nextName = baseCookieName + SESSION_COOKIE_CHUNK + chunkIndex;
+            LOG.debugf("Creating the %s cookie chunk, size: %d", nextName, nextValue.length());
+            createSessionCookie(context, oidcConfig, nextName, nextValue, maxAge);
+            currentPos = nextPos;
+        }
     }
 }

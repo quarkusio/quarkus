@@ -240,31 +240,23 @@ public abstract class CurrentManagedContext implements ManagedContext {
         // the default field values are set before 'this' is accessible, hence
         // they should be the very first value observable even in presence of
         // unsafe publication of this object.
-        private static final int VALID = 0;
-        private static final int INVALID = 1;
-        private static final VarHandle IS_VALID;
+        private static final VarHandle STATE_UPDATER;
 
-        private static final int FALSE = 0;
-        private static final int TRUE = 1;
-        private static final VarHandle INITIALIZED_FIRED;
-        private static final VarHandle BEFORE_DESTROYED_FIRED;
+        private static final byte INVALID_MASK = 0b00000001;
+        private static final byte INITIALIZED_FIRED_MASK = 0b00000010;
+        private static final byte BEFORE_DESTROYED_FIRED_MASK = 0b00000100;
 
         static {
             try {
-                IS_VALID = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "isValid", int.class);
-                INITIALIZED_FIRED = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "initializedFired",
-                        int.class);
-                BEFORE_DESTROYED_FIRED = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "beforeDestroyedFired",
-                        int.class);
+                STATE_UPDATER = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "state", byte.class);
             } catch (ReflectiveOperationException e) {
                 throw new Error(e);
             }
         }
 
         private final ContextInstances contextInstances;
-        private volatile int isValid;
-        private volatile int initializedFired;
-        private volatile int beforeDestroyedFired;
+        // it contains 3 states: isValid, initializedFired and beforeDestroyedFired
+        private volatile byte state;
 
         CurrentContextState(ContextInstances contextInstances) {
             this.contextInstances = Objects.requireNonNull(contextInstances);
@@ -280,23 +272,39 @@ public abstract class CurrentManagedContext implements ManagedContext {
          * @return {@code true} if the state was successfully invalidated, {@code false} otherwise
          */
         boolean invalidate() {
-            // Atomically sets the value just like AtomicBoolean.compareAndSet(boolean, boolean)
-            return IS_VALID.compareAndSet(this, VALID, INVALID);
+            return set(INVALID_MASK);
         }
 
         @Override
         public boolean isValid() {
-            return isValid == VALID;
+            return isNotSet(INVALID_MASK);
         }
 
         boolean shouldFireInitializedEvent() {
-            return INITIALIZED_FIRED.compareAndSet(this, FALSE, TRUE);
+            return set(INITIALIZED_FIRED_MASK);
         }
 
         boolean shouldFireBeforeDestroyedEvent() {
-            return BEFORE_DESTROYED_FIRED.compareAndSet(this, FALSE, TRUE);
+            return set(BEFORE_DESTROYED_FIRED_MASK);
+        }
+
+        private boolean isNotSet(byte bitMask) {
+            return (state & bitMask) == 0;
+        }
+
+        private boolean set(byte bitMask) {
+            byte state = this.state;
+            for (;;) {
+                if ((state & bitMask) != 0) {
+                    return false;
+                }
+                final byte newState = (byte) (state | bitMask);
+                state = (byte) STATE_UPDATER.compareAndExchange(this, state, newState);
+                if (state == newState) {
+                    return true;
+                }
+            }
         }
 
     }
-
 }

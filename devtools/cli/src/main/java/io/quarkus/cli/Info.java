@@ -2,8 +2,7 @@ package io.quarkus.cli;
 
 import java.util.concurrent.Callable;
 
-import io.quarkus.cli.build.BaseBuildCommand;
-import io.quarkus.cli.build.BuildSystemRunner;
+import io.quarkus.cli.common.build.BuildSystemRunner;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "info", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Display project information and verify versions health (platform and extensions).", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")

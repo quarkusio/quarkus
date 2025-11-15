@@ -22,6 +22,7 @@ class BookEntity : PanacheMongoEntity() {
     @BsonProperty("bookTitle")
     var title: String? = null
         private set
+
     var author: String? = null
         private set
 
@@ -30,6 +31,7 @@ class BookEntity : PanacheMongoEntity() {
     @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd") var creationDate: LocalDate? = null
     var categories = listOf<String>()
         private set
+
     private var details: BookDetail? = null
 
     fun setTitle(title: String?): BookEntity {

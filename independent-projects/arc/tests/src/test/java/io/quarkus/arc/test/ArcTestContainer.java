@@ -96,6 +96,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private boolean strictCompatibility = false;
         private boolean optimizeContexts = false;
         private final List<Predicate<ClassInfo>> excludeTypes;
+        private boolean testMode = false;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -227,6 +228,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public Builder testMode(boolean testMode) {
+            this.testMode = testMode;
+            return this;
+        }
+
         public Builder optimizeContexts(boolean value) {
             this.optimizeContexts = value;
             return this;
@@ -274,6 +280,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     private final boolean strictCompatibility;
     private final boolean optimizeContexts;
+    private final boolean testMode;
 
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
@@ -299,6 +306,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.strictCompatibility = false;
         this.optimizeContexts = false;
         this.excludeTypes = Collections.emptyList();
+        this.testMode = false;
     }
 
     public ArcTestContainer(Builder builder) {
@@ -325,6 +333,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.strictCompatibility = builder.strictCompatibility;
         this.optimizeContexts = builder.optimizeContexts;
         this.excludeTypes = builder.excludeTypes;
+        this.testMode = builder.testMode;
     }
 
     // this is where we start Arc, we operate on a per-method basis
@@ -502,8 +511,9 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                     .setContextClassLoader(testClassLoader);
 
             // Now we are ready to initialize Arc
-            ArcInitConfig.Builder initConfigBuilder = ArcInitConfig.builder();
-            initConfigBuilder.setStrictCompatibility(strictCompatibility);
+            ArcInitConfig.Builder initConfigBuilder = ArcInitConfig.builder()
+                    .setStrictCompatibility(strictCompatibility)
+                    .setTestMode(testMode);
             Arc.initialize(initConfigBuilder.build());
 
         } catch (Throwable e) {

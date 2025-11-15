@@ -68,7 +68,13 @@ class MockSupport {
     private static <T> void mockObservers(T instance, boolean mock) throws NoSuchMethodException, SecurityException,
             ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         // io.quarkus.arc.ClientProxy.arc_bean()
-        Method getBeanMethod = instance.getClass().getDeclaredMethod("arc_bean");
+        Method getBeanMethod;
+        try {
+            getBeanMethod = instance.getClass().getDeclaredMethod("arc_bean");
+        } catch (NoSuchMethodException e) {
+            // Not a client proxy
+            return;
+        }
         Object bean = getBeanMethod.invoke(instance);
         // io.quarkus.arc.InjectableBean.getIdentifier()
         Method getIdMethod = bean.getClass().getDeclaredMethod("getIdentifier");

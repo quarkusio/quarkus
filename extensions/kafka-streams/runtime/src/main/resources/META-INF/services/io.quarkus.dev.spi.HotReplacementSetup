@@ -1,1 +1,1 @@
-io.quarkus.kafka.streams.runtime.devmode.KafkaStreamsHotReplacementSetup
+io.quarkus.kafka.streams.runtime.dev.KafkaStreamsHotReplacementSetup

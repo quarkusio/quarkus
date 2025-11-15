@@ -2,15 +2,16 @@ package io.quarkus.test.junit;
 
 import java.io.IOException;
 
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import io.quarkus.logging.Log;
-
 public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTestWithCallbacksExtension
         implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler, TestWatcher {
+
+    private static final Logger LOG = Logger.getLogger(AbstractQuarkusTestWithContextExtension.class);
 
     public static final String IO_QUARKUS_TESTING_TYPE = "io.quarkus.testing.type";
 
@@ -75,7 +76,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
                 try {
                     state.close();
                 } catch (IOException ignored) {
-                    Log.debug(ignored);
+                    LOG.debug(ignored);
                     // ignoring exceptions when closing state.
 
                 } finally {

@@ -14,7 +14,7 @@ import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
-import io.quarkus.cli.registry.ToggleRegistryClientMixin;
+import io.quarkus.cli.common.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;

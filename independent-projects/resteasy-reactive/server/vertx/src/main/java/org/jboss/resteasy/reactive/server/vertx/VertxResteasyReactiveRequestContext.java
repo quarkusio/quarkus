@@ -532,6 +532,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
+    public void reset() {
+        response.reset();
+    }
+
+    @Override
     public boolean isWriteQueueFull() {
         return response.writeQueueFull();
     }

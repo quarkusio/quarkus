@@ -10,7 +10,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 
 /**
- * This class is registered as an @ApplicationScoped synthetic bean at build time.
+ * This class is registered as an {@link jakarta.enterprise.context.ApplicationScoped} synthetic bean at build time.
  */
 public class CacheManagerImpl implements CacheManager {
 

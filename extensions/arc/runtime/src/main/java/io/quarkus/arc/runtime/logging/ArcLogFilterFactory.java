@@ -14,7 +14,7 @@ public class ArcLogFilterFactory implements LogFilterFactory {
 
     @Override
     public Filter create(String className) throws Exception {
-        InstanceHandle<?> instance = Arc.container().instance(Class.forName(className, true, Thread.currentThread()
+        InstanceHandle<?> instance = Arc.requireContainer().instance(Class.forName(className, true, Thread.currentThread()
                 .getContextClassLoader()));
         if (!instance.isAvailable()) {
             throw new IllegalStateException("Improper integration of '" + LogFilterFactory.class.getName() + "' detected");

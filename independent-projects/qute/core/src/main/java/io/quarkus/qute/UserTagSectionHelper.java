@@ -20,7 +20,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
     private final HtmlEscaper htmlEscaper;
     private final String itKey;
 
-    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, SectionBlock> extendingBlocks,
+    UserTagSectionHelper(TemplateSupplier templateSupplier, Map<String, SectionBlock> extendingBlocks,
             Map<String, Expression> parameters, boolean isIsolated, boolean isNestedContentNeeded, HtmlEscaper htmlEscaper,
             String itKey) {
         super(templateSupplier, extendingBlocks, parameters, isIsolated);
@@ -39,7 +39,8 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         evaluatedParams.put(Factory.ARGS, new Arguments(evaluatedParams));
         if (isNestedContentNeeded) {
             // If needed then add the {nested-content} to the evaluated params
-            Expression nestedContent = ((TemplateImpl) template.get()).findExpression(this::isNestedContent);
+            Expression nestedContent = ((TemplateImpl) templateSupplier.get(evaluatedParams))
+                    .findExpression(this::isNestedContent);
             if (nestedContent != null) {
                 // Execute the nested content first and make it accessible via the "nested-content" key
                 evaluatedParams.put(NESTED_CONTENT,
@@ -106,9 +107,10 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         }
 
         @Override
-        protected boolean ignoreParameterInit(Supplier<String> firstParamSupplier, String key, String value) {
-            // {#myTag _isolated=true /}
-            return super.ignoreParameterInit(firstParamSupplier, key, value)
+        protected boolean ignoreParameterInit(Map<String, String> params, Supplier<String> firstParamValue, String key,
+                String value) {
+            return super.ignoreParameterInit(params, firstParamValue, key, value)
+                    // {#myTag _isolated=true /}
                     || (key.equals(ISOLATED)
                             // {#myTag _isolated /}
                             || value.equals(ISOLATED)
@@ -116,7 +118,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
                             || value.equals(UNISOLATED)
                             // IT with default value or not the first agrument
                             // e.g. it=it in {#myTag foo=bar /} or baz in {#myTag foo=bar baz /}
-                            || (key.equals(IT) && (!firstParamSupplier.get().equals(value) || value.equals(IT))));
+                            || (key.equals(IT) && (!firstParamValue.get().equals(value) || value.equals(IT))));
         }
 
         @Override
@@ -125,13 +127,13 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         }
 
         @Override
-        protected UserTagSectionHelper newHelper(Supplier<Template> template, Map<String, Expression> params,
+        protected UserTagSectionHelper newHelper(TemplateSupplier templateSupplier, Map<String, Expression> params,
                 Map<String, SectionBlock> extendingBlocks, Boolean isolatedValue, SectionInitContext context) {
             boolean isNestedContentNeeded = !context.getBlock(SectionHelperFactory.MAIN_BLOCK_NAME).isEmpty();
             // Use the filtered map of paramas and not the original map from the SectionInitContext
             Expression itKeyExpr = params.getOrDefault(IT, null);
 
-            return new UserTagSectionHelper(template, extendingBlocks, params,
+            return new UserTagSectionHelper(templateSupplier, extendingBlocks, params,
                     isolatedValue != null ? isolatedValue
                             : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, ISOLATED_DEFAULT_VALUE)),
                     isNestedContentNeeded, htmlEscaper,
@@ -139,7 +141,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         }
 
         @Override
-        protected void handleParam(String key, String value, Supplier<String> firstParamSupplier,
+        protected void processParam(Map<String, String> params, String key, String value, Supplier<String> firstParamValue,
                 BiConsumer<String, String> paramConsumer) {
             if (key.equals(IT)) {
                 if (value.equals(IT)) {
@@ -151,7 +153,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
                     paramConsumer.accept(defaultedKey, value);
                 }
             }
-            super.handleParam(key, value, firstParamSupplier, paramConsumer);
+            super.processParam(params, key, value, firstParamValue, paramConsumer);
         }
 
     }
@@ -208,27 +210,27 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
         public Arguments skip(String... keys) {
             Set<String> keySet = Set.of(keys);
-            return doFilter(e -> !keySet.contains(e.getKey()));
+            return filter(e -> !keySet.contains(e.getKey()));
         }
 
         public Arguments skipIdenticalKeyValue() {
-            return doFilter(e -> !e.getKey().equals(e.getValue()));
+            return filter(e -> !e.getKey().equals(e.getValue()));
         }
 
         /**
          * Skip the first argument if it does not define a name.
          */
         public Arguments skipIt() {
-            return doFilter(e -> !e.getKey().equals(itKey));
+            return filter(e -> !e.getKey().equals(itKey));
         }
 
         public Arguments filter(String... keys) {
             Set<String> keySet = Set.of(keys);
-            return doFilter(e -> keySet.contains(e.getKey()));
+            return filter(e -> keySet.contains(e.getKey()));
         }
 
         public Arguments filterIdenticalKeyValue() {
-            return doFilter(e -> e.getKey().equals(e.getValue()));
+            return filter(e -> e.getKey().equals(e.getValue()));
         }
 
         // foo="1" bar="true" readonly="readonly"
@@ -247,7 +249,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
             return new RawString(builder.toString());
         }
 
-        private Arguments doFilter(Predicate<Entry<String, Object>> predicate) {
+        public Arguments filter(Predicate<Entry<String, Object>> predicate) {
             List<Entry<String, Object>> newArgs = new ArrayList<>(args.size());
             for (Entry<String, Object> e : args) {
                 if (predicate.test(e)) {

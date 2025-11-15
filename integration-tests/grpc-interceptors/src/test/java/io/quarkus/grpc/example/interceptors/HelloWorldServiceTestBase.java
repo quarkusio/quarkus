@@ -17,6 +17,7 @@ import examples.HelloRequest;
 import examples.MutinyCopycatGrpc;
 import io.grpc.Channel;
 import io.grpc.stub.StreamObserver;
+import io.quarkus.grpc.examples.interceptors.EarlyHeaderClientInterceptor;
 import io.quarkus.grpc.examples.interceptors.HelloExceptionHandlerProvider;
 import io.quarkus.grpc.test.utils.GRPCTestUtils;
 import io.smallrye.mutiny.Multi;
@@ -51,6 +52,31 @@ class HelloWorldServiceTestBase {
         // TODO
         System.out.println("Exception > " + t);
         Assertions.assertTrue(HelloExceptionHandlerProvider.invoked);
+    }
+
+    @Test
+    void testEarlyHeaders() throws Exception {
+        EarlyHeaderClientInterceptor earlyHeaderClientInterceptor = new EarlyHeaderClientInterceptor();
+        GreeterGrpc.GreeterStub helloGrpcStub = GreeterGrpc.newStub(channel).withInterceptors(earlyHeaderClientInterceptor);
+        helloGrpcStub.sayHello(HelloRequest.newBuilder().setName("gRPC").build(), new StreamObserver<>() {
+            @Override
+            public void onNext(HelloReply helloReply) {
+                // ignore
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                throwable.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                // ignore
+            }
+        });
+
+        String headerValue = earlyHeaderClientInterceptor.getHeaderFuture().get(5, TimeUnit.SECONDS);
+        Assertions.assertEquals(headerValue, "whatever");
     }
 
     @Test

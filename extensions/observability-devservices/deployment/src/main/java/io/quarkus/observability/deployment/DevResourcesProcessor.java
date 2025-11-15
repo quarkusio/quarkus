@@ -5,7 +5,7 @@ import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevResourcesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -17,7 +17,7 @@ import io.quarkus.observability.runtime.DevResourceShutdownRecorder;
 import io.quarkus.observability.runtime.DevResourcesConfigBuilder;
 import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevResourcesProcessor.IsEnabled.class)
+@BuildSteps(onlyIf = { IsDevResourcesSupportedByLaunchMode.class, DevResourcesProcessor.IsEnabled.class })
 class DevResourcesProcessor {
     private static final Logger log = LoggerFactory.getLogger(DevResourcesProcessor.class);
     private static final String FEATURE = "devresources";

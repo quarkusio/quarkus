@@ -9,7 +9,6 @@ import io.quarkus.amazon.lambda.deployment.ProvidedAmazonLambdaHandlerBuildItem;
 import io.quarkus.amazon.lambda.http.AwsHttpContextProducers;
 import io.quarkus.amazon.lambda.http.DefaultLambdaIdentityProvider;
 import io.quarkus.amazon.lambda.http.LambdaHttpAuthenticationMechanism;
-import io.quarkus.amazon.lambda.http.LambdaHttpConfig;
 import io.quarkus.amazon.lambda.http.LambdaHttpHandler;
 import io.quarkus.amazon.lambda.http.LambdaHttpRecorder;
 import io.quarkus.amazon.lambda.http.model.AlbContext;
@@ -24,7 +23,7 @@ import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -61,8 +60,9 @@ public class AmazonLambdaHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void setupConfig(LambdaHttpConfig config, LambdaHttpRecorder recorder) {
-        recorder.setConfig(config);
+    public void setupConfig(LambdaHttpRecorder recorder) {
+        // force config to be set as static var in the recorder - TODO - rewrite this, it shouldn't use static vars
+        recorder.setConfig();
     }
 
     @BuildStep
@@ -95,7 +95,7 @@ public class AmazonLambdaHttpProcessor {
     /**
      * Lambda provides /tmp for temporary files. Set vertx cache dir
      */
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
         systemProperty.produce(new SystemPropertyBuildItem(CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
     }

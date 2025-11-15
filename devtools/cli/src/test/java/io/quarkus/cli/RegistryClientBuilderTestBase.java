@@ -33,7 +33,7 @@ public abstract class RegistryClientBuilderTestBase {
 
     static Path workDir() {
         if (workDir == null) {
-            var p = Path.of(System.getProperty("user.dir")).resolve("target").resolve("test-work-dir");
+            var p = Path.of(System.getProperty("user.dir")).resolve("target").resolve("test-classes").resolve("test-work-dir");
             try {
                 Files.createDirectories(p);
             } catch (IOException e) {

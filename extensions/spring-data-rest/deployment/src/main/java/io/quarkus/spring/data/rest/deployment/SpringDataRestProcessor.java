@@ -5,8 +5,9 @@ import static io.quarkus.deployment.Feature.SPRING_DATA_REST;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.ws.rs.Priorities;
 
@@ -24,7 +25,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -82,36 +82,36 @@ class SpringDataRestProcessor {
     }
 
     @BuildStep
-    void registerRepositories(CombinedIndexBuildItem indexBuildItem, Capabilities capabilities,
+    void registerRepositories(
+            CombinedIndexBuildItem indexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<ResourcePropertiesBuildItem> resourcePropertiesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
         IndexView index = indexBuildItem.getIndex();
         EntityClassHelper entityClassHelper = new EntityClassHelper(index);
-        List<ClassInfo> repositoriesToImplement = getRepositoriesToImplement(index, CRUD_REPOSITORY_INTERFACE,
+        Set<ClassInfo> repositoriesToImplement = getRepositoriesToImplement(index, CRUD_REPOSITORY_INTERFACE,
                 LIST_CRUD_REPOSITORY_INTERFACE,
                 PAGING_AND_SORTING_REPOSITORY_INTERFACE, LIST_PAGING_AND_SORTING_REPOSITORY_INTERFACE,
                 JPA_REPOSITORY_INTERFACE);
 
-        implementResources(capabilities, implementationsProducer, restDataResourceProducer, resourcePropertiesProducer,
+        implementResources(implementationsProducer, restDataResourceProducer, resourcePropertiesProducer,
                 unremovableBeansProducer, new RepositoryMethodsImplementor(index, entityClassHelper),
-                index,
-                repositoriesToImplement);
+                index, repositoriesToImplement);
     }
 
     /**
      * Implement the {@link io.quarkus.rest.data.panache.RestDataResource} interface for each given Spring Data
      * repository and register its metadata and properties to be later picked up by the `rest-data-panache` extension.
      */
-    private void implementResources(Capabilities capabilities,
+    private void implementResources(
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<ResourcePropertiesBuildItem> resourcePropertiesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             ResourceMethodsImplementor methodsImplementor,
             IndexView index,
-            List<ClassInfo> repositoriesToImplement) {
+            Set<ClassInfo> repositoriesToImplement) {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
         ResourceImplementor resourceImplementor = new ResourceImplementor(methodsImplementor);
         EntityClassHelper entityClassHelper = new EntityClassHelper(index);
@@ -123,8 +123,8 @@ class SpringDataRestProcessor {
             ResourcePropertiesProvider propertiesProvider = new RepositoryPropertiesProvider(index, paged);
             List<Type> generics = getGenericTypes(classInfo);
             String repositoryName = classInfo.name().toString();
-            String entityType = generics.get(0).toString();
-            String idType = generics.get(1).toString();
+            String entityType = generics.get(0).name().toString();
+            String idType = generics.get(1).name().toString();
 
             String resourceClass = resourceImplementor.implement(classOutput, repositoryName, entityType);
 
@@ -141,8 +141,8 @@ class SpringDataRestProcessor {
         }
     }
 
-    private List<ClassInfo> getRepositoriesToImplement(IndexView indexView, DotName... repositoryInterfaces) {
-        List<ClassInfo> result = new LinkedList<>();
+    private Set<ClassInfo> getRepositoriesToImplement(IndexView indexView, DotName... repositoryInterfaces) {
+        Set<ClassInfo> result = new LinkedHashSet<>();
         for (DotName repositoryInterface : repositoryInterfaces) {
             for (ClassInfo classInfo : indexView.getKnownDirectImplementors(repositoryInterface)) {
                 if (!hasImplementors(indexView, classInfo) && !EXCLUDED_INTERFACES.contains(classInfo.name())) {

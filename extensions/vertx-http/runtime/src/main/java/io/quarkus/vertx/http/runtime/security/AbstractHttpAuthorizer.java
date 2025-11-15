@@ -59,55 +59,24 @@ abstract class AbstractHttpAuthorizer {
      * be invoked, if not appropriate action will be taken to either report the failure or attempt authentication.
      */
     public void checkPermission(RoutingContext routingContext) {
-        if (!controller.isAuthorizationEnabled()) {
+        if (!controller.isAuthorizationEnabled() || policies.isEmpty()) {
             routingContext.next();
             return;
         }
-        //check their permissions
-        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null,
-                policies);
-    }
 
-    private void doPermissionCheck(RoutingContext routingContext,
-            Uni<SecurityIdentity> identity, int index,
-            SecurityIdentity augmentedIdentity,
-            List<HttpSecurityPolicy> permissionCheckers) {
-        if (index == permissionCheckers.size()) {
-            QuarkusHttpUser currentUser = (QuarkusHttpUser) routingContext.user();
-            if (augmentedIdentity != null) {
-                if (!augmentedIdentity.isAnonymous()
-                        && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
-                    setIdentity(augmentedIdentity, routingContext);
-                }
-                if (securityEventHelper.fireEventOnSuccess()) {
-                    securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(augmentedIdentity,
-                            Map.of(RoutingContext.class.getName(), routingContext)));
-                }
-            } else if (securityEventHelper.fireEventOnSuccess()
-                    && permissionCheckPerformed(permissionCheckers, routingContext, index)) {
-                securityEventHelper.fireSuccessEvent(
-                        new AuthorizationSuccessEvent(currentUser == null ? null : currentUser.getSecurityIdentity(),
-                                Map.of(RoutingContext.class.getName(), routingContext)));
-            }
-            routingContext.next();
-            return;
-        }
-        //get the current checker
-        HttpSecurityPolicy res = permissionCheckers.get(index);
-        res.checkPermission(routingContext, identity, context)
+        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null)
                 .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
                     public void accept(HttpSecurityPolicy.CheckResult checkResult) {
-                        if (!checkResult.isPermitted()) {
-                            doDeny(identity, routingContext, res, checkResult.getAugmentedIdentity());
+                        if (routingContext.response().ended() || routingContext.failed()) {
+                            return;
+                        }
+                        if (checkResult.isPermitted()) {
+                            routingContext.next();
                         } else {
-                            if (checkResult.getAugmentedIdentity() != null) {
-                                doPermissionCheck(routingContext, checkResult.getAugmentedIdentityAsUni(),
-                                        index + 1, checkResult.getAugmentedIdentity(), permissionCheckers);
-                            } else {
-                                //attempt to run the next checker
-                                doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity, permissionCheckers);
-                            }
+                            // if this is invoked, there is a bug in our code because all the denied checks must result
+                            // in the DoDenyException exception
+                            routingContext.fail(new IllegalStateException("Received unhandled HttpSecurityPolicy.CheckResult"));
                         }
                     }
                 }, new Consumer<Throwable>() {
@@ -116,7 +85,13 @@ abstract class AbstractHttpAuthorizer {
                         // we don't fail event if it's already failed with same exception as we don't want to process
                         // the exception twice;at this point, the exception could be failed by the default auth failure handler
                         if (!routingContext.response().ended() && !throwable.equals(routingContext.failure())) {
-                            routingContext.fail(throwable);
+                            if (throwable instanceof DoDenyException doDenyException) {
+                                // HTTP Security policy has forbidden access
+                                doDeny(doDenyException.augmentedIdentityUni, routingContext,
+                                        doDenyException.policyWhichForbiddenAccess, doDenyException.augmentedIdentity);
+                            } else {
+                                routingContext.fail(throwable);
+                            }
                         } else if (throwable instanceof AuthenticationFailedException) {
                             log.debug("Authentication challenge is required");
                         } else if (throwable instanceof AuthenticationRedirectException) {
@@ -125,7 +100,56 @@ abstract class AbstractHttpAuthorizer {
                         } else {
                             log.error("Exception occurred during authorization", throwable);
                         }
+                    }
+                });
+    }
 
+    private Uni<HttpSecurityPolicy.CheckResult> doPermissionCheck(RoutingContext routingContext,
+            Uni<SecurityIdentity> identityUni, int index, SecurityIdentity identity) {
+        return policies.get(index)
+                .checkPermission(routingContext, identityUni, context)
+                .onItem().transformToUni(checkResult -> {
+                    final SecurityIdentity augmentedIdentity;
+                    final Uni<SecurityIdentity> augmentedIdentityUni;
+                    if (checkResult.getAugmentedIdentity() != null) {
+                        // HTTP Security policy provided a new SecurityIdentity
+                        augmentedIdentity = checkResult.getAugmentedIdentity();
+                        augmentedIdentityUni = checkResult.getAugmentedIdentityAsUni();
+                    } else {
+                        // this is identity either augmented by the previous HTTP Security policy, or from RoutingContext
+                        augmentedIdentity = identity;
+                        augmentedIdentityUni = identityUni;
+                    }
+
+                    if (!checkResult.isPermitted()) {
+                        var failure = new DoDenyException(policies.get(index), augmentedIdentity, augmentedIdentityUni);
+                        return Uni.createFrom().failure(failure);
+                    }
+
+                    if (index + 1 == policies.size()) {
+                        // all checks permitted access
+                        QuarkusHttpUser currentUser = (QuarkusHttpUser) routingContext.user();
+                        if (augmentedIdentity != null) {
+                            if (!augmentedIdentity.isAnonymous()
+                                    && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
+                                // perform security identity augmentation
+                                setIdentity(augmentedIdentity, routingContext);
+                            }
+                            if (securityEventHelper.fireEventOnSuccess()) {
+                                securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(augmentedIdentity,
+                                        Map.of(RoutingContext.class.getName(), routingContext)));
+                            }
+                        } else if (securityEventHelper.fireEventOnSuccess()
+                                && permissionCheckPerformed(policies, routingContext, index)) {
+                            securityEventHelper.fireSuccessEvent(
+                                    new AuthorizationSuccessEvent(
+                                            currentUser == null ? null : currentUser.getSecurityIdentity(),
+                                            Map.of(RoutingContext.class.getName(), routingContext)));
+                        }
+                        return Uni.createFrom().item(checkResult);
+                    } else {
+                        // perform the next check
+                        return doPermissionCheck(routingContext, augmentedIdentityUni, index + 1, augmentedIdentity);
                     }
                 });
     }
@@ -206,9 +230,23 @@ abstract class AbstractHttpAuthorizer {
             RoutingContext routingContext, int index) {
         // the path matching policy is not permission check itself, it selects policy based on
         // configured HTTP permissions, but if there are no path matching HTTP permissions, there is no check
-        if (index == 1 && permissionCheckers.get(0) instanceof AbstractPathMatchingHttpSecurityPolicy) {
+        if (index == 0 && permissionCheckers.get(0) instanceof AbstractPathMatchingHttpSecurityPolicy) {
             return AbstractPathMatchingHttpSecurityPolicy.policyApplied(routingContext);
         }
         return index > 0;
+    }
+
+    private static final class DoDenyException extends RuntimeException {
+
+        private final HttpSecurityPolicy policyWhichForbiddenAccess;
+        private final SecurityIdentity augmentedIdentity;
+        private final Uni<SecurityIdentity> augmentedIdentityUni;
+
+        private DoDenyException(HttpSecurityPolicy policyWhichForbiddenAccess, SecurityIdentity augmentedIdentity,
+                Uni<SecurityIdentity> augmentedIdentityUni) {
+            this.policyWhichForbiddenAccess = policyWhichForbiddenAccess;
+            this.augmentedIdentity = augmentedIdentity;
+            this.augmentedIdentityUni = augmentedIdentityUni;
+        }
     }
 }

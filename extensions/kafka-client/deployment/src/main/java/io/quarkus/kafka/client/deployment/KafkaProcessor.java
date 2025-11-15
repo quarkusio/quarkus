@@ -20,7 +20,7 @@ import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
-import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.metrics.MetricsReporter;
 import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
@@ -61,7 +61,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -170,6 +170,7 @@ public class KafkaProcessor {
         log.produce(new LogCategoryBuildItem("org.apache.kafka.clients", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.utils", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.metrics", Level.WARNING));
+        log.produce(new LogCategoryBuildItem("org.apache.kafka.common.config", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.telemetry", Level.WARNING));
     }
 
@@ -249,6 +250,7 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
+        collectImplementors(toRegister, indexBuildItem, MetricsReporter.class);
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OAuthBearerSaslClient.class,
                 OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
@@ -295,7 +297,6 @@ public class KafkaProcessor {
 
         // built in partitioner and partition assignors
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                DefaultPartitioner.class,
                 RangeAssignor.class,
                 RoundRobinAssignor.class,
                 StickyAssignor.class)
@@ -332,7 +333,7 @@ public class KafkaProcessor {
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsProduction.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
@@ -507,7 +508,7 @@ public class KafkaProcessor {
                         "org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin")
                 // VerificationKeyResolver is value on static map in OAuthBearerValidatorCallbackHandler
                 .addRuntimeInitializedClass("org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler")
-                .addRuntimeReinitializedClass("org.apache.kafka.shaded.com.google.protobuf.UnsafeUtil");
+                .addRuntimeInitializedClass("org.apache.kafka.shaded.com.google.protobuf.UnsafeUtil");
         return builder.build();
     }
 

@@ -446,6 +446,11 @@ In addition to the method parameters that can be annotated with the appropriate 
 `jakarta.servlet.http.HttpServletRequest` and `jakarta.servlet.http.HttpServletResponse` are also supported.
 For this to function however, users need to add the `quarkus-undertow` dependency.
 
+⚠️ Important: These types are only available when using the Classic RESTEasy stack (quarkus-resteasy / quarkus-resteasy-jackson) because they rely on the Servlet API provided by Undertow (quarkus-undertow).
+
+If your application uses the Reactive stack (quarkus-rest / quarkus-rest-jackson), then the Servlet API is not supported.
+In this case, adding the quarkus-undertow dependency will not enable servlet injection and will result in runtime errors.
+
 === Exception handler method return types
 
 The following method return types are supported:
@@ -463,6 +468,46 @@ The following parameter types are supported, in arbitrary order:
 * Request and/or response objects (typically from the Servlet API). You may choose any specific request/response type, e.g. `ServletRequest` / `HttpServletRequest`. To use Servlet API, the `quarkus-undertow` dependency needs to be added.
 
 Other parameter types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
+
+==== Using `HttpServerRequest` and `HttpServerResponse` in Spring Web-style exception handlers
+
+When using the Quarkus Spring Web compatibility layer on top of the reactive stack (`quarkus-rest-jackson`),
+you cannot inject servlet-based request and response types such as `jakarta.servlet.http.HttpServletRequest` or `jakarta.servlet.http.HttpServletResponse`.
+These types are only available when using the Classic RESTEasy stack (quarkus-resteasy / quarkus-resteasy-jackson), which relies on the Servlet API provided by `quarkus-undertow` dependency.
+
+To provide a Spring-friendly experience while staying reactive, Quarkus allows you to inject the following types into your `@ExceptionHandler` methods:
+
+- io.vertx.core.http.HttpServerRequest
+
+- io.vertx.core.http.HttpServerResponse
+
+These types give you direct access to the underlying Vert.x HTTP layer.
+This allows you to manipulate the response (e.g. set headers, cookies, or status codes) or enrich the returned information using details from the request.
+
+For example:
+
+[source, java]
+----
+@ExceptionHandler(IllegalArgumentException.class)
+public ResponseEntity<Object> handleException(Exception ex,
+                                                       HttpServerRequest request,
+                                                       HttpServerResponse response) {
+    // Add a custom header to the response
+    response.putHeader("X-Error-Reason", "IllegalArgument");
+
+    // Build a response body enriched with request details
+    String body = String.format("Request %s %s failed",
+            request.method().name(),
+            request.uri());
+
+    return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+}
+
+----
+
+**Warning:** This is potentially dangerous.
+Users should only do this if they understand the reactive model, and are aware that writing directly to the response can bypass normal handling of status codes, headers, and serialization.
+
 
 == Important Technical Note
 

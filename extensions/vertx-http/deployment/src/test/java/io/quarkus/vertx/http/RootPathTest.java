@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http;
 
-import static io.restassured.RestAssured.given;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 

@@ -5,7 +5,7 @@ import java.util.Optional;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -36,7 +36,7 @@ public class SslProcessor {
     }
 
     @BuildStep
-    void runtime(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
-        reinitialized.produce(new RuntimeReinitializedClassBuildItem(JAVA_11_PLUS_SSL_LOGGER));
+    void runtime(BuildProducer<RuntimeInitializedClassBuildItem> reinitialized) {
+        reinitialized.produce(new RuntimeInitializedClassBuildItem(JAVA_11_PLUS_SSL_LOGGER));
     }
 }

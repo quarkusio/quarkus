@@ -38,7 +38,6 @@ import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -55,16 +54,15 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.db2.client.DB2PoolCreator;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolRecorder;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolSupport;
 import io.quarkus.reactive.db2.client.runtime.DB2ServiceBindingConverter;
-import io.quarkus.reactive.db2.client.runtime.DataSourcesReactiveDB2Config;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.db2client.DB2Pool;
+import io.vertx.db2client.spi.DB2Driver;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
@@ -87,10 +85,8 @@ class ReactiveDB2ClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
@@ -104,8 +100,7 @@ class ReactiveDB2ClientProcessor {
                 continue;
             }
 
-            createPool(recorder, vertx, eventLoopCount, shutdown, db2Pool, syntheticBeans, dataSourceName,
-                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config);
+            createPool(recorder, vertx, eventLoopCount, shutdown, db2Pool, syntheticBeans, dataSourceName);
 
             db2PoolNamesBuilder.add(dataSourceName);
         }
@@ -161,6 +156,11 @@ class ReactiveDB2ClientProcessor {
     }
 
     @BuildStep
+    void registerDriver(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(new ServiceProviderBuildItem("io.vertx.sqlclient.spi.Driver", DB2Driver.class.getName()));
+    }
+
+    @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
@@ -203,18 +203,10 @@ class ReactiveDB2ClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<DB2PoolBuildItem> db2Pool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config) {
+            String dataSourceName) {
 
         Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> poolFunction = recorder.configureDB2Pool(vertx.getVertx(),
-                eventLoopCount.getEventLoopCount(),
-                dataSourceName,
-                dataSourcesRuntimeConfig,
-                dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveDB2Config,
-                shutdown);
+                eventLoopCount.getEventLoopCount(), dataSourceName, shutdown);
         db2Pool.produce(new DB2PoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator db2PoolBeanConfigurator = SyntheticBeanBuildItem.configure(DB2Pool.class)

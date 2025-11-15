@@ -17,7 +17,7 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
                     c.getMappedPort(KAFKA_PORT)))
             .withKafkaConfigurationMap(Map.ofEntries(
                     entry("listener.security.protocol.map",
-                            "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT"),
+                            "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"),
                     entry("sasl.enabled.mechanisms", "PLAIN"),
                     entry("sasl.mechanism.inter.broker.protocol", "PLAIN"),
                     entry("listener.name.sasl_plaintext.plain.sasl.jaas.config",

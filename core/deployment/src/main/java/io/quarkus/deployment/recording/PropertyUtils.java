@@ -6,10 +6,10 @@ import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -53,7 +53,8 @@ final class PropertyUtils {
                 }
             }
 
-            Set<String> names = new HashSet<>(getters.keySet());
+            // we want to return the properties in a deterministic order
+            Set<String> names = new TreeSet<>(getters.keySet());
             names.addAll(isGetters.keySet());
             names.addAll(setters.keySet());
             for (String i : names) {

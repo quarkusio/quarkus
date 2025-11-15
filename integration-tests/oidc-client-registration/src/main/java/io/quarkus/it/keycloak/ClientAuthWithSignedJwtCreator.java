@@ -1,21 +1,15 @@
 package io.quarkus.it.keycloak;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPublicKey;
-import java.util.Arrays;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jose4j.base64url.Base64Url;
 
 import io.quarkus.logging.Log;
 import io.quarkus.oidc.client.registration.ClientMetadata;
@@ -43,7 +37,7 @@ public class ClientAuthWithSignedJwtCreator {
     void observe(@Observes StartupEvent event, OidcClientRegistration clientRegistration,
             @ConfigProperty(name = "keycloak.url") String keycloakUrl) {
         generateRsaKeyPair();
-        var requestClientMetadata = new ClientMetadata(createClientMetadataJson(keycloakUrl));
+        var requestClientMetadata = createClientMetadata();
         var registeredClient = clientRegistration.registerClient(requestClientMetadata).await().indefinitely();
         this.createdClientMetadata = registeredClient.metadata();
         var signedJwt = createSignedJwt(keycloakUrl, this.createdClientMetadata.getClientId());
@@ -76,38 +70,13 @@ public class ClientAuthWithSignedJwtCreator {
                 .sign(keyPair.getPrivate());
     }
 
-    private String createClientMetadataJson(String keycloakUrl) {
-        RSAPublicKey rsaKey = (RSAPublicKey) keyPair.getPublic();
-        String modulus = Base64Url.encode(toIntegerBytes(rsaKey.getModulus()));
-        String publicExponent = Base64Url.encode(toIntegerBytes(rsaKey.getPublicExponent()));
-        return """
-                {
-                  "redirect_uris" : [ "http://localhost:8081/protected/jwt-bearer-token-file" ],
-                  "token_endpoint_auth_method" : "private_key_jwt",
-                  "grant_types" : [ "client_credentials", "authorization_code" ],
-                  "client_name" : "signed-jwt-test",
-                  "client_uri" : "%1$s/auth/realms/quarkus/app",
-                  "jwks" : {
-                    "keys" : [ {
-                      "kid" : "%4$s",
-                      "kty" : "RSA",
-                      "alg" : "RS256",
-                      "use" : "sig",
-                      "e" : "%3$s",
-                      "n" : "%2$s"
-                    } ]
-                  }
-                }
-                """
-                .formatted(keycloakUrl, modulus, publicExponent, createKeyId());
-    }
-
-    private String createKeyId() {
-        try {
-            return Base64Url.encode(MessageDigest.getInstance("SHA-256").digest(keyPair.getPrivate().getEncoded()));
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to generate key id", e);
-        }
+    private ClientMetadata createClientMetadata() {
+        return ClientMetadata.builder()
+                .redirectUri("http://localhost:8081/protected/jwt-bearer-token-file")
+                .tokenEndpointAuthMethod("private_key_jwt")
+                .clientName("signed-jwt-test")
+                .jwk(keyPair.getPublic())
+                .build();
     }
 
     private static KeyPair generateRsaKeyPair() {
@@ -119,25 +88,4 @@ public class ClientAuthWithSignedJwtCreator {
             throw new RuntimeException("Failed to generate RSA key pair", e);
         }
     }
-
-    private static byte[] toIntegerBytes(final BigInteger bigInt) {
-        final int bitlen = bigInt.bitLength();
-        // following code comes from the Keycloak project
-
-        final int bytelen = (bitlen + 7) / 8;
-        final byte[] array = bigInt.toByteArray();
-        if (array.length == bytelen) {
-            // expected number of bytes, return them
-            return array;
-        } else if (bytelen < array.length) {
-            // if array is greater is because the sign bit (it can be only 1 byte more), remove it
-            return Arrays.copyOfRange(array, array.length - bytelen, array.length);
-        } else {
-            // if array is smaller fill it with zeros
-            final byte[] resizedBytes = new byte[bytelen];
-            System.arraycopy(array, 0, resizedBytes, bytelen - array.length, array.length);
-            return resizedBytes;
-        }
-    }
-
 }

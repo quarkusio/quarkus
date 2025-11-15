@@ -2,6 +2,7 @@ package io.quarkus.devservices.deployment.compose;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,12 +27,19 @@ public class ComposeFile {
 
     public ComposeFile(File composeFile) {
         Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
+        Map<String, Object> composeFileContentVal;
         try (FileInputStream fileInputStream = new FileInputStream(composeFile)) {
-            composeFileContent = yaml.load(fileInputStream);
+            composeFileContentVal = yaml.load(fileInputStream);
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse YAML file from " + composeFile.getAbsolutePath(), e);
         }
         this.composeFileName = composeFile.getAbsolutePath();
+        if (composeFileContentVal == null) { // this happens when the file is empty
+            log.warnv("File {0} is empty", composeFileName);
+            composeFileContent = Collections.emptyMap();
+        } else {
+            composeFileContent = composeFileContentVal;
+        }
         parseAndValidate();
     }
 

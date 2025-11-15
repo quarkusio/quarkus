@@ -27,7 +27,8 @@ public class NativeAgentIT extends MojoTestBase {
         assertThat(runJvmITsWithAgent.getProcess().waitFor()).isZero();
 
         MavenProcessInvocationResult runNativeITs = running
-                .execute(List.of("verify", "-Dnative", "-Dquarkus.native.agent-configuration-apply"), Map.of());
+                .execute(TestUtils.nativeArguments("verify", "-Dnative", "-Dquarkus.native.agent-configuration-apply"),
+                        Map.of());
         assertThat(runNativeITs.getProcess().waitFor()).isZero();
     }
 }

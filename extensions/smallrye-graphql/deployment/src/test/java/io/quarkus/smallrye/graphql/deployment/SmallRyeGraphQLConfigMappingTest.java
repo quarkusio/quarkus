@@ -16,7 +16,7 @@ class SmallRyeGraphQLConfigMappingTest {
                 .withInterceptors(new SmallRyeGraphQLConfigMapping())
                 .build();
 
-        assertEquals("org.acme.CustomRuntimeException", config.getRawValue("mp.graphql.showErrorMessage"));
+        assertEquals("org.acme.CustomRuntimeException", config.getConfigValue("mp.graphql.showErrorMessage").getValue());
     }
 
     @Test
@@ -26,6 +26,6 @@ class SmallRyeGraphQLConfigMappingTest {
                 .addDiscoveredInterceptors()
                 .build();
 
-        assertEquals("org.acme.CustomRuntimeException", config.getRawValue("mp.graphql.showErrorMessage"));
+        assertEquals("org.acme.CustomRuntimeException", config.getConfigValue("mp.graphql.showErrorMessage").getValue());
     }
 }

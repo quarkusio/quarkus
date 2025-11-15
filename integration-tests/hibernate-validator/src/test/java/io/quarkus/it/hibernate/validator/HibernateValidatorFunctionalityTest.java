@@ -542,4 +542,16 @@ public class HibernateValidatorFunctionalityTest {
                 .then()
                 .body(is("passed"));
     }
+
+    @Test
+    void testConstraintsDefinedInXml() {
+        RestAssured.given()
+                .when()
+                .get("/hibernate-validator/test/constraints-defined-in-xml")
+                .then()
+                .statusCode(200)
+                .body(containsString("failed"),
+                        containsString("id (must be greater than 0)"),
+                        containsString("name (must not be null)"));
+    }
 }

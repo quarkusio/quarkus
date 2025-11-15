@@ -34,7 +34,7 @@ class SetConfigTest {
     void addConfiguration() throws Exception {
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "set", "foo.bar", "1234");
         assertEquals(0, result.getExitCode());
-        assertEquals("1234", config().getRawValue("foo.bar"));
+        assertEquals("1234", config().getConfigValue("foo.bar").getValue());
     }
 
     @Test
@@ -50,7 +50,7 @@ class SetConfigTest {
         }
         CliDriver.Result result = CliDriver.execute(tempDir, "config", "set", "foo.bar", "5678");
         assertEquals(0, result.getExitCode());
-        assertEquals("5678", config().getRawValue("foo.bar"));
+        assertEquals("5678", config().getConfigValue("foo.bar").getValue());
     }
 
     @Test
@@ -61,7 +61,7 @@ class SetConfigTest {
         SmallRyeConfig config = config();
         assertEquals("1234", config.getConfigValue("foo.bar").getValue());
 
-        String encryption = config.getRawValue("smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key");
+        String encryption = config.getConfigValue("smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key").getValue();
         assertNotNull(encryption);
 
         result = CliDriver.execute(tempDir, "config", "set", "foo.baz", "5678", "-k");

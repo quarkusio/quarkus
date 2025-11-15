@@ -29,7 +29,8 @@ public class ContainerImageDevUiProcessor {
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
 
         CardPageBuildItem card = new CardPageBuildItem();
-        card.addBuildTimeData("builderTypes", array);
+        card.addBuildTimeData("builderTypes", array,
+                "Available builder types that can be used in the `quarkus-container-image_build` method (mcp tool) as input in the `builder` parameter");
         card.addPage(Page.webComponentPageBuilder()
                 .title("Build Container")
                 .componentLink("qwc-container-image-build.js")

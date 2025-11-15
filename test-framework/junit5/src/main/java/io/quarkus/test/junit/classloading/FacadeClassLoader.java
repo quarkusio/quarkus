@@ -14,17 +14,20 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -38,6 +41,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.test.common.FacadeClassLoaderProvider;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
@@ -52,7 +56,7 @@ import io.quarkus.test.junit.TestResourceUtil;
  * We need to load all our test classes in one go, during the discovery phase, before we start the applications.
  * We may need several applications and therefore, several classloaders, depending on what profiles are set.
  * To solve that, we prepare the applications, to get classloaders, and file them here.
- *
+ * <p>
  * Final, since some code does instanceof checks using the class name.
  */
 public final class FacadeClassLoader extends ClassLoader implements Closeable {
@@ -69,7 +73,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private static final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
 
     // JUnit discovery is single threaded, so no need for concurrency on this map
-    private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
+    private final Map<String, QuarkusClassLoader> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
 
     /*
@@ -93,12 +97,15 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     // JUnit extensions can be registered by a service loader - see https://junit.org/junit5/docs/current/user-guide/#extensions-registration
     private boolean isServiceLoaderMechanism;
     private Method osIsCurrent;
+
+    // These annotations can't be statically loaded because they need to be on the inspection classloader
     private Class<? extends Annotation> quarkusTestAnnotation;
     private Class<? extends Annotation> disabledAnnotation;
     private Class<? extends Annotation> disabledOnOsAnnotation;
     private Method disabledOnOsAnnotationValue;
     private Class<? extends Annotation> quarkusIntegrationTestAnnotation;
     private Class<? extends Annotation> profileAnnotation;
+    private Class<? extends Annotation> nestedAnnotation;
     private Class<? extends Annotation> extendWithAnnotation;
     private Class<? extends Annotation> registerExtensionAnnotation;
     private Class<? extends Annotation> testAnnotation;
@@ -109,17 +116,32 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private final boolean isAuxiliaryApplication;
     private QuarkusClassLoader keyMakerClassLoader;
 
+    private final boolean isContinuousTesting;
+
+    private final List<FacadeClassLoaderProvider> facadeClassLoaderProviders;
+
     public FacadeClassLoader(ClassLoader parent) {
         this(parent, false, null, null, null, System.getProperty("java.class.path"));
     }
 
+    // Also called reflectively by JUnitTestRunner
     public FacadeClassLoader(ClassLoader parent, boolean isAuxiliaryApplication, CuratedApplication curatedApplication,
             final Map<String, String> profileNames,
             final Set<String> quarkusTestClasses, final String classesPath) {
         super(parent);
+        // Note that in normal testing, the parent is the system classloader, and in continuous testing, the parent is a quarkus classloader
+        // It would be nice to resolve that inconsistency, but I'm not sure it's very possible
 
-        // Don't make a no-profile curated application, since our caller had one already
-        curatedApplications.put(getProfileKey(null), curatedApplication);
+        if (quarkusTestClasses != null) {
+            isContinuousTesting = true;
+        } else {
+            isContinuousTesting = false;
+        }
+
+        // Don't make a no-profile curated application if our caller had one already
+        if (curatedApplication != null) {
+            curatedApplications.put(getProfileKey(null), curatedApplication);
+        }
 
         this.quarkusTestClasses = quarkusTestClasses;
         this.isAuxiliaryApplication = isAuxiliaryApplication;
@@ -176,6 +198,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                     .loadClass(QuarkusIntegrationTest.class.getName());
             profileAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass(TestProfile.class.getName());
+            nestedAnnotation = (Class<? extends Annotation>) annotationLoader
+                    .loadClass(Nested.class.getName());
             testAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(Test.class.getName());
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             // If QuarkusTest is not on the classpath, that's fine; it just means we definitely won't have QuarkusTests. That means we can bypass a whole bunch of logic.
@@ -220,6 +244,25 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // We set it to null so we know not to look in it
             this.profiles = null;
         }
+
+        // In the case where a QuarkusMainTest is present, but not a QuarkusTest, tests will be loaded and run using
+        // the parent classloader. In continuous testing mode, that will be a Quarkus classloader and it will not have
+        // the test config on it, so get that classloader test-ready.
+
+        // It would be nice to do this without the guard, but doing this on the normal path causes us to write something we don't want
+        if (isContinuousTesting) {
+            try {
+                initialiseTestConfig(parent);
+            } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
+                    | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        facadeClassLoaderProviders = new ArrayList<>();
+        ServiceLoader<FacadeClassLoaderProvider> loader = ServiceLoader.load(FacadeClassLoaderProvider.class,
+                FacadeClassLoader.class.getClassLoader());
+        loader.forEach(facadeClassLoaderProviders::add);
     }
 
     @Override
@@ -247,7 +290,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         try {
 
             Class<?> profile = null;
-            if (profiles != null && !isServiceLoaderMechanism) {
+            if (isContinuousTesting && !isServiceLoaderMechanism) {
                 isQuarkusTest = quarkusTestClasses.contains(name);
 
                 profile = profiles.get(name);
@@ -295,10 +338,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                             // An @interface isn't a quarkus test, and doesn't want its own application; to detect it, just check if it has a superclass
 
                             isQuarkusTest = isQuarkusTest
-                                    || AnnotationSupport.isAnnotated(inspectionClass,
-                                            quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
-                                    || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
-                                    || registersQuarkusTestExtensionOnField(inspectionClass);
+                                    || isQuarkusTest(inspectionClass);
 
                             if (isQuarkusTest) {
                                 // Many integration tests have Quarkus higher up in the hierarchy, but they do not count as QuarkusTests and have to be run differently
@@ -323,26 +363,53 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             }
 
             if (isQuarkusTest && !isIntegrationTest) {
-
-                preloadTestResourceClasses(inspectionClass);
                 QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(inspectionClass, profile);
                 Class<?> clazz = runtimeClassLoader.loadClass(name);
 
                 return clazz;
             } else {
+                for (FacadeClassLoaderProvider p : facadeClassLoaderProviders) {
+                    ClassLoader cl = p.getClassLoader(name, getParent());
+                    if (cl != null) {
+                        return cl.loadClass(name);
+                    }
+                }
+
                 return super.loadClass(name);
             }
 
         } catch (NoSuchMethodException e) {
-            // TODO better handling of these
-            System.err.println("Could not get method " + e);
+            log.error("Could not get method " + e);
             throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
-            System.err.println("Could not invoke " + e);
+            log.error("Could not invoke " + e);
             throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
-            System.err.println("Could not access " + e);
+            log.error("Could not access " + e);
             throw new RuntimeException(e);
+        }
+
+    }
+
+    private boolean isQuarkusTest(Class<?> inspectionClass) throws ClassNotFoundException {
+        boolean isQuarkusAtTopLevel = AnnotationSupport.isAnnotated(inspectionClass,
+                quarkusTestAnnotation) // AnnotationSupport picks up cases where a class is annotated with an annotation which itself includes the annotation we care about
+                || registersQuarkusTestExtensionWithExtendsWith(inspectionClass)
+                || registersQuarkusTestExtensionOnField(inspectionClass);
+
+        if (isQuarkusAtTopLevel) {
+            return true;
+        } else {
+            // Normally we wouldn't load nested classes but when launched in an IDE at package level, they're sometimes included; make sure we identify them correctly
+            boolean isNested = AnnotationSupport.isAnnotated(inspectionClass, nestedAnnotation);
+            if (isNested) {
+                String parentName = inspectionClass.getName().substring(0,
+                        inspectionClass.getName().lastIndexOf("$"));
+                Class<?> inspectionParentClass = peekingClassLoader.loadClass(parentName);
+                return isQuarkusTest(inspectionParentClass);
+            } else {
+                return false;
+            }
         }
 
     }
@@ -378,42 +445,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     }
 
-    /*
-     * What's this for?
-     * It's a bit like detecting the location in a privacy test or detecting the lab environment in an emissions test and then
-     * deciding how to behave.
-     * We're special-casing behaviour for a hard-coded selection of test packages. Yuck!
-     * TODO Hopefully, once https://github.com/quarkusio/quarkus/issues/45785 is done, it will not be needed.
-     * Some tests, especially in kubernetes-client and openshift-client, check config to decide whether to start a dev service.
-     * That happens at augmentation, which happens before test execution.
-     * In the old model, the test class would have already been loaded by JUnit first, and it would have had a chance to write
-     * config to the system properties.
-     * That config would influence whether dev services were started.
-     * TODO even without 45785 it might be nice to find a better way, perhaps rewriting the AbstractKubernetesTestResource test
-     * resource to work differently?
-     *
-     */
-    private void preloadTestResourceClasses(Class<?> fromCanary) {
-        try {
-            Class<Annotation> ca = (Class<Annotation>) peekingClassLoader
-                    .loadClass("io.quarkus.test.common.QuarkusTestResource");
-            List<Annotation> ans = AnnotationSupport.findRepeatableAnnotations(fromCanary, ca);
-            for (Annotation a : ans) {
-                Method m = a
-                        .getClass()
-                        .getMethod(VALUE);
-                Class<?> resourceClass = (Class<?>) m.invoke(a);
-                // Only do this hack for the resources we know need it, since it can cause failures in other areas
-                if (resourceClass.getName().contains("Kubernetes")) {
-                    getParent().loadClass(resourceClass.getName());
-                }
-            }
-        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-            // In some projects, these classes are not on the canary classpath. That's fine, we know there's nothing to preload.
-            log.debug("Canary classloader could not preload test resources:" + e);
-        }
-    }
-
     private boolean registersQuarkusTestExtensionOnField(Class<?> inspectionClass) {
 
         try {
@@ -439,8 +470,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         String profileKey = getProfileKey(profile);
 
         try {
-            StartupAction startupAction;
             String key;
+            QuarkusClassLoader classLoader;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
@@ -450,8 +481,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that issue is fixed, could reconsider
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
-                startupAction = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
-                keyMakerClassLoader = startupAction.getClassLoader();
+                classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
+                keyMakerClassLoader = classLoader;
 
                 // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
                 final String resourceKey = requiredTestClass != null ? getResourceKey(requiredTestClass, profile) : null;
@@ -463,18 +494,15 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
-                startupAction = runtimeClassLoaders.get(key);
-                if (startupAction == null) {
+                classLoader = runtimeClassLoaders.get(key);
+                if (classLoader == null) {
                     // Making a classloader uses the profile key to look up a curated application
-                    startupAction = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
+                    classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
                 }
-
             }
 
-            // If we didn't have a classloader and didn't get a resource key
-            runtimeClassLoaders.put(key, startupAction);
-
-            return startupAction.getClassLoader();
+            runtimeClassLoaders.put(key, classLoader);
+            return classLoader;
         } catch (RuntimeException e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
             e.printStackTrace();
@@ -543,15 +571,38 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         return curatedApplication.getOrCreateBaseRuntimeClassLoader();
     }
 
-    private StartupAction getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
+    private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
-        StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
-                curatedApplication, profile);
 
+        // Before interacting with the profiles, set the TCCL to one which is not the FacadeClassloader
+        // This could also go in AppMakerHelper.setExtraProperties, but then it affects more code paths
+        StartupAction startupAction;
+        try {
+            if (profile != null) {
+                Thread.currentThread().setContextClassLoader(profile.getClassLoader());
+            }
+            startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
+                    curatedApplication, profile);
+
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+
+        // If the try block fails, this would be null, but there's no catch, so we'd never get to this code
         QuarkusClassLoader loader = startupAction.getClassLoader();
 
+        initialiseTestConfig(loader);
+
+        return loader;
+
+    }
+
+    private static void initialiseTestConfig(ClassLoader loader) throws ClassNotFoundException, InstantiationException,
+            IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        // Make sure that our new classloader has config on it; this is a bit of a scattergun approach to setting config, but it helps cover most paths
         Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
 
         Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
@@ -560,9 +611,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
         configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
                 .invoke(null, testConfigProviderResolver);
-
-        return startupAction;
-
     }
 
     public boolean isServiceLoaderMechanism() {

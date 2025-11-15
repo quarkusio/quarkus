@@ -206,7 +206,7 @@ in use. Also, never use both annotation processors together.
 [source,xml]
 ----
 <dependency>
-  <groupId>com.datastax.oss</groupId>
+  <groupId>org.apache.cassandra</groupId>
   <artifactId>java-driver-mapper-runtime</artifactId>
 </dependency>
 ----
@@ -476,7 +476,7 @@ Now let's add a simple web page to interact with our `FruitResource`.
 
 Quarkus automatically serves static resources located under the `META-INF/resources` directory. In
 the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the contents
-from link:src/main/resources/META-INF/resources/fruits.html[this file] in it.
+from link:https://github.com/datastax/cassandra-quarkus/blob/main/quickstart/src/main/resources/META-INF/resources/fruits.html[this file] in it.
 
 You can now interact with your REST service:
 
@@ -631,7 +631,7 @@ curl -X GET http://localhost:8080/reactive-fruits
 
 Now let's add a simple web page to interact with our `ReactiveFruitResource`. In the
 `src/main/resources/META-INF/resources` directory, add a `reactive-fruits.html` file with the
-contents from link:src/main/resources/META-INF/resources/reactive-fruits.html[this file] in it.
+contents from link:https://github.com/datastax/cassandra-quarkus/blob/main/quickstart/src/main/resources/META-INF/resources/reactive-fruits.html[this file] in it.
 
 You can now interact with your reactive REST service:
 

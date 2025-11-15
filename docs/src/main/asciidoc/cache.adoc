@@ -490,6 +490,40 @@ public class CachedService {
 <3> This key generator is not a CDI bean.
 <4> The `@CacheKey` annotation will be ignored when the `foo` cache data is invalidated, but `param1` will be the cache key when the `bar` cache data is invalidated.
 
+=== @CachedResults
+
+WARNING: This API is experimental and may change in the future.
+
+The `@io.quarkus.cache.CachedResults` qualifier may be applied to injection points to instruct the container to inject a _generated wrapper bean_ that
+delegates all method invocations to the original bean but the return values of selected business methods are cached. 
+By default, all non-void non-static business methods are included. 
+However, it is possible to exclude methods whose names match one of the regular expressions defined by `@CachedResults#exclude()`.
+The injected class must be either an interface or declare a no-args constructor.
+
+[source,java]
+----
+package org.example.cache;
+
+import org.example.PingService;
+
+import io.quarkus.cache.CachedResults;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class MyBean {
+
+    @Inject
+    @CachedResults
+    PingService service; <1>
+   
+    int ping() {
+        return service.ping(); <2>
+    }
+}
+----
+<1> A _generated wrapper bean_ is injected instead of the original bean that implements the `PingService`.
+<2> The return value of the `service.ping()` invocation will be cached. The cache will be named like `org.example.PingService#ping()`.
+
 [[programmatic-api]]
 == Caching using the programmatic API
 
@@ -736,6 +770,21 @@ The `setExpireAfterAccess`, `setExpireAfterWrite` and `setMaximumSize` methods f
 
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.
 Caffeine is a high performance, near optimal caching library.
+
+== Multiple Backends Simultaneously
+
+This extension can be configured to use multiple backends simultaneously, allowing different caches to leverage either in-memory providers (like Caffeine) or distributed providers (like Redis) as needed, for example:
+
+[source,properties]
+----
+# default cache backend
+quarkus.cache.type=caffeine
+
+# change the cache backend for "weather-cache" to Redis.
+quarkus.cache.weather-cache.type=redis
+----
+
+NOTE: The syntax for the property name is `quarkus.cache."cache-name".type`. If no explicit backend is defined for a cache, the default backend is used. For details on configuring a specific backend, refer to its guide.
 
 === Caffeine configuration properties
 

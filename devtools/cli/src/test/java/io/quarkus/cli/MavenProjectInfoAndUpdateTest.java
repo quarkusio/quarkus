@@ -51,7 +51,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
     @Test
     void testClean() throws Exception {
 
-        final CliDriver.Result createResult = run(workDir(), "create", "acme-clean",
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-clean",
                 "-x supersonic,acme-quarkiverse-extension");
         assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);
@@ -83,7 +83,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
     @Test
     void testMisalignedPlatformExtensionVersion() throws Exception {
 
-        final CliDriver.Result createResult = run(workDir(), "create", "acme-misaligned-ext-version",
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-misaligned-ext-version",
                 "-x supersonic,acme-quarkiverse-extension,org.acme.quarkus.platform:acme-quarkus-subatomic:1.0.0");
         assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
                 .as(() -> "Expected OK return code." + createResult);

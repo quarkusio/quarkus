@@ -19,6 +19,7 @@ public class ParamDeclarationDefaultValueTest {
         assertDefaultValue(engine.parse("{@java.lang.String val= 'foo'}\n{val.toUpperCase}"), "FOO");
         assertDefaultValue(engine.parse("{@java.lang.String val='foo and bar'}\n{val.toUpperCase}"), "FOO AND BAR");
         assertDefaultValue(engine.parse("{@java.lang.String val= 'foo and bar'}\n{val.toUpperCase}"), "FOO AND BAR");
+        assertDefaultValue(engine.parse("{@java.lang.String val=null}\n{val == null ? 'ok' : 'nok'}"), "ok");
     }
 
     @Test
@@ -56,12 +57,14 @@ public class ParamDeclarationDefaultValueTest {
         assertEquals(expectedOutput, template.render());
         Expression fooExpr = template.getExpressions().stream().filter(e -> e.isLiteral()).findFirst().orElse(null);
         assertNotNull(fooExpr);
-        assertEquals("|java.lang.String|", fooExpr.collectTypeInfo());
-        Expression valExpr = template.getExpressions().stream().filter(e -> e.toOriginalString().equals("val.toUpperCase"))
-                .findAny().orElse(null);
-        assertNotNull(valExpr);
-        assertEquals("|java.lang.String|.toUpperCase", valExpr.collectTypeInfo());
-        assertEquals(2, valExpr.getOrigin().getLine());
+        if (fooExpr.getLiteral() != null) {
+            assertEquals("|java.lang.String|", fooExpr.collectTypeInfo());
+            Expression valExpr = template.getExpressions().stream().filter(e -> e.toOriginalString().equals("val.toUpperCase"))
+                    .findAny().orElse(null);
+            assertNotNull(valExpr);
+            assertEquals("|java.lang.String|.toUpperCase", valExpr.collectTypeInfo());
+            assertEquals(2, valExpr.getOrigin().getLine());
+        }
     }
 
 }

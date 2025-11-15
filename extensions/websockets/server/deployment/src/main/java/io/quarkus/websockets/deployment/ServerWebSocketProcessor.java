@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.websockets.client.deployment.AnnotatedWebsocketEndpointBuildItem;
 import io.quarkus.websockets.client.deployment.ServerWebSocketContainerBuildItem;
 import io.quarkus.websockets.client.deployment.ServerWebSocketContainerFactoryBuildItem;
@@ -110,10 +111,11 @@ public class ServerWebSocketProcessor {
         final IndexView index = indexBuildItem.getIndex();
         WebsocketClientProcessor.registerCodersForReflection(reflection, index.getAnnotations(SERVER_ENDPOINT));
 
+        int priority = 1 + SecurityHandlerPriorities.AUTHORIZATION;
         return new FilterBuildItem(
                 recorder.createHandler(webSocketDeploymentInfoBuildItem.get().getInfo(),
                         serverWebSocketContainerBuildItem.get().getContainer()),
-                100);
+                priority);
     }
 
     @BuildStep

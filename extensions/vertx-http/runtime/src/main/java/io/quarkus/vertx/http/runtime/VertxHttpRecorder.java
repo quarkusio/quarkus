@@ -4,6 +4,7 @@ import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.set
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
+import static io.quarkus.vertx.http.runtime.options.HttpServerTlsConfig.getHttpServerTlsConfigName;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +39,7 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.crac.Resource;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -48,7 +50,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
@@ -217,6 +218,7 @@ public class VertxHttpRecorder {
     final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<VertxHttpConfig> httpConfig;
     final RuntimeValue<ManagementConfig> managementConfig;
+    final RuntimeValue<ShutdownConfig> shutdownConfig;
 
     private static volatile Handler<HttpServerRequest> managementRouter;
     private static volatile Handler<HttpServerRequest> managementRouterDelegate;
@@ -225,11 +227,13 @@ public class VertxHttpRecorder {
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             RuntimeValue<VertxHttpConfig> httpConfig,
-            RuntimeValue<ManagementConfig> managementConfig) {
+            RuntimeValue<ManagementConfig> managementConfig,
+            RuntimeValue<ShutdownConfig> shutdownConfig) {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
         this.httpConfig = httpConfig;
         this.managementBuildTimeConfig = managementBuildTimeConfig;
         this.managementConfig = managementConfig;
+        this.shutdownConfig = shutdownConfig;
     }
 
     public static void setHotReplacement(Handler<RoutingContext> handler, HotReplacementContext hrc) {
@@ -305,7 +309,7 @@ public class VertxHttpRecorder {
             }
             rootHandler = root;
 
-            var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildConfig, httpConfig.insecureRequests());
+            var insecureRequestStrategy = getInsecureRequestStrategy(httpConfig, httpBuildConfig, LaunchMode.DEVELOPMENT);
             //we can't really do
             doServerStart(vertx, httpBuildConfig, managementBuildTimeConfig, null, httpConfig, managementConfig,
                     LaunchMode.DEVELOPMENT,
@@ -365,8 +369,7 @@ public class VertxHttpRecorder {
                 || (managementConfig != null && managementConfig.domainSocketEnabled()))) {
             // Start the server
             if (closeTask == null) {
-                var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildTimeConfig,
-                        httpConfiguration.insecureRequests());
+                var insecureRequestStrategy = getInsecureRequestStrategy(httpConfiguration, httpBuildTimeConfig, launchMode);
                 doServerStart(vertx.get(), httpBuildTimeConfig, managementBuildTimeConfig, managementRouter,
                         httpConfiguration, managementConfig, launchMode, ioThreads, websocketSubProtocols,
                         insecureRequestStrategy,
@@ -390,7 +393,8 @@ public class VertxHttpRecorder {
         mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
     }
 
-    public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
+    public void finalizeRouter(
+            Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, List<Filter> managementInterfaceFilterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
@@ -398,7 +402,7 @@ public class VertxHttpRecorder {
             String rootPath, String nonRootPath,
             LaunchMode launchMode, BooleanSupplier[] requireBodyHandlerConditions,
             Handler<RoutingContext> bodyHandler,
-            GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
+            GracefulShutdownFilter gracefulShutdownFilter,
             Executor executor,
             LogBuildTimeConfig logBuildTimeConfig,
             String srcMainJava,
@@ -483,7 +487,7 @@ public class VertxHttpRecorder {
 
         boolean quarkusWrapperNeeded = false;
 
-        if (shutdownConfig.isTimeoutEnabled()) {
+        if (shutdownConfig.getValue().isTimeoutEnabled()) {
             gracefulShutdownFilter.next(root);
             root = gracefulShutdownFilter;
             quarkusWrapperNeeded = true;
@@ -562,7 +566,7 @@ public class VertxHttpRecorder {
             var mr = managementRouter.getValue();
             boolean hasManagementRoutes = !mr.getRoutes().isEmpty();
 
-            addHotReplacementHandlerIfNeeded(mr);
+            // We do not add the hotreload handler on the management interface
 
             mr.route().last().failureHandler(
                     new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),
@@ -856,7 +860,8 @@ public class VertxHttpRecorder {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
-                        launchMode, insecureRequestStrategy, httpConfig, connectionCount, registry, startEventsFired);
+                        launchMode, insecureRequestStrategy, httpConfig, connectionCount, registry, startEventsFired,
+                        httpBuildTimeConfig);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<>() {
             @Override
@@ -1183,11 +1188,13 @@ public class VertxHttpRecorder {
         private final AtomicInteger connectionCount;
         private final List<Long> reloadingTasks = new CopyOnWriteArrayList<>();
         private final AtomicBoolean startEventsFired;
+        private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
                 InsecureRequests insecureRequests, VertxHttpConfig httpConfig, AtomicInteger connectionCount,
-                TlsConfigurationRegistry registry, AtomicBoolean startEventsFired) {
+                TlsConfigurationRegistry registry, AtomicBoolean startEventsFired,
+                VertxHttpBuildTimeConfig httpBuildTimeConfig) {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
@@ -1197,6 +1204,7 @@ public class VertxHttpRecorder {
             this.connectionCount = connectionCount;
             this.registry = registry;
             this.startEventsFired = startEventsFired;
+            this.httpBuildTimeConfig = httpBuildTimeConfig;
             org.crac.Core.getGlobalContext().register(this);
         }
 
@@ -1379,7 +1387,7 @@ public class VertxHttpRecorder {
                             try {
                                 long l = TlsCertificateReloader.initCertReloadingAction(
                                         vertx, httpsServer, httpsOptions, quarkusConfig.ssl(), registry,
-                                        quarkusConfig.tlsConfigurationName());
+                                        getHttpServerTlsConfigName(quarkusConfig, httpBuildTimeConfig, launchMode));
                                 if (l != -1) {
                                     reloadingTasks.add(l);
                                 }
@@ -1392,7 +1400,8 @@ public class VertxHttpRecorder {
                         if (https) {
                             container.instance(HttpCertificateUpdateEventListener.class).get()
                                     .register(event.result(),
-                                            quarkusConfig.tlsConfigurationName().orElse(TlsConfig.DEFAULT_NAME),
+                                            getHttpServerTlsConfigName(quarkusConfig, httpBuildTimeConfig, launchMode)
+                                                    .orElse(TlsConfig.DEFAULT_NAME),
                                             "http server");
                         }
 
@@ -1535,7 +1544,7 @@ public class VertxHttpRecorder {
                                         return duplicated;
                                     },
                                     null,
-                                    new HttpServerOptions(),
+                                    createVirtualHttpServerOptions(),
                                     chctx,
                                     rootContext,
                                     "localhost",
@@ -1545,6 +1554,16 @@ public class VertxHttpRecorder {
                         });
 
                         ch.pipeline().addLast("handler", handler);
+                    }
+
+                    private static HttpServerOptions createVirtualHttpServerOptions() {
+                        var result = new HttpServerOptions();
+                        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
+                                .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
+                        if (maybeMaxHeadersSize.isPresent()) {
+                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+                        }
+                        return result;
                     }
                 });
 

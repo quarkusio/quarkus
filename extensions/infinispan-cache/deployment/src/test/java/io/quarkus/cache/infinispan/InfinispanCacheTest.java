@@ -255,25 +255,27 @@ public class InfinispanCacheTest {
 
     @Test
     public void testGetAsyncWithParallelCalls() throws Exception {
-        CyclicBarrier barrier = new CyclicBarrier(2);
         Cache cache = getCache();
         String id = generateId();
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
         Future<Uni<String>> thread1 = fork(() -> cache.getAsync(id, key -> {
             try {
-                barrier.await(10, TimeUnit.SECONDS);
-                barrier.await(10, TimeUnit.SECONDS);
+                barrier.await(10, TimeUnit.SECONDS); // Wait for both threads
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             return Uni.createFrom().item("thread1");
         }));
 
-        // Ensure first retrieval is in lambda before continuing
-        barrier.await(10, TimeUnit.SECONDS);
-
-        Future<Uni<String>> thread2 = fork(() -> cache.getAsync(id, key -> Uni.createFrom().item("thread2")));
-
-        barrier.await(1, TimeUnit.SECONDS);
+        Future<Uni<String>> thread2 = fork(() -> {
+            try {
+                barrier.await(10, TimeUnit.SECONDS); // Wait for both threads
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return cache.getAsync(id, key -> Uni.createFrom().item("thread2"));
+        });
 
         String valueObtainedByThread1 = awaitUni(thread1.get(10, TimeUnit.SECONDS));
         String valueObtainedByThread2 = awaitUni(thread2.get(10, TimeUnit.SECONDS));

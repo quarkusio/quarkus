@@ -9,8 +9,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,9 +22,15 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 
 public class DefaultNativeImageLauncher implements NativeImageLauncher {
+    private static final Logger log = Logger.getLogger(DefaultNativeImageLauncher.class);
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
@@ -96,24 +102,27 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
     public void start() throws IOException {
         start(new String[0], true);
-
-        Path logFile = PropertyTestUtil.getLogFilePath();
         Supplier<Boolean> startedSupplier = createStartedSupplier(); // keep the legacy SPI handling
+        LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                .getConfigMapping(LogRuntimeConfig.class);
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         if (startedSupplier != null) {
             waitForStartedSupplier(startedSupplier, quarkusProcess, waitTimeSeconds);
         } else if (startedFunction != null) {
             IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
-                    waitTimeSeconds, logFile);
+                    waitTimeSeconds, logRuntimeConfig.file().path().toPath());
             isSsl = result.isSsl();
         } else {
-            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
+                    waitTimeSeconds);
             updateConfigForPort(result.getPort());
             isSsl = result.isSsl();
         }
     }
 
     public void start(String[] programArgs, boolean handleIo) throws IOException {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         if (nativeImagePath == null) {
@@ -131,9 +140,9 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             // in the main module, since those tests hit the application itself
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }
-        Path logFile = PropertyTestUtil.getLogFilePath();
-        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
-        args.add("-Dquarkus.log.file.enable=true");
+        File logPath = logRuntimeConfig.file().path();
+        args.add("-Dquarkus.log.file.path=" + logPath.getAbsolutePath());
+        args.add("-Dquarkus.log.file.enabled=true");
         args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
             args.add("-Dquarkus.profile=" + testProfile);
@@ -144,8 +153,15 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         args.addAll(Arrays.asList(programArgs));
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
-        Files.deleteIfExists(logFile);
-        Files.createDirectories(logFile.getParent());
+        try {
+            Files.deleteIfExists(logPath.toPath());
+            if (logPath.getParent() != null) {
+                Files.createDirectories(logPath.toPath().getParent());
+            }
+        } catch (FileSystemException e) {
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+        }
+
         if (handleIo) {
             quarkusProcess = LauncherUtil.launchProcessAndDrainIO(args, env);
         } else {

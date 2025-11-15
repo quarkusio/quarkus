@@ -42,6 +42,10 @@
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-dev</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-health-ui</artifactId>
         </dependency>

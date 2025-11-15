@@ -25,9 +25,9 @@ import org.hibernate.annotations.ParamDef
     FilterDef(
         name = "Person.hasName",
         defaultCondition = "name = :name",
-        parameters = [ParamDef(name = "name", type = String::class)]
+        parameters = [ParamDef(name = "name", type = String::class)],
     ),
-    FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
+    FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'"),
 )
 @Filters(Filter(name = "Person.isAlive"), Filter(name = "Person.hasName"))
 open class Person : PanacheEntity() {

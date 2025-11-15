@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
@@ -47,7 +47,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts a RabbitMQ broker as dev service if needed.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class RabbitMQDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(RabbitMQDevServicesProcessor.class);

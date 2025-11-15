@@ -32,6 +32,8 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.spring.web.runtime.common.ResponseEntityConverter;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
 
@@ -250,6 +252,16 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                     parameterTypeHandles[i] = getBeanFromArc(toResponse, UriInfo.class.getName());
                 } else if (typesUtil.isAssignable(Request.class, parameterType.name())) {
                     parameterTypeHandles[i] = getBeanFromArc(toResponse, Request.class.getName());
+                } else if (typesUtil.isAssignable(HttpServerRequest.class, parameterType.name())) {
+                    parameterTypeHandles[i] = getBeanFromArc(toResponse, HttpServerRequest.class.getName());
+                } else if (typesUtil.isAssignable(HttpServerResponse.class, parameterType.name())) {
+                    ResultHandle requestHandle = getBeanFromArc(toResponse, HttpServerRequest.class.getName());
+                    ResultHandle responseHandle = toResponse.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(HttpServerRequest.class,
+                                    "response",
+                                    HttpServerResponse.class),
+                            requestHandle);
+                    parameterTypeHandles[i] = responseHandle;
                 } else {
                     throw new IllegalArgumentException(
                             "Parameter type '" + parameterType.name() + "' is not supported for method '"

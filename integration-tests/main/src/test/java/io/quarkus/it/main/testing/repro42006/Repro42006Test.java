@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.support.ParameterDeclarations;
 
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -25,7 +26,7 @@ public class Repro42006Test {
 
     private static class LambdaProvider implements ArgumentsProvider {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+        public Stream<? extends Arguments> provideArguments(ParameterDeclarations parameters, ExtensionContext context) {
             return Stream.of(
                     Arguments.of("SerializableSupplier", (SerializableSupplier) () -> "foo"),
                     Arguments.of("SerializableCustom", (SerializableCustom) () -> "bar"));

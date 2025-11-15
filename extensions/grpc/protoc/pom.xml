@@ -18,6 +18,10 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.salesforce.servicelibs</groupId>
             <artifactId>jprotoc</artifactId>
             <exclusions>
@@ -46,7 +50,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <createSourcesJar>true</createSourcesJar>
                             <shadedClassifierName>shaded</shadedClassifierName>
                             <shadedArtifactAttached>true</shadedArtifactAttached>

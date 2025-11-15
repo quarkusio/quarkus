@@ -67,7 +67,7 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
      */
     @Override
     default void close() {
-        if (Arc.container().strictCompatibility()) {
+        if (Arc.requireContainer().strictCompatibility()) {
             destroy();
             return;
         }

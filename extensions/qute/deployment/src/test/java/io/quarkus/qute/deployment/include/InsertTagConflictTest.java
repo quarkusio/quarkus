@@ -31,7 +31,7 @@ public class InsertTagConflictTest {
                 }
                 assertNotNull(te);
                 assertTrue(te.getMessage().contains(
-                        "Parser error in template [base.html] line 1: {#insert} defined in the {#include} conflicts with an existing section/tag: row"),
+                        "Parser error in template [base.html:1]: {#insert} defined in the {#include} conflicts with an existing section/tag: row"),
                         te.getMessage());
             });;
 

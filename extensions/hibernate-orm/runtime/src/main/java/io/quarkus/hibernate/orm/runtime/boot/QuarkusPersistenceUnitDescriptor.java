@@ -6,41 +6,42 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
+import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
 import org.hibernate.bytecode.spi.ClassTransformer;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 
+import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
+import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitProviderHelper;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
 public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDescriptor {
 
     private final String name;
-    // The default PU in Hibernate Reactive is named "default-reactive" instead of "<default>",
-    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
-    // use the name "<default>", so we need to convert between those.
-    private final String configurationName;
+    private final QuarkusPersistenceUnitProviderHelper providerHelper;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
-    private final PersistenceUnitTransactionType transactionType;
+    private final PersistenceUnitTransactionType persistenceUnitTransactionType;
     private final ValidationMode validationMode;
     private final SharedCacheMode sharedCacheMode;
     private final List<String> managedClassNames;
     private final Properties properties;
     private final boolean reactive;
 
-    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
-            PersistenceUnitTransactionType transactionType,
+    public QuarkusPersistenceUnitDescriptor(String name,
+            QuarkusPersistenceUnitProviderHelper providerHelper,
+            PersistenceUnitTransactionType persistenceUnitTransactionType,
             List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
-        this.configurationName = configurationName;
+        this.providerHelper = providerHelper;
         this.providerClassName = null;
         this.useQuotedIdentifiers = false;
-        this.transactionType = transactionType;
+        this.persistenceUnitTransactionType = persistenceUnitTransactionType;
         this.validationMode = null;
         this.sharedCacheMode = null;
         this.managedClassNames = managedClassNames;
@@ -55,16 +56,17 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
      */
     @Deprecated
     @RecordableConstructor
-    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+    public QuarkusPersistenceUnitDescriptor(String name,
+            QuarkusPersistenceUnitProviderHelper providerHelper,
             String providerClassName, boolean useQuotedIdentifiers,
-            PersistenceUnitTransactionType transactionType,
+            PersistenceUnitTransactionType persistenceUnitTransactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
-        this.configurationName = configurationName;
+        this.providerHelper = providerHelper;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
-        this.transactionType = transactionType;
+        this.persistenceUnitTransactionType = persistenceUnitTransactionType;
         this.validationMode = validationMode;
         this.sharedCacheMode = sharedCacheMode;
         this.managedClassNames = managedClassNames;
@@ -87,9 +89,11 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         }
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(), toClone.getProviderClassName(),
+        return new QuarkusPersistenceUnitDescriptor(toClone.getName(),
+                new HibernateOrmPersistenceUnitProviderHelper(),
+                toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
-                toClone.getTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
+                toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
     }
 
@@ -103,8 +107,8 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         return name;
     }
 
-    public String getConfigurationName() {
-        return configurationName;
+    public QuarkusPersistenceUnitProviderHelper getProviderHelper() {
+        return providerHelper;
     }
 
     @Override
@@ -124,8 +128,15 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     @Override
-    public PersistenceUnitTransactionType getTransactionType() {
-        return transactionType;
+    public PersistenceUnitTransactionType getPersistenceUnitTransactionType() {
+        return persistenceUnitTransactionType;
+    }
+
+    @Override
+    @Deprecated
+    @SuppressWarnings("removal")
+    public jakarta.persistence.spi.PersistenceUnitTransactionType getTransactionType() {
+        return PersistenceUnitTransactionTypeHelper.toDeprecatedForm(getPersistenceUnitTransactionType());
     }
 
     @Override
@@ -217,10 +228,9 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     public String toString() {
         return "QuarkusPersistenceUnitDescriptor{" +
                 "name='" + name + '\'' +
-                ", configurationName='" + configurationName + '\'' +
                 ", providerClassName='" + providerClassName + '\'' +
                 ", useQuotedIdentifiers=" + useQuotedIdentifiers +
-                ", transactionType=" + transactionType +
+                ", transactionType=" + persistenceUnitTransactionType +
                 ", validationMode=" + validationMode +
                 ", sharedCacheMode=" + sharedCacheMode +
                 ", managedClassNames=" + managedClassNames +

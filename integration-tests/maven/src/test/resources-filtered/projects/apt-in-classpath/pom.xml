@@ -47,7 +47,7 @@
     </dependency>
     <dependency>
       <groupId>org.hibernate.orm</groupId>
-      <artifactId>hibernate-jpamodelgen</artifactId>
+      <artifactId>hibernate-processor</artifactId>
       <scope>provided</scope>
     </dependency>
     <!-- Second APT dep -->

@@ -23,7 +23,7 @@ object ViolationReportSerializer : KSerializer<ViolationReport> {
             element("status", serialDescriptor<Int>())
             element(
                 "violations",
-                listSerialDescriptor(ListSerializer(ViolationReportViolationSerializer).descriptor)
+                listSerialDescriptor(ListSerializer(ViolationReportViolationSerializer).descriptor),
             )
         }
 
@@ -43,7 +43,7 @@ object ViolationReportSerializer : KSerializer<ViolationReport> {
                             decodeSerializableElement(
                                 descriptor,
                                 2,
-                                ListSerializer(ViolationReportViolationSerializer)
+                                ListSerializer(ViolationReportViolationSerializer),
                             )
                     else -> throw SerializationException("Unexpected index $index")
                 }
@@ -52,7 +52,7 @@ object ViolationReportSerializer : KSerializer<ViolationReport> {
             ViolationReport(
                 requireNotNull(title),
                 status?.let { Response.Status.fromStatusCode(it) },
-                violations
+                violations,
             )
         }
     }
@@ -65,7 +65,7 @@ object ViolationReportSerializer : KSerializer<ViolationReport> {
                 descriptor,
                 2,
                 ListSerializer(ViolationReportViolationSerializer),
-                value.violations
+                value.violations,
             )
         }
     }

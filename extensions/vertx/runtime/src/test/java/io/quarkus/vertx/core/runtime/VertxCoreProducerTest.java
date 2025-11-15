@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
@@ -37,7 +38,7 @@ public class VertxCoreProducerTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        recorder = new VertxCoreRecorder();
+        recorder = new VertxCoreRecorder(new RuntimeValue<>(), new RuntimeValue<>());
     }
 
     @AfterEach

@@ -174,7 +174,7 @@ public class IncludeTest {
                 .isThrownBy(() -> engine.parse("{#include super}{#header}super header{/header}{/include}", null, "foo.html")
                         .render())
                 .withMessage(
-                        "Rendering error in template [foo.html] line 1: included template [super] not found")
+                        "Rendering error in template [foo.html:1]: included template [super] not found")
                 .hasFieldOrProperty("origin")
                 .hasFieldOrProperty("code");
     }
@@ -213,14 +213,14 @@ public class IncludeTest {
                 () -> engine.parse("{#include foo$foo_and_bar /}", null, "bum.html").render());
         assertEquals(IncludeSectionHelper.Code.FRAGMENT_NOT_FOUND, expected.getCode());
         assertEquals(
-                "Rendering error in template [bum.html] line 1: fragment [foo_and_bar] not found in the included template [foo]",
+                "Rendering error in template [bum.html:1]: fragment [foo_and_bar] not found in the included template [foo]",
                 expected.getMessage());
 
         expected = assertThrows(TemplateException.class,
                 () -> engine.parse("{#include foo$foo-and_bar /}", null, "bum.html").render());
         assertEquals(IncludeSectionHelper.Code.INVALID_FRAGMENT_ID, expected.getCode());
         assertEquals(
-                "Rendering error in template [bum.html] line 1: invalid fragment identifier [foo-and_bar]",
+                "Rendering error in template [bum.html:1]: invalid fragment identifier [foo-and_bar]",
                 expected.getMessage());
     }
 
@@ -345,6 +345,47 @@ public class IncludeTest {
                            {/foo}
                         {/include}
                                     """).render().replaceAll("\\s+", ""));
+    }
+
+    @Test
+    public void testDynamicTemplate() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("root", engine.parse("<html><body>{#insert foo /}</body></html>"));
+        assertEquals("<html><body>Something</body></html>",
+                engine.parse("{#include _id=foo}{#foo}Something{/include}").data("foo", "root").render());
+        assertEquals("<html><body>1</body></html>",
+                engine.parse("{#include bar=1 _id=foo}{#foo}{bar}{/include}").data("foo", "root").render());
+    }
+
+    @Test
+    public void testDynamicTemplateNotFound() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include _id=foo /}", null, "foo.html")
+                        .data("foo", "nonexistent")
+                        .render())
+                .withMessage(
+                        "Rendering error in template [foo.html:1]: included template [nonexistent] not found")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
+    }
+
+    @Test
+    public void testNoTemplate() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include /}", null, "foo.html")
+                        .render())
+                .withMessage(
+                        "Parser error in template [foo.html:1]: Neither the template id nor the template name parameter was specified");
+    }
+
+    @Test
+    public void testTemplateNameWithUnderscorePrefix() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("_root", engine.parse("<html><body>{#insert foo /}</body></html>"));
+        assertEquals("<html><body>Something</body></html>",
+                engine.parse("{#include _root}{#foo}Something{/include}").render());
     }
 
 }

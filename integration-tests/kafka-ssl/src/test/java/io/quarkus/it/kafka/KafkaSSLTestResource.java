@@ -28,7 +28,8 @@ public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager
                     entry("ssl.truststore.password", "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L"),
                     entry("ssl.truststore.type", "PKCS12"),
                     entry("ssl.endpoint.identification.algorithm", ""),
-                    entry("listener.security.protocol.map", "BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL")))
+                    entry("listener.security.protocol.map",
+                            "BROKER1:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,CONTROLLER:PLAINTEXT")))
             .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-keystore.p12"),
                     "/opt/kafka/config/kafka-keystore.p12")
             .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-truststore.p12"),

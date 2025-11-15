@@ -26,7 +26,6 @@ import io.quarkus.oidc.runtime.dev.ui.OidcDevLoginObserver;
 import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
 
@@ -37,7 +36,6 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void produceProviderComponent(Optional<KeycloakDevServicesConfigBuildItem> configProps,
             BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
-            VertxHttpConfig httpConfig,
             OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BeanContainerBuildItem beanContainer,
@@ -69,7 +67,10 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     users,
                     keycloakRealms,
                     configProps.get().isContainerRestarted(),
-                    httpConfig, false, null);
+                    false, null);
+
+            cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");
+
             // use same card page so that both pages appear on the same card
             var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem);
             keycloakAdminPageProducer.produce(keycloakAdminPageItem);

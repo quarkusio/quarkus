@@ -2,6 +2,8 @@ package io.quarkus.deployment.logging;
 
 import static io.quarkus.runtime.logging.LoggingSetupRecorder.initializeBuildTimeLogging;
 
+import java.lang.annotation.RetentionPolicy;
+import java.lang.constant.ClassDesc;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
@@ -48,15 +49,18 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.LogManager;
-import org.objectweb.asm.Opcodes;
+
+import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.Substitute;
+import com.oracle.svm.core.annotate.TargetClass;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.ApplicationArchive;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -68,7 +72,9 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryMinLevelDefaultsBuildItem;
@@ -79,12 +85,13 @@ import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.QuarkusCommand;
@@ -103,16 +110,18 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.gizmo.AnnotationCreator;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.This;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.logging.LoggingFilter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -136,7 +145,7 @@ public final class LoggingResourceProcessor {
     private static final String LOGGER_NODE_CLASS_NAME = "io.quarkus.runtime.generated.Target_org_jboss_logmanager_LoggerNode";
 
     private static final String MIN_LEVEL_COMPUTE_CLASS_NAME = "io.quarkus.runtime.generated.MinLevelCompute";
-    private static final MethodDescriptor IS_MIN_LEVEL_ENABLED = MethodDescriptor.ofMethod(MIN_LEVEL_COMPUTE_CLASS_NAME,
+    private static final MethodDesc IS_MIN_LEVEL_ENABLED = ClassMethodDesc.of(ClassDesc.of(MIN_LEVEL_COMPUTE_CLASS_NAME),
             "isMinLevelEnabled",
             boolean.class, int.class, String.class);
 
@@ -223,12 +232,12 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     void miscSetup(
-            Consumer<RuntimeReinitializedClassBuildItem> runtimeInit,
+            Consumer<RuntimeInitializedClassBuildItem> runtimeInit,
             Consumer<NativeImageSystemPropertyBuildItem> systemProp,
             Consumer<ServiceProviderBuildItem> provider) {
-        runtimeInit.accept(new RuntimeReinitializedClassBuildItem(ConsoleHandler.class.getName()));
-        runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.ref.References$ReaperThread"));
-        runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.os.Process"));
+        runtimeInit.accept(new RuntimeInitializedClassBuildItem(ConsoleHandler.class.getName()));
+        runtimeInit.accept(new RuntimeInitializedClassBuildItem("io.smallrye.common.ref.References$ReaperThread"));
+        runtimeInit.accept(new RuntimeInitializedClassBuildItem("io.smallrye.common.os.Process"));
         systemProp
                 .accept(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
         provider.accept(
@@ -240,8 +249,6 @@ public final class LoggingResourceProcessor {
     LoggingSetupBuildItem setupLoggingRuntimeInit(
             final RecorderContext context,
             final LoggingSetupRecorder recorder,
-            final LogRuntimeConfig logRuntimeConfig,
-            final LogBuildTimeConfig logBuildTimeConfig,
             final CombinedIndexBuildItem combinedIndexBuildItem,
             final LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
@@ -308,7 +315,7 @@ public final class LoggingResourceProcessor {
             }
 
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
-                    recorder.initializeLogging(logRuntimeConfig, logBuildTimeConfig, discoveredLogComponents,
+                    recorder.initializeLogging(discoveredLogComponents,
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
                             streamingDevUiLogHandler, handlers, namedHandlers,
                             possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
@@ -326,18 +333,14 @@ public final class LoggingResourceProcessor {
             }
 
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            LogBuildTimeConfig logBuildTimeConfig = config.getConfigMapping(LogBuildTimeConfig.class);
             LogRuntimeConfig logRuntimeConfigInBuild = config.getConfigMapping(LogRuntimeConfig.class);
             ConsoleRuntimeConfig consoleRuntimeConfig = config.getConfigMapping(ConsoleRuntimeConfig.class);
 
             initializeBuildTimeLogging(logRuntimeConfigInBuild, logBuildTimeConfig, consoleRuntimeConfig,
                     categoryMinLevelDefaults.content, additionalLogCleanupFilters, launchModeBuildItem.getLaunchMode());
-
-            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
-                }
-            });
+            // Build time logging is terminated before the application is started, after dev services are started.
+            // When there is no devservices build time logging is still closed at deployment classloader close #closeBuildTimeLogging
         }
         return new LoggingSetupBuildItem();
     }
@@ -388,7 +391,7 @@ public final class LoggingResourceProcessor {
         return result;
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIfNot = IsProduction.class)
     @Produce(TestSetupBuildItem.class)
     @Produce(LogConsoleFormatBuildItem.class)
     @Consume(ConsoleInstalledBuildItem.class)
@@ -527,12 +530,37 @@ public final class LoggingResourceProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void setUpMinLevelLogging(LogBuildTimeConfig log,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
-            final BuildProducer<GeneratedClassBuildItem> generatedTraceLogger) {
-        ClassOutput output = new GeneratedClassGizmoAdaptor(generatedTraceLogger, false);
+            final BuildProducer<GeneratedClassBuildItem> gcProducer,
+            final BuildProducer<GeneratedResourceBuildItem> grProducer) {
+        ClassOutput output = new GeneratedClassGizmo2Adaptor(gcProducer, grProducer, false);
+        generateDefaultLoggerNode(output);
         if (allRootMinLevelOrHigher(log.minLevel().intValue(), log.categories(), categoryMinLevelDefaults.content)) {
-            generateDefaultLoggers(log.minLevel(), output);
+            Level minLevel = log.minLevel();
+            generateDefaultLoggingLogger(minLevel, output);
+            String defaultMinLevelName = minLevel.getName();
+            generateLogManagerLogger(output, (b0, name, levelIntValue) -> {
+                final Expr defaultLevelIntValue = getLogManagerLevelIntValue(defaultMinLevelName, b0);
+                return b0.ge(levelIntValue, defaultLevelIntValue);
+            });
         } else {
-            generateCategoryMinLevelLoggers(log.categories(), categoryMinLevelDefaults.content, log.minLevel(), output);
+            Map<String, CategoryBuildTimeConfig> categories = log.categories();
+            Level rootMinLevel = log.minLevel();
+            generateMinLevelCompute(categories, categoryMinLevelDefaults.content, rootMinLevel, output);
+            generateLogManagerLogger(output,
+                    (b0, name, levelIntValue) -> b0.invokeStatic(IS_MIN_LEVEL_ENABLED, levelIntValue, name));
+        }
+    }
+
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void closeBuildTimeLogging(List<DevServicesResultBuildItem> devServices) {
+        if (devServices.isEmpty()) {
+            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+                }
+            });
         }
     }
 
@@ -552,172 +580,107 @@ public final class LoggingResourceProcessor {
         return true;
     }
 
-    private static void generateDefaultLoggers(Level minLevel, ClassOutput output) {
-        generateDefaultLoggingLogger(minLevel, output);
-        generateDefaultLoggerNode(output);
-        generateLogManagerLogger(output, LoggingResourceProcessor.generateMinLevelDefault(minLevel.getName()));
-    }
-
-    private static void generateCategoryMinLevelLoggers(Map<String, CategoryBuildTimeConfig> categories,
-            Map<String, InheritableLevel> categoryMinLevelDefaults, Level rootMinLevel,
-            ClassOutput output) {
-        generateMinLevelCompute(categories, categoryMinLevelDefaults, rootMinLevel, output);
-        generateDefaultLoggerNode(output);
-        generateLogManagerLogger(output, LoggingResourceProcessor::generateMinLevelCheckCategory);
-    }
-
-    private static BranchResult generateMinLevelCheckCategory(MethodCreator method, FieldDescriptor nameAliasDescriptor) {
-        final ResultHandle levelIntValue = getParamLevelIntValue(method);
-        final ResultHandle nameAlias = method.readInstanceField(nameAliasDescriptor, method.getThis());
-        return method.ifTrue(method.invokeStaticMethod(IS_MIN_LEVEL_ENABLED, levelIntValue, nameAlias));
-    }
-
     private static void generateMinLevelCompute(Map<String, CategoryBuildTimeConfig> categories,
             Map<String, InheritableLevel> categoryMinLevelDefaults, Level rootMinLevel,
             ClassOutput output) {
-        try (ClassCreator cc = ClassCreator.builder().setFinal(true)
-                .className(MIN_LEVEL_COMPUTE_CLASS_NAME)
-                .classOutput(output).build()) {
-
-            try (MethodCreator mc = cc.getMethodCreator(IS_MIN_LEVEL_ENABLED)) {
-                mc.setModifiers(Opcodes.ACC_STATIC);
-
-                final ResultHandle level = mc.getMethodParam(0);
-                final ResultHandle name = mc.getMethodParam(1);
-
-                BytecodeCreator current = mc;
-                for (Map.Entry<String, CategoryBuildTimeConfig> entry : categories.entrySet()) {
-                    final String category = entry.getKey();
-                    final int categoryLevelIntValue = LoggingSetupRecorder
-                            .getLogLevel(category, categories, CategoryBuildTimeConfig::minLevel,
-                                    categoryMinLevelDefaults,
-                                    rootMinLevel)
-                            .intValue();
-
-                    ResultHandle equalsResult = current.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class),
-                            name, current.load(category));
-
-                    BranchResult equalsBranch = current.ifTrue(equalsResult);
-                    try (BytecodeCreator false1 = equalsBranch.falseBranch()) {
-                        ResultHandle startsWithResult = false1.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(String.class, "startsWith", boolean.class, String.class),
-                                name, false1.load(category + "."));
-
-                        BranchResult startsWithBranch = false1.ifTrue(startsWithResult);
-
-                        final BytecodeCreator startsWithTrue = startsWithBranch.trueBranch();
-                        final BranchResult levelCompareBranch = startsWithTrue.ifIntegerGreaterEqual(level,
-                                startsWithTrue.load(categoryLevelIntValue));
-                        levelCompareBranch.trueBranch().returnValue(levelCompareBranch.trueBranch().load(true));
-                        levelCompareBranch.falseBranch().returnValue(levelCompareBranch.falseBranch().load(false));
-
-                        current = startsWithBranch.falseBranch();
+        Gizmo g = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
+        g.class_(MIN_LEVEL_COMPUTE_CLASS_NAME, cc -> {
+            cc.final_();
+            cc.staticMethod("isMinLevelEnabled", mc -> {
+                mc.returning(boolean.class);
+                ParamVar level = mc.parameter("level", int.class);
+                ParamVar name = mc.parameter("name", String.class);
+                mc.body(b0 -> {
+                    for (Map.Entry<String, CategoryBuildTimeConfig> entry : categories.entrySet()) {
+                        final String category = entry.getKey();
+                        final int categoryLevelIntValue = LoggingSetupRecorder
+                                .getLogLevel(category, categories, CategoryBuildTimeConfig::minLevel,
+                                        categoryMinLevelDefaults,
+                                        rootMinLevel)
+                                .intValue();
+                        b0.if_(b0.objEquals(name, Const.of(category)), BlockCreator::returnTrue);
+                        b0.if_(b0.invokeVirtual(
+                                MethodDesc.of(String.class, "startsWith", boolean.class, String.class),
+                                name, Const.of(category + ".")),
+                                t1 -> t1.return_(t1.ge(level, categoryLevelIntValue)));
                     }
-
-                    equalsBranch.trueBranch().returnValue(equalsBranch.trueBranch().load(true));
-                }
-
-                final ResultHandle infoLevelIntValue = getLogManagerLevelIntValue(rootMinLevel.toString(), current);
-                final BranchResult isInfoOrHigherBranch = current.ifIntegerGreaterEqual(level, infoLevelIntValue);
-                isInfoOrHigherBranch.trueBranch().returnValue(isInfoOrHigherBranch.trueBranch().load(true));
-                isInfoOrHigherBranch.falseBranch().returnValue(isInfoOrHigherBranch.falseBranch().load(false));
-            }
-        }
+                    b0.return_(b0.ge(level, getLogManagerLevelIntValue(rootMinLevel.toString(), b0)));
+                });
+            });
+        });
     }
 
     private static void generateDefaultLoggerNode(ClassOutput output) {
-        try (ClassCreator cc = ClassCreator.builder().setFinal(true)
-                .className(LOGGER_NODE_CLASS_NAME)
-                .classOutput(output).build()) {
+        Gizmo g = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
+        g.class_(LOGGER_NODE_CLASS_NAME, cc -> {
+            cc.final_();
+            cc.addAnnotation(TargetClass.class, ac -> ac.add(TargetClass::className, "org.jboss.logmanager.LoggerNode"));
+            cc.method("isLoggableLevel", mc -> {
+                mc.addAnnotation(Alias.class);
+                mc.parameter("level", int.class);
+                mc.returning(boolean.class);
+                mc.body(BlockCreator::returnFalse);
+            });
+        });
+    }
 
-            AnnotationCreator targetClass = cc.addAnnotation("com.oracle.svm.core.annotate.TargetClass");
-            targetClass.addValue("className", "org.jboss.logmanager.LoggerNode");
-
-            final MethodCreator isLoggableLevelMethod = cc.getMethodCreator("isLoggableLevel", boolean.class, int.class);
-            isLoggableLevelMethod.addAnnotation("com.oracle.svm.core.annotate.Alias");
-            isLoggableLevelMethod.returnValue(isLoggableLevelMethod.load(false));
-        }
+    interface MinLevelEnabledFunction {
+        Expr apply(BlockCreator b0, Var name, Var levelInt);
     }
 
     private static void generateLogManagerLogger(ClassOutput output,
-            BiFunction<MethodCreator, FieldDescriptor, BranchResult> isMinLevelEnabledFunction) {
-        try (ClassCreator cc = ClassCreator.builder().setFinal(true)
-                .className(LOGMANAGER_LOGGER_CLASS_NAME)
-                .classOutput(output).build()) {
-
-            AnnotationCreator targetClass = cc.addAnnotation("com.oracle.svm.core.annotate.TargetClass");
-            targetClass.addValue("className", "org.jboss.logmanager.Logger");
-
-            FieldCreator nameAlias = cc.getFieldCreator("name", String.class);
-            nameAlias.addAnnotation("com.oracle.svm.core.annotate.Alias");
-
-            FieldCreator loggerNodeAlias = cc.getFieldCreator("loggerNode", LOGGER_NODE_CLASS_NAME);
-            loggerNodeAlias.addAnnotation("com.oracle.svm.core.annotate.Alias");
-
-            final MethodCreator isLoggableMethod = cc.getMethodCreator("isLoggable", boolean.class,
-                    java.util.logging.Level.class);
-            isLoggableMethod.addAnnotation("com.oracle.svm.core.annotate.Substitute");
-
-            final ResultHandle levelIntValue = getParamLevelIntValue(isLoggableMethod);
-
-            final BranchResult levelBranch = isMinLevelEnabledFunction.apply(isLoggableMethod, nameAlias.getFieldDescriptor());
-
-            final BytecodeCreator levelTrue = levelBranch.trueBranch();
-            levelTrue.returnValue(
-                    levelTrue.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(LOGGER_NODE_CLASS_NAME, "isLoggableLevel", boolean.class, int.class),
-                            levelTrue.readInstanceField(loggerNodeAlias.getFieldDescriptor(), levelTrue.getThis()),
-                            levelIntValue));
-
-            final BytecodeCreator levelFalse = levelBranch.falseBranch();
-            levelFalse.returnValue(levelFalse.load(false));
-        }
+            MinLevelEnabledFunction isMinLevelEnabledFunction) {
+        Gizmo gizmo = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
+        gizmo.class_(LOGMANAGER_LOGGER_CLASS_NAME, cc -> {
+            cc.final_();
+            This this_ = cc.this_();
+            cc.addAnnotation(TargetClass.class, ac -> ac.add(TargetClass::value, org.jboss.logmanager.Logger.class));
+            FieldDesc name = cc.field("name", fc -> {
+                fc.setType(String.class);
+                fc.addAnnotation(Alias.class);
+            });
+            FieldDesc loggerNode = cc.field("loggerNode", fc -> {
+                fc.setType(ClassDesc.of(LOGGER_NODE_CLASS_NAME));
+                fc.addAnnotation(Alias.class);
+            });
+            cc.method("isLoggable", mc -> {
+                mc.returning(boolean.class);
+                mc.addAnnotation(Substitute.class);
+                ParamVar level = mc.parameter("level", Level.class);
+                mc.body(b0 -> {
+                    var levelInt = b0.localVar("levelInt",
+                            b0.invokeVirtual(MethodDesc.of(Level.class, "intValue", int.class), level));
+                    b0.ifNot(isMinLevelEnabledFunction.apply(b0, this_.field(name), levelInt), BlockCreator::returnFalse);
+                    b0.return_(b0.invokeVirtual(
+                            ClassMethodDesc.of(ClassDesc.of(LOGGER_NODE_CLASS_NAME), "isLoggableLevel", boolean.class,
+                                    int.class),
+                            this_.field(loggerNode), levelInt));
+                });
+            });
+        });
     }
 
-    private static ResultHandle getParamLevelIntValue(MethodCreator method) {
-        final ResultHandle level = method.getMethodParam(0);
-        return method
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Level.class, "intValue", int.class), level);
-    }
-
-    private static BiFunction<MethodCreator, FieldDescriptor, BranchResult> generateMinLevelDefault(
-            String defaultMinLevelName) {
-        return (method, nameAliasDescriptor) -> {
-            final ResultHandle levelIntValue = getParamLevelIntValue(method);
-            final ResultHandle infoLevelIntValue = getLogManagerLevelIntValue(defaultMinLevelName, method);
-            return method.ifIntegerGreaterEqual(levelIntValue, infoLevelIntValue);
-        };
-    }
-
-    private static ResultHandle getLogManagerLevelIntValue(String levelName, BytecodeCreator method) {
-        FieldDescriptor fd;
-        switch (levelName) {
-            case "FATAL":
-            case "ERROR":
-            case "WARN":
-            case "INFO":
-            case "DEBUG":
-            case "TRACE":
-                fd = FieldDescriptor.of(org.jboss.logmanager.Level.class, levelName, org.jboss.logmanager.Level.class);
-                break;
-            default:
-                fd = FieldDescriptor.of(Level.class, levelName, Level.class);
-                break;
-        }
-        final ResultHandle levelVal = method.readStaticField(fd);
-        return method
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Level.class, "intValue", int.class), levelVal);
+    private static Expr getLogManagerLevelIntValue(String levelName, BlockCreator b0) {
+        FieldDesc fd = FieldDesc.of(switch (levelName) {
+            case "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE" -> org.jboss.logmanager.Level.class;
+            default -> Level.class;
+        }, levelName);
+        return b0.invokeVirtual(MethodDesc.of(Level.class, "intValue", int.class), b0.get(Expr.staticField(fd)));
     }
 
     private static void generateDefaultLoggingLogger(Level minLevel, ClassOutput output) {
-        try (ClassCreator cc = ClassCreator.builder().setFinal(true)
-                .className(LOGGING_LOGGER_CLASS_NAME)
-                .classOutput(output).build()) {
-
-            AnnotationCreator targetClass = cc.addAnnotation("com.oracle.svm.core.annotate.TargetClass");
-            targetClass.addValue("className", "org.jboss.logging.Logger");
-
+        Gizmo gizmo = Gizmo.create(output)
+                .withDebugInfo(false)
+                .withParameters(false);
+        gizmo.class_(LOGGING_LOGGER_CLASS_NAME, cc -> {
+            cc.final_();
+            cc.addAnnotation(TargetClass.class, ac -> ac.add(TargetClass::className, "org.jboss.logging.Logger"));
             if (minLevel.intValue() >= org.jboss.logmanager.Level.INFO.intValue()) {
                 // Constant fold these methods to return false,
                 // since the build time log level is above this level.
@@ -726,17 +689,21 @@ public final class LoggingResourceProcessor {
             } else if (minLevel.intValue() == org.jboss.logmanager.Level.DEBUG.intValue()) {
                 generateFalseFoldMethod("isTraceEnabled", cc);
             }
-        }
+        });
     }
 
     /**
      * Generates a method that is constant-folded to always return false.
      */
     private static void generateFalseFoldMethod(String name, ClassCreator cc) {
-        MethodCreator method = cc.getMethodCreator(name, boolean.class);
-        method.addAnnotation("com.oracle.svm.core.annotate.Substitute");
-        method.addAnnotation("org.graalvm.compiler.api.replacements.Fold");
-        method.returnValue(method.load(false));
+        cc.method(name, mc -> {
+            mc.public_();
+            mc.returning(boolean.class);
+            mc.addAnnotation(Substitute.class);
+            mc.addAnnotation(ClassDesc.of("org.graalvm.compiler.api.replacements.Fold"), RetentionPolicy.RUNTIME, ac -> {
+            });
+            mc.body(BlockCreator::returnFalse);
+        });
     }
 
     @BuildStep

@@ -1,6 +1,7 @@
 package io.quarkus.arc.deployment;
 
 import static io.quarkus.arc.processor.Annotations.getAnnotations;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -41,10 +42,12 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
 
@@ -52,18 +55,20 @@ public class StartupBuildSteps {
 
     static final DotName STARTUP_NAME = DotName.createSimple(Startup.class.getName());
 
-    static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
-    static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
+    static final MethodDesc ARC_CONTAINER = MethodDesc.of(Arc.class, "container", ArcContainer.class);
+    static final MethodDesc ARC_CONTAINER_BEAN = MethodDesc.of(ArcContainer.class, "bean",
             InjectableBean.class, String.class);
-    static final MethodDescriptor ARC_CONTAINER_INSTANCE = MethodDescriptor.ofMethod(ArcContainer.class, "instance",
+    static final MethodDesc ARC_CONTAINER_INSTANCE = MethodDesc.of(ArcContainer.class, "instance",
             InstanceHandle.class, InjectableBean.class);
-    static final MethodDescriptor INSTANCE_HANDLE_GET = MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class);
-    static final MethodDescriptor CLIENT_PROXY_CONTEXTUAL_INSTANCE = MethodDescriptor.ofMethod(ClientProxy.class,
-            "arc_contextualInstance", Object.class);
-    static final MethodDescriptor CONTEXTUAL_CREATE = MethodDescriptor.ofMethod(Contextual.class,
-            "create", Object.class, CreationalContext.class);
-    static final MethodDescriptor CONTEXTUAL_DESTROY = MethodDescriptor.ofMethod(Contextual.class,
-            "destroy", void.class, Object.class, CreationalContext.class);
+    static final MethodDesc INSTANCE_HANDLE_GET = MethodDesc.of(InstanceHandle.class, "get", Object.class);
+    static final MethodDesc CLIENT_PROXY_CONTEXTUAL_INSTANCE = MethodDesc.of(ClientProxy.class, "arc_contextualInstance",
+            Object.class);
+    static final MethodDesc CONTEXTUAL_CREATE = MethodDesc.of(Contextual.class, "create",
+            Object.class, CreationalContext.class);
+    static final MethodDesc CONTEXTUAL_DESTROY = MethodDesc.of(Contextual.class, "destroy",
+            void.class, Object.class, CreationalContext.class);
+    static final ConstructorDesc CREATIONAL_CONTEXT_IMPL_CTOR = ConstructorDesc.of(CreationalContextImpl.class,
+            Contextual.class);
 
     private static final Logger LOG = Logger.getLogger(StartupBuildSteps.class);
 
@@ -99,7 +104,7 @@ public class StartupBuildSteps {
             @Override
             public boolean test(BeanInfo bean) {
                 if (bean.isClassBean()) {
-                    return bean.getTarget().get().asClass().annotationsMap().containsKey(STARTUP_NAME);
+                    return bean.getTarget().get().asClass().hasAnnotation(STARTUP_NAME);
                 } else if (bean.isProducerMethod()) {
                     return !getAnnotations(Kind.METHOD, STARTUP_NAME, bean.getTarget().get().asMethod().annotations())
                             .isEmpty();
@@ -168,25 +173,27 @@ public class StartupBuildSteps {
         }
     }
 
-    private void registerStartupObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean, String id,
+    private void registerStartupObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo btBean, String id,
             int priority, MethodInfo startupMethod) {
         ObserverConfigurator configurator = observerRegistration.getContext().configure()
-                .beanClass(bean.getBeanClass())
+                .beanClass(btBean.getBeanClass())
                 .observedType(StartupEvent.class);
         configurator.id(id);
         configurator.priority(priority);
-        configurator.notify(mc -> {
+        configurator.notify(ng -> {
+            BlockCreator b0 = ng.notifyMethod();
+
             // InjectableBean<Foo> bean = Arc.container().bean("bflmpsvz");
-            ResultHandle containerHandle = mc.invokeStaticMethod(ARC_CONTAINER);
-            ResultHandle beanHandle = mc.invokeInterfaceMethod(ARC_CONTAINER_BEAN, containerHandle,
-                    mc.load(bean.getIdentifier()));
+            LocalVar arc = b0.localVar("arc", b0.invokeStatic(ARC_CONTAINER));
+            LocalVar rtBean = b0.localVar("bean",
+                    b0.invokeInterface(ARC_CONTAINER_BEAN, arc, Const.of(btBean.getIdentifier())));
 
             // if the [synthetic] bean is not active and is not injected in an always-active bean, skip obtaining the instance
             // this means that an inactive bean that is injected into an always-active bean will end up with an error
-            if (bean.canBeInactive()) {
+            if (btBean.canBeInactive()) {
                 boolean isInjectedInAlwaysActiveBean = false;
                 for (InjectionPointInfo ip : observerRegistration.getBeanProcessor().getBeanDeployment().getInjectionPoints()) {
-                    if (bean.equals(ip.getResolvedBean()) && ip.getTargetBean().isPresent()
+                    if (btBean.equals(ip.getResolvedBean()) && ip.getTargetBean().isPresent()
                             && !ip.getTargetBean().get().canBeInactive()) {
                         isInjectedInAlwaysActiveBean = true;
                         break;
@@ -194,47 +201,48 @@ public class StartupBuildSteps {
                 }
 
                 if (!isInjectedInAlwaysActiveBean) {
-                    ResultHandle isActive = mc.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(InjectableBean.class, "isActive", boolean.class),
-                            beanHandle);
-                    mc.ifFalse(isActive).trueBranch().returnVoid();
+                    Expr isActive = b0.invokeInterface(
+                            MethodDesc.of(InjectableBean.class, "isActive", boolean.class), rtBean);
+                    b0.ifNot(isActive, BlockCreator::return_);
                 }
             }
 
-            if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+            if (BuiltinScope.DEPENDENT.is(btBean.getScope())) {
                 // It does not make a lot of sense to support @Startup dependent beans but it's still a valid use case
-                ResultHandle creationalContext = mc.newInstance(
-                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                        beanHandle);
+                LocalVar creationalContext = b0.localVar("cc",
+                        b0.new_(CREATIONAL_CONTEXT_IMPL_CTOR, rtBean));
                 // Create a dependent instance
-                ResultHandle instance = mc.invokeInterfaceMethod(CONTEXTUAL_CREATE, beanHandle,
-                        creationalContext);
+                LocalVar instance = b0.localVar("instance",
+                        b0.invokeInterface(CONTEXTUAL_CREATE, rtBean, creationalContext));
                 if (startupMethod != null) {
-                    TryBlock tryBlock = mc.tryBlock();
-                    tryBlock.invokeVirtualMethod(MethodDescriptor.of(startupMethod), instance);
-                    CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-                    catchBlock.invokeInterfaceMethod(CONTEXTUAL_DESTROY, beanHandle, instance, creationalContext);
-                    catchBlock.throwException(RuntimeException.class, "Error destroying bean with @Startup method",
-                            catchBlock.getCaughtException());
+                    b0.try_(tc -> {
+                        tc.body(b1 -> {
+                            b1.invokeVirtual(methodDescOf(startupMethod), instance);
+                        });
+                        tc.catch_(Exception.class, "e", (b1, e) -> {
+                            b0.invokeInterface(CONTEXTUAL_DESTROY, rtBean, instance, creationalContext);
+                            b1.throw_(b1.new_(ConstructorDesc.of(RuntimeException.class, String.class, Throwable.class),
+                                    Const.of("Error calling @Startup method"), e));
+                        });
+                    });
                 }
                 // Destroy the instance immediately
-                mc.invokeInterfaceMethod(CONTEXTUAL_DESTROY, beanHandle, instance, creationalContext);
+                b0.invokeInterface(CONTEXTUAL_DESTROY, rtBean, instance, creationalContext);
             } else {
                 // Obtains the instance from the context
                 // InstanceHandle<Foo> handle = Arc.container().instance(bean);
-                ResultHandle instanceHandle = mc.invokeInterfaceMethod(ARC_CONTAINER_INSTANCE, containerHandle,
-                        beanHandle);
-                ResultHandle instance = mc.invokeInterfaceMethod(INSTANCE_HANDLE_GET, instanceHandle);
+                Expr instanceHandle = b0.invokeInterface(ARC_CONTAINER_INSTANCE, arc, rtBean);
+                Expr instance = b0.invokeInterface(INSTANCE_HANDLE_GET, instanceHandle);
                 if (startupMethod != null) {
-                    mc.invokeVirtualMethod(MethodDescriptor.of(startupMethod), instance);
-                } else if (bean.getScope().isNormal()) {
+                    b0.invokeVirtual(methodDescOf(startupMethod), instance);
+                } else if (btBean.getScope().isNormal()) {
                     // We need to unwrap the client proxy
                     // ((ClientProxy) handle.get()).arc_contextualInstance();
-                    ResultHandle proxyHandle = mc.checkCast(instance, ClientProxy.class);
-                    mc.invokeInterfaceMethod(CLIENT_PROXY_CONTEXTUAL_INSTANCE, proxyHandle);
+                    Expr proxy = b0.cast(instance, ClientProxy.class);
+                    b0.invokeInterface(CLIENT_PROXY_CONTEXTUAL_INSTANCE, proxy);
                 }
             }
-            mc.returnVoid();
+            b0.return_();
         });
         configurator.done();
     }

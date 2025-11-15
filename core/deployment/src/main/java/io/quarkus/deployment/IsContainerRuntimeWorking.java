@@ -88,7 +88,7 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
 
                 boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
                         .invoke(dockerClientFactoryInstance);
-                if (!isAvailable) {
+                if (!isAvailable && !silent) {
                     compressor.closeAndDumpCaptured();
                 }
 
@@ -117,6 +117,15 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
      */
     protected static class DockerHostStrategy implements Strategy {
         private static final String UNIX_SCHEME = "unix";
+        private final boolean silent;
+
+        public DockerHostStrategy() {
+            this.silent = false;
+        }
+
+        public DockerHostStrategy(boolean silent) {
+            this.silent = silent;
+        }
 
         @Override
         public Result get() {
@@ -136,9 +145,11 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                     if (Files.isWritable(dockerSocketPath)) {
                         return Result.AVAILABLE;
                     } else {
-                        LOGGER.warnf(
-                                "Unix socket defined in DOCKER_HOST %s is not writable, make sure Docker is running on the specified host",
-                                dockerHost);
+                        if (!silent) {
+                            LOGGER.warnf(
+                                    "Unix socket defined in DOCKER_HOST %s is not writable, make sure Docker is running on the specified host",
+                                    dockerHost);
+                        }
                     }
                 } else {
                     try (Socket s = new Socket()) {
@@ -146,9 +157,11 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                                 DOCKER_HOST_CHECK_TIMEOUT);
                         return Result.AVAILABLE;
                     } catch (IOException e) {
-                        LOGGER.warnf(
-                                "Unable to connect to DOCKER_HOST URI %s, make sure Docker is running on the specified host",
-                                dockerHost);
+                        if (!silent) {
+                            LOGGER.warnf(
+                                    "Unable to connect to DOCKER_HOST URI %s, make sure Docker is running on the specified host",
+                                    dockerHost);
+                        }
                     }
                 }
             } catch (URISyntaxException | IllegalArgumentException e) {

@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.net.URL;
 import java.time.Duration;
 
+import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.WebResponse;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
@@ -69,6 +72,7 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     private void testWebAppTenantAllowed(String user) throws Exception {
+        Awaitility.await().atMost(REQUEST_TIMEOUT).untilAsserted(() -> assertTokenStateCount(0));
         try (final org.htmlunit.WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/api-permission-webapp");
 
@@ -88,6 +92,7 @@ public abstract class AbstractPolicyEnforcerTest {
             assureGetPathWithCookie("//api-permission-webapp", cookie, 200, null, "Permission Resource WebApp");
 
             webClient.getCookieManager().clearCookies();
+            Awaitility.await().atMost(REQUEST_TIMEOUT).untilAsserted(() -> assertTokenStateCount(1));
         }
     }
 
@@ -279,4 +284,11 @@ public abstract class AbstractPolicyEnforcerTest {
         }
     }
 
+    private static void assertTokenStateCount(Integer expectedNumOfTokens) {
+        RestAssured
+                .get("/api/token-state-count")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is(expectedNumOfTokens.toString()));
+    }
 }

@@ -5,6 +5,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Request;
@@ -24,6 +25,12 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String invoke(@PathParam("name") String name) {
         return "Hello, " + name;
+    }
+
+    @GET
+    @Path("/query")
+    public String helloWithQueryParam(@QueryParam("foo") String foo) {
+        return "Hello, this is your query parameter: " + foo;
     }
 
     @POST

@@ -1,11 +1,16 @@
 package io.quarkus.bootstrap.runner;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
@@ -44,7 +49,7 @@ public class JarResource implements ClassLoadingResource {
                 path = '/' + path;
             }
             URI uri = new URI("file", null, path, null);
-            url = uri.toURL();
+            url = new URL((URL) null, uri.toString(), new JarUrlStreamHandler(uri));
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
@@ -200,5 +205,74 @@ public class JarResource implements ClassLoadingResource {
     @Override
     public int hashCode() {
         return Objects.hashCode(jarPath);
+    }
+
+    /**
+     * This URLStreamHandler is designed to handle only one jar, which is the one passed in the constructor.
+     * The goal here is to cache the external form of the URL.
+     * <p>
+     * Do not use this class outside of this extremely specific purpose.
+     */
+    private static class JarUrlStreamHandler extends URLStreamHandler {
+
+        private final String externalForm;
+
+        private JarUrlStreamHandler(URI uri) {
+            this.externalForm = "file:".concat(uri.getRawPath());
+            // while it would be more optimized to store the URI here for when we open connections
+            // opening a connection for ProtectionDomains is actually extremely rare
+            // and never done in production at runtime so we favored reducing memory allocations for the common case
+        }
+
+        @Override
+        protected URLConnection openConnection(URL u) throws IOException {
+            return new JarURLConnection(u);
+        }
+
+        @Override
+        protected String toExternalForm(URL u) {
+            return externalForm;
+        }
+    }
+
+    private static class JarURLConnection extends URLConnection {
+
+        private final File file;
+
+        private JarURLConnection(URL url) throws IOException {
+            super(url);
+            try {
+                this.file = new File(url.toURI());
+            } catch (URISyntaxException e) {
+                throw new IOException(e);
+            }
+        }
+
+        @Override
+        public void connect() throws IOException {
+            if (!file.exists()) {
+                throw new FileNotFoundException(file.getAbsolutePath());
+            }
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return new FileInputStream(file);
+        }
+
+        @Override
+        public int getContentLength() {
+            return (int) file.length();
+        }
+
+        @Override
+        public long getContentLengthLong() {
+            return file.length();
+        }
+
+        @Override
+        public String getContentType() {
+            return "application/java-archive";
+        }
     }
 }

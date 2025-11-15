@@ -43,6 +43,16 @@ public interface NativeConfig {
     Optional<List<String>> additionalBuildArgs();
 
     /**
+     * Comma-separated, additional arguments to pass to the build process.
+     * The arguments are appended to those provided through {@link #additionalBuildArgs()}, as a result they may override those
+     * passed through {@link #additionalBuildArgs()}.
+     * By convention, this is meant to be set on the command-line, while {@link #additionalBuildArgs()} should be preferred for
+     * use in properties files.
+     * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
+     */
+    Optional<List<String>> additionalBuildArgsAppend();
+
+    /**
      * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
      */
     @WithDefault("true")
@@ -55,60 +65,11 @@ public interface NativeConfig {
     boolean enableHttpsUrlHandler();
 
     /**
-     * If all security services should be added to the native image
-     *
-     * @deprecated {@code --enable-all-security-services} was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
-     */
-    @WithDefault("false")
-    @Deprecated
-    boolean enableAllSecurityServices();
-
-    /**
-     * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
-     *
-     * @deprecated inlineBeforeAnalysis is always enabled starting from GraalVM 21.3.
-     */
-    @Deprecated
-    @WithDefault("true")
-    boolean inlineBeforeAnalysis();
-
-    /**
-     * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
-     */
-    @Deprecated
-    @WithDefault("true")
-    boolean enableJni();
-
-    /**
      * The default value for java.awt.headless JVM option.
      * Switching this option affects linking of awt libraries.
      */
     @WithDefault("true")
     boolean headless();
-
-    /**
-     * Defines the user language used for building the native executable.
-     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale language for the native executable
-     * application runtime.
-     * e.g. en or cs as defined by IETF BCP 47 language tags.
-     * <p>
-     *
-     * @deprecated Use the global quarkus.default-locale.
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> userLanguage();
-
-    /**
-     * Defines the user country used for building the native executable.
-     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale country for the native executable
-     * application runtime.
-     * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
-     * <p>
-     *
-     * @deprecated Use the global quarkus.default-locale.
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> userCountry();
 
     /**
      * Defines the file encoding as in {@code -Dfile.encoding=...}.
@@ -164,16 +125,6 @@ public interface NativeConfig {
     boolean publishDebugBuildProcessPort();
 
     /**
-     * If the native image server should be restarted.
-     *
-     * @deprecated Since GraalVM 20.2.0 the native image server has become an experimental feature and is disabled by
-     *             default.
-     */
-    @Deprecated
-    @WithDefault("false")
-    boolean cleanupServer();
-
-    /**
      * If isolates should be enabled
      */
     @WithDefault("true")
@@ -185,18 +136,6 @@ public interface NativeConfig {
      */
     @WithDefault("false")
     boolean enableFallbackImages();
-
-    /**
-     * If the native image server should be used. This can speed up compilation but can result in changes not always
-     * being picked up due to cache invalidation not working 100%
-     *
-     * @deprecated This used to be the default prior to GraalVM 20.2.0 and this configuration item was used to disable
-     *             it as it was not stable. Since GraalVM 20.2.0 the native image server has become an experimental
-     *             feature.
-     */
-    @Deprecated
-    @WithDefault("false")
-    boolean enableServer();
 
     /**
      * If all META-INF/services entries should be automatically registered
@@ -324,18 +263,10 @@ public interface NativeConfig {
      * <li><code>jmxserver</code> for JMX server support (experimental)</li>
      * <li><code>nmt</code> for native memory tracking support</li>
      * <li><code>all</code> for all monitoring features</li>
+     * <li><code>none</code> for explicitly turning off all monitoring features</li>
      * </ul>
      */
     Optional<List<MonitoringOption>> monitoring();
-
-    /**
-     * If full stack traces are enabled in the resulting image
-     *
-     * @deprecated GraalVM 23.1+ will always build with full stack traces.
-     */
-    @WithDefault("true")
-    @Deprecated
-    boolean fullStackTraces();
 
     /**
      * If the reports on call paths and included packages/classes/methods should be generated
@@ -477,7 +408,12 @@ public interface NativeConfig {
          * <p>
          * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
          * and {@code bar/blue.png} will not be available in the native image.
+         *
+         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
+         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
+         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
          */
+        @Deprecated(since = "3.29", forRemoval = true)
         Optional<List<String>> excludes();
     }
 
@@ -529,6 +465,25 @@ public interface NativeConfig {
     @ConfigGroup
     interface Compression {
         /**
+         * Whether compression should be enabled.
+         */
+        @WithDefault("true")
+        boolean enabled();
+
+        /**
+         * Whether the compression should be executed within a container.
+         */
+        Optional<Boolean> containerBuild();
+
+        /**
+         * The image used for compression. Defaults to {@code quarkus.native.builder-image} if not
+         * set.
+         * <p>
+         * Setting this variable will automatically activate
+         */
+        Optional<String> containerImage();
+
+        /**
          * The compression level in [1, 10].
          * 10 means <em>best</em>.
          * <p>
@@ -561,7 +516,8 @@ public interface NativeConfig {
         JMXSERVER,
         JMXCLIENT,
         NMT,
-        ALL
+        ALL,
+        NONE
     }
 
     enum ImagePullStrategy {

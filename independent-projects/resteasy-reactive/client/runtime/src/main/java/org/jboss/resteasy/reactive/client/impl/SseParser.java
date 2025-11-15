@@ -27,15 +27,15 @@ public class SseParser implements Handler<Buffer> {
     /**
      * Holds the current event's comment data as we read them
      */
-    private StringBuffer commentBuffer = new StringBuffer();
+    private final StringBuffer commentBuffer = new StringBuffer();
     /**
      * Holds the current event's field name as we read a field
      */
-    private StringBuffer nameBuffer = new StringBuffer();
+    private final StringBuffer nameBuffer = new StringBuffer();
     /**
      * Holds the current event's field value as we read a field
      */
-    private StringBuffer valueBuffer = new StringBuffer();
+    private final StringBuffer valueBuffer = new StringBuffer();
     /**
      * True if we're at the very beginning of the data stream and could see a BOM
      */
@@ -60,7 +60,7 @@ public class SseParser implements Handler<Buffer> {
     /**
      * The event data we're reading. Defaults to "" and changes with "data" fields
      */
-    private StringBuffer dataBuffer = new StringBuffer();
+    private final StringBuffer dataBuffer = new StringBuffer();
     /**
      * The event's last id we're reading. Defaults to null and changes with "id" fields (cannot be reset)
      */
@@ -69,7 +69,7 @@ public class SseParser implements Handler<Buffer> {
      * The event connect time we're reading. Defaults to -1 and changes with "retry" fields (in ms)
      */
     private long eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
-    private SseEventSourceImpl sseEventSource;
+    private final SseEventSourceImpl sseEventSource;
 
     public SseParser(SseEventSourceImpl sseEventSource, String defaultContentType) {
         this.sseEventSource = sseEventSource;

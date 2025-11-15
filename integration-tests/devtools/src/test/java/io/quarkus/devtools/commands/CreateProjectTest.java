@@ -185,8 +185,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("@Path(\"/foo\")"));
         assertThat(projectDir.resolve("build.gradle"))
                 .exists()
-                .satisfies(checkContains("group 'io.foo'"))
-                .satisfies(checkContains("version '1.0.0-FOO'"))
+                .satisfies(checkContains("group = 'io.foo'"))
+                .satisfies(checkContains("version = '1.0.0-FOO'"))
                 .satisfies(checkContains("implementation 'io.quarkus:quarkus-resteasy'"));
 
         assertThat(projectDir.resolve("settings.gradle"))

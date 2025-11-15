@@ -21,7 +21,7 @@ abstract class AbstractSuspendedRequestFilter : ResteasyReactiveContainerRequest
 
     abstract fun handleResult(
         containerRequestContext: ResteasyReactiveContainerRequestContext,
-        uniResult: Uni<*>
+        uniResult: Uni<*>,
     )
 
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader

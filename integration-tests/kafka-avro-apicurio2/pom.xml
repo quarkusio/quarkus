@@ -97,6 +97,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-kafka-companion</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>strimzi-test-container</artifactId>
             <scope>test</scope>
@@ -208,6 +213,14 @@
     </dependencies>
 
     <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <id>confluent</id>
             <url>https://packages.confluent.io/maven/</url>

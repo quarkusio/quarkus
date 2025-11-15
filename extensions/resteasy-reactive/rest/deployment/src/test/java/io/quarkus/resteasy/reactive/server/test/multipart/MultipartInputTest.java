@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageFormDataBase;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.builder.MultiPartSpecBuilder;
+import io.restassured.specification.MultiPartSpecification;
 
 public class MultipartInputTest extends AbstractMultipartTest {
 
@@ -238,6 +240,25 @@ public class MultipartInputTest extends AbstractMultipartTest {
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(4, uploadDir.toFile().listFiles().length);
+    }
+
+    @Test
+    public void testExtraHeader() {
+        MultiPartSpecification formPart = new MultiPartSpecBuilder(TXT_FILE)
+                .header("extra-header", "extra-value")
+                .mimeType("text/plain")
+                .build();
+        RestAssured.given()
+                .multiPart(formPart)
+                .accept("text/plain")
+                .when()
+                .post("/multipart/extra-header")
+                .then()
+                .statusCode(200)
+                .body(equalTo("extra-value"));
+
+        // ensure that the 3 uploaded files where created on disk
+        Assertions.assertEquals(1, uploadDir.toFile().listFiles().length);
     }
 
     private String filePath(File file) {

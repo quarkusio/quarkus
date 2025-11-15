@@ -935,6 +935,10 @@ include at build time.
 |===
 |Monitoring Option |Description |Availability As Of
 
+|jcmd
+|Include JCMD support
+|GraalVM CE for JDK 24 Mandrel 24.2
+
 |jfr
 |Include JDK Flight Recorder support
 |GraalVM CE 21.3 Mandrel 21.3
@@ -958,6 +962,10 @@ include at build time.
 |nmt
 |Adds support for native memory tracking.
 |GraalVM for JDK 23 Mandrel 24.1
+
+|threaddump
+|Adds support for dumping thread stacks on SIGQUIT/SIGBREAK.
+|GraalVM for JDK 22 Mandrel 24.0
 
 |none
 |Disables support for all monitoring options that would be enabled by default in Quarkus

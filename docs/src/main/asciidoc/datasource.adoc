@@ -592,23 +592,6 @@ If XA cannot be enabled for one of your datasources:
 * If you do not need a rollback for one datasource to trigger a rollback for other datasources, consider splitting your code into multiple transactions.
 To do so, use xref:transaction.adoc#programmatic-approach[`QuarkusTransaction.requiringNew()`]/xref:transaction.adoc#declarative-approach[`@Transactional(REQUIRES_NEW)`] (preferably) or xref:transaction.adoc#legacy-api-approach[`UserTransaction`] (for more complex use cases).
 
-[CAUTION]
-====
-If no other solution works and compatibility with Quarkus 3.8 or earlier is required, set `quarkus.transaction-manager.unsafe-multiple-last-resources` to `allow` to enable unsafe transaction handling across multiple non-XA datasources.
-
-With this property set to `allow`, a transaction rollback might only apply to the last non-XA datasource, while other non-XA datasources may have already committed their changes.
-This can leave the system in an inconsistent state.
-
-Alternatively, allow the same unsafe behavior but with warnings when it occurs:
-
-* Setting the property to `warn-each` logs a warning for *each* offending transaction.
-* Setting the property to `warn-first` logs a warning for the *first* offending transaction.
-
-We do not recommend using this configuration property and plan to remove it in the future.
-You should update your application accordingly.
-If you believe your use case justifies keeping this option, open an issue in the link:https://github.com/quarkusio/quarkus/issues/new?assignees=&labels=kind%2Fenhancement&projects=&template=feature_request.yml[Quarkus tracker] explaining why.
-====
-
 == Datasource integrations
 
 [[datasource-health-check]]

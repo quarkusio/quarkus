@@ -36,9 +36,20 @@ class JavaVersionTest {
     }
 
     @Test
+    public void givenJavaVersion26ShouldReturn25() {
+        assertEquals("25", computeJavaVersion(JAVA, "26.0.1"));
+    }
+
+    @Test
+    public void givenJavaVersion25ShouldReturn25() {
+        assertEquals("25", computeJavaVersion(JAVA, "25"));
+    }
+
+    @Test
     void shouldProperlyUseMinJavaVersion() {
-        assertThat(getCompatibleLTSVersions(new JavaVersion("17"))).containsExactly(17, 21);
-        assertThat(getCompatibleLTSVersions(new JavaVersion("21"))).containsExactly(21);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("17"))).containsExactly(17, 21, 25);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("21"))).containsExactly(21, 25);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("25"))).containsExactly(25);
         assertThat(getCompatibleLTSVersions(new JavaVersion("100"))).isEmpty();
         assertThat(getCompatibleLTSVersions(JavaVersion.NA)).isEqualTo(JAVA_VERSIONS_LTS);
     }
@@ -55,6 +66,8 @@ class JavaVersionTest {
         assertEquals(17, determineBestJavaLtsVersion(18));
         assertEquals(21, determineBestJavaLtsVersion(21));
         assertEquals(21, determineBestJavaLtsVersion(22));
+        assertEquals(25, determineBestJavaLtsVersion(25));
+        assertEquals(25, determineBestJavaLtsVersion(26));
     }
 
     @Test

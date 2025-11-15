@@ -46,7 +46,7 @@
         <!-- main versions -->
         <version.gizmo>1.9.0</version.gizmo>
         <version.jandex>3.5.2</version.jandex>
-        <version.gizmo2>2.0.0.Beta8</version.gizmo2>
+        <version.gizmo2>2.0.0.Beta9</version.gizmo2>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
         <version.mutiny>3.0.1</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>

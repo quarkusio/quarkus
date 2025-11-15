@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
@@ -16,6 +17,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
@@ -27,6 +29,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.codecs.Codec;
@@ -86,7 +89,8 @@ public class RedisDatasourceProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             VertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem,
+            ProxyRegistryBuildItem proxyRegistryBuildItem) {
 
         if (clients.isEmpty()) {
             return;
@@ -96,15 +100,17 @@ public class RedisDatasourceProcessor {
             names.add(client.name);
         }
         // Inject the creation of the client when the application starts.
-        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry());
+        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry(),
+                proxyRegistryBuildItem.registry());
 
         // Create the supplier and define the beans.
         for (String name : names) {
+            Supplier<ActiveResult> checkActive = recorder.checkActive(name);
             // Data sources
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, RedisDataSource.class,
-                    recorder.getBlockingDataSource(name)));
+                    checkActive, recorder.getBlockingDataSource(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisDataSource.class,
-                    recorder.getReactiveDataSource(name)));
+                    checkActive, recorder.getReactiveDataSource(name)));
         }
 
         recorder.cleanup(shutdown);

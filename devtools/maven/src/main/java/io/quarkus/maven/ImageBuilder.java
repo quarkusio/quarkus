@@ -14,6 +14,7 @@ import io.quarkus.maven.dependency.ArtifactDependency;
 public enum ImageBuilder {
 
     docker,
+    podman,
     jib,
     buildpack,
     openshift;
@@ -74,7 +75,7 @@ public enum ImageBuilder {
         return project.getDependencies().stream()
                 .filter(d -> "io.quarkus".equals(d.getGroupId()))
                 .map(d -> strip(d.getArtifactId()))
-                .filter(n -> Arrays.stream(ImageBuilder.values()).anyMatch(e -> e.equals(n)))
+                .filter(n -> Arrays.stream(ImageBuilder.values()).anyMatch(e -> e.name().equals(n)))
                 .collect(Collectors.toSet());
     }
 

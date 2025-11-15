@@ -51,7 +51,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
                     testConfig.env(),
                     context.devServicesLaunchResult(),
-                    context.buildOutputDirectory().resolve(pathStr)));
+                    context.buildOutputDirectory().resolve(pathStr),
+                    config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class)
+                            .orElse(Boolean.FALSE)));
             return launcher;
         } else {
             throw new IllegalStateException("The path of the native binary could not be determined");
@@ -61,17 +63,25 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
     static class DefaultJarInitContext extends DefaultInitContextBase implements JarArtifactLauncher.JarInitContext {
 
         private final Path jarPath;
+        private final boolean generateAotFile;
 
         DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
-                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath) {
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath,
+                boolean generateAotFile) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
+            this.generateAotFile = generateAotFile;
         }
 
         @Override
         public Path jarPath() {
             return jarPath;
+        }
+
+        @Override
+        public boolean generateAotFile() {
+            return generateAotFile;
         }
     }
 

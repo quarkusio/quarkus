@@ -129,6 +129,10 @@ public class RequestParamControllerTest {
         when().get("/api/foos/paramRequired")
                 .then()
                 .statusCode(400).body(containsString("Missing required param in method"));
+
+        when().get("/api/foos/paramExplicitlyRequired")
+                .then()
+                .statusCode(400).body(containsString("Missing required param in method"));
     }
 
 }

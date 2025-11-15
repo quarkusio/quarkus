@@ -226,68 +226,22 @@ public class JvmStartupOptimizerArchiveBuildStep {
     private Path createAot(JarBuildItem jarResult,
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
             boolean isFastJar) {
-        // first we run java -XX:AOTMode=record -XX:AOTConfiguration=app.aotconf -jar ...
-        ArchivePathsContainer aotConfigPathContainers = ArchivePathsContainer.aotConfFromQuarkusJar(jarResult.getPath());
-        Path aotConfPath = launchArchiveCreateCommand(aotConfigPathContainers.workingDirectory,
-                aotConfigPathContainers.resultingFile,
-                recordAotConfCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotConfigPathContainers));
-        if (aotConfPath == null) {
-            // something went wrong, bail as the issue has already been logged
-            return null;
+        if (Runtime.version().feature() < 25) {
+            throw new IllegalStateException(
+                    "AOT cache generation requires building with JDK 25 or newer (see JEP 514). ");
         }
-
-        // now we run java -XX:AOTMode=create -XX:AOTConfiguration=app.aotconf -jar ...
         ArchivePathsContainer aotPathContainers = ArchivePathsContainer.aotFromQuarkusJar(jarResult.getPath());
         return launchArchiveCreateCommand(aotPathContainers.workingDirectory, aotPathContainers.resultingFile,
-                createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotConfPath));
+                createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotPathContainers));
 
-    }
-
-    private List<String> recordAotConfCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
-            String containerImage, boolean isFastJar,
-            ArchivePathsContainer aotConfigPathContainers) {
-        List<String> javaArgs = new ArrayList<>();
-        javaArgs.add("-XX:AOTMode=record");
-        javaArgs.add("-XX:AOTConfiguration=" + aotConfigPathContainers.resultingFile.getFileName().toString());
-        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
-        javaArgs.add("-jar");
-
-        List<String> command;
-        if (containerImage != null) {
-            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME
-                            : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
-            command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
-            command.addAll(dockerRunCommand);
-            command.add("java");
-            command.addAll(javaArgs);
-            if (isFastJar) {
-                command.add(FastJarFormat.QUARKUS_RUN_JAR);
-            } else {
-                command.add(jarResult.getPath().getFileName().toString());
-            }
-        } else {
-            command = new ArrayList<>(2 + javaArgs.size());
-            command.add(javaBinPath);
-            command.addAll(javaArgs);
-            if (isFastJar) {
-                command
-                        .add(jarResult.getLibraryDir().getParent().resolve(FastJarFormat.QUARKUS_RUN_JAR)
-                                .getFileName().toString());
-            } else {
-                command.add(jarResult.getPath().getFileName().toString());
-            }
-        }
-        return command;
     }
 
     private List<String> createAotCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
             String containerImage, boolean isFastJar,
-            Path aotConfPath) {
+            ArchivePathsContainer aotPathContainers) {
         List<String> javaArgs = new ArrayList<>();
-        javaArgs.add("-XX:AOTMode=create");
-        javaArgs.add("-XX:AOTConfiguration=" + aotConfPath.getFileName().toString());
-        javaArgs.add("-XX:AOTCache=app.aot");
+        javaArgs.add("-XX:AOTCacheOutput=" + aotPathContainers.resultingFile.getFileName().toString());
+        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
         javaArgs.add("-jar");
 
         List<String> command;
@@ -367,10 +321,6 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
         public static ArchivePathsContainer appCDSFromQuarkusJar(Path jar) {
             return doCreate(jar, "app-cds.jsa");
-        }
-
-        public static ArchivePathsContainer aotConfFromQuarkusJar(Path jar) {
-            return doCreate(jar, "app.aotconf");
         }
 
         public static ArchivePathsContainer aotFromQuarkusJar(Path jar) {

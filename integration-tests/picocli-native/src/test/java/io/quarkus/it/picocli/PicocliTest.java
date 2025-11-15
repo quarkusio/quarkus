@@ -67,7 +67,7 @@ public class PicocliTest {
         org.jboss.logging.Logger.getLogger("test").error("error");
         LaunchResult result = launcher.launch("with-method-sub-command", "loggingHello", "-n", "World!");
         assertThat(result.exitCode()).isZero();
-        assertThat(result.getOutput()).contains("ERROR [io.qua.it.pic.WithMethodSubCommand] (main) Hello World!");
+        assertThat(result.getOutput()).contains("ERROR [io.quarkus.it.picocli.WithMethodSubCommand] (main) Hello World!");
         assertThat(result.getOutput()).doesNotContain("ERROR [test] (main) error");
     }
 

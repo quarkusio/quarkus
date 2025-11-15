@@ -22,6 +22,7 @@ public final class Labels {
 
     public static final String COMPOSE_WAIT_FOR = QUARKUS_COMPOSE_PREFIX + ".wait_for";
     public static final String COMPOSE_WAIT_FOR_LOGS = COMPOSE_WAIT_FOR + ".logs";
+    public static final String COMPOSE_WAIT_FOR_LOGS_TIMEOUT = COMPOSE_WAIT_FOR_LOGS + ".timeout";
     public static final String COMPOSE_WAIT_FOR_PORTS = COMPOSE_WAIT_FOR + ".ports";
     public static final String COMPOSE_WAIT_FOR_PORTS_DISABLE = COMPOSE_WAIT_FOR_PORTS + ".disable";
     public static final String COMPOSE_WAIT_FOR_PORTS_TIMEOUT = COMPOSE_WAIT_FOR_PORTS + ".timeout";

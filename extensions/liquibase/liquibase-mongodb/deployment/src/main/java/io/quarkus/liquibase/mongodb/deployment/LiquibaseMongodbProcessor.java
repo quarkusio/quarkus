@@ -51,7 +51,7 @@ import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbClient;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbRecorder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.paths.PathFilter;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
@@ -253,7 +253,7 @@ class LiquibaseMongodbProcessor {
                     .unremovable()
                     .supplier(recorder.liquibaseSupplier(clientName));
 
-            if (MongoClientBeanUtil.isDefault(clientName)) {
+            if (MongoConfig.isDefaultClient(clientName)) {
                 configurator.addQualifier(Default.class);
             } else {
                 configurator.name(LIQUIBASE_MONGODB_BEAN_NAME_PREFIX + clientName);

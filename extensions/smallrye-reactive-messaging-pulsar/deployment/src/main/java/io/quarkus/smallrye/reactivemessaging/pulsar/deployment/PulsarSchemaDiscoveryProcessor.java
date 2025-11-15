@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.deployment.SmallRyeReactiveMessagingProcessor.getChannelPropertyKey;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelIncomingPropertyName;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelOutgoingPropertyName;
 
 import java.util.List;
 import java.util.Map;
@@ -102,16 +103,12 @@ public class PulsarSchemaDiscoveryProcessor {
         }
     }
 
-    private static String outgoingSchemaKey(String channelName) {
-        return getChannelPropertyKey(channelName, "schema", false);
-    }
-
     private void processPulsarTransactions(DefaultSchemaDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             String channelName,
             Type injectionPointType) {
         if (injectionPointType != null && isPulsarEmitter(injectionPointType)) {
-            String enableTransactionKey = getChannelPropertyKey(channelName, "enableTransaction", false);
+            String enableTransactionKey = getChannelOutgoingPropertyName(channelName, "enableTransaction");
             log.infof("Transactional producer detected for channel '%s', setting following default config values: "
                     + "'" + enableTransactionKey + "=true'", channelName);
             produceRuntimeConfigurationDefaultBuildItem(discovery, config, enableTransactionKey, "true");
@@ -129,18 +126,15 @@ public class PulsarSchemaDiscoveryProcessor {
                     objectMapperSchemaFor(SyntheticBeanBuilder.objectMapperSchemaId(value), value, syntheticBean);
                 } else {
                     String schema = schemaFor(discovery, value, syntheticBean);
-                    produceRuntimeConfigurationDefaultBuildItem(discovery, config, incomingSchemaKey(channelName), schema);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelIncomingPropertyName(channelName, "schema"), schema);
                 }
             }
             if (Boolean.TRUE.equals(isBatch)) {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        getChannelPropertyKey(channelName, "batchReceive", true), "true");
+                        getChannelIncomingPropertyName(channelName, "batchReceive"), "true");
             }
         });
-    }
-
-    private static String incomingSchemaKey(String channelName) {
-        return getChannelPropertyKey(channelName, "schema", true);
     }
 
     private Type getInjectionPointType(AnnotationInstance annotation) {
@@ -318,7 +312,8 @@ public class PulsarSchemaDiscoveryProcessor {
                     objectMapperSchemaFor(SyntheticBeanBuilder.objectMapperSchemaId(value), value, syntheticBean);
                 } else {
                     String schema = schemaFor(discovery, value, syntheticBean);
-                    produceRuntimeConfigurationDefaultBuildItem(discovery, config, outgoingSchemaKey(channelName), schema);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelOutgoingPropertyName(channelName, "schema"), schema);
                 }
             }
         });

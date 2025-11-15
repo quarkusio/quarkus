@@ -2,12 +2,6 @@ package io.quarkus.resteasy.reactive.links.deployment;
 
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isAssignableFrom;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COLLECTION;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
 import java.util.HashSet;
 import java.util.List;
@@ -20,7 +14,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
@@ -59,11 +52,12 @@ final class LinksContainerFactory {
 
     private LinkInfo getLinkInfo(ResourceMethod resourceMethod, MethodInfo resourceMethodInfo,
             AnnotationInstance restLinkAnnotation, String resourceClassPath, IndexView index) {
-        Type returnType = getNonAsyncReturnType(resourceMethodInfo.returnType());
+        Type returnType = RestLinksTypeUtil.getNonAsyncReturnType(resourceMethodInfo.returnType());
         String rel = getAnnotationValue(restLinkAnnotation, "rel", deductRel(resourceMethod, returnType, index));
         String title = getAnnotationValue(restLinkAnnotation, "title", null);
         String type = getAnnotationValue(restLinkAnnotation, "type", null);
-        String entityType = getAnnotationValue(restLinkAnnotation, "entityType", deductEntityType(returnType));
+        String entityType = getAnnotationValue(restLinkAnnotation, "entityType",
+                RestLinksTypeUtil.deductEntityType(returnType));
         String path = UriBuilder.fromPath(resourceClassPath).path(resourceMethod.getPath()).toTemplate();
         while (path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
@@ -105,19 +99,6 @@ final class LinksContainerFactory {
     }
 
     /**
-     * If a method return type is parameterized and has a single argument (e.g. List), then use that argument as an
-     * entity type. Otherwise, use the return type.
-     */
-    private String deductEntityType(Type returnType) {
-        if (returnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-            if (returnType.asParameterizedType().arguments().size() == 1) {
-                return returnType.asParameterizedType().arguments().get(0).name().toString();
-            }
-        }
-        return returnType.name().toString();
-    }
-
-    /**
      * Extract parameters from a path string
      */
     private Set<String> getPathParameters(String path) {
@@ -140,29 +121,5 @@ final class LinksContainerFactory {
 
     private boolean isCollection(Type type, IndexView index) {
         return isAssignableFrom(COLLECTION, type.name(), index);
-    }
-
-    private Type getNonAsyncReturnType(Type returnType) {
-        switch (returnType.kind()) {
-            case ARRAY:
-            case CLASS:
-            case PRIMITIVE:
-            case VOID:
-                return returnType;
-            case PARAMETERIZED_TYPE:
-                // NOTE: same code in RuntimeResourceDeployment.getNonAsyncReturnType
-                ParameterizedType parameterizedType = returnType.asParameterizedType();
-                if (COMPLETION_STAGE.equals(parameterizedType.name())
-                        || COMPLETABLE_FUTURE.equals(parameterizedType.name())
-                        || UNI.equals(parameterizedType.name())
-                        || MULTI.equals(parameterizedType.name())
-                        || REST_MULTI.equals(parameterizedType.name())
-                        || REST_RESPONSE.equals(parameterizedType.name())) {
-                    return parameterizedType.arguments().get(0);
-                }
-                return returnType;
-            default:
-        }
-        return returnType;
     }
 }

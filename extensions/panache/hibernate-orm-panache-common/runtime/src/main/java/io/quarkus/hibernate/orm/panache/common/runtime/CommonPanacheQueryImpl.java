@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,6 +30,21 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public class CommonPanacheQueryImpl<Entity> {
+
+    /*
+     * We use this complex caching mechanism to avoid recalculating projection queries
+     * for recurring classes. In theory this gets stored in the Class object itself so
+     * it is GCed when the class is disposed, so it auto-cleans itself. The extra
+     * AtomicReference is as per Franz's advice, for a reason I did not understand.
+     * We did verify that this improves allocation and cpu a lot, as it avoids
+     * repeated usage of reflection and string building.
+     */
+    private final static ClassValue<AtomicReference<String>> ProjectionQueryCache = new ClassValue<>() {
+        @Override
+        protected AtomicReference<String> computeValue(Class<?> type) {
+            return new AtomicReference<>();
+        }
+    };
 
     private interface NonThrowingCloseable extends AutoCloseable {
         @Override
@@ -120,12 +136,16 @@ public class CommonPanacheQueryImpl<Entity> {
         // FIXME: this assumes the query starts with "FROM " probably?
 
         // build select clause with a constructor expression
-        String selectClause = "SELECT " + getParametersFromClass(type, null);
+        AtomicReference<String> cachedProjection = ProjectionQueryCache.get(type);
+        if (cachedProjection.get() == null) {
+            cachedProjection.set("SELECT " + getParametersFromClass(type, null));
+        }
+        String selectClause = cachedProjection.get();
         // I think projections do not change the result count, so we can keep the custom count query
         return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery, customCountQueryForSpring, null);
     }
 
-    private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
+    private static StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
         StringBuilder selectClause = new StringBuilder();
         Constructor<?> constructor = getConstructor(type);
 
@@ -138,7 +158,7 @@ public class CommonPanacheQueryImpl<Entity> {
         return selectClause;
     }
 
-    private Constructor<?> getConstructor(Class<?> type) {
+    private static Constructor<?> getConstructor(Class<?> type) {
         Constructor<?>[] typeConstructors = type.getDeclaredConstructors();
 
         //We start to look for constructors with @ProjectedConstructor
@@ -172,7 +192,7 @@ public class CommonPanacheQueryImpl<Entity> {
         return typeConstructors[0];
     }
 
-    private String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {
+    private static String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {
         String parameterName;
         // Check if constructor param is annotated with ProjectedFieldName
         if (hasProjectedFieldName(parameter)) {
@@ -201,11 +221,11 @@ public class CommonPanacheQueryImpl<Entity> {
         }
     }
 
-    private boolean hasProjectedFieldName(AnnotatedElement annotatedElement) {
+    private static boolean hasProjectedFieldName(AnnotatedElement annotatedElement) {
         return annotatedElement.isAnnotationPresent(ProjectedFieldName.class);
     }
 
-    private String getNameFromProjectedFieldName(AnnotatedElement annotatedElement) {
+    private static String getNameFromProjectedFieldName(AnnotatedElement annotatedElement) {
         final String name = annotatedElement.getAnnotation(ProjectedFieldName.class).value();
         if (name.isEmpty()) {
             throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");

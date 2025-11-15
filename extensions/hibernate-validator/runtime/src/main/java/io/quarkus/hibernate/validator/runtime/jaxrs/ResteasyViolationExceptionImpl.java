@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.validator.runtime.jaxrs;
 
+import java.io.Serial;
 import java.util.List;
 import java.util.Set;
 
@@ -20,6 +21,7 @@ import org.jboss.resteasy.spi.validation.ConstraintTypeUtil;
  * while a violation on the parameters of a REST endpoint call is a client error (HTTP 400).
  */
 public class ResteasyViolationExceptionImpl extends ResteasyViolationException {
+    @Serial
     private static final long serialVersionUID = 657697354453281559L;
 
     public ResteasyViolationExceptionImpl(final Set<? extends ConstraintViolation<?>> constraintViolations,
@@ -29,7 +31,7 @@ public class ResteasyViolationExceptionImpl extends ResteasyViolationException {
 
     @Override
     public ConstraintTypeUtil getConstraintTypeUtil() {
-        return new ConstraintTypeUtil20();
+        return ConstraintTypeUtil20.INSTANCE;
     }
 
     @Override

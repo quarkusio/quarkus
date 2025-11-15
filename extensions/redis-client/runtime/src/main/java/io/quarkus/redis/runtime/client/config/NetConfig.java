@@ -38,13 +38,33 @@ public interface NetConfig {
     Optional<Duration> connectionTimeout();
 
     /**
-     * Set a list of remote hosts that are not proxied when the client is configured to use a proxy.
+     * The name of the proxy configuration to use.
+     * <p>
+     * If {@code quarkus.redis.tcp.proxy-options.host} is set, the {@code quarkus.redis.tcp.proxy-options.*}
+     * (and {@code quarkus.redis.tcp.non-proxy-hosts}) configuration is used and the {@code quarkus.proxy.*}
+     * configuration is ignored.
+     * <p>
+     * Otherwise, if not set and the default proxy configuration is configured ({@code quarkus.proxy.*}), it is used.
+     * If set to {@code none}, no proxy configuration is used.
+     * If set to some other value, the configuration from {@code quarkus.proxy.<name>.*} is used.
+     * If set but no proxy configuration with that name is found, an exception is thrown at runtime.
      */
+    Optional<String> proxyConfigurationName();
+
+    /**
+     * Set a list of remote hosts that are not proxied when the client is configured to use a proxy.
+     *
+     * @deprecated use {@code quarkus.redis.tcp.proxy-configuration-name} and {@code quarkus.proxy.*}
+     */
+    @Deprecated
     Optional<List<String>> nonProxyHosts();
 
     /**
      * Set proxy options for connections via CONNECT proxy
+     *
+     * @deprecated use {@code quarkus.redis.tcp.proxy-configuration-name} and {@code quarkus.proxy.*}
      */
+    @Deprecated
     ProxyConfig proxyOptions();
 
     /**

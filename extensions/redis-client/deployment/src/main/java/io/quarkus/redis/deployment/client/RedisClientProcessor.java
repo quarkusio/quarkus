@@ -1,6 +1,8 @@
 package io.quarkus.redis.deployment.client;
 
 import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_NAME;
+import static io.quarkus.redis.runtime.client.config.RedisConfig.HOSTS;
+import static io.quarkus.redis.runtime.client.config.RedisConfig.HOSTS_PROVIDER_NAME;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,10 +12,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -25,6 +26,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
@@ -43,6 +45,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisHostsProvider;
@@ -52,9 +55,11 @@ import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.redis.client.impl.types.BulkType;
 
 public class RedisClientProcessor {
@@ -62,9 +67,6 @@ public class RedisClientProcessor {
     static final DotName REDIS_CLIENT_ANNOTATION = DotName.createSimple(RedisClientName.class.getName());
 
     private static final String FEATURE = "redis-client";
-
-    private static final Pattern NAMED_CLIENT_PROPERTY_NAME_PATTERN = Pattern
-            .compile("^quarkus\\.redis\\.(.+)\\.hosts(-provider-name)?$");
 
     private static final List<DotName> SUPPORTED_INJECTION_TYPE = List.of(
             // Legacy types
@@ -128,7 +130,8 @@ public class RedisClientProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchModeBuildItem launchMode,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem,
+            ProxyRegistryBuildItem proxyRegistryBuildItem) {
 
         // Collect the used redis clients, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
@@ -157,74 +160,85 @@ public class RedisClientProcessor {
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
         // Inject the creation of the client when the application starts.
-        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry());
+        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry(),
+                proxyRegistryBuildItem.registry());
 
         // Create the supplier and define the beans.
         for (String name : names) {
+            Supplier<ActiveResult> checkActive = recorder.checkActive(name);
+
             // Redis objects
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.mutiny.redis.client.Redis.class,
-                    recorder.getRedisClient(name)));
+                    checkActive, recorder.getRedisClient(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.redis.client.Redis.class,
-                    recorder.getBareRedisClient(name)));
+                    checkActive, recorder.getBareRedisClient(name)));
 
             // Redis API objects
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.mutiny.redis.client.RedisAPI.class,
-                    recorder.getRedisAPI(name)));
+                    checkActive, recorder.getRedisAPI(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, io.vertx.redis.client.RedisAPI.class,
-                    recorder.getBareRedisAPI(name)));
+                    checkActive, recorder.getBareRedisAPI(name)));
 
             // Legacy clients
-            syntheticBeans
-                    .produce(configureAndCreateSyntheticBean(name, RedisClient.class, recorder.getLegacyRedisClient(name)));
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, RedisClient.class,
+                    checkActive, recorder.getLegacyRedisClient(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisClient.class,
-                    recorder.getLegacyReactiveRedisClient(name)));
+                    checkActive, recorder.getLegacyReactiveRedisClient(name)));
         }
 
         recorder.cleanup(shutdown);
 
         // Handle data import
-        preloadRedisData(DEFAULT_CLIENT_NAME, buildTimeConfig.defaultRedisClient(), applicationArchivesBuildItem,
-                launchMode.getLaunchMode(),
-                nativeImageResources, hotDeploymentWatchedFiles, recorder);
-
-        if (buildTimeConfig.namedRedisClients() != null) {
-            for (Map.Entry<String, RedisClientBuildTimeConfig> entry : buildTimeConfig.namedRedisClients().entrySet()) {
-                preloadRedisData(entry.getKey(), entry.getValue(), applicationArchivesBuildItem, launchMode.getLaunchMode(),
-                        nativeImageResources, hotDeploymentWatchedFiles, recorder);
-            }
+        for (String name : buildTimeConfig.clientsNames()) {
+            preloadRedisData(name, buildTimeConfig.clients().get(name), applicationArchivesBuildItem,
+                    launchMode.getLaunchMode(),
+                    nativeImageResources, hotDeploymentWatchedFiles, recorder);
         }
     }
 
     static Set<String> configuredClientNames(RedisBuildTimeConfig buildTimeConfig, Config config) {
         Set<String> names = new HashSet<>();
         // redis client names from dev services
-        if (buildTimeConfig.defaultDevService().devservices().enabled()) {
-            names.add(DEFAULT_CLIENT_NAME);
+        for (Entry<String, RedisClientBuildTimeConfig> client : buildTimeConfig.clients().entrySet()) {
+            if (client.getValue().devservices().enabled()) {
+                names.add(client.getKey());
+            }
         }
-        names.addAll(buildTimeConfig.additionalDevServices().keySet());
-        // redis client names declared in config
-        for (String propertyName : config.getPropertyNames()) {
-            if (propertyName.equals("quarkus.redis.hosts")) {
+
+        // TODO - We shouldn't query runtime config during deployment
+        Map<String, String> map = config.unwrap(SmallRyeConfig.class).getMapKeys("quarkus.redis");
+        for (Entry<String, String> entry : map.entrySet()) {
+            NameIterator nameIterator = new NameIterator(entry.getKey());
+
+            if (nameIterator.nextSegmentEquals(HOSTS) || nameIterator.nextSegmentEquals(HOSTS_PROVIDER_NAME)) {
                 names.add(DEFAULT_CLIENT_NAME);
                 continue;
             }
-            Matcher matcher = NAMED_CLIENT_PROPERTY_NAME_PATTERN.matcher(propertyName);
-            if (matcher.matches()) {
-                names.add(matcher.group(1));
+
+            if (nameIterator.hasNext()) {
+                String candidateName = nameIterator.getNextSegment();
+                nameIterator.next();
+                if (nameIterator.hasNext()
+                        && (nameIterator.nextSegmentEquals(HOSTS) || nameIterator.nextSegmentEquals(HOSTS_PROVIDER_NAME))) {
+                    names.add(candidateName);
+                }
             }
         }
+
         return names;
     }
 
-    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,
-            Class<T> type,
-            Supplier<T> supplier) {
+    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name, Class<T> type,
+            Supplier<ActiveResult> checkActive, Supplier<T> supplier) {
+
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
-                .supplier(supplier)
-                .scope(ApplicationScoped.class)
+                .checkActive(checkActive)
+                .startup()
+                .setRuntimeInit()
                 .unremovable()
-                .setRuntimeInit();
+                .supplier(supplier)
+                .scope(ApplicationScoped.class);
 
         if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name)) {
             configurator.addQualifier(Default.class);
@@ -248,7 +262,7 @@ public class RedisClientProcessor {
             } catch (RuntimeException e) {
                 throw new ConfigurationException(
                         "Unable to interpret path referenced in '"
-                                + RedisConfig.propertyKey(name, "redis-load-script") + "="
+                                + RedisConfig.getPropertyName(name, "redis-load-script") + "="
                                 + String.join(",", importFiles)
                                 + "': " + e.getMessage());
             }
@@ -260,7 +274,7 @@ public class RedisClientProcessor {
                 //raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationException(
                         "Unable to find file referenced in '"
-                                + RedisConfig.propertyKey(name, "redis-load-script") + "="
+                                + RedisConfig.getPropertyName(name, "redis-load-script") + "="
                                 + String.join(", ", clientConfig.loadScript().get())
                                 + "'. Remove property or add file to your path.");
             }

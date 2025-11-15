@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.runtime;
 
+import static io.quarkus.mongodb.runtime.MongoConfig.getPropertyName;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -13,6 +15,7 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.metrics.MicrometerConnectionPoolListener;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
@@ -24,9 +27,9 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class MongoClientRecorder {
-    private final RuntimeValue<MongodbConfig> runtimeConfig;
+    private final RuntimeValue<MongoConfig> runtimeConfig;
 
-    public MongoClientRecorder(final RuntimeValue<MongodbConfig> runtimeConfig) {
+    public MongoClientRecorder(final RuntimeValue<MongoConfig> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
     }
 
@@ -87,7 +90,7 @@ public class MongoClientRecorder {
 
     @SuppressWarnings("rawtypes")
     private AnnotationLiteral literal(String name) {
-        if (name.startsWith(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)) {
+        if (name.startsWith(MongoConfig.DEFAULT_CLIENT_NAME)) {
             return Default.Literal.INSTANCE;
         }
         return NamedLiteral.of(name);
@@ -118,8 +121,7 @@ public class MongoClientRecorder {
      */
     public void performInitialization(RuntimeValue<Vertx> vertx) {
         MongoDnsClientProvider.vertx = vertx.getValue();
-        initializeDNSLookup(runtimeConfig.getValue().defaultMongoClientConfig());
-        for (MongoClientConfig mongoClientConfig : runtimeConfig.getValue().mongoClientConfigs().values()) {
+        for (MongoClientConfig mongoClientConfig : runtimeConfig.getValue().clients().values()) {
             initializeDNSLookup(mongoClientConfig);
         }
     }
@@ -130,5 +132,33 @@ public class MongoClientRecorder {
         }
         // this ensures that DNS resolution will take place if necessary
         new ConnectionString(mongoClientConfig.connectionString().get());
+    }
+
+    public Supplier<ActiveResult> checkActive(final String name) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                MongoClientConfig mongoClientConfig = runtimeConfig.getValue().clients().get(name);
+                if (!mongoClientConfig.active()) {
+                    return ActiveResult.inactive(String.format(
+                            """
+                                    Mongo Client '%s' was deactivated through configuration properties. \
+                                    To activate the Mongo Client, set configuration property '%s' to 'true' and configure the Mongo Client '%s'. \
+                                    Refer to https://quarkus.io/guides/mongodb for guidance.
+                                    """,
+                            name, getPropertyName(name, "active"), name));
+                }
+                if (mongoClientConfig.hosts().isEmpty() && mongoClientConfig.connectionString().isEmpty()) {
+                    return ActiveResult.inactive(String.format(
+                            """
+                                    Mongo Client '%s' was deactivated automatically because neither the hosts nor the connectionString is set. \
+                                    To activate the Mongo Client, set the configuration property '%s' or '%s' \
+                                    Refer to https://quarkus.io/guides/mongodb for guidance.
+                                    """,
+                            name, getPropertyName(name, "hosts"), getPropertyName(name, "connection-string")));
+                }
+                return ActiveResult.active();
+            }
+        };
     }
 }

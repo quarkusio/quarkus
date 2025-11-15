@@ -282,6 +282,7 @@ Commands:
   image                   Build or push project container image.
     build                 Build a container image.
       docker              Build a container image using Docker.
+      podman              Build a container image using Podman.
       buildpack           Build a container image using Buildpack.
       jib                 Build a container image using Jib.
       openshift           Build a container image using OpenShift.

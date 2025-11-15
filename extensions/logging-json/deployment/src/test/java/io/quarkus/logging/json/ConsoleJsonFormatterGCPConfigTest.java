@@ -32,7 +32,7 @@ public class ConsoleJsonFormatterGCPConfigTest {
                             quarkus.log.level=INFO
                             quarkus.log.console.enabled=true
                             quarkus.log.console.level=WARNING
-                            quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n
+                            quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n
                             quarkus.log.console.json.enabled=true
                             quarkus.log.console.json.log-format=gcp
                             """), "application.properties"));

@@ -20,7 +20,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.2.20</kotlin.version>
+        <kotlin.version>2.2.21</kotlin.version>
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.1.0</dokka.version>
         <scala.version>2.13.12</scala.version>
@@ -30,11 +30,11 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.5.1</jandex.version>
+        <jandex.version>3.5.2</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.17.0</htmlunit.version>
+        <htmlunit.version>4.18.0</htmlunit.version>
         <javaparser-core.version>3.27.1</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
@@ -97,7 +97,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.4.0</keycloak.server.version>
+        <keycloak.server.version>26.4.5</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.3</unboundid-ldap.version>
@@ -108,13 +108,13 @@
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.43.0</artemis.version>
+        <artemis.version>2.44.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.46.0</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.47.0</docker-maven-plugin.version>
         <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->

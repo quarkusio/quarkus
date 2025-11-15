@@ -173,7 +173,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 //so we just setup basic console logging
                 InitialConfigurator.DELAYED_HANDLER.addHandler(new ConsoleHandler(
                         ConsoleHandler.Target.SYSTEM_OUT,
-                        new ColorPatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")));
+                        new ColorPatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n")));
                 consoleContext.reset(new ConsoleCommand(' ', "Restarts the application", "to restart", 0, null,
                         () -> {
                             consoleContext.reset();

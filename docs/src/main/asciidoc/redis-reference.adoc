@@ -138,6 +138,70 @@ public class RedisExample {
 
 TIP: You can omit the `@Inject` annotation when using `@RedisClientName`.
 
+=== Activate or deactivate Redis Clients
+
+When a Redis Clients is configured at build time, and its URL is set at runtime, it is active by default. Quarkus
+starts the corresponding Redis Client when the application starts.
+
+To deactivate a Redis Client at runtime, either:
+
+* Do not set `quarkus.redis[.optional name].hosts` or `quarkus.redis[.optional name].hosts-provider-name`.
+* Set `quarkus.redis[.optional name].active` to `false`.
+
+If a Redis Client is not active:
+
+* The Redis Client does not attempt to connect to Redis during application startup.
+* The Redis Client does not contribute a <<redis-health-check,health check>>.
+* Static CDI injection points involving the Redis Client, such as `@Inject ReactiveRedisDataSource redis` or `@Inject RedisDataSource redis`, cause application startup to fail.
+* Dynamic retrieval of the Redis Client, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or an injected `Instance<ReactiveRedisDataSource>`, causes an exception to be thrown.
+* Other Quarkus extensions that consume the Redis Client may cause application startup to fail.
+
+This feature is especially useful when the application must dynamically select a Redis Client from a predefined set at
+runtime.
+
+.An example of configuring multiple Redis Clients for runtime selection:
+
+[source,properties]
+----
+quarkus.redis.one.active=false
+quarkus.redis.one.hosts=redis://localhost:64251
+
+quarkus.redis.two.active=false
+quarkus.redis.two.hosts=redis://localhost:64251
+----
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    @RedisClientName("one")
+    InjectableInstance<ReactiveRedisDataSource> one;
+    @Inject
+    @RedisClientName("two")
+    InjectableInstance<ReactiveRedisDataSource> two;
+
+    public void doSomething() {
+        ReactiveRedisDataSource redis = one.getActive();
+        // ...
+    }
+}
+----
+
+Setting `quarkus.redis.one.active=true` xref:config-reference.adoc#configuration-sources[at runtime] makes only the
+Redis Client `one` available.
+Setting `quarkus.redis.two.active=true` at runtime makes only the Redis Client `two` available.
+
+[IMPORTANT]
+====
+A Redis Client (either default or named) must always be discoverable at build-time to be considered for runtime
+injection. This can be done by injecting the Redis Client name with `@RedisClientName`. If the Redis Client name may be
+active or inactive, it needs to use the wrapper `InjectableInstance<>`, or else Quarkus will throw an exception at
+startup time if the Redis Client is inactive. Alternatively, Redis Clients may also be discovered via configuration.
+====
+
 == Connect to the Redis server
 
 The Redis extension can operate in 4 distinct modes:
@@ -1014,6 +1078,7 @@ See xref:redis-dev-services.adoc[Redis Dev Service].
 
 == Configure Redis observability
 
+[[redis-health-check]]
 === Enable the health checks
 
 If you are using the `quarkus-smallrye-health` extension, `quarkus-redis` will automatically add a readiness health check to validate the connection to the Redis server.

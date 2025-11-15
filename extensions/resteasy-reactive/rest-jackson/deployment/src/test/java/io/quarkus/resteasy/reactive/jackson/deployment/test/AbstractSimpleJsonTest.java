@@ -773,6 +773,18 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testNullStringEcho() {
+        RestAssured
+                .with()
+                .body("{\"text\": null}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/null-string-echo")
+                .then()
+                .statusCode(400)
+                .body(containsString("must not be null"));
+    }
+
+    @Test
     public void testItem() {
         RestAssured
                 .with()

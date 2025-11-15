@@ -30,4 +30,9 @@ public class ReflectionResource {
         }
     }
 
+    @GET
+    @Path("/completeReflectionTypes")
+    public boolean isCompleteReflectionTypes() {
+        return Boolean.getBoolean("org.graalvm.nativeimage.future-defaults.complete-reflection-types");
+    }
 }

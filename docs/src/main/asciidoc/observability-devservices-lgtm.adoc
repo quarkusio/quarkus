@@ -187,9 +187,10 @@ Some panels in the dashboards might take a few minutes to show accurate data whe
 
 ==== Custom dashboards
 
-Users can add their own Grafana dashboards aka their configuration. All you need to do is to place a `grafana-dashboard-[your name].json` into a `META-INF/grafana` directory in your application, and LGTM DevResource will pick this up automatically, and include this dashboard configuration in the overall Grafana dashboards yaml configuration.
+Users can add their own Grafana dashboards with their own configuration.
+Place a `grafana-dashboard-[your name].json` file into the `META-INF/grafana` directory in your application, and LGTM Dev Services will pick it up automatically, and include this dashboard configuration in the overall Grafana dashboards YAML configuration.
 
-e.g. /META-INF/grafana/grafana-dashboard-my-simple-prometheus-dashboard.json configuration file creates `My Simple Promeheus Dashboard` titled dashboard
+For instance, the `/META-INF/grafana/grafana-dashboard-my-simple-prometheus-dashboard.json` configuration file creates a dashboard named `My Simple Prometheus Dashboard`.
 
 === Additional configuration
 

@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -244,14 +245,14 @@ public class AugmentActionImpl implements AugmentAction {
 
     private void writeArtifactResultMetadataFile(BuildSystemTargetBuildItem outputTargetBuildItem,
             List<ArtifactResultBuildItem> artifactResultBuildItems) {
-        ArtifactResultBuildItem lastArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
+        ArtifactResultBuildItem effectiveArtifact = effectiveArtifact(artifactResultBuildItems);
         Path quarkusArtifactMetadataPath = outputTargetBuildItem.getOutputDirectory().resolve("quarkus-artifact.properties");
         Properties properties = new Properties();
-        properties.put("type", lastArtifact.getType());
-        if (lastArtifact.getPath() != null) {
-            properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, lastArtifact));
+        properties.put("type", effectiveArtifact.getType());
+        if (effectiveArtifact.getPath() != null) {
+            properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, effectiveArtifact));
         } else {
-            if (lastArtifact.getType().endsWith("-container")) {
+            if (effectiveArtifact.getType().endsWith("-container")) {
                 // in this case we write "path" as to contain the path to the artifact from which the container was built
                 try {
                     ArtifactResultBuildItem baseArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 2);
@@ -264,7 +265,7 @@ public class AugmentActionImpl implements AugmentAction {
                 }
             }
         }
-        Map<String, String> metadata = lastArtifact.getMetadata();
+        Map<String, String> metadata = effectiveArtifact.getMetadata();
         if (metadata != null) {
             for (Map.Entry<String, String> entry : metadata.entrySet()) {
                 properties.put("metadata." + entry.getKey(), entry.getValue());
@@ -275,6 +276,18 @@ public class AugmentActionImpl implements AugmentAction {
         } catch (IOException e) {
             log.debug("Unable to write artifact result metadata file", e);
         }
+    }
+
+    private ArtifactResultBuildItem effectiveArtifact(List<ArtifactResultBuildItem> artifactResultBuildItems) {
+        ListIterator li = artifactResultBuildItems.listIterator(artifactResultBuildItems.size());
+        while (li.hasPrevious()) {
+            ArtifactResultBuildItem result = (ArtifactResultBuildItem) li.previous();
+            if ("appCDS".equals(result.getType())) {
+                continue;
+            }
+            return result;
+        }
+        throw new IllegalStateException("Unable to locate effective artifact");
     }
 
     private static String artifactPathForResultMetadata(BuildSystemTargetBuildItem outputTargetBuildItem,

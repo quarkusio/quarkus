@@ -303,15 +303,6 @@ public class SpringWebResteasyReactiveProcessor {
                             AnnotationValue defaultValue = annotation.value("defaultValue");
                             if (defaultValue != null) {
                                 defaultValueStr = defaultValue.asString();
-                            } else {
-                                AnnotationValue requiredValue = annotation.value("required");
-                                if (requiredValue != null) {
-                                    if (requiredValue.asBoolean()) {
-                                        throw new IllegalArgumentException(
-                                                "Using required @RequestMapping is not supported. Offending method is '"
-                                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
-                                    }
-                                }
                             }
                             if (defaultValueStr != null) {
                                 transform.add(create(DEFAULT_VALUE, annotation.target(),

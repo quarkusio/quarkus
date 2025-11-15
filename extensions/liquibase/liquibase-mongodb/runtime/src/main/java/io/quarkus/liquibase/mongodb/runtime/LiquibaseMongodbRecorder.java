@@ -11,9 +11,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
-import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
@@ -22,12 +21,12 @@ import liquibase.Liquibase;
 public class LiquibaseMongodbRecorder {
     private final LiquibaseMongodbBuildTimeConfig buildTimeConfig;
     private final RuntimeValue<LiquibaseMongodbConfig> runtimeConfig;
-    private final RuntimeValue<MongodbConfig> mongodbRuntimeConfig;
+    private final RuntimeValue<MongoConfig> mongodbRuntimeConfig;
 
     public LiquibaseMongodbRecorder(
             final LiquibaseMongodbBuildTimeConfig buildTimeConfig,
             final RuntimeValue<LiquibaseMongodbConfig> runtimeConfig,
-            final RuntimeValue<MongodbConfig> mongodbRuntimeConfig) {
+            final RuntimeValue<MongoConfig> mongodbRuntimeConfig) {
         this.buildTimeConfig = buildTimeConfig;
         this.runtimeConfig = runtimeConfig;
         this.mongodbRuntimeConfig = mongodbRuntimeConfig;
@@ -58,18 +57,17 @@ public class LiquibaseMongodbRecorder {
                 if (liquibaseMongodbClientConfig.mongoClientName().isPresent()) {
                     // keep compatibility with the legacy configuration which makes possible set the mongo-client-name
                     String forceMongoClientName = liquibaseMongodbClientConfig.mongoClientName().get();
-                    mongoClientConfig = mongodbRuntimeConfig.getValue().mongoClientConfigs().get(forceMongoClientName);
+                    mongoClientConfig = mongodbRuntimeConfig.getValue().clients().get(forceMongoClientName);
                     if (mongoClientConfig == null) {
                         throw new IllegalArgumentException(
                                 "Mongo client named '%s' not found".formatted(forceMongoClientName));
                     }
                     clientNameSelected = forceMongoClientName;
-                } else if (MongoClientBeanUtil.isDefault(clientName)) {
-                    mongoClientConfig = mongodbRuntimeConfig.getValue().defaultMongoClientConfig();
+                } else if (MongoConfig.isDefaultClient(clientName)) {
+                    mongoClientConfig = mongodbRuntimeConfig.getValue().clients().get(clientName);
                     clientNameSelected = clientName;
                 } else {
-                    mongoClientConfig = getRequiredConfig(
-                            mongodbRuntimeConfig.getValue().mongoClientConfigs(),
+                    mongoClientConfig = getRequiredConfig(mongodbRuntimeConfig.getValue().clients(),
                             "Mongo client named '%s' not found");
                     clientNameSelected = clientName;
                 }
@@ -83,7 +81,7 @@ public class LiquibaseMongodbRecorder {
     }
 
     private Annotation getLiquibaseMongodbQualifier(String clientName) {
-        if (MongoClientBeanUtil.isDefault(clientName)) {
+        if (MongoConfig.isDefaultClient(clientName)) {
             return Default.Literal.INSTANCE;
         } else {
             return LiquibaseMongodbClient.LiquibaseMongodbClientLiteral.of(clientName);

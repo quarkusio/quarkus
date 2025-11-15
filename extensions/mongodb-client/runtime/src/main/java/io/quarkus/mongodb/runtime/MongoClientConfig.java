@@ -14,6 +14,11 @@ import io.smallrye.config.WithName;
 
 @ConfigGroup
 public interface MongoClientConfig {
+    /**
+     * Whether this Mongo Client should be active at runtime.
+     */
+    @WithDefault("true")
+    boolean active();
 
     /**
      * Configures the connection string.
@@ -68,7 +73,7 @@ public interface MongoClientConfig {
      * The addresses are passed as {@code host:port}.
      */
     @WithDefault("127.0.0.1:27017")
-    List<String> hosts();
+    Optional<List<String>> hosts();
 
     /**
      * Configure the database name.

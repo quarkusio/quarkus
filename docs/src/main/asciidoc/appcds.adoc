@@ -98,15 +98,14 @@ AppCDS has improved significantly in the latest JDK releases. This means that to
 [TIP]
 ====
 Starting with JDK 24, the JVM provides an evolution of the class-data sharing in the form of the AOT cache.
-If you are building an application that will target JDK 24+ you can take advantage of this feature by adding the following system property when packaging your application:
+If you are building an application that will target JDK 25+ you can take advantage of this feature by adding the following system property when packaging your application:
 
 [source,bash]
 ----
--Dquarkus.package.jar.appcds.use-aot=true
+-Dquarkus.package.jar.appcds.enabled=true -Dquarkus.package.jar.appcds.use-aot=true
 ----
 
-The result of this flag (plus the `-Dquarkus.package.jar.appcds.enabled=true` original one) is the creation of an AOT cache file
-named `app.aot`.
+The result of using these flags is the creation of an AOT cache file named `app.aot`.
 
 You can use this AOT cache when launching the application like so:
 
@@ -116,6 +115,13 @@ cd target/quarkus-app
 java -XX:AOTCache=app.aot -jar quarkus-run.jar
 ----
 ====
+
+=== Generate the AOT cache from integration tests
+
+Although Quarkus can generate an AOT cache file without ever running the production application, the file will not be optimal as the application was never exercised against any load. To alleviate this,
+Quarkus can use the existing testsuite of tests annotated with `@QuarkusIntegrationTest` to create an AOT cache file.
+See the xref:getting-started-testing.adoc#generating-an-aot-cache-during-integration-tests[corresponding section] in the Testing Guide for more details.
+
 
 === Usage in containers
 

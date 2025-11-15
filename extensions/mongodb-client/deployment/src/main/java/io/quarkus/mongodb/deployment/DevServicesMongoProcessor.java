@@ -1,7 +1,7 @@
 package io.quarkus.mongodb.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
-import static io.quarkus.mongodb.runtime.MongoClientBeanUtil.isDefault;
+import static io.quarkus.mongodb.runtime.MongoConfig.isDefaultClient;
 
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,7 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.Labels;
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -164,8 +164,9 @@ public class DevServicesMongoProcessor {
             LaunchMode launchMode, String serviceName) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
-            log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
-                    + " as it has been disabled in the config");
+            log.debug(
+                    "Not starting devservices for " + (isDefaultClient(connectionName) ? "default datasource" : connectionName)
+                            + " as it has been disabled in the config");
             return null;
         }
 
@@ -175,14 +176,15 @@ public class DevServicesMongoProcessor {
                 && !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts");
         if (!needToStart) {
             // a connection string has been provided
-            log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
-                    + " as a connection string and/or server addresses have been provided");
+            log.debug(
+                    "Not starting devservices for " + (isDefaultClient(connectionName) ? "default datasource" : connectionName)
+                            + " as a connection string and/or server addresses have been provided");
             return null;
         }
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Please configure datasource URL for "
-                    + (isDefault(connectionName) ? "default datasource" : connectionName)
+                    + (isDefaultClient(connectionName) ? "default datasource" : connectionName)
                     + " or get a working docker instance");
             return null;
         }
@@ -240,8 +242,8 @@ public class DevServicesMongoProcessor {
     }
 
     private String getConfigPrefix(String connectionName) {
-        String configPrefix = "quarkus." + MongodbConfig.CONFIG_NAME + ".";
-        if (!isDefault(connectionName)) {
+        String configPrefix = "quarkus." + MongoConfig.CONFIG_NAME + ".";
+        if (!isDefaultClient(connectionName)) {
             configPrefix = configPrefix + connectionName + ".";
         }
         return configPrefix;

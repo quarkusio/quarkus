@@ -42,7 +42,7 @@ public class ComposeFileTest {
         assertNotNull(db);
         assertEquals("db", db.getServiceName());
         assertEquals("database system is ready to accept connections",
-                db.getLabels().get("io.quarkus.devservices.compose.wait_for.logs"));
+                db.getLabels().get("io.quarkus.devservices.compose.wait_for.logs.2"));
         assertFalse(db.hasHealthCheck());
 
         // Test Redis service
@@ -91,7 +91,7 @@ public class ComposeFileTest {
         // Test labels
         Map<String, Object> labels = db.getLabels();
         assertEquals("database system is ready to accept connections",
-                labels.get("io.quarkus.devservices.compose.wait_for.logs"));
+                labels.get("io.quarkus.devservices.compose.wait_for.logs.2"));
 
         // Test container name (should be null for valid compose)
         assertNull(db.getContainerName());

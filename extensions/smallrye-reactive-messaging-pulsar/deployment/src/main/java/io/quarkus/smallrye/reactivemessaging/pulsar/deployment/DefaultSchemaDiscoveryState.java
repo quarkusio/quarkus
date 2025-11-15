@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.deployment.SmallRyeReactiveMessagingProcessor.getChannelPropertyKey;
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.getChannelPropertyName;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,7 +52,7 @@ class DefaultSchemaDiscoveryState {
 
         String channelType = incoming ? "incoming" : "outgoing";
         return isPulsarConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
-            String connectorKey = getChannelPropertyKey(channelName, "connector", incoming);
+            String connectorKey = getChannelPropertyName(channelName, "connector", incoming);
             String connector = getConfig()
                     .getOptionalValue(connectorKey, String.class)
                     .orElse("ignored");
@@ -108,7 +108,7 @@ class DefaultSchemaDiscoveryState {
     }
 
     boolean hasObjectMapperConfigSchema(Type type, String channelName, boolean incoming) {
-        String key = getChannelPropertyKey(channelName, "schema", incoming);
+        String key = getChannelPropertyName(channelName, "schema", incoming);
         Optional<String> schema = getConfig().getOptionalValue(key, String.class);
         return schema.isPresent() && schema.get().equals(SyntheticBeanBuilder.objectMapperSchemaId(type));
     }

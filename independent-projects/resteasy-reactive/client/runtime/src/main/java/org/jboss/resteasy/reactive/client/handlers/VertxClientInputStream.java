@@ -93,16 +93,9 @@ public class VertxClientInputStream extends InputStream {
         }
         closed = true;
         try {
-            while (!finished) {
-                readIntoBuffer();
-                if (pooled != null) {
-                    pooled.release();
-                    pooled = null;
-                }
+            if (!finished) {
+                exchange.discard();
             }
-        } catch (IOException | RuntimeException e) {
-            //our exchange is all broken, just end it
-            throw e;
         } finally {
             if (pooled != null) {
                 pooled.release();
@@ -245,6 +238,10 @@ public class VertxClientInputStream extends InputStream {
                 Long.parseLong(length); // ignore the value as can only return an int anyway
                 return Integer.MAX_VALUE;
             }
+        }
+
+        public void discard() {
+            request.pause().handler(null).exceptionHandler(null).endHandler(null).resume();
         }
     }
 

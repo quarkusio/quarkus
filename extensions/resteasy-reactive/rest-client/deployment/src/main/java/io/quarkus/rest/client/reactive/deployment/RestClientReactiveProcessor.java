@@ -105,6 +105,8 @@ import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
+import io.quarkus.rest.client.reactive.spi.ClientRequestFilterBuildItem;
+import io.quarkus.rest.client.reactive.spi.ClientResponseFilterBuildItem;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
@@ -281,6 +283,8 @@ class RestClientReactiveProcessor {
     void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
             List<RegisterProviderAnnotationInstanceBuildItem> registerProviderAnnotationInstances,
             List<AnnotationToRegisterIntoClientContextBuildItem> annotationsToRegisterIntoClientContext,
+            List<ClientRequestFilterBuildItem> clientRequestFilters,
+            List<ClientResponseFilterBuildItem> clientResponseFilters,
             BuildProducer<GeneratedBeanBuildItem> generatedBeansProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
@@ -325,20 +329,22 @@ class RestClientReactiveProcessor {
                         continue;
                     }
 
-                    DotName providerDotName = providerClass.name();
-                    int priority = getAnnotatedPriority(index, providerDotName.toString(), Priorities.USER);
-
-                    constructor.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
-                                    void.class, Class.class,
-                                    int.class),
-                            constructor.getThis(), constructor.loadClassFromTCCL(providerDotName.toString()),
-                            constructor.load(priority));
-
-                    // when the server is not included, providers are not automatically registered for reflection,
-                    // so we need to always do it for the client to be on the safe side
-                    reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(providerDotName.toString()).build());
+                    registerGlobalProvider(providerClass.name(), index, constructor, reflectiveClassesProducer);
                 }
+            }
+
+            Set<DotName> providersFromBuildItems = new HashSet<>();
+            providersFromBuildItems.addAll(clientRequestFilters.stream().map(ClientRequestFilterBuildItem::getClassName)
+                    .map(DotName::createSimple).collect(
+                            Collectors.toSet()));
+            providersFromBuildItems.addAll(clientResponseFilters.stream().map(ClientResponseFilterBuildItem::getClassName)
+                    .map(DotName::createSimple).collect(
+                            Collectors.toSet()));
+            if (!providersFromBuildItems.isEmpty()) {
+                for (DotName dotName : providersFromBuildItems) {
+                    registerGlobalProvider(dotName, index, constructor, reflectiveClassesProducer);
+                }
+                unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanTypes(providersFromBuildItems));
             }
 
             MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
@@ -359,6 +365,23 @@ class RestClientReactiveProcessor {
         }
 
         unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(annotationRegisteredProvidersImpl));
+    }
+
+    private void registerGlobalProvider(DotName providerClassName,
+            IndexView index, MethodCreator methodCreator,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
+        int priority = getAnnotatedPriority(index, providerClassName.toString(), Priorities.USER);
+
+        methodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
+                        void.class, Class.class,
+                        int.class),
+                methodCreator.getThis(), methodCreator.loadClassFromTCCL(providerClassName.toString()),
+                methodCreator.load(priority));
+
+        // when the server is not included, providers are not automatically registered for reflection,
+        // so we need to always do it for the client to be on the safe side
+        reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(providerClassName.toString()).build());
     }
 
     @BuildStep

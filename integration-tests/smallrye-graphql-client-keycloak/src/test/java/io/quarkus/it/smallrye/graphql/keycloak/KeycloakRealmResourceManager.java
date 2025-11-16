@@ -15,7 +15,6 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
-import org.testcontainers.containers.GenericContainer;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.restassured.RestAssured;
@@ -24,11 +23,7 @@ import io.restassured.response.Response;
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
     private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180");
-    //private static String KEYCLOAK_SERVER_URL;
     private static final String KEYCLOAK_REALM = "quarkus";
-    //private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:22.0.5";
-
-    private GenericContainer<?> keycloak;
 
     @Override
     public Map<String, String> start() {

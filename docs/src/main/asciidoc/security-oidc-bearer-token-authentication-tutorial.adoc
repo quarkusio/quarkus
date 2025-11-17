@@ -198,14 +198,33 @@ For more information, see the <<bearer-token-tutorial-keycloak-dev-mode>> sectio
 For more information, see the Quarkus xref:security-oidc-configuration-properties-reference.adoc[OpenID Connect (OIDC) configuration properties] guide.
 
 
+[[bearer-token-tutorial-keycloak-dev-mode]]
+== Run the application in dev mode
+
+Put the link:{quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] in the `src/main/resources` application folder so that it gets copied to the classpath and imported automatically to Keycloak. You do not need to do this if you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution], in which case, this realm file is added to the classpath during the build.
+
+. To run the application in dev mode, run the following commands:
++
+====
+include::{includes}/devtools/dev.adoc[]
+====
+* xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
+. Open a xref:dev-ui.adoc[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui].
+Then, in an `OpenID Connect` card, click the `Keycloak provider` link .
+. When prompted to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`, do the following steps:
+
+ * Log in as `alice` (password: `alice`), who has a `user` role.
+ ** Accessing `/api/admin` returns a `403` status code.
+ ** Accessing `/api/users/me` returns a `200` status code.
+ * Log out and log in again as `admin` (password: `admin`), who has both `admin` and `user` roles.
+ ** Accessing `/api/admin` returns a `200` status code.
+ ** Accessing `/api/users/me` returns a `200` status code.
+
 == Start and configure the Keycloak server
 
-. Put the link:{quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode.
-You do not need to do this if you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution], in which case, this realm file is added to the classpath during the build.
-+
 [NOTE]
 ====
-Do not start the Keycloak server when you run the application in dev mode; `Dev Services for Keycloak` will start a container.
+Do not start the Keycloak server when you <<bearer-token-tutorial-keycloak-dev-mode,run the application in dev mode>>; `Dev Services for Keycloak` will start and configure a container.
 For more information, see the <<bearer-token-tutorial-keycloak-dev-mode>> section.
 ====
 +
@@ -246,30 +265,7 @@ For more information, see the xref:security-keycloak-admin-client.adoc[Quarkus K
 endif::no-quarkus-keycloak-admin-client[]
 
 
-
-[[bearer-token-tutorial-keycloak-dev-mode]]
-== Run the application in dev mode
-
-. To run the application in dev mode, run the following commands:
-+
-====
-include::{includes}/devtools/dev.adoc[]
-====
-* xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
-. Open a xref:dev-ui.adoc[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui].
-Then, in an `OpenID Connect` card, click the `Keycloak provider` link .
-. When prompted to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`, do the following steps:
-
- * Log in as `alice` (password: `alice`), who has a `user` role.
- ** Accessing `/api/admin` returns a `403` status code.
- ** Accessing `/api/users/me` returns a `200` status code.
- * Log out and log in again as `admin` (password: `admin`), who has both `admin` and `user` roles.
- ** Accessing `/api/admin` returns a `200` status code.
- ** Accessing `/api/users/me` returns a `200` status code.
-
 == Run the Application in JVM mode
-
-When you are done with dev mode, you can run the application as a standard Java application.
 
 . Compile the application:
 +

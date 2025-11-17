@@ -545,14 +545,6 @@
                     <name>test-containers</name>
                 </property>
             </activation>
-            <properties>
-                <datasource.db-kind>postgresql</datasource.db-kind>
-                <datasource.url>${postgres.url}</datasource.url>
-                <datasource.username>hibernate_orm_test</datasource.username>
-                <datasource.password>hibernate_orm_test</datasource.password>
-
-                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQLDialect</hibernate-orm.dialect>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>io.quarkus</groupId>
@@ -603,88 +595,6 @@
             </properties>
         </profile>
 
-        <profile>
-            <id>docker-postgresql</id>
-            <activation>
-                <property>
-                    <name>start-containers</name>
-                </property>
-            </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>${postgres.image}</name>
-                                    <alias>postgresql</alias>
-                                    <run>
-                                        <env>
-                                            <POSTGRES_USER>hibernate_orm_test</POSTGRES_USER>
-                                            <POSTGRES_PASSWORD>hibernate_orm_test</POSTGRES_PASSWORD>
-                                            <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
-                                        </env>
-                                        <ports>
-                                            <port>5431:5432</port>
-                                        </ports>
-                                        <wait>
-                                            <!-- For some reason, Postgres will tell us it's ready *twice*,
-                                            and that's the truth the second time only.
-                                            See https://github.com/fabric8io/docker-maven-plugin/issues/628
-                                            See also how the condition is configured in testcontainers:
-                                            https://github.com/testcontainers/testcontainers-java/blob/c64aab9fd5e3a452ee0faf793560327eb4da9841/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java#L52-L55 -->
-                                            <time>20000</time>
-                                            <log>(?s)ready to accept connections.*ready to accept connections</log>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                            <!--Stops all postgres images currently running, not just those we just started.
-                              Useful to stop processes still running from a previously failed integration test run -->
-                            <allContainers>true</allContainers>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docker-prune</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${docker-prune.location}</executable>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 
 </project>

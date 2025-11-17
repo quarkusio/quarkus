@@ -398,3 +398,4 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
 * xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
 * xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
+* xref:spring-test.adoc[Testing Spring-style Applications in Quarkus]

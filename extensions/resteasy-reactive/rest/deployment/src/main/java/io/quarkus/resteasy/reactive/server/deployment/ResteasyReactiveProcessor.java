@@ -623,7 +623,9 @@ public class ResteasyReactiveProcessor {
                                             .source(source + " > " + parameterType.name().toString())
                                             .build());
                                 }
-                                if (parameterType.name().equals(FILE)) {
+                                DotName paramTypeName = parameterType.name();
+                                if (paramTypeName.equals(FILE)
+                                        || paramTypeName.equals(ResteasyReactiveDotNames.SSE_EVENT_SINK)) {
                                     paramsRequireReflection = true;
                                     break;
 

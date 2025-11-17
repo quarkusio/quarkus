@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
@@ -65,8 +64,6 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     }
 
     private LaunchResult doLaunch(ExtensionContext context, String[] arguments) throws Exception {
-        JBossVersion.disableVersionLogging();
-
         var result = doProcessStart(context, arguments);
         List<String> out = Arrays.asList(new String(result.getOutput(), StandardCharsets.UTF_8).split("\n"));
         List<String> err = Arrays.asList(new String(result.getStderror(), StandardCharsets.UTF_8).split("\n"));

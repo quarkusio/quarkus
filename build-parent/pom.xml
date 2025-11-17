@@ -24,7 +24,7 @@
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.1.0</dokka.version>
         <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.9.6</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.9.7</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>

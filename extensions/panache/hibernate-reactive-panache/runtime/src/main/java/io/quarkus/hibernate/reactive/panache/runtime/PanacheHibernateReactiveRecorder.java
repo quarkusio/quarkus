@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class PanacheHibernateReactiveRecorder {
-    public void setEntityToPersistenceUnit(Map<String, String> entityToPersistenceUnit) {
-        AbstractJpaOperations.setEntityToPersistenceUnit(entityToPersistenceUnit);
+    public void addEntityTypesToPersistenceUnit(Map<String, String> entityToPersistenceUnit) {
+        AbstractJpaOperations.addEntityTypesToPersistenceUnit(entityToPersistenceUnit);
     }
 }

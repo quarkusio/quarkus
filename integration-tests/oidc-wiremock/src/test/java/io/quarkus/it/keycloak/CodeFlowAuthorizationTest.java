@@ -405,6 +405,8 @@ public class CodeFlowAuthorizationTest {
             // be returned to Quarkus, analyzed and refreshed
             assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
 
+            assertEquals(299, decryptAccessTokenExpiryTime(webClient, "code-flow-user-info-github-cached-in-idtoken"));
+
             // This is the initial call to  the token endpoint where the code was exchanged for tokens
             wireMockServer.verify(1,
                     postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
@@ -421,12 +423,14 @@ public class CodeFlowAuthorizationTest {
 
             issuedAt = idTokenClaims.getLong("iat");
             expiresAt = idTokenClaims.getLong("exp");
-            assertEquals(305, expiresAt - issuedAt);
+            assertEquals(299, expiresAt - issuedAt);
 
             sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             date = sessionCookie.getExpires();
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 305 + 300);
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 305 + 300 + 3);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 299 + 300);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
+
+            assertEquals(305, decryptAccessTokenExpiryTime(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 
             // access token must've been refreshed
             wireMockServer.verify(1,
@@ -699,11 +703,33 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
-    private JsonObject decryptIdToken(WebClient webClient, String tenantId) throws Exception {
+    private static JsonObject decryptIdToken(WebClient webClient, String tenantId) throws Exception {
         Cookie sessionCookie = getSessionCookie(webClient, tenantId);
         assertNotNull(sessionCookie);
 
-        SecretKey key = null;
+        SecretKey key = getSessionCookieDecryptionKey(webClient, tenantId);
+
+        String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+        String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
+
+        return OidcCommonUtils.decodeJwtContent(encodedIdToken);
+    }
+
+    private static int decryptAccessTokenExpiryTime(WebClient webClient, String tenantId) throws Exception {
+        Cookie sessionCookie = getSessionCookie(webClient, tenantId);
+        assertNotNull(sessionCookie);
+
+        SecretKey key = getSessionCookieDecryptionKey(webClient, tenantId);
+
+        String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+        // idtoken|accesstoken|accesstoken-exp-in-time|...
+        return Integer.valueOf(decryptedSessionCookie.split("\\|")[2]);
+
+    }
+
+    private static SecretKey getSessionCookieDecryptionKey(WebClient webClient, String tenantId) throws Exception {
         if ("code-flow-user-info-github".equals(tenantId)) {
             PrivateKey privateKey = KeyUtils.tryAsPemSigningPrivateKey(
                     "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyXwKqKL/"
@@ -724,18 +750,12 @@ public class CodeFlowAuthorizationTest {
                             + "r/ATkc4sG4kxQKBgBL9neT0TmJtxlYGzjNcjdJXs3Q91+nZt3DRMGT9s0917SuP77+FdJYocDiH1rVa9sGG8rkh1jTdqliAxDXwIm5I"
                             + "GS/0OBnkaN1nnGDk5yTiYxOutC5NSj7ecI5Erud8swW6iGqgz2ioFpGxxIYqRlgTv/6mVt41KALfKrYIkVLw",
                     SignatureAlgorithm.RS256);
-            key = OidcUtils.createSecretKeyFromDigest(privateKey.getEncoded());
+            return OidcUtils.createSecretKeyFromDigest(privateKey.getEncoded());
         } else {
-            key = OidcUtils.createSecretKeyFromDigest(
+            return OidcUtils.createSecretKeyFromDigest(
                     "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
                             .getBytes(StandardCharsets.UTF_8));
         }
-
-        String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
-
-        String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
-
-        return OidcCommonUtils.decodeJwtContent(encodedIdToken);
     }
 
     private WebClient createWebClient() {
@@ -974,11 +994,11 @@ public class CodeFlowAuthorizationTest {
                                 .withTransformers("response-template")));
     }
 
-    private Cookie getSessionCookie(WebClient webClient, String tenantId) {
+    private static Cookie getSessionCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
     }
 
-    private Cookie getStateCookie(WebClient webClient, String tenantId) {
+    private static Cookie getStateCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookies().stream()
                 .filter(c -> c.getName().startsWith("q_auth" + (tenantId == null ? "" : "_" + tenantId))).findFirst()
                 .orElse(null);

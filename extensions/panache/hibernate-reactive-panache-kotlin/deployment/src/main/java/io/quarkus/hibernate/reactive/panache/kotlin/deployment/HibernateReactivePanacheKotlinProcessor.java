@@ -139,7 +139,8 @@ public class HibernateReactivePanacheKotlinProcessor {
 
             panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
         }
-        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit, incomplete);
+        // This is called even if there are no entity types, so that Panache gets properly initialized.
+        recorder.addEntityTypesToPersistenceUnit(panacheEntityToPersistenceUnit, incomplete);
     }
 
     private void processCompanions(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,

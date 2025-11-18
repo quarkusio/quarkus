@@ -179,16 +179,19 @@ public class SmallRyeFaultToleranceProcessor {
                         Enablement.class);
 
         int metricsProviders = 0;
-        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-            builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
-            metricsProviders++;
-        } else if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+            // Priority to Micrometer. We should avoid having OTel + Micrometer on.
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
             metricsProviders++;
-        }
-        if (openTelemetrySdk.map(OpenTelemetrySdkBuildItem::isMetricsBuildTimeEnabled).orElse(false)) {
-            builder.addBeanClass("io.smallrye.faulttolerance.metrics.OpenTelemetryProvider");
-            metricsProviders++;
+        } else {
+            if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+                builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
+                metricsProviders++;
+            }
+            if (openTelemetrySdk.map(OpenTelemetrySdkBuildItem::isMetricsBuildTimeEnabled).orElse(false)) {
+                builder.addBeanClass("io.smallrye.faulttolerance.metrics.OpenTelemetryProvider");
+                metricsProviders++;
+            }
         }
 
         if (metricsProviders == 0) {

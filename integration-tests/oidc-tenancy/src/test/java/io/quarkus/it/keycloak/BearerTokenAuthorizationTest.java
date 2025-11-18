@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -202,7 +203,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testCodeFlowRefreshTokens() throws IOException, InterruptedException {
+    public void testCodeFlowRefreshTokensWhenIdTokenIsExpired() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user");
             assertEquals("Sign in to quarkus-webapp", page.getTitleText());
@@ -213,6 +214,8 @@ public class BearerTokenAuthorizationTest {
 
             Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertNotNull(sessionCookie);
+            JsonObject jwtHeaders = getIdTokenHeaders(sessionCookie.getValue());
+            assertFalse(jwtHeaders.getBoolean("internal", false));
 
             Set<Cookie> atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertEquals(3, atSessionCookies.size());
@@ -225,10 +228,66 @@ public class BearerTokenAuthorizationTest {
                     + ", refreshToken: true",
                     page.getBody().asNormalizedText());
 
-            // Wait till the session expires - which should cause the first and also last token refresh request,
-            // id and access tokens should have new values, refresh token value should remain the same.
-            // No new sign-in process is required.
-            //await().atLeast(6, TimeUnit.SECONDS);
+            Thread.sleep(6 * 1000);
+
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(
+                            URI.create("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user")
+                                    .toURL()));
+
+            Cookie sessionCookie2 = getSessionCookie(webClient, "tenant-web-app-refresh");
+            assertNotNull(sessionCookie2);
+            assertNotEquals(sessionCookie2.getValue(), sessionCookie.getValue());
+            JsonObject jwtHeaders2 = getIdTokenHeaders(sessionCookie2.getValue());
+            assertTrue(jwtHeaders2.getBoolean("internal"));
+
+            atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertEquals(3, atSessionCookies.size());
+            Cookie rtCookie2 = getSessionRtCookie(webClient, "tenant-web-app-refresh");
+            assertNotNull(rtCookie2);
+            assertEquals(rtCookie2.getValue(), rtCookie.getValue());
+
+            assertEquals("userName: alice, idToken: true, accessToken: true, accessTokenLongStringClaim: "
+                    + getAccessTokenLongStringClaim(atSessionCookies)
+                    + ", refreshToken: true",
+                    webResponse.getContentAsString());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private static JsonObject getIdTokenHeaders(String value) throws Exception {
+        return OidcUtils.decodeJwtHeaders(value);
+    }
+
+    @Test
+    public void testCodeFlowRefreshTokensWhileIdTokenIsValid() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-refresh/tenant-web-app-refresh/api/user");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getButtonByName("login").click();
+
+            Cookie sessionCookie = getSessionCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertNotNull(sessionCookie);
+            JsonObject jwtHeaders = getIdTokenHeaders(sessionCookie.getValue());
+            assertFalse(jwtHeaders.getBoolean("internal", false));
+
+            Set<Cookie> atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertEquals(3, atSessionCookies.size());
+
+            Cookie rtCookie = getSessionRtCookie(page.getWebClient(), "tenant-web-app-refresh");
+            assertNotNull(rtCookie);
+
+            assertEquals("userName: alice, idToken: true, accessToken: true, accessTokenLongStringClaim: "
+                    + getAccessTokenLongStringClaim(atSessionCookies)
+                    + ", refreshToken: true",
+                    page.getBody().asNormalizedText());
+
+            // Wait till a valid ID token is within the refresh token skew
             Thread.sleep(2 * 1000);
 
             webClient.getOptions().setRedirectEnabled(false);
@@ -240,6 +299,10 @@ public class BearerTokenAuthorizationTest {
             Cookie sessionCookie2 = getSessionCookie(webClient, "tenant-web-app-refresh");
             assertNotNull(sessionCookie2);
             assertEquals(sessionCookie2.getValue(), sessionCookie.getValue());
+
+            JsonObject jwtHeaders2 = getIdTokenHeaders(sessionCookie2.getValue());
+            assertFalse(jwtHeaders2.getBoolean("internal", false));
+
             atSessionCookies = getSessionAtCookie(page.getWebClient(), "tenant-web-app-refresh");
             assertEquals(3, atSessionCookies.size());
             Cookie rtCookie2 = getSessionRtCookie(webClient, "tenant-web-app-refresh");

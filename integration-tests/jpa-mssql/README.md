@@ -4,7 +4,7 @@
 
 By default, the tests of this module are disabled.
 
-To run the tests in a standard JVM with SQL Server started as a Docker container, you can run the following command:
+To run the tests in a standard JVM with SQL Server started as a Dev Service, you can run the following command:
 
 ```
 mvn clean install -Dstart-containers -Dtest-containers

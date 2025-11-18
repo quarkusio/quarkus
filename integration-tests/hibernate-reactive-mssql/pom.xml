@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Hibernate Reactive - MS SQL Server</name>
     <description>Hibernate Reactive related tests running with the MS SQL Server database</description>
 
-    <properties>
-        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -102,6 +98,12 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -177,87 +179,6 @@
                  -->
                 <quarkus.native.add-all-charsets>true</quarkus.native.add-all-charsets>
             </properties>
-        </profile>
-
-        <profile>
-            <id>docker-mssql</id>
-            <activation>
-                <property>
-                    <name>start-containers</name>
-                </property>
-            </activation>
-            <properties>
-                <!-- Careful: SQL Server refuses to work with trivial passwords. -->
-                <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>${mssql.image}</name>
-                                    <alias>quarkus-test-mssqldb</alias>
-                                    <run>
-                                        <ports>
-                                            <port>1435:1433</port>
-                                        </ports>
-                                        <env>
-                                            <ACCEPT_EULA>Y</ACCEPT_EULA>
-                                            <MSSQL_SA_PASSWORD>yourStrong(!)Password</MSSQL_SA_PASSWORD>
-                                        </env>
-                                        <log>
-                                            <prefix>MS SQL Server:</prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <log>SQL Server is now ready for client connections</log>
-                                            <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
-                                            <time>40000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docker-prune</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${docker-prune.location}</executable>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 

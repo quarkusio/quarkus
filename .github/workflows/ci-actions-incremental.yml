@@ -249,6 +249,16 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Checkout SR-CP snapshot
+        uses: actions/checkout@v5
+        with:
+          repository: smallrye/smallrye-context-propagation
+          ref: completable-future-rewrite
+          path: custom-sr-cp
+      - name: Build and install SR-CP snapshot
+        working-directory: custom-sr-cp
+        run: |
+          mvn $COMMON_MAVEN_ARGS install
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline

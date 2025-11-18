@@ -30,7 +30,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.TypeVariable;
 
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
@@ -292,17 +291,17 @@ public class DecoratorGenerator extends BeanGenerator {
             Set<MethodDesc> abstractMethods = new HashSet<>();
             Map<MethodDesc, MethodDesc> bridgeMethods = new HashMap<>();
             for (Type decoratedType : decorator.getDecoratedTypes()) {
-                ClassInfo decoratedTypeClass = index.getClassByName(decoratedType.name());
-                if (decoratedTypeClass == null) {
+                ClassInfo decoratedInterface = index.getClassByName(decoratedType.name());
+                if (decoratedInterface == null) {
                     throw new IllegalStateException("Decorated type not found in the bean archive index: " + decoratedType);
                 }
 
                 // A decorated type can declare type parameters
                 // For example Converter<String> should result in a T -> String mapping
-                List<TypeVariable> typeParameters = decoratedTypeClass.typeParameters();
-                Map<String, Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedTypeClass, decorator);
+                boolean isDecoratedInterfaceGeneric = !decoratedInterface.typeParameters().isEmpty();
+                Map<String, Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedInterface, decorator);
 
-                for (MethodInfo method : decoratedTypeClass.methods()) {
+                for (MethodInfo method : decoratedInterface.methods()) {
                     if (Methods.skipForDelegateSubclass(method)) {
                         continue;
                     }
@@ -311,9 +310,9 @@ public class DecoratorGenerator extends BeanGenerator {
                     // Create a resolved descriptor variant if a param contains a type variable
                     // E.g. ping(T) -> ping(String)
                     MethodDesc resolvedMethodDesc;
-                    if (!typeParameters.isEmpty() && (Methods.containsTypeVariableParameter(method)
+                    if (isDecoratedInterfaceGeneric && (Methods.containsTypeVariableParameter(method)
                             || Types.containsTypeVariable(method.returnType()))) {
-                        List<Type> paramTypes = Types.getResolvedParameters(decoratedTypeClass, resolvedTypeParameters,
+                        List<Type> paramTypes = Types.getResolvedParameters(decoratedInterface, resolvedTypeParameters,
                                 method, index);
                         Type returnType = Types.resolveTypeParam(method.returnType(), resolvedTypeParameters, index);
                         ClassDesc[] paramTypesArray = new ClassDesc[paramTypes.size()];

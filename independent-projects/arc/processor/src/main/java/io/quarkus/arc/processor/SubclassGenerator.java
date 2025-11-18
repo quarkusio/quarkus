@@ -806,7 +806,7 @@ public class SubclassGenerator extends AbstractGenerator {
         for (DecoratorInfo decoratorParameter : decoratorParameters) {
             LocalVar decoratorVar = decoratorToLocalVar.get(decoratorParameter.getIdentifier());
             if (decoratorVar == null) {
-                throw new IllegalStateException("Decorator var must not be null");
+                throw new IllegalStateException("Unknown next " + decoratorParameter + " when generating " + generatedName);
             }
             params[paramIdx] = decoratorVar;
             paramIdx++;

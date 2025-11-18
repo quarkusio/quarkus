@@ -54,7 +54,7 @@
         <smallrye-graphql.version>2.16.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.10.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
-        <smallrye-context-propagation.version>2.2.1</smallrye-context-propagation.version>
+        <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.20.3</smallrye-mutiny-vertx-binding.version>
@@ -137,7 +137,7 @@
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <mutiny.version>3.0.1</mutiny.version>
+        <mutiny.version>3.0.2</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka3.version>4.0.1</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->

@@ -258,7 +258,7 @@ jobs:
       - name: Build and install SR-CP snapshot
         working-directory: custom-sr-cp
         run: |
-          mvn install
+          mvn -B -DskipTests install
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
@@ -343,9 +343,9 @@ jobs:
       - name: Tar .m2 content pushed to subsequent jobs
         run: |
           if [ -d .m2/.develocity/build-cache ]; then
-            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/repository/io/smallrye/smallrye-context-propagation* .m2/.develocity/build-cache
           else
-            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/repository/io/smallrye/smallrye-context-propagation*
           fi
       - name: Upload .m2 content pushed to subsequent jobs
         uses: actions/upload-artifact@v5

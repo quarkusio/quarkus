@@ -258,7 +258,7 @@ jobs:
       - name: Build and install SR-CP snapshot
         working-directory: custom-sr-cp
         run: |
-          mvn $COMMON_MAVEN_ARGS install
+          mvn install
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline

@@ -20,7 +20,7 @@ public class PlantResource {
     Pool client;
 
     @Inject
-    @ReactiveDataSource("additional")
+    @ReactiveDataSource("extra")
     Pool additionalClient;
 
     @PostConstruct
@@ -34,13 +34,13 @@ public class PlantResource {
                 .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')").execute())
                 .await().indefinitely();
 
-        additionalClient.query("DROP TABLE IF EXISTS vegetables").execute()
-                .flatMap(r -> client
+        additionalClient.query("DROP TABLE IF EXISTS legumes").execute()
+                .flatMap(r -> additionalClient
                         .query("CREATE TABLE legumes (id INTEGER NOT NULL GENERATED AS IDENTITY, name VARCHAR(50) NOT NULL)")
                         .execute())
-                .flatMap(r -> client.query("INSERT INTO legumes (name) VALUES ('Cumcumber')").execute())
-                .flatMap(r -> client.query("INSERT INTO legumes (name) VALUES ('Broccoli')").execute())
-                .flatMap(r -> client.query("INSERT INTO legumes (name) VALUES ('Leeks')").execute())
+                .flatMap(r -> additionalClient.query("INSERT INTO legumes (name) VALUES ('Cumcumber')").execute())
+                .flatMap(r -> additionalClient.query("INSERT INTO legumes (name) VALUES ('Broccoli')").execute())
+                .flatMap(r -> additionalClient.query("INSERT INTO legumes (name) VALUES ('Leeks')").execute())
                 .await().indefinitely();
     }
 

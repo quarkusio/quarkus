@@ -64,7 +64,12 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
             // this runs in threads that start with 'ducttape'
             StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
                     (s) -> s.getName().startsWith("ducttape"));
-            try (ResettableSystemProperties ignored = ResettableSystemProperties.of("api.version", "1.44")) {
+
+            String dockerApiVersion = System.getProperty("api.version");
+
+            try (ResettableSystemProperties ignored = dockerApiVersion == null
+                    ? ResettableSystemProperties.of("api.version", "1.44")
+                    : ResettableSystemProperties.empty()) {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");
                 Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);

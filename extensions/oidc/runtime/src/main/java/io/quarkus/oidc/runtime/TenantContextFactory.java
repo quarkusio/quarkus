@@ -164,7 +164,7 @@ final class TenantContextFactory {
 
         if (!oidcConfig.tenantEnabled()) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return Uni.createFrom().item(TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig));
+            return TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig);
         }
 
         if (oidcConfig.authServerUrl().isEmpty()) {
@@ -172,11 +172,11 @@ final class TenantContextFactory {
                 throw new ConfigurationException("Both public key and certificate chain verification modes are enabled");
             }
             if (oidcConfig.publicKey().isPresent()) {
-                return Uni.createFrom().item(createTenantContextFromPublicKey(oidcConfig));
+                return createTenantContextFromPublicKey(oidcConfig);
             }
 
             if (oidcConfig.certificateChain().trustStoreFile().isPresent()) {
-                return Uni.createFrom().item(createTenantContextToVerifyCertChain(oidcConfig));
+                return createTenantContextToVerifyCertChain(oidcConfig);
             }
         }
 
@@ -190,8 +190,7 @@ final class TenantContextFactory {
                                 + " because either 'TenantConfigResolver' which will resolve tenant configurations is registered"
                                 + " or named tenants are configured.");
                         oidcConfig.tenantEnabled = false;
-                        return Uni.createFrom()
-                                .item(TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig));
+                        return TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig);
                     }
                 }
                 throw new ConfigurationException(
@@ -330,13 +329,7 @@ final class TenantContextFactory {
                     Set.of(tokenIssuedAtRequired, tokenAge));
         }
 
-        return createOidcProvider(oidcConfig)
-                .onItem().transform(new Function<OidcProvider, TenantConfigContext>() {
-                    @Override
-                    public TenantConfigContext apply(OidcProvider p) {
-                        return TenantConfigContext.createReady(p, oidcConfig);
-                    }
-                });
+        return createOidcProvider(oidcConfig).flatMap(p -> TenantConfigContext.createReady(p, oidcConfig));
     }
 
     private String getConfigPropertyForTenant(String tenantId, String configSubKey) {
@@ -359,25 +352,23 @@ final class TenantContextFactory {
         return true;
     }
 
-    private TenantConfigContext createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {
+    private Uni<TenantConfigContext> createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {
         if (!OidcUtils.isServiceApp(oidcConfig)) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }
         LOG.debug("'public-key' property for the local token verification is set,"
                 + " no connection to the OIDC server will be created");
 
-        return TenantConfigContext.createReady(
-                new OidcProvider(oidcConfig.publicKey().get(), oidcConfig), oidcConfig);
+        return TenantConfigContext.createReady(new OidcProvider(oidcConfig.publicKey().get(), oidcConfig), oidcConfig);
     }
 
-    private TenantConfigContext createTenantContextToVerifyCertChain(OidcTenantConfig oidcConfig) {
+    private Uni<TenantConfigContext> createTenantContextToVerifyCertChain(OidcTenantConfig oidcConfig) {
         if (!OidcUtils.isServiceApp(oidcConfig)) {
             throw new ConfigurationException(
                     "Currently only 'service' applications can be used to verify tokens with inlined certificate chains");
         }
 
-        return TenantConfigContext.createReady(
-                new OidcProvider(null, oidcConfig), oidcConfig);
+        return TenantConfigContext.createReady(new OidcProvider(null, oidcConfig), oidcConfig);
     }
 
     private OIDCException toOidcException(Throwable cause, String authServerUrl, String tenantId) {
@@ -515,9 +506,8 @@ final class TenantContextFactory {
                                     "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
-                        return Uni.createFrom()
-                                .item(new OidcProviderClientImpl(client, vertx, metadata, oidcConfig, oidcRequestFilters,
-                                        oidcResponseFilters));
+                        return OidcProviderClientImpl.of(client, vertx, metadata, oidcConfig, oidcRequestFilters,
+                                oidcResponseFilters);
                     }
 
                 });

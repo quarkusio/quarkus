@@ -28,7 +28,6 @@ import java.util.StringTokenizer;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.crypto.KeyGenerator;
@@ -39,7 +38,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
-import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
@@ -354,24 +352,21 @@ public class OidcCommonUtils {
         return creds.jwt().assertion();
     }
 
-    public static String clientSecret(Credentials creds) {
-        return creds.secret()
-                .orElse(creds.clientSecret().value().orElseGet(fromCredentialsProvider(creds.clientSecret().provider())));
-    }
-
-    public static String jwtSecret(Credentials creds) {
-        return creds.jwt().secret().orElseGet(fromCredentialsProvider(creds.jwt().secretProvider()));
-    }
-
-    public static String getClientOrJwtSecret(Credentials creds) {
-        LOG.debug("Trying to get the configured client secret");
-        String encSecret = clientSecret(creds);
-        if (encSecret == null) {
-            LOG.debug("Client secret is not configured, "
-                    + "trying to get the configured 'client_jwt_secret' secret");
-            encSecret = jwtSecret(creds);
+    public static Uni<String> clientSecret(Credentials creds) {
+        if (creds.secret().isPresent()) {
+            return Uni.createFrom().item(creds.secret().get());
         }
-        return encSecret;
+        if (creds.clientSecret().value().isPresent()) {
+            return Uni.createFrom().item(creds.clientSecret().value().get());
+        }
+        return fromCredentialsProvider(creds.clientSecret().provider());
+    }
+
+    public static Uni<String> jwtSecret(Credentials creds) {
+        if (creds.jwt().secret().isPresent()) {
+            return Uni.createFrom().item(creds.jwt().secret().get());
+        }
+        return fromCredentialsProvider(creds.jwt().secretProvider());
     }
 
     public static SecretKey generateSecretKey() throws Exception {
@@ -384,27 +379,19 @@ public class OidcCommonUtils {
         return creds.clientSecret().method().orElseGet(() -> Secret.Method.BASIC);
     }
 
-    private static Supplier<? extends String> fromCredentialsProvider(Provider provider) {
-        return new Supplier<String>() {
-
-            @Override
-            public String get() {
-                if (provider.key().isPresent()) {
-                    String providerName = provider.name().orElse(null);
-                    String keyringName = provider.keyringName().orElse(null);
-                    CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(providerName);
-                    // getCredentials invocation may block the event loop
-                    return credentialsProvider.getCredentials(keyringName).get(provider.key().get());
-                }
-                return null;
-            }
-        };
+    private static Uni<String> fromCredentialsProvider(Provider provider) {
+        if (provider.key().isEmpty()) {
+            return Uni.createFrom().nullItem();
+        }
+        return CredentialsProviderFinder
+                .find(provider.name().orElse(null))
+                .getCredentialsAsync(provider.keyringName().orElse(null))
+                .onItem().ifNotNull().transform(credentials -> credentials.get(provider.key().get()));
     }
 
-    public static Key clientJwtKey(Credentials creds) {
+    public static Uni<Key> clientJwtKey(Credentials creds) {
         if (creds.jwt().secret().isPresent() || creds.jwt().secretProvider().key().isPresent()) {
-            return KeyUtils
-                    .createSecretKeyFromSecret(jwtSecret(creds));
+            return jwtSecret(creds).onItem().ifNotNull().transform(KeyUtils::createSecretKeyFromSecret);
         } else {
             Key key = null;
             try {
@@ -438,7 +425,7 @@ public class OidcCommonUtils {
             if (key == null) {
                 throw new ConfigurationException("Key is null");
             }
-            return key;
+            return Uni.createFrom().item(key);
         }
     }
 
@@ -495,9 +482,9 @@ public class OidcCommonUtils {
 
     }
 
-    public static String initClientSecretBasicAuth(OidcClientCommonConfig oidcConfig) {
-        if (isClientSecretBasicAuthRequired(oidcConfig.credentials())) {
-            return basicSchemeValue(oidcConfig.clientId().get(), clientSecret(oidcConfig.credentials()));
+    public static String initClientSecretBasicAuth(OidcClientCommonConfig oidcConfig, String clientSecret) {
+        if (clientSecret != null && isClientSecretBasicAuthRequired(oidcConfig.credentials())) {
+            return basicSchemeValue(oidcConfig.clientId().get(), clientSecret);
         }
         return null;
     }
@@ -508,11 +495,11 @@ public class OidcCommonUtils {
 
     }
 
-    public static Key initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
+    public static Uni<Key> initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
         if (isClientJwtAuthRequired(oidcConfig.credentials(), server)) {
             return clientJwtKey(oidcConfig.credentials());
         }
-        return null;
+        return Uni.createFrom().nullItem();
     }
 
     public static Predicate<? super Throwable> oidcEndpointNotAvailable() {

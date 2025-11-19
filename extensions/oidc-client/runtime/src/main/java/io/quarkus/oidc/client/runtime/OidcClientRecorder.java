@@ -130,10 +130,10 @@ public class OidcClientRecorder {
             }
         }
         return tokenUrisUni.onItemOrFailure()
-                .transform(new BiFunction<OidcConfigurationMetadata, Throwable, OidcClient>() {
+                .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcClient>>() {
 
                     @Override
-                    public OidcClient apply(OidcConfigurationMetadata metadata, Throwable t) {
+                    public Uni<OidcClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
                         if (t != null) {
                             throw toOidcClientException(getEndpointUrl(oidcConfig), t);
                         }
@@ -189,7 +189,7 @@ public class OidcClientRecorder {
                         MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
                         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
-                        return new OidcClientImpl(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
+                        return OidcClientImpl.of(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
                                 tokenGrantParams, commonRefreshGrantParams, oidcConfig, oidcRequestFilters,
                                 oidcResponseFilters, vertx);
                     }

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 
 import java.util.Collections;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import jakarta.ws.rs.sse.OutboundSseEvent;
@@ -16,15 +17,15 @@ public class SseEventSinkImpl implements SseEventSink {
     public static final byte[] EMPTY_BUFFER = new byte[0];
     private ResteasyReactiveRequestContext context;
     private SseBroadcasterImpl broadcaster;
-    private boolean closed;
+    private AtomicBoolean closed = new AtomicBoolean();
 
     public SseEventSinkImpl(ResteasyReactiveRequestContext context) {
         this.context = context;
     }
 
     @Override
-    public synchronized boolean isClosed() {
-        return context.serverResponse().closed() || closed;
+    public boolean isClosed() {
+        return context.serverResponse().closed() || closed.get();
     }
 
     @Override
@@ -36,10 +37,10 @@ public class SseEventSinkImpl implements SseEventSink {
     }
 
     @Override
-    public synchronized void close() {
-        if (closed)
+    public void close() {
+        if (!closed.compareAndSet(false, true))
             return;
-        closed = true;
+
         ServerHttpResponse response = context.serverResponse();
         if (!response.closed()) {
             if (!response.headWritten()) {

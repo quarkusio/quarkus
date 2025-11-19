@@ -177,7 +177,7 @@ public class QuarkusCompiler implements Closeable {
         }
     }
 
-    public void setupSourceCompilationContext(DevModeContext context,
+    private void setupSourceCompilationContext(DevModeContext context,
             Set<File> classPathElements,
             Set<File> reloadableClassPathElements,
             DevModeContext.ModuleInfo i,

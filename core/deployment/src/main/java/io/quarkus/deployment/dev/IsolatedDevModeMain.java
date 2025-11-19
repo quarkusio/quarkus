@@ -250,7 +250,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 compilationProviders.add(provider);
                 context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
             }
-            QuarkusCompiler compiler = new QuarkusCompiler(curatedApplication, compilationProviders, context);
+            GradleCompiler compiler = new GradleCompiler(curatedApplication, compilationProviders, context);
             TestSupport testSupport = null;
             if (devModeType == DevModeType.LOCAL) {
                 testSupport = new TestSupport(curatedApplication, compilationProviders, context, devModeType);

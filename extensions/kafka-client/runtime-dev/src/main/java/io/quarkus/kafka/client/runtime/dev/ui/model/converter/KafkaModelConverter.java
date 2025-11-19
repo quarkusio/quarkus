@@ -30,6 +30,7 @@ public class KafkaModelConverter {
 
     private static Map<String, String> headers(ConsumerRecord<Bytes, Bytes> message) {
         return StreamSupport.stream(message.headers().spliterator(), false)
-                .collect(Collectors.toMap(Header::key, header -> new String(header.value(), StandardCharsets.UTF_8)));
+                .collect(Collectors.toMap(Header::key, header -> new String(header.value(), StandardCharsets.UTF_8),
+                        (existing, replacement) -> replacement));
     }
 }

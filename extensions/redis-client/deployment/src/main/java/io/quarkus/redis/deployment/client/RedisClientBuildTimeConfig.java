@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
@@ -11,7 +12,6 @@ import io.smallrye.config.WithDefault;
 
 @ConfigGroup
 public interface RedisClientBuildTimeConfig {
-
     /**
      * A list of files allowing to pre-load data into the Redis server.
      * The file is formatted as follows:
@@ -38,4 +38,9 @@ public interface RedisClientBuildTimeConfig {
     @WithDefault("true")
     boolean loadOnlyIfEmpty();
 
+    /**
+     * Dev Services allows Quarkus to automatically start Redis in dev and test mode.
+     */
+    @ConfigDocSection(generated = true)
+    DevServicesConfig devservices();
 }

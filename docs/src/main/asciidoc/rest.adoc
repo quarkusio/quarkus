@@ -2422,6 +2422,36 @@ public class Mapper {
 
 }
 ----
+
+By default, `@UnwrapException` only unwraps exceptions when no exception mapper exists for the wrapper exception or its parent types.
+You can control the unwrapping behavior using the `strategy` attribute with one of the following values:
+
+* `ExceptionUnwrapStrategy.UNWRAP_IF_NO_MATCH` (default): Unwraps only if neither the thrown exception nor any of its supertypes have a registered mapper. Checks the entire type hierarchy before unwrapping.
+* `ExceptionUnwrapStrategy.UNWRAP_IF_NO_EXACT_MATCH`: Unwraps if the thrown exception type itself has no exact mapper registered. Checks for an exact match first, then unwraps if none is found.
+* `ExceptionUnwrapStrategy.ALWAYS`: Always unwraps exception before checking mappers. Only falls back to checking mappers for the wrapper exception if no mapper is found for any unwrapped cause.
+
+[source,java]
+----
+@UnwrapException(value = {WebApplicationException.class}, strategy = ExceptionUnwrapStrategy.UNWRAP_IF_NO_EXACT_MATCH)
+public class Mappers {
+
+    @ServerExceptionMapper
+    public Response handleRuntimeException(RuntimeException ex) {
+        // Handles RuntimeException and its subclasses
+        return Response.status(599).build();
+    }
+
+    @ServerExceptionMapper
+    public Response handleJsonProcessingException(JsonProcessingException ex) {
+        // This will be called for JsonProcessingException wrapped in WebApplicationException
+        // because UNWRAP_IF_NO_EXACT_MATCH forces unwrapping even though RuntimeException mapper that would match WebApplicationException exists
+        return Response.status(400).entity("Invalid JSON").build();
+    }
+
+}
+----
+
+This is useful when you have a general exception mapper for a parent type (like `RuntimeException`) but want to handle specific wrapped exceptions differently.
 ====
 
 [NOTE]

@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -31,9 +30,8 @@ import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.proxy.config.ProxyConfig.NamedProxyConfig;
-import io.quarkus.proxy.config.ProxyConfigurationRegistry;
-import io.quarkus.proxy.config.ProxyConfigurationRegistry.NoneReturnValue;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
@@ -205,17 +203,17 @@ public class RestClientCDIDelegateBuilder<T> {
             final ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
             final Optional<String> proxyConfigurationName = restClientConfig.proxyConfigurationName()
                     .or(() -> configRoot.proxyConfigurationName());
-            registry.getProxyConfig(proxyConfigurationName, NoneReturnValue.NONE_INSTANCE)
-                    .map(NamedProxyConfig::assertHttpType)
+            registry.get(proxyConfigurationName)
+                    .map(ProxyConfiguration::assertHttpType)
                     .ifPresent(proxyConfig -> {
-                        builder.proxyAddress(proxyConfig.host().get(), proxyConfig.port().getAsInt());
-                        registry.getUsernamePassword(proxyConfig).ifPresent(creds -> {
-                            builder.proxyUser(creds.getUsername());
-                            builder.proxyPassword(creds.getPassword());
-                        });
+                        builder.proxyAddress(proxyConfig.host(), proxyConfig.port());
+                        if (proxyConfig.username().isPresent() && proxyConfig.password().isPresent()) {
+                            builder.proxyUser(proxyConfig.username().get());
+                            builder.proxyPassword(proxyConfig.password().get());
+                        }
                         proxyConfig.nonProxyHosts().ifPresent(nonProxyHosts -> {
                             if (!nonProxyHosts.isEmpty()) {
-                                builder.nonProxyHosts(nonProxyHosts.stream().collect(Collectors.joining(",")));
+                                builder.nonProxyHosts(String.join(",", nonProxyHosts));
                             }
                         });
                         proxyConfig.proxyConnectTimeout().ifPresent(builder::proxyConnectTimeout);

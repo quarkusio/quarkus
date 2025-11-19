@@ -1,5 +1,6 @@
 package io.quarkus.devservices.keycloak;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem.getKeycloakUrl;
@@ -406,7 +407,7 @@ public class KeycloakDevServicesProcessor {
                 capturedDevServicesConfiguration.shared(),
                 LaunchMode.current());
 
-        String imageName = capturedDevServicesConfiguration.imageName();
+        String imageName = capturedDevServicesConfiguration.imageName().orElseGet(() -> getDefaultImageNameFor("keycloak"));
         DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
 
         final Supplier<RunningDevService> defaultKeycloakContainerSupplier = () -> {

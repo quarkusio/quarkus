@@ -146,7 +146,7 @@ public class LiquibaseMongodbFactory {
 
     private Database createDatabase(MongoClients clients, String clientName, String databaseName) {
         MongoConnection databaseConnection = new MongoConnection();
-        MongoClient mongoClient = clients.createMongoClient(clientName);
+        MongoClient mongoClient = clients.unmanagedMongoClient(clientName);
         databaseConnection.setMongoClient(mongoClient);
         databaseConnection.setMongoDatabase(mongoClient.getDatabase(databaseName));
         Database database = new MongoLiquibaseDatabase();

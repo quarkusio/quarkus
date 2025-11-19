@@ -27,7 +27,6 @@ class HealthCheckContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.smallrye-health.context-propagation", "true")
             .withApplicationRoot((jar) -> jar
                     .addClasses(RequestScopedBean.class, ContextualHC.class));
 

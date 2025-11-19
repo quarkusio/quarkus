@@ -3,7 +3,7 @@ package io.quarkus.infinispan.client.runtime.graal;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.impl.InternalRemoteCache;
-import org.infinispan.client.hotrod.impl.operations.OperationsFactory;
+import org.infinispan.client.hotrod.impl.transport.netty.OperationDispatcher;
 import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.SerializationContext;
@@ -24,11 +24,13 @@ public final class SubstituteRemoteCacheManager {
     private Marshaller marshaller;
     @Alias
     private Configuration configuration;
+    @Alias
+    private OperationDispatcher dispatcher;
 
     @Substitute
-    private void initRemoteCache(InternalRemoteCache<?, ?> remoteCache, OperationsFactory operationsFactory) {
+    private void initRemoteCache(InternalRemoteCache<?, ?> remoteCache) {
         // Invoke the init method that doesn't have the JMX ObjectName argument
-        remoteCache.init(operationsFactory, configuration);
+        remoteCache.init(configuration, dispatcher);
     }
 
     @Substitute

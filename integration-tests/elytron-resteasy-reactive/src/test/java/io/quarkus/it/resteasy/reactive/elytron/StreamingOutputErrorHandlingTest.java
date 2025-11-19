@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -55,21 +56,25 @@ public class StreamingOutputErrorHandlingTest {
     public void testStreamingOutputFailureMidStream() {
         AtomicLong byteCount = new AtomicLong();
         CompletableFuture<Void> latch = new CompletableFuture<>();
+        AtomicBoolean connectionWasReset = new AtomicBoolean(false);
 
         sendRequest("/streaming-output-error/output?fail=true", latch,
-                b -> byteCount.addAndGet(b.length()));
+                b -> byteCount.addAndGet(b.length()),
+                () -> connectionWasReset.set(true));
 
         Assertions.assertTimeoutPreemptively(TIMEOUT, () -> {
-            ExecutionException ex = Assertions.assertThrows(ExecutionException.class,
-                    latch::get,
-                    "Client should have detected that the server reset the connection");
-
-            Assertions.assertInstanceOf(HttpClosedException.class, ex.getCause(),
-                    "Expected HttpClosedException when connection is reset mid-stream");
+            try {
+                latch.get();
+                Assertions.assertEquals(EXPECTED_BYTES_FIRST_BATCH, byteCount.get(),
+                        "When connection completes without exception, should have received only first batch " +
+                                "(data was in buffer before reset)");
+            } catch (ExecutionException ex) {
+                Assertions.assertInstanceOf(HttpClosedException.class, ex.getCause(),
+                        "Expected HttpClosedException when connection is reset mid-stream");
+                Assertions.assertEquals(EXPECTED_BYTES_FIRST_BATCH, byteCount.get(),
+                        "Should have received only the first batch of data before failure");
+            }
         });
-
-        Assertions.assertEquals(EXPECTED_BYTES_FIRST_BATCH, byteCount.get(),
-                "Should have received only the first batch of data before failure");
     }
 
     @Test
@@ -78,8 +83,8 @@ public class StreamingOutputErrorHandlingTest {
         CompletableFuture<Void> latch = new CompletableFuture<>();
 
         sendRequest("/streaming-output-error/output?fail=false", latch,
-                b -> byteCount.addAndGet(b.length()));
-
+                b -> byteCount.addAndGet(b.length()), () -> {
+                });
         Assertions.assertTimeoutPreemptively(TIMEOUT,
                 () -> latch.get(),
                 "StreamingOutput should complete successfully without errors");
@@ -88,7 +93,8 @@ public class StreamingOutputErrorHandlingTest {
                 "Should have received all data when no errors occur");
     }
 
-    private void sendRequest(String uri, CompletableFuture<Void> latch, Consumer<Buffer> bodyConsumer) {
+    private void sendRequest(String uri, CompletableFuture<Void> latch,
+            Consumer<Buffer> bodyConsumer, Runnable onConnectionClose) {
         Handler<Throwable> failureHandler = latch::completeExceptionally;
 
         client.request(HttpMethod.GET, port, "localhost", uri)
@@ -99,6 +105,7 @@ public class StreamingOutputErrorHandlingTest {
                             .onFailure(failureHandler)
                             .onSuccess(response -> {
                                 response.request().connection().closeHandler(v -> {
+                                    onConnectionClose.run();
                                     failureHandler.handle(new HttpClosedException("Connection was closed"));
                                 });
 

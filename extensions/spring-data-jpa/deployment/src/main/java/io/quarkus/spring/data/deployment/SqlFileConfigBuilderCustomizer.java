@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
@@ -12,6 +13,9 @@ import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 public class SqlFileConfigBuilderCustomizer implements SmallRyeConfigBuilderCustomizer {
     @Override
     public void configBuilder(SmallRyeConfigBuilder builder) {
+        if (!LaunchMode.current().isDevOrTest()) {
+            return;
+        }
         List<String> supportedSqlFiles = List.of("import.sql", "data.sql");
         List<String> sqlFilesThatExist = new ArrayList<>();
 

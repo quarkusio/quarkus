@@ -276,8 +276,8 @@ public class DataSources {
         }
 
         // metrics
-        if (dataSourceJdbcBuildTimeConfig.enableMetrics().isPresent()) {
-            dataSourceConfiguration.metricsEnabled(dataSourceJdbcBuildTimeConfig.enableMetrics().get());
+        if (dataSourceJdbcBuildTimeConfig.metrics().enabled().isPresent()) {
+            dataSourceConfiguration.metricsEnabled(dataSourceJdbcBuildTimeConfig.metrics().enabled().get());
         } else {
             // if the enable-metrics property is unspecified, treat it as true if MP Metrics are being exposed
             dataSourceConfiguration.metricsEnabled(dataSourcesBuildTimeConfig.metricsEnabled() && mpMetricsPresent);

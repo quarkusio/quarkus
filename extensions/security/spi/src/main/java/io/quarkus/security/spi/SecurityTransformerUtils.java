@@ -17,8 +17,10 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 
 /**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
+ * @deprecated this transformer does not reflect annotation transformations, use the {@link SecurityTransformer}
+ *             helper produced by the {@link SecurityTransformerBuildItem} build item
  */
+@Deprecated(since = "3.30", forRemoval = true)
 public final class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
     private static final Set<DotName> SECURITY_ANNOTATIONS = Set.of(DotName.createSimple(RolesAllowed.class.getName()),

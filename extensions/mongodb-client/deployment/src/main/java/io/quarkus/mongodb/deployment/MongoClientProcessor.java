@@ -71,6 +71,7 @@ import io.quarkus.mongodb.runtime.MongoClientCustomizer;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
+import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.mongodb.runtime.MongoReactiveContextProvider;
 import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
@@ -280,7 +281,7 @@ public class MongoClientProcessor {
     void connectionNames(
             List<MongoClientNameBuildItem> mongoClientNames,
             BuildProducer<MongoConnectionNameBuildItem> mongoConnections) {
-        mongoConnections.produce(new MongoConnectionNameBuildItem(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME));
+        mongoConnections.produce(new MongoConnectionNameBuildItem(MongoConfig.DEFAULT_CLIENT_NAME));
         for (MongoClientNameBuildItem bi : mongoClientNames) {
             mongoConnections.produce(new MongoConnectionNameBuildItem(bi.getName()));
         }
@@ -368,12 +369,12 @@ public class MongoClientProcessor {
         if (createDefaultBlockingMongoClient) {
             syntheticBeanBuildItemBuildProducer.produce(createBlockingSyntheticBean(recorder,
                     makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients(),
-                    MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
+                    MongoConfig.DEFAULT_CLIENT_NAME, false));
         }
         if (createDefaultReactiveMongoClient) {
             syntheticBeanBuildItemBuildProducer.produce(createReactiveSyntheticBean(recorder,
                     makeUnremovable || mongoClientBuildTimeConfig.forceDefaultClients(),
-                    MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, false));
+                    MongoConfig.DEFAULT_CLIENT_NAME, false));
         }
 
         for (MongoClientNameBuildItem mongoClientName : mongoClientNames) {
@@ -396,9 +397,9 @@ public class MongoClientProcessor {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(MongoClient.class)
                 .scope(ApplicationScoped.class)
-                // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been set up
                 .supplier(recorder.mongoClientSupplier(clientName))
+                .checkActive(recorder.checkActive(clientName))
+                .startup()
                 .setRuntimeInit();
 
         return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, false);
@@ -410,9 +411,9 @@ public class MongoClientProcessor {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(ReactiveMongoClient.class)
                 .scope(ApplicationScoped.class)
-                // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been set up
                 .supplier(recorder.reactiveMongoClientSupplier(clientName))
+                .checkActive(recorder.checkActive(clientName))
+                .startup()
                 .setRuntimeInit();
 
         return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, true);
@@ -424,7 +425,7 @@ public class MongoClientProcessor {
             configurator.unremovable();
         }
 
-        if (MongoClientBeanUtil.isDefault(clientName)) {
+        if (MongoConfig.isDefaultClient(clientName)) {
             configurator.addQualifier(Default.class);
         } else {
             String namedQualifier = MongoClientBeanUtil.namedQualifier(clientName, isReactive);
@@ -505,7 +506,7 @@ public class MongoClientProcessor {
                     String clientName = name.get().value().asString();
                     customizers.computeIfAbsent(clientName, k -> new ArrayList<>()).add(bean.getBeanClass().toString());
                 } else {
-                    customizers.computeIfAbsent(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, k -> new ArrayList<>())
+                    customizers.computeIfAbsent(MongoConfig.DEFAULT_CLIENT_NAME, k -> new ArrayList<>())
                             .add(bean.getBeanClass().toString());
                 }
             }

@@ -227,7 +227,7 @@ final class LinksProcessor {
         ClassInfo classInfo = index.getClassByName(className);
 
         if (classInfo == null) {
-            throw new RuntimeException(String.format("Class '%s' was not found", classInfo));
+            throw new RuntimeException(String.format("Class '%s' was not found", className));
         }
         validateRec(index, entityType, classInfo);
     }
@@ -272,7 +272,7 @@ final class LinksProcessor {
         // Id field not found but there's still hope
         classInfo = index.getClassByName(superClassName);
         if (classInfo == null) {
-            throw new RuntimeException(String.format("Class '%s' was not found", classInfo));
+            throw new RuntimeException(String.format("Class '%s' was not found", superClassName));
         }
         validateRec(index, entityType, classInfo);
     }

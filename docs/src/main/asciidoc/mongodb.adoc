@@ -303,6 +303,71 @@ MongoClient mongoClient1;
 ReactiveMongoClient mongoClient2;
 ----
 
+=== Activate or deactivate Mongo Clients
+
+When a Mongo Client is configured at build time, and its URL is set at runtime, it is active by default. Quarkus
+starts the corresponding Mongo Client when the application starts.
+
+To deactivate a Mongo Client at runtime, either:
+
+* Do not set `quarkus.mongodb[.optional name].hosts` or `quarkus.mongodb[.optional name].connection-#string#`.
+* Set `quarkus.mongodb[.optional name].active` to `false`.
+
+If a Mongo Client is not active:
+
+* The Mongo Client does not attempt to connect to Mongo during application startup.
+* The Mongo Client does not contribute a <<mongo-health-check,health check>>.
+* Static CDI injection points involving the Mongo Client, such as `@Inject ReactiveMongoClient mongoClient` or `@Inject MongoClient mongoClient`, cause application startup to fail.
+* Dynamic retrieval of the Mongo Client, such as through `CDI.getBeanContainer()`, `Arc.instance()`, or an injected `Instance<ReactiveMongoClient>`, causes an exception to be thrown.
+* Other Quarkus extensions that consume the Mongo Client may cause application startup to fail.
+
+This feature is especially useful when the application must dynamically select a Mongo Client from a predefined set at
+runtime.
+
+.An example of configuring multiple Mongo Clients for runtime selection:
+
+[source,properties]
+----
+quarkus.mongodb.one.active=false
+quarkus.mongodb.one.connection-string=mongodb://127.0.0.1:27018
+quarkus.mongodb.two.active=false
+quarkus.mongodb.two.connection-string=mongodb://127.0.0.1:27019
+----
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+
+import com.mongodb.client.MongoClient;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    @MongoClientName("one")
+    InjectableInstance<ReactiveMongoClient> one;
+    @Inject
+    @MongoClientName("two")
+    InjectableInstance<MongoClient> two;
+    public void doSomething() {
+        ReactiveMongoClient mongoClient = one.getActive();
+        // ...
+    }
+}
+----
+
+Setting `quarkus.mongodb.one.active=true` xref:config-reference.adoc#configuration-sources[at runtime] makes only the
+Mongo Client `one` available.
+Setting `quarkus.mongodb.two.active=true` at runtime makes only the Mongo Client `two` available.
+
+[IMPORTANT]
+====
+A Mongo Client (either default or named) must always be discoverable at build-time to be considered for runtime
+injection. This can be done by injecting the Mongo Client name with `@MongoClientName`. If the Mongo Client name may be
+active or inactive, it needs to use the wrapper `InjectableInstance<>`, or else Quarkus will throw an exception at
+startup time if the Mongo Client is inactive. Alternatively, Mongo Clients may also be discovered via configuration.
+====
+
 == Running a MongoDB Database
 As by default, `MongoClient` is configured to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
 
@@ -605,6 +670,7 @@ The xref:mongodb-panache.adoc[MongoDB with Panache] extension facilitates the us
 The xref:liquibase-mongodb.adoc[Liquibase MongoDB] extension facilitates the initialization of a MongoDB database including indices and initial data.
 It implements the same schema migration facilities that Liquibase offers for SQL databases.
 
+[[mongo-health-check]]
 == Connection Health Check
 
 If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb-client` will automatically add a readiness health check

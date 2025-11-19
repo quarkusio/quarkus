@@ -38,12 +38,8 @@ class MongoMetricsTest extends MongoTestBase {
 
     @Test
     void testMetricsInitialization() {
-        // Clients are created lazily, this metric should not be present yet
-        assertThat(getMetric("mongodb.driver.pool.size")).isNull();
-        assertThat(getMetric("mongodb.driver.pool.checkedout")).isNull();
-
         // Just need to execute something so that a connection is opened
-        String name = client.listDatabaseNames().first();
+        client.listDatabaseNames().first();
 
         assertThat(getMetric("mongodb.driver.pool.size")).isOne();
         assertThat(getMetric("mongodb.driver.commands")).isOne();

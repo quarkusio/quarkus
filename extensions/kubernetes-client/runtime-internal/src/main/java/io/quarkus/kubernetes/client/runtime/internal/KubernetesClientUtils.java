@@ -1,5 +1,8 @@
 package io.quarkus.kubernetes.client.runtime.internal;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -20,7 +23,18 @@ public class KubernetesClientUtils {
     public static Config createConfig(KubernetesClientBuildConfig buildConfig) {
         boolean globalTrustAll = ConfigProvider.getConfig().getOptionalValue("quarkus.tls.trust-all", Boolean.class)
                 .orElse(false);
-        Config base = Config.autoConfigure(null);
+        Config base;
+        if (buildConfig.kubeconfigFile().isPresent()) {
+            String kubeconfigPath = buildConfig.kubeconfigFile().get();
+            try {
+                String kubeconfig = Files.readString(Path.of(kubeconfigPath));
+                base = Config.fromKubeconfig(kubeconfig);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read kubeconfig file: " + kubeconfigPath, e);
+            }
+        } else {
+            base = Config.autoConfigure(null);
+        }
         boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : globalTrustAll;
         final var configBuilder = new ConfigBuilder(base).withTrustCerts(trustAll);
         buildConfig.watchReconnectInterval().ifPresent(d -> configBuilder.withWatchReconnectInterval(millisAsInt(d)));

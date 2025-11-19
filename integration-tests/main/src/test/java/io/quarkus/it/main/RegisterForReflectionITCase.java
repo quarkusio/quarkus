@@ -21,9 +21,10 @@ public class RegisterForReflectionITCase {
         final String resourceA = BASE_PKG + ".ResourceA";
 
         assertRegistration("ResourceA", resourceA);
-        assertRegistration("FAILED", resourceA + "$InnerClassOfA");
-        assertRegistration("FAILED", resourceA + "$StaticClassOfA");
-        assertRegistration("FAILED", resourceA + "$InterfaceOfA");
+        final boolean isCompleteReflectionTypes = isCompleteReflectionTypes();
+        assertRegistration(isCompleteReflectionTypes ? "InnerClassOfA" : "FAILED", resourceA + "$InnerClassOfA");
+        assertRegistration(isCompleteReflectionTypes ? "StaticClassOfA" : "FAILED", resourceA + "$StaticClassOfA");
+        assertRegistration(isCompleteReflectionTypes ? "InterfaceOfA" : "FAILED", resourceA + "$InterfaceOfA");
     }
 
     @Test
@@ -54,7 +55,9 @@ public class RegisterForReflectionITCase {
 
         assertRegistration("FAILED", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
-        assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+        final boolean isCompleteReflectionTypes = isCompleteReflectionTypes();
+        assertRegistration(isCompleteReflectionTypes ? "OtherAccessibleClassOfD" : "FAILED",
+                resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
     }
 
     // NOTE: This test is expected to fail with GraalVM >= 23.1.0 and < 23.1.3 yet we enable it for all 23.1 versions
@@ -69,5 +72,10 @@ public class RegisterForReflectionITCase {
 
     private void assertRegistration(String expected, String queryParam) {
         RestAssured.given().queryParam("className", queryParam).when().get(ENDPOINT).then().body(is(expected));
+    }
+
+    private boolean isCompleteReflectionTypes() {
+        return Boolean.valueOf(
+                RestAssured.given().when().get("/reflection/completeReflectionTypes").then().extract().body().asString());
     }
 }

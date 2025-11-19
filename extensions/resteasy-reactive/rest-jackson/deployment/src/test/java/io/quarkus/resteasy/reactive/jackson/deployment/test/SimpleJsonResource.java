@@ -152,6 +152,12 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return mapWrapper;
     }
 
+    @POST
+    @Path("/null-string-echo")
+    public String echoNullString(@Valid StringWrapper input) {
+        return input.text();
+    }
+
     @GET
     @Path("/abstract-cat")
     public AbstractPet getAbstractCat() {

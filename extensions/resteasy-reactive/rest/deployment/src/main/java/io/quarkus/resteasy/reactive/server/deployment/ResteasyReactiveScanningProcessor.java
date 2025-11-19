@@ -34,6 +34,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.server.ExceptionUnwrapStrategy;
 import org.jboss.resteasy.reactive.server.UnwrapException;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
@@ -134,6 +135,9 @@ public class ResteasyReactiveScanningProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
         for (AnnotationInstance instance : index.getAnnotations(UnwrapException.class)) {
             AnnotationValue value = instance.value();
+            AnnotationValue strategyValue = instance.value("strategy");
+            ExceptionUnwrapStrategy strategy = toExceptionUnwrapStrategy(strategyValue);
+
             if (value == null) {
                 // in this case we need to use the class where the annotation was placed as the exception to be unwrapped
 
@@ -162,14 +166,21 @@ public class ResteasyReactiveScanningProcessor {
                                     + classInfo.name() + "'.");
                 }
 
-                producer.produce(new UnwrappedExceptionBuildItem(classInfo.name().toString()));
+                producer.produce(new UnwrappedExceptionBuildItem(classInfo.name().toString(), strategy));
             } else {
                 Type[] exceptionTypes = value.asClassArray();
                 for (Type exceptionType : exceptionTypes) {
-                    producer.produce(new UnwrappedExceptionBuildItem(exceptionType.name().toString()));
+                    producer.produce(new UnwrappedExceptionBuildItem(exceptionType.name().toString(), strategy));
                 }
             }
         }
+    }
+
+    private static ExceptionUnwrapStrategy toExceptionUnwrapStrategy(AnnotationValue strategyValue) {
+        if (strategyValue != null) {
+            return ExceptionUnwrapStrategy.valueOf(strategyValue.asEnum());
+        }
+        return ExceptionUnwrapStrategy.UNWRAP_IF_NO_MATCH;
     }
 
     @BuildStep
@@ -186,7 +197,7 @@ public class ResteasyReactiveScanningProcessor {
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
         for (UnwrappedExceptionBuildItem bi : unwrappedExceptions) {
-            exceptions.addUnwrappedException(bi.getThrowableClassName());
+            exceptions.addUnwrappedException(bi.getThrowableClassName(), bi.getStrategy());
         }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             exceptions.addNonBlockingProblem(

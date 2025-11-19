@@ -19,6 +19,11 @@ import io.vertx.redis.client.RedisTopology;
 
 @ConfigGroup
 public interface RedisClientConfig {
+    /**
+     * Whether this Redis Client should be active at runtime.
+     */
+    @WithDefault("true")
+    boolean active();
 
     /**
      * The Redis hosts to use while connecting to the Redis server. Only the cluster and sentinel modes will consider more than
@@ -287,5 +292,4 @@ public interface RedisClientConfig {
                 ", configureClientName=" + configureClientName() +
                 '}';
     }
-
 }

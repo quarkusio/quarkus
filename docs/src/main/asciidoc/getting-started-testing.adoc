@@ -1354,6 +1354,32 @@ packaged as *jar*, you can use:
 
 as an argument to Maven/Gradle when launching the test. This will make the application wait until a remote JVM debugger is connected to port `5005`.
 
+[#generating-an-aot-cache-during-integration-tests]
+=== Generating an AOT cache during integration tests
+
+When targeting JDK 25+, you can instruct Quarkus to generate an AOT cache (`app.aot`) while running `@QuarkusIntegrationTest` tests.
+Enable this by adding the following system property to your integration test run:
+
+[source,bash]
+----
+-Dquarkus.package.jar.appcds.use-aot=true
+----
+
+With this flag, the tested application is launched with the JVM’s AOT cache output option, and an `app.aot` file is produced next to the built jar (for example `target/quarkus-app/app.aot`). You can then run the application with:
+
+[source,bash]
+----
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+
+This feature essentially turns the existing testsuite into a training run.
+
+[NOTE]
+====
+- The feature requires JDK 25 or newer.
+- The effectiveness of the generated cache depends on how representative your integration tests are of production startup and early traffic.
+====
+
 === Launching containers
 
 When `@QuarkusIntegrationTest` results in launching a container (because the application was built with `quarkus.container-image.build` set to `true`), the container is launched on a predictable container network. This facilitates writing integration tests that need to launch services to support the application.
@@ -1496,13 +1522,13 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 
 [NOTE]
 --
-Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.  
+Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.
 
 For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
 
 For Gradle, this means the two types of tests should belong to different source sets.
 
-.Source set configuration example  
+.Source set configuration example
 [%collapsible]
 ====
 [source,kotlin,subs=attributes+]
@@ -1639,6 +1665,36 @@ which allows you to set up the resource before Quarkus starts (e.g. configure a 
 For `@QuarkusIntegrationTest` tests that result in launcher the application as a container, `io.quarkus.test.common.DevServicesContext` also provides access to the id of the container network on which the application container was launched (via the `containerNetworkId` method).
 This can be used by `QuarkusTestResourceLifecycleManager` that need to launch additional containers that the application will communicate with.
 ====
+
+== Creating `@QuarkusTest` meta-annotation
+
+The `@QuarkusTest` annotation can be grouped with other annotations by defining a custom meta-annotation.
+For instance, you can bundle it with the `@Tag` annotation to automatically mark a group of tests like in the example below:
+
+[source,java]
+----
+org.acme.test
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Tag;
+
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@QuarkusTest
+@Tag("security")
+public @interface QuarkusSecurityTest {   <1>
+}
+----
+<1> The `@QuarkusSecurityTest` annotation can be used instead of the `@QuarkusTest` annotation.
 
 == Testing Components
 

@@ -44,7 +44,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.5.1</jandex.version>
+        <jandex.version>3.5.2</jandex.version>
         <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit5.version>5.13.4</junit5.version>
         <maven.version>3.9.11</maven.version>
@@ -56,17 +56,17 @@
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <mutiny.version>3.0.1</mutiny.version>
-        <smallrye-common.version>2.13.9</smallrye-common.version>
+        <smallrye-common.version>2.14.0</smallrye-common.version>
         <vertx.version>4.5.22</vertx.version>
         <rest-assured.version>5.5.6</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.20.0</jackson-bom.version>
+        <jackson-bom.version>2.20.1</jackson-bom.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <yasson.version>3.0.4</yasson.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <awaitility.version>4.3.0</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>3.20.1</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>3.20.2</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <mockito.version>5.20.0</mockito.version>
         <wiremock.version>3.13.1</wiremock.version>

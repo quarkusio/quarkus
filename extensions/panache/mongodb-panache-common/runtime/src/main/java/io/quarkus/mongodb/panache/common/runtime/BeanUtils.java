@@ -6,6 +6,8 @@ import java.util.function.Predicate;
 
 import jakarta.inject.Named;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
@@ -14,7 +16,8 @@ import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
-import io.quarkus.mongodb.runtime.MongoClients;
+import io.quarkus.mongodb.runtime.MongoConfig;
+import io.smallrye.config.SmallRyeConfig;
 
 public final class BeanUtils {
 
@@ -26,7 +29,7 @@ public final class BeanUtils {
             return entity.clientName();
         }
 
-        return MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME;
+        return MongoConfig.DEFAULT_CLIENT_NAME;
     }
 
     public static <T> T clientFromArc(MongoEntity entity,
@@ -60,18 +63,15 @@ public final class BeanUtils {
     }
 
     public static String getDatabaseName(MongoEntity mongoEntity, String clientBeanName) {
-        MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
-        MongoClientConfig matchingMongoClientConfig = mongoClients.getMatchingMongoClientConfig(clientBeanName);
-        if (matchingMongoClientConfig.database().isPresent()) {
-            return matchingMongoClientConfig.database().get();
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        MongoConfig mongoConfig = config.getConfigMapping(MongoConfig.class);
+        MongoClientConfig mongoClientConfig = mongoConfig.clients().get(clientBeanName);
+        if (mongoClientConfig.database().isPresent()) {
+            return mongoClientConfig.database().get();
         }
-
-        if (!clientBeanName.equals(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)) {
-            MongoClientConfig defaultMongoClientConfig = mongoClients
-                    .getMatchingMongoClientConfig(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME);
-            if (defaultMongoClientConfig.database().isPresent()) {
-                return defaultMongoClientConfig.database().get();
-            }
+        mongoClientConfig = mongoConfig.clients().get(MongoConfig.DEFAULT_CLIENT_NAME);
+        if (mongoClientConfig.database().isPresent()) {
+            return mongoClientConfig.database().get();
         }
 
         if (mongoEntity == null) {

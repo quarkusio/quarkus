@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -21,6 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class DataFileWatchTest {
+
+    // This is a rather long timeout due to the GH runner instances running many things concurrently.
+    static final Duration FUTURE_WAIT_DURATION = Duration.ofMinutes(15);
 
     @TempDir
     Path tempDir;
@@ -55,7 +59,7 @@ public class DataFileWatchTest {
     }
 
     @Test
-    public void waitForDataFileGoodCase() throws Exception {
+    public void waitForDataFileGoodCase() {
         // Scenario:
         // - The Jacoco data file does not already exist
         // - File created after 2 wait iterations
@@ -92,7 +96,7 @@ public class DataFileWatchTest {
 
         Future<Boolean> future = executor.submit(dataFileWatch::waitForDataFile);
 
-        assertThat(future.get(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(future).succeedsWithin(FUTURE_WAIT_DURATION).isEqualTo(true);
         assertThat(waitIterations.get()).isEqualTo(2);
         assertThat(error.get()).isNull();
     }
@@ -136,13 +140,13 @@ public class DataFileWatchTest {
 
         Future<Boolean> future = executor.submit(dataFileWatch::waitForDataFile);
 
-        assertThat(future.get(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(future).succeedsWithin(FUTURE_WAIT_DURATION).isEqualTo(true);
         assertThat(waitIterations.get()).isEqualTo(2);
         assertThat(error.get()).isNull();
     }
 
     @Test
-    public void waitForDataFileJacocoStillRunning() throws Exception {
+    public void waitForDataFileJacocoStillRunning() {
         // Scenario:
         // - The Jacoco data file does not already exist
         // - file created after 2 wait iterations
@@ -174,7 +178,7 @@ public class DataFileWatchTest {
 
         Future<Boolean> future = executor.submit(dataFileWatch::waitForDataFile);
 
-        assertThat(future.get(30, TimeUnit.SECONDS)).isFalse();
+        assertThat(future).succeedsWithin(FUTURE_WAIT_DURATION).isEqualTo(false);
         assertThat(waitIterations.get()).isEqualTo(0);
         assertThat(error.get()).isEqualTo(String.format(
                 "Timed out waiting for Jacoco data file %s update, file size before test run: did not exist, current file size: 100",
@@ -182,7 +186,7 @@ public class DataFileWatchTest {
     }
 
     @Test
-    public void waitForDataFileThatNeverAppears() throws Exception {
+    public void waitForDataFileThatNeverAppears() {
         // Scenario:
         // - The Jacoco data file does not already exist,
         // - The data file never appears
@@ -205,8 +209,8 @@ public class DataFileWatchTest {
 
         Future<Boolean> future = executor.submit(dataFileWatch::waitForDataFile);
 
-        assertThat(future.isDone()).isFalse();
-        assertThat(future.get(30, TimeUnit.SECONDS)).isFalse();
+        assertThat(future).succeedsWithin(FUTURE_WAIT_DURATION).isEqualTo(false);
+        assertThat(waitIterations.get()).isEqualTo(0);
         assertThat(error.get()).isEqualTo(String.format(
                 "Timed out waiting for Jacoco data file %s update, file size before test run: did not exist, current file size: does not exist",
                 datafile));
@@ -238,8 +242,8 @@ public class DataFileWatchTest {
 
         Future<Boolean> future = executor.submit(dataFileWatch::waitForDataFile);
 
-        assertThat(future.isDone()).isFalse();
-        assertThat(future.get(30, TimeUnit.SECONDS)).isFalse();
+        assertThat(future).succeedsWithin(FUTURE_WAIT_DURATION).isEqualTo(false);
+        assertThat(waitIterations.get()).isEqualTo(0);
         assertThat(error.get()).isEqualTo(String.format(
                 "Timed out waiting for Jacoco data file %s update, file size before test run: 100, current file size: 100",
                 datafile));

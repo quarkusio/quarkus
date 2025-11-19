@@ -44,12 +44,11 @@ import com.dajudge.kindcontainer.client.config.UserSpec;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
-import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.apps.ReplicaSet;
-import io.fabric8.kubernetes.api.model.apps.StatefulSet;
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -218,7 +217,7 @@ public class DevServicesKubernetesProcessor {
                             resources.forEach(resource -> {
                                 client.resource(resource).create();
 
-                                if (isReadinessApplicable(resource)) {
+                                if (Readiness.getInstance().isReadinessApplicable(resource)) {
                                     resourcesWithReadiness.add(resource);
                                 }
                             });
@@ -240,17 +239,6 @@ public class DevServicesKubernetesProcessor {
         } catch (Exception e) {
             log.error("Failed to create Kubernetes client while trying to apply manifests.", e);
         }
-    }
-
-    private boolean isReadinessApplicable(HasMetadata item) {
-        return (item instanceof Deployment ||
-                item instanceof io.fabric8.kubernetes.api.model.extensions.Deployment ||
-                item instanceof ReplicaSet ||
-                item instanceof Pod ||
-                item instanceof ReplicationController ||
-                item instanceof Endpoints ||
-                item instanceof Node ||
-                item instanceof StatefulSet);
     }
 
     private InputStream getManifestStream(String manifestPath) throws IOException {

@@ -57,9 +57,8 @@ public class CustomConfigurationViaBeansTest {
         assertThat(hibernateValidatorFactory.getScriptEvaluatorFactory()).isInstanceOf(MyScriptEvaluatorFactory.class);
         assertThat(hibernateValidatorFactory.getGetterPropertySelectionStrategy())
                 .isInstanceOf(MyGetterPropertySelectionStrategy.class);
-        // Waiting for https://hibernate.atlassian.net/browse/HV-1841 to be released
-        //assertThat(hibernateValidatorFactory.getPropertyNodeNameProvider())
-        //        .isInstanceOf(MyPropertyNodeNameProvider.class);
+        assertThat(hibernateValidatorFactory.getPropertyNodeNameProvider())
+                .isInstanceOf(MyPropertyNodeNameProvider.class);
     }
 
     @ApplicationScoped

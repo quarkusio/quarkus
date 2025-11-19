@@ -77,12 +77,12 @@ images at https://quay.io/repository/jbosstm/lra-coordinator?tab=tags.
 The LRA Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
 It relies on a `compose-devservices.yml`, such as:
 
-[source,yaml]
+[source,yaml,subs=attributes+]
 ----
 name: <application name>
 services:
-  mongo:
-    image: quay.io/jbosstm/lra-coordinator:7.2.2.Final-3.24.4
+  narayana-lra:
+    image: {narayana-lra-image}
     ports:
       - "8080"
 ----

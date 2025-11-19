@@ -115,6 +115,7 @@
         <amqp.image>quay.io/artemiscloud/activemq-artemis-broker:1.0.25</amqp.image>
         <apicurio-registry.image>quay.io/apicurio/apicurio-registry-mem:2.6.13.Final</apicurio-registry.image>
         <narayana-lra.image>quay.io/jbosstm/lra-coordinator:latest</narayana-lra.image>
+        <rabbitmq.image>rabbitmq:3.12-management</rabbitmq.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>

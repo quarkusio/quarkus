@@ -50,9 +50,9 @@ You can set the port by configuring the `quarkus.rabbitmq.devservices.port` prop
 Dev Services for RabbitMQ uses official images available at https://hub.docker.com/_/rabbitmq.
 You can configure the image and version with the `quarkus.rabbitmq.devservices.image-name` property:
 
-[source, properties]
+[source, properties, subs=attributes+]
 ----
-quarkus.rabbitmq.devservices.image-name=rabbitmq:latest
+quarkus.rabbitmq.devservices.image-name={rabbitmq-image}
 ----
 
 == Access the management UI

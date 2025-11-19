@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 
@@ -371,7 +372,7 @@ public class RabbitMQDevServicesProcessor {
 
         public RabbitMQDevServiceCfg(RabbitMQDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
-            this.imageName = devServicesConfig.imageName();
+            this.imageName = devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("rabbitmq"));
             this.fixedExposedPort = devServicesConfig.port().orElse(0);
             this.fixedExposedHttpPort = devServicesConfig.httpPort().orElse(0);
             this.shared = devServicesConfig.shared();

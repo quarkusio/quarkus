@@ -41,7 +41,7 @@
         <!-- When updating gradle-wrapper.version, make sure to also update files in
              independent-projects/tools/base-codestarts/src/main/resources/codestarts
              /quarkus/tooling/gradle-wrapper/base/gradle -->
-        <gradle-wrapper.version>9.1.0</gradle-wrapper.version>
+        <gradle-wrapper.version>9.2.1</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.14.1</compiler-plugin.version>
@@ -59,7 +59,7 @@
         <mockito.version>5.20.0</mockito.version>
         <quarkus.version>3.30.999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.5.1</jandex.version>
+        <jandex.version>3.5.2</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>

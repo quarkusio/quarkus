@@ -346,7 +346,7 @@ To start a Keycloak server, you can use Docker and run the following command:
 docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` is set to `26.0.7` or higher.
+where `keycloak.version` is set to `{keycloak-server-version}` or higher.
 
 Access your Keycloak server at http://localhost:8180[localhost:8180].
 

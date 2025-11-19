@@ -8,11 +8,15 @@ import io.quarkus.builder.item.MultiBuildItem;
  * A {@link MultiBuildItem} used to register a class annotated with {@code @ConfigProperties}
  * for build-time configuration mapping in Quarkus.
  *
- * <p>This build item allows Quarkus to generate an implementation of the configuration class
+ * <p>
+ * This build item allows Quarkus to generate an implementation of the configuration class
  * based on the provided prefix, enabling strong typing and reflection-free access
- * to configuration properties.</p>
+ * to configuration properties.
+ * </p>
  *
- * <p>Multiple instances of this build item can be produced, one for each configuration class.</p>
+ * <p>
+ * Multiple instances of this build item can be produced, one for each configuration class.
+ * </p>
  *
  * @see io.quarkus.runtime.annotations.ConfigProperties
  */

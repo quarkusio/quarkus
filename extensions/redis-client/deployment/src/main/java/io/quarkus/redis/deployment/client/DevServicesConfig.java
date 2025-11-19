@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
@@ -26,6 +27,7 @@ public interface DevServicesConfig {
      * If you want to use Redis Stack modules (bloom, graph, search...), use:
      * {@code redis/redis-stack:latest}.
      */
+    @ConfigDocDefault(value = "`{redis-image}`", escape = false)
     Optional<String> imageName();
 
     /**

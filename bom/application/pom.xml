@@ -3775,13 +3775,6 @@
                 <version>${commons-logging-jboss-logging.version}</version>
             </dependency>
             <dependency>
-                <!-- NOTE: this dependency exists in order to help users who are using the old GAV for logging -->
-                <!-- The version doesn't need to be a property since it will be locked at 1.2.0.Final forever -->
-                <groupId>org.jboss.logmanager</groupId>
-                <artifactId>jboss-logmanager-embedded</artifactId>
-                <version>1.2.0.Final</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>jboss-logmanager</artifactId>
                 <version>${jboss-logmanager.version}</version>

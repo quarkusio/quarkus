@@ -213,7 +213,7 @@ public class ConfigResolver {
                     discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),
                     discoveryConfigProperty.isConverted(),
                     discoveryConfigProperty.getType().isEnum(),
-                    enumAcceptedValues, defaultValue,
+                    enumAcceptedValues, defaultValue, discoveryConfigProperty.isEscapeDefaultValueForDoc(),
                     JavadocUtil.getJavadocSiteLink(typeBinaryName),
                     deprecation);
             context.getItemCollection().addItem(configProperty);

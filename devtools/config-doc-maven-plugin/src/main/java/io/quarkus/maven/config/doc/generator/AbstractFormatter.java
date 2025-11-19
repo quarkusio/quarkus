@@ -252,7 +252,11 @@ abstract class AbstractFormatter implements Formatter {
             }
         }
 
-        return escapeDefaultValue(defaultValue);
+        if (configProperty.isEscapeDefaultValue()) {
+            return escapeDefaultValue(defaultValue);
+        } else {
+            return defaultValue;
+        }
     }
 
     private static String trimFinalDot(String javadoc) {

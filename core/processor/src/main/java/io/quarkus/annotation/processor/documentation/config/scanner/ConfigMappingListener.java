@@ -152,8 +152,12 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
 
         AnnotationMirror configDocDefaultAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_DOC_DEFAULT);
         if (configDocDefaultAnnotation != null) {
-            builder.defaultValueForDoc(
-                    configDocDefaultAnnotation.getElementValues().values().iterator().next().getValue().toString());
+            String value = (String) utils.element().getAnnotationValues(configDocDefaultAnnotation).get("value");
+            builder.defaultValueForDoc(value);
+            Boolean escape = (Boolean) utils.element().getAnnotationValues(configDocDefaultAnnotation).get("escape");
+            if (escape != null) {
+                builder.escapeDefaultValueForDoc(escape);
+            }
         }
 
         if (resolvedType.isMap()) {

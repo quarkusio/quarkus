@@ -42,7 +42,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -74,7 +73,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     private void ensurePrepared(ExtensionContext extensionContext, Class<? extends QuarkusTestProfile> profile)
             throws Exception {
-        JBossVersion.disableVersionLogging();
         QuarkusTestExtensionState state = getState(extensionContext);
         boolean wrongProfile = !Objects.equals(profile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
@@ -224,7 +222,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     private int doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile, String[] arguments)
             throws Exception {
-        JBossVersion.disableVersionLogging();
 
         TracingHandler.quarkusStarting();
         Closeable testResourceManager = null;

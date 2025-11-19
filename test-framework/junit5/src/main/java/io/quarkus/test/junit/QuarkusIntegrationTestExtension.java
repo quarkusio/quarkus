@@ -43,7 +43,6 @@ import org.opentest4j.TestAbortedException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.dev.testing.TestConfig;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
@@ -189,7 +188,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private QuarkusTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
-        JBossVersion.disableVersionLogging();
 
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         String artifactType = getEffectiveArtifactType(quarkusArtifactProperties, config);

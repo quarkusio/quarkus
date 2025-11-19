@@ -20,6 +20,7 @@ import './qwc-workspace-binary.js';
 import 'qui-ide-link';
 import 'qui-assistant-warning';
 import { assistantState } from 'assistant-state';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the workspace
@@ -133,6 +134,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this.md = new MarkdownIt();
         this._workspaceItems = null;
         this._fileSeparator = '/';
@@ -153,7 +155,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         this._beforeUnloadHandler = (e) => {
             if (this.shouldConfirmAwayNavigation()) {
                 e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                e.returnValue = msg('You have unsaved changes. Are you sure you want to leave?', { id: 'workspace-unsaved-leave' });
                 return e.returnValue;
             }
         };
@@ -213,7 +215,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                         ${this._renderResultDialog()}
                         ${this._renderConfirmDialog()}`;
         } else {
-            return html`<div class="nothing">No code found. <span class="checkNow" @click="${this.hotReload}">Check now</span></div>`;
+            return html`<div class="nothing">${msg('No code found.', { id: 'workspace-no-code' })}. <span class="checkNow" @click="${this.hotReload}">${msg('Check now', { id: 'workspace-check-now' })}</span></div>`;
         }
     }
     
@@ -221,7 +223,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         return html`<qui-directory-tree id="directoryTree" class="files"
                         .directory="${this._workspaceTreeNames}"
                         .fileSeparator="${this._fileSeparator}"
-                        header="Source Code"
+                        header="${msg('Source Code', { id: 'workspace-source-code' })}"
                         @file-select="${this._onFileSelect}"
                     ></qui-directory-tree>`;
     }
@@ -247,10 +249,10 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         return html`
             <div class="mainMenuBar" style="${isHidden ? 'visibility: hidden;' : ''}">
                 <div class="mainMenuBarButtons">
-                    <vaadin-button title="Save" theme="icon tertiary" aria-label="Save" @click="${this._saveSelectedWorkspaceItem}">
+                    <vaadin-button title="${msg('Save', { id: 'workspace-save' })}" theme="icon tertiary" aria-label="Save" @click="${this._saveSelectedWorkspaceItem}">
                         <vaadin-icon icon="font-awesome-solid:floppy-disk"></vaadin-icon>
                     </vaadin-button>
-                    <vaadin-button title="Copy" theme="icon tertiary" aria-label="Copy" @click="${this._copySelectedWorkspaceItem}">
+                    <vaadin-button title="${msg('Copy', { id: 'workspace-copy' })}" theme="icon tertiary" aria-label="Copy" @click="${this._copySelectedWorkspaceItem}">
                         <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
                     </vaadin-button>
                 </div>
@@ -261,7 +263,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
 
                 <div class="mainMenuBarActions">
                     ${this._renderActions()}
-                    <qui-ide-link title="Open in IDE"
+                    <qui-ide-link title="${msg('Open in IDE', { id: 'workspace-open-ide' })}"
                         style="cursor: pointer;"
                         fileName="${this._selectedWorkspaceItem?.path}"
                         lineNumber="0"
@@ -281,7 +283,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                     <div class="actionButtonBar">
                         <vaadin-button theme="icon" aria-label="Close" @click="${this._clearActionResult}">
                             <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
-                            <vaadin-tooltip slot="tooltip" text="Close"></vaadin-tooltip>
+                            <vaadin-tooltip slot="tooltip" text="${msg('Close', { id: 'workspace-close' })}"></vaadin-tooltip>
                         </vaadin-button>
                     </div>
                     ${this._renderActionResult()}
@@ -309,9 +311,11 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                             ${dialogFooterRenderer(
                             () => html`
                                 <vaadin-button theme="primary" @click="${this._saveActionResult}">
-                                    Save
+                                    ${msg('Save', { id: 'workspace-save' })}
                                 </vaadin-button>
-                                <vaadin-button theme="tertiary" @click="${this._copyActionResult}">Copy</vaadin-button>
+                                <vaadin-button theme="tertiary" @click="${this._copyActionResult}">
+                                    ${msg('Copy', { id: 'workspace-copy' })}
+                                </vaadin-button>
                                 `,
                                 []
                             )}
@@ -410,11 +414,11 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _renderConfirmDialog(){
         return html`
         <vaadin-confirm-dialog
-            header="Unsaved changes"
+            header="${msg('Unsaved changes', { id: 'workspace-unsaved' })}"
             cancel-button-visible
             reject-button-visible
-            reject-text="Discard"
-            confirm-text="Save"
+            reject-text="${msg('Discard', { id: 'workspace-discard' })}"
+            confirm-text="${msg('Save', { id: 'workspace-save' })}"
             .opened="${this._confirmDialogOpened}"
             @opened-changed="${this._confirmOpenedChanged}"
             @confirm="${() => {
@@ -427,7 +431,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                 this._confirmDiscard();
             }}"
         >
-          There are unsaved changes. Do you want to discard or save them?
+            ${msg('There are unsaved changes. Do you want to discard or save them?', { id: 'workspace-unsaved-dialog' })}
         </vaadin-confirm-dialog>`;
     }
     
@@ -521,9 +525,9 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             this._showActionProgress = false;
             document.body.style.cursor = 'default';
             if(err.error.message){
-                notifier.showErrorMessage(err.message + ". Please check your logs.");
+                notifier.showErrorMessage(err.message + ". " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
             }else {
-                notifier.showErrorMessage("An error occured. Please check your logs.");
+                notifier.showErrorMessage(msg('An error occured.', { id: 'workspace-error' }) + " " + msg('Please check your logs.', { id: 'workspace-check-logs' }));
             }
         });
     }
@@ -597,10 +601,10 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _saveContent(content, path, select=true){
         this.jsonRpc.saveWorkspaceItemContent({content:content, path:path}).then(jsonRpcResponse => { 
             if(jsonRpcResponse.result.success){
-                notifier.showInfoMessage(jsonRpcResponse.result.path + " saved successfully");
+                notifier.showInfoMessage(jsonRpcResponse.result.path + " " + msg('saved successfully', { id: 'workspace-saved-success' }));
                 if(select) this._selectedWorkspaceItem = { ...this._selectedWorkspaceItem, content: content, isDirty: false };
             }else {
-                notifier.showErrorMessage(jsonRpcResponse.result.path + " NOT saved. " + jsonRpcResponse.result.errorMessage);
+                notifier.showErrorMessage(jsonRpcResponse.result.path + " " + msg('NOT saved', { id: 'workspace-not-saved' }) + ". " + jsonRpcResponse.result.errorMessage);
             }
         });
         
@@ -608,16 +612,16 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _copyContent(content, path){
         if (!content) {
-            notifier.showWarningMessage(path + " has no content");
+            notifier.showWarningMessage(path + " " + msg('has no content', { id: 'workspace-no-content' }));
             return;
         }
         
         navigator.clipboard.writeText(content)
             .then(() => {
-                notifier.showInfoMessage("Content copied to clipboard");
+                notifier.showInfoMessage(msg('Content copied to clipboard', { id: 'workspace-copy-success' }));
             })
             .catch(err => {
-                notifier.showErrorMessage("Failed to copy content:" + err);
+                notifier.showErrorMessage(msg('Failed to copy content', { id: 'workspace-copy-failed' }) + ": " + err);
             });
     }
     
@@ -707,7 +711,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         this.jsonRpc.getWorkspaceActions().then(jsonRpcResponse => {
             this._workspaceActions = [
                 {
-                  text: "Action", className: 'bg-primary text-primary-contrast', 
+                  text: msg('Action', { id: 'workspace-action' }), className: 'bg-primary text-primary-contrast', 
                   children: jsonRpcResponse.result.map(item => (
                             { 
                                 text: item.label, 

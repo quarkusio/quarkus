@@ -9,6 +9,7 @@ import { popoverRenderer } from '@vaadin/popover/lit.js';
 import '@vaadin/item';
 import '@vaadin/list-box';
 import { StorageController } from 'storage-controller';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the health UI
@@ -77,6 +78,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._health = null;
     }
 
@@ -120,7 +122,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
             return html`<div class="cards">${this._health.payload.checks.map((check) =>
                 html`${this._renderCard(check)}`
             )}</div>
-            <vaadin-icon id="configureIcon" icon="font-awesome-solid:gear" title="Configure health status updates"></vaadin-icon>
+            <vaadin-icon id="configureIcon" icon="font-awesome-solid:gear" title=${msg('Configure health status updates', { id: 'quarkus-smallrye-health-configure' })}></vaadin-icon>
             <vaadin-popover
                 for="configureIcon"
                 .position="start-bottom"

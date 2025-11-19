@@ -193,12 +193,12 @@ export class JsonRpc {
                             console.log("method not found " + method);
                             return Reflect.get(target, prop);
                         }
-                    }
+                    };
                 } else {
                     return Reflect.get(target, prop);
                 }
             }
-        })
+        });
     }
 
     _setExtensionName(discoveredNamespace, serviceIdentifier){
@@ -312,7 +312,7 @@ export class JsonRpc {
                 } else {
                     JsonRpc.dispatchMessageLogEntry(Level.Warning, MessageDirection.Down, "Unknown type [" + devUiResponse.messageType + "], " + event.data);
                 }
-            }
+            };
         }
 
         JsonRpc.webSocket.onclose = function (event) {
@@ -332,7 +332,7 @@ export class JsonRpc {
         JsonRpc.webSocket.onerror = function (error) {
             JsonRpc.dispatchMessageLogEntry(Level.Error, MessageDirection.Stationary, "Error from " + JsonRpc.serverUri);
             JsonRpc.webSocket.close();
-        }
+        };
     }
 
     static dispatchMessageLogEntry(level, direction, message) {

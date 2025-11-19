@@ -16,6 +16,7 @@ import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import '@qomponent/qui-badge';
 import 'qui-ide-link';
+import { msg, updateWhenLocaleChanges, getLocale } from 'localization';
 
 /**
  * This component represent the Server Log
@@ -98,29 +99,30 @@ export class QwcServerLog extends QwcAbstractLogElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._loggerLevels = [];
         for (let i in loggerLevels) {
             let loggerLevel = loggerLevels[i];
             this._loggerLevels.push({
                 'label': loggerLevel,
-                'value': loggerLevel,
+                'value': loggerLevel
             });
         }
 
         this.logControl
-                .addToggle("On/off switch", true, (e) => {
+                .addToggle(msg('On/off switch', { id: 'log-toggle' }), true, (e) => {
                     this._toggleOnOffClicked(e);
-                }).addItem("Log levels", "font-awesome-solid:layer-group", "var(--lumo-tertiary-text-color)", (e) => {
+                }).addItem(msg('Log levels', { id: 'log-levels' }), "font-awesome-solid:layer-group", "var(--lumo-tertiary-text-color)", (e) => {
                     this._logLevels();
-                }).addItem("Columns", "font-awesome-solid:table-columns", "var(--lumo-tertiary-text-color)", (e) => {
+                }).addItem(msg('Columns', { id: 'log-columns' }), "font-awesome-solid:table-columns", "var(--lumo-tertiary-text-color)", (e) => {
                     this._columns();
-                }).addItem("Zoom out", "font-awesome-solid:magnifying-glass-minus", "var(--lumo-tertiary-text-color)", (e) => {
+                }).addItem(msg('Zoom out', { id: 'log-zoom-out' }), "font-awesome-solid:magnifying-glass-minus", "var(--lumo-tertiary-text-color)", (e) => {
                     this._zoomOut();
-                }).addItem("Zoom in", "font-awesome-solid:magnifying-glass-plus", "var(--lumo-tertiary-text-color)", (e) => {
+                }).addItem(msg('Zoom in', { id: 'log-zoom-in' }), "font-awesome-solid:magnifying-glass-plus", "var(--lumo-tertiary-text-color)", (e) => {
                     this._zoomIn();
-                }).addItem("Clear", "font-awesome-solid:trash-can", "var(--lumo-error-color)", (e) => {
+                }).addItem(msg('Clear', { id: 'log-clear' }), "font-awesome-solid:broom", "var(--lumo-warning-color)", (e) => {
                     this._clearLog();
-                }).addFollow("Follow log", true , (e) => {
+                }).addFollow(msg('Follow log', { id: 'log-follow' }), true , (e) => {
                     this._toggleFollowLog(e);
                 }).done();
                 
@@ -156,9 +158,11 @@ export class QwcServerLog extends QwcAbstractLogElement {
 
     render() {
         if(this._filteredLoggers){
+            
+            const llTitle = msg('Log levels', { id: 'log-levels' }) + " (" + this._filteredLoggers.length + ")";
             return html`
                 <vaadin-dialog class="levelsDialog"
-                    header-title="Log levels (${this._filteredLoggers.length})"
+                    header-title="${llTitle}"
                     resizable
                     draggable
                     .opened="${this._levelsDialogOpened}"
@@ -168,12 +172,12 @@ export class QwcServerLog extends QwcAbstractLogElement {
                             <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
                         </vaadin-button>
                     `,
-                    []
+                    [getLocale()]
                     )}
                     ${dialogRenderer(() => this._renderLevelsDialog(), "levels")}
                 ></vaadin-dialog>
                 <vaadin-dialog class="columnsDialog"
-                    header-title="Columns"
+                    header-title="${msg('Columns', { id: 'log-columns' })}"
                     resizable
                     draggable
                     .opened="${this._columnsDialogOpened}"
@@ -183,7 +187,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
                             <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
                         </vaadin-button>
                     `,
-                    []
+                    [getLocale()]
                     )}
                     ${dialogRenderer(() => this._renderColumnsDialog(), "columns")}
                 ></vaadin-dialog>
@@ -208,23 +212,23 @@ export class QwcServerLog extends QwcAbstractLogElement {
             return html`<br/>`;
         }else if(message.type === "help"){
             return html`<br/>
-                            The following commands are available:<br/>
+                            ${msg('The following commands are available', { id: 'loghelp-available-commands' })}:<br/>
                             <br/>
-                            == Continuous Testing<br/>
+                            == ${msg('Continuous Testing', { id: 'loghelp-continuous-testing' })}<br/>
                             <br/>
-                            [r] - Resume testing / Re-run all tests<br/>
-                            [f] - Re-run failed tests<br/>
-                            [b] - Toggle 'broken only' mode, where only failing tests are run<br/>
-                            [v] - Print failures from the last test run<br/>
-                            [p] - Pause tests<br/>
-                            [o] - Toggle test output<br/>
+                            [r] - ${msg('Resume testing / Re-run all tests', { id: 'loghelp-resume-or-rerun' })}<br/>
+                            [f] - ${msg('Re-run failed tests', { id: 'loghelp-rerun-failed' })}<br/>
+                            [b] - ${msg("Toggle 'broken only' mode, where only failing tests are run", { id: 'loghelp-toggle-broken-only' })}<br/>
+                            [v] - ${msg('Print failures from the last test run', { id: 'loghelp-print-failures' })}<br/>
+                            [p] - ${msg('Pause tests', { id: 'loghelp-pause-tests' })}<br/>
+                            [o] - ${msg('Toggle test output', { id: 'loghelp-toggle-output' })}<br/>
                             <br/>
-                            == System<br/>
+                            == ${msg('System', { id: 'loghelp-system' })}<br/>
                             <br/>
-                            [s] - Force restart<br/>
-                            [i] - Toggle instrumentation based reload <br/>
-                            [l] - Toggle live reload<br/>
-                            [h] - Show this help<br/>
+                            [s] - ${msg('Force restart', { id: 'loghelp-force-restart' })}<br/>
+                            [i] - ${msg('Toggle instrumentation-based reload', { id: 'loghelp-toggle-instrumentation-reload' })}<br/>
+                            [l] - ${msg('Toggle live reload', { id: 'loghelp-toggle-live-reload' })}<br/>
+                            [h] - ${msg('Show this help', { id: 'loghelp-show-help' })}<br/>
                             `;
         }else{
             var level = message.level.toUpperCase();
@@ -283,55 +287,55 @@ export class QwcServerLog extends QwcAbstractLogElement {
     
     _renderSequenceNumber(sequenceNumber){
         if(this._selectedColumns.includes('1')){
-            return html`<qui-badge small><span title='Sequence number'>${sequenceNumber}</span></qui-badge>`;
+            return html`<qui-badge small><span title='${msg('Sequence number', { id: 'logline-sequence-number' })}'>${sequenceNumber}</span></qui-badge>`;
         }
     }
     
     _renderHostName(hostName){
         if(this._selectedColumns.includes('2')){
-            return html`<span title='Host name'>${hostName}</span>`;
+            return html`<span title='${msg('Host name', { id: 'logline-host-name' })}'>${hostName}</span>`;
         }
     }
     
     _renderDate(timestamp){
         if(this._selectedColumns.includes('3')){
-            return html`<span title='Date'>${timestamp.slice(0, 10)}</span>`;
+            return html`<span title='${msg('Date', { id: 'logline-date' })}'>${timestamp.slice(0, 10)}</span>`;
         }
     }
     
     _renderTime(timestamp){
         if(this._selectedColumns.includes('4')){
-            return html`<span title='Time'>${timestamp.slice(11, 23).replace(".", ",")}</span>`;
+            return html`<span title='${msg('Time', { id: 'logline-time' })}'>${timestamp.slice(11, 23).replace(".", ",")}</span>`;
         }
     }
     
     _renderLevel(level, leveldisplay){
         if(this._selectedColumns.includes('5')){
-            return html`<span title='Level' class='text-${level}'>${leveldisplay}</span>`;
+            return html`<span title='${msg('Level', { id: 'logline-level' })}' class='text-${level}'>${leveldisplay}</span>`;
         }
     }
     
     _renderLoggerNameShort(loggerNameShort){
         if(this._selectedColumns.includes('6')){
-            return html`<span title='Logger name (short)' class='text-logger'>[${loggerNameShort}]</span>`;
+            return html`<span title='${msg('Logger name', { id: 'logline-logger-name' })} (${msg('short', { id: 'logline-short' })})' class='text-logger'>[${loggerNameShort}]</span>`;
         }
     }
     
     _renderLoggerName(loggerName){
         if(this._selectedColumns.includes('7')){
-            return html`<span title='Logger name' class='text-logger'>[${loggerName}]</span>`;
+            return html`<span title='${msg('Logger name', { id: 'logline-logger-name' })}' class='text-logger'>[${loggerName}]</span>`;
         }
     }
     
     _renderLoggerClassName(loggerClassName){
         if(this._selectedColumns.includes('8')){
-            return html`<span title='Logger class name' class='text-logger'>[${loggerClassName}]</span>`;
+            return html`<span title='${msg('Logger class name', { id: 'logline-logger-class-name' })}' class='text-logger'>[${loggerClassName}]</span>`;
         }
     }
     
     _renderSourceClassNameFull(sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('9')){
-            return html`<qui-ide-link title='Source full class name' 
+            return html`<qui-ide-link title='${msg('Source full class name', { id: 'logline-source-full-class-name' })}' 
                         class='text-source'
                         fileName='${sourceClassNameFull}'
                         lineNumber='${sourceLineNumber}'>[${sourceClassNameFull}]</qui-ide-link>`;
@@ -340,7 +344,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
     
     _renderSourceClassNameFullShort(sourceClassNameFullShort, sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('10')){
-            return html`<qui-ide-link title='Source full class name (short)' 
+            return html`<qui-ide-link title='${msg('Source full class name', { id: 'logline-source-full-class-name' })} (${msg('short', { id: 'logline-short' })})' 
                         class='text-source'
                         fileName='${sourceClassNameFull}'
                         lineNumber='${sourceLineNumber}'>[${sourceClassNameFullShort}]</qui-ide-link>`;
@@ -349,7 +353,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
     
     _renderSourceClassName(sourceClassName, sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('11')){
-            return html`<qui-ide-link title='Source class name' 
+            return html`<qui-ide-link title='${msg('Source class name', { id: 'logline-source-class-name' })}' 
                         class='text-source'
                         fileName='${sourceClassNameFull}'
                         lineNumber='${sourceLineNumber}'>[${sourceClassName}]</qui-ide-link>`;
@@ -358,13 +362,13 @@ export class QwcServerLog extends QwcAbstractLogElement {
     
     _renderSourceMethodName(sourceMethodName){
         if(this._selectedColumns.includes('12')){
-            return html`<span title='Source method name' class='text-source'>${sourceMethodName}</span>`;
+            return html`<span title='${msg('Source method name', { id: 'logline-source-method-name' })} class='text-source'>${sourceMethodName}</span>`;
         }
     }
     
     _renderSourceFileName(sourceFileName, sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('13')){
-            return html`<qui-ide-link title='Source file name' 
+            return html`<qui-ide-link title='${msg('Source file name', { id: 'logline-source-file-name' })}' 
                         class='text-file'
                         fileName='${sourceClassNameFull}'
                         lineNumber='${sourceLineNumber}'>${sourceFileName}</qui-ide-link>`;
@@ -373,31 +377,31 @@ export class QwcServerLog extends QwcAbstractLogElement {
     
     _renderSourceLineNumber(sourceLineNumber){
         if(this._selectedColumns.includes('14')){
-            return html`<span title='Source line number' class='text-source'>(line:${sourceLineNumber})</span>`;
+            return html`<span title='${msg('Source line number', { id: 'logline-source-line-number' })}' class='text-source'>(line:${sourceLineNumber})</span>`;
         }
     }
     
     _renderProcessId(processId){
         if(this._selectedColumns.includes('15')){
-            return html`<span title='Process Id' class='text-process'>(${processId})</span>`;
+            return html`<span title='${msg('Process Id', { id: 'logline-process-id' })}' class='text-process'>(${processId})</span>`;
         }
     }
     
     _renderProcessName(processName){
         if(this._selectedColumns.includes('16')){
-            return html`<span title='Process name' class='text-process'>(${processName})</span>`;
+            return html`<span title='${msg('Process name', { id: 'logline-process-name' })}' class='text-process'>(${processName})</span>`;
         }
     }
     
     _renderThreadId(threadId){
         if(this._selectedColumns.includes('17')){
-            return html`<span title='Thread Id' class='text-thread'>(${threadId})</span>`;
+            return html`<span title='${msg('Thread Id', { id: 'logline-thread-id' })}' class='text-thread'>(${threadId})</span>`;
         }
     }
     
     _renderThreadName(threadName){
         if(this._selectedColumns.includes('18')){
-            return html`<span title='Thread name' class='text-thread'>(${threadName})</span>`;
+            return html`<span title='${msg('Thread name', { id: 'logline-thread-name' })}' class='text-thread'>(${threadName})</span>`;
         }
     }
     
@@ -418,7 +422,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
             message = this._makeMultiLine(message);
         
             if(message){
-                return html`<span title="Message" class='text-${level}'>${unsafeHTML(message)}${this._renderDecoration(decoration)}${this._renderStackTrace(stacktrace)}</span>`;
+                return html`<span title="${msg('Message', { id: 'logline-message' })}" class='text-${level}'>${unsafeHTML(message)}${this._renderDecoration(decoration)}${this._renderStackTrace(stacktrace)}</span>`;
             }   
         }
     }
@@ -482,20 +486,20 @@ export class QwcServerLog extends QwcAbstractLogElement {
                             style="width: 600px; max-width: 100%; min-width: 300px; height: 100%; align-items: stretch;">
 
                 <vaadin-text-field
-                        placeholder="Filter"
+                        placeholder="${msg('Filter', { id: 'loglevelsdialog-filter' })}"
                         style="width: 100%;"
                         @value-changed="${(e) => this._filterLoggers(e)}">
                     <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
                 </vaadin-text-field>
                 <vaadin-grid .items="${this._filteredLoggers}" style="width: 100%;" theme="row-stripes">
                     <vaadin-grid-sort-column resizable
-                                        header="Name"
+                                        header="${msg('Name', { id: 'loglevelsdialog-name' })}"
                                         path="name">
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-column auto-width resizable flex-grow="0"
                                             class="cell"
-                                            header="Level"
+                                            header="${msg('Level', { id: 'loglevelsdialog-level' })}"
                                             ${columnBodyRenderer(this._logLevelRenderer, [])}>
 
                 </vaadin-grid>
@@ -555,26 +559,26 @@ export class QwcServerLog extends QwcAbstractLogElement {
                             .value="${this._selectedColumns}"
                             @value-changed="${(e) => (this._selectedColumns = e.detail.value)}"
                             theme="vertical">
-                        <vaadin-checkbox value="0" label="Level icon"></vaadin-checkbox>
-                        <vaadin-checkbox value="1" label=Sequence number"></vaadin-checkbox>
-                        <vaadin-checkbox value="2" label="Host name"></vaadin-checkbox>
-                        <vaadin-checkbox value="3" label="Date"></vaadin-checkbox>
-                        <vaadin-checkbox value="4" label="Time"></vaadin-checkbox>
-                        <vaadin-checkbox value="5" label="Level"></vaadin-checkbox>
-                        <vaadin-checkbox value="6" label="Logger name (short)"></vaadin-checkbox>
-                        <vaadin-checkbox value="7" label="Logger name"></vaadin-checkbox>
-                        <vaadin-checkbox value="8" label="Logger class name"></vaadin-checkbox>
-                        <vaadin-checkbox value="9" label="Source full class name"></vaadin-checkbox>
-                        <vaadin-checkbox value="10" label="Source full class name (short)"></vaadin-checkbox>
-                        <vaadin-checkbox value="11" label="Source class name"></vaadin-checkbox>
-                        <vaadin-checkbox value="12" label="Source method name"></vaadin-checkbox>
-                        <vaadin-checkbox value="13" label="Source file name"></vaadin-checkbox>
-                        <vaadin-checkbox value="14" label="Source line number"></vaadin-checkbox>
-                        <vaadin-checkbox value="15" label="Process id"></vaadin-checkbox>
-                        <vaadin-checkbox value="16" label="Process name"></vaadin-checkbox>
-                        <vaadin-checkbox value="17" label="Thread id"></vaadin-checkbox>
-                        <vaadin-checkbox value="18" label="Thread name"></vaadin-checkbox>
-                        <vaadin-checkbox value="19" label="Message"></vaadin-checkbox>
+                        <vaadin-checkbox value="0" label="${msg('Level icon', { id: 'logline-level_icon' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="1" label="${msg('Sequence number', { id: 'logline-sequence-number' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="2" label="${msg('Host name', { id: 'logline-host-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="3" label="${msg('Date', { id: 'logline-date' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="4" label="${msg('Time', { id: 'logline-time' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="5" label="${msg('Level', { id: 'logline-level' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="6" label="${msg('Logger name', { id: 'logline-logger-name' })} (${msg('short', { id: 'logline-short' })})"></vaadin-checkbox>
+                        <vaadin-checkbox value="7" label="${msg('Logger name', { id: 'logline-logger-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="8" label="${msg('Logger class name', { id: 'logline-logger-class-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="9" label="${msg('Source full class name', { id: 'logline-source-full-class-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="10" label="${msg('Source full class name', { id: 'logline-source-full-class-name' })} (${msg('short', { id: 'logline-short' })})"></vaadin-checkbox>
+                        <vaadin-checkbox value="11" label="${msg('Source class name', { id: 'logline-source-class-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="12" label="${msg('Source method name', { id: 'logline-source-method-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="13" label="${msg('Source file name', { id: 'logline-source-file-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="14" label="${msg('Source line number', { id: 'logline-source-line-number' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="15" label="${msg('Process Id', { id: 'logline-process-id' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="16" label="${msg('Process name', { id: 'logline-process-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="17" label="${msg('Thread Id', { id: 'logline-thread-id' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="18" label="${msg('Thread name', { id: 'logline-thread-name' })}"></vaadin-checkbox>
+                        <vaadin-checkbox value="19" label="${msg('Message', { id: 'logline-message' })}"></vaadin-checkbox>
                     </vaadin-checkbox-group>`;
     }
     

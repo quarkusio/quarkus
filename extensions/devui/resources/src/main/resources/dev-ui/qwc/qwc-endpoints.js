@@ -5,6 +5,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import { JsonRpc } from 'jsonrpc';
 import { swaggerUiPath } from 'devui-data';
+import { msg, updateWhenLocaleChanges, dynamicMsg } from 'localization';
 
 /**
  * This component show all available endpoints
@@ -35,6 +36,9 @@ export class QwcEndpoints extends LitElement {
         a:hover {
             color: var(--quarkus-blue);
         }
+        h3 {
+            padding-left: 5px;
+        }
     `;
 
     static properties = {
@@ -44,6 +48,7 @@ export class QwcEndpoints extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._info = null;
         this.filter = null;
     }
@@ -67,7 +72,7 @@ export class QwcEndpoints extends LitElement {
         }else{
             return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching information...</div>
+                <div>${msg('Fetching information...', { id: 'endpoints-fetching-info' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
@@ -75,15 +80,15 @@ export class QwcEndpoints extends LitElement {
     }
 
     _renderType(type, items){
-        return html`<h3>${type}</h3>
-                    <vaadin-grid .items="${items}" class="infogrid" all-rows-visible>
-                        <vaadin-grid-sort-column header='URL'
+        return html`<h3>${dynamicMsg('endpoints', type)}</h3>
+                    <vaadin-grid .items="${items}" class="infogrid" all-rows-visible theme="no-border">
+                        <vaadin-grid-sort-column header='${msg('URL', { id: 'endpoints-url' })}'
                                                 path="uri" 
                                             ${columnBodyRenderer((endpoint) => this._uriRenderer(endpoint, type), [])}>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column 
-                                            header="Description" 
+                                            header="${msg('Description', { id: 'endpoints-description' })}" 
                                             path="description"
                                             ${columnBodyRenderer(this._descriptionRenderer, [])}>
                         </vaadin-grid-sort-column>
@@ -94,7 +99,7 @@ export class QwcEndpoints extends LitElement {
         if (endpoint.uri && (endpoint.description && endpoint.description.startsWith("GET")) || type !== "Resource Endpoints") {
             return html`<a href="${endpoint.uri}" target="_blank">${endpoint.uri}</a>`;
         }else if(swaggerUiPath!==""){
-            return html`<a href="${swaggerUiPath}" title="Test this Swagger UI" target="_blank">${endpoint.uri}</a>`;
+            return html`<a href="${swaggerUiPath}" title="${msg('Test this Swagger UI', { id: 'endpoints-test-swagger-ui' })}" target="_blank">${endpoint.uri}</a>`;
         }else{
             return html`<span>${endpoint.uri}</span>`;
         }

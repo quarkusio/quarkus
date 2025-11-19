@@ -5,6 +5,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/vertical-layout';
 import '@vaadin/button';
 import '@vaadin/checkbox';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Arc Fired Events
@@ -33,6 +34,13 @@ export class QwcArcFiredEvents extends LitElement {
         _skipLifecycleEvents: {state: true}
     };
   
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+        this._firedEvents = null;
+        this._skipLifecycleEvents = true;
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._refresh();
@@ -53,38 +61,50 @@ export class QwcArcFiredEvents extends LitElement {
     }
         
     render() {
-        if(this._firedEvents){
+        if (this._firedEvents) {
             return this._renderFiredEvents();
         } else {
-            return html`<span>Loading ArC fired event...</span>`;
+            return html`<span>
+                ${msg('Loading ArC fired event...', { id: 'quarkus-arc-loading-fired-events' })}
+            </span>`;
         }
     }
 
     _renderFiredEvents(){
         return html`<div class="menubar">
                     <vaadin-button theme="small" @click=${() => this._refresh()} class="button">
-                        <vaadin-icon icon="font-awesome-solid:rotate"></vaadin-icon> Refresh
+                        <vaadin-icon icon="font-awesome-solid:rotate"></vaadin-icon>
+                        ${msg('Refresh', { id: 'quarkus-arc-refresh' })}
                     </vaadin-button> 
                     <vaadin-button theme="small" @click=${() => this._clear()} class="button">
-                        <vaadin-icon icon="font-awesome-solid:trash-can"></vaadin-icon> Clear
+                        <vaadin-icon icon="font-awesome-solid:trash-can"></vaadin-icon>
+                        ${msg('Clear', { id: 'quarkus-arc-clear' })}
                     </vaadin-button> 
-                    <vaadin-checkbox theme="small" .checked="${this._skipLifecycleEvents}" label="Skip monitoring of context lifecycle events" @change="${() => this._toggleContext()}"></vaadin-checkbox>
+                    <vaadin-checkbox
+                        theme="small"
+                        .checked="${this._skipLifecycleEvents}"
+                        label=${msg(
+                            'Skip monitoring of context lifecycle events',
+                            { id: 'quarkus-arc-skip-context-lifecycle-events' }
+                        )}
+                        @change="${() => this._toggleContext()}">
+                    </vaadin-checkbox>
                 </div>
                 <vaadin-grid .items="${this._firedEvents}" class="arctable" theme="no-border">
                     <vaadin-grid-column auto-width
-                        header="Timestamp"
+                        header=${msg('Timestamp', { id: 'quarkus-arc-timestamp' })}
                         path="timestamp"
                         resizable>
                     </vaadin-grid-column>
 
                     <vaadin-grid-column auto-width
-                        header="Event Type"
+                        header=${msg('Event Type', { id: 'quarkus-arc-event-type' })}
                         ${columnBodyRenderer(this._eventTypeRenderer, [])}
                         resizable>
                     </vaadin-grid-column>
 
                     <vaadin-grid-column auto-width
-                        header="Qualifiers"
+                        header=${msg('Qualifiers', { id: 'quarkus-arc-qualifiers' })}
                         path="qualifiers"
                         resizable>
                     </vaadin-grid-column>
@@ -119,7 +139,7 @@ export class QwcArcFiredEvents extends LitElement {
     _addToEvents(event){
         this._firedEvents = [
             event,
-            ...this._firedEvents,
+            ...this._firedEvents
         ];
     }
 }

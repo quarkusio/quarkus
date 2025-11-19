@@ -6,6 +6,7 @@ import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 
 export class QwcSmallryeReactiveMessagingChannels extends LitElement {
@@ -25,6 +26,11 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
 
     static properties = {
         _channels: {state: true, type: Array}
+    }
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
     }
 
     /**
@@ -48,7 +54,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
         if (this._channels) {
             return this._renderChannelTable();
         } else {
-            return html`<span>Loading channels...</span>`;
+            return html`<span>${msg('Loading channels...', { id: 'quarkus-smallrye-reactive-messaging-loading-channels' })}</span>`;
         }
     }
 
@@ -56,17 +62,17 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
         return html`
                 <vaadin-grid .items="${this._channels}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
-                                        header="Channel"
+                                        header=${msg('Channel', { id: 'quarkus-smallrye-reactive-messaging-channel' })}
                                         ${columnBodyRenderer(this._channelNameRenderer, [])}>
                     </vaadin-grid-column>
 
                     <vaadin-grid-column auto-width
-                                        header="Publisher(s)"
+                                        header=${msg('Publisher(s)', { id: 'quarkus-smallrye-reactive-messaging-publishers' })}
                                         ${columnBodyRenderer(this._channelPublisherRenderer, [])}>>
                     </vaadin-grid-column>
 
                     <vaadin-grid-column auto-width
-                                        header="Subscriber(s)"
+                                        header=${msg('Subscriber(s)', { id: 'quarkus-smallrye-reactive-messaging-subscribers' })}
                                         ${columnBodyRenderer(this._channelSubscriberRenderer, [])}
                                         resizable>
                     </vaadin-grid-column>
@@ -74,7 +80,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     }
 
     _channelNameRenderer(channel) {
-        return html`${ channel.name }`
+        return html`${ channel.name }`;
     }
 
     _channelSubscriberRenderer(channel) {
@@ -89,7 +95,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
                   </ul>
                 `;
             } else {
-                return html`<em>No subscribers</em>`
+                return html`<em>${msg('No subscribers', { id: 'quarkus-smallrye-reactive-messaging-no-subscribers' })}</em>`;
             }
         }
     }
@@ -106,7 +112,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
                   </ul>
                 `;
             } else {
-                return html`<em>No publishers</em>`
+                return html`<em>${msg('No publishers', { id: 'quarkus-smallrye-reactive-messaging-no-publishers' })}</em>`;
             }
         }
     }
@@ -114,17 +120,17 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     _renderComponent(component) {
         switch (component.type) {
             case "PUBLISHER":
-                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:right-from-bracket" title="publisher"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:right-from-bracket" title=${msg('publisher', { id: 'quarkus-smallrye-reactive-messaging-publisher' })}></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "SUBSCRIBER":
-                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:right-to-bracket" title="subscriber"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:right-to-bracket" title=${msg('subscriber', { id: 'quarkus-smallrye-reactive-messaging-subscriber' })}></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "PROCESSOR":
-                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:arrows-turn-to-dots" title="processor"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:arrows-turn-to-dots" title=${msg('processor', { id: 'quarkus-smallrye-reactive-messaging-processor' })}></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "CONNECTOR":
-                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:plug" title="connector"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:plug" title=${msg('connector', { id: 'quarkus-smallrye-reactive-messaging-connector' })}></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "EMITTER":
-                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:syringe" title="emitter"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:syringe" title=${msg('emitter', { id: 'quarkus-smallrye-reactive-messaging-emitter' })}></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
             case "CHANNEL":
-                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:syringe" title="channel"></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
+                return html`<span class="smaller"><vaadin-icon icon="font-awesome-solid:syringe" title=${msg('channel', { id: 'quarkus-smallrye-reactive-messaging-channel' })}></vaadin-icon> ${unsafeHTML(component.description)}</span>`;
         }
     }
 }

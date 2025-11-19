@@ -12,6 +12,7 @@ import '@vaadin/progress-bar';
 import '@vaadin/button';
 import './qwc-build-step-graph.js';
 import './qwc-build-steps-execution-graph.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Build Steps
@@ -67,6 +68,7 @@ export class QwcBuildSteps extends QwcHotReloadElement {
 
   constructor() {
     super();
+    updateWhenLocaleChanges(this);
     this._buildMetrics = null;
     this._selectedBuildStep = null;
     this._showBuildStepsExecutionGraph = false;
@@ -86,7 +88,7 @@ export class QwcBuildSteps extends QwcHotReloadElement {
       }else {
           return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Loading build steps...</div>
+                <div>${msg('Loading build steps...', { id: 'buildmetrics-loading-steps' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
@@ -124,41 +126,48 @@ export class QwcBuildSteps extends QwcHotReloadElement {
 
   _renderBuildStepList(){
 
-      return html`<div class="build-steps">
+    const length = this._buildMetrics.records.length;
+    const threads = this._buildMetrics.numberOfThreads;
+    const duration = this._buildMetrics.duration;
+
+    return html`<div class="build-steps">
             <div class="summary">
                 <div>
-                    Executed <strong>${this._buildMetrics.records.length}</strong> build steps on <strong>${this._buildMetrics.numberOfThreads}</strong> threads in <strong>${this._buildMetrics.duration} ms</strong>.
+                ${msg(
+                    str`Executed ${length} build steps on ${threads} threads in ${duration} ms`,
+                    {id: 'buildmetrics-summary'}
+                )}
                 </div>    
                 <vaadin-button theme="tertiary" @click="${this._showBuildStepsChart}">
                     <vaadin-icon icon="font-awesome-solid:chart-simple" slot="prefix"></vaadin-icon>
-                    Build Steps Concurrent Execution Chart
+                    ${msg('Build Steps Concurrent Execution Chart', { id: 'buildmetrics-concurrent-chart' })}
                 </vaadin-button>
             </div>
             <vaadin-text-field
-                    placeholder="Filter"
+                    placeholder="${msg('Filter', { id: 'buildmetrics-filter' })}"
                     style="width: 100%;"
                     @value-changed="${(e) => this._filter(e)}">
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
             </vaadin-text-field>
             <vaadin-grid .items="${this._filtered}" class="datatable" theme="row-stripes">
                 <vaadin-grid-sort-column resizable
-                                    header="Build step"
+                                    header="${msg('Build step', { id: 'buildmetrics-step' })}"
                                     path="stepId"
                                     ${columnBodyRenderer(this._stepIdRenderer, [])}>
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
-                                    header="Started"
+                                    header="${msg('Started', { id: 'buildmetrics-started' })}"
                                     path="started">
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
-                                    header="Duration (ms)"
+                                    header="${msg('Duration (ms)', { id: 'buildmetrics-duration' })}"
                                     path="duration">
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
-                                    header="Thread"
+                                    header="${msg('Thread', { id: 'buildmetrics-thread' })}"
                                     path="thread">
                 </vaadin-grid-sort-column>
                 

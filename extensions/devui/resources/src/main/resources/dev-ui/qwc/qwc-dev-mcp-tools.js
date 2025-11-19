@@ -12,6 +12,7 @@ import '@vaadin/vertical-layout';
 import 'qui-themed-code-block';
 import '@qomponent/qui-badge';
 import '@qomponent/qui-switch';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component show all available tools for MCP clients
@@ -42,6 +43,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._showInputDialog = false;
         this._selectedTool = [];
         this._inputvalues = new Map();
@@ -63,7 +65,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         }else{
             return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching tools...</div>
+                <div>${msg('Fetching tools...', { id: 'devmcp-fetching-tools' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
@@ -101,33 +103,33 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                             }
                         }}">
                         <vaadin-grid-column
-                            header="Enabled"
+                            header="${msg('Enabled', { id: 'devmcp-enabled' })}"
                             frozen
                             auto-width
                             flex-grow="0"
                             ${columnBodyRenderer(this._stateRenderer, [])}
                         ></vaadin-grid-column>
                         <vaadin-grid-sort-column 
-                            header='Namespace'
+                            header='${msg('Namespace', { id: 'devmcp-namespace' })}'
                             path="name" 
                             auto-width
                             ${columnBodyRenderer(this._namespaceRenderer, [])}
                         >
                         </vaadin-grid-sort-column>
                         <vaadin-grid-sort-column 
-                            header='Method'
+                            header='${msg('Method', { id: 'devmcp-method' })}'
                             path="name" 
                             auto-width
                             ${columnBodyRenderer(this._nameRenderer, [])}
                         >
                         </vaadin-grid-sort-column>
                         <vaadin-grid-sort-column 
-                            header='Description'
+                            header='${msg('Description', { id: 'devmcp-description' })}'
                             path="description" 
                             auto-width>
                         </vaadin-grid-sort-column>
                         <vaadin-grid-column
-                            header="Params"
+                            header="${msg('Params', { id: 'devmcp-params' })}"
                             frozen-to-end
                             auto-width
                             flex-grow="0"
@@ -139,7 +141,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     _renderFilterTextbar(){
         return html`<vaadin-text-field class="filterText"
-                                placeholder="Filter"
+                                placeholder="${msg('Filter', { id: 'devmcp-filter' })}"
                                 value="${this._filteredValue}"
                                 style="flex: 1;"
                                 @value-changed="${(e) => this._filterTextChanged(e)}">
@@ -150,7 +152,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     _renderToolInvovationResultDialog(){
         return html`<vaadin-dialog
-                        header-title="Tool invocation result"
+                        header-title="${msg('Tool invocation result', { id: 'devmcp-invocation-result' })}"
                         .opened="${this._toolResult!==null}"
                         @opened-changed="${(event) => {
                             if(!event.detail.value){
@@ -171,7 +173,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     _renderToolInvocationInputDialog(){
         return html `<vaadin-dialog
-                        header-title="Input"
+                        header-title="${msg('Input', { id: 'devmcp-input' })}"
                         .opened="${this._showInputDialog}"
                         @opened-changed="${(event) => {
                             if(!event.detail.value){
@@ -218,7 +220,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
                                   ></vaadin-text-field>
                                 `
                               )}
-                              <vaadin-button @click="${() => this._getInputValuesAndTest(prop)}">Test</vaadin-button>
+                              <vaadin-button @click="${() => this._getInputValuesAndTest(prop)}">${msg('Test', { id: 'devmcp-test' })}</vaadin-button>
                         </vaadin-vertical-layout>`;
         }
     }
@@ -235,7 +237,7 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
         }
 
         this._filtered = this._tools.filter((prop) => {
-           return  this._match(prop.name, this._searchTerm) || this._match(prop.description, this._searchTerm)
+           return  this._match(prop.name, this._searchTerm) || this._match(prop.description, this._searchTerm);
         });
     }
 

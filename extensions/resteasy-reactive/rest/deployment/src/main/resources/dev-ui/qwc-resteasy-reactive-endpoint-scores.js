@@ -6,6 +6,7 @@ import '@vaadin/horizontal-layout';
 import 'echarts-gauge-grade';
 import 'qui-badge';
 import 'qwc-no-data';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Rest Easy Reactive Endpoint scores
@@ -85,6 +86,7 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._latestScores = null;
     }
 
@@ -101,9 +103,10 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
                 })}`;
             }
         }
-        return html`<qwc-no-data message="You do not have any REST endpoints." 
-                                    link="https://quarkus.io/guides/resteasy-reactive"
-                                    linkText="Learn how to write REST Services with Quarkus REST">
+        return html`<qwc-no-data
+                        message="${msg('You do not have any REST endpoints.', { id: 'quarkus-rest-no-rest-endpoints' })}"
+                        link="https://quarkus.io/guides/resteasy-reactive"
+                        linkText="${msg('Learn how to write REST Services with Quarkus REST', { id: 'quarkus-rest-learn-rest' })}">
                 </qwc-no-data>
             `;
     }
@@ -160,8 +163,6 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
     }
     
     _renderDiagnosticText(diagnostic){
-        let whatToDo = html``;
-        
         return html`<div class="diagnosticText">
                         <div class="message">${diagnostic[0].message}</div>
                     </div>`;
@@ -170,11 +171,11 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
     _renderInformation(endpoint){
         return html`<div class="information">
                         <table class="infoTable">
-                            ${this._renderMediaType("Produces", endpoint.producesHeaders)}
-                            ${this._renderMediaType("Consumes", endpoint.consumesHeaders)}
+                            ${this._renderMediaType(msg('Produces', { id: 'quarkus-rest-produces' }), endpoint.producesHeaders)}
+                            ${this._renderMediaType(msg('Consumes', { id: 'quarkus-rest-consumes' }), endpoint.consumesHeaders)}
                     
                             <tr>
-                                <td class="col1">Resource Class:</td>
+                                <td class="col1">${msg('Resource Class', { id: 'quarkus-rest-resource-class' })}:</td>
                                 <td>${endpoint.className}</td>
                             </tr>
                         </table>

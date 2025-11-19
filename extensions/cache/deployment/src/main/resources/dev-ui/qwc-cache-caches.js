@@ -11,6 +11,7 @@ import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import './qwc-cache-keys.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 export class QwcCacheCaches extends LitElement {
 
@@ -41,6 +42,7 @@ export class QwcCacheCaches extends LitElement {
     
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._selectedCache = null;
     }
 
@@ -71,7 +73,7 @@ export class QwcCacheCaches extends LitElement {
                 return this._renderCacheTable();
             }
         } else {
-            return html`<span>Loading caches...</span>`;
+            return html`<span>${msg('Loading caches...', { id: 'quarkus-cache-loading-caches' })}</span>`;
         }
     }
 
@@ -83,12 +85,12 @@ export class QwcCacheCaches extends LitElement {
             <div class="caches">
                 <vaadin-grid .items="${caches}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
-                                        header="Name"
+                                        header=${msg('Name', { id: 'quarkus-cache-name' })}
                                         ${columnBodyRenderer(this._nameRenderer, [])}>
                     </vaadin-grid-column>
 
                     <vaadin-grid-column auto-width
-                                        header="Size"
+                                        header=${msg('Size', { id: 'quarkus-cache-size' })}
                                         path="size">
                     </vaadin-grid-column>
 
@@ -110,11 +112,11 @@ export class QwcCacheCaches extends LitElement {
     _actionRenderer(cache) {
         return html`
             <vaadin-button theme="small" @click=${() => this._clear(cache.name)} class="button">
-                <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> Clear
+                <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> ${msg('Clear', { id: 'quarkus-cache-clear' })}
             </vaadin-button>
             &nbsp;|&nbsp;
             <vaadin-button theme="small" @click=${() => this._showCacheKeys(cache)} class="button">
-                <vaadin-icon class="keysIcon" icon="font-awesome-solid:key"></vaadin-icon> Keys
+                <vaadin-icon class="keysIcon" icon="font-awesome-solid:key"></vaadin-icon> ${msg('Keys', { id: 'quarkus-cache-keys-button' })}
             </vaadin-button>`;
     }
 

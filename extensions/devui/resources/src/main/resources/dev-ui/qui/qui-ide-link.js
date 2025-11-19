@@ -3,6 +3,7 @@ import { JsonRpc } from 'jsonrpc';
 import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { devuiState } from 'devui-state';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 export class QuiIdeLink extends observeState(LitElement) {
 
@@ -23,11 +24,12 @@ export class QuiIdeLink extends observeState(LitElement) {
         lineNumber: {type: String},
         stackTraceLine: {type: String},
         _fontWeight: {type: String},
-        noCheck: {type: Boolean},
+        noCheck: {type: Boolean}
     };
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this.stackTraceLine = null;
         this.fileName = null;
         this.lang = "java";
@@ -94,7 +96,8 @@ export class QuiIdeLink extends observeState(LitElement) {
             'lineNumber': this.lineNumber
         }).then(jsonRpcResponse => {
             if(!jsonRpcResponse.result){
-                notifier.showErrorMessage("Could not open your IDE");
+                let em = msg('Could not open your IDE', { id: 'ide-open-failed' });
+                notifier.showErrorMessage(em);
             }
         });
     }

@@ -1,5 +1,6 @@
 import {LitElement, html, css} from 'lit';
 import '@qomponent/qui-badge';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 export class QuiAssistantWarning extends LitElement {
 
@@ -11,7 +12,8 @@ export class QuiAssistantWarning extends LitElement {
 
     constructor() {
         super();
-        this.warning = "Quarkus assistant can make mistakes. Check responses.";
+        updateWhenLocaleChanges(this);
+        this.warning = msg('Quarkus assistant can make mistakes. Check responses.', { id: 'assistant-warning-explanation' });
     }
     
     connectedCallback() {
@@ -19,7 +21,7 @@ export class QuiAssistantWarning extends LitElement {
     }
 
     render() {
-        return html`<qui-badge style="padding-left: 20px;" text="Warning" level="contrast" color="var(--quarkus-assistant)" icon="robot" tiny>
+        return html`<qui-badge style="padding-left: 20px;" text="${msg('Warning', { id: 'assistant-warning' })}" level="contrast" color="var(--quarkus-assistant)" icon="robot" tiny>
                             <span>${this.warning}</span>
                         </qui-badge>`;
     }

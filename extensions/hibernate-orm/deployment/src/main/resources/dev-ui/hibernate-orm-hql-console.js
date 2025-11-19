@@ -1,6 +1,6 @@
-import {css, html, QwcHotReloadElement} from 'qwc-hot-reload-element';
-import {JsonRpc} from 'jsonrpc';
-import {StorageController} from 'storage-controller';
+import { css, html, QwcHotReloadElement } from 'qwc-hot-reload-element';
+import { JsonRpc } from 'jsonrpc';
+import { StorageController } from 'storage-controller';
 import '@vaadin/icon';
 import '@vaadin/button';
 import '@vaadin/combo-box';
@@ -9,13 +9,14 @@ import '@vaadin/text-area';
 import '@vaadin/progress-bar';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
-import {assistantState} from 'assistant-state';
+import { assistantState } from 'assistant-state';
 import 'qui-assistant-warning';
-import {observeState} from 'lit-element-state';
+import { observeState } from 'lit-element-state';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
-    configJsonRpc = new JsonRpc("devui-configuration");
+    configJsonRpc = new JsonRpc('devui-configuration');
     storageControl = new StorageController(this);
 
     static styles = css`
@@ -244,21 +245,22 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     `;
 
     static properties = {
-        _persistenceUnits: {state: true, type: Array},
-        _selectedPersistenceUnit: {state: true},
-        _entityTypes: {state: true, type: Array},
-        _messages: {state: true, type: Array},
-        _currentPageNumber: {state: true},
-        _currentNumberOfPages: {state: true},
-        _allowHql: {state: true},
-        _assistantEnabled: {state: true},
-        _assistantInteractive: {state: true},
-        _loading: {state: true, type: Boolean},
-        _expandCounter: {state: true, type: Number},
+        _persistenceUnits: { state: true, type: Array },
+        _selectedPersistenceUnit: { state: true },
+        _entityTypes: { state: true, type: Array },
+        _messages: { state: true, type: Array },
+        _currentPageNumber: { state: true },
+        _currentNumberOfPages: { state: true },
+        _allowHql: { state: true },
+        _assistantEnabled: { state: true },
+        _assistantInteractive: { state: true },
+        _loading: { state: true, type: Boolean },
+        _expandCounter: { state: true, type: Number }
     }
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._persistenceUnits = [];
         this._selectedPersistenceUnit = null;
         this._entityTypes = [];
@@ -294,8 +296,16 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                 this._selectPersistenceUnit(this._persistenceUnits[0]);
             }
         }).catch(error => {
-            console.error("Failed to fetch configuration or persistence units:", error);
-            this._addErrorMessage("Failed to fetch configuration or persistence units: " + error);
+            console.error('Failed to fetch configuration or persistence units:', error);
+            this._addErrorMessage(
+                msg(
+                    str`Failed to fetch configuration or persistence units: ${0}`,
+                    {
+                        id: 'quarkus-hibernate-orm-failed-fetch-config-or-pu',
+                        args: [String(error)]
+                    }
+                )
+            );
         }).finally(() => {
             this._loading = false;
         });
@@ -308,8 +318,15 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             return this._renderChatInterface();
         } else {
             return html`
-                <p>No persistence units were found.
-                    <vaadin-button @click="${this.hotReload}" theme="small">Check again</vaadin-button>
+                <p>
+                    ${msg('No persistence units were found.', {
+                        id: 'quarkus-hibernate-orm-no-persistence-units'
+                    })}
+                    <vaadin-button @click="${this.hotReload}" theme="small">
+                        ${msg('Check again', {
+                            id: 'quarkus-hibernate-orm-check-again'
+                        })}
+                    </vaadin-button>
                 </p>`;
         }
     }
@@ -317,12 +334,44 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     _renderFetchingProgress() {
         return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;">
-                <div>Fetching persistence units...</div>
+                <div>
+                    ${msg('Fetching persistence units...', {
+                        id: 'quarkus-hibernate-orm-fetching-persistence-units'
+                    })}
+                </div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>`;
     }
 
     _renderChatInterface() {
+        const nlPlaceholder = msg(
+            'Enter natural language request',
+            { id: 'quarkus-hibernate-orm-enter-nl-request' }
+        );
+        const hqlPlaceholder = msg(
+            'Enter an HQL query',
+            { id: 'quarkus-hibernate-orm-enter-hql-query' }
+        );
+
+        const inputPlaceholder = this._assistantEnabled ? nlPlaceholder : hqlPlaceholder;
+
+        const assistantToggleTooltipEnabled = msg(
+            'Disable Hibernate Assistant',
+            { id: 'quarkus-hibernate-orm-disable-assistant' }
+        );
+        const assistantToggleTooltipDisabled = msg(
+            'Enable Hibernate Assistant',
+            { id: 'quarkus-hibernate-orm-enable-assistant' }
+        );
+
+        const assistantButtonLabel = this._assistantEnabled
+            ? msg('Assistant enabled', {
+                id: 'quarkus-hibernate-orm-assistant-enabled'
+            })
+            : msg('Assistant disabled', {
+                id: 'quarkus-hibernate-orm-assistant-disabled'
+            });
+
         return html`
             <div class="persistenceUnits">
                 <div class="chat-container bordered">
@@ -337,46 +386,76 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                         </div>
                     </div>
                     <div class="chat-area" id="chat-area">
-                        ${this._messages.map(msg => this._renderMessage(msg))}
+                        ${this._messages.map(msgObj => this._renderMessage(msgObj))}
                     </div>
                     ${this._allowHql ? html`
                         <div class="chat-input">
-                            <vaadin-text-field class="chat-text-area" placeholder="${this._assistantEnabled ? 'Enter natural language request' : 'Enter an HQL query'}"
-                                              id="hql-input"
-                                              @keydown="${this._handleKeyDown}"
-                                              style="height: 40px;" 
-                                              clear-button-visible>
-                                <vaadin-tooltip slot="tooltip"
-                                                text="${this._assistantEnabled ? 'Enter natural language request' : 'Enter an HQL query'}">
+                            <vaadin-text-field
+                                class="chat-text-area"
+                                .placeholder="${inputPlaceholder}"
+                                id="hql-input"
+                                @keydown="${this._handleKeyDown}"
+                                style="height: 40px;"
+                                clear-button-visible>
+                                <vaadin-tooltip
+                                    slot="tooltip"
+                                    text="${inputPlaceholder}">
                                 </vaadin-tooltip>
                             </vaadin-text-field>
                             ${assistantState.current.isConfigured ? html`
-                                <vaadin-button theme="secondary" @click="${this._toggleAssistant}"
-                                               style="color: ${this._assistantEnabled ? 'var(--quarkus-assistant)' : 'var(--lumo-secondary-text-color)'}">
+                                <vaadin-button
+                                    theme="secondary"
+                                    @click="${this._toggleAssistant}"
+                                    style="color: ${this._assistantEnabled
+                                        ? 'var(--quarkus-assistant)'
+                                        : 'var(--lumo-secondary-text-color)'}">
                                     <vaadin-icon icon="font-awesome-solid:robot" slot="prefix"></vaadin-icon>
-                                    <vaadin-tooltip slot="tooltip" 
-                                                    text="${this._assistantEnabled ? 'Disable Hibernate Assistant' : 'Enable Hibernate Assistant'}">
+                                    <vaadin-tooltip
+                                        slot="tooltip"
+                                        text="${this._assistantEnabled
+                                            ? assistantToggleTooltipEnabled
+                                            : assistantToggleTooltipDisabled}">
                                     </vaadin-tooltip>
-                                    ${this._assistantEnabled ? 'Assistant enabled' : 'Assistant disabled'}
+                                    ${assistantButtonLabel}
                                 </vaadin-button>
-                                <vaadin-checkbox 
-                                        label="Interactive"
-                                        ?disabled="${!this._assistantEnabled}"
-                                        ?checked="${this._assistantInteractive}"
-                                        @change="${this._onInteractiveChanged}">
-                                    <vaadin-tooltip slot="tooltip"
-                                                    text="Interactive mode generates a natural language response based on the extracted data"></vaadin-tooltip>
+                                <vaadin-checkbox
+                                    label="${msg('Interactive', {
+                                        id: 'quarkus-hibernate-orm-interactive-label'
+                                    })}"
+                                    ?disabled="${!this._assistantEnabled}"
+                                    ?checked="${this._assistantInteractive}"
+                                    @change="${this._onInteractiveChanged}">
+                                    <vaadin-tooltip
+                                        slot="tooltip"
+                                        text="${msg(
+                                            'Interactive mode generates a natural language response based on the extracted data',
+                                            { id: 'quarkus-hibernate-orm-interactive-tooltip' }
+                                        )}">
+                                    </vaadin-tooltip>
                                 </vaadin-checkbox>
                             ` : ''}
                             <div class="vertical-separator"></div>
                             <vaadin-button theme="contrast" @click="${this._clearChat}">
                                 <vaadin-icon icon="font-awesome-solid:trash"></vaadin-icon>
-                                <vaadin-tooltip slot="tooltip" text="Clear History"></vaadin-tooltip>
+                                <vaadin-tooltip
+                                    slot="tooltip"
+                                    text="${msg('Clear history', {
+                                        id: 'quarkus-hibernate-orm-clear-history'
+                                    })}">
+                                </vaadin-tooltip>
                             </vaadin-button>
-                            <vaadin-button theme="primary" @click="${this._sendQuery}"
-                                           ?disabled="${this._selectedPersistenceUnit?.reactive}">
+
+                            <vaadin-button
+                                theme="primary"
+                                @click="${this._sendQuery}"
+                                ?disabled="${this._selectedPersistenceUnit?.reactive}">
                                 <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
-                                <vaadin-tooltip slot="tooltip" text="Execute query"></vaadin-tooltip>
+                                <vaadin-tooltip
+                                    slot="tooltip"
+                                    text="${msg('Execute query', {
+                                        id: 'quarkus-hibernate-orm-execute-query'
+                                    })}">
+                                </vaadin-tooltip>
                             </vaadin-button>
                         </div>` : ''}
                 </div>
@@ -402,21 +481,21 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     _renderMessage(message) {
         if (message.type === 'loading') {
             return html`
-            <div class="message system-message">
-                <div style="display: flex; justify-content: center; align-items: center;">
-                    <vaadin-icon icon="font-awesome-solid:circle-notch" class="spinner"></vaadin-icon>
-                </div>
-            </div>`;
+                <div class="message system-message">
+                    <div style="display: flex; justify-content: center; align-items: center;">
+                        <vaadin-icon icon="font-awesome-solid:circle-notch" class="spinner"></vaadin-icon>
+                    </div>
+                </div>`;
         } else if (message.type === 'user') {
             return html`
-            <div class="message user-message">
-                <div>${message.content}</div>
-            </div>`;
+                <div class="message user-message">
+                    <div>${message.content}</div>
+                </div>`;
         } else if (message.type === 'error') {
             return html`
-            <div class="message error-message">
-                <div><strong>Error:</strong> ${message.content}</div>
-            </div>`;
+                <div class="message error-message">
+                    <div><strong>Error:</strong> ${message.content}</div>
+                </div>`;
         } else if (message.type === 'result') {
             return html`
                 <div class="message system-message">
@@ -429,9 +508,9 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                 </div>`;
         } else {
             return html`
-            <div class="message system-message">
-                <div>${message.content}</div>
-            </div>`;
+                <div class="message system-message">
+                    <div>${message.content}</div>
+                </div>`;
         }
     }
 
@@ -440,14 +519,35 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             return;
         }
 
-        const results = `${message.message ? 'Using ' : ''}${message.results} result${message.results === 1 ? '' : 's'}`;
+        const pluralSuffix = message.results === 1 ? '' : 's';
+
+        const results = message.message
+            ? msg(
+                str`Using ${0} result${1}`,
+                {
+                    id: 'quarkus-hibernate-orm-using-results',
+                    args: [message.results, pluralSuffix]
+                }
+            )
+            : msg(
+                str`${0} result${1}`,
+                {
+                    id: 'quarkus-hibernate-orm-results',
+                    args: [message.results, pluralSuffix]
+                }
+            );
+
         return html`
             <div class="result-footer">
                 <span class="result-count">${results}</span>
-                ${message.assistant ? html`<qui-assistant-warning style="display: inline-block;padding-right: 20px;"/>` : ''}
-                <vaadin-button theme="tertiary-inline" class="copy-button"
-                               data-query="${message.query}"
-                               @click="${(e) => this._copyQueryToClipboard(e, message.query)}">
+                ${message.assistant
+                    ? html`<qui-assistant-warning style="display: inline-block;padding-right: 20px;"/>`
+                    : ''}
+                <vaadin-button
+                    theme="tertiary-inline"
+                    class="copy-button"
+                    data-query="${message.query}"
+                    @click="${(e) => this._copyQueryToClipboard(e, message.query)}">
                     HQL
                     <vaadin-icon class="small-icon" icon="font-awesome-regular:copy"></vaadin-icon>
                     <vaadin-tooltip slot="tooltip" text="${message.query}"></vaadin-tooltip>
@@ -463,13 +563,25 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             </div>
             ${message.totalPages > 1 ? html`
                 <div class="pagination">
-                    <vaadin-button theme="icon tertiary" ?disabled="${message.page === 1}"
-                                   @click="${() => this._paginateResults(message.query, message.page - 1)}">
+                    <vaadin-button
+                        theme="icon tertiary"
+                        ?disabled="${message.page === 1}"
+                        @click="${() => this._paginateResults(message.query, message.page - 1)}">
                         <vaadin-icon class="small-icon" icon="font-awesome-solid:chevron-left"></vaadin-icon>
                     </vaadin-button>
-                    <span>Page ${message.page} of ${message.totalPages}</span>
-                    <vaadin-button theme="icon tertiary" ?disabled="${message.page >= message.totalPages}"
-                                   @click="${() => this._paginateResults(message.query, message.page + 1)}">
+                    <span>
+                        ${msg(
+                            str`Page ${0} of ${1}`,
+                            {
+                                id: 'quarkus-hibernate-orm-page-of',
+                                args: [message.page, message.totalPages]
+                            }
+                        )}
+                    </span>
+                    <vaadin-button
+                        theme="icon tertiary"
+                        ?disabled="${message.page >= message.totalPages}"
+                        @click="${() => this._paginateResults(message.query, message.page + 1)}">
                         <vaadin-icon class="small-icon" icon="font-awesome-solid:chevron-right"></vaadin-icon>
                     </vaadin-button>
                 </div>` : ''}`;
@@ -493,7 +605,11 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _renderResultsData(data) {
         if (!data || data.length === 0) {
-            return html`<div>No results found.</div>`;
+            return html`<div>
+                ${msg('No results found.', {
+                    id: 'quarkus-hibernate-orm-no-results-found'
+                })}
+            </div>`;
         }
 
         return this._renderArrayTable(data, false);
@@ -501,11 +617,23 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _formatValue(value) {
         if (value === true) {
-            return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="true" icon="font-awesome-regular:square-check"></vaadin-icon>`;
+            return html`
+                <vaadin-icon
+                    style="color: var(--lumo-contrast-50pct);"
+                    title="${msg('true', { id: 'quarkus-hibernate-orm-true' })}"
+                    icon="font-awesome-regular:square-check">
+                </vaadin-icon>`;
         } else if (value === false) {
-            return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="false" icon="font-awesome-regular:square"></vaadin-icon>`;
+            return html`
+                <vaadin-icon
+                    style="color: var(--lumo-contrast-50pct);"
+                    title="${msg('false', { id: 'quarkus-hibernate-orm-false' })}"
+                    icon="font-awesome-regular:square">
+                </vaadin-icon>`;
         } else if (value === null || value === undefined) {
-            return html`<span>null</span>`;
+            return html`<span>
+                ${msg('null', { id: 'quarkus-hibernate-orm-null' })}
+            </span>`;
         } else if (typeof value === 'object') {
             return this._renderExpandableJson(value);
         } else if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
@@ -518,17 +646,31 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     _renderExpandableJson(value) {
         const isArray = Array.isArray(value);
         const preview = isArray
-            ? `Array[${value.length}]`
-            : `Object{${Object.keys(value).length} properties}`;
+            ? msg(
+                str`Array[${0}]`,
+                {
+                    id: 'quarkus-hibernate-orm-array-preview',
+                    args: [value.length]
+                }
+            )
+            : msg(
+                str`Object{${0} properties}`,
+                {
+                    id: 'quarkus-hibernate-orm-object-preview',
+                    args: [Object.keys(value).length]
+                }
+            );
 
         const expandId = `expand-${++this._expandCounter}`;
         return html`
             <div class="expandable-json">
-                <span class="json-preview" @click="${(e) => this._toggleExpand(e, expandId)}">[+] ${preview}</span>
+                <span class="json-preview" @click="${(e) => this._toggleExpand(e, expandId)}">
+                    [+] ${preview}
+                </span>
                 <div id="${expandId}" class="nested-table" style="display: none">
                     ${isArray
-                            ? this._renderArrayTable(value, true) // true means this is nested
-                            : this._renderObjectTable(value)}
+                        ? this._renderArrayTable(value, true)
+                        : this._renderObjectTable(value)}
                 </div>
             </div>
         `;
@@ -549,7 +691,12 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _renderArrayTable(array, isNested = false) {
         if (array.length === 0) {
-            return html`<div style="font-style: italic; color: var(--lumo-tertiary-text-color);">[empty array]</div>`;
+            return html`
+                <div style="font-style: italic; color: var(--lumo-tertiary-text-color);">
+                    ${msg('[empty array]', {
+                        id: 'quarkus-hibernate-orm-empty-array'
+                    })}
+                </div>`;
         }
 
         // Check if we need a complex table (objects) or a simple list
@@ -568,23 +715,23 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                 <div class="table-container">
                     <table>
                         <thead>
-                        <tr>
-                            ${[...keys].map(key => html`<th>${key}</th>`)}
-                        </tr>
+                            <tr>
+                                ${[...keys].map(key => html`<th>${key}</th>`)}
+                            </tr>
                         </thead>
                         <tbody>
-                        ${array.map(item => {
-                            if (typeof item === 'object' && item !== null) {
-                                return html`
-                                    <tr>
-                                        ${[...keys].map(key => html`
-                                            <td>${this._formatValue(item[key])}</td>
-                                        `)}
-                                    </tr>
-                                `;
-                            }
-                            return '';
-                        })}
+                            ${array.map(item => {
+                                if (typeof item === 'object' && item !== null) {
+                                    return html`
+                                        <tr>
+                                            ${[...keys].map(key => html`
+                                                <td>${this._formatValue(item[key])}</td>
+                                            `)}
+                                        </tr>
+                                    `;
+                                }
+                                return '';
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -595,18 +742,26 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
                 <div class="table-container">
                     <table>
                         <thead>
-                        <tr>
-                            <th>Index</th>
-                            <th>Value</th>
-                        </tr>
+                            <tr>
+                                <th>
+                                    ${msg('Index', {
+                                        id: 'quarkus-hibernate-orm-index'
+                                    })}
+                                </th>
+                                <th>
+                                    ${msg('Value', {
+                                        id: 'quarkus-hibernate-orm-value'
+                                    })}
+                                </th>
+                            </tr>
                         </thead>
                         <tbody>
-                        ${array.map((item, index) => html`
-                            <tr>
-                                <td style="width: 50px;">${index}</td>
-                                <td>${this._formatValue(item)}</td>
-                            </tr>
-                        `)}
+                            ${array.map((item, index) => html`
+                                <tr>
+                                    <td style="width: 50px;">${index}</td>
+                                    <td>${this._formatValue(item)}</td>
+                                </tr>
+                            `)}
                         </tbody>
                     </table>
                 </div>
@@ -616,54 +771,64 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _renderObjectTable(obj) {
         return html`
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Property</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(obj).map(([key, value]) => html`
+            <div class="table-container">
+                <table>
+                    <thead>
                         <tr>
-                            <td style="width: 30%;">${key}</td>
-                            <td>${this._formatValue(value)}</td>
+                            <th>
+                                ${msg('Property', {
+                                    id: 'quarkus-hibernate-orm-property'
+                                })}
+                            </th>
+                            <th>
+                                ${msg('Value', {
+                                    id: 'quarkus-hibernate-orm-value'
+                                })}
+                            </th>
                         </tr>
-                    `)}
-                </tbody>
-            </table>
-        </div>
-    `;
-    }
-
-    _capitalize(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
+                    </thead>
+                    <tbody>
+                        ${Object.entries(obj).map(([key, value]) => html`
+                            <tr>
+                                <td style="width: 30%;">${key}</td>
+                                <td>${this._formatValue(value)}</td>
+                            </tr>
+                        `)}
+                    </tbody>
+                </table>
+            </div>
+        `;
     }
 
     _renderPUsComboBox() {
         return html`
             <vaadin-combo-box
-                    label="Persistence Unit"
-                    item-label-path="label"
-                    item-value-path="label"
-                    .items="${this._persistenceUnits}"
-                    .value="${this._persistenceUnits[0]?.label || ''}"
-                    @value-changed="${this._onPersistenceUnitChanged}"
-                    .allowCustomValue="${false}"
-            ></vaadin-combo-box>
+                label="${msg('Persistence Unit', {
+                    id: 'quarkus-hibernate-orm-persistence-unit'
+                })}"
+                item-label-path="label"
+                item-value-path="label"
+                .items="${this._persistenceUnits}"
+                .value="${this._persistenceUnits[0]?.label || ''}"
+                @value-changed="${this._onPersistenceUnitChanged}"
+                .allowCustomValue="${false}">
+            </vaadin-combo-box>
         `;
     }
 
     _renderEntityTypes() {
         return html`
             <vaadin-combo-box
-                    label="Entity Types"
-                    .items="${this._entityTypes}"
-                    placeholder="Select entity to use..."
-                    @value-changed="${(e) => this._insertEntityName(e.detail.value)}"
-                    clear-button-visible
-            ></vaadin-combo-box>
+                label="${msg('Entity Types', {
+                    id: 'quarkus-hibernate-orm-entity-types-label'
+                })}"
+                .items="${this._entityTypes}"
+                placeholder="${msg('Select entity to use...', {
+                    id: 'quarkus-hibernate-orm-entity-types-placeholder'
+                })}"
+                @value-changed="${(e) => this._insertEntityName(e.detail.value)}"
+                clear-button-visible>
+            </vaadin-combo-box>
         `;
     }
 
@@ -679,7 +844,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _onPersistenceUnitChanged(event) {
         const selectedValue = event.detail.value;
-        this._selectPersistenceUnit(this._persistenceUnits.find(unit => unit.label === selectedValue))
+        this._selectPersistenceUnit(this._persistenceUnits.find(unit => unit.label === selectedValue));
     }
 
     _selectPersistenceUnit(pu) {
@@ -694,36 +859,61 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     }
 
     _welcomeMessage(pu) {
-        if ( pu ) {
+        if (pu) {
             if (pu.reactive) {
-                this._addErrorMessage("Reactive persistence units are not supported in this console, please use a blocking one.");
+                this._addErrorMessage(
+                    msg(
+                        'Reactive persistence units are not supported in this console, please use a blocking one.',
+                        { id: 'quarkus-hibernate-orm-reactive-not-supported' }
+                    )
+                );
             } else {
-                // Add initialization welcome message
+                const welcome = msg('Welcome to the HQL Console!', {
+                    id: 'quarkus-hibernate-orm-welcome-hql-console'
+                });
+
                 if (this._allowHql) {
-                    this._addSystemMessage(`Welcome to the HQL Console! Enter your queries below.`);
+                    this._addSystemMessage(
+                        html`${welcome} ${msg(
+                            'Enter your queries below.',
+                            { id: 'quarkus-hibernate-orm-hql-execution-enabled' }
+                        )}`
+                    );
                 } else {
                     this._addSystemMessage(html`
-                        Welcome to the HQL Console!
-                        <a href="#" @click="${this._handleAllowHqlChange}"
+                        ${welcome}
+                        <a href="#"
+                           @click="${this._handleAllowHqlChange}"
                            style="color: var(--lumo-primary-color); text-decoration: underline; font-weight: bold;">
-                            Enable HQL execution in <code>application.properties</code>
+                            ${msg(
+                                'Enable HQL execution in application.properties',
+                                { id: 'quarkus-hibernate-orm-enable-hql-execution-link' }
+                            )}
                         </a>.
                     `);
                 }
             }
-        }
-        else {
-            this._addErrorMessage("No persistence unit is available.");
+        } else {
+            this._addErrorMessage(
+                msg('No persistence unit is available.', {
+                    id: 'quarkus-hibernate-orm-no-pu-available'
+                })
+            );
         }
     }
 
     _handleAllowHqlChange() {
         this.configJsonRpc.updateProperty({
-            'name': '%dev.quarkus.hibernate-orm.dev-ui.allow-hql',
-            'value': 'true'
-        }).then(e => {
+            name: '%dev.quarkus.hibernate-orm.dev-ui.allow-hql',
+            value: 'true'
+        }).then(() => {
             this._allowHql = true;
-            this._addSystemMessage("HQL execution is now enabled. Enter your queries below.");
+            this._addSystemMessage(
+                msg(
+                    'HQL execution is now enabled. Enter your queries below.',
+                    { id: 'quarkus-hibernate-orm-hql-execution-enabled' }
+                )
+            );
         });
     }
 
@@ -736,11 +926,15 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
 
     _sendQuery() {
         const input = this.renderRoot.querySelector('#hql-input');
-        const query = input.value.trim();
+        const query = (input?.value || '').trim();
 
         if (!query) return;
 
-        this._addUserMessage(html`<strong>${this._assistantEnabled ? 'Message' : 'Query'}: </strong>${query}`);
+        const label = this._assistantEnabled
+            ? msg('Message', { id: 'quarkus-hibernate-orm-message-label' })
+            : msg('Query', { id: 'quarkus-hibernate-orm-query-label' });
+
+        this._addUserMessage(html`<strong>${label}: </strong>${query}`);
 
         this._executeHQL(query, 1, this._assistantEnabled, this._assistantInteractive);
     }
@@ -761,7 +955,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             pageNumber: pageNumber,
             pageSize: this._pageSize,
             assistant: assistant,
-            interactive: interactive,
+            interactive: interactive
         }).then(response => {
             // Clone the messages array to modify it
             const updatedMessages = [...this._messages];
@@ -795,7 +989,7 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
             const updatedMessages = [...this._messages];
             updatedMessages[loadingMessageIndex] = {
                 type: 'error',
-                content: response.error && response.error.message || "Failed to execute query."
+                content: response.error && response.error.message || 'Failed to execute query.'
             };
             this._messages = updatedMessages;
         });
@@ -816,7 +1010,9 @@ export class HibernateOrmHqlConsoleComponent extends observeState(QwcHotReloadEl
     _scrollToBottom() {
         setTimeout(() => {
             const chatArea = this.renderRoot.querySelector('#chat-area');
-            chatArea.scrollTop = chatArea.scrollHeight;
+            if (chatArea) {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
         }, 100);
     }
 

@@ -11,6 +11,7 @@ import '@vaadin/integer-field';
 import '@vaadin/button';
 import './qwc-kafka-messages.js';
 import './qwc-kafka-add-topic.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 
 /**
@@ -58,11 +59,12 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
         _createTopicDialogOpened: {state: true},
         
         _deleteTopicDialogOpened: {state: true},
-        _deleteTopicName: {state: false},
+        _deleteTopicName: {state: false}
     };
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this._topics = null;
         this._selectedTopic = null;
         
@@ -83,7 +85,7 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
 
     disconnectedCallback() { 
         this._observer.cancel();
-        super.disconnectedCallback()
+        super.disconnectedCallback();
     }
 
     hotReload(){
@@ -95,12 +97,12 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
     render() {
         if(this._topics && this._selectedTopic === null){
             return this._renderTopicList();
-        } else if(this._topics && this._selectedTopic!=null){
+        } else if(this._topics && this._selectedTopic !== null){
             return html`<qwc-kafka-messages 
                 extensionName="${this.jsonRpc.getExtensionName()}"
                 topicName="${this._selectedTopic.name}" 
                 partitionsCount=${this._selectedTopic.partitionsCount}
-                @kafka-messages-back=${this._showTopicList}></qwc-kafka-messages>`
+                @kafka-messages-back=${this._showTopicList}></qwc-kafka-messages>`;
         } else {
             return html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>`;
         }
@@ -117,7 +119,7 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
                 ${this._renderTopicGrid()}
                 
                 <div class="bottom">
-                    <vaadin-icon class="create-button" icon="font-awesome-solid:circle-plus" @click="${() => {this._createTopicDialogOpened = true}}" title="Create topic"></vaadin-icon>
+                    <vaadin-icon class="create-button" icon="font-awesome-solid:circle-plus" @click="${() => {this._createTopicDialogOpened = true;}}" title=${msg('Create topic', { id: 'quarkus-kafka-client-create-topic' })}></vaadin-icon>
                 </div>    
             </div>`;
     }
@@ -127,28 +129,28 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
                                     class="table" theme="no-border">
                         <vaadin-grid-sort-column auto-width
                             path="name"
-                            header="Topic Name"
+                            header=${msg('Topic Name', { id: 'quarkus-kafka-client-topic-name' })}
                             ${columnBodyRenderer(this._nameRenderer, [])}
                             resizable>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column auto-width
                             path="topicId"
-                            header="ID"
+                            header=${msg('ID', { id: 'quarkus-kafka-client-id' })}
                             ${columnBodyRenderer(this._idRenderer, [])}
                             resizable>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column auto-width
                             path="partitionsCount"
-                            header="Partitions count"
+                            header=${msg('Partitions count', { id: 'quarkus-kafka-client-partitions-count' })}
                             ${columnBodyRenderer(this._partitionsCountRenderer, [])}
                             resizable>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column auto-width
                             path="nmsg"
-                            header="Number of msg"
+                            header=${msg('Number of msg', { id: 'quarkus-kafka-client-number-of-msg' })}
                             ${columnBodyRenderer(this._nmsgRenderer, [])}
                             resizable>
                         </vaadin-grid-sort-column>
@@ -164,11 +166,11 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
     _renderCreateTopicDialog(){
         if(this._createTopicDialogOpened){
             return html`<vaadin-dialog class="createDialog"
-                    header-title="Create topic"
+                    header-title=${msg('Create topic', { id: 'quarkus-kafka-client-create-topic' })}
                     resizable
                     .opened="${this._createTopicDialogOpened}"
                     @opened-changed="${(e) => (this._createTopicDialogOpened = e.detail.value)}"
-                    ${dialogRenderer(() => this._renderCreateTopicDialogForm(), "Create topic")}
+                    ${dialogRenderer(() => this._renderCreateTopicDialogForm(), msg('Create topic', { id: 'quarkus-kafka-client-create-topic' }))}
                 ></vaadin-dialog>`;
         }
     }
@@ -176,16 +178,17 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
     _renderConfirmDeleteDialog(){
 
         return html`<vaadin-dialog class="deleteDialog"
-                    header-title="Confirm delete"
+                    header-title=${msg('Confirm delete', { id: 'quarkus-kafka-client-confirm-delete' })}
                     .opened="${this._deleteTopicDialogOpened}"
                     @opened-changed="${(e) => (this._deleteTopicDialogOpened = e.detail.value)}"
-                    ${dialogRenderer(() => this._renderDeleteTopicDialogForm(), "Confirm delete")}
+                    ${dialogRenderer(() => this._renderDeleteTopicDialogForm(), msg('Confirm delete', { id: 'quarkus-kafka-client-confirm-delete' }))}
                 ></vaadin-dialog>`;
     }
 
     _renderDeleteTopicDialogForm(){
+        const dtn = this._deleteTopicName;
         return html`
-            Are you sure you want to delete topic <b>${this._deleteTopicName}</b><br/>?
+            ${msg(str`Are you sure you want to delete topic ${dtn}?`, { id: 'quarkus-kafka-client-delete-topic-confirm' })}<br/>
             ${this._renderDeleteTopicButtons()}
         `;
     }
@@ -220,7 +223,7 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
     }
 
     _deleteActionRenderer(topic){
-        return html`<vaadin-icon data-topic-name="${topic.name}" class="delete-button" icon="font-awesome-solid:trash-can" @click="${this._openConfirmDeleteDialog}" title="Delete topic"></vaadin-icon>`;
+        return html`<vaadin-icon data-topic-name="${topic.name}" class="delete-button" icon="font-awesome-solid:trash-can" @click="${this._openConfirmDeleteDialog}" title=${msg('Delete topic', { id: 'quarkus-kafka-client-delete-topic' })}></vaadin-icon>`;
     }
 
     _renderCreateTopicDialogForm(){
@@ -242,8 +245,8 @@ export class QwcKafkaTopics extends QwcHotReloadElement {
 
     _renderDeleteTopicButtons(){
         return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
-                        <vaadin-button theme="secondary error" @click=${this._submitDeleteTopicForm}>Delete</vaadin-button>
-                        <vaadin-button theme="secondary" @click=${this._resetDeleteTopicForm}>Cancel</vaadin-button>
+                        <vaadin-button theme="secondary error" @click=${this._submitDeleteTopicForm}>${msg('Delete', { id: 'quarkus-kafka-client-delete' })}</vaadin-button>
+                        <vaadin-button theme="secondary" @click=${this._resetDeleteTopicForm}>${msg('Cancel', { id: 'quarkus-kafka-client-cancel' })}</vaadin-button>
                     </div>`;
     }
 

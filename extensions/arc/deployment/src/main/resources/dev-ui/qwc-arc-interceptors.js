@@ -5,6 +5,7 @@ import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Arc Interceptors
@@ -44,34 +45,35 @@ export class QwcArcInterceptors extends LitElement {
   
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._interceptors = interceptors;
         this._filteredInterceptors = this._interceptors;
     }
   
     render() {
-        if(this._filteredInterceptors){
+        if (this._filteredInterceptors) {
             return html`${this._renderFilterBar()}
             <vaadin-grid .items="${this._filteredInterceptors}" class="arctable" theme="no-border">
               <vaadin-grid-sort-column path="interceptorClass.name" auto-width
-                header="Interceptor Class"
+                header=${msg('Interceptor Class', { id: 'quarkus-arc-interceptor-class' })}
                 ${columnBodyRenderer(this._classRenderer, [])}
                 resizable>
               </vaadin-grid-sort-column>
 
               <vaadin-grid-sort-column path="priority" auto-width
-                header="Priority"
+                header=${msg('Priority', { id: 'quarkus-arc-priority' })}
                 ${columnBodyRenderer(this._priorityRenderer, [])}
                 resizable>
               </vaadin-grid-sort-column>
 
               <vaadin-grid-column auto-width
-                header="Bindings"
+                header=${msg('Bindings', { id: 'quarkus-arc-bindings' })}
                 ${columnBodyRenderer(this._bindingsRenderer, [])}
                 resizable>
               </vaadin-grid-column>
 
               <vaadin-grid-column auto-width
-                header="Interception Types"
+                header=${msg('Interception Types', { id: 'quarkus-arc-interception-types' })}
                 ${columnBodyRenderer(this._typeRenderer, [])}
                 resizable>
               </vaadin-grid-column>
@@ -82,23 +84,23 @@ export class QwcArcInterceptors extends LitElement {
 
     _renderFilterBar(){
         return html`<vaadin-text-field
-                        placeholder="Search"
+                        placeholder=${msg('Search', { id: 'quarkus-arc-search' })}
                         class="filterBar"
                         @value-changed="${(e) => {
                             const searchTerm = (e.detail.value || '').trim();
                             const matchesTerm = (value) => {
-                                if(value){
+                                if (value) {
                                     return value.toLowerCase().includes(searchTerm.toLowerCase());
                                 }
-                            }
-                            if(searchTerm?.trim()){
+                            };
+                            if (searchTerm?.trim()) {
                                 this._filteredInterceptors = this._interceptors.filter(
                                     ({ interceptorClass, priority }) => {
                                         return !searchTerm ||
                                             matchesTerm(interceptorClass?.name) ||
-                                            matchesTerm(priority.toString())
+                                            matchesTerm(priority.toString());
                                 });
-                            }else{
+                            } else {
                                 this._filteredInterceptors = this._interceptors;
                             }
                         }}">

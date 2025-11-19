@@ -7,6 +7,7 @@ import '@vaadin/icon';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import '@vaadin/progress-bar';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 export class QwcKubernetesManifest extends observeState(LitElement) {
 
@@ -32,12 +33,17 @@ export class QwcKubernetesManifest extends observeState(LitElement) {
 
     // Components callbacks
 
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
     /**
      * Called when displayed
      */
     connectedCallback() {
         super.connectedCallback();
-        this._message = "Generating Kubernetes manifests...";
+        this._message = msg('Generating Kubernetes manifests...', { id: 'quarkus-kubernetes-generating-manifests' });
         this.jsonRpc.generateManifests().then(jsonRpcResponse => {
             const data = JSON.parse(jsonRpcResponse.result);
             var m = new Map();
@@ -45,7 +51,7 @@ export class QwcKubernetesManifest extends observeState(LitElement) {
                 m.set(key, data[key]);
             }
             this._manifests = m;
-            this._message = "No manifests generated.";
+            this._message = msg('No manifests generated.', { id: 'quarkus-kubernetes-no-manifests' });
         });
     }
 
@@ -55,7 +61,7 @@ export class QwcKubernetesManifest extends observeState(LitElement) {
      */
     render() {
         if (this._manifests) {
-            if (this._manifests.size == 0) {
+            if (this._manifests.size === 0) {
                 return html`
                 <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
                     <div>${this._message}</div>

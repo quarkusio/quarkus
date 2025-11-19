@@ -15,6 +15,7 @@ import 'qui-ide-link';
 import 'qwc-no-data';
 import 'echarts-horizontal-stacked-bar';
 import {ring} from 'ldrs';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 ring.register();
 
@@ -84,11 +85,12 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         _state: {state: true},
         _busy: {state: true},
         _detailsOpenedItem: {state: true, type: Array},
-        _displayTags: {state: true, type: Boolean},
+        _displayTags: {state: true, type: Boolean}
     };
   
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._busy = false;
         this._detailsOpenedItem = [];
         this._chartTitles = ["passed", "failed", "skipped"];
@@ -108,7 +110,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     get _testsReceived() {
-        return this._tests != null;
+        return this._tests !== null;
     }
 
     get _testsEnabled() {
@@ -124,7 +126,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     get _hasTestResult() {
-        return (this._testResult?.counts?.total ?? 0) > 0
+        return (this._testResult?.counts?.total ?? 0) > 0;
     }
 
     get _hasFailedTestResult() {
@@ -230,7 +232,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                 this._testResult.counts?.failed ?? 0,
                 this._testResult.counts?.skipped ?? 0
             ];
-            return html`<echarts-horizontal-stacked-bar name = "Tests"
+            return html`<echarts-horizontal-stacked-bar name = "${msg('Tests', { id: 'continuoustesting-tests' })}"
                             sectionTitles="${this._chartTitles.toString()}" 
                             sectionValues="${values.toString()}"
                             sectionColors="${this._chartColors.toString()}">
@@ -244,9 +246,9 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         }else if(this._testsEnabled && this._testResult?.totalTime){
 
              return html`<span class="total">
-                         Total time: 
+                         ${msg('Total time', { id: 'continuoustesting-total-time' })}: 
                          <qui-badge><span>${this._testResult?.totalTime}ms</span></qui-badge>
-                     </span>`
+                     </span>`;
         }
         
     }
@@ -271,18 +273,18 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                 >
                 ${
                     this._displayTags && this._hasTestResultWithTags
-                    ? html`<vaadin-grid-sort-column path="tags" header="Tags" ${columnBodyRenderer((prop) => this._tagsRenderer(prop), [])} resizable width="40px"></vaadin-grid-sort-column>`
+                    ? html`<vaadin-grid-sort-column path="tags" header="${msg('Tags', { id: 'continuoustesting-tags' })}" ${columnBodyRenderer((prop) => this._tagsRenderer(prop), [])} resizable width="40px"></vaadin-grid-sort-column>`
                     : ''
                 }
-                <vaadin-grid-sort-column path="testClass" header="Test Class" ${columnBodyRenderer((prop) => this._testRenderer(prop), [])} resizable auto-width></vaadin-grid-sort-column>
-                <vaadin-grid-sort-column path="displayName" header="Name" ${columnBodyRenderer((prop) => this._nameRenderer(prop), [])} resizable auto-width></vaadin-grid-sort-column>
-                <vaadin-grid-sort-column path="time" header="Time" ${columnBodyRenderer((prop) => this._timeRenderer(prop), [])} width="10px" flexGrow = 0></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="testClass" header="${msg('Test Class', { id: 'continuoustesting-test-class' })}" ${columnBodyRenderer((prop) => this._testRenderer(prop), [])} resizable auto-width></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="displayName" header="${msg('Name', { id: 'continuoustesting-name' })}" ${columnBodyRenderer((prop) => this._nameRenderer(prop), [])} resizable auto-width></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="time" header="${msg('Time', { id: 'continuoustesting-time' })}" ${columnBodyRenderer((prop) => this._timeRenderer(prop), [])} width="10px" flexGrow = 0></vaadin-grid-sort-column>
             </vaadin-grid>`;
 
         }else{
-            return html`<qwc-no-data message="Continuous Testing is not running. Click the Start button or press [r] in the console to start." 
+            return html`<qwc-no-data message="${msg('Continuous Testing is not running. Click the Start button or press [r] in the console to start.', { id: 'continuoustesting-not-running' })}" 
                                     link="https://quarkus.io/guides/continuous-testing"
-                                    linkText="Read more about Continuous Testing">
+                                    linkText="${msg('Read more about Continuous Testing', { id: 'continuoustesting-read-more' })}">
                             ${this._renderPlayButton()}
                 </qwc-no-data>
             `;
@@ -293,7 +295,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         if(!this._busy && !this._testsEnabled){
             return html`<vaadin-button theme="tertiary" id="start-continuous-testing-btn" @click=${this._start}>
                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
-                        Start
+                        ${msg('Start', { id: 'continuoustesting-start' })}
                     </vaadin-button>`;
         }else{
             return html`<l-ring size="26" stroke="2" color="var(--lumo-contrast-25pct)" class="ring"></l-ring>`;
@@ -391,7 +393,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         if(this._testsEnabled){
             return html`<vaadin-button id="run-all-cnt-testing-btn" theme="tertiary" @click="${this._runAll}" ?disabled=${this._state.inProgress || this._busy}>
                             <vaadin-icon icon="font-awesome-solid:person-running"></vaadin-icon>
-                            Run all
+                            ${msg('Run all', { id: 'continuoustesting-run-all' })}
                         </vaadin-button>`;
         }
     }
@@ -400,7 +402,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         if(this._testsEnabled && this._hasFailedTestResult){
             return html`<vaadin-button id="run-failed-cnt-testing-btn" theme="tertiary" @click="${this._runFailed}" ?disabled=${this._state.inProgress || this._busy}>
                             <vaadin-icon class="warning" icon="font-awesome-solid:person-falling-burst" ></vaadin-icon>
-                            Run failed
+                            ${msg('Run failed', { id: 'continuoustesting-run-failed' })}
                         </vaadin-button>`;
         }
     }
@@ -411,7 +413,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                                     @change="${this._toggleBrokenOnly}"
                                     ?checked=${this._tests.config.brokenOnly}
                                     ?disabled=${this._testsCurrentlyRunning || this._busy}
-                                    label="Only run failing tests">
+                                    label="${msg('Only run failing tests', { id: 'continuoustesting-only-run-failing' })}">
                         </vaadin-checkbox>`;
         }
     }
@@ -422,7 +424,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                                          @change="${this._toggleDisplayTags}"
                                          ?checked=${this._displayTags}
                                          ?disabled=${this._busy || !this._hasTestResultWithTags}
-                                         label="Display tags (if available)">
+                                         label="${msg('Display tags (if available)', { id: 'continuoustesting-display-tags' })}">
             </vaadin-checkbox>`;
         }
     }

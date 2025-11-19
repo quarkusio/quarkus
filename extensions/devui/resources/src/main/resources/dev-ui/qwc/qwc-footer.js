@@ -9,7 +9,8 @@ import '@vaadin/tabs';
 import '@vaadin/icon';
 import '@vaadin/menu-bar';
 import 'qwc/qwc-ws-status.js';
-        
+import { updateWhenLocaleChanges, dynamicMsg } from 'localization';
+
 /**
  * This component shows the Bottom Drawer
  * 
@@ -186,11 +187,12 @@ export class QwcFooter extends observeState(LitElement) {
         _selectedTab: {state: false},
         _height: {state: false},
         _originalHeight: {state: false},
-        _originalMouseY: {state: false},
+        _originalMouseY: {state: false}
     };
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         LogController.addListener(this);
         window.addEventListener('storage-changed', (event) => {
             this._storageChange(event);
@@ -287,7 +289,7 @@ export class QwcFooter extends observeState(LitElement) {
     
     _renderTabHeader(footerTab, index){
         import(footerTab.componentRef);
-        return html`<vaadin-tab id="tab-${index}" class="${this._tabClass}" @click=${() => this._tabSelected(index)}>${footerTab.title}</vaadin-tab>`;
+        return html`<vaadin-tab id="tab-${index}" class="${this._tabClass}" @click=${() => this._tabSelected(index)}>${dynamicMsg('footer', footerTab.title)}</vaadin-tab>`;
     }
     
     _renderControls(){

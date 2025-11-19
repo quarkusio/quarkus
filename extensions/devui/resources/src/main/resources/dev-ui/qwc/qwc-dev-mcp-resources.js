@@ -10,6 +10,7 @@ import '@qomponent/qui-code-block';
 import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import '@qomponent/qui-switch';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component show all available resources for MCP clients
@@ -36,6 +37,7 @@ export class QwcDevMCPResources extends observeState(LitElement) {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._selectedResource = [];
         this._selectedResourceContent = null;
         this._busyReading = false;
@@ -50,7 +52,7 @@ export class QwcDevMCPResources extends observeState(LitElement) {
         if (this._resources) {    
             return html`${this._renderResources()}`;
         }else{
-            return this._renderProgressBar("Fetching resources...");
+            return this._renderProgressBar(msg('Fetching resources...', { id: 'devmcp-fetching-resources' }));
         }
     }
 
@@ -61,7 +63,7 @@ export class QwcDevMCPResources extends observeState(LitElement) {
 
         return html`
                     <vaadin-dialog
-                        header-title="Read resource: ${dialogTitle}"
+                        header-title="${msg('Read resource', { id: 'devmcp-read-resource' })}: ${dialogTitle}"
                         .opened="${this._selectedResourceContent!==null}"
                         @opened-changed="${(event) => {
                             if(!event.detail.value){
@@ -92,28 +94,28 @@ export class QwcDevMCPResources extends observeState(LitElement) {
                                 }
                             }}">
                             <vaadin-grid-column
-                                header="Enabled"
+                                header="${msg('Enabled', { id: 'devmcp-enabled' })}"
                                 frozen
                                 auto-width
                                 flex-grow="0"
                             ${columnBodyRenderer(this._stateRenderer, [])}
                             ></vaadin-grid-column>
                             <vaadin-grid-sort-column 
-                                header='Namespace'
+                                header='${msg('Namespace', { id: 'devmcp-namespace' })}'
                                 path="name" 
                                 auto-width
                                 ${columnBodyRenderer(this._namespaceRenderer, [])}
                             >
                             </vaadin-grid-sort-column>
                             <vaadin-grid-sort-column 
-                                header='Resource'
+                                header='${msg('Resource', { id: 'devmcp-resource' })}'
                                 path="name" 
                                 auto-width
                                 ${columnBodyRenderer(this._nameRenderer, [])}
                             >
                             </vaadin-grid-sort-column>
                             <vaadin-grid-sort-column 
-                                header='Description'
+                                header='${msg('Description', { id: 'devmcp-description' })}'
                                 path="description"
                                 auto-width>
                             </vaadin-grid-sort-column>
@@ -183,7 +185,7 @@ export class QwcDevMCPResources extends observeState(LitElement) {
                         this._selectedResourceContent = c;
                     }
                 }else{
-                    this._selectedResourceContent = "No data found";
+                    this._selectedResourceContent = msg('No data found', { id: 'devmcp-no-data' });
                 }
                 this._busyReading = false;
             });            

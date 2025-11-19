@@ -6,6 +6,7 @@ import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-selection-column.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { notifier } from 'notifier';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class HibernateSearchStandaloneElasticsearchIndexedEntitiesComponent extends LitElement {
 
@@ -22,6 +23,11 @@ export class HibernateSearchStandaloneElasticsearchIndexedEntitiesComponent exte
         _selectedEntityTypes: {state: true, type: Array}
     }
 
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this.jsonRpc.getInfo().then(response => {
@@ -34,21 +40,23 @@ export class HibernateSearchStandaloneElasticsearchIndexedEntitiesComponent exte
         if (this._indexedEntityTypes) {
             return this._renderEntityTypesTable();
         } else {
-            return html`<span>Loading...</span>`;
+            return html`<span>${msg('Loading...', { id: 'quarkus-hibernate-search-standalone-elasticsearch-loading' })}</span>`;
         }
     }
 
     _renderEntityTypesTable() {
-        if (this._indexedEntityTypes.length == 0) {
-            return html`<p>No indexed entities were found.</p>`
+        if (this._indexedEntityTypes.length === 0) {
+            return html`<p>${msg('No indexed entities were found.', { id: 'quarkus-hibernate-search-standalone-elasticsearch-no-indexed-entities' })}</p>`;
         }
+        const l = this._selectedEntityTypes.length;
+        const t = this._selectedEntityTypes.length !== 1 ? 's' : '';
         return html`
                 <vaadin-horizontal-layout theme="spacing padding filled" style="align-items: baseline">
-                    <span>Selected ${this._selectedEntityTypes.length} entity type${this._selectedEntityTypes.length != 1 ? 's' : ''}</span>
+                    <span>${msg(str`Selected ${l} entity type${t}`, { id: 'quarkus-hibernate-search-standalone-elasticsearch-selected-entity-types' })}</span>
                     <vaadin-button @click="${() => this._reindexSelected()}"
-                        ?disabled=${this._selectedEntityTypes.length == 0}>
+                        ?disabled=${this._selectedEntityTypes.length === 0}>
                         <vaadin-icon icon="font-awesome-solid:rotate-right" slot="prefix"></vaadin-icon>
-                        Reindex selected
+                        ${msg('Reindex selected', { id: 'quarkus-hibernate-search-standalone-elasticsearch-reindex-selected' })}
                     </vaadin-button>
                 </vaadin-horizontal-layout>
                 <vaadin-grid .items="${this._indexedEntityTypes}"
@@ -58,15 +66,15 @@ export class HibernateSearchStandaloneElasticsearchIndexedEntitiesComponent exte
                     <vaadin-grid-selection-column auto-select>
                     </vaadin-grid-selection-column>
                     <vaadin-grid-column auto-width
-                                        header="Entity name"
+                                        header=${msg('Entity name', { id: 'quarkus-hibernate-search-standalone-elasticsearch-entity-name' })}
                                         path="name">
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                                        header="Class name"
+                                        header=${msg('Class name', { id: 'quarkus-hibernate-search-standalone-elasticsearch-class-name' })}
                                         path="javaClass">
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                                        header="Index names"
+                                        header=${msg('Index names', { id: 'quarkus-hibernate-search-standalone-elasticsearch-index-names' })}
                                         ${columnBodyRenderer(this._indexNameRenderer, [])}>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
@@ -85,23 +93,21 @@ export class HibernateSearchStandaloneElasticsearchIndexedEntitiesComponent exte
 
     _reindexSelected() {
         const selected = this._selectedEntityTypes;
-        if (selected == null || selected.length == 0) {
-            notifier.showErrorMessage("Select entity types to reindex.");
+        if (selected === null || selected.length === 0) {
+            notifier.showErrorMessage(msg('Select entity types to reindex.', { id: 'quarkus-hibernate-search-standalone-elasticsearch-select-entity-types' }));
             return;
         }
         const entityTypeNames = selected.map(e => e.name);
+        const l = selected.length;
         this.jsonRpc.reindex({'entityTypeNames': entityTypeNames})
             .onNext(response => {
-                const msg = response.result;
-                if (msg === "started") {
-                    notifier.showInfoMessage("Requested reindexing of " + selected.length
-                            + " entity types.");
-                } else if (msg === "success") {
-                    notifier.showSuccessMessage("Successfully reindexed " + selected.length
-                            + " entity types.");
+                const resultMsg = response.result;
+                if (resultMsg === "started") {
+                    notifier.showInfoMessage(msg(str`Requested reindexing of ${l} entity types.`, { id: 'quarkus-hibernate-search-standalone-elasticsearch-reindex-started' }));
+                } else if (resultMsg === "success") {
+                    notifier.showSuccessMessage(msg(str`Successfully reindexed ${l} entity types.`, { id: 'quarkus-hibernate-search-standalone-elasticsearch-reindex-success' }));
                 } else {
-                    notifier.showErrorMessage("An error occurred while reindexing " + selected.length
-                            + " entity types:\n" + msg);
+                    notifier.showErrorMessage(msg(str`An error occurred while reindexing ${l} entity types:\n${resultMsg}`, { id: 'quarkus-hibernate-search-standalone-elasticsearch-reindex-error' }));
                 }
             });
     }

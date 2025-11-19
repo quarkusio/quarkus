@@ -6,6 +6,7 @@ import 'qui-themed-code-block';
 import '@qomponent/qui-card';
 import 'qwc-no-data';
 import { notifier } from 'notifier';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Dev Services Page
@@ -68,6 +69,7 @@ export class QwcDevServices extends QwcHotReloadElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._services = devServices;
     }
 
@@ -89,9 +91,9 @@ export class QwcDevServices extends QwcHotReloadElement {
                             ${this._services.map(devService => this._renderCard(devService))}  
                         </div>`;
         } else {
-            return html`<qwc-no-data message="You do not have any Dev Services running." 
+            return html`<qwc-no-data message="${msg('You do not have any Dev Services running.', { id: 'devservice-no-services' })}" 
                                     link="https://quarkus.io/guides/dev-services"
-                                    linkText="Read more about Dev Services">
+                                    linkText="${msg('Read more about Dev Services', { id: 'devservice-read-more' })}">
                 </qwc-no-data>
             `;
         }
@@ -128,18 +130,18 @@ export class QwcDevServices extends QwcHotReloadElement {
     _renderConfigDetails(devService){
         if (devService.configs) {
             let properties = this._configToText(devService);
-            return html`<div class="configHeader">Config: 
+            return html`<div class="configHeader">${msg('Config', { id: 'devservice-config' })}: 
                             <div class="copyButtons">
-                                Make a copy for: 
+                                ${msg('Make a copy for', { id: 'devservice-make-copy-for' })}: 
                                 <qui-badge 
-                                    title="Copy config for test environment"
+                                    title="${msg('Copy config for test environment', { id: 'devservice-copy-config-test' })}"
                                     @click="${() => this._copyForTest(devService)}">
-                                        <span>Test</span>
+                                        <span>${msg('Test', { id: 'devservice-test' })}</span>
                                 </qui-badge>
                                 <qui-badge 
-                                    title="Copy config for prod environment"
+                                    title="${msg('Copy config for prod environment', { id: 'devservice-copy-config-prod' })}"
                                     @click="${() => this._copyForProd(devService)}">
-                                        <span>Prod</span>
+                                        <span>${msg('Prod', { id: 'devservice-prod' })}</span>
                                 </qui-badge> 
                             </div>
                         </div>
@@ -182,7 +184,7 @@ export class QwcDevServices extends QwcHotReloadElement {
             let ports = devService.containerInfo.exposedPorts;
             
             const p = ports
-                .filter(p => p.publicPort != null)
+                .filter(p => p.publicPort !== null)
                 .map(p => p.ip + ":" + p.publicPort + "->" + p.privatePort + "/" + p.type)
                 .join(', ');
 
@@ -212,10 +214,10 @@ export class QwcDevServices extends QwcHotReloadElement {
     _copyToClipboard(text) {
         navigator.clipboard.writeText(text)
             .then(() => {
-                notifier.showInfoMessage("Copied to clipboard");
+                notifier.showInfoMessage(msg('Copied to clipboard', { id: 'devservice-copied' }));
             })
             .catch(err => {
-                notifier.showErrorMessage("Clipboard write failed [" + err + "]");
+                notifier.showErrorMessage(msg('Clipboard write failed', { id: 'devservice-copy-failed' }) + " [" + err + "]");
             });
     }
 

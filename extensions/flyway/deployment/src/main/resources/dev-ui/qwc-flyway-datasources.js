@@ -15,6 +15,7 @@ import { dialogRenderer } from '@vaadin/dialog/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/progress-bar';
 import { notifier } from 'notifier';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class QwcFlywayDatasources extends QwcHotReloadElement {
 
@@ -34,6 +35,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this._ds = null;
         this._selectedDs = null;
         this._createDialogOpened = false;
@@ -68,11 +70,11 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         return html`${this._renderCreateDialog()}${this._renderUpdateDialog()}
                 <vaadin-grid .items="${this._ds}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
-                                        header="Name"
+                                        header=${msg('Name', { id: 'quarkus-flyway-name' })}
                                         ${columnBodyRenderer(this._nameRenderer, [])}>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                                        header="Action"
+                                        header=${msg('Action', { id: 'quarkus-flyway-action' })}
                                         ${columnBodyRenderer(this._actionRenderer, [])}
                                         resizable>
                     </vaadin-grid-column>
@@ -90,13 +92,13 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
             let colorvar = this._cleanDisabled ? '--lumo-disabled-text-color' : '--lumo-warning-text-color';
             return html`<div id=${ds.name} style="display: inline-block;">
                 <vaadin-button theme="small" @click=${() => this._clean(ds)} class="button" ?disabled=${this._cleanDisabled}>
-                    <vaadin-icon style="color: var(${colorvar});" icon="font-awesome-solid:broom"></vaadin-icon> Clean
+                    <vaadin-icon style="color: var(${colorvar});" icon="font-awesome-solid:broom"></vaadin-icon> ${msg('Clean', { id: 'quarkus-flyway-clean' })}
                 </vaadin-button></div>
                 <vaadin-button theme="small" @click=${() => this._migrate(ds)} class="button">
-                    <vaadin-icon icon="font-awesome-solid:arrow-right-arrow-left"></vaadin-icon> Migrate
+                    <vaadin-icon icon="font-awesome-solid:arrow-right-arrow-left"></vaadin-icon> ${msg('Migrate', { id: 'quarkus-flyway-migrate' })}
                 </vaadin-button>
                 ${this._cleanDisabled
-                    ? html`<vaadin-tooltip for="${ds.name}" text="Flyway clean has been disabled via quarkus.flyway.clean-disabled=true"></vaadin-tooltip>`
+                    ? html`<vaadin-tooltip for="${ds.name}" text=${msg('Flyway clean has been disabled via quarkus.flyway.clean-disabled=true', { id: 'quarkus-flyway-clean-disabled-tooltip' })}></vaadin-tooltip>`
                     : null}
                 `;
         }
@@ -105,8 +107,8 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     _renderUpdateButton(ds) {
         if(ds.hasMigrations){
             return html`
-                <vaadin-button theme="small" @click=${() => this._showUpdateDialog(ds)} class="button" title="Create update migration file. Always manually review the created file as it can cause data loss">
-                    <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon> Generate Migration File
+                <vaadin-button theme="small" @click=${() => this._showUpdateDialog(ds)} class="button" title=${msg('Create update migration file. Always manually review the created file as it can cause data loss', { id: 'quarkus-flyway-update-button-title' })}>
+                    <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon> ${msg('Generate Migration File', { id: 'quarkus-flyway-generate-migration-file' })}
                 </vaadin-button>`;
         }
     }
@@ -114,8 +116,8 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     _renderCreateButton(ds) {
         if(ds.createPossible){
             return html`
-                <vaadin-button theme="small" @click=${() => this._showCreateDialog(ds)} class="button" title="Set up basic files for Flyway migrations to work. Initial file in db/migrations will be created and you can then add additional migration files">
-                    <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon> Create Initial Migration File
+                <vaadin-button theme="small" @click=${() => this._showCreateDialog(ds)} class="button" title=${msg('Set up basic files for Flyway migrations to work. Initial file in db/migrations will be created and you can then add additional migration files', { id: 'quarkus-flyway-create-button-title' })}>
+                    <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon> ${msg('Create Initial Migration File', { id: 'quarkus-flyway-create-initial-migration-file' })}
                 </vaadin-button>`;
         }
     }
@@ -136,58 +138,54 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         
     _renderCreateDialog(){    
         return html`<vaadin-dialog class="createDialog"
-                    header-title="Create"
+                    header-title=${msg('Create', { id: 'quarkus-flyway-create' })}
                     .opened="${this._createDialogOpened}"
                     @opened-changed="${(e) => (this._createDialogOpened = e.detail.value)}"
-                    ${dialogRenderer(() => this._renderCreateDialogForm(), "Create")}
+                    ${dialogRenderer(() => this._renderCreateDialogForm(), msg('Create', { id: 'quarkus-flyway-create' }))}
                 ></vaadin-dialog>`;
     }
 
     _renderUpdateDialog(){
         return html`<vaadin-dialog class="updateDialog"
-                    header-title="Update"
+                    header-title=${msg('Update', { id: 'quarkus-flyway-update' })}
                     .opened="${this._updateDialogOpened}"
                     @opened-changed="${(e) => (this._updateDialogOpened = e.detail.value)}"
-                    ${dialogRenderer(() => this._renderUpdateDialogForm(), "Update")}
+                    ${dialogRenderer(() => this._renderUpdateDialogForm(), msg('Update', { id: 'quarkus-flyway-update' }))}
                 ></vaadin-dialog>`;
     }
 
     _renderCreateDialogForm(){
-        let title = this._selectedDs.name + " Datasource";
+        let title = msg(str`${0} Datasource`, { id: 'quarkus-flyway-datasource-title' }, this._selectedDs.name);
         return html`<b>${title}</b></br>
-            Set up an initial file from Hibernate ORM schema generation for Flyway migrations to work.<br/>
-            If you say yes, an initial file in <code>db/migrations</code> will be <br/>
-            created and you can then add additional migration files as documented. 
+            ${msg('Set up an initial file from Hibernate ORM schema generation for Flyway migrations to work.<br/>If you say yes, an initial file in <code>db/migrations</code> will be <br/>created and you can then add additional migration files as documented.', { id: 'quarkus-flyway-create-dialog-description' })}
             ${this._renderCreateDialogButtons(this._selectedDs)}
         `;
     }
 
     _renderUpdateDialogForm(){
-        let title = this._selectedDs.name + " Datasource";
+        let title = msg(str`${0} Datasource`, { id: 'quarkus-flyway-datasource-title' }, this._selectedDs.name);
         return html`<b>${title}</b></br>
-            Create an incremental migration file from Hibernate ORM schema diff.<br/>
-            If you say yes, an additional file in <code>db/migrations</code> will be <br/>
-            created.
+            ${msg('Create an incremental migration file from Hibernate ORM schema diff.<br/>If you say yes, an additional file in <code>db/migrations</code> will be <br/>created.', { id: 'quarkus-flyway-update-dialog-description' })}
             ${this._renderUpdateDialogButtons(this._selectedDs)}
         `;
     }
 
     _renderCreateDialogButtons(ds){
         return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
-                        <vaadin-button theme="secondary" @click=${() => this._create(this._selectedDs)}>Create</vaadin-button>
-                        <vaadin-button theme="secondary error" @click=${this._cancelCreate}>Cancel</vaadin-button>
+                        <vaadin-button theme="secondary" @click=${() => this._create(this._selectedDs)}>${msg('Create', { id: 'quarkus-flyway-create' })}</vaadin-button>
+                        <vaadin-button theme="secondary error" @click=${this._cancelCreate}>${msg('Cancel', { id: 'quarkus-flyway-cancel' })}</vaadin-button>
                     </div>`;
     }
 
     _renderUpdateDialogButtons(ds){
         return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
-                        <vaadin-button theme="secondary" @click=${() => this._update(this._selectedDs)}>Update</vaadin-button>
-                        <vaadin-button theme="secondary error" @click=${this._cancelUpdate}>Cancel</vaadin-button>
+                        <vaadin-button theme="secondary" @click=${() => this._update(this._selectedDs)}>${msg('Update', { id: 'quarkus-flyway-update' })}</vaadin-button>
+                        <vaadin-button theme="secondary error" @click=${this._cancelUpdate}>${msg('Cancel', { id: 'quarkus-flyway-cancel' })}</vaadin-button>
                     </div>`;
     }
 
     _clean(ds) {
-        if (confirm('This will drop all objects (tables, views, procedures, triggers, ...) in the configured schema. Do you want to continue?')) {
+        if (confirm(msg('This will drop all objects (tables, views, procedures, triggers, ...) in the configured schema. Do you want to continue?', { id: 'quarkus-flyway-clean-confirm' }))) {
             this.jsonRpc.clean({ds: ds.name}).then(jsonRpcResponse => {
                 this._showResultNotification(jsonRpcResponse.result);
             });

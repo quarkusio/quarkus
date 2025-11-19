@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { devuiState } from 'devui-state';
 import 'qwc/qwc-endpoints.js';
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the welcome screen
@@ -114,6 +115,11 @@ export class QwcWelcome extends LitElement {
         }
     `;
 
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
     render() {
         return html`<div class="fullscreen">
                         <div class="header" @click=${this._reload}>
@@ -160,34 +166,41 @@ export class QwcWelcome extends LitElement {
                             </svg>
                         </div>    
                         <div class="banner">
-                            <div class="callout">Congratulations!</div>
+                            <div class="callout">${msg('Congratulations!', { id: 'welcome-congratulations' })}</div>
                             <div class="app-details">
-                                <h2>Application</h2>
+                                <h2>${msg('Application', { id: 'welcome-application' })}</h2>
                                 <ul>
-                                    <li>GroupId: <code>${devuiState.applicationInfo.groupId}</code></li>
-                                    <li>ArtifactId: <code>${devuiState.applicationInfo.artifactId}</code></li>
-                                    <li>Version: <code>${devuiState.applicationInfo.applicationVersion}</code></li>
-                                    <li>Quarkus Version: <code>${devuiState.applicationInfo.quarkusVersion}</code></li>
+                                    <li>${msg('GroupId', { id: 'welcome-group-id' })}: <code>${devuiState.applicationInfo.groupId}</code></li>
+                                    <li>${msg('ArtifactId', { id: 'welcome-artifact-id' })}: <code>${devuiState.applicationInfo.artifactId}</code></li>
+                                    <li>${msg('Version', { id: 'welcome-version' })}: <code>${devuiState.applicationInfo.applicationVersion}</code></li>
+                                    <li>${msg('Quarkus Version', { id: 'welcome-quarkus-version' })}: <code>${devuiState.applicationInfo.quarkusVersion}</code></li>
                                 </ul>
                             </div>
                         </div>
                         <div class="content">
                             <div class="left-column">
-                                <h1>You just made a Quarkus application.</h1>
-                                <p>This page is served by the Quarkus Dev UI (only in dev mode) until you provide your own Web UI</p>
-                                <a href="extensions" class="cta-button">Visit the Dev UI</a>
+                                <h1>${msg('You just made a Quarkus application.', { id: 'welcome-created-app' })}</h1>
+                                <p>${msg(
+                                    'This page is served by the Quarkus Dev UI (only in dev mode) until you provide your own Web UI',
+                                    { id: 'welcome-served-by-devui' }
+                                  )}</p>
+                                <a href="extensions" class="cta-button">${msg('Visit the Dev UI', { id: 'welcome-visit-devui' })}</a>
                                 ${this._renderDynamicWelcomeData()}
-                                <qwc-endpoints filter="Resource Endpoints"></qwc-endpoints>
+                                <qwc-endpoints filter="${msg('Resource Endpoints', { id: 'welcome-resource-endpoints' })}"></qwc-endpoints>
                             </div>
                             <div class="right-column">
                                 ${this._renderSelectedExtensions()}
                                 
-                                <h3><a href="https://quarkus.io/guides/">Documentation</a></h3>
-                                <p>Practical step-by-step guides to help you achieve a specific goal. Use them to help get your work
-                                    done.</p>
-                                <h3><a href="https://quarkus.io/guides/tooling">Set up your IDE</a></h3>
-                                <p>Everyone has a favorite IDE they like to use to code. Learn how to configure yours to maximize your
-                                    Quarkus productivity.</p>
+                                <h3><a href="https://quarkus.io/guides/">${msg('Documentation', { id: 'welcome-documentation' })}</a></h3>
+                                <p>${msg(
+                                    'Practical step-by-step guides to help you achieve a specific goal. Use them to help get your work done.',
+                                    { id: 'welcome-guides-blurb' }
+                                  )}</p>
+                                <h3><a href="https://quarkus.io/guides/tooling">${msg('Set up your IDE', { id: 'welcome-setup-ide' })}</a></h3>
+                                <p>${msg(
+                                    'Everyone has a favorite IDE they like to use to code. Learn how to configure yours to maximize your Quarkus productivity.',
+                                    { id: 'welcome-setup-ide-blurb' }
+                                  )}</p>
                             </div>
                         </div>    
                     </div>`;
@@ -207,8 +220,8 @@ export class QwcWelcome extends LitElement {
         }else {
             return html`
                 <div class="locations">
-                    <span>Learn how you can <a href="https://quarkus.io/guides/web" target="_blank">add your own static web content</a></span>
-                    <span>Static assets: <code>${devuiState.welcomeData.resourcesDir}/META-INF/resources/</code></span>
+                    <span><a href="https://quarkus.io/guides/web" target="_blank">${msg('Learn how you can add your own static web content', { id: 'welcome-add-static-content' })}</a></span>
+                    <span>${msg('Static assets', { id: 'welcome-static-assets' })}: <code>${devuiState.welcomeData.resourcesDir}/META-INF/resources/</code></span>
                     ${this._renderFileLocations()}
                 </div>
             `;
@@ -216,13 +229,13 @@ export class QwcWelcome extends LitElement {
     }
     
     _renderFileLocations(){
-        return html`<span>App configuration: <code>${devuiState.welcomeData.configFile}</code></span>
-                    <span>Code: <code>${devuiState.welcomeData.sourceDir}</code></span>`;
+        return html`<span>${msg('App configuration', { id: 'welcome-app-configuration' })}: <code>${devuiState.welcomeData.configFile}</code></span>
+                    <span>${msg('Code', { id: 'welcome-code' })}: <code>${devuiState.welcomeData.sourceDir}</code></span>`;
     }
     
     _renderSelectedExtensions(){
         if(devuiState.welcomeData.selectedExtensions){
-            return html`<h3>Selected extensions</h3>
+            return html`<h3>${msg('Selected extensions', { id: 'welcome-selected-extensions' })}</h3>
                         <ul>
                             ${devuiState.welcomeData.selectedExtensions.map((ext) =>
                                 html`<li title="${ext.description}">${ext.name} ${this._renderGuideLink(ext)}</li>`
@@ -234,7 +247,7 @@ export class QwcWelcome extends LitElement {
     
     _renderGuideLink(ext){
         if(ext.guide){
-            return html`(<a href="${ext.guide}" target="_blank">guide</a>)`;
+            return html`(<a href="${ext.guide}" target="_blank">${msg('Guide', { id: 'extensions-guide-label' })}</a>)`;
         }
     }
     

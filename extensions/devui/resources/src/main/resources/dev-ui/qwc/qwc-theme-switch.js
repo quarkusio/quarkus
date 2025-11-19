@@ -2,78 +2,68 @@ import { LitElement, html, css } from 'lit';
 import { themeState } from 'theme-state';
 import { StorageController } from 'storage-controller';
 import '@vaadin/button';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
-/**
- * Basic theme switch
- */
 export class QwcThemeSwitch extends LitElement {
     storageControl = new StorageController(this);
-    
+
     themes = [
-        { id: 0, name: 'Desktop', icon: 'font-awesome-solid:desktop' },
-        { id: 1, name: 'Light', icon: 'font-awesome-solid:sun' },
-        { id: 2, name: 'Dark', icon: 'font-awesome-solid:moon' }
+        { id: 0, key: 'desktop', icon: 'font-awesome-solid:desktop' },
+        { id: 1, key: 'light',   icon: 'font-awesome-solid:sun' },
+        { id: 2, key: 'dark',    icon: 'font-awesome-solid:moon' }
     ];
-    
+
     static styles = css`
-        .themeButtons {
-            display: flex;
-            gap: 20px;
-            padding-bottom: 15px;
+        .themeButtons { 
+            display: flex; 
+            gap: 20px; 
+            padding-bottom: 15px; 
         }
-    
-        .themeBlock {
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            width: 60px;
+        .themeBlock { 
+            border-radius: 8px; 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; 
+            width: 60px; 
         }
-        .selected {
-            border: 3px solid var(--lumo-contrast-10pct);
+        .selected { 
+            border: 3px solid var(--lumo-contrast-10pct); 
         }
-    
-        .selectable {
-            border: 3px solid var(--lumo-base-color);
-            cursor: pointer;
+        .selectable { 
+            border: 3px solid var(--lumo-base-color); 
+            cursor: pointer; 
         }
-        .selectable:hover {
-            border: 3px solid var(--lumo-contrast-10pct);
+        .selectable:hover { 
+            border: 3px solid var(--lumo-contrast-10pct); 
         }
     `;
 
     static properties = {
-        _selectedThemeIndex: {state: true},
+        _selectedThemeIndex: { state: true },
+        _desktopTheme: { state: false }
     };
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._restoreThemePreference();
-        window.addEventListener('storage-changed', (event) => {
-            this._storageChange(event);
-        });
+        window.addEventListener('storage-changed', (event) => this._storageChange(event));
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this._desktopTheme = "dark"; // default
+        this._desktopTheme = 'dark'; // default
         if(window.matchMedia){
-             if(window.matchMedia('(prefers-color-scheme: light)').matches){
-                this._desktopTheme = "light";
-             }
-            
-             // Change theme setting when OS theme change
-             window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
-                 if(e.matches){
-                    this._desktopTheme = "light";
-                 }else{
-                    this._desktopTheme = "dark";
-                 }
-                 if(this._selectedThemeIndex===0){
-                     this._changeToSelectedThemeIndex();
-                 }
+            if(window.matchMedia('(prefers-color-scheme: light)').matches){
+                this._desktopTheme = 'light';
+            }
+
+            // watch OS theme changes when in Desktop mode
+            window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+                this._desktopTheme = e.matches ? 'light' : 'dark';
+                if (this._selectedThemeIndex === 0) this._changeToSelectedThemeIndex();
             });
         }
         
@@ -81,32 +71,36 @@ export class QwcThemeSwitch extends LitElement {
     }
 
     render() {
-        
-        return html`<div class="themeButtons" @wheel=${this._onWheel}>
-                        ${this.themes.map((theme) =>
-                            html`${this._renderButton(theme)}`
-                        )}                        
-                    </div>`;
+        return html`
+            <div class="themeButtons" @wheel=${this._onWheel}>
+                ${this.themes.map((theme) => this._renderButton(theme))}
+            </div>
+        `;
     }
 
-    _renderButton(theme){
-        let selectedTheme = this.themes[this._selectedThemeIndex];
-        
-        if(selectedTheme.id === theme.id){
-            return html`<div class="themeBlock selected">
-                            <vaadin-icon icon="${theme.icon}"></vaadin-icon>
-                            <span>${theme.name}</span>
-                        </div>`;
-        }else{
-            return html`<div class="themeBlock selectable" @click="${() => this._selectTheme(theme)}">
-                            <vaadin-icon icon="${theme.icon}"></vaadin-icon>
-                            <span>${theme.name}</span>
-                        </div>`;
+    _labelFor(key) {
+        switch (key) {
+            case 'desktop': return msg('Workspace', { id: 'theme-desktop-label' });
+            case 'light':   return msg('Light',     { id: 'theme-light-label' });
+            case 'dark':    return msg('Dark',      { id: 'theme-dark-label' });
+            default:        return key;
         }
     }
 
-    _storageChange(event){
-        if(event.detail.method === "remove" && event.detail.key.startsWith("qwc-theme-switch-")){
+    _renderButton(theme) {
+        const selected = this.themes[this._selectedThemeIndex].id === theme.id;
+        const label = this._labelFor(theme.key);
+        const content = html`
+            <vaadin-icon icon="${theme.icon}"></vaadin-icon>
+            <span>${label}</span>
+        `;
+        return selected
+            ? html`<div class="themeBlock selected" aria-current="true">${content}</div>`
+            : html`<div class="themeBlock selectable" @click=${() => this._selectTheme(theme)}>${content}</div>`;
+    }
+
+    _storageChange(event) {
+        if (event.detail.method === 'remove' && event.detail.key.startsWith('qwc-theme-switch-')) {
             this._restoreThemePreference();
             this._changeToSelectedThemeIndex();
         }
@@ -114,41 +108,30 @@ export class QwcThemeSwitch extends LitElement {
 
     _onWheel(event) {
         event.preventDefault();
-        if (event.deltaY < 0) {
-            this._selectedThemeIndex = (this._selectedThemeIndex + 1) % this.themes.length;
-            this._changeToSelectedThemeIndex();
-        } else {
-            this._selectedThemeIndex = (this._selectedThemeIndex - 1 + this.themes.length) % this.themes.length;    
-            this._changeToSelectedThemeIndex();
-        }
+        this._selectedThemeIndex = event.deltaY < 0
+            ? (this._selectedThemeIndex + 1) % this.themes.length
+            : (this._selectedThemeIndex - 1 + this.themes.length) % this.themes.length;
+        this._changeToSelectedThemeIndex();
     }
 
-    _selectTheme(theme){
+    _selectTheme(theme) {
         this._selectedThemeIndex = theme.id;
         this._changeToSelectedThemeIndex();
     }
 
-    _changeToSelectedThemeIndex(){
-        let theme = this.themes[this._selectedThemeIndex];
+    _changeToSelectedThemeIndex() {
+        const theme = this.themes[this._selectedThemeIndex];
         this.storageControl.set('theme-preference', theme.id);
-        
-        if(theme.id === 0){ // Desktop
-            themeState.changeTo(this._desktopTheme);
-        }else {
-            themeState.changeTo(theme.name.toLowerCase());
+        if (theme.key === 'desktop') {
+            themeState.changeTo(this._desktopTheme); // follow OS
+        } else {
+            themeState.changeTo(theme.key);
         }
-        
     }
 
     _restoreThemePreference() {
-        const storedValue = this.storageControl.get("theme-preference");
-        if(storedValue){
-            this._selectedThemeIndex = storedValue;
-        } else {
-            this._selectedThemeIndex = 0;
-        }
+        const stored = this.storageControl.get('theme-preference');
+        this._selectedThemeIndex = (stored ?? 0) * 1; // ensure number
     }
-
-
 }
 customElements.define('qwc-theme-switch', QwcThemeSwitch);

@@ -16,6 +16,7 @@ import { themeState } from 'theme-state';
 import { JsonRpc } from 'jsonrpc';
 import '@qomponent/qui-badge';
 import { assistantState } from 'assistant-state';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component create cards of all the extensions
@@ -119,6 +120,7 @@ export class QwcExtensions extends observeState(LitElement) {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._favourites = this._getStoredFavourites();
         this._addDialogOpened = false;
         this._installedExtensions = [];
@@ -138,7 +140,7 @@ export class QwcExtensions extends observeState(LitElement) {
                     this._addExtensionsEnabled = true;
                 }
             }).catch(e => {
-                notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
+                notifier.showErrorMessage(msg('Could not list namespaces', { id: 'extensions-namespaces-failed' }) + " "+ e?.error?.message);
             });
         }
     }
@@ -165,7 +167,7 @@ export class QwcExtensions extends observeState(LitElement) {
                         <vaadin-text-field id="searchInput"
                             class="extensionFilterInput"
                             theme="small"
-                            placeholder="Search extensions…"
+                            placeholder="${msg('Search extensions…', { id: 'extensions-search' })}"
                             clear-button-visible
                             .value=${this._filterText}
                             @input=${this._onFilterInput}>
@@ -376,7 +378,7 @@ export class QwcExtensions extends observeState(LitElement) {
                 <div class="card-content-top">
                     <span class="description">
                         ${this._renderLogo(logo)}
-                        ${extension.description}
+                        ${msg(extension.description, {id: extension.namespace + '-meta-description'})}
                     </span>
                     ${this._renderCardLinks(extension)}
                 </div>
@@ -468,7 +470,7 @@ export class QwcExtensions extends observeState(LitElement) {
                 theme="no-padding"
                 resizable
                 draggable
-                header-title="Add extension"
+                header-title="${msg('Add extension', { id: 'extensions-add' })}"
                 .opened="${this._addDialogOpened}"
                 @opened-changed="${(event) => {
                     this._addDialogOpened = event.detail.value;
@@ -492,7 +494,7 @@ export class QwcExtensions extends observeState(LitElement) {
     
     _renderAddExtensionButton(){
         if(connectionState.current.isConnected){
-            return html`<vaadin-button class="addExtensionButton" theme="icon" aria-label="Add Extension" title="Add Extension" @click="${this._openAddDialog}">
+            return html`<vaadin-button class="addExtensionButton" theme="icon" aria-label="Add Extension" title="${msg('Add extension', { id: 'extensions-add' })}" @click="${this._openAddDialog}">
                         <vaadin-icon class="addExtensionIcon" icon="font-awesome-solid:plus"></vaadin-icon>
                     </vaadin-button>`;
         }
@@ -502,9 +504,9 @@ export class QwcExtensions extends observeState(LitElement) {
         this._addDialogOpened = false;
         let name = e.detail.name;
         if(e.detail.outcome){
-            notifier.showInfoMessage(name + " installation in progress");
+            notifier.showInfoMessage(name + " " + msg('installation in progress', { id: 'extensions-installing' }));
         }else{
-            notifier.showErrorMessage(name + " installation failed");
+            notifier.showErrorMessage(name + " " + msg('installation failed', { id: 'extensions-install-failed' }));
         }
     }
     

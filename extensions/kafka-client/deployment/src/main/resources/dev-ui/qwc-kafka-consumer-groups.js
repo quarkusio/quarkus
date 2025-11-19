@@ -4,6 +4,7 @@ import '@vaadin/progress-bar';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import { columnBodyRenderer, gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Kafka Consumer Groups
@@ -34,11 +35,12 @@ export class QwcKafkaConsumerGroups extends QwcHotReloadElement {
     static properties = {
         _consumerGroups: {state: true},
         _selectedConsumerGroups: {state: true, type: Array},
-        _memberDetailOpenedItem: {state: true, type: Array},
+        _memberDetailOpenedItem: {state: true, type: Array}
     };
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this._consumerGroups = null;
         this._selectedConsumerGroups = [];
         this._memberDetailOpenedItem = [];
@@ -79,38 +81,38 @@ export class QwcKafkaConsumerGroups extends QwcHotReloadElement {
                             }}">
                     <vaadin-grid-sort-column auto-width
                         path="state"
-                        header="State"
+                        header=${msg('State', { id: 'quarkus-kafka-client-state' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="name"
-                        header="Name"
+                        header=${msg('Name', { id: 'quarkus-kafka-client-name' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="coordinatorId"
-                        header="Coordinator"
+                        header=${msg('Coordinator', { id: 'quarkus-kafka-client-coordinator' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="protocol"
-                        header="Protocol"
+                        header=${msg('Protocol', { id: 'quarkus-kafka-client-protocol' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="members"
-                        header="Members"
+                        header=${msg('Members', { id: 'quarkus-kafka-client-members' })}
                         ${columnBodyRenderer(this._membersRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="lag"
-                        header="Lag(Sum)"
+                        header=${msg('Lag(Sum)', { id: 'quarkus-kafka-client-lag-sum' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
@@ -123,9 +125,9 @@ export class QwcKafkaConsumerGroups extends QwcHotReloadElement {
             let name = this._selectedConsumerGroups[0].name;
             let members = this._selectedConsumerGroups[0].members;
             return html`<div class="top-bar">
-                            <vaadin-button @click="${() => {this._selectedConsumerGroups = []}}" class="backButton">
+                            <vaadin-button @click="${() => {this._selectedConsumerGroups = [];}}" class="backButton">
                                 <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                                Back
+                                ${msg('Back', { id: 'quarkus-kafka-client-back' })}
                             </vaadin-button>
                             <h4>${name}</h4>
                         </div>
@@ -139,19 +141,19 @@ export class QwcKafkaConsumerGroups extends QwcHotReloadElement {
                                     ${gridRowDetailsRenderer(this._memberDetailRenderer, [])}>
                             <vaadin-grid-sort-column auto-width
                                 path="memberId"
-                                header="Member ID"
+                                header=${msg('Member ID', { id: 'quarkus-kafka-client-member-id' })}
                                 resizable>
                             </vaadin-grid-sort-column>
 
                             <vaadin-grid-sort-column auto-width
                                 path="host"
-                                header="Host"
+                                header=${msg('Host', { id: 'quarkus-kafka-client-host' })}
                                 resizable>
                             </vaadin-grid-sort-column>
 
                             <vaadin-grid-sort-column auto-width
                                 path="partitions"
-                                header="Partitions"
+                                header=${msg('Partitions', { id: 'quarkus-kafka-client-partitions' })}
                                 ${columnBodyRenderer(this._memberPartitionsRenderer, [])}
                                 resizable>
                             </vaadin-grid-sort-column>

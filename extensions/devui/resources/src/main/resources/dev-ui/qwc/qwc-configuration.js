@@ -19,6 +19,7 @@ import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {observeState} from 'lit-element-state';
 import {connectionState} from 'connection-state';
 import {devuiState} from 'devui-state';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component allows users to change the configuration
@@ -104,6 +105,7 @@ export class QwcConfiguration extends observeState(LitElement) {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._configSourceSet = new Map();
         this._detailsOpenedItem = [];
         this._busy = null;
@@ -114,6 +116,14 @@ export class QwcConfiguration extends observeState(LitElement) {
 
     connectedCallback() {
         super.connectedCallback();
+        
+        this._onLocaleStatus = (event) => {
+            if (event.detail.status === 'ready') {
+              this._reloadConfigSourceSet();
+            }
+        };
+        window.addEventListener('lit-localize-status', this._onLocaleStatus);
+        
         this._filteredValue = this.routerController.getQueryParameter("filter");
 
         if(this._filteredValue){
@@ -123,17 +133,30 @@ export class QwcConfiguration extends observeState(LitElement) {
             this._allConfiguration = e.result;
             this._visibleConfiguration = e.result;
             this._filtered = e.result;
-            
-            for (const configItem of this._allConfiguration) {
-                let configSourceName = this._getConfigSourceName(configItem.configValue);
-                if(configSourceName && !this._configSourceSet.has(configSourceName)){
-                    this._configSourceSet.set(configSourceName, this._createConfigSourceObject(configSourceName, configItem.configValue));
-                }
-            }
+            this._reloadConfigSourceSet();
         });
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
         });
+    }
+
+    disconnectedCallback() {
+        if (this._onLocaleStatus) {
+            window.removeEventListener('lit-localize-status', this._onLocaleStatus);
+            this._onLocaleStatus = null;
+        }
+        super.disconnectedCallback();
+    }
+
+    _reloadConfigSourceSet(){
+        this._configSourceSet = new Map();
+        for (const configItem of this._allConfiguration) {
+            let configSourceName = this._getConfigSourceName(configItem.configValue);
+            if(configSourceName && !this._configSourceSet.has(configSourceName)){
+                this._configSourceSet.set(configSourceName, this._createConfigSourceObject(configSourceName, configItem.configValue));
+            }
+        }
+        
     }
 
     _getConfigSourceName(configValue){
@@ -149,7 +172,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         
         if(configSourceName.startsWith("PropertiesConfigSource[source")
                     && configSourceName.endsWith("/application.properties]")){
-            displayName = "My properties";
+            displayName = msg('My properties', { id: 'configuration-my-properties' });
         }
         
         let configSourceObject = {name:configSourceName, display: displayName, position:configValue.configSourcePosition, ordinal:configValue.configSourceOrdinal};
@@ -160,9 +183,9 @@ export class QwcConfiguration extends observeState(LitElement) {
         if (this._filtered && this._values) {
             return this._render();
         } else if(!connectionState.current.isConnected){
-            return html`<span>Waiting for backend connection...</span>`;
+            return html`<span>${msg('Waiting for backend connection...', { id: 'configuration-waiting' })}</span>`;
         } else {
-            return html`<span>Loading configuration properties...</span>`;
+            return html`<span>${msg('Loading configuration properties...', { id: 'configuration-loading' })}</span>`;
         }
     }
 
@@ -194,7 +217,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         }
 
         this._filtered = this._visibleConfiguration.filter((prop) => {
-           return  this._match(prop.name, this._searchTerm) || this._match(prop.description, this._searchTerm)
+           return  this._match(prop.name, this._searchTerm) || this._match(prop.description, this._searchTerm);
         });
     }
 
@@ -202,7 +225,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         return html`<div class="conf">
                 <div class="confTopBar">
                     <vaadin-text-field
-                            placeholder="Filter"
+                            placeholder="${msg('Filter', { id: 'configuration-filter' })}"
                             value="${this._filteredValue}"
                             style="flex: 1;"
                             @value-changed="${(e) => this._filterTextChanged(e)}">
@@ -214,7 +237,7 @@ export class QwcConfiguration extends observeState(LitElement) {
                         @change="${(event) => {
                             this._toggleFilterByConfigSource(event);
                         }}"
-                        placeholder="Filter by config sources"
+                        placeholder="${msg('Filter by config sources', { id: 'configuration-filter-sources' })}"
                         item-label-path="display"
                         item-value-path="name"
                         .items="${Array.from(this._configSourceSet.values())}"
@@ -256,12 +279,12 @@ export class QwcConfiguration extends observeState(LitElement) {
                                 }}"
                             ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
                         >
-                        <vaadin-grid-sort-column auto-width class="cell" flex-grow="0" path="configPhase" header='Phase'
+                        <vaadin-grid-sort-column auto-width class="cell" flex-grow="0" path="configPhase" header='${msg('Phase', { id: 'configuration-phase' })}'
                                             ${columnBodyRenderer(this._lockRenderer, [])}>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column width="45%" resizable flex-grow="0"
-                                            header="Name"
+                                            header="${msg('Name', { id: 'configuration-name' })}"
                                             path="name"
                                             class="cell"
                                             ${columnBodyRenderer(this._nameRenderer, [])}>
@@ -269,7 +292,7 @@ export class QwcConfiguration extends observeState(LitElement) {
 
                         <vaadin-grid-column auto-width resizable
                                             class="cell"
-                                            header="Value"
+                                            header="${msg('Value', { id: 'configuration-value' })}"
                                             ${columnBodyRenderer(this._valueRenderer, [])}>
                         </vaadin-grid-column>
                     </vaadin-grid>`;
@@ -279,9 +302,9 @@ export class QwcConfiguration extends observeState(LitElement) {
         if (prop.configPhase === "BUILD_AND_RUN_TIME_FIXED" || prop.configPhase === "BUILD_TIME") {
             return html`
                 <vaadin-icon theme="small" class="lock-icon" id="icon-lock-${prop.name}" icon="font-awesome-solid:lock"></vaadin-icon>
-                <vaadin-tooltip for="icon-lock-${prop.name}" text="Fixed at build time (not overridable at runtime)"
+                <vaadin-tooltip for="icon-lock-${prop.name}" text="${msg('Fixed at build time (not overridable at runtime)', { id: 'configuration-fixed-build' })}"
                                 position="top-start"></vaadin-tooltip>
-            `
+            `;
         }
     }
 
@@ -291,7 +314,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         if (prop.autoFromDevServices) {
             devservice = html`
                 <vaadin-icon id="icon-dev-${prop.name}" icon="font-awesome-solid:magic"></vaadin-icon>
-                <vaadin-tooltip for="icon-dev-${prop.name}" text="Automatically set by Dev Services"
+                <vaadin-tooltip for="icon-dev-${prop.name}" text="${msg('Automatically set by Dev Services', { id: 'configuration-auto-devservices' })}"
                                 position="top-start"></vaadin-tooltip>
             `;
         }
@@ -299,7 +322,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         if (prop.wildcardEntry) {
             wildcard = html`
                 <vaadin-icon id="icon-wc-${prop.name}" icon="font-awesome-solid:plus"></vaadin-icon>
-                <vaadin-tooltip for="icon-wc-${prop.name}" text="This will add a new named config group"
+                <vaadin-tooltip for="icon-wc-${prop.name}" text="${msg('This will add a new named config group', { id: 'configuration-add-group' })}"
                                 position="top-start"></vaadin-tooltip>
             `;
         }
@@ -311,9 +334,9 @@ export class QwcConfiguration extends observeState(LitElement) {
     _valueRenderer(prop) {
         let def = '';
         if (prop.defaultValue) {
-            def = "Default value: " + prop.defaultValue;
+            def = msg('Default value', { id: 'configuration-default-value' }) + ": " + prop.defaultValue;
         } else {
-            def = "No default value";
+            def = msg('No default value', { id: 'configuration-no-default' });
         }
 
         let actualValue = this._values[prop.name];
@@ -378,7 +401,7 @@ export class QwcConfiguration extends observeState(LitElement) {
                 }
                 items.push({
                     'label': prop.allowedValues[idx],
-                    'value': prop.allowedValues[idx],
+                    'value': prop.allowedValues[idx]
                 });
             }
             if (! defaultValue) {
@@ -436,19 +459,19 @@ export class QwcConfiguration extends observeState(LitElement) {
         }
         res = res.toUpperCase();
 
-        let def = "<strong>Default value: </strong> None";
+        let def = "<strong>" + msg('Default value', { id: 'configuration-default-value' }) + ": </strong> " + msg('None', { id: 'configuration-none' });
         if (prop.defaultValue) {
-            def = "<strong>Default value: </strong>" + prop.defaultValue;
+            def = "<strong>" + msg('Default value', { id: 'configuration-default-value' }) + ": </strong>" + prop.defaultValue;
         }
-        let configSourceName = "Unknown";
+        let configSourceName = msg('Unknown', { id: 'configuration-unknown' });
         if(prop.configValue.sourceName){
             configSourceName = prop.configValue.sourceName;
         }
-        let src = "<strong>Config source: </strong> " + configSourceName;
+        let src = "<strong>" + msg('Config source', { id: 'configuration-source' }) + ": </strong> " + configSourceName;
         return html`<div class="description">
                         <p>${unsafeHTML(prop.description)}</p>
                         <div>
-                            <span><strong>Environment variable: </strong></span><code>${res}</code><br/>
+                            <span><strong>${msg('Environment variable', { id: 'configuration-env-var' })}: </strong></span><code>${res}</code><br/>
                             <span>${unsafeHTML(def)}</span><br/>
                             <span>${unsafeHTML(src)}</span>
                         </div>
@@ -477,22 +500,21 @@ export class QwcConfiguration extends observeState(LitElement) {
 
     _updateProperty(property, value){
         this._busy = true;
-        let target = 'application.properties'
+        let target = 'application.properties';
         let configSourceName = this._getConfigSourceName(property.configValue);
-        if  (configSourceName != null && configSourceName.startsWith("PropertiesConfigSource[source=")) {
-            target = configSourceName.substring(30, configSourceName.length - 1)
+        if  (configSourceName !== null && configSourceName.startsWith("PropertiesConfigSource[source=")) {
+            target = configSourceName.substring(30, configSourceName.length - 1);
         }
-        console.log(target)
         this.jsonRpc.updateProperty({
             'name': property.name,
             'value': value,
             'profile': property.profile,
             'target' : target
         }).then(e => {
-            console.log(e)
             this._values[property.name] = value;
             fetch(devuiState.applicationInfo.contextRoot);
-            notifier.showInfoMessage("Property <code>" + property.name + "</code> updated");
+            const propertyName = property.name;
+            notifier.showInfoMessage(msg(str`Property ${propertyName} updated`, { id: 'configuration-updated' }));
             this._busy = null;
         });
     }

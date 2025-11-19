@@ -1,6 +1,7 @@
 import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import { LogController } from 'log-controller';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the log of scheduled executions.
@@ -27,23 +28,48 @@ export class QwcSchedulerLog extends LitElement {
         _observer: {state:false},
         _zoom: {state:true},
         _increment: {state: false},
-        _followLog: {state: false},
+        _followLog: {state: false}
     };
     
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
+
         this.logControl
-                .addToggle("On/off switch", true, (e) => {
-                    this._toggleOnOffClicked(e);
-                }).addItem("Zoom out", "font-awesome-solid:magnifying-glass-minus", "grey", (e) => {
-                    this._zoomOut();
-                }).addItem("Zoom in", "font-awesome-solid:magnifying-glass-plus", "grey", (e) => {
-                    this._zoomIn();
-                }).addItem("Clear", "font-awesome-solid:trash-can", "#FF004A", (e) => {
-                    this._clearLog();
-                }).addFollow("Follow log", true , (e) => {
-                    this._toggleFollowLog(e);
-                }).done();
+                .addToggle(
+                    msg('On/off switch', { id: 'quarkus-scheduler-log-on-off-switch' }),
+                    true,
+                    (e) => {
+                        this._toggleOnOffClicked(e);
+                    })
+                .addItem(
+                    msg('Zoom out', { id: 'quarkus-scheduler-log-zoom-out' }),
+                    'font-awesome-solid:magnifying-glass-minus',
+                    'grey',
+                    (e) => {
+                        this._zoomOut();
+                    })
+                .addItem(
+                    msg('Zoom in', { id: 'quarkus-scheduler-log-zoom-in' }),
+                    'font-awesome-solid:magnifying-glass-plus',
+                    'grey',
+                    (e) => {
+                        this._zoomIn();
+                    })
+                .addItem(
+                    msg('Clear', { id: 'quarkus-scheduler-log-clear' }),
+                    'font-awesome-solid:trash-can',
+                    '#FF004A',
+                    (e) => {
+                        this._clearLog();
+                    })
+                .addFollow(
+                    msg('Follow log', { id: 'quarkus-scheduler-log-follow-log' }),
+                    true,
+                    (e) => {
+                        this._toggleFollowLog(e);
+                    })
+                .done();
         this._logEntries = [];
         this._zoom = parseFloat(1.0);
         this._increment = parseFloat(0.05);
@@ -93,23 +119,33 @@ export class QwcSchedulerLog extends LitElement {
     }
     
     _renderTime(logEntry){
-        return html`<span title='Time'>${logEntry.timestamp}</span>`;
+        return html`<span title=${msg('Time', { id: 'quarkus-scheduler-log-time' })}>${logEntry.timestamp}</span>`;
     }
     
     _renderMessage(logEntry){
-        return logEntry.success ? html`Job executed ${this._renderInfo(logEntry)}` : html`Job failed ${this._renderInfo(logEntry)}: <span class="text-error">${logEntry.message}<span>` ;
+        return logEntry.success
+            ? html`${msg('Job executed', { id: 'quarkus-scheduler-log-job-executed' })} ${this._renderInfo(logEntry)}`
+            : html`${msg('Job failed', { id: 'quarkus-scheduler-log-job-failed' })} ${this._renderInfo(logEntry)}: <span class="text-error">${logEntry.message}<span>` ;
     }
     
     _renderInfo(logEntry){
-        return html`<span title='Info' class='text-info'>[${this._renderIdentity(logEntry)}${this._renderMethodDescription(logEntry)}]</span>`;
+        return html`<span
+            title=${msg('Info', { id: 'quarkus-scheduler-log-info' })}
+            class='text-info'>
+            [${this._renderIdentity(logEntry)}${this._renderMethodDescription(logEntry)}]
+        </span>`;
     }
     
     _renderIdentity(logEntry){
-        return logEntry.triggerIdentity ? html`identity: ${logEntry.triggerIdentity}${logEntry.triggerMethodDescription ? ', ' : ''}` : '';
+        return logEntry.triggerIdentity
+            ? html`${msg('identity:', { id: 'quarkus-scheduler-log-identity-label' })} ${logEntry.triggerIdentity}${logEntry.triggerMethodDescription ? ', ' : ''}`
+            : '';
     }
     
     _renderMethodDescription(logEntry){
-        return logEntry.triggerMethodDescription ? html`method: ${logEntry.triggerMethodDescription}` : '';
+        return logEntry.triggerMethodDescription
+            ? html`${msg('method:', { id: 'quarkus-scheduler-log-method-label' })} ${logEntry.triggerMethodDescription}`
+            : '';
     }
     
     _renderIcon(logEntry){

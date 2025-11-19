@@ -6,6 +6,7 @@ import '@vaadin/progress-bar';
 import MarkdownIt from 'markdown-it';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { dialogRenderer } from '@vaadin/dialog/lit.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the scheduled methods.
@@ -44,6 +45,7 @@ export class QwcSchedulerCronBuilder extends LitElement {
     
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._createCronLoading = false;
         this._cron = null;
         this._example = null;
@@ -60,42 +62,58 @@ export class QwcSchedulerCronBuilder extends LitElement {
     }
 
     render() {
-        return html`${this._renderLoadingDialog()}
-                    ${this._renderInput()}
-                    ${this._renderOutput()}
-                    `;
+        return html`
+            ${this._renderLoadingDialog()}
+            ${this._renderInput()}
+            ${this._renderOutput()}
+        `;
     }
     
     _renderInput(){
-        return html`<div class="input">
-                        <vaadin-text-area 
-                            min-rows="4" 
-                            max-rows="8" 
-                            label="Describe the cron you want to create" 
-                            .value=${this._description ?? ''}
-                            @value-changed=${(e) => { this._description = e.detail.value; }}>
-                        </vaadin-text-area>
-                        ${this._renderButton()}
-                    </div>`;
+        return html`
+            <div class="input">
+                <vaadin-text-area 
+                    min-rows="4" 
+                    max-rows="8" 
+                    .label=${msg(
+                        'Describe the cron you want to create',
+                        { id: 'quarkus-scheduler-describe-cron' }
+                    )}
+                    .value=${this._description ?? ''}
+                    @value-changed=${(e) => { this._description = e.detail.value; }}>
+                </vaadin-text-area>
+                ${this._renderButton()}
+            </div>
+        `;
     }
     
     _renderOutput(){
         if(this._cron){
             const htmlContent = this.md.render(this._example);
-            return html`<div class="output">
-                        <h3>Cron:</h3>
-                        <code>${this._cron}</code>
-                        <h3>Example</h3>
-                        <div class="example">
-                            ${unsafeHTML(htmlContent)}
-                        </div>
-                    </div>`;
+            return html`
+                <div class="output">
+                    <h3>
+                        ${msg('Cron:', { id: 'quarkus-scheduler-cron-label' })}
+                    </h3>
+                    <code>${this._cron}</code>
+                    <h3>
+                        ${msg('Example', { id: 'quarkus-scheduler-example' })}
+                    </h3>
+                    <div class="example">
+                        ${unsafeHTML(htmlContent)}
+                    </div>
+                </div>
+            `;
         }
     }
     
     _renderButton(){
         if(!this._createCronLoading){
-            return html`<vaadin-button @click="${this._createCron}">Create cron</vaadin-button>`;
+            return html`
+                <vaadin-button @click="${this._createCron}">
+                    ${msg('Create cron', { id: 'quarkus-scheduler-create-cron' })}
+                </vaadin-button>
+            `;
         }
     }
     
@@ -106,16 +124,29 @@ export class QwcSchedulerCronBuilder extends LitElement {
               @closed="${() => {
                 this._createCronLoading = false;
               }}"
-              ${dialogRenderer(() => html`
-                            <label class="text-secondary" id="pblabel">Talking to the Dev Assistant ... please wait</label>
-                            <vaadin-progress-bar indeterminate aria-labelledby="pblabel"></vaadin-progress-bar>`, [])}
-            ></vaadin-dialog>`;
+              ${dialogRenderer(
+                () => html`
+                    <label class="text-secondary" id="pblabel">
+                        ${msg(
+                            'Talking to the Dev Assistant ... please wait',
+                            { id: 'quarkus-scheduler-talking-to-dev-assistant' }
+                        )}
+                    </label>
+                    <vaadin-progress-bar
+                        indeterminate
+                        aria-labelledby="pblabel">
+                    </vaadin-progress-bar>
+                `,
+                []
+              )}
+            ></vaadin-dialog>
+        `;
     }
     
     _createCron(){
         this._createCronLoading = true;
         document.body.style.cursor = 'wait';
-        this.jsonRpc.createCron({"description": this._description}).then(jsonResponse => {
+        this.jsonRpc.createCron({ description: this._description }).then(jsonResponse => {
             this._createCronLoading = false;
             document.body.style.cursor = 'default';
             this._cron = jsonResponse.result.cron;

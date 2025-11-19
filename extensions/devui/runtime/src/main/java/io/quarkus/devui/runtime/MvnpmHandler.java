@@ -124,6 +124,8 @@ public class MvnpmHandler implements Handler<RoutingContext> {
             return CONTENT_TYPE_CSS;
         } else if (f.endsWith(DOT_XML)) {
             return CONTENT_TYPE_XML;
+        } else if (f.endsWith(DOT_SVG)) {
+            return CONTENT_TYPE_SVG;
         }
         // .csv 	Comma-separated values (CSV) 	text/csv
         // .gif 	Graphics Interchange Format (GIF) 	image/gif
@@ -150,6 +152,7 @@ public class MvnpmHandler implements Handler<RoutingContext> {
     private static final String DOT_XHTML = ".xhtml";
     private static final String DOT_CSS = ".css";
     private static final String DOT_XML = ".xml";
+    private static final String DOT_SVG = ".svg";
 
     private static final String CONTENT_TYPE_JAVASCRIPT = "application/javascript";
     private static final String CONTENT_TYPE_JSON = "application/json";
@@ -158,5 +161,6 @@ public class MvnpmHandler implements Handler<RoutingContext> {
     private static final String CONTENT_TYPE_XML = "application/xml; charset=utf-8";
     private static final String CONTENT_TYPE_CSS = "text/css; charset=utf-8";
     private static final String CONTENT_TYPE_TEXT = "text/plain; charset=utf-8";
+    private static final String CONTENT_TYPE_SVG = "image/svg+xml; charset=utf-8";
 
 }

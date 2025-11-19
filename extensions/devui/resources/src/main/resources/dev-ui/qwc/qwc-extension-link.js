@@ -4,6 +4,7 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@qomponent/qui-badge';
 import { StorageController } from 'storage-controller';
+import { msg, dynamicMsg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component adds a custom link on the Extension card
@@ -67,7 +68,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         streamingLabel: {type: String},
         _effectiveLabel: {state: true},
         _effectiveExternalUrl: {state: true},
-        _observer: {state: false},
+        _observer: {state: false}
     };
   
     _staticLabel = null;
@@ -76,7 +77,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     _effectiveExternalUrl = null;
 
     set staticLabel(val) {
-        if(!this._staticLabel || (this._staticLabel && this._staticLabel != val)){
+        if(!this._staticLabel || (this._staticLabel && this._staticLabel !== val)){
             let oldVal = this._staticLabel;
             this._staticLabel = val;
             this.requestUpdate('staticLabel', oldVal);
@@ -102,7 +103,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     }
     
     set streamingLabel(val) {
-        if(!this._streamingLabel || (this._streamingLabel && this._streamingLabel != val)){
+        if(!this._streamingLabel || (this._streamingLabel && this._streamingLabel !== val)){
             let oldVal = this._streamingLabel;
             this._streamingLabel = val;
             this.requestUpdate('streamingLabel', oldVal);
@@ -112,6 +113,11 @@ export class QwcExtensionLink extends QwcHotReloadElement {
       
     get streamingLabel() { 
         return this._streamingLabel; 
+    }
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
     }
 
     connectedCallback() {
@@ -213,7 +219,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
                 <a class="extensionLink" href="${linkRef}" ?router-ignore=${routerIgnore} target="${target}" title="${this.tooltipContent}">
                     <span class="iconAndName" style="color:${this.colorName};">
                         <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
-                        ${this.displayName}
+                        ${dynamicMsg(this.namespace, this.displayName)}
                     </span>
                 </a>
                 ${this._renderBadge()}
@@ -222,7 +228,6 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             return html`<a class="extensionLink" ?router-ignore=true>
             <span class="iconAndName">
                 <vaadin-icon class="icon" icon="font-awesome-solid:spinner"></vaadin-icon>
-                loading ...
             </span>
         </a>${this._renderBadge()}`;
         }

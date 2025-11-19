@@ -3,6 +3,7 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/progress-bar';
 import '@vaadin/grid';
 import { columnBodyRenderer, columnHeaderRenderer } from '@vaadin/grid/lit.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Kafka Nodes
@@ -26,6 +27,7 @@ export class QwcKafkaNodes extends QwcHotReloadElement {
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
     }
 
     connectedCallback() {
@@ -42,9 +44,9 @@ export class QwcKafkaNodes extends QwcHotReloadElement {
     render() { 
         if(this._info){
             let header = [];
-            header.push({key:"Kafka cluster id", value: this._info.clusterInfo.id});
-            header.push({key:"Controller node (broker)", value: this._info.broker});
-            header.push({key:"ACL operations", value: this._info.clusterInfo.aclOperations});
+            header.push({key:msg('Kafka cluster id', { id: 'quarkus-kafka-client-kafka-cluster-id' }), value: this._info.clusterInfo.id});
+            header.push({key:msg('Controller node (broker)', { id: 'quarkus-kafka-client-controller-node' }), value: this._info.broker});
+            header.push({key:msg('ACL operations', { id: 'quarkus-kafka-client-acl-operations' }), value: this._info.clusterInfo.aclOperations});
 
             return html`<div class="header">
                             <vaadin-grid .items="${header}" class="noGridHeader" theme="no-row-borders" all-rows-visible>
@@ -53,7 +55,7 @@ export class QwcKafkaNodes extends QwcHotReloadElement {
                             </vaadin-grid>
                         </div>
                         <div class="nodes">
-                            <h3>Cluster Nodes</h3>
+                            <h3>${msg('Cluster Nodes', { id: 'quarkus-kafka-client-cluster-nodes' })}</h3>
                             <vaadin-grid .items="${this._info.clusterInfo.nodes}" theme="compact" all-rows-visible>
                                 <vaadin-grid-column path="id" ${columnHeaderRenderer(this._idHeaderRenderer, [])}></vaadin-grid-column>    
                                 <vaadin-grid-column path="host" ${columnHeaderRenderer(this._hostHeaderRenderer, [])}></vaadin-grid-column>
@@ -72,13 +74,13 @@ export class QwcKafkaNodes extends QwcHotReloadElement {
     }
 
     _idHeaderRenderer(){
-        return html`<b>ID</b>`;
+        return html`<b>${msg('ID', { id: 'quarkus-kafka-client-id' })}</b>`;
     }
     _hostHeaderRenderer(){
-        return html`<b>Host</b>`;
+        return html`<b>${msg('Host', { id: 'quarkus-kafka-client-host' })}</b>`;
     }
     _portHeaderRenderer(){
-        return html`<b>Port</b>`;
+        return html`<b>${msg('Port', { id: 'quarkus-kafka-client-port' })}</b>`;
     }
 }
 

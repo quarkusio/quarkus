@@ -20,7 +20,7 @@ class ConnectionState extends LitState {
         newState.name = "disconnected";
         newState.icon = "plug-circle-exclamation";
         newState.color = "var(--lumo-error-color)";
-        newState.message = "Disconnected from " + serverUri;
+        newState.message = "Disconnected from";
         newState.serverUri = serverUri;
         newState.isConnected = false;
         newState.isDisconnected = true;
@@ -35,7 +35,7 @@ class ConnectionState extends LitState {
         newState.name = "connecting";
         newState.icon = "plug-circle-bolt";
         newState.color = "var(--lumo-warning-color)";
-        newState.message = "Connecting to " + serverUri;
+        newState.message = "Connecting to";
         newState.serverUri = serverUri;
         newState.isConnected = false;
         newState.isDisconnected = true;
@@ -50,7 +50,7 @@ class ConnectionState extends LitState {
         newState.name = "hotreload";
         newState.icon = "plug-circle-bolt";
         newState.color = "var(--lumo-primary-color)";
-        newState.message = "Hot reloading " + serverUri;
+        newState.message = "Hot reloading";
         newState.serverUri = serverUri;
         newState.isConnected = false;
         newState.isDisconnected = false;
@@ -65,7 +65,7 @@ class ConnectionState extends LitState {
         newState.name = "connected";
         newState.icon = "plug-circle-check";
         newState.color = "var(--lumo-success-color)";
-        newState.message = "Connected to " + serverUri;
+        newState.message = "Connected to";
         newState.serverUri = serverUri;
         newState.isConnected = true;
         newState.isDisconnected = false;

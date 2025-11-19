@@ -6,6 +6,7 @@ import '@vaadin/button';
 import '@vaadin/icon';
 import 'qui-themed-code-block';
 import { notifier } from 'notifier';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class QwcGraphqlGenerateClient extends LitElement {
     jsonRpc = new JsonRpc(this);
@@ -50,26 +51,27 @@ export class QwcGraphqlGenerateClient extends LitElement {
     static properties = {
         _codemap: {state: true},
         _selectedLanguage: {state: true},
-        _loading: {state: true},
+        _loading: {state: true}
     };
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._codemap = new Map();
         this._selectedLanguage = null;
         this._loading = false;
 
         this.languages = [
-            {label: 'Java (Quarkus)', value: 'Java', mode: 'java', context: 'This code should be valid Quarkus Java code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one'},
-            {label: 'Kotlin (Quarkus)', value: 'Kotlin', mode: 'java', context: 'This code should be valid Quarkus Kotlin code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one'},
-            {label: 'Javascript', value: 'Javascript', mode: 'js', context: ''},
-            {label: 'TypeScript', value: 'Typecript', mode: 'ts', context: ''},
-            {label: 'C#', value: 'C#', mode: 'cs', context: ''},
-            {label: 'C++', value: 'C++', mode: 'cpp', context: ''},
-            {label: 'PHP', value: 'PHP', mode: 'php', context: ''},
-            {label: 'Python', value: 'Python', mode: 'py', context: ''},
-            {label: 'Rust', value: 'Rust', mode: 'rust', context: ''},
-            {label: 'Go', value: 'Golang', mode: 'go', context: ''}
+            {label: msg('Java (Quarkus)', { id: 'quarkus-smallrye-graphql-java-quarkus' }), value: 'Java', mode: 'java', context: msg('This code should be valid Quarkus Java code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one', { id: 'quarkus-smallrye-graphql-java-context' })},
+            {label: msg('Kotlin (Quarkus)', { id: 'quarkus-smallrye-graphql-kotlin-quarkus' }), value: 'Kotlin', mode: 'java', context: msg('This code should be valid Quarkus Kotlin code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one', { id: 'quarkus-smallrye-graphql-kotlin-context' })},
+            {label: msg('Javascript', { id: 'quarkus-smallrye-graphql-javascript' }), value: 'Javascript', mode: 'js', context: ''},
+            {label: msg('TypeScript', { id: 'quarkus-smallrye-graphql-typescript' }), value: 'Typecript', mode: 'ts', context: ''},
+            {label: msg('C#', { id: 'quarkus-smallrye-graphql-csharp' }), value: 'C#', mode: 'cs', context: ''},
+            {label: msg('C++', { id: 'quarkus-smallrye-graphql-cpp' }), value: 'C++', mode: 'cpp', context: ''},
+            {label: msg('PHP', { id: 'quarkus-smallrye-graphql-php' }), value: 'PHP', mode: 'php', context: ''},
+            {label: msg('Python', { id: 'quarkus-smallrye-graphql-python' }), value: 'Python', mode: 'py', context: ''},
+            {label: msg('Rust', { id: 'quarkus-smallrye-graphql-rust' }), value: 'Rust', mode: 'rust', context: ''},
+            {label: msg('Go', { id: 'quarkus-smallrye-graphql-go' }), value: 'Golang', mode: 'go', context: ''}
         ];
     }
 
@@ -77,22 +79,22 @@ export class QwcGraphqlGenerateClient extends LitElement {
         return html`
         <div class="top">
             <vaadin-combo-box
-                label="Technology / Language"
+                label=${msg('Technology / Language', { id: 'quarkus-smallrye-graphql-technology-language' })}
                 .items="${this.languages}"
                 item-label-path="label"
                 item-value-path="value"
                 @value-changed="${this._languageSelected}">
             </vaadin-combo-box>
             <p class="blurb">
-                Generate client code based on the GraphQL schema document produced by your Quarkus application.
+                ${msg('Generate client code based on the GraphQL schema document produced by your Quarkus application.', { id: 'quarkus-smallrye-graphql-description' })}
             </p>
         </div>
         
         ${this._loading ? html`
             <div class="progress">
-                <label class="text-secondary" id="pblbl">Talking to AI...</label>
+                <label class="text-secondary" id="pblbl">${msg('Talking to AI...', { id: 'quarkus-smallrye-graphql-talking-to-ai' })}</label>
                 <vaadin-progress-bar indeterminate aria-labelledby="pblbl" aria-describedby="sublbl"></vaadin-progress-bar>
-                <span class="text-secondary text-xs" id="sublbl">This can take a while</span>
+                <span class="text-secondary text-xs" id="sublbl">${msg('This can take a while', { id: 'quarkus-smallrye-graphql-can-take-while' })}</span>
             </div>
         ` : ''}
 
@@ -120,7 +122,7 @@ export class QwcGraphqlGenerateClient extends LitElement {
                 }
             } catch (e) {
                 console.error('Failed to generate code:', e);
-                notifier.showErrorMessage("Failed to generate code: " + e);
+                notifier.showErrorMessage(msg(str`Failed to generate code: ${e}`, { id: 'quarkus-smallrye-graphql-failed-generate' }));
             } finally {
                 this._loading = false;
             }
@@ -129,12 +131,13 @@ export class QwcGraphqlGenerateClient extends LitElement {
 
     _renderClientResult(lang) {
         const code = this._codemap.get(lang.value);
+        const ll = lang.label;
         return html`
       <div class="generatedcode">
-        <div class="heading">${lang.label} code generated from the GraphQL Schema with Quarkus assistant:
+        <div class="heading">${msg(str`${ll} code generated from the GraphQL Schema with Quarkus assistant:`, { id: 'quarkus-smallrye-graphql-code-generated' })}
             <vaadin-button theme="secondary" @click="${() => this._copyGeneratedContent(lang.value)}">
                 <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
-                Copy
+                ${msg('Copy', { id: 'quarkus-smallrye-graphql-copy' })}
             </vaadin-button>
         </div>
         <qui-themed-code-block
@@ -150,10 +153,10 @@ export class QwcGraphqlGenerateClient extends LitElement {
         if (this._codemap.has(langName)) {
             const content = this._codemap.get(langName);
             navigator.clipboard.writeText(content)
-                    .then(() => notifier.showInfoMessage("Content copied to clipboard"))
-                    .catch(err => notifier.showErrorMessage("Failed to copy content: " + err));
+                    .then(() => notifier.showInfoMessage(msg('Content copied to clipboard', { id: 'quarkus-smallrye-graphql-copied' })))
+                    .catch(err => notifier.showErrorMessage(msg(str`Failed to copy content: ${err}`, { id: 'quarkus-smallrye-graphql-failed-copy' })));
         } else {
-            notifier.showWarningMessage("No content");
+            notifier.showWarningMessage(msg('No content', { id: 'quarkus-smallrye-graphql-no-content' }));
         }
     }
 }

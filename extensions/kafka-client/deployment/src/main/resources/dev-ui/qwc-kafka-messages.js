@@ -12,6 +12,7 @@ import { themeState } from 'theme-state';
 import '@quarkus-webcomponents/codeblock';
 import '@vaadin/split-layout';
 import './qwc-kafka-add-message.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Kafka Messages for a certain topic
@@ -66,6 +67,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this._messages = null;
         this._createMessageDialogOpened = false;
         this._messagesDetailOpenedItem = [];
@@ -84,7 +86,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
 
     disconnectedCallback() { 
         this._observer.cancel();
-        super.disconnectedCallback()
+        super.disconnectedCallback();
     }
 
     hotReload(){
@@ -111,7 +113,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
                     <div class="top-bar">
                         <vaadin-button @click="${this._backAction}" class="backButton">
                             <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
+                            ${msg('Back', { id: 'quarkus-kafka-client-back' })}
                         </vaadin-button>
                         <h4>${this.topicName}</h4>
                     </div>`;
@@ -122,7 +124,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
             detail: {},
             bubbles: true,
             cancelable: true,
-            composed: false,
+            composed: false
         });
         this.dispatchEvent(back);
     }
@@ -139,32 +141,32 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
                         ${gridRowDetailsRenderer(this._messagesDetailRenderer, [])}>
                     <vaadin-grid-sort-column auto-width
                         path="offset"
-                        header="Offset"
+                        header=${msg('Offset', { id: 'quarkus-kafka-client-offset' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="partition"
-                        header="Partitions"
+                        header=${msg('Partitions', { id: 'quarkus-kafka-client-partitions' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="timestamp"
-                        header="Timestamp"
+                        header=${msg('Timestamp', { id: 'quarkus-kafka-client-timestamp' })}
                         ${columnBodyRenderer(this._timestampRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="key"
-                        header="Key"
+                        header=${msg('Key', { id: 'quarkus-kafka-client-key' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
                         path="value"
-                        header="Value"
+                        header=${msg('Value', { id: 'quarkus-kafka-client-value' })}
                         resizable>
                     </vaadin-grid-sort-column>
 
@@ -179,7 +181,7 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
 
         return html`<vaadin-split-layout>
                         <master-content class="detail-block">
-                            <span>Message value:</span>
+                            <span>${msg('Message value:', { id: 'quarkus-kafka-client-message-value' })}</span>
                             <div class="code-block">    
                                 <qui-code-block
                                     mode='json'
@@ -189,18 +191,18 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
                             </div>
                         </master-content>
                         <detail-content class="detail-block">
-                            <span>Message headers:</span>
+                            <span>${msg('Message headers:', { id: 'quarkus-kafka-client-message-headers' })}</span>
                             <vaadin-grid class="header-grid" .items="${headers}" 
                                     theme="no-border" all-rows-visible>
                                 <vaadin-grid-sort-column auto-width
                                     path="key"
-                                    header="Key"
+                                    header=${msg('Key', { id: 'quarkus-kafka-client-key' })}
                                     resizable>
                                 </vaadin-grid-sort-column>
 
                                 <vaadin-grid-sort-column auto-width
                                     path="value"
-                                    header="Value"
+                                    header=${msg('Value', { id: 'quarkus-kafka-client-value' })}
                                     resizable>
                                 </vaadin-grid-sort-column>
                             </vaadin-grid>
@@ -233,19 +235,20 @@ export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
     _renderAddMessagesPlusButton(){    
         if(this._messages){
             return html`<div class="bottom">
-                <vaadin-icon class="create-button" icon="font-awesome-solid:circle-plus" @click="${() => {this._createMessageDialogOpened = true}}" title="Create message"></vaadin-icon>
+                <vaadin-icon class="create-button" icon="font-awesome-solid:circle-plus" @click="${() => {this._createMessageDialogOpened = true;}}" title=${msg('Create message', { id: 'quarkus-kafka-client-create-message' })}></vaadin-icon>
             </div>`;
         }
     }
 
     _renderCreateMessageDialog(){
         if(this._createMessageDialogOpened){
+            const tn = this.topicName;
             return html`<vaadin-dialog class="createDialog"
-                        header-title="Add new message to ${this.topicName}"
+                        header-title=${msg(str`Add new message to ${tn}`, { id: 'quarkus-kafka-client-add-new-message' })}
                         resizable
                         .opened="${this._createMessageDialogOpened}"
                         @opened-changed="${(e) => (this._createMessageDialogOpened = e.detail.value)}"
-                        ${dialogRenderer(() => this._renderCreateMessageDialogForm(), "Add new message to ${this.topicName}")}
+                        ${dialogRenderer(() => this._renderCreateMessageDialogForm(), msg(str`Add new message to ${tn}`, { id: 'quarkus-kafka-client-add-new-message' }))}
                     ></vaadin-dialog>`;
         }
     }

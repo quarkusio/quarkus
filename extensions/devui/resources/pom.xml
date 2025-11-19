@@ -87,6 +87,16 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <groupId>org.mvnpm.at.lit</groupId>
+            <artifactId>localize</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>flag-icons</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>org.mvnpm.at.types</groupId>
             <artifactId>trusted-types</artifactId>
             <scope>runtime</scope>

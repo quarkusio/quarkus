@@ -4,6 +4,7 @@ import '@vaadin/progress-bar';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component show all available routes
@@ -43,11 +44,12 @@ export class QwcRoutes extends LitElement {
     `;
 
     static properties = {
-        _routes: {state: true},
+        _routes: {state: true}
     }
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._routes = null;
     }
 
@@ -66,20 +68,20 @@ export class QwcRoutes extends LitElement {
         if (this._routes) {
             return html`<vaadin-grid .items="${this._routes}" class="infogrid">
                         <vaadin-grid-sort-column resizable
-                                            header='Handler'
+                                            header='${msg('Handler', { id: 'endpoints-handler' })}'
                                             path="contextHandlers"
                                             auto-width
                                             ${columnBodyRenderer(this._contextHandlersRenderer, [])}>>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column resizable
-                                            header="Order"     
+                                            header="${msg('Order', { id: 'endpoints-order' })}"     
                                             path="order"
                                             auto-width>
                         </vaadin-grid-sort-column>
             
                         <vaadin-grid-sort-column resizable
-                                            header="Path"
+                                            header="${msg('Path', { id: 'endpoints-path' })}"
                                             path="path"
                                             auto-width
                                             ${columnBodyRenderer(this._pathRenderer, [])}>>
@@ -89,7 +91,7 @@ export class QwcRoutes extends LitElement {
         }else{
             return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching routes...</div>
+                <div>${msg('Fetching routes...', { id: 'endpoints-fetching-routes' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
@@ -108,14 +110,14 @@ export class QwcRoutes extends LitElement {
     _contextHandlersRenderer(route){
         const contextHandler = this._extractClassName(route.contextHandlers);
         if(contextHandler){
-            return html`<code title="Context Handler" class="contextHandler">${contextHandler}</code>`;
+            return html`<code title="${msg('Context Handler', { id: 'endpoints-context-handler' })}" class="contextHandler">${contextHandler}</code>`;
         }else{
             const failureHandler = this._extractClassName(route.failureHandlers);
             if(failureHandler){
-                return html`<code title="Failure Handler" class="failureHandler">${failureHandler}</code>`;
+                return html`<code title="${msg('Failure Handler', { id: 'endpoints-failure-handler' })}" class="failureHandler">${failureHandler}</code>`;
             }
         }
-        return html`<code>Unknown (could not detect)</code>`;
+        return html`<code>${msg('Unknown (could not detect)', { id: 'endpoints-unknown' })}</code>`;
     }
     
     _extractClassName(handler){

@@ -10,7 +10,7 @@ import '@vaadin/message-list';
 import { notifier } from 'notifier';
 import { JsonRpc } from 'jsonrpc';
 import { endpoints } from 'build-time-data';
-
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 export class QwcWebSocketNextEndpoints extends LitElement {
     
@@ -67,6 +67,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         // If not null then show the connections of the selected endpoint
         this._selectedEndpoint = null;
         // If not null then show the detail of a Dev UI connection
@@ -87,11 +88,11 @@ export class QwcWebSocketNextEndpoints extends LitElement {
             })
             .then(() => {
                 this._conntectionStatusStream = this.jsonRpc.connectionStatus().onNext(jsonResponse => {
-                    const endpoint = this._endpointsAndConnections.find(e => e.generatedClazz == jsonResponse.result.endpoint);
+                    const endpoint = this._endpointsAndConnections.find(e => e.generatedClazz === jsonResponse.result.endpoint);
                     if (endpoint) {
                         if (jsonResponse.result.removed) {
                             const connectionId = jsonResponse.result.id;
-                            endpoint.connections = endpoint.connections.filter(c => c.id != connectionId);
+                            endpoint.connections = endpoint.connections.filter(c => c.id !== connectionId);
                         } else {
                             endpoint.connections = [
                                 ...endpoint.connections,
@@ -106,7 +107,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                 }
             ); 
             this._textMessagesStream =  this.jsonRpc.connectionMessages().onNext(jsonResponse => {
-                if (this._selectedConnection && jsonResponse.result.key == this._selectedConnection.devuiSocketKey) {
+                if (this._selectedConnection && jsonResponse.result.key === this._selectedConnection.devuiSocketKey) {
                     this._textMessages = [
                         jsonResponse.result,
                         ...this._textMessages
@@ -127,7 +128,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                if (this._textMessages) {
                    return this._renderConnection();
                } else {
-                   return html`<span>Loading messages...</span>`;
+                   return html`<span>${msg('Loading messages...', { id: 'quarkus-websockets-next-loading-messages' })}</span>`;
                }
             } else if (this._selectedEndpoint){
                return this._renderConnections();
@@ -135,7 +136,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                return this._renderEndpoints();
             }
         } else {
-            return html`<span>Loading endpoints...</span>`;
+            return html`<span>${msg('Loading endpoints...', { id: 'quarkus-websockets-next-loading-endpoints' })}</span>`;
         }
     }
     
@@ -143,22 +144,22 @@ export class QwcWebSocketNextEndpoints extends LitElement {
             return html`
                 <vaadin-grid .items="${this._endpointsAndConnections}" class="endpoints-table" theme="no-border" all-rows-visible>
                     <vaadin-grid-column auto-width
-                        header="Endpoint Class"
+                        header=${msg('Endpoint Class', { id: 'quarkus-websockets-next-endpoint-class' })}
                         ${columnBodyRenderer(this._renderClazz, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Connections"
+                        header=${msg('Connections', { id: 'quarkus-websockets-next-connections' })}
                         ${columnBodyRenderer(this._renderConnectionsButton, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Path"
+                        header=${msg('Path', { id: 'quarkus-websockets-next-path' })}
                         ${columnBodyRenderer(this._renderPath, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Callbacks"
+                        header=${msg('Callbacks', { id: 'quarkus-websockets-next-callbacks' })}
                         ${columnBodyRenderer(this._renderCallbacks, [])}
                         resizable>
                     </vaadin-grid-column>
@@ -171,27 +172,27 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                 ${this._renderTopBar()}
                 <vaadin-grid .items="${this._selectedEndpoint.connections}" class="connections-table" theme="no-border" all-rows-visible>
                     <vaadin-grid-column auto-width
-                        header="Type"
+                        header=${msg('Type', { id: 'quarkus-websockets-next-type' })}
                         ${columnBodyRenderer(this._renderType, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Id"
+                        header=${msg('Id', { id: 'quarkus-websockets-next-id' })}
                         ${columnBodyRenderer(this._renderId, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Handshake Path"
+                        header=${msg('Handshake Path', { id: 'quarkus-websockets-next-handshake-path' })}
                         ${columnBodyRenderer(this._renderHandshakePath, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Creation Time"
+                        header=${msg('Creation Time', { id: 'quarkus-websockets-next-creation-time' })}
                         ${columnBodyRenderer(this._renderCreationTime, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                        header="Actions"
+                        header=${msg('Actions', { id: 'quarkus-websockets-next-actions' })}
                         ${columnBodyRenderer(this._renderDevButton, [])}
                         resizable>
                     </vaadin-grid-column>
@@ -214,42 +215,47 @@ export class QwcWebSocketNextEndpoints extends LitElement {
     }
     
     _renderTopBar(){
-            return html`
-                    <div class="top-bar">
-                        <vaadin-button @click="${this._showEndpoints}">
-                            <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
-                        </vaadin-button>
-                        <h4>Open connections for endpoint: <code>${this._selectedEndpoint.clazz}</code></h4>
-                    </div>`;
+        const c = this._selectedEndpoint.clazz;
+        return html`
+                <div class="top-bar">
+                    <vaadin-button @click="${this._showEndpoints}">
+                        <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
+                        ${msg('Back', { id: 'quarkus-websockets-next-back' })}
+                    </vaadin-button>
+                    <h4>${msg(str`Open connections for endpoint: ${c}`, { id: 'quarkus-websockets-next-open-connections' })}</h4>
+                </div>`;
     }
     
     _renderTopBarConnection(){
-            return html`
-                    <div class="top-bar">
-                        <vaadin-button @click="${() => this._showConnections(this._selectedEndpoint)}">
-                            <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
-                        </vaadin-button>
-                        <vaadin-button @click="${this._closeDevConnection}">
-                            <vaadin-icon icon="font-awesome-solid:xmark" slot="prefix"></vaadin-icon>
-                            Close connection
-                        </vaadin-button>
-                        <vaadin-button disabled>
-                            Connection messages limit: ${this._connectionMessagesLimit}
-                        </vaadin-button>
-                        <vaadin-button @click="${this._clearMessages}">
-                            <vaadin-icon icon="font-awesome-solid:trash" slot="prefix"></vaadin-icon>
-                            Clear messages
-                        </vaadin-button>
-                        <h4>Connection: <code>${this._selectedConnection.id}</code></h4>
-                        <h3>Endpoint: <code>${this._selectedEndpoint.clazz}</code> &nbsp;|&nbsp; Handshake path: <code>${this._selectedConnection.handshakePath}</code></h3>
-                    </div>`;
+        const cml = this._connectionMessagesLimit;
+        const i = this._selectedConnection.id;
+        const c = this._selectedEndpoint.clazz;
+        const p = this._selectedConnection.handshakePath;
+        return html`
+                <div class="top-bar">
+                    <vaadin-button @click="${() => this._showConnections(this._selectedEndpoint)}">
+                        <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
+                        ${msg('Back', { id: 'quarkus-websockets-next-back' })}
+                    </vaadin-button>
+                    <vaadin-button @click="${this._closeDevConnection}">
+                        <vaadin-icon icon="font-awesome-solid:xmark" slot="prefix"></vaadin-icon>
+                        ${msg('Close connection', { id: 'quarkus-websockets-next-close-connection' })}
+                    </vaadin-button>
+                    <vaadin-button disabled>
+                        ${msg(str`Connection messages limit: ${cml}`, { id: 'quarkus-websockets-next-connection-messages-limit' })}
+                    </vaadin-button>
+                    <vaadin-button @click="${this._clearMessages}">
+                        <vaadin-icon icon="font-awesome-solid:trash" slot="prefix"></vaadin-icon>
+                        ${msg('Clear messages', { id: 'quarkus-websockets-next-clear-messages' })}
+                    </vaadin-button>
+                    <h4>${msg(str`Connection: ${i}`, { id: 'quarkus-websockets-next-connection' })}</h4>
+                    <h3>${msg(str`Endpoint: ${c} | Handshake path: ${p}`, { id: 'quarkus-websockets-next-endpoint-handshake' })}</h3>
+                </div>`;
     }
      
     _renderPath(endpoint) {
         const inputId = endpoint.clazz.replaceAll("\.","_").replaceAll("\$","_");
-        const hasPathParam = endpoint.path.indexOf('{') != -1;
+        const hasPathParam = endpoint.path.indexOf('{') !== -1;
         var inputPath;
         var resetButton;
         if (hasPathParam) {
@@ -257,16 +263,16 @@ export class QwcWebSocketNextEndpoints extends LitElement {
             <vaadin-text-field
                 id="${inputId}"
                 value="${endpoint.path}"
-                 helper-text="Replace path parameters with current values"
+                 helper-text=${msg('Replace path parameters with current values', { id: 'quarkus-websockets-next-replace-path-params' })}
                 style="font-family: monospace;width: 15em;"
              >
-            `
+            `;
             resetButton = html`
-            <vaadin-button @click="${() => this._resetPathInput(inputId, endpoint.path)}" label="Reset the original path" >
+            <vaadin-button @click="${() => this._resetPathInput(inputId, endpoint.path)}" label=${msg('Reset the original path', { id: 'quarkus-websockets-next-reset-path' })}>
                <vaadin-icon icon="font-awesome-solid:rotate-right" style="padding: 0.25em"></vaadin-icon>
-               <vaadin-tooltip slot="tooltip" text="Reset the value to the original endpoint path"></vaadin-tooltip>
+               <vaadin-tooltip slot="tooltip" text=${msg('Reset the value to the original endpoint path', { id: 'quarkus-websockets-next-reset-tooltip' })}></vaadin-tooltip>
             </vaadin-button>
-            `
+            `;
         } else {
             inputPath = html`
             <vaadin-text-field
@@ -275,15 +281,15 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                 readonly
                 style="font-family: monospace;width: 15em;"
              >
-            `
+            `;
             resetButton = html``;
         }
         return html`
             ${inputPath}
             </vaadin-text-field>
-            <vaadin-button @click="${() => this._openDevConnection(inputId,endpoint)}" label="Open Dev UI connection">
-                Connect
-                <vaadin-tooltip slot="tooltip" text="Open new Dev UI connection"></vaadin-tooltip>
+            <vaadin-button @click="${() => this._openDevConnection(inputId,endpoint)}" label=${msg('Open Dev UI connection', { id: 'quarkus-websockets-next-open-dev-ui-connection' })}>
+                ${msg('Connect', { id: 'quarkus-websockets-next-connect' })}
+                <vaadin-tooltip slot="tooltip" text=${msg('Open new Dev UI connection', { id: 'quarkus-websockets-next-open-dev-ui-connection-tooltip' })}></vaadin-tooltip>
             </vaadin-button>
             ${resetButton}
         `;
@@ -320,12 +326,12 @@ export class QwcWebSocketNextEndpoints extends LitElement {
     _renderType(connection) {
         if(connection.devuiSocketKey) {
             return html`<vaadin-icon icon="font-awesome-solid:flask-vial" slot="prefix">
-                <vaadin-tooltip slot="tooltip" text="Dev UI connection"></vaadin-tooltip>
-            </vaadin-icon>`
+                <vaadin-tooltip slot="tooltip" text=${msg('Dev UI connection', { id: 'quarkus-websockets-next-dev-ui-connection' })}></vaadin-tooltip>
+            </vaadin-icon>`;
         } else {
             return html`<vaadin-icon icon="font-awesome-solid:gear" slot="prefix">
-                <vaadin-tooltip slot="tooltip" text="Regular connection"></vaadin-tooltip>
-            </vaadin-icon>`
+                <vaadin-tooltip slot="tooltip" text=${msg('Regular connection', { id: 'quarkus-websockets-next-regular-connection' })}></vaadin-tooltip>
+            </vaadin-icon>`;
         }
     }
 
@@ -352,7 +358,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
             return html`
             <vaadin-button @click=${() => this._showConnectionDetail(connection)}>
                 <vaadin-icon icon="font-awesome-solid:wrench"  style="padding: 0.25em" slot="prefix"></vaadin-icon>
-                Manage
+                ${msg('Manage', { id: 'quarkus-websockets-next-manage' })}
             </vaadin-button>
             `;    
         } else {
@@ -384,23 +390,23 @@ export class QwcWebSocketNextEndpoints extends LitElement {
         if (path) {
             this.jsonRpc.openDevConnection({"path": path, "endpointPath": endpoint.path}).then(jsonResponse => {
                 if (jsonResponse.result.success) {
-                    notifier.showSuccessMessage("Opened Dev UI connection");
+                    notifier.showSuccessMessage(msg('Opened Dev UI connection', { id: 'quarkus-websockets-next-opened-dev-ui-connection' }));
                     this._selectedEndpoint = endpoint;
                 } else {
-                    notifier.showErrorMessage("Unable to open Dev UI connection", "bottom-stretch");
+                    notifier.showErrorMessage(msg('Unable to open Dev UI connection', { id: 'quarkus-websockets-next-unable-open' }), "bottom-stretch");
                 }
             });
         } else {
-            notifier.showErrorMessage("Unable to obtain the endpoint path", "bottom-stretch");
+            notifier.showErrorMessage(msg('Unable to obtain the endpoint path', { id: 'quarkus-websockets-next-unable-obtain-path' }), "bottom-stretch");
         }
     }
     
     _closeDevConnection() {
        this.jsonRpc.closeDevConnection({"connectionKey": this._selectedConnection.devuiSocketKey}).then(jsonResponse => {
            if (jsonResponse.result.success) {
-              notifier.showSuccessMessage("Closed Dev UI connection");
+              notifier.showSuccessMessage(msg('Closed Dev UI connection', { id: 'quarkus-websockets-next-closed-dev-ui-connection' }));
            } else {
-              notifier.showErrorMessage("Unable to close Dev UI connection", "bottom-stretch");
+              notifier.showErrorMessage(msg('Unable to close Dev UI connection', { id: 'quarkus-websockets-next-unable-close' }), "bottom-stretch");
            }
            this._selectedConnection = null;
            this._showConnections(this._selectedEndpoint);
@@ -411,7 +417,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
         if (this._selectedConnection && this._selectedConnection.devuiSocketKey) {
             this.jsonRpc.clearMessages({"connectionKey": this._selectedConnection.devuiSocketKey}).then(jsonResponse => {
                if (!jsonResponse.result.success) {
-                  notifier.showErrorMessage("Unable to clear messages for Dev UI connection", "bottom-stretch");
+                  notifier.showErrorMessage(msg('Unable to clear messages for Dev UI connection', { id: 'quarkus-websockets-next-unable-clear-messages' }), "bottom-stretch");
                }
                this._textMessages = [];
            });
@@ -430,9 +436,9 @@ export class QwcWebSocketNextEndpoints extends LitElement {
         if (this._selectedConnection && this._selectedConnection.devuiSocketKey) {
             this.jsonRpc.sendTextMessage({"connectionKey": this._selectedConnection.devuiSocketKey, "message": e.detail.value}).then(jsonResponse => {
                 if (jsonResponse.result.success) {
-                    notifier.showSuccessMessage("Text message sent to Dev UI connection");
+                    notifier.showSuccessMessage(msg('Text message sent to Dev UI connection', { id: 'quarkus-websockets-next-message-sent' }));
                 } else {
-                    notifier.showErrorMessage("Unable to send text message to Dev UI connection", "bottom-stretch");
+                    notifier.showErrorMessage(msg('Unable to send text message to Dev UI connection', { id: 'quarkus-websockets-next-unable-send-message' }), "bottom-stretch");
                 }
             });
         }

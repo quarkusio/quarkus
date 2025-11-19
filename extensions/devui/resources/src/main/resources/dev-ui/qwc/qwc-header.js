@@ -18,9 +18,11 @@ import 'qui-assistant-warning';
 import { dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
+import './qwc-language-switch.js';
 import { assistantState } from 'assistant-state';
 import { StorageController } from 'storage-controller';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { msg, updateWhenLocaleChanges, getLocale, dynamicMsg } from 'localization';
 
 /**
  * This component represent the Dev UI Header
@@ -29,6 +31,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     storageControl = new StorageController(this);
     routerController = new RouterController(this);
     jsonRpc = new JsonRpc("report-issues", true);
+    _dot = "\u00B7";
     
     static styles = css`
         
@@ -109,6 +112,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         `;
 
     static properties = {
+        flagsVersion: {type: String},
         _title: {state: true},
         _subTitle: {state: true},
         _showWarning: {state: true},
@@ -121,6 +125,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._connectionDialogOpened = false;
         this._settingsDialogOpened = false;
         this._title = "Extensions";
@@ -215,8 +220,8 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         if(!connectionState.current.isConnected){
             return html`
             <vaadin-confirm-dialog
-                header="Server unreachable"
-                confirm-text="Retry"
+                header="${msg('Server unreachable', { id: 'disconnected-dialog-header' })}"
+                confirm-text="${msg('Retry', { id: 'disconnected-dialog-retry-button' })}"
                 .opened="${this._connectionDialogOpened}"
                 @opened-changed="${this._connectionDialogChanged}"
                 @confirm="${() => {
@@ -224,8 +229,9 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                     this.requestUpdate();
                 }}"
             >
-                It looks like the application is currently unavailable. After several reconnection attempts, we’re unable to connect.
-                Once the application is back online, click “Retry” to reconnect.
+            
+            ${msg('It looks like the application is currently unavailable. After several reconnection attempts, we’re unable to connect. Once the application is back online, click “Retry” to reconnect.', { id: 'disconnected-dialog-text' })}
+                
             </vaadin-confirm-dialog>`;
         }
     }
@@ -250,11 +256,11 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     _renderTitle(){
-        let dot = "\u00B7";
+        
         if(this._subTitle){
-            return html`<span class="title">${this._title}</span><span class="subtitle">${dot} ${this._subTitle} ${this._renderWarning()}</span>`;
+            return html`<span class="title">${dynamicMsg('menu', this._title)}</span><span class="subtitle">${this._dot} ${dynamicMsg('page', this._subTitle)} ${this._renderWarning()}</span>`;
         }else{
-            return html`<span class="title">${this._title}</span>`;
+            return html`<span class="title">${dynamicMsg('menu', this._title)}</span>`;
         }
     }
 
@@ -264,12 +270,8 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         }
     }
 
-    _renderThemeOptions(){
-        return html`<qwc-theme-switch></qwc-theme-switch>`;
-    }
-
     _renderRightSideSettings(){
-        return html`<vaadin-button theme="icon" aria-label="Settings" title="Settings" class="button" @click=${this._openSettingsDialog}>
+        return html`<vaadin-button theme="icon" aria-label="Settings" title="${msg('Settings', { id: 'settings-title' })}" class="button" @click=${this._openSettingsDialog}>
                         <vaadin-icon icon="font-awesome-solid:gear"></vaadin-icon>
                     </vaadin-button>`;
     }
@@ -372,46 +374,54 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                         <h2
                             class="draggable"
                             style="flex: 1; cursor: move; margin: 0; font-size: 1.5em; font-weight: bold; padding: var(--lumo-space-m) 0;">
-                        Settings
+                        ${msg('Settings', { id: 'settings-title' })}
                         </h2>
                         <vaadin-button theme="tertiary" @click="${this._closeSettingsDialog}">
                             <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
-                        </vaadin-button>`, []
+                        </vaadin-button>`, [getLocale()]
                 )}
                 ${dialogRenderer(
                     () => html`<vaadin-tabsheet style="width: 70vw; height: 70vh;">
                                     <vaadin-tabs slot="tabs" selected=${this._selectedSettingTab}>
                                         <vaadin-tab id="general-tab">
                                             <vaadin-icon icon="font-awesome-solid:wrench"></vaadin-icon>
-                                            <span>General</span>
+                                            <span>${msg('General', { id: 'settings-general' })}</span>
                                         </vaadin-tab>
                                         <vaadin-tab id="storage-tab">
                                             <vaadin-icon icon="font-awesome-solid:database"></vaadin-icon>
-                                            <span>Storage</span>
+                                            <span>${msg('Storage', { id: 'settings-storage' })}</span>
                                         </vaadin-tab>
                                         ${this._renderDynamicSettingsTabs()}
                                     </vaadin-tabs>
 
                                     <div tab="general-tab">
-                                        <h4> Theme </h4>
-                                        <qwc-theme-switch></qwc-theme-switch>
+                                        <div style="display: flex;justify-content: space-between;">
+                                            <div>
+                                                <h4> ${msg('Theme', { id: 'theme-label' })} </h4>
+                                                <qwc-theme-switch></qwc-theme-switch>
+                                            </div>
+                                            <div style="padding-right: 150px;">
+                                                <h4> ${msg('Language', { id: 'language-label' })} </h4>
+                                                <qwc-language-switch flagsVersion="${this.flagsVersion}"></qwc-language-switch>
+                                            </div>
+                                        </div>        
                                         <hr style="color:var(--lumo-contrast-5pct);"/>
-                                        <h4> Bugs / Features </h4>
+                                        <h4>${msg('Bugs / Features', { id: 'bugs-feature-label' })}</h4>
                                         <div style="display: flex; flex-direction: column;align-items: baseline;">
                                             <vaadin-button theme="tertiary" @click="${this._reportBug}" style="color: var(--lumo-body-text-color);">
                                                 <vaadin-icon icon="font-awesome-solid:bug" slot="prefix"></vaadin-icon>
-                                                Report a bug
+                                                ${msg('Report a bug', { id: 'report-bug' })}
                                             </vaadin-button>
                                             <vaadin-button theme="tertiary" @click="${this._reportFeature}" style="color: var(--lumo-body-text-color);">
                                                 <vaadin-icon icon="font-awesome-solid:plug-circle-plus" slot="prefix"></vaadin-icon>
-                                                Request a new feature/enhancement
+                                                ${msg('Request a new feature/enhancement', { id: 'request-feature' })}
                                             </vaadin-button>
                                         </div>
                                     </div>
                                     <div tab="storage-tab">
                                         <vaadin-grid .items="${this._relevantLocalStorageItems}" theme="no-border">
-                                            <vaadin-grid-sort-column path="key"></vaadin-grid-sort-column>
-                                            <vaadin-grid-sort-column path="value"
+                                            <vaadin-grid-sort-column path="key" header="${msg('Name', { id: 'storage-name' })}"></vaadin-grid-sort-column>
+                                            <vaadin-grid-sort-column path="value" header="${msg('Value', { id: 'storage-value' })}"
                                                 ${columnBodyRenderer(
                                                       (item) => html`<div style="white-space: normal; word-break: break-word;">${item.value}</div>`
                                                 )}>
@@ -426,7 +436,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                                     </div>
                                     ${this._renderDynamicSettingsContents()}
                                 </vaadin-tabsheet>
-                        `, [this._settingsDialogOpened, this._relevantLocalStorageItems]
+                        `, [this._settingsDialogOpened, this._relevantLocalStorageItems, getLocale()]
                 )}
             ></vaadin-dialog>`;
     }
@@ -444,7 +454,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         this._tabIndexById.set(tabid, i);
         return html`<vaadin-tab id="${tabid}">
                         <vaadin-icon icon="${settingItem.icon}"></vaadin-icon>
-                        <span>${settingItem.title}</span>
+                        <span>${dynamicMsg('settings', settingItem.title)}</span>
                     </vaadin-tab>`;
     }
     
@@ -455,7 +465,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
     }
 
     _renderDynamicSettingsContent(settingItem, index){
-        let dynamicTab = `<${settingItem.componentName} title="${settingItem.title}" namespace="${settingItem.namespace}"></${settingItem.componentName}>`;
+        let dynamicTab = `<${settingItem.componentName} title="${dynamicMsg('settings', settingItem.title)}" namespace="${settingItem.namespace}"></${settingItem.componentName}>`;
         return html`<div tab="${settingItem.id}-tab">
                         ${unsafeHTML(dynamicTab)}
                     </div>`;

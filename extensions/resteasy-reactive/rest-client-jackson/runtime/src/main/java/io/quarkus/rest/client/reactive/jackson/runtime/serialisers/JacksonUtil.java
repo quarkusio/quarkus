@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.jackson.runtime.serialisers;
 
+import java.lang.annotation.Annotation;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -10,6 +12,7 @@ import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 final class JacksonUtil {
@@ -52,5 +55,20 @@ final class JacksonUtil {
         }
 
         return null;
+    }
+
+    static Optional<Class<?>> matchingView(Annotation[] annotations) {
+        if (annotations == null) {
+            return Optional.empty();
+        }
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType() == JsonView.class) {
+                Class<?>[] views = ((JsonView) annotation).value();
+                if (views != null && views.length > 0 && views[0] != null) {
+                    return Optional.of(views[0]);
+                }
+            }
+        }
+        return Optional.empty();
     }
 }

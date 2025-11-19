@@ -4,7 +4,7 @@
 
 By default, the tests of this module are disabled.
 
-To run the tests in a standard JVM with MS SQL started as a Docker container, you can run the following command:
+To run the tests in a standard JVM with MS SQL started as a Dev Service, you can run the following command:
 
 ```
 mvn clean install -Dtest-containers -Dstart-containers
@@ -16,10 +16,10 @@ Additionally, you can generate a native image and run the tests for this native 
 mvn clean install -Dtest-containers -Dstart-containers -Dnative
 ```
 
-If you don't want to run MS SQL as a Docker container, you can start your own.
+If you don't want to run MS SQL as a Dev Service, you can start your own.
 It needs to listen on port 1435 and be accessible to the user `sa` with the password `yourStrong(!)Password`.
 
-You can then run the tests as follows (either with `-Dnative` or not):
+You can then run the tests as follows (either with `-Dnative` or not), remembering to add extra configuration for the JDBC url:
 
 ```
 mvn clean install -Dtest-containers

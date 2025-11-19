@@ -24,7 +24,7 @@
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.1.0</dokka.version>
         <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.9.6</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.9.7</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
@@ -63,7 +63,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.11</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.1.0</gradle-wrapper.version>
+        <gradle-wrapper.version>9.2.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -104,7 +104,7 @@
 
         <assertj.version>3.27.6</assertj.version>
 
-        <wiremock.version>3.13.1</wiremock.version>
+        <wiremock.version>3.13.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -114,7 +114,7 @@
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.47.0</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.48.0</docker-maven-plugin.version>
         <maven-invoker-plugin.version>3.9.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->

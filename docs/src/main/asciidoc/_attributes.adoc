@@ -19,7 +19,6 @@
 :logstash-image: ${logstash.image}
 :kibana-image: ${kibana.image}
 :keycloak-docker-image: ${keycloak.docker.image}
-:keycloak-server-version: ${keycloak.server.version}
 :jandex-version: ${jandex.version}
 :jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
 :kotlin-version: ${kotlin.version}

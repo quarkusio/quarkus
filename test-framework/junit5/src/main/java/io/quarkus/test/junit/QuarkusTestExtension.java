@@ -65,7 +65,6 @@ import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
@@ -161,8 +160,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
-        JBossVersion.disableVersionLogging();
-
         // TODO we should do much less of this, because it's being done upfront by the interceptor
         TracingHandler.quarkusStarting();
         hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {

@@ -67,7 +67,6 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
@@ -90,7 +89,6 @@ public class QuarkusUnitTest
     private Handler[] originalHandlers;
 
     static {
-        JBossVersion.disableVersionLogging();
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
         rootLogger = (Logger) LogManager.getLogManager().getLogger("");
     }

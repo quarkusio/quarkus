@@ -1375,16 +1375,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
 
                         if (tokens.getIdToken() == null) {
-                            if (isIdTokenRequired(configContext) || !isInternalIdToken(currentIdToken, configContext)) {
-                                if (!autoRefresh) {
-                                    LOG.debugf(
-                                            "ID token is not returned in the refresh token grant response, re-authentication is required");
-                                    throw new AuthenticationFailedException(tokenMap(currentIdToken));
-                                } else {
-                                    // Auto-refresh is triggered while current ID token is still valid, continue using it.
-                                    tokens.setIdToken(currentIdToken);
-                                }
+                            if (autoRefresh) {
+                                // Auto-refresh is triggered while current ID token is still valid, continue using it.
+                                tokens.setIdToken(currentIdToken);
+                            } else if (isIdTokenRequired(configContext)) {
+                                LOG.debugf(
+                                        "Required ID token is not returned in the refresh token grant response, re-authentication is required");
+                                throw new AuthenticationFailedException(tokenMap(currentIdToken));
                             } else {
+                                if (!isInternalIdToken(currentIdToken, configContext)) {
+                                    LOG.debugf(
+                                            "OIDC provider issued an ID token after the authorization code flow completion but did not refresh it,"
+                                                    + " an internal ID token will be generated");
+                                }
                                 tokens.setIdToken(generateInternalIdToken(configContext, null, currentIdToken,
                                         tokens.getAccessTokenExpiresIn()));
                             }

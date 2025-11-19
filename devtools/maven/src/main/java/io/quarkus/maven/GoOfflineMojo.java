@@ -64,10 +64,10 @@ public class GoOfflineMojo extends AbstractMojo {
 
     /**
      * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependencies should be resolved.
-     * {@code io.quarkus.runtime.LaunchMode.TEST} is the default, since it includes both {@code provided} and {@code test}
-     * dependency scopes.
+     * {@code all} is the default, since it includes both {@code provided} and {@code test}
+     * dependency scopes and also the dependencies required by dev mode.
      */
-    @Parameter(property = "mode", required = false, defaultValue = "test")
+    @Parameter(property = "mode", required = false, defaultValue = "all")
     String mode;
 
     @Override
@@ -82,7 +82,11 @@ public class GoOfflineMojo extends AbstractMojo {
         final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(resolver);
 
         final Set<String> excludedScopes;
-        if (mode.equalsIgnoreCase("test")) {
+        if (mode.equals("all")) {
+            appModelResolver.setDevMode(true);
+            appModelResolver.setTest(true);
+            excludedScopes = Set.of();
+        } else if (mode.equalsIgnoreCase("test")) {
             appModelResolver.setTest(true);
             excludedScopes = Set.of();
         } else if (mode.equalsIgnoreCase("dev") || mode.equalsIgnoreCase("development")) {

@@ -37,7 +37,6 @@ import io.quarkus.bootstrap.model.JvmOptions;
 import io.quarkus.bootstrap.model.JvmOptionsBuilder;
 import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.smallrye.common.process.ProcessUtil;
 
 public class DevModeCommandLineBuilder {
@@ -348,8 +347,6 @@ public class DevModeCommandLineBuilder {
     }
 
     public DevModeCommandLine build() throws Exception {
-        JBossVersion.disableVersionLogging();
-
         //build a class-path string for the base platform
         //this stuff does not change
         // Do not include URIs in the manifest, because some JVMs do not like that

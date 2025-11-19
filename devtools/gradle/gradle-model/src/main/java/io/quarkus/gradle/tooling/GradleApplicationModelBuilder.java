@@ -518,7 +518,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private void initProjectModuleAndBuildPaths(final Project project,
             ResolvedArtifact resolvedArtifact, ApplicationModelBuilder appModel, final ResolvedDependencyBuilder appDep) {
-
+        if (project == null) {
+            System.err.println("Error: could not find project for " + resolvedArtifact.getId().getDisplayName());
+            throw new IllegalStateException("Could not find project for " + resolvedArtifact.getId().getDisplayName());
+        }
         appDep.setWorkspaceModule().setReloadable();
 
         if (appDep.getWorkspaceModule() == null) {

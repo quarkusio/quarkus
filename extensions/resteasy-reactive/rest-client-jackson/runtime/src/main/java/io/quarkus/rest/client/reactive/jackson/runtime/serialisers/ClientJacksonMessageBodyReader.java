@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -42,17 +43,18 @@ public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReade
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
-        return doRead(type, genericType, mediaType, entityStream, null);
+        return doRead(type, genericType, mediaType, annotations, entityStream, null);
     }
 
-    private Object doRead(Class<Object> type, Type genericType, MediaType mediaType, InputStream entityStream,
+    private Object doRead(Class<Object> type, Type genericType, MediaType mediaType, Annotation[] annotations,
+            InputStream entityStream,
             RestClientRequestContext context)
             throws IOException {
         try {
             if (entityStream instanceof EmptyInputStream) {
                 return null;
             }
-            ObjectReader reader = getEffectiveReader(mediaType, context);
+            ObjectReader reader = getEffectiveReader(mediaType, annotations, context);
             return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
                     .readValue(entityStream);
 
@@ -68,20 +70,31 @@ public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReade
             MultivaluedMap<String, String> httpHeaders,
             InputStream entityStream,
             RestClientRequestContext context) throws java.io.IOException, jakarta.ws.rs.WebApplicationException {
-        return doRead(type, genericType, mediaType, entityStream, context);
+        return doRead(type, genericType, mediaType, annotations, entityStream, context);
     }
 
-    private ObjectReader getEffectiveReader(MediaType responseMediaType, RestClientRequestContext context) {
+    private ObjectReader getEffectiveReader(MediaType responseMediaType, Annotation[] annotations,
+            RestClientRequestContext context) {
         ObjectMapper effectiveMapper = getObjectMapperFromContext(responseMediaType, context);
         if (effectiveMapper == null) {
             return defaultReader;
         }
 
-        return objectReaderMap.computeIfAbsent(effectiveMapper, new Function<>() {
+        return applyJsonViewIfPresent(objectReaderMap.computeIfAbsent(effectiveMapper, new Function<>() {
             @Override
             public ObjectReader apply(ObjectMapper objectMapper) {
                 return objectMapper.reader();
             }
-        });
+        }), annotations);
     }
+
+    private static ObjectReader applyJsonViewIfPresent(ObjectReader reader, Annotation[] annotations) {
+        Optional<Class<?>> maybeView = JacksonUtil.matchingView(annotations);
+        if (maybeView.isPresent()) {
+            return reader.withView(maybeView.get());
+        } else {
+            return reader;
+        }
+    }
+
 }

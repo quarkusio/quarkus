@@ -5,6 +5,7 @@ import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSI
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,10 +24,16 @@ import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
-    private static volatile Map<String, String> entityToPersistenceUnit = Collections.emptyMap();
+    private static final Map<String, String> entityToPersistenceUnit = new HashMap<>();
 
-    public static void setEntityToPersistenceUnit(Map<String, String> map) {
-        entityToPersistenceUnit = Collections.unmodifiableMap(map);
+    // Putting synchronized here because fields involved were marked as volatile initially,
+    // so I expect recorders can be called concurrently?
+    public static void addEntityTypesToPersistenceUnit(Map<String, String> map) {
+        // Note: this may be called multiple times if an app uses both Java and Kotlin.
+        // We don't really test what happens if entities are defined both in Java and Kotlin at the moment,
+        // so we mostly care about the case where this gets called once with an empty map, and once with a non-empty map:
+        // in that case, we don't want the empty map to erase the other one.
+        entityToPersistenceUnit.putAll(map);
     }
 
     // FIXME: make it configurable?

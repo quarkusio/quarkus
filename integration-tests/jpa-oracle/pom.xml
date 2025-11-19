@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - JPA - Oracle</name>
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
-    <properties>
-        <oracledb.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</oracledb.url>
-    </properties>
-
     <dependencies>
         <!-- Enables the JPA capabilities -->
         <dependency>
@@ -188,59 +184,6 @@
             </activation>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>${oracle.image}</name>
-                                    <run>
-                                        <ports>
-                                            <port>1521:1521</port>
-                                        </ports>
-                                        <env>
-                                            <ORACLE_PASSWORD>hibernate_orm_test</ORACLE_PASSWORD>
-                                        </env>
-                                        <log>
-                                            <prefix>Oracle Database: </prefix>
-                                            <date>default</date>
-                                            <color>red</color>
-                                        </log>
-                                        <wait>
-                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
-                                            <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
-                                            <time>60000</time>
-                                            <!-- leverage the healthcheck in the image we use -->
-                                            <healthy>yes</healthy>
-                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
-                                            <!--<log>DATABASE IS READY TO USE!</log>-->
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                            <!--Stops all Oracle DB images currently running, not just those we just started.
-                              Useful to stop processes still running from a previously failed integration test run -->
-                            <allContainers>true</allContainers>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>

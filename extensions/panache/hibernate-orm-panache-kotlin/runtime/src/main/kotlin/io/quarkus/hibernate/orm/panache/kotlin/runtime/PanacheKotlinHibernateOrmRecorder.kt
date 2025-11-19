@@ -5,10 +5,10 @@ import io.quarkus.runtime.annotations.Recorder
 
 @Recorder
 open class PanacheKotlinHibernateOrmRecorder {
-    open fun setEntityToPersistenceUnit(
+    open fun addEntityTypesToPersistenceUnit(
         entityToPersistenceUnit: Map<String?, String?>?,
         incomplete: Boolean,
     ) {
-        AbstractJpaOperations.setEntityToPersistenceUnit(entityToPersistenceUnit, incomplete)
+        AbstractJpaOperations.addEntityTypesToPersistenceUnit(entityToPersistenceUnit, incomplete)
     }
 }

@@ -50,7 +50,7 @@
         <smallrye-config.version>3.14.1</smallrye-config.version>
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.2.1</smallrye-open-api.version>
+        <smallrye-open-api.version>4.2.2</smallrye-open-api.version>
         <smallrye-graphql.version>2.16.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
@@ -89,10 +89,10 @@
         <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.9.0</gizmo.version>
-        <gizmo2.version>2.0.0.Beta8</gizmo2.version>
+        <gizmo2.version>2.0.0.Beta10</gizmo2.version>
         <jackson-bom.version>2.20.1</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <commons-lang3.version>3.19.0</commons-lang3.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-codec.version>1.20.0</commons-codec.version>
         <classmate.version>1.7.1</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
@@ -111,7 +111,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.7.0.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.3.Final</jboss-marshalling.version>
-        <jboss-threads.version>3.9.1</jboss-threads.version>
+        <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>4.5.22</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
@@ -182,7 +182,7 @@
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.52.0</checker-qual.version>
         <error-prone-annotations.version>2.44.0</error-prone-annotations.version>
-        <jib-core.version>0.27.3</jib-core.version>
+        <jib-core.version>0.28.1</jib-core.version>
         <google-http-client.version>1.47.1</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.7</picocli.version>
@@ -5835,7 +5835,6 @@
                 <groupId>org.infinispan</groupId>
                 <artifactId>infinispan-core</artifactId>
                 <version>${infinispan.version}</version>
-                <classifier>jakarta</classifier>
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>

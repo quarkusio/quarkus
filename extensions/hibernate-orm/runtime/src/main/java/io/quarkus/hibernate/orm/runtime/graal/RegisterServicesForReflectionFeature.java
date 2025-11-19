@@ -7,7 +7,7 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 /**
- * Makes methods of reachable hibernate services accessible through {@link Class#getMethods()}.
+ * Makes methods of reachable Hibernate services accessible through {@link Class#getMethods()}.
  *
  * See <a href="https://github.com/quarkusio/quarkus/issues/45525">Github issue #45525</a>.
  */
@@ -15,7 +15,7 @@ public class RegisterServicesForReflectionFeature implements Feature {
 
     @Override
     public String getDescription() {
-        return "Makes methods of reachable hibernate services accessible through getMethods()`";
+        return "Makes methods of reachable Hibernate services accessible through Class#getMethods()";
     }
 
     // The {@code duringAnalysis} method is invoked multiple times and increases the set of reachable types, thus we

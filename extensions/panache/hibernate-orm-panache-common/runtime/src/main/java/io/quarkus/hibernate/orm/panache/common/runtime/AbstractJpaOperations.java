@@ -25,12 +25,22 @@ import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
-    private static volatile Map<String, String> entityToPersistenceUnit = Collections.emptyMap();
-    private static volatile boolean entityToPersistenceUnitIsIncomplete = true;
+    private static final Map<String, String> entityToPersistenceUnit = new HashMap<>();
+    private static volatile Boolean entityToPersistenceUnitIsIncomplete = null;
 
-    public static void setEntityToPersistenceUnit(Map<String, String> map, boolean incomplete) {
-        entityToPersistenceUnit = Collections.unmodifiableMap(map);
-        entityToPersistenceUnitIsIncomplete = incomplete;
+    // Putting synchronized here because fields involved were marked as volatile initially,
+    // so I expect recorders can be called concurrently?
+    public static synchronized void addEntityTypesToPersistenceUnit(Map<String, String> map, boolean incomplete) {
+        // Note: this may be called multiple times if an app uses both Java and Kotlin.
+        // We don't really test what happens if entities are defined both in Java and Kotlin at the moment,
+        // so we mostly care about the case where this gets called once with an empty map, and once with a non-empty map:
+        // in that case, we don't want the empty map to erase the other one.
+        entityToPersistenceUnit.putAll(map);
+        if (entityToPersistenceUnitIsIncomplete == null) {
+            entityToPersistenceUnitIsIncomplete = incomplete;
+        } else {
+            entityToPersistenceUnitIsIncomplete = entityToPersistenceUnitIsIncomplete || incomplete;
+        }
     }
 
     protected abstract PanacheQueryType createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
@@ -58,7 +68,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         String clazzName = clazz.getName();
         String persistentUnitName = entityToPersistenceUnit.get(clazzName);
         if (persistentUnitName == null) {
-            if (entityToPersistenceUnitIsIncomplete) {
+            if (entityToPersistenceUnitIsIncomplete == null || entityToPersistenceUnitIsIncomplete) {
                 // When using persistence.xml, `entityToPersistenceUnit` is most likely empty,
                 // so we'll just return the default PU and hope for the best.
                 // The error will be thrown later by Hibernate ORM if necessary;

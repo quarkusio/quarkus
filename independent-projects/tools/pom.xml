@@ -41,7 +41,7 @@
         <!-- When updating gradle-wrapper.version, make sure to also update files in
              independent-projects/tools/base-codestarts/src/main/resources/codestarts
              /quarkus/tooling/gradle-wrapper/base/gradle -->
-        <gradle-wrapper.version>9.1.0</gradle-wrapper.version>
+        <gradle-wrapper.version>9.2.1</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.14.1</compiler-plugin.version>

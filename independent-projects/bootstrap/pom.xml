@@ -55,7 +55,7 @@
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <commons-codec.version>1.20.0</commons-codec.version>
         <commons-io.version>2.21.0</commons-io.version>
-        <commons-lang.version>3.19.0</commons-lang.version>
+        <commons-lang.version>3.20.0</commons-lang.version>
         <guava.version>33.5.0-jre</guava.version>
         <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
         <j2objc.annotations.version>2.8</j2objc.annotations.version><!-- keep in sync with guava.version -->
@@ -72,7 +72,7 @@
         <plexus-utils.version>3.5.1</plexus-utils.version>
         <smallrye-common.version>2.14.0</smallrye-common.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
-        <gradle-tooling.version>9.1.0</gradle-tooling.version>
+        <gradle-tooling.version>9.2.1</gradle-tooling.version>
         <quarkus-fs-util.version>1.2.0</quarkus-fs-util.version>
         <crac.version>1.5.0</crac.version>
     </properties>

@@ -183,7 +183,7 @@ quarkus.oidc.credentials.client-secret.provider.keyring-name=oidc
 quarkus.oidc.credentials.jwt.secret-provider.name=oidc-credentials-provider
 ----
 
-Example of `private_key_jwt` with the PEM key inlined in application.properties, and where the signature algorithm is `RS256`:
+.Example of `private_key_jwt` with the PEM key inlined in application.properties, and where the signature algorithm is `RS256`:
 
 [source,properties]
 ----
@@ -192,7 +192,7 @@ quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key=Base64-encoded private key representation
 ----
 
-Example of `private_key_jwt` with the PEM key file, and where the signature algorithm is RS256:
+.Example of `private_key_jwt` with the PEM key file, and where the signature algorithm is RS256:
 
 [source,properties]
 ----

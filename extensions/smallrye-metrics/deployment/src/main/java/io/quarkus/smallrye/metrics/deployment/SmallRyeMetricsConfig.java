@@ -19,6 +19,13 @@ public interface SmallRyeMetricsConfig {
     String path();
 
     /**
+     * If the extension should be enabled even if deprecated and scheduled for removal.
+     */
+    @WithName("deprecated.enabled")
+    @WithDefault("false")
+    boolean deprecatedEnabled();
+
+    /**
      * Whether metrics published by Quarkus extensions should be enabled.
      */
     @WithName("extensions.enabled")

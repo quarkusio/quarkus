@@ -345,7 +345,7 @@ You can ignore the `docker-compose` instructions here, as well as the Apicurio R
 
 Create a `docker-compose.yaml` file at the root of the project with the following content:
 
-[source,yaml]
+[source,yaml,subs=attributes+]
 ----
 services:
 
@@ -361,7 +361,7 @@ services:
       LOG_DIR: "/tmp/logs"
 
   schema-registry:
-    image: apicurio/apicurio-registry-mem:2.6.13.Final
+    image: {apicurio-registry-image}
     ports:
       - 8081:8080
     depends_on:

@@ -20,6 +20,7 @@
 :kibana-image: ${kibana.image}
 :keycloak-image: ${keycloak.docker.image}
 :amqp-image: ${amqp.image}
+:apicurio-registry-image: ${apicurio-registry.image}
 :jandex-version: ${jandex.version}
 :jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
 :kotlin-version: ${kotlin.version}

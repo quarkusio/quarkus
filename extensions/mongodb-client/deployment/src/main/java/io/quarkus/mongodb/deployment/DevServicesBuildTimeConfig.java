@@ -3,6 +3,7 @@ package io.quarkus.mongodb.deployment;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
@@ -22,6 +23,7 @@ public interface DevServicesBuildTimeConfig {
     /**
      * The container image name to use, for container based DevServices providers.
      */
+    @ConfigDocDefault(value = "`{mongo-image}`", escape = false)
     Optional<String> imageName();
 
     /**

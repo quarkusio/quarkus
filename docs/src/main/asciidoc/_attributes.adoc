@@ -22,6 +22,7 @@
 :amqp-image: ${amqp.image}
 :apicurio-registry-image: ${apicurio-registry.image}
 :narayana-lra-image: ${narayana-lra.image}
+:mongo-image: ${mongo.image}
 :jandex-version: ${jandex.version}
 :jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
 :kotlin-version: ${kotlin.version}

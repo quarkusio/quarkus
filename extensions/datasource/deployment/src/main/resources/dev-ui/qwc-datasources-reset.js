@@ -11,6 +11,7 @@ import '@vaadin/grid';
 import 'qui-alert';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 import {datasources} from 'build-time-data';
 
@@ -42,6 +43,11 @@ export class QwcDatasourcesReset extends LitElement {
         "_message": {state: true}
     }
 
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._ds = datasources;
@@ -51,7 +57,7 @@ export class QwcDatasourcesReset extends LitElement {
         if (this._ds) {
             return this._renderDataSourceTable();
         } else {
-            return html`<span>Loading datasources...</span>`;
+            return html`<span>${msg('Loading datasources...', { id: 'quarkus-datasource-loading-datasources' })}</span>`;
         }
     }
 
@@ -60,11 +66,11 @@ export class QwcDatasourcesReset extends LitElement {
                 ${this._message}
                 <vaadin-grid .items="${this._ds}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
-                                        header="Name"
+                                        header=${msg('Name', { id: 'quarkus-datasource-name' })}
                                         ${columnBodyRenderer(this._nameRenderer, [])}>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
-                                        header="Action"
+                                        header=${msg('Action', { id: 'quarkus-datasource-action' })}
                                         ${columnBodyRenderer(this._actionRenderer, [])}
                                         resizable>
                     </vaadin-grid-column>
@@ -74,7 +80,7 @@ export class QwcDatasourcesReset extends LitElement {
     _actionRenderer(ds) {
         return html`
             <vaadin-button theme="small" @click=${() => this._reset(ds)} class="button">
-                <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> Reset
+                <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> ${msg('Reset', { id: 'quarkus-datasource-reset' })}
             </vaadin-button>`;
     }
 
@@ -86,11 +92,11 @@ export class QwcDatasourcesReset extends LitElement {
         this._message = '';
         this.jsonRpc.reset({ds: ds}).then(jsonRpcResponse => {
             if (ds === "<default>") {
-                ds = "default"
+                ds = "default";
             }
             this._message = html`<qui-alert level="success" showIcon>
-                                    <span>The datasource <code>${ds}</code> has been cleared.</span>
-                                 </qui-alert>`
+                                    <span>${msg(str`The datasource ${ds} has been cleared.`, { id: 'quarkus-datasource-cleared' })}</span>
+                                 </qui-alert>`;
         });
     }
 

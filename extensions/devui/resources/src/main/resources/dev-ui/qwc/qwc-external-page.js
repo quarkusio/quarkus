@@ -4,6 +4,7 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import 'qui-themed-code-block';
 import '@vaadin/progress-bar';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component loads an external page
@@ -32,6 +33,11 @@ export class QwcExternalPage extends LitElement {
         _mode: {type: String},
         _mimeType: {type: String}
     };
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
 
     connectedCallback() {
         super.connectedCallback();
@@ -66,7 +72,7 @@ export class QwcExternalPage extends LitElement {
         }else {
             return html`
                 <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                    <div>Loading content...</div>
+                    <div>${msg('Loading content...', { id: 'external-loading' })}</div>
                     <vaadin-progress-bar indeterminate></vaadin-progress-bar>
                 </div>`;
         }
@@ -99,7 +105,7 @@ export class QwcExternalPage extends LitElement {
 
     _loadExternal(){
         if(this._mode){
-            if(this._mode == "html" || this._mode == "pdf"){
+            if(this._mode === "html" || this._mode === "pdf"){
                 return html`<object type='${this._mimeType}'
                                 data='${this._externalUrl}' 
                                 width='100%' 
@@ -109,7 +115,7 @@ export class QwcExternalPage extends LitElement {
                 return html`<div class="codeBlock">
                             <span class="download" @click="${this._download}" title="${this._externalUrl}">
                                 <vaadin-icon class="icon" icon="font-awesome-solid:download"></vaadin-icon>
-                                Download
+                                ${msg('Download', { id: 'external-download' })}
                             </span>
                             <qui-themed-code-block 
                                 mode='${this._mode}'

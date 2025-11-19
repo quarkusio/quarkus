@@ -19,7 +19,7 @@ export class QwcDataTablePage extends LitElement {
     static properties = {
         _buildTimeDataKey: {attribute: false},
         _buildTimeData: {attribute: false},
-        _cols: {attribute: false},
+        _cols: {attribute: false}
     };
 
     connectedCallback() {

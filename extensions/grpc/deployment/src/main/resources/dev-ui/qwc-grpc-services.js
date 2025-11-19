@@ -14,6 +14,7 @@ import '@vaadin/split-layout';
 import 'qui-badge';
 import 'qui-ide-link';
 import '@vaadin/button';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Grpc Services
@@ -66,6 +67,7 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this._detailsOpenedItem = [];
         this._streamsMap = new Map();
         this._testerContent = '';
@@ -104,26 +106,26 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
                         >
 
                     <vaadin-grid-column width="25px"
-                        header="Status"
+                        header=${msg('Status', { id: 'quarkus-grpc-status' })}
                         ${columnBodyRenderer(this._statusRenderer, [])}>
                     </vaadin-grid-column>
 
                     <vaadin-grid-sort-column auto-width
-                        header="Name"
+                        header=${msg('Name', { id: 'quarkus-grpc-name' })}
                         path="name"
                         ${columnBodyRenderer(this._nameRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column auto-width
-                        header="Implementation Class"
+                        header=${msg('Implementation Class', { id: 'quarkus-grpc-implementation-class' })}
                         path="serviceClass"            
                         ${columnBodyRenderer(this._serviceClassRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
             
                     <vaadin-grid-column auto-width
-                        header="Methods"
+                        header=${msg('Methods', { id: 'quarkus-grpc-methods' })}
                         ${columnBodyRenderer(this._methodsRenderer, [])}>
                     </vaadin-grid-column>
             
@@ -233,15 +235,15 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     _renderCommandButtons(service, method){
         if(this._streamsMap.size >=0){
             if(method.type == 'UNARY' || method.type == 'SERVER_STREAMING'){
-                return html`<vaadin-button theme="secondary error" @click=${() => this._default(service.name, method)}>Reset</vaadin-button>
-                            <vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Send</vaadin-button>`;
+                return html`<vaadin-button theme="secondary error" @click=${() => this._default(service.name, method)}>${msg('Reset', { id: 'quarkus-grpc-reset' })}</vaadin-button>
+                            <vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>${msg('Send', { id: 'quarkus-grpc-send' })}</vaadin-button>`;
             }else if(this._isRunning(service.name, method)){
-                return html`<vaadin-button theme="secondary error" @click=${() => this._default(service.name, method)}>Reset</vaadin-button>
-                            <vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Send</vaadin-button>
-                            <vaadin-button theme="secondary error" @click=${() => this._disconnect(service, method)}>Disconnect</vaadin-button>
+                return html`<vaadin-button theme="secondary error" @click=${() => this._default(service.name, method)}>${msg('Reset', { id: 'quarkus-grpc-reset' })}</vaadin-button>
+                            <vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>${msg('Send', { id: 'quarkus-grpc-send' })}</vaadin-button>
+                            <vaadin-button theme="secondary error" @click=${() => this._disconnect(service, method)}>${msg('Disconnect', { id: 'quarkus-grpc-disconnect' })}</vaadin-button>
                             <vaadin-progress-bar class="progress-short" indeterminate></vaadin-progress-bar>`;
             }else {
-                return html`<vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Send</vaadin-button>`;
+                return html`<vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>${msg('Send', { id: 'quarkus-grpc-send' })}</vaadin-button>`;
             }
         }
     }

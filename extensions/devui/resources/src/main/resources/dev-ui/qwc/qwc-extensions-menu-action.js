@@ -2,8 +2,10 @@ import { LitElement, html, css} from 'lit';
 import { StorageController } from 'storage-controller';
 import '@vaadin/popover';
 import '@vaadin/vertical-layout';
+import '@vaadin/item';
+import '@vaadin/list-box';
 import { popoverRenderer } from '@vaadin/popover/lit.js';
-
+import { msg, updateWhenLocaleChanges, dynamicMsg } from 'localization';
 
 /**
  * This is the menu action on the Extensions menu
@@ -24,6 +26,7 @@ export class QwcExtensionsMenuAction extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._filteritems = ["Favorites","Active","Inactive"];
         window.addEventListener('storage-changed', (event) => {
             this._storageChange(event);
@@ -36,19 +39,19 @@ export class QwcExtensionsMenuAction extends LitElement {
     }
 
     render(){
-        return html`<vaadin-button id="filterButton" theme="icon tertiary small" aria-label="Filter" title="Filter extension cards" class="actionBtn">
+        return html`<vaadin-button id="filterButton" theme="icon tertiary small" aria-label="Filter" title="${msg('Filter extension cards', { id: 'extensions-filter-cards' })}" class="actionBtn">
                         <vaadin-icon icon="font-awesome-solid:filter"></vaadin-icon>
                     </vaadin-button>
                     <vaadin-popover
                         for="filterButton"
                         .position="bottom-start"
                         .position="${this.position}"
-                        ${popoverRenderer(this._renderFilters)}
+                        ${popoverRenderer(this._renderFilters, [this._filteritems])}
                     ></vaadin-popover>`;
     }
 
-    _renderFilters = () => {
-    return html`
+    _renderFilters(){
+        return html`
             <vaadin-list-box multiple
                 .selectedValues="${this._selectedFilters}"
                 @selected-values-changed="${this._onFilterChange}">
@@ -58,7 +61,7 @@ export class QwcExtensionsMenuAction extends LitElement {
     }
 
     _renderFilter(filter){
-        return html`<vaadin-item>${filter}</vaadin-item>`;
+        return html`<vaadin-item>${dynamicMsg('extensions', filter)}</vaadin-item>`;
     }
 
     _getStoredFilters(){

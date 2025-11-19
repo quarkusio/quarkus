@@ -1,5 +1,6 @@
 import { LitElement, html, css} from 'lit';
 import {ring} from 'ldrs';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 ring.register();
 
@@ -24,6 +25,7 @@ export class QwcContinuousTestingMenuAction extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._ctState = "stopped";
     }
 
@@ -43,15 +45,15 @@ export class QwcContinuousTestingMenuAction extends LitElement {
 
     render(){
         let icon = "stop";
-        let title = "Stop";
+        let title = msg('Stop', { id: 'continuoustesting-stop' });
         if(this._ctState === "stopped"){
             icon = "play";
-            title = "Start";
+            title = msg('Start', { id: 'continuoustesting-start' });
         }
 
         if(this._ctState === "stopped" || this._ctState === "started"){
             return html`<vaadin-button 
-                            title="${title} Continuous Testing " class="actionBtn"
+                            title="${title} ${msg('Continuous Testing', { id: 'continuoustesting-title' })} " class="actionBtn"
                             id="start-cnt-testing-btn" 
                             theme="icon tertiary small" 
                             @click="${this._startStopClicked}">

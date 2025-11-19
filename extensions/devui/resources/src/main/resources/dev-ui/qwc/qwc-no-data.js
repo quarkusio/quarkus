@@ -24,7 +24,7 @@ export class QwcNoData extends LitElement {
     static properties = {
         message: {attribute: true},
         link: {attribute: true},
-        linkText: {attribute: true},
+        linkText: {attribute: true}
     };
 
     constructor() {

@@ -1,0 +1,56 @@
+// This is the default
+import { str } from '@lit/localize';
+
+export const templates = {
+    // Metadata
+    'quarkus-agroal-meta-description':'JDBC Datasources and connection pooling',
+    // Pages
+    'quarkus-agroal-database_view':'Database view',
+    // General
+    'quarkus-agroal-fetching-data-sources': 'Fetching data sources...',
+    'quarkus-agroal-loading': 'Loading',
+    'quarkus-agroal-import-sql-script': 'Import SQL Script',
+    'quarkus-agroal-save-insert-script': 'Save insert script',
+    'quarkus-agroal-copy-insert-script': 'Copy insert script',
+    'quarkus-agroal-er-diagram': 'ER Diagram',
+    'quarkus-agroal-generate-more-data': 'Use Quarkus Assistant to generate more data',
+    'quarkus-agroal-generating-more-data': 'Quarkus Assistant is generating more data ... please wait',
+    'quarkus-agroal-generating-data': 'Quarkus Assistant is generating data ... please wait',
+    'quarkus-agroal-file-saved': 'File saved successfully',
+    'quarkus-agroal-file-save-failed': str`Failed to save file: ${0}`,
+    'quarkus-agroal-copied-to-clipboard': 'Copied to clipboard successfully!',
+    'quarkus-agroal-copy-failed': str`Could not copy text: ${0}`,
+    'quarkus-agroal-no-active-datasource': 'No active local datasource found.',
+    'quarkus-agroal-datasource-label': 'Datasource',
+    'quarkus-agroal-create-import-sql': 'Create an import.sql from the current data',
+    'quarkus-agroal-import-sql': 'import.sql',
+    'quarkus-agroal-tables': 'Tables',
+    'quarkus-agroal-fetching-tables': 'Fetching tables...',
+    'quarkus-agroal-generate-er-diagram-title': 'Generate an ER Diagram for the tables',
+    'quarkus-agroal-refresh': 'Refresh',
+    'quarkus-agroal-data': 'Data',
+    'quarkus-agroal-definition': 'Definition',
+    'quarkus-agroal-stop-watching': 'Stop watching',
+    'quarkus-agroal-start-watching': 'Start watching',
+    'quarkus-agroal-fetching-data': 'Fetching data ...',
+    'quarkus-agroal-no-data': 'No data.',
+    'quarkus-agroal-generate-some-data-title': 'Use Quarkus Assistant to generate some data',
+    'quarkus-agroal-generate-some-data': 'Generate some data',
+    'quarkus-agroal-clear': 'Clear',
+    'quarkus-agroal-run': 'Run',
+    'quarkus-agroal-allow-sql-execution': 'Allow any SQL execution from here',
+    'quarkus-agroal-describe-data-english': 'Describe the data you are looking for in English',
+    'quarkus-agroal-using': 'Using',
+    'quarkus-agroal-assistant': 'Assistant',
+    'quarkus-agroal-sql': 'SQL',
+    'quarkus-agroal-generating-er-diagram': 'Generating ER Diagram ... please wait',
+    'quarkus-agroal-download': 'download',
+    'quarkus-agroal-json-value': 'Json value',
+    'quarkus-agroal-no-tables-found': 'No tables found',
+    'quarkus-agroal-creating-sql-from': str`Creating SQL from "${0}"`,
+    'quarkus-agroal-using-sql': str`Using SQL "${0}"`,
+    'quarkus-agroal-page-of': str`${0} of ${1}`,
+    'quarkus-agroal-previous': 'Previous',
+    'quarkus-agroal-next': 'Next'
+};
+

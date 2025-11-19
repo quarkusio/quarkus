@@ -14,6 +14,7 @@ import '@vaadin/select';
 import '@vaadin/item';
 import '@vaadin/list-box';
 import 'qui/qui-alert.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 
 export class QwcOpenshiftDeployment extends LitElement {
@@ -41,6 +42,7 @@ export class QwcOpenshiftDeployment extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
 
         this.expose = "true";
         this.untrusted = "false";
@@ -56,10 +58,10 @@ export class QwcOpenshiftDeployment extends LitElement {
         }
 
         this.types = [];
-        this.types.push({name: "Default", value: ""});
-        this.types.push({name: "Jar", value: "jar"});
-        this.types.push({name: "Mutable Jar", value: "mutable-jar"});
-        this.types.push({name: "Native", value: "native"});
+        this.types.push({name: msg('Default', { id: 'quarkus-openshift-default' }), value: ""});
+        this.types.push({name: msg('Jar', { id: 'quarkus-openshift-jar' }), value: "jar"});
+        this.types.push({name: msg('Mutable Jar', { id: 'quarkus-openshift-mutable-jar' }), value: "mutable-jar"});
+        this.types.push({name: msg('Native', { id: 'quarkus-openshift-native' }), value: "native"});
     }
 
     /**
@@ -82,7 +84,7 @@ export class QwcOpenshiftDeployment extends LitElement {
         if (this.build_in_progress) {
             progress = html`
                 <div class="report">
-                    <div>Deploying...</div>
+                    <div>${msg('Deploying...', { id: 'quarkus-openshift-deploying' })}</div>
                     <vaadin-progress-bar indeterminate theme="contrast"></vaadin-progress-bar>
                 </div>`;
         } else if (this.build_complete) {
@@ -99,7 +101,7 @@ export class QwcOpenshiftDeployment extends LitElement {
 
         return html`
             <vaadin-select
-                    label="Build Type"
+                    label=${msg('Build Type', { id: 'quarkus-openshift-build-type' })}
                     .items="${_types}"
                     .value="${_defaultType}"
                     ?disabled="${this.build_in_progress}"
@@ -108,7 +110,7 @@ export class QwcOpenshiftDeployment extends LitElement {
 
             <div>
             <vaadin-checkbox
-                    label="Expose route"
+                    label=${msg('Expose route', { id: 'quarkus-openshift-expose-route' })}
                     id="checkbox-expose"
                     checked
                     .value="${this.expose}"
@@ -119,13 +121,13 @@ export class QwcOpenshiftDeployment extends LitElement {
             <div>
                 <vaadin-checkbox
                         id="checkbox-trust"
-                        label="Accept untrusted certificates"
+                        label=${msg('Accept untrusted certificates', { id: 'quarkus-openshift-accept-untrusted' })}
                         .value="${this.untrusted}"
                         ?disabled="${this.build_in_progress}"
                 ></vaadin-checkbox>
             </div>
 
-            <vaadin-button @click="${this._build}" ?disabled="${this.build_in_progress}">Deploy</vaadin-button>
+            <vaadin-button @click="${this._build}" ?disabled="${this.build_in_progress}">${msg('Deploy', { id: 'quarkus-openshift-deploy' })}</vaadin-button>
             ${progress}
         `;
     }
@@ -156,7 +158,7 @@ export class QwcOpenshiftDeployment extends LitElement {
                     this.build_complete = true;
                     this.build_in_progress = false;
                     this.build_error = true;
-                    this.result = html`<qui-alert level="error"> The deployment failed: ${msg}</qui-alert>`;
+                    this.result = html`<qui-alert level="error">${msg(str`The deployment failed: ${msg}`, { id: 'quarkus-openshift-deployment-failed' })}</qui-alert>`;
                 }
             });
     }

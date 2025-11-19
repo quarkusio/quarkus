@@ -11,7 +11,7 @@ export class QwcDataQutePage extends LitElement {
     static styles = css``;
 
     static properties = {
-        _htmlFragment: {attribute: false},
+        _htmlFragment: {attribute: false}
     };
 
     connectedCallback() {

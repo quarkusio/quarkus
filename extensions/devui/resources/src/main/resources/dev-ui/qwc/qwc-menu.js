@@ -6,6 +6,7 @@ import { RouterController } from 'router-controller';
 import { StorageController } from 'storage-controller';
 import '@vaadin/icon';
 import '@vaadin/context-menu';
+import { msg, updateWhenLocaleChanges, dynamicMsg } from 'localization';
 
 /**
  * This component represent the Dev UI left menu
@@ -112,14 +113,14 @@ export class QwcMenu extends observeState(LitElement) {
     static properties = {
         _show: {state: true},
         _selectedPage: {attribute: false},
-        _selectedPageLabel: {attribute: false},
         _width: {state: true},
         _customMenuNamespaces: {state: true},
-        _dynamicMenuNamespaces: {state: true},
+        _dynamicMenuNamespaces: {state: true}
     };
     
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         // TODO, Use state for location
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateSelection(event);
@@ -134,7 +135,6 @@ export class QwcMenu extends observeState(LitElement) {
     connectedCallback() {
         super.connectedCallback();
         this._selectedPage = "devui-extensions"; // default
-        this._selectedPageLabel = "Extensions"; // default
         this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
         this._restoreState();
     }
@@ -150,7 +150,6 @@ export class QwcMenu extends observeState(LitElement) {
     
     _updateSelection(event){
         let currentPage = this.routerController.getCurrentPage();
-        this._selectedPageLabel = currentPage.title;
         this._selectedPage = currentPage.namespace;
         this._selectedPageIsMax = !currentPage.includeInMenu; // TODO: introduce new property called isMaxView ?
     }
@@ -225,7 +224,7 @@ export class QwcMenu extends observeState(LitElement) {
         }
     }
 
-    _renderCustomItem(page, index){
+    _renderCustomItem(page, i){
         if(page){
             const index = devuiState.cards.active.findIndex(obj => obj.namespace === page.namespace); // Only show if that extension is added
             if (index !== -1) {
@@ -235,9 +234,11 @@ export class QwcMenu extends observeState(LitElement) {
                     extensionName = page.metadata.extensionName;
                 }
             
-                let items = [{ text: 'Remove', action: 'remove', id: page.id , namespace: page.namespace}];
+                let text = msg('Remove', { id: 'menu-remove-context-item' });
+            
+                let items = [{ text: text, action: 'remove', id: page.id , namespace: page.namespace}];
                 return html`<vaadin-context-menu .items=${items} @item-selected=${this._handleContextMenu} title="${extensionName}">
-                            ${this._renderItem(page, -1)}
+                            ${this._renderItem(page, -1, 'page')}
                         </vaadin-context-menu>`;
             }
         }
@@ -263,8 +264,10 @@ export class QwcMenu extends observeState(LitElement) {
         }
     }
     
-    _renderItem(page, index){
-        
+    _renderItem(page, index, dynamicNamespace='menu'){
+        if(dynamicNamespace!='menu'){
+            
+        }
         var defaultSelection = false;
         if(index===0)defaultSelection = true;
         if(page.componentRef){
@@ -278,9 +281,9 @@ export class QwcMenu extends observeState(LitElement) {
             let displayName = "";
             if(this._show){
                 if(page.namespaceLabel){
-                    displayName = page.namespaceLabel;
+                    displayName = dynamicMsg(dynamicNamespace, page.namespaceLabel);
                 }else{
-                    displayName = page.title;
+                    displayName = dynamicMsg(dynamicNamespace, page.title);
                 }
             }
             
@@ -316,7 +319,7 @@ export class QwcMenu extends observeState(LitElement) {
             return "hidden";
         }
         
-        const selected = this._selectedPage == page.namespace;
+        const selected = this._selectedPage === page.namespace;
         if(selected){
             return "item selected";
         }
@@ -342,11 +345,11 @@ export class QwcMenu extends observeState(LitElement) {
     }
 
     _renderIcon(icon, action){
-        if(action == "smaller" && this._show){
+        if(action === "smaller" && this._show){
             return html`
                 <vaadin-icon class="menuSizeControl" icon="font-awesome-solid:${icon}" @click="${this._changeMenuSize}" data-action="${action}"></vaadin-icon>
             `;
-        }else if(action == "larger" && !this._show){
+        }else if(action === "larger" && !this._show){
             return html`
                 <vaadin-icon class="menuSizeControl" icon="font-awesome-solid:${icon}" @click="${this._changeMenuSize}" data-action="${action}"></vaadin-icon>
             `;

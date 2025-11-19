@@ -1,5 +1,6 @@
 /**
  * Control buttons for the log(s) at the bottom
+ * TODO: This should just be a component. Not sure why it's a control.
  */
 export class LogController {
     static _controllers = new Map();

@@ -13,6 +13,7 @@ import '@vaadin/split-layout';
 import {notifier} from 'notifier';
 import {Router} from '@vaadin/router';
 import {devRoot} from 'build-time-data';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This keeps state of OIDC properties that can potentially change on hot reload.
@@ -81,7 +82,7 @@ class OidcPropertiesState extends LitState {
             propertiesState.httpPort = response.result.httpPort;
             propertiesState.oidcProviderName = response.result.oidcProviderName;
             propertiesState.oidcApplicationType = response.result.oidcApplicationType;
-            propertiesState.isWebApp = propertiesState?.oidcApplicationType === 'web-app'
+            propertiesState.isWebApp = propertiesState?.oidcApplicationType === 'web-app';
             propertiesState.oidcGrantType = response.result.oidcGrantType;
             propertiesState.swaggerIsAvailable = response.result.swaggerIsAvailable;
             propertiesState.graphqlIsAvailable = response.result.graphqlIsAvailable;
@@ -260,6 +261,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._devRoot = (devRoot?.replaceAll('/', '%2F') ?? '') + 'dev-ui'; // e.g. /q/dev-ui
         this._selectedRealm = null;
         this._servicePath = '/';
@@ -302,7 +304,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             if (propertiesState.propertiesStateId) {
                 this.requestUpdate();
             }
-        }
+        };
         propertiesState.addObserver(this.conditionalUpdatePropertiesStateObserver, 'idToken');
         propertiesState.addObserver(this.conditionalUpdatePropertiesStateObserver, 'testServiceResponses');
         propertiesState.addObserver(this.conditionalUpdatePropertiesStateObserver, 'accessToken');
@@ -350,7 +352,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         } else {
             return html`
             <div class="container" style="color: var(--lumo-secondary-text-color);border: 0">
-                <div>Loading...</div>
+                <div>${msg('Loading...', { id: 'quarkus-oidc-loading' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>`;
         }
@@ -384,7 +386,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 <vaadin-vertical-layout class="margin-left-auto frm-field">
                     <vaadin-button theme="primary success" class="full-width"
                                    @click=${() => this._signInToService()}>
-                        Log into your Web Application
+                        ${msg('Log into your Web Application', { id: 'quarkus-oidc-log-into-web-app' })}
                     </vaadin-button>
                 </vaadin-vertical-layout>
             </vaadin-vertical-layout>
@@ -405,12 +407,12 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             () => this._testServiceWithPassword(),
             () => this._testServiceWithPasswordInSwaggerUi(),
             () => this._testServiceWithPasswordInGraphQLUi(),
-            'Get access token and test your service',
+            msg('Get access token and test your service', { id: 'quarkus-oidc-get-access-token-test' }),
             html`
                 <vaadin-form-layout class="txt-field-form full-width">
                     <vaadin-form-item class="full-width">
-                        <label slot="label">User name</label>
-                        <vaadin-text-field class="frm-field" title="User" value="" required
+                        <label slot="label">${msg('User name', { id: 'quarkus-oidc-user-name' })}</label>
+                        <vaadin-text-field class="frm-field" title=${msg('User', { id: 'quarkus-oidc-user' })} value="" required
                                            @value-changed="${e => {
                                                this._passwordGrantUsername = (e.detail?.value || '').trim();
                                            }}"></vaadin-text-field>
@@ -418,8 +420,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 </vaadin-form-layout>
                 <vaadin-form-layout class="txt-field-form full-width">
                     <vaadin-form-item class="full-width">
-                        <label slot="label">Password</label>
-                        <vaadin-password-field class="frm-field" title="Password" value=""
+                        <label slot="label">${msg('Password', { id: 'quarkus-oidc-password' })}</label>
+                        <vaadin-password-field class="frm-field" title=${msg('Password', { id: 'quarkus-oidc-password-title' })} value=""
                                                @value-changed="${e => {
                                                    this._passwordGrantPwd = (e.detail?.value || '').trim();
                                                }}"></vaadin-password-field>
@@ -444,23 +446,23 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="margin-left-auto frm-field">
                             <vaadin-horizontal-layout class="full-width">
-                                <vaadin-button class="fill-space margin-right-auto" theme="primary" title="Test service" 
+                                <vaadin-button class="fill-space margin-right-auto" theme="primary" title=${msg('Test service', { id: 'quarkus-oidc-test-service' })} 
                                                @click=${testSvcFun}>
-                                    Test service
+                                    ${msg('Test service', { id: 'quarkus-oidc-test-service-button' })}
                                 </vaadin-button>
-                                <vaadin-button theme="tertiary" class="margin-l-m" title="Test in Swagger UI"
+                                <vaadin-button theme="tertiary" class="margin-l-m" title=${msg('Test in Swagger UI', { id: 'quarkus-oidc-test-swagger-ui' })}
                                                @click=${testSvcSwaggerFun} 
                                                ?hidden="${!propertiesState.swaggerIsAvailable}">
                                     <vaadin-icon icon="font-awesome-solid:up-right-from-square" slot="prefix" 
                                                  class="btn-icon"></vaadin-icon>
-                                    Swagger UI
+                                    ${msg('Swagger UI', { id: 'quarkus-oidc-swagger-ui' })}
                                 </vaadin-button>
-                                <vaadin-button theme="tertiary" class="margin-l-m" title="Test in GraphQL UI"
+                                <vaadin-button theme="tertiary" class="margin-l-m" title=${msg('Test in GraphQL UI', { id: 'quarkus-oidc-test-graphql-ui' })}
                                                @click=${testSvcGraphQlFun} 
                                                ?hidden="${!propertiesState.graphqlIsAvailable}">
                                     <vaadin-icon icon="font-awesome-solid:up-right-from-square" slot="prefix" 
                                                  class="btn-icon"></vaadin-icon>
-                                    GraphQL UI
+                                    ${msg('GraphQL UI', { id: 'quarkus-oidc-graphql-ui' })}
                                 </vaadin-button>
                             </vaadin-horizontal-layout>
                         </vaadin-horizontal-layout>
@@ -551,7 +553,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     clientId: this._getClientId(),
                     clientSecret: this._getClientSecret()
                 }),
-            'Client credentials',
+            msg('Client credentials', { id: 'quarkus-oidc-client-credentials' }),
             servicePath
         );
     }
@@ -589,8 +591,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     static _logFailedServiceTest(response) {
-        notifier.showErrorMessage('Failed to test service. Error message: '
-            + response?.error?.message, 'top-end');
+        const em = response?.error?.message;
+        notifier.showErrorMessage(msg(str`Failed to test service. Error message: ${em}`, { id: 'quarkus-oidc-failed-test-service' }), 'top-end');
     }
 
     _clientCredentialsCard() {
@@ -598,7 +600,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             () => this._testServiceWithClientCredentials(),
             () => this._testServiceWithClientCredentialsInSwaggerUi(),
             () => this._testServiceWithClientCredentialsInGraphQLUi(),
-            'Get access token for the client and test your service',
+            msg('Get access token for the client and test your service', { id: 'quarkus-oidc-get-access-token-client' }),
             html``
         );
     }
@@ -612,8 +614,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 secret = html`
                     <vaadin-form-layout class="txt-field-form full-width">
                         <vaadin-form-item class="full-width">
-                            <label slot="label">Secret</label>
-                            <vaadin-password-field class="frm-field" title="Secret"
+                            <label slot="label">${msg('Secret', { id: 'quarkus-oidc-secret' })}</label>
+                            <vaadin-password-field class="frm-field" title=${msg('Secret', { id: 'quarkus-oidc-secret-title' })}
                                     @value-changed="${e => {
                                         this._selectedClientSecret = (e.detail?.value || '').trim();
                                     }}"
@@ -626,7 +628,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             return html`
                 <vaadin-form-layout class="txt-field-form full-width">
                     <vaadin-form-item class="full-width">
-                        <label slot="label">Realm</label>
+                        <label slot="label">${msg('Realm', { id: 'quarkus-oidc-realm' })}</label>
                         <vaadin-select class="frm-field"
                                 .items="${realms}"
                                 .value="${propertiesState.keycloakRealms[0]}"
@@ -636,8 +638,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 </vaadin-form-layout>
                 <vaadin-form-layout class="txt-field-form full-width">
                     <vaadin-form-item class="full-width">
-                        <label slot="label">Client</label>
-                        <vaadin-text-field class="frm-field" title="Client ID"
+                        <label slot="label">${msg('Client', { id: 'quarkus-oidc-client' })}</label>
+                        <vaadin-text-field class="frm-field" title=${msg('Client ID', { id: 'quarkus-oidc-client-id' })}
                                            @value-changed="${e => {
                                                 this._selectedClientId = (e.detail?.value || '').trim();
                                             }}"
@@ -662,10 +664,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 <vaadin-form-layout class="margin-left-auto txt-field-form frm-field">
                         <vaadin-form-item class="full-width">
                             <vaadin-button theme="primary success" class="full-width"
-                                        title="Log into Single Page Application to Get Access and ID Tokens"
+                                        title=${msg('Log into Single Page Application to Get Access and ID Tokens', { id: 'quarkus-oidc-log-into-spa-title' })}
                                         @click=${() => this._signInToOidcProviderAndGetTokens()}>
                                 <vaadin-icon icon="font-awesome-solid:user" slot="prefix" class="btn-icon"></vaadin-icon>
-                                Log into Single Page Application
+                                ${msg('Log into Single Page Application', { id: 'quarkus-oidc-log-into-spa' })}
                             </vaadin-button>            
                         </vaadin-form-item>
                     </vaadin-form-layout>
@@ -676,7 +678,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                                       ?hidden="${propertiesState.hideLogInErr}">
                 <vaadin-icon icon="font-awesome-regular:circle-xmark" class="error-color"></vaadin-icon>
                 <span class="primary-color">${QwcOidcProvider._getQueryParameter(QwcOidcProvider.ERROR_DESCRIPTION)}</span>
-                <vaadin-button theme="tertiary small" title="Click to start again" class="margin-left-auto"
+                <vaadin-button theme="tertiary small" title=${msg('Click to start again', { id: 'quarkus-oidc-click-start-again' })} class="margin-left-auto"
                                @click=${() => QwcOidcProvider._showLoginToSpa()}>
                     <vaadin-icon icon="font-awesome-solid:right-from-bracket" slot="prefix" class="btn-icon">
                     </vaadin-icon>
@@ -689,14 +691,15 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _displayTokenCard() {
         const servicePathForm = this._servicePathForm();
         const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
+        const un = propertiesState.userName;
         return html`
             <vaadin-vertical-layout class="full-width" ?hidden="${propertiesState.hideImplicitLoggedIn}">
                 <vaadin-vertical-layout class="height-4xl container">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
-                        <span class="margin-right-auto default-cursor heading">Your tokens</span>
+                        <span class="margin-right-auto default-cursor heading">${msg('Your tokens', { id: 'quarkus-oidc-your-tokens' })}</span>
                         <span class="margin-right-space-m ${classMap({'display-none': !propertiesState.userName})}">
-                            Logged in as ${propertiesState.userName}</span>
-                        <vaadin-button theme="tertiary small" title="Click to logout and start again" 
+                            ${msg(str`Logged in as ${un}`, { id: 'quarkus-oidc-logged-in-as' })}</span>
+                        <vaadin-button theme="tertiary small" title=${msg('Click to logout and start again', { id: 'quarkus-oidc-click-logout-start-again' })} 
                                        @click=${() => this._logout()} ?hidden="${!propertiesState.logoutUrl}">
                             <vaadin-icon icon="font-awesome-solid:up-right-from-square" slot="prefix" class="btn-icon">
                             </vaadin-icon>
@@ -705,8 +708,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-details class="token-detail">
                         <vaadin-details-summary slot="summary">
                             <div class="token-detail-summary">
-                                <span class="margin-right-auto">View Access Token</span>
-                                <vaadin-button theme="tertiary small" title="Copy to clipboard"
+                                <span class="margin-right-auto">${msg('View Access Token', { id: 'quarkus-oidc-view-access-token' })}</span>
+                                <vaadin-button theme="tertiary small" title=${msg('Copy to clipboard', { id: 'quarkus-oidc-copy-to-clipboard' })}
                                                @click=${QwcOidcProvider._copyAccessTokenToClipboard}>
                                     <vaadin-icon icon="font-awesome-solid:clipboard" slot="prefix" class="btn-icon">
                                     </vaadin-icon>
@@ -716,13 +719,13 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <div>
                             <vaadin-split-layout theme="minimal">
                                 <div class="encoded-token half-width">
-                                    <h3>Encoded</h3>
+                                    <h3>${msg('Encoded', { id: 'quarkus-oidc-encoded' })}</h3>
                                     <p>
                                         ${QwcOidcProvider._prettyToken(propertiesState.accessToken)}
                                     </p>
                                 </div>
                                 <div class="decoded-token half-width">
-                                    <h3>Decoded</h3>
+                                    <h3>${msg('Decoded', { id: 'quarkus-oidc-decoded' })}</h3>
                                     <p>
                                         ${QwcOidcProvider._decodeToken(propertiesState.accessToken)}
                                     </p>
@@ -733,8 +736,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-details class="token-detail">
                         <vaadin-details-summary slot="summary">
                             <div class="token-detail-summary">
-                                <span class="margin-right-auto">View ID Token</span>
-                                <vaadin-button theme="tertiary small" title="Copy to clipboard"
+                                <span class="margin-right-auto">${msg('View ID Token', { id: 'quarkus-oidc-view-id-token' })}</span>
+                                <vaadin-button theme="tertiary small" title=${msg('Copy to clipboard', { id: 'quarkus-oidc-copy-to-clipboard-id' })}
                                                @click=${QwcOidcProvider._copyIdTokenToClipboard}>
                                     <vaadin-icon icon="font-awesome-solid:clipboard" slot="prefix" class="btn-icon">
                                     </vaadin-icon>
@@ -744,13 +747,13 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <div>
                             <vaadin-split-layout theme="minimal">
                                 <div class="encoded-token half-width">
-                                    <h3>Encoded</h3>
+                                    <h3>${msg('Encoded', { id: 'quarkus-oidc-encoded-id' })}</h3>
                                     <p>
                                         ${QwcOidcProvider._prettyToken(propertiesState.idToken)}
                                     </p>
                                 </div>
                                 <div class="decoded-token half-width">
-                                    <h3>Decoded</h3>
+                                    <h3>${msg('Decoded', { id: 'quarkus-oidc-decoded-id' })}</h3>
                                     <p>
                                         ${QwcOidcProvider._decodeToken(propertiesState.idToken)}
                                     </p>
@@ -761,40 +764,40 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 </vaadin-vertical-layout>
                 <vaadin-vertical-layout theme="spacing" class="height-4xl container margin-top-space-m">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
-                        <span class="margin-right-auto default-cursor heading">Test your service</span>
-                        <vaadin-button theme="tertiary small" title="Test in Swagger UI"
+                        <span class="margin-right-auto default-cursor heading">${msg('Test your service', { id: 'quarkus-oidc-test-your-service' })}</span>
+                        <vaadin-button theme="tertiary small" title=${msg('Test in Swagger UI', { id: 'quarkus-oidc-test-swagger-ui-button' })}
                                        @click=${() => QwcOidcProvider._navigateToSwaggerUi()} 
                                        ?hidden="${!propertiesState.swaggerIsAvailable}">
                             <vaadin-icon icon="font-awesome-solid:up-right-from-square" slot="prefix" class="btn-icon">
                             </vaadin-icon>
-                            Swagger UI
+                            ${msg('Swagger UI', { id: 'quarkus-oidc-swagger-ui-button' })}
                         </vaadin-button>
-                        <vaadin-button theme="tertiary small" class="margin-l-m" title="Test in GraphQL UI"
+                        <vaadin-button theme="tertiary small" class="margin-l-m" title=${msg('Test in GraphQL UI', { id: 'quarkus-oidc-test-graphql-ui-button' })}
                                        @click=${() => QwcOidcProvider._navigateToGraphQLUi()} 
                                        ?hidden="${!propertiesState.graphqlIsAvailable}">
                             <vaadin-icon icon="font-awesome-solid:up-right-from-square" slot="prefix" class="btn-icon">
                             </vaadin-icon>
-                            GraphQL UI
+                            ${msg('GraphQL UI', { id: 'quarkus-oidc-graphql-ui-button' })}
                         </vaadin-button>
                     </vaadin-horizontal-layout>
                     <vaadin-vertical-layout theme="padding">
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="full-width">
                             <vaadin-horizontal-layout class="margin-left-auto frm-field">
-                                <vaadin-button class="fill-space" theme="primary" title="Test With Access Token"
+                                <vaadin-button class="fill-space" theme="primary" title=${msg('Test With Access Token', { id: 'quarkus-oidc-test-with-access-token' })}
                                                ?hidden="${propertiesState.isWebApp}"
                                                @click=${() => this._testServiceWithAccessToken()}>
-                                    With Access Token
+                                    ${msg('With Access Token', { id: 'quarkus-oidc-with-access-token' })}
                                 </vaadin-button>
-                                <vaadin-button class="fill-space margin-l-m" theme="primary" title="Test With ID Token"
+                                <vaadin-button class="fill-space margin-l-m" theme="primary" title=${msg('Test With ID Token', { id: 'quarkus-oidc-test-with-id-token' })}
                                                ?hidden="${propertiesState.isWebApp}"
                                                @click=${() => this._testServiceWithIdToken()}>
-                                    With ID Token
+                                    ${msg('With ID Token', { id: 'quarkus-oidc-with-id-token' })}
                                 </vaadin-button>
-                                <vaadin-button class="fill-space" theme="primary" title="Test"
+                                <vaadin-button class="fill-space" theme="primary" title=${msg('Test', { id: 'quarkus-oidc-test' })}
                                                ?hidden="${!propertiesState.isWebApp}"
                                                @click=${() => this._signInToService()}>
-                                    Test
+                                    ${msg('Test', { id: 'quarkus-oidc-test-button' })}
                                 </vaadin-button>
                             </vaadin-horizontal-layout>
                         </vaadin-horizontal-layout>
@@ -809,7 +812,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html`
             <vaadin-form-layout class="txt-field-form full-width">
                 <vaadin-form-item class="full-width">
-                    <label slot="label">Service path</label>
+                    <label slot="label">${msg('Service path', { id: 'quarkus-oidc-service-path' })}</label>
                     <vaadin-text-field class="frm-field"
                                        value="/"
                                        @value-changed="${e => {
@@ -829,7 +832,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             <vaadin-horizontal-layout class="full-width" ?hidden="${propertiesState.isWebApp}">
                 <vaadin-message-list class="test-svc-msg-list" .items="${propertiesState.testServiceResponses}">
                 </vaadin-message-list>
-                <vaadin-button theme="tertiary small" title="Clear results" class="margin-left-auto"
+                <vaadin-button theme="tertiary small" title=${msg('Clear results', { id: 'quarkus-oidc-clear-results' })} class="margin-left-auto"
                                @click=${() => OidcPropertiesState.clearTestServiceResponses()}>
                     <vaadin-icon icon="font-awesome-solid:eraser" slot="prefix" class="btn-icon">
                     </vaadin-icon>
@@ -839,7 +842,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _testServiceWithAccessToken(){
-        this._testServiceWithToken(propertiesState.accessToken, "Access Token");
+        this._testServiceWithToken(propertiesState.accessToken, msg("Access Token", { id: 'quarkus-oidc-access-token' }));
     }
 
     _testServiceWithToken(token, tokenType){
@@ -852,7 +855,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 }),
             tokenType,
             servicePath
-        )
+        );
     }
 
     static _addResponseData(statusCode, headline, servicePath) {
@@ -863,7 +866,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             icon = QwcOidcProvider._getFontAwesomeFailureSvgAsImgSrc();
         }
         OidcPropertiesState.updateTestServiceResponses({
-            text: 'service path: ' + servicePath + ', result : ' + statusCode,
+            text: msg(str`service path: ${servicePath}, result : ${statusCode}`, { id: 'quarkus-oidc-service-path-result' }),
             time: new Date().toLocaleString(),
             userName: headline,
             userImg: icon,
@@ -872,7 +875,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _testServiceWithIdToken(){
-        this._testServiceWithToken(propertiesState.idToken, "ID Token")
+        this._testServiceWithToken(propertiesState.idToken, msg("ID Token", { id: 'quarkus-oidc-id-token' }));
     }
 
     static _showLoginToSpa() {
@@ -962,7 +965,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     static _getQueryParameters() {
         return new Proxy(new URLSearchParams(window.location.search), {
-            get: (searchParams, prop) => searchParams.get(prop),
+            get: (searchParams, prop) => searchParams.get(prop)
         });
     }
 
@@ -977,21 +980,21 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     static _copyIdTokenToClipboard(e) {
         e.stopPropagation();
-        QwcOidcProvider._copyToClipboard(propertiesState.idToken, 'ID token');
+        QwcOidcProvider._copyToClipboard(propertiesState.idToken, msg('ID token', { id: 'quarkus-oidc-id-token-label' }));
     }
 
     static _copyAccessTokenToClipboard(e) {
         e.stopPropagation();
-        QwcOidcProvider._copyToClipboard(propertiesState.accessToken, 'access token');
+        QwcOidcProvider._copyToClipboard(propertiesState.accessToken, msg('access token', { id: 'quarkus-oidc-access-token-label' }));
     }
 
     static _copyToClipboard(txt, what) {
         navigator.clipboard.writeText(txt).then(
             () => {
-                notifier.showInfoMessage('Copied "' + what + '" to clipboard.', 'top-end');
+                notifier.showInfoMessage(msg(str`Copied "${what}" to clipboard.`, { id: 'quarkus-oidc-copied-to-clipboard' }), 'top-end');
             },
             () => {
-                notifier.showErrorMessage('Failed to copy "' + what + '" to clipboard.', 'top-end');
+                notifier.showErrorMessage(msg(str`Failed to copy "${what}" to clipboard.`, { id: 'quarkus-oidc-failed-copy-to-clipboard' }), 'top-end');
             }
         );
     }
@@ -1036,7 +1039,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             const state = QwcOidcProvider._getQueryParameter('state');
             QwcOidcProvider._exchangeCodeForTokens(code, state, jsonRpc, onUpdateDone);
         } else if (propertiesState.isWebApp) {
-            QwcOidcProvider._checkSessionCookieAndUpdateState(jsonRpc, onUpdateDone)
+            QwcOidcProvider._checkSessionCookieAndUpdateState(jsonRpc, onUpdateDone);
         } else {
             // logged out
 
@@ -1178,11 +1181,11 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     static _getEncodedCurrentBaseUrl() {
-        return QwcOidcProvider._getCurrentBaseUrl().replaceAll('/', '%2F').replaceAll(':', '%3A')
+        return QwcOidcProvider._getCurrentBaseUrl().replaceAll('/', '%2F').replaceAll(':', '%3A');
     }
 
     static _getCurrentBaseUrl() {
-        return window.location.origin
+        return window.location.origin;
     }
 
     static _checkSessionCookie(jsonRpc, onLoggedIn, onLoggedOut) {
@@ -1242,7 +1245,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     static _getHashQueryStringParam(paramName) {
         const params = new Proxy(new URLSearchParams(window.location.hash.substring(1)), {
-            get: (searchParams, prop) => searchParams.get(prop),
+            get: (searchParams, prop) => searchParams.get(prop)
         });
         if (params) {
             return params[paramName] || null;
@@ -1277,8 +1280,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const signature = parts[2]?.trim();
 
                 return html`
-                <span class='token-headers jwt-tooltip-cursor' title='Header'>${headers}</span>.<span class='token-payload jwt-tooltip-cursor' title='Claims'
-                >${payload}</span>.<span class='token-signature jwt-tooltip-cursor' title='Signature'>${signature}</span>
+                <span class='token-headers jwt-tooltip-cursor' title=${msg('Header', { id: 'quarkus-oidc-header' })}>${headers}</span>.<span class='token-payload jwt-tooltip-cursor' title=${msg('Claims', { id: 'quarkus-oidc-claims' })}
+                >${payload}</span>.<span class='token-signature jwt-tooltip-cursor' title=${msg('Signature', { id: 'quarkus-oidc-signature' })}>${signature}</span>
             `;
             } else if (parts.length === 5) {
                 const headers = parts[0]?.trim();
@@ -1288,10 +1291,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const authTag = parts[4]?.trim();
 
                 return html`
-                <span class='token-headers jwt-tooltip-cursor' title='Header'>${headers}</span>.<span class='token-encryption jwt-tooltip-cursor' title='Encrypted Key'
-                >${encryptedKey}.<span class='token-encryption jwt-tooltip-cursor' title='Init Vector'
-                >${initVector}</span>.<span class='token-payload jwt-tooltip-cursor' title='Ciphertext'
-                >${ciphertext}</span>.<span class='token-encryption jwt-tooltip-cursor' title='Authentication Tag'>${authTag}</span>
+                <span class='token-headers jwt-tooltip-cursor' title=${msg('Header', { id: 'quarkus-oidc-header' })}>${headers}</span>.<span class='token-encryption jwt-tooltip-cursor' title=${msg('Encrypted Key', { id: 'quarkus-oidc-encrypted-key' })}
+                >${encryptedKey}.<span class='token-encryption jwt-tooltip-cursor' title=${msg('Init Vector', { id: 'quarkus-oidc-init-vector' })}
+                >${initVector}</span>.<span class='token-payload jwt-tooltip-cursor' title=${msg('Ciphertext', { id: 'quarkus-oidc-ciphertext' })}
+                >${ciphertext}</span>.<span class='token-encryption jwt-tooltip-cursor' title=${msg('Authentication Tag', { id: 'quarkus-oidc-authentication-tag' })}>${authTag}</span>
             `;
             } else {
                 return html`${token}`;
@@ -1350,7 +1353,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 // on to values
                 ret += ": ";
                 // decorate values
-                if(k == 'iat' || k == 'nbf' || k == 'exp'){
+                if(k === 'iat' || k === 'nbf' || k === 'exp'){
                     ret += "<span class='jwt-tooltip-bg jwt-tooltip-cursor' title='" + new Date(val * 1000).toString() + "'>" + val + "</span>";
                 } else {
                     ret += JSON.stringify(val);
@@ -1380,7 +1383,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 return html`
                 <pre class='token-headers'>${unsafeHTML(headersHtml?.trim())}</pre>
                 <pre class='token-payload'>${unsafeHTML(json?.trim())}</pre>
-                <span class='token-signature jwt-tooltip-cursor' title='Signature'>${signature?.trim()}</span>
+                <span class='token-signature jwt-tooltip-cursor' title=${msg('Signature', { id: 'quarkus-oidc-signature' })}>${signature?.trim()}</span>
                 `;
             } else if (parts.length === 5) {
                 const headers = window.atob(parts[0]?.trim());
@@ -1390,11 +1393,11 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const authTag = parts[4]?.trim();
 
                 return html`
-                <pre class='token-headers jwt-tooltip-cursor' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-encryption jwt-tooltip-cursor' title='Encrypted Key'>${encryptedKey}</pre>
-                <pre class='token-encryption jwt-tooltip-cursor' title='Init Vector'>${initVector}</pre>
-                <pre class='token-payload jwt-tooltip-cursor' title='Ciphertext'>${ciphertext}</pre>
-                <span class='token-encryption jwt-tooltip-cursor' title='Authentication Tag'>${authTag}</span>
+                <pre class='token-headers jwt-tooltip-cursor' title=${msg('Header', { id: 'quarkus-oidc-header' })}>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
+                <pre class='token-encryption jwt-tooltip-cursor' title=${msg('Encrypted Key', { id: 'quarkus-oidc-encrypted-key' })}>${encryptedKey}</pre>
+                <pre class='token-encryption jwt-tooltip-cursor' title=${msg('Init Vector', { id: 'quarkus-oidc-init-vector' })}>${initVector}</pre>
+                <pre class='token-payload jwt-tooltip-cursor' title=${msg('Ciphertext', { id: 'quarkus-oidc-ciphertext' })}>${ciphertext}</pre>
+                <span class='token-encryption jwt-tooltip-cursor' title=${msg('Authentication Tag', { id: 'quarkus-oidc-authentication-tag' })}>${authTag}</span>
             `;
             } else {
                 return html`${token}`;
@@ -1429,14 +1432,14 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             '<path d=\'M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0 0 ' +
             '512zM175 175c-9.4 9.4-9.4 24.6 0 33.9l47 47-47 47c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l47-47 ' +
             '47 47c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-47-47 47-47c9.4-9.4 9.4-24.6 0-33.9s-24.6-9.4-33.9 ' +
-            '0l-47 47-47-47c-9.4-9.4-24.6-9.4-33.9 0z\' style=\'fill: rgb(220,53,69)\'/></svg>'
+            '0l-47 47-47-47c-9.4-9.4-24.6-9.4-33.9 0z\' style=\'fill: rgb(220,53,69)\'/></svg>';
     }
 
     static _getFontAwesomeSuccessSvgAsImgSrc() {
         return 'data:image/svg+xml;utf-8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 512 512\'>' +
             '<path d=\'M256 48a208 208 0 1 1 0 416 208 208 0 1 1 0-416zm0 464A256 256 0 1 0 256 0a256 256 0 1 0' +
             ' 0 512zM369 209c9.4-9.4 9.4-24.6 0-33.9s-24.6-9.4-33.9 0l-111 111-47-47c-9.4-9.4-24.6-9.4-33.9 ' +
-            '0s-9.4 24.6 0 33.9l64 64c9.4 9.4 24.6 9.4 33.9 0L369 209z\' style=\'fill: rgb(40,167,69)\'/></svg>'
+            '0s-9.4 24.6 0 33.9l64 64c9.4 9.4 24.6 9.4 33.9 0L369 209z\' style=\'fill: rgb(40,167,69)\'/></svg>';
     }
 
     _getTokenUrl() {

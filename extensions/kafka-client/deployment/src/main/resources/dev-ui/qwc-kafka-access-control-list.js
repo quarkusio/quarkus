@@ -1,6 +1,7 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/progress-bar';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Kafka Access Control List
@@ -12,11 +13,12 @@ export class QwcKafkaAccessControlList extends QwcHotReloadElement {
     static styles = css``;
 
     static properties = {
-        _aclInfo: {state: true},
+        _aclInfo: {state: true}
     };
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
     }
 
     connectedCallback() {
@@ -36,25 +38,25 @@ export class QwcKafkaAccessControlList extends QwcHotReloadElement {
                                 class="table" theme="no-border">
                         <vaadin-grid-sort-column auto-width
                             path="operation"
-                            header="Operation"
+                            header=${msg('Operation', { id: 'quarkus-kafka-client-operation' })}
                             resizable>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column auto-width
                             path="principal"
-                            header="Principal"
+                            header=${msg('Principal', { id: 'quarkus-kafka-client-principal' })}
                             resizable>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column auto-width
                             path="perm"
-                            header="Permission"
+                            header=${msg('Permission', { id: 'quarkus-kafka-client-permission' })}
                             resizable>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column auto-width
                             path="pattern"
-                            header="Resource Pattern"
+                            header=${msg('Resource Pattern', { id: 'quarkus-kafka-client-resource-pattern' })}
                             resizable>
                         </vaadin-grid-sort-column>
 

@@ -3,6 +3,7 @@ import {JsonRpc} from 'jsonrpc';
 import '@vaadin/grid';
 import {columnBodyRenderer} from '@vaadin/grid/lit.js';
 import '@vaadin/vertical-layout';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 export class QwcFaultToleranceMethods extends LitElement {
     jsonRpc = new JsonRpc(this);
@@ -19,8 +20,13 @@ export class QwcFaultToleranceMethods extends LitElement {
     `;
 
     static properties = {
-        _guardedMethods: {state: true},
+        _guardedMethods: {state: true}
     };
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
 
     connectedCallback() {
         super.connectedCallback();
@@ -31,24 +37,24 @@ export class QwcFaultToleranceMethods extends LitElement {
         if (this._guardedMethods) {
             return this._renderGuardedMethods();
         } else {
-            return html`<span>Loading guarded methods...</span>`;
+            return html`<span>${msg('Loading guarded methods...', { id: 'quarkus-smallrye-fault-tolerance-loading' })}</span>`;
         }
     }
 
     _renderGuardedMethods() {
         return html`
                 <vaadin-grid .items="${this._guardedMethods}" theme="no-border">
-                    <vaadin-grid-column header="Bean Class" auto-width flex-grow="0"
+                    <vaadin-grid-column header=${msg('Bean Class', { id: 'quarkus-smallrye-fault-tolerance-bean-class' })} auto-width flex-grow="0"
                                         ${columnBodyRenderer(this._renderBeanClass, [])}
                                         resizable>
                     </vaadin-grid-column>
 
-                    <vaadin-grid-column header="Method" auto-width flex-grow="0"
+                    <vaadin-grid-column header=${msg('Method', { id: 'quarkus-smallrye-fault-tolerance-method' })} auto-width flex-grow="0"
                                         ${columnBodyRenderer(this._renderMethodName, [])}
                                         resizable>
                     </vaadin-grid-column>
 
-                    <vaadin-grid-column header="Fault Tolerance Strategies" auto-width flex-grow="0"
+                    <vaadin-grid-column header=${msg('Fault Tolerance Strategies', { id: 'quarkus-smallrye-fault-tolerance-strategies' })} auto-width flex-grow="0"
                                         ${columnBodyRenderer(this._renderStrategies, [])}
                                         resizable>
                     </vaadin-grid-column>

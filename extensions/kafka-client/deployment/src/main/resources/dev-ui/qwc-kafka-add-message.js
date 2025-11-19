@@ -5,6 +5,7 @@ import '@vaadin/text-field';
 import '@vaadin/combo-box';
 import '@vaadin/text-area';
 import '@vaadin/button';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Add Message screen
@@ -27,11 +28,12 @@ export class QwcKafkaAddMessage extends LitElement {
         _targetPartitions: {state: false},
         _types: {state: false},
         _newMessage: {state: true},
-        _newMessageHeaders: {state: true, type: Array},
+        _newMessageHeaders: {state: true, type: Array}
     };
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this.partitionsCount = 0;
         this.topicName = null;
         this._targetPartitions = [];
@@ -39,7 +41,7 @@ export class QwcKafkaAddMessage extends LitElement {
         this._reset();
         this.responsiveSteps = [
             { minWidth: 0, columns: 1 },
-            { minWidth: '320px', columns: 2 },
+            { minWidth: '320px', columns: 2 }
         ];
     }
 
@@ -47,15 +49,15 @@ export class QwcKafkaAddMessage extends LitElement {
         super.connectedCallback();
         this.jsonRpc = new JsonRpc(this.extensionName);
 
-        this._targetPartitions.push({name: "Any", value: "any"});
+        this._targetPartitions.push({name: msg('Any', { id: 'quarkus-kafka-client-any' }), value: "any"});
         for (var i = 0; i < this.partitionsCount; i++) {
             this._targetPartitions.push({name: i.toString(), value: i});
         }
 
-        this._types.push({name: "Text", value: "text"});
-        this._types.push({name: "None (Tombstone)", value: "none"});
-        this._types.push({name: "JSON", value: "json"});
-        this._types.push({name: "Binary", value: "binary"});
+        this._types.push({name: msg('Text', { id: 'quarkus-kafka-client-text' }), value: "text"});
+        this._types.push({name: msg('None (Tombstone)', { id: 'quarkus-kafka-client-none-tombstone' }), value: "none"});
+        this._types.push({name: msg('JSON', { id: 'quarkus-kafka-client-json' }), value: "json"});
+        this._types.push({name: msg('Binary', { id: 'quarkus-kafka-client-binary' }), value: "binary"});
     }
 
     _reset(){
@@ -73,7 +75,7 @@ export class QwcKafkaAddMessage extends LitElement {
             detail: {},
             bubbles: true,
             cancelable: true,
-            composed: false,
+            composed: false
         });
         this.dispatchEvent(canceled);
     }
@@ -82,7 +84,7 @@ export class QwcKafkaAddMessage extends LitElement {
 
         return html`<vaadin-form-layout .responsiveSteps="${this.responsiveSteps}">
                         <vaadin-combo-box
-                            label="Target partition"
+                            label=${msg('Target partition', { id: 'quarkus-kafka-client-target-partition' })}
                             item-label-path="name"
                             item-value-path="value"
                             value="${this._newMessage.partition ?? 'any'}" 
@@ -91,7 +93,7 @@ export class QwcKafkaAddMessage extends LitElement {
                         </vaadin-combo-box>
                     
                         <vaadin-combo-box
-                            label="Type"
+                            label=${msg('Type', { id: 'quarkus-kafka-client-type' })}
                             item-label-path="name"
                             item-value-path="value"
                             value="${this._newMessage.type ?? 'text'}" 
@@ -100,8 +102,8 @@ export class QwcKafkaAddMessage extends LitElement {
                         </vaadin-combo-box>
 
                         <vaadin-text-field
-                            label="Key"
-                            placeholder="my-awesome-key"
+                            label=${msg('Key', { id: 'quarkus-kafka-client-key' })}
+                            placeholder=${msg('my-awesome-key', { id: 'quarkus-kafka-client-key-placeholder' })}
                             value="${this._newMessage.key ?? ''}"
                             @value-changed="${(e) => this._createMessageKeyChanged(e)}"
                             required
@@ -110,22 +112,22 @@ export class QwcKafkaAddMessage extends LitElement {
                         
                         <vaadin-text-area style="min-height: 160px;"
                                     colspan="2"
-                                    label="Value"
+                                    label=${msg('Value', { id: 'quarkus-kafka-client-value' })}
                                     value="${this._newMessage.value ?? ''}"
                                     @value-changed="${(e) => this._createMessageValueChanged(e)}"
                                     required>
                         </vaadin-text-area>
                         
                         <div colspan="2">
-                            <span>Headers</span>
+                            <span>${msg('Headers', { id: 'quarkus-kafka-client-headers' })}</span>
                             <vaadin-text-field id="key"
-                                placeholder="key" value=''>
+                                placeholder=${msg('key', { id: 'quarkus-kafka-client-key-placeholder-header' })} value=''>
                             </vaadin-text-field>
                             <vaadin-text-field id="value"
-                                placeholder="value"
+                                placeholder=${msg('value', { id: 'quarkus-kafka-client-value-placeholder-header' })}
                                 value=''>
                             </vaadin-text-field>
-                            <vaadin-button slot="suffix" theme="icon" aria-label="Add header" @click=${(e) => this._newMessageAddHeader(e)}>
+                            <vaadin-button slot="suffix" theme="icon" aria-label=${msg('Add header', { id: 'quarkus-kafka-client-add-header' })} @click=${(e) => this._newMessageAddHeader(e)}>
                                 <vaadin-icon icon="font-awesome-solid:plus"></vaadin-icon>
                             </vaadin-button>
                         </div>
@@ -144,13 +146,13 @@ export class QwcKafkaAddMessage extends LitElement {
                                 theme="no-border" all-rows-visible>
                             <vaadin-grid-sort-column auto-width
                                 path="key"
-                                header="Key"
+                                header=${msg('Key', { id: 'quarkus-kafka-client-key' })}
                                 resizable>
                             </vaadin-grid-sort-column>
 
                             <vaadin-grid-sort-column auto-width
                                 path="value"
-                                header="Value"
+                                header=${msg('Value', { id: 'quarkus-kafka-client-value' })}
                                 resizable>
                             </vaadin-grid-sort-column>
                         </vaadin-grid>`;
@@ -159,8 +161,8 @@ export class QwcKafkaAddMessage extends LitElement {
 
     _renderCreateMessageButtons(){
         return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
-                        <vaadin-button theme="secondary" @click=${this._submitCreateMessageForm}>Create</vaadin-button>
-                        <vaadin-button theme="secondary error" @click=${this._cancel}>Cancel</vaadin-button>
+                        <vaadin-button theme="secondary" @click=${this._submitCreateMessageForm}>${msg('Create', { id: 'quarkus-kafka-client-create' })}</vaadin-button>
+                        <vaadin-button theme="secondary error" @click=${this._cancel}>${msg('Cancel', { id: 'quarkus-kafka-client-cancel' })}</vaadin-button>
                     </div>`;
     }
 
@@ -185,7 +187,7 @@ export class QwcKafkaAddMessage extends LitElement {
                             detail: {result: jsonRpcResponse.result},
                             bubbles: true,
                             cancelable: true,
-                            composed: false,
+                            composed: false
                         });
 
                         this.dispatchEvent(success);

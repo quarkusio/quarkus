@@ -21,7 +21,7 @@ export class QwcReadme extends LitElement {
   `;
 
   static properties = {
-      _readme: {state:true},
+      _readme: {state:true}
   };
 
   constructor() {

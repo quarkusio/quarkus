@@ -7,6 +7,7 @@ import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import '@vaadin/combo-box';
 import { JsonRpc } from 'jsonrpc';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Application dependencies
@@ -62,6 +63,7 @@ export class QwcDependencies extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._root = root;
         this._categories =     ['root'   , 'deployment', 'runtime', 'target'];
         this._categoriesEnum = ['root'   , 'deployment', 'runtime', 'target'];
@@ -93,7 +95,7 @@ export class QwcDependencies extends LitElement {
             let targetNode = dependencyGraphNodes.find(item => item.id === linkSpec.target);
             let catindex = this._categoriesEnum.indexOf(linkSpec.type);
             
-            if(this._showDirectOnly.length==0 || (this._showDirectOnly.length>0 && this._isDirect(linkSpec))){
+            if(this._showDirectOnly.length===0 || (this._showDirectOnly.length>0 && this._isDirect(linkSpec))){
                 this._addToNodes(sourceNode, catindex);
                 this._addToNodes(targetNode, catindex);
                 let link = new Object();
@@ -178,10 +180,10 @@ export class QwcDependencies extends LitElement {
                             ${this._renderDirectOnlyCheckbox()}
                             ${this._renderSimpleDescriptionCheckbox()}
                             
-                            <vaadin-button theme="icon" aria-label="Zoom in" @click=${this._zoomIn}>
+                            <vaadin-button theme="icon" aria-label="${msg('Zoom in', { id: 'log-zoom-in' })}" @click=${this._zoomIn}>
                                 <vaadin-icon icon="font-awesome-solid:magnifying-glass-plus"></vaadin-icon>
                             </vaadin-button>
-                            <vaadin-button theme="icon" aria-label="Zoom out" @click=${this._zoomOut}>
+                            <vaadin-button theme="icon" aria-label="${msg('Zoom out', { id: 'log-zoom-out' })}" @click=${this._zoomOut}>
                                 <vaadin-icon icon="font-awesome-solid:magnifying-glass-minus"></vaadin-icon>
                             </vaadin-button>
                         </div>
@@ -194,7 +196,7 @@ export class QwcDependencies extends LitElement {
                 this._togglePathToTarget(event);
             }}"
             class="allGavs"
-            placeholder="Show path to ..."
+            placeholder="${msg('Show path to...', { id: 'dependencies-show-path-to' })}"
             item-label-path="name"
             item-value-path="id"
             .items="${this._allGavs}"
@@ -209,7 +211,7 @@ export class QwcDependencies extends LitElement {
                             this._showSimpleDescription = event.detail.value;
                             this._createNodes();
                         }}">
-                        <vaadin-checkbox value="0" label="Simple description"></vaadin-checkbox>
+                        <vaadin-checkbox value="0" label="${msg('Simple description', { id: 'dependencies-simple-description' })}"></vaadin-checkbox>
                     </vaadin-checkbox-group>`;
     }
 
@@ -220,7 +222,7 @@ export class QwcDependencies extends LitElement {
                             this._showDirectOnly = event.detail.value;
                             this._createNodes();
                         }}">
-                        <vaadin-checkbox value="0" label="Direct Only"></vaadin-checkbox>
+                        <vaadin-checkbox value="0" label="${msg('Direct Only', { id: 'dependencies-direct-only' })}"></vaadin-checkbox>
                     </vaadin-checkbox-group>`;
     }
 

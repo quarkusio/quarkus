@@ -5,6 +5,7 @@ import '@vaadin/button';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the keys of a specific cache.
@@ -37,6 +38,7 @@ export class QwcCacheKeys extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this.cacheName = null;
         this._numberOfKeys = 0;
     }
@@ -51,13 +53,15 @@ export class QwcCacheKeys extends LitElement {
     }
 
     render() {
+        const nok = this._numberOfKeys;
+        const cn = this.cacheName;
         return html`
                     <div class="keys">
                         <vaadin-button @click="${this._backAction}">
                             <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
+                            ${msg('Back', { id: 'quarkus-cache-back' })}
                         </vaadin-button>
-                        <h4>Found ${this._numberOfKeys} keys in ${this.cacheName}</h4>
+                        <h4>${msg(str`Found ${nok} keys in ${cn}`, { id: 'quarkus-cache-found-keys' })}</h4>
                         <vaadin-grid .items="${this._keys}" class="datatable" theme="no-border">
                             <vaadin-grid-column auto-width
                                             header=""

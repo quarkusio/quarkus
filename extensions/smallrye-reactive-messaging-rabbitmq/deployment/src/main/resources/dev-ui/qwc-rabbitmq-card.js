@@ -2,6 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { pages } from 'build-time-data';
 import { JsonRpc } from 'jsonrpc';
 import 'qwc-extension-link';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 const NAME = "Reactive Messaging - RabbitMQ";
 export class QwcRabbitMqCard extends LitElement {
@@ -44,6 +45,11 @@ export class QwcRabbitMqCard extends LitElement {
         _externalUrl: {state: true}
     };
 
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this.jsonRpc.getRabbitMqPort().then(jsonRpcResponse => {
@@ -76,7 +82,7 @@ export class QwcRabbitMqCard extends LitElement {
                     namespace="${this.namespace}"
                     extensionName="${this.extensionName}"
                     iconName="font-awesome-solid:arrow-up-right-from-square"
-                    displayName="RabbitMQ Management UI"
+                    displayName=${msg('RabbitMQ Management UI', { id: 'quarkus-smallrye-reactive-messaging-rabbitmq-management-ui' })}
                     staticLabel="${this._port}"
                     ?embed=false
                     externalUrl="${this._externalUrl}">

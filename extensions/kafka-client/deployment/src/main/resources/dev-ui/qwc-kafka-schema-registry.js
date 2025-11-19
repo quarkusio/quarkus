@@ -1,4 +1,5 @@
-import { LitElement, html, css} from 'lit'; 
+import { LitElement, html, css} from 'lit';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Kafka Scheme Registry
@@ -13,10 +14,11 @@ export class QwcKafkaSchemeRegistry extends LitElement {
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
     }
 
     render() { 
-        return html`<span> TODO: Scheme Registry</span>`;
+        return html`<span>${msg('TODO: Scheme Registry', { id: 'quarkus-kafka-client-schema-registry-todo' })}</span>`;
     }
 }
 

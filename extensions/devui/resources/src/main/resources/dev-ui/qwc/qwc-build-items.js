@@ -9,6 +9,8 @@ import '@vaadin/text-field';
 import '@vaadin/vertical-layout';
 import '@vaadin/horizontal-layout';
 import '@vaadin/progress-bar';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
+
 /**
  * This component shows the Build Items
  */
@@ -49,6 +51,7 @@ export class QwcBuildItems extends QwcHotReloadElement {
 
   constructor() {
     super();
+    updateWhenLocaleChanges(this);
     this.hotReload();
   }
 
@@ -66,7 +69,7 @@ export class QwcBuildItems extends QwcHotReloadElement {
       }else {
           return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Loading build items...</div>
+                <div>${msg('Loading build items...', { id: 'buildmetrics-loading-items' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
@@ -93,23 +96,28 @@ export class QwcBuildItems extends QwcHotReloadElement {
   }
 
   _render() {
+    const count = this._count;
+    const length = this._buildItems.length;
+    
     return html`<div class="build-items">
-            <div class="summary">Produced <strong>${this._count}</strong> build items of <strong>${this._buildItems.length}</strong> types.</div>
+            <div class="summary">${msg(str`Produced ${count} build items of ${length} types.`,
+                                        {id: 'buildmetrics-items-produced'}
+                                )}</div>
             <vaadin-text-field
-                    placeholder="Filter"
+                    placeholder="${msg('Filter', { id: 'buildmetrics-filter' })}"
                     style="width: 100%;"
                     @value-changed="${(e) => this._filter(e)}">
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
             </vaadin-text-field>
             <vaadin-grid .items="${this._filtered}" class="datatable" theme="row-stripes">
                 <vaadin-grid-sort-column resizable
-                                    header="Build item"
+                                    header="${msg('Build item', { id: 'buildmetrics-item' })}"
                                     path="class"
                                     ${columnBodyRenderer(this._classRenderer, [])}>
                 </vaadin-grid-sort-column>
 
                 <vaadin-grid-sort-column auto-width resizable flex-grow="0"
-                                    header="Count"
+                                    header="${msg('Count', { id: 'buildmetrics-count' })}"
                                     path="count">
                 </vaadin-grid-sort-column>
             </vaadin-grid></div>`;

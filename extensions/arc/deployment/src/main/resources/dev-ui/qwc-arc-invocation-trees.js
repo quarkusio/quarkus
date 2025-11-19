@@ -4,6 +4,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
 import '@vaadin/button';
 import '@vaadin/checkbox';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Arc Invocation Trees
@@ -42,6 +43,11 @@ export class QwcArcInvocationTrees extends LitElement {
         _filterOutQuarkusBeans: {state: true}
     };
   
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._filterOutQuarkusBeans = true;
@@ -49,31 +55,40 @@ export class QwcArcInvocationTrees extends LitElement {
     }
   
     render() {
-        if(this._invocations){
+        if (this._invocations) {
             return this._renderInvocations();
         } else {
-            return html`<span>Loading ArC invocation trees...</span>`;
+            return html`<span>
+                ${msg('Loading ArC invocation trees...', { id: 'quarkus-arc-loading-invocation-trees' })}
+            </span>`;
         }
     }
   
     _renderInvocations(){
         return html`<div class="menubar">
                     <vaadin-button theme="small" @click=${() => this._refresh()} class="button">
-                        <vaadin-icon icon="font-awesome-solid:rotate"></vaadin-icon> Refresh
+                        <vaadin-icon icon="font-awesome-solid:rotate"></vaadin-icon> 
+                        ${msg('Refresh', { id: 'quarkus-arc-refresh' })}
                     </vaadin-button> 
                     <vaadin-button theme="small" @click=${() => this._clear()} class="button">
-                        <vaadin-icon icon="font-awesome-solid:trash-can"></vaadin-icon> Clear
+                        <vaadin-icon icon="font-awesome-solid:trash-can"></vaadin-icon> 
+                        ${msg('Clear', { id: 'quarkus-arc-clear' })}
                     </vaadin-button> 
-                    <vaadin-checkbox theme="small" .checked="${this._filterOutQuarkusBeans}" label="Filter out Quarkus beans" @change=${() => this._toggleFilter()}></vaadin-checkbox>
+                    <vaadin-checkbox
+                        theme="small"
+                        .checked="${this._filterOutQuarkusBeans}"
+                        label=${msg('Filter out Quarkus beans', { id: 'quarkus-arc-filter-out-quarkus-beans' })}
+                        @change=${() => this._toggleFilter()}>
+                    </vaadin-checkbox>
                 </div>
                 <vaadin-grid .items="${this._invocations}" class="arctable" theme="no-border">
                     <vaadin-grid-column auto-width
-                        header="Start"
+                        header=${msg('Start', { id: 'quarkus-arc-start' })}
                         path="startTime"
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column width="70%"
-                        header="Invocations"
+                        header=${msg('Invocations', { id: 'quarkus-arc-invocations' })}
                         ${columnBodyRenderer(this._invocationsRenderer, [])}
                         resizable>
                     </vaadin-grid-column>
@@ -93,7 +108,7 @@ export class QwcArcInvocationTrees extends LitElement {
             <li>
             <qui-badge small><span>${invocation.kind.toLowerCase()}</span></qui-badge>
             <code>${invocation.methodName}</code>
-            <qui-badge small primary><span>${invocation.duration == 0 ? '< 1' : invocation.duration} ms</span></qui-badge>
+            <qui-badge small primary><span>${invocation.duration === 0 ? '< 1' : invocation.duration} ms</span></qui-badge>
             <ul>
                 ${invocation.children.map(child =>
                     html`${this._invocationRenderer(child)}`

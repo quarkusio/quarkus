@@ -95,6 +95,7 @@ public class BuildTimeContentProcessor {
     private static final String SLASH = "/";
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
     private static final String ES_MODULE_SHIMS = "es-module-shims";
+    private static final String FLAG_ICONS = "flag-icons";
 
     final Config config = ConfigProvider.getConfig();
 
@@ -159,6 +160,9 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("connection-state", contextRoot + "state/connection-state.js");
         internalImportMapBuildItem.add("assistant-state", contextRoot + "state/assistant-state.js");
         internalImportMapBuildItem.add("devui-state", contextRoot + "state/devui-state.js");
+        // i18n
+        internalImportMapBuildItem.add("i18n/", contextRoot + "i18n/");
+        internalImportMapBuildItem.add("localization", contextRoot + "i18n/localization.js");
 
         internalImportMapProducer.produce(internalImportMapBuildItem);
 
@@ -460,7 +464,7 @@ public class BuildTimeContentProcessor {
             }
         }
 
-        String esModuleShimsVersion = extractEsModuleShimsVersion(mvnpmBuildItem.getMvnpmJars());
+        Map<String, String> jsVersions = extractJsVersionsFor(mvnpmBuildItem.getMvnpmJars(), ES_MODULE_SHIMS, FLAG_ICONS);
         String importmap = aggregator.aggregateAsJson(imports);
         aggregator.reset();
 
@@ -473,7 +477,8 @@ public class BuildTimeContentProcessor {
                 "contextRoot", contextRoot,
                 "importmap", importmap,
                 "themeVars", themeVars,
-                "esModuleShimsVersion", esModuleShimsVersion);
+                "esModuleShimsVersion", jsVersions.get(ES_MODULE_SHIMS),
+                "flagsVersion", jsVersions.get(FLAG_ICONS));
 
         quteTemplateBuildItem.add("index.html", data);
 
@@ -549,16 +554,19 @@ public class BuildTimeContentProcessor {
         buildTimeConstProducer.produce(internalBuildTimeData);
     }
 
-    private String extractEsModuleShimsVersion(Set<URL> urls) {
+    private Map<String, String> extractJsVersionsFor(Set<URL> urls, String... artifacts) {
+        Map<String, String> rm = new HashMap<>();
         for (URL u : urls) {
-            if (u.getPath().contains(ES_MODULE_SHIMS)) {
-                int i = u.getPath().indexOf(ES_MODULE_SHIMS) + ES_MODULE_SHIMS.length() + 1;
-                String versionOnward = u.getPath().substring(i);
-                String[] parts = versionOnward.split(SLASH);
-                return parts[0];
+            for (String artifact : artifacts) {
+                if (u.getPath().contains(artifact)) {
+                    int i = u.getPath().indexOf(artifact) + artifact.length() + 1;
+                    String versionOnward = u.getPath().substring(i);
+                    String[] parts = versionOnward.split(SLASH);
+                    rm.put(artifact, parts[0]);
+                }
             }
         }
-        return "";
+        return rm;
     }
 
     private void addThemeBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData, DevUIConfig devUIConfig,

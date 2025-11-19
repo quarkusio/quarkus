@@ -5,6 +5,7 @@ import '@vaadin/button';
 import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import '@vaadin/progress-bar';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Build Step Execution Graph
@@ -35,6 +36,7 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._threadSlotRecords = null;
         this._slots = null;
         this._showLegend = false;
@@ -57,8 +59,8 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
         
         if(this._threadSlotRecords){
             let xdata = this._slots.toString();
-            let xname = this._slots.length + " time slots (" + this._slots[0] +" ms)";
-            let yname = "Number of build threads used in a time slot";
+            let xname = this._slots.length + " " + msg('time slots', { id: 'buildmetrics-time-slots' }) + " (" + this._slots[0] +" ms)";
+            let yname = msg('Number of build threads used in a time slot', { id: 'buildmetrics-thread-count' });
             return html`${this._renderTopBar()}
                 <echarts-bar-stack width="400px" height="400px"
                         xdata="${xdata}"
@@ -71,7 +73,7 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
         }else{
             return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Loading Build Steps Execution Graph...</div>
+                <div>${msg('Loading Build Steps Execution Graph...', { id: 'buildmetrics-loading-graph' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
@@ -85,10 +87,10 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
                     <div class="top-bar">
                         <vaadin-button @click="${this._backAction}">
                             <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
+                            ${msg('Back', { id: 'buildmetrics-back' })}
                         </vaadin-button>
-                        <h4>Build Steps Concurrent Execution Chart</h4>
-                        <vaadin-checkbox label="Legend"
+                        <h4>${msg('Build Steps Concurrent Execution Chart', { id: 'buildmetrics-concurrent-chart' })}</h4>
+                        <vaadin-checkbox label="${msg('Legend', { id: 'buildmetrics-legend' })}"
                             @change="${(event) => {
                                 this._checkedChanged(event, event.target.checked);
                             }}"
@@ -101,7 +103,7 @@ export class QwcBuildStepsExecutionGraph extends LitElement {
             detail: {},
             bubbles: true,
             cancelable: true,
-            composed: false,
+            composed: false
         });
         this.dispatchEvent(back);
     }

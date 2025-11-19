@@ -4,6 +4,7 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/text-field';
 import '@vaadin/integer-field';
 import '@vaadin/button';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the add Topics Screen
@@ -20,11 +21,12 @@ export class QwcKafkaAddTopic extends LitElement {
 
     static properties = {
         extensionName: {type: String}, // TODO: Add 'pane' concept in router to register internal extension pages.
-        _newTopic: {state: true},
+        _newTopic: {state: true}
     };
 
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this._reset();
     }
 
@@ -36,15 +38,15 @@ export class QwcKafkaAddTopic extends LitElement {
 
     render(){
         return html`<vaadin-text-field
-                        label="Topic Name"
-                        placeholder="my-awesome-topic"
+                        label=${msg('Topic Name', { id: 'quarkus-kafka-client-topic-name' })}
+                        placeholder=${msg('my-awesome-topic', { id: 'quarkus-kafka-client-topic-name-placeholder' })}
                         value="${this._newTopic.name ?? ''}"
                         @value-changed="${(e) => this._nameChanged(e)}"
                         required
                         clear-button-visible>
                     </vaadin-text-field>
                     <vaadin-integer-field 
-                        label="Partitions"
+                        label=${msg('Partitions', { id: 'quarkus-kafka-client-partitions' })}
                         value="${this._newTopic.partitions ?? '1'}" 
                         step-buttons-visible 
                         @value-changed="${(e) => this._partitionsChanged(e)}"
@@ -52,7 +54,7 @@ export class QwcKafkaAddTopic extends LitElement {
                         max="99">
                     </vaadin-integer-field>
                     <vaadin-integer-field 
-                        label="Replications"
+                        label=${msg('Replications', { id: 'quarkus-kafka-client-replications' })}
                         value="${this._newTopic.replications ?? '1'}" 
                         step-buttons-visible 
                         @value-changed="${(e) => this._replicationsChanged(e)}"    
@@ -60,8 +62,8 @@ export class QwcKafkaAddTopic extends LitElement {
                         max="99">
                     </vaadin-integer-field>
                     <vaadin-text-field
-                        label="Configurations"
-                        placeholder="key1=value1,key2=value2"
+                        label=${msg('Configurations', { id: 'quarkus-kafka-client-configurations' })}
+                        placeholder=${msg('key1=value1,key2=value2', { id: 'quarkus-kafka-client-configurations-placeholder' })}
                         value="${this._newTopic.configs}"
                         step-buttons-visible
                         @value-changed="${(e) => this._configsChanged(e)}">
@@ -71,8 +73,8 @@ export class QwcKafkaAddTopic extends LitElement {
     
     _renderButtons(){
         return html`<div style="display: flex; flex-direction: row-reverse; gap: 10px;">
-                        <vaadin-button theme="secondary" @click=${this._submit}>Create</vaadin-button>
-                        <vaadin-button theme="secondary error" @click=${this._cancel}>Cancel</vaadin-button>
+                        <vaadin-button theme="secondary" @click=${this._submit}>${msg('Create', { id: 'quarkus-kafka-client-create' })}</vaadin-button>
+                        <vaadin-button theme="secondary error" @click=${this._cancel}>${msg('Cancel', { id: 'quarkus-kafka-client-cancel' })}</vaadin-button>
                     </div>`;
     }
     
@@ -90,7 +92,7 @@ export class QwcKafkaAddTopic extends LitElement {
             detail: {},
             bubbles: true,
             cancelable: true,
-            composed: false,
+            composed: false
         });
         this.dispatchEvent(canceled);
     }
@@ -108,7 +110,7 @@ export class QwcKafkaAddTopic extends LitElement {
                     detail: {result: jsonRpcResponse.result},
                     bubbles: true,
                     cancelable: true,
-                    composed: false,
+                    composed: false
                 });
 
                 this.dispatchEvent(success);

@@ -9,7 +9,8 @@ import '@vaadin/details';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@qomponent/qui-badge';
-import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
+import { columnBodyRenderer, gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component create the add extensions screen
@@ -86,11 +87,12 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
         _filteredExtensions: {state: true, type: Array},
         _filteredValue: {state: true},
         _filteredCategory: {state: true},
-        _detailsOpenedItem: {state: true, type: Array},
+        _detailsOpenedItem: {state: true, type: Array}
     }
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._extensions = null;
         this._categories = null;
         this._filteredExtensions = null;
@@ -128,7 +130,7 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
         }else{
             return html`<div class="loading">
                             <vaadin-horizontal-layout style="justify-content: space-between;">
-                                <label class="text-secondary" id="pblabel">Loading installable extensions</label>
+                                <label class="text-secondary" id="pblabel">${msg('Loading installable extensions', { id: 'extensions-loading-installable' })}</label>
                             </vaadin-horizontal-layout>
                             <vaadin-progress-bar class="progress" aria-labelledby="pblabel" indeterminate></vaadin-progress-bar>
                         </div>`;
@@ -142,16 +144,22 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
                                 const prop = event.detail.value;
                                 this._detailsOpenedItem = prop ? [prop] : [];
                             }}"
-                            ${gridRowDetailsRenderer(this._descriptionRenderer, [])}>
-                            <vaadin-grid-sort-column header="Name" path="name" auto-width flex-grow="0" resizable></vaadin-grid-sort-column>
-                            <vaadin-grid-sort-column header="Description" path="description" resizable></vaadin-grid-sort-column>
+                            ${gridRowDetailsRenderer(this._expandedDescriptionRenderer, [])}>
+                            <vaadin-grid-sort-column header="${msg('Name', { id: 'extensions-name' })}" path="name" auto-width flex-grow="0" resizable></vaadin-grid-sort-column>
+                            <vaadin-grid-sort-column header="${msg('Description', { id: 'extensions-description' })}" path="description" resizable ${columnBodyRenderer(this._descriptionRenderer, [])}></vaadin-grid-sort-column>
                         </vaadin-grid>`;
+    }
+
+    _descriptionRenderer(prop) {
+        if (prop.description) {
+            return html`${msg(prop.description, {id: prop.artifact.artifactId + '-meta-description'})}`;
+        }
     }
 
     _renderFilterBar(){
         return html`<div class="filterbar">
                         <vaadin-text-field style="width: 100%;"
-                                placeholder="Filter"
+                                placeholder="${msg('Filter', { id: 'extensions-filter' })}"
                                 value="${this._filteredValue}"
                                 @value-changed="${(e) => this._filterTextChanged(e)}">
                             <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
@@ -165,7 +173,7 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
     _renderCategoryDropdown(){
         if(this._categories){
             return html`<vaadin-combo-box
-                            placeholder="Category"
+                            placeholder="${msg('Category', { id: 'extensions-category' })}"
                             item-label-path="name"
                             item-value-path="id"
                             .items="${this._categories}"
@@ -225,12 +233,12 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
         return value.toLowerCase().includes(term.toLowerCase());
     }
 
-    _descriptionRenderer(prop) {
+    _expandedDescriptionRenderer(prop) {
         
         return html`<div class="descriptionPane">
                         <div class="description">
-                            <span class="line"><b>Artifact:</b> ${prop.artifact.groupId}:${prop.artifact.artifactId}</span>
-                            <span class="line"><b>Version:</b> ${prop.artifact.version}</span>
+                            <span class="line"><b>${msg('Artifact', { id: 'extensions-artifact-col' })}:</b> ${prop.artifact.groupId}:${prop.artifact.artifactId}</span>
+                            <span class="line"><b>${msg('Version', { id: 'extensions-version' })}:</b> ${prop.artifact.version}</span>
                             ${this._renderIsPlatform(prop)}
                             ${this._renderMetadata1(prop)}
                         </div>
@@ -240,7 +248,7 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
                     </div>
                     <vaadin-button class="install" theme="secondary success" @click="${() => this._install(prop)}">
                         <vaadin-icon icon="font-awesome-solid:download" slot="prefix"></vaadin-icon>
-                        Add Extension
+                        ${msg('Add extension', { id: 'extensions-add' })}
                     </vaadin-button>    
                     `;
     }
@@ -256,33 +264,33 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
 
     _renderIsPlatform(prop){
         if (prop.origins && prop.origins.some(str => str.startsWith("io.quarkus:quarkus-bom-quarkus-platform"))){
-            return html`<span class="line"><b>Platform:</b> <vaadin-icon style="height: var(--lumo-icon-size-s); width: var(--lumo-icon-size-s);" icon="font-awesome-solid:check"></vaadin-icon></span>`;
+            return html`<span class="line"><b>${msg('Platform', { id: 'extensions-platform' })}:</b> <vaadin-icon style="height: var(--lumo-icon-size-s); width: var(--lumo-icon-size-s);" icon="font-awesome-solid:check"></vaadin-icon></span>`;
         } else {
-            return html`<span class="line"><b>Platform:</b> <vaadin-icon style="height: var(--lumo-icon-size-s); width: var(--lumo-icon-size-s);" icon="font-awesome-solid:xmark"></vaadin-icon></span>`;
+            return html`<span class="line"><b>${msg('Platform', { id: 'extensions-platform' })}:</b> <vaadin-icon style="height: var(--lumo-icon-size-s); width: var(--lumo-icon-size-s);" icon="font-awesome-solid:xmark"></vaadin-icon></span>`;
         } 
     }
 
     _renderGuide(metadata){
        if (metadata.guide){
-           return html`<span class="line"><b>Guide:</b> <a target="_blank" href="${metadata.guide}">${metadata.guide}</a></span>`;
+           return html`<span class="line"><b>${msg('Guide', { id: 'extensions-guide-label' })}:</b> <a target="_blank" href="${metadata.guide}">${metadata.guide}</a></span>`;
         } 
     }
 
     _renderScmUrl(metadata){
         if (metadata['scm-url']){
-           return html`<span class="line"><b>SCM:</b> <a target="_blank" href="${metadata['scm-url']}">${metadata['scm-url']}</a></span>`;     
+           return html`<span class="line"><b>${msg('SCM', { id: 'extensions-scm' })}:</b> <a target="_blank" href="${metadata['scm-url']}">${metadata['scm-url']}</a></span>`;     
         }
     }
     
     _renderStatus(metadata){
         if(metadata.status){
-            return html`<span class="line"><b>Status:</b> <qui-badge level="${this._statusLevel(metadata.status)}" small><span>${metadata.status.toUpperCase()}</span></qui-badge></span>`;     
+            return html`<span class="line"><b>${msg('Status', { id: 'extensions-status' })}:</b> <qui-badge level="${this._statusLevel(metadata.status)}" small><span>${metadata.status.toUpperCase()}</span></qui-badge></span>`;     
         }
     }
     
     _renderMinJavaVersion(metadata){
         if(metadata['minimum-java-version']){
-           return html`<span class="line"><b>Minimum Java version:</b> ${metadata['minimum-java-version']}</span>`;     
+           return html`<span class="line"><b>${msg('Minimum Java version', { id: 'extensions-min-java' })}:</b> ${metadata['minimum-java-version']}</span>`;     
         }
     }
 
@@ -311,19 +319,19 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
     
     _renderCategories(metadata){
         if(metadata.categories){
-           return this._renderList("Categories", metadata.categories);
+           return this._renderList(msg('Categories', { id: 'extensions-categories-col' }), metadata.categories);
         }
     }
     
     _renderKeywords(metadata){
         if(metadata.keywords){
-           return this._renderList("Keywords", metadata.keywords);
+           return this._renderList(msg('Keywords', { id: 'extensions-keywords-col' }), metadata.keywords);
         }
     }
     
     _renderExtensionDependencies(metadata){
         if(metadata['extension-dependencies']){
-           return html`<vaadin-details summary="Extension dependencies">
+           return html`<vaadin-details summary="${msg('Extension dependencies', { id: 'extensions-dependencies-col' })}">
                             <vaadin-vertical-layout>
                                 ${this._renderExtensionDependenciesLines(metadata['extension-dependencies'])}
                             </vaadin-vertical-layout>
@@ -361,7 +369,7 @@ export class QwcExtensionAdd extends QwcHotReloadElement {
             const options = {
                 detail: {outcome: outcome, name: prop.name},
                 bubbles: true,
-                composed: true,
+                composed: true
             };
             this.dispatchEvent(new CustomEvent('inprogress', options));
             

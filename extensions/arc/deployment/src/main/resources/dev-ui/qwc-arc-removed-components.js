@@ -11,6 +11,7 @@ import { removedBeans } from 'build-time-data';
 import { removedDecorators } from 'build-time-data';
 import { removedInterceptors } from 'build-time-data';
 import 'qui-ide-link';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Arc RemovedComponents
@@ -50,11 +51,12 @@ export class QwcArcRemovedComponents extends LitElement {
         _filteredRemovedBeans: {state: true},
         _removedDecorators: {state: true},
         _removedInterceptors: {state: true},
-        _filteredRemovedInterceptors: {state: true},
+        _filteredRemovedInterceptors: {state: true}
     };
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._removedBeans = removedBeans;
         this._filteredRemovedBeans = this._removedBeans;
         this._removedDecorators = removedDecorators;
@@ -67,15 +69,15 @@ export class QwcArcRemovedComponents extends LitElement {
             <vaadin-tabsheet class="fullHeight">
                 <vaadin-tabs slot="tabs">
                     <vaadin-tab id="beans-tab">
-                        <span>Removed beans</span>
+                        <span>${msg('Removed beans', { id: 'quarkus-arc-removed-beans' })}</span>
                         <qui-badge small><span>${this._removedBeans.length}</span></qui-badge>
                     </vaadin-tab>
                     <vaadin-tab id="decorators-tab">
-                        <span>Removed decorators</span>
+                        <span>${msg('Removed decorators', { id: 'quarkus-arc-removed-decorators' })}</span>
                         <qui-badge small><span>${this._removedDecorators.length}</span></qui-badge>
                     </vaadin-tab>
                     <vaadin-tab id="interceptors-tab">
-                        <span>Removed interceptors</span>
+                        <span>${msg('Removed interceptors', { id: 'quarkus-arc-removed-interceptors' })}</span>
                         <qui-badge small><span>${this._removedInterceptors.length}</span></qui-badge>
                     </vaadin-tab>
                 </vaadin-tabs>
@@ -94,12 +96,12 @@ export class QwcArcRemovedComponents extends LitElement {
             return html`${this._renderFilterBar(0)}
                 <vaadin-grid .items="${this._filteredRemovedBeans}" theme="no-border" class="searchableGrid">
                     <vaadin-grid-sort-column path="providerType.name" auto-width
-                        header="Bean"
+                        header=${msg('Bean', { id: 'quarkus-arc-bean' })}
                         ${columnBodyRenderer(this._beanRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
                     <vaadin-grid-column auto-width
-                        header="Kind"
+                        header=${msg('Kind', { id: 'quarkus-arc-kind' })}
                         ${columnBodyRenderer(this._kindRenderer, [])}
                         resizable>
                     </vaadin-grid-column>
@@ -107,13 +109,13 @@ export class QwcArcRemovedComponents extends LitElement {
                 </vaadin-grid>`;
             
         } else {
-            return html`<qui-badge level='contrast'><span>No beans removed</span></qui-badge>`;
+            return html`<qui-badge level='contrast'><span>${msg('No beans removed', { id: 'quarkus-arc-no-beans-removed' })}</span></qui-badge>`;
         }
     }
 
     _renderFilterBar(tab){
         return html`<vaadin-text-field
-                        placeholder="Search"
+                        placeholder=${msg('Search', { id: 'quarkus-arc-search' })}
                         class="filterBar"
                         @value-changed="${(e) => {
                             const searchTerm = (e.detail.value || '').trim();
@@ -121,13 +123,13 @@ export class QwcArcRemovedComponents extends LitElement {
                                 if(value){
                                     return value.toLowerCase().includes(searchTerm.toLowerCase());
                                 }
-                            }
+                            };
                             if(tab === 0){
                                 if(searchTerm?.trim()){
                                     this._filteredRemovedBeans = this._removedBeans.filter(
                                         ({ providerType}) => {
                                             return !searchTerm ||
-                                                matchesTerm(providerType?.name)
+                                                matchesTerm(providerType?.name);
                                     });
                                 }else{
                                     this._filteredRemovedBeans = this._removedBeans;
@@ -137,7 +139,7 @@ export class QwcArcRemovedComponents extends LitElement {
                                     this._filteredRemovedInterceptors = this._removedInterceptors.filter(
                                         ({ interceptorClass}) => {
                                             return !searchTerm ||
-                                                matchesTerm(interceptorClass?.name)
+                                                matchesTerm(interceptorClass?.name);
                                     });
                                 }else{
                                     this._filteredRemovedInterceptors = this._removedInterceptors;
@@ -150,10 +152,10 @@ export class QwcArcRemovedComponents extends LitElement {
 
     _renderRemovedDecorators(){
         if (this._removedDecorators.length > 0) {
-            return html`TODO: Not yet implemented`;
+            return html`${msg('TODO: Not yet implemented', { id: 'quarkus-arc-not-yet-implemented' })}`;
             
         } else {
-            return html`<qui-badge level='contrast'><span>No decorators removed</span></qui-badge>`;
+            return html`<qui-badge level='contrast'><span>${msg('No decorators removed', { id: 'quarkus-arc-no-decorators-removed' })}</span></qui-badge>`;
         }
     }
 
@@ -162,12 +164,12 @@ export class QwcArcRemovedComponents extends LitElement {
             return html`${this._renderFilterBar(2)}
                 <vaadin-grid .items="${this._filteredRemovedInterceptors}" theme="no-border" class="fullHeight">
                     <vaadin-grid-sort-column path="interceptorClass.name" auto-width
-                        header="Interceptor"
+                        header=${msg('Interceptor', { id: 'quarkus-arc-interceptor' })}
                         ${columnBodyRenderer(this._interceptorRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
                     <vaadin-grid-column auto-width
-                        header="Bindings"
+                        header=${msg('Bindings', { id: 'quarkus-arc-bindings' })}
                         ${columnBodyRenderer(this._bindingsRenderer, [])}
                         resizable>
                     </vaadin-grid-column>
@@ -175,7 +177,7 @@ export class QwcArcRemovedComponents extends LitElement {
                 </vaadin-grid>`;
             
         } else {
-            return html`<qui-badge level='contrast'><span>No interceptors removed</span></qui-badge>`;
+            return html`<qui-badge level='contrast'><span>${msg('No interceptors removed', { id: 'quarkus-arc-no-interceptors-removed' })}</span></qui-badge>`;
         }
     }
 
@@ -215,10 +217,10 @@ export class QwcArcRemovedComponents extends LitElement {
         let level = null;
   
         if(bean.kind.toLowerCase() === "field"){
-          kind = "Producer field";
+          kind = msg('Producer field', { id: 'quarkus-arc-producer-field' });
           level = "success";
         }else if(bean.kind.toLowerCase() === "method"){
-            kind = "Producer method";
+            kind = msg('Producer method', { id: 'quarkus-arc-producer-method' });
             level = "success";
         }else if(bean.kind.toLowerCase() === "synthetic"){
           level = "contrast";
@@ -233,9 +235,9 @@ export class QwcArcRemovedComponents extends LitElement {
   
       _kindClassRenderer(bean){
           if (bean.kind.toLowerCase() === "field") {
-              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}</code>`
+              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}</code>`;
           } else if (bean.kind.toLowerCase() === "method") {
-              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
+              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`;
           } else {
               return html``;
           }

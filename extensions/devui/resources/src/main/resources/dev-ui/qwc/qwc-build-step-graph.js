@@ -5,6 +5,7 @@ import '@vaadin/button';
 import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import '@vaadin/progress-bar';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Build Step Graph
@@ -40,6 +41,7 @@ export class QwcBuildStepGraph extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this.stepId = null;
         this._dependencyGraph = null;
         this._categories =     ['root'   , 'direct dependencies', 'direct dependents'];
@@ -71,14 +73,13 @@ export class QwcBuildStepGraph extends LitElement {
             let dependencyGraphNodes = this._dependencyGraph.nodes;
             let dependencyGraphLinks = this._dependencyGraph.links;
 
-            this._links = []
-            this._nodes = []
+            this._links = [];
+            this._nodes = [];
 
             for (var l = 0; l < dependencyGraphLinks.length; l++) {
                 const sourceNode = dependencyGraphNodes.find(node => node.stepId === dependencyGraphLinks[l].source);
                 const targetNode = dependencyGraphNodes.find(node => node.stepId === dependencyGraphLinks[l].target);
-                //console.log('Adding link: ' + sourceNode.stepId + ' -> ' + targetNode.stepId);
-
+                
                 // We need to make sure that the nodes are added first,
                 // because the node index is used as a link source/target
                 const catindex = this._categoriesEnum.indexOf(dependencyGraphLinks[l].type);
@@ -102,7 +103,6 @@ export class QwcBuildStepGraph extends LitElement {
             }else {
                 newNode.category = catindex;
             }
-            //console.log('Adding node: ' + newNode.name);
             return this._nodes.push(newNode) - 1;
         }
         return index;
@@ -115,7 +115,7 @@ export class QwcBuildStepGraph extends LitElement {
         }else{
             nodeObject.name = node.stepId;
         }
-        nodeObject.value = node.stepId == this.stepId ? 20 : 10;
+        nodeObject.value = node.stepId === this.stepId ? 20 : 10;
         nodeObject.symbolSize = nodeObject.value;
         nodeObject.id = node.stepId;
         nodeObject.description = node.simpleName;
@@ -136,12 +136,12 @@ export class QwcBuildStepGraph extends LitElement {
         } else if(this.stepId) {
             return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Loading Dependency Graph...</div>
+                <div>${msg('Loading Dependency Graph...', { id: 'buildmetrics-loading-deps' })}</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;
         } else {
-            return html`<span>No build step provided</span>`;
+            return html`<span>${msg('No build step provided', { id: 'buildmetrics-no-step' })}</span>`;
         }
     }
     
@@ -150,16 +150,16 @@ export class QwcBuildStepGraph extends LitElement {
                     <div class="top-bar">
                         <vaadin-button @click="${this._backAction}">
                             <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
-                            Back
+                            ${msg('Back', { id: 'buildmetrics-back' })}
                         </vaadin-button>
                         <h4>${this.stepId}</h4>
                         <div>
                             ${this._renderCheckbox()}
                             
-                            <vaadin-button theme="icon" aria-label="Zoom in" @click=${this._zoomIn}>
+                            <vaadin-button theme="icon" aria-label="${msg('Zoom in', { id: 'log-zoom-in' })}" @click=${this._zoomIn}>
                                 <vaadin-icon icon="font-awesome-solid:magnifying-glass-plus"></vaadin-icon>
                             </vaadin-button>
-                            <vaadin-button theme="icon" aria-label="Zoom out" @click=${this._zoomOut}>
+                            <vaadin-button theme="icon" aria-label="${msg('Zoom out', { id: 'log-zoom-out' })}" @click=${this._zoomOut}>
                                 <vaadin-icon icon="font-awesome-solid:magnifying-glass-minus"></vaadin-icon>
                             </vaadin-button>
                         </div>
@@ -173,7 +173,7 @@ export class QwcBuildStepGraph extends LitElement {
                             this._showSimpleDescription = event.detail.value;
                             this._createNodes();
                         }}">
-                        <vaadin-checkbox value="0" label="Simple description"></vaadin-checkbox>
+                        <vaadin-checkbox value="0" label="${msg('Simple description', { id: 'buildmetrics-simple-description' })}"></vaadin-checkbox>
                     </vaadin-checkbox-group>`;
     }
     
@@ -182,7 +182,7 @@ export class QwcBuildStepGraph extends LitElement {
             detail: {},
             bubbles: true,
             cancelable: true,
-            composed: false,
+            composed: false
         });
         this.dispatchEvent(back);
     }

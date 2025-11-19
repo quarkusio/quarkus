@@ -2,6 +2,7 @@ import {LitElement, html, css} from 'lit';
 import {importMap} from 'build-time-data';
 
 import '@quarkus-webcomponents/codeblock';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 export class QwcWebDependencyLocatorImportmap extends LitElement {
 
@@ -21,12 +22,13 @@ export class QwcWebDependencyLocatorImportmap extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._importMap = importMap;
     }
 
     render() {
         return html`
-            To use this in your app, add this to the head of your main html:
+            ${msg('To use this in your app, add this to the head of your main html:', { id: 'quarkus-web-dependency-locator-usage-instruction' })}
             <div class="codeBlock">
                 <qui-code-block
                     mode='javascrip'
@@ -34,7 +36,7 @@ export class QwcWebDependencyLocatorImportmap extends LitElement {
                 </qui-code-block>
             </div>
             
-            Here is the generated import map:
+            ${msg('Here is the generated import map:', { id: 'quarkus-web-dependency-locator-generated-importmap' })}
             <div class="codeBlock">
                 <qui-code-block
                     mode='json'
@@ -45,4 +47,4 @@ export class QwcWebDependencyLocatorImportmap extends LitElement {
     }
 }
 
-customElements.define('qwc-web-dependency-locator-importmap', QwcWebDependencyLocatorImportmap)
+customElements.define('qwc-web-dependency-locator-importmap', QwcWebDependencyLocatorImportmap);

@@ -7,6 +7,7 @@ import 'qui-themed-code-block';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/progress-bar';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component allows users to change the configuration in an online editor
@@ -36,6 +37,7 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._error = null;
         this._value = null;
         this._type = null;
@@ -70,7 +72,7 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
 
     render() {
         if(this._error){
-            return html`<span>Error: ${this._error}</span>`;
+            return html`<span>${msg('Error', { id: 'configuration-error' })}: ${this._error}</span>`;
         }
 
         return html`
@@ -96,7 +98,7 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
         }else{
             return html`<vaadin-button @click="${() => this._save()}">
                 <vaadin-icon icon="font-awesome-solid:floppy-disk" slot="prefix"></vaadin-icon>
-                Save
+                ${msg('Save', { id: 'configuration-save' })}
             </vaadin-button>`;
         }
     }
@@ -111,10 +113,10 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
         }).then(jsonRpcResponse => {
             this._inProgress = false;
             if (jsonRpcResponse.result === false) {
-                notifier.showErrorMessage("Configuration failed to update. See log file for details");
+                notifier.showErrorMessage(msg('Configuration failed to update. See log file for details', { id: 'configuration-update-failed' }));
             } else {
                 fetch(devuiState.applicationInfo.contextRoot);
-                notifier.showSuccessMessage("Configuration successfully updated");
+                notifier.showSuccessMessage(msg('Configuration successfully updated', { id: 'configuration-update-success' }));
             }
         });
     }

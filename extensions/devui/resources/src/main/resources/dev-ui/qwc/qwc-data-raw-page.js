@@ -20,7 +20,7 @@ export class QwcDataRawPage extends LitElement {
 
     static properties = {
         _buildTimeDataKey: {attribute: false},
-        _buildTimeData: {attribute: false},
+        _buildTimeData: {attribute: false}
     };
 
     constructor() {

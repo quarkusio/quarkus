@@ -13,6 +13,7 @@ import '@vaadin/checkbox';
 import '@vaadin/select';
 import '@vaadin/item';
 import '@vaadin/list-box';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 
 export class QwcContainerImageBuild extends LitElement {
@@ -44,6 +45,7 @@ export class QwcContainerImageBuild extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this.build_in_progress = false;
         this.build_complete = false;
         this.build_error = false;
@@ -55,10 +57,10 @@ export class QwcContainerImageBuild extends LitElement {
         }
 
         this.types = [];
-        this.types.push({name: "Default", value: ""});
-        this.types.push({name: "Jar", value: "jar"});
-        this.types.push({name: "Mutable Jar", value: "mutable-jar"});
-        this.types.push({name: "Native", value: "native"});
+        this.types.push({name: msg('Default', { id: 'quarkus-container-image-default' }), value: ""});
+        this.types.push({name: msg('Jar', { id: 'quarkus-container-image-jar' }), value: "jar"});
+        this.types.push({name: msg('Mutable Jar', { id: 'quarkus-container-image-mutable-jar' }), value: "mutable-jar"});
+        this.types.push({name: msg('Native', { id: 'quarkus-container-image-native' }), value: "native"});
     }
 
     /**
@@ -79,7 +81,7 @@ export class QwcContainerImageBuild extends LitElement {
 
         const _builderPicker = html`
             <vaadin-select
-                    label="Image Builder"
+                    label=${msg('Image Builder', { id: 'quarkus-container-image-image-builder' })}
                     .items="${_builders}"
                     .value="${_defaultBuilder}"
                     ?disabled="${_builders.length === 1 || this.build_in_progress}"
@@ -90,7 +92,7 @@ export class QwcContainerImageBuild extends LitElement {
         if (this.build_in_progress) {
             progress = html`
                 <div class="report">
-                    <div>Generating container images...</div>
+                    <div>${msg('Generating container images...', { id: 'quarkus-container-image-generating' })}</div>
                     <vaadin-progress-bar indeterminate theme="contrast"></vaadin-progress-bar>
                 </div>`;
         } else if (this.build_complete) {
@@ -106,16 +108,16 @@ export class QwcContainerImageBuild extends LitElement {
         }
 
         return html`
-            <p>Select the type of build (jar, native...) and the container image builder.</p>
+            <p>${msg('Select the type of build (jar, native...) and the container image builder.', { id: 'quarkus-container-image-select-build-type' })}</p>
             <vaadin-select
-                    label="Build Type"
+                    label=${msg('Build Type', { id: 'quarkus-container-image-build-type' })}
                     .items="${_types}"
                     .value="${_defaultType}"
                     ?disabled="${this.build_in_progress}"
                     @value-changed="${e => this.selected_type = e.target.value}"
             ></vaadin-select>
             ${_builderPicker}
-            <vaadin-button @click="${this._build}" ?disabled="${this.build_in_progress}">Build Container</vaadin-button>
+            <vaadin-button @click="${this._build}" ?disabled="${this.build_in_progress}">${msg('Build Container', { id: 'quarkus-container-image-build-container' })}</vaadin-button>
             ${progress}
         `;
     }

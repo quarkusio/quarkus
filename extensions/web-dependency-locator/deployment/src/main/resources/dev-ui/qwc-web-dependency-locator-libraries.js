@@ -7,6 +7,7 @@ import '@vaadin/button';
 import '@vaadin/grid/vaadin-grid-tree-column.js';
 import {notifier} from 'notifier';
 import {columnBodyRenderer} from '@vaadin/grid/lit.js';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 
 export class QwcWebDependencyLocatorLibraries extends LitElement {
@@ -34,6 +35,7 @@ export class QwcWebDependencyLocatorLibraries extends LitElement {
 
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._webDependencyLibraries = webDependencyLibraries;
         this._selectedWebDependency = this._webDependencyLibraries[0];
     }
@@ -68,9 +70,9 @@ export class QwcWebDependencyLocatorLibraries extends LitElement {
                 <vaadin-grid .itemHasChildrenPath="${'children'}" .dataProvider="${dataProvider}"
                              theme="compact no-border" class="full-height">
                     <vaadin-grid-tree-column path="name"></vaadin-grid-tree-column>
-                    <vaadin-grid-column width="5em" header="Copy link" flex-grow="0"
+                    <vaadin-grid-column width="5em" header=${msg('Copy link', { id: 'quarkus-web-dependency-locator-copy-link' })} flex-grow="0"
                                         ${columnBodyRenderer(this._assetCopyRenderer, [])}></vaadin-grid-column>
-                    <vaadin-grid-column width="6em" header="Open asset" flex-grow="0"
+                    <vaadin-grid-column width="6em" header=${msg('Open asset', { id: 'quarkus-web-dependency-locator-open-asset' })} flex-grow="0"
                                         ${columnBodyRenderer(this._assetLinkRenderer, [])}></vaadin-grid-column>
                 </vaadin-grid>
             </div>`;
@@ -78,9 +80,10 @@ export class QwcWebDependencyLocatorLibraries extends LitElement {
 
     _assetLinkRenderer(item) {
         if (item.fileAsset) {
+            const n = item.name;
             return html`<a href="${item.urlPart}" target="_blank" style="color: var(--lumo-contrast-80pct);">
                 <vaadin-icon style="font-size: small;" icon="font-awesome-solid:up-right-from-square" role="link"
-                             title="Open link to ${item.name} in a new tab">
+                             title=${msg(str`Open link to ${n} in a new tab`, { id: 'quarkus-web-dependency-locator-open-link' })}>
                 </vaadin-icon>
             </a>`;
         } else {
@@ -90,11 +93,12 @@ export class QwcWebDependencyLocatorLibraries extends LitElement {
 
     _assetCopyRenderer(item) {
         if (item.fileAsset) {
+            const n = item.name;
             return html`
                 <vaadin-button theme="icon" style="margin: 0; height: 2em;" 
-                               @click=${() => {this._onCopyLinkClick(item)}}
-                               aria-label="Copy link to ${item.name} to clipboard"
-                               title="Copy link to ${item.name} to clipboard">
+                               @click=${() => {this._onCopyLinkClick(item);}}
+                               aria-label=${msg(str`Copy link to ${n} to clipboard`, { id: 'quarkus-web-dependency-locator-copy-link-aria' })}
+                               title=${msg(str`Copy link to ${n} to clipboard`, { id: 'quarkus-web-dependency-locator-copy-link-title' })}>
                     <vaadin-icon style="font-size: small; cursor: pointer" icon="font-awesome-regular:copy"
                                  role="button">
                     </vaadin-icon>
@@ -105,8 +109,9 @@ export class QwcWebDependencyLocatorLibraries extends LitElement {
     }
 
     _onCopyLinkClick(item) {
+        const n = item.name;
         navigator.clipboard.writeText(item.urlPart);
-        notifier.showInfoMessage('URL for ' + item.name + ' copied to clipboard', 'top-end');
+        notifier.showInfoMessage(msg(str`URL for ${n} copied to clipboard`, { id: 'quarkus-web-dependency-locator-url-copied' }), 'top-end');
     }
 
 }

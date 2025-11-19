@@ -2,6 +2,7 @@ import { QwcAbstractLogElement, html, css} from 'qwc-abstract-log-element';
 import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
 import { StorageController } from 'storage-controller';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component represent the Dev UI Json RPC Message log
@@ -49,6 +50,7 @@ export class QwcJsonrpcMessages extends QwcAbstractLogElement {
     
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         const stored = this.storageControl.get("onOffSwitch");
         if(stored && stored === "on"){
             this._isOn = true;
@@ -57,15 +59,15 @@ export class QwcJsonrpcMessages extends QwcAbstractLogElement {
         }
         
         this.logControl
-                .addToggle("On/off switch", this._isOn, (e) => {
+                .addToggle(msg('On/off switch', { id: 'log-toggle' }), this._isOn, (e) => {
                     this._toggleOnOffClicked(e);
-                }).addItem("Zoom out", "font-awesome-solid:magnifying-glass-minus", "grey", (e) => {
+                }).addItem(msg('Zoom out', { id: 'log-zoom-out' }), "font-awesome-solid:magnifying-glass-minus", "grey", (e) => {
                     this._zoomOut();
-                }).addItem("Zoom in", "font-awesome-solid:magnifying-glass-plus", "grey", (e) => {
+                }).addItem(msg('Zoom in', { id: 'log-zoom-in' }), "font-awesome-solid:magnifying-glass-plus", "grey", (e) => {
                     this._zoomIn();
-                }).addItem("Clear", "font-awesome-solid:trash-can", "#FF004A", (e) => {
+                }).addItem(msg('Clear', { id: 'log-clear' }), "font-awesome-solid:broom", "var(--lumo-warning-color)", (e) => {
                     this._clearLog();
-                }).addFollow("Follow log", true , (e) => {
+                }).addFollow(msg('Follow log', { id: 'log-follow' }), true , (e) => {
                     this._toggleFollowLog(e);
                 }).done();
                 

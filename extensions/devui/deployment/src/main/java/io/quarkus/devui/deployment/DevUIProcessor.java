@@ -6,25 +6,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
+import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -120,7 +127,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DevUIProcessor {
     private static final String FOOTER_LOG_NAMESPACE = "devui-footer-log";
-
+    private static final String JS_SUFFIX = ".js";
+    private static final String I18N_DIR = "dev-ui/i18n/";
     private static final String DEVUI = "dev-ui";
     private static final String UNDERSCORE = "_";
     private static final String SLASH = "/";
@@ -345,6 +353,105 @@ public class DevUIProcessor {
                 .addBeanClass(DevUIBuildTimeStaticService.class)
                 .setDefaultScope(BuiltinScope.APPLICATION.getName())
                 .setUnremovable().build());
+    }
+
+    /**
+     * This creates a set of supported locales
+     */
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    BuildTimeConstBuildItem findAllSupportedLocales() {
+        BuildTimeConstBuildItem localesInfo = new BuildTimeConstBuildItem("devui-locales");
+        Set<LanguageCountry> locales = new HashSet<>();
+        try {
+            Enumeration<URL> urls = tccl.getResources(I18N_DIR);
+            while (urls.hasMoreElements()) {
+                URL url = urls.nextElement();
+                String protocol = url.getProtocol();
+
+                if ("file".equals(protocol)) {
+                    scanFileDirectory(url, locales);
+                } else if ("jar".equals(protocol)) {
+                    scanJarDirectory(url, locales);
+                }
+            }
+
+            if (!locales.isEmpty()) {
+                List<LanguageCountry> sorted = locales.stream()
+                        .sorted(Comparator.comparing(LanguageCountry::name, String.CASE_INSENSITIVE_ORDER))
+                        .toList();
+
+                localesInfo.addBuildTimeData("locales", sorted);
+            }
+
+        } catch (IOException | URISyntaxException ex) {
+            ex.printStackTrace();
+            locales.add(new LanguageCountry("en-GB", "English (UK)")); // default
+            List<LanguageCountry> sorted = locales.stream()
+                    .sorted(Comparator.comparing(LanguageCountry::name, String.CASE_INSENSITIVE_ORDER))
+                    .toList();
+            localesInfo.addBuildTimeData("locales", sorted);
+        }
+        return localesInfo;
+    }
+
+    private static void scanFileDirectory(URL dirUrl, Set<LanguageCountry> locales) throws IOException, URISyntaxException {
+        URI uri = dirUrl.toURI();
+        Path dir = Paths.get(uri);
+
+        if (!Files.isDirectory(dir)) {
+            return;
+        }
+
+        try (var stream = Files.list(dir)) {
+            stream.filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        String fileName = path.getFileName().toString();
+                        addIfLocaleFile(fileName, locales);
+                    });
+        }
+
+    }
+
+    private static void scanJarDirectory(URL jarDirUrl, Set<LanguageCountry> locales) throws IOException {
+        JarURLConnection conn = (JarURLConnection) jarDirUrl.openConnection();
+        try (JarFile jarFile = conn.getJarFile()) {
+            Enumeration<JarEntry> entries = jarFile.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                String name = entry.getName();
+                // We only care about entries under dev-ui/i18n/
+                if (name.startsWith(I18N_DIR)) {
+                    String fileName = name.substring(I18N_DIR.length());
+                    // ignore nested dirs under dev-ui/i18n/
+                    if (fileName.contains("/")) {
+                        continue;
+                    }
+                    addIfLocaleFile(fileName, locales);
+                }
+            }
+        }
+
+    }
+
+    private static void addIfLocaleFile(String fileName, Set<LanguageCountry> locales) {
+        if (!fileName.endsWith(JS_SUFFIX)) {
+            return;
+        }
+        if (!fileName.contains("-")) {
+            // only accept e.g. en-GB.js, fr-FR.js, not plain en.js
+            return;
+        }
+
+        String code = fileName.substring(0, fileName.length() - JS_SUFFIX.length());
+
+        Locale locale = Locale.forLanguageTag(code);
+        String displayLanguage = locale.getDisplayLanguage();
+        String countryCode = locale.getCountry();
+
+        locales.add(new LanguageCountry(code, displayLanguage + " (" + countryCode + ")"));
     }
 
     /**
@@ -1302,4 +1409,9 @@ public class DevUIProcessor {
             }
         }
     };
+
+    static record LanguageCountry(
+            String code,
+            String name) {
+    }
 }

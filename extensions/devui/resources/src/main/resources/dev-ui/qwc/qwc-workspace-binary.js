@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import '@vaadin/button';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component allows downloading of binary content
@@ -31,6 +32,7 @@ export class QwcWorkspaceBinary extends LitElement {
     
     constructor() { 
         super();
+        updateWhenLocaleChanges(this);
         this.base64Data = '';
         this.filename = 'file.bin';
         this.mimeType = null;
@@ -38,8 +40,8 @@ export class QwcWorkspaceBinary extends LitElement {
     
     render() {
         return html`
-            <div class="text">Binary content.</div>
-            <vaadin-button theme="secondary" @click=${() => this._downloadFile()}>Download</vaadin-button>
+            <div class="text">${msg('Binary content.', { id: 'workspace-binary' })}</div>
+            <vaadin-button theme="secondary" @click=${() => this._downloadFile()}>${msg('Download', { id: 'workspace-download' })}</vaadin-button>
         `;
     }
     
@@ -87,7 +89,7 @@ export class QwcWorkspaceBinary extends LitElement {
             gif: 'image/gif',
             txt: 'text/plain',
             html: 'text/html',
-            xml: 'application/xml',
+            xml: 'application/xml'
         };
         return map[ext] || 'application/octet-stream';
     }

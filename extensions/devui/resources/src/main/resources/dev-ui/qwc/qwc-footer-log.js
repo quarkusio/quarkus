@@ -2,6 +2,7 @@ import { QwcAbstractLogElement, html, css} from 'qwc-abstract-log-element';
 import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
 import { JsonRpc } from 'jsonrpc';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component represent Log file in the footer.
@@ -41,17 +42,17 @@ export class QwcFooterLog extends QwcAbstractLogElement {
     
     constructor() {
         super();
-         
+        updateWhenLocaleChanges(this);
         this.logControl
-                .addToggle("On/off switch", true, (e) => {
+                .addToggle(msg('On/off switch', { id: 'log-toggle' }), true, (e) => {
                     this._toggleOnOffClicked(e);
-                }).addItem("Zoom out", "font-awesome-solid:magnifying-glass-minus", "var(--lumo-tertiary-text-color)", (e) => {
+                }).addItem(msg('Zoom out', { id: 'log-zoom-out' }), "font-awesome-solid:magnifying-glass-minus", "var(--lumo-tertiary-text-color)", (e) => {
                     this._zoomOut();
-                }).addItem("Zoom in", "font-awesome-solid:magnifying-glass-plus", "var(--lumo-tertiary-text-color)", (e) => {
+                }).addItem(msg('Zoom in', { id: 'log-zoom-in' }), "font-awesome-solid:magnifying-glass-plus", "var(--lumo-tertiary-text-color)", (e) => {
                     this._zoomIn();
-                }).addItem("Clear", "font-awesome-solid:trash-can", "var(--lumo-error-color)", (e) => {
+                }).addItem(msg('Clear', { id: 'log-clear' }), "font-awesome-solid:trash-can", "var(--lumo-error-color)", (e) => {
                     this._clearLog();
-                }).addFollow("Follow log", true , (e) => {
+                }).addFollow(msg('Follow log', { id: 'log-follow' }), true , (e) => {
                     this._toggleFollowLog(e);
                 }).done();
                 

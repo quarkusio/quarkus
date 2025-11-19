@@ -18,6 +18,8 @@
         <lit-element.version>4.2.1</lit-element.version>
         <lit-html.version>3.3.1</lit-html.version>
         <ssr-dom-shim.version>1.4.0</ssr-dom-shim.version>
+        <lit-localize.version>0.12.2</lit-localize.version>
+        <flag-icons.version>7.5.0</flag-icons.version>
         <trusted-types.version>2.0.7</trusted-types.version>
         <reactive-element.version>2.1.1</reactive-element.version>
         <vaadin-usage-statistics.version>2.1.3</vaadin-usage-statistics.version>
@@ -166,6 +168,19 @@
                 <groupId>org.mvnpm.at.lit-labs</groupId>
                 <artifactId>ssr-dom-shim</artifactId>
                 <version>${ssr-dom-shim.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.mvnpm.at.lit</groupId>
+                <artifactId>localize</artifactId>
+                <version>${lit-localize.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>flag-icons</artifactId>
+                <version>${flag-icons.version}</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

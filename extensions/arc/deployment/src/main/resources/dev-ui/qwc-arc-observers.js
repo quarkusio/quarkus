@@ -6,6 +6,7 @@ import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 import 'qui-ide-link';
+import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component shows the Arc Observers
@@ -51,48 +52,49 @@ export class QwcArcObservers extends LitElement {
   
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._observers = observers;
         this._filteredObservers = this._observers;
     }
   
     render() {
-        if(this._filteredObservers){
+        if (this._filteredObservers) {
 
             return html`${this._renderFilterBar()}
                 <vaadin-grid .items="${this._filteredObservers}" class="arctable" theme="no-border">
 
                     <vaadin-grid-sort-column path="declaringClass.name" auto-width
-                        header="Source"
+                        header=${msg('Source', { id: 'quarkus-arc-source' })}
                         ${columnBodyRenderer(this._sourceRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column path="observedType.name" auto-width
-                        header="Observed Type / Qualifiers"
+                        header=${msg('Observed Type / Qualifiers', { id: 'quarkus-arc-observed-type-qualifiers' })}
                         ${columnBodyRenderer(this._typeRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column path="priority" auto-width
-                        header="Priority"
+                        header=${msg('Priority', { id: 'quarkus-arc-priority' })}
                         ${columnBodyRenderer(this._priorityRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column path="reception" auto-width
-                        header="Reception"
+                        header=${msg('Reception', { id: 'quarkus-arc-reception' })}
                         ${columnBodyRenderer(this._receptionRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column path="transactionPhase" auto-width
-                        header="Transaction Phase"
+                        header=${msg('Transaction Phase', { id: 'quarkus-arc-transaction-phase' })}
                         ${columnBodyRenderer(this._transactionPhaseRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
 
                     <vaadin-grid-sort-column path="async" auto-width 
-                        header="Async"
+                        header=${msg('Async', { id: 'quarkus-arc-async' })}
                         ${columnBodyRenderer(this._asyncRenderer, [])}
                         resizable>
                     </vaadin-grid-sort-column>
@@ -103,24 +105,24 @@ export class QwcArcObservers extends LitElement {
 
   _renderFilterBar(){
         return html`<vaadin-text-field
-                        placeholder="Search"
+                        placeholder=${msg('Search', { id: 'quarkus-arc-search' })}
                         class="filterBar"
                         @value-changed="${(e) => {
                             const searchTerm = (e.detail.value || '').trim();
                             const matchesTerm = (value) => {
-                                if(value){
+                                if (value) {
                                     return value.toLowerCase().includes(searchTerm.toLowerCase());
                                 }
-                            }
-                            if(searchTerm?.trim()){
+                            };
+                            if (searchTerm?.trim()) {
                                 this._filteredObservers = this._observers.filter(
                                     ({ declaringClass, observedType , priority}) => {
                                         return !searchTerm ||
                                             matchesTerm(declaringClass?.name) ||
                                             matchesTerm(observedType?.name) ||
-                                            matchesTerm(priority.toString())
+                                            matchesTerm(priority.toString());
                                 });
-                            }else{
+                            } else {
                                 this._filteredObservers = this._observers;
                             }
                         }}">

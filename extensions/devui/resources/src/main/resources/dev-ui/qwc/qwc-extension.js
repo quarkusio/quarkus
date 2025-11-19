@@ -7,6 +7,7 @@ import '@qomponent/qui-badge';
 import { JsonRpc } from 'jsonrpc';
 import { notifier } from 'notifier';
 import { connectionState } from 'connection-state';
+import { msg, str, updateWhenLocaleChanges } from 'localization';
 
 /**
  * This component represent one extension
@@ -107,6 +108,7 @@ export class QwcExtension extends observeState(LitElement) {
     
     constructor() {
         super();
+        updateWhenLocaleChanges(this);
         this._dialogOpened = false;
         this.favourite = false;
         this.installed = false;
@@ -117,7 +119,7 @@ export class QwcExtension extends observeState(LitElement) {
         
         return html`
             <vaadin-dialog class="detailDialog"
-                header-title="${this.name} extension details"
+                header-title="${this.name} ${msg('extension details', { id: 'extensions-details' })}"
                 .opened="${this._dialogOpened}"
                 @opened-changed="${(e) => (this._dialogOpened = e.detail.value)}"
                 ${dialogHeaderRenderer(
@@ -148,38 +150,40 @@ export class QwcExtension extends observeState(LitElement) {
 
     _headerToolBar(){
         let favouriteIcon = "font-awesome-regular:star";
-        let favouriteTitle = "Favour this extension";
+        let favouriteTitle = msg('Favour this extension', { id: 'extensions-favour' });
         if(this.favourite){
             favouriteIcon = "font-awesome-solid:star";
-            favouriteTitle = "Unfavour this extension";
+            favouriteTitle = msg('Unfavour this extension', { id: 'extensions-unfavour' });
         }
-
+        const name = this.name;
         return html`<div class="headerTools">
-                        ${this.clazz == "active"?
+                        ${this.clazz === "active"?
                             html`<vaadin-icon class="icon fav" icon="${favouriteIcon}" @click="${this._fav}" title="${favouriteTitle}"></vaadin-icon>`:
                             html``
                         }
                         ${this.guide?
-                            html`<vaadin-icon class="icon guide" icon="font-awesome-solid:book" @click="${this._guide}" title="Go to the ${this.name} guide"></vaadin-icon>`:
+                            html`<vaadin-icon class="icon guide" icon="font-awesome-solid:book" @click="${this._guide}" title="${msg(str`Go to the ${name} guide`, { id: 'extensions-guide' })}"></vaadin-icon>`:
                             html``
                         }
                     </div>`;
     }
 
     _footerTemplate() {
+        const name = this.name;
         return html`
             <div class="card-footer">
                 ${this._renderConfigFilterIcon()}
                 ${this._renderStatus()}
-                <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="More about the ${this.name} extension"></vaadin-icon>
+                <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="${msg(str`More about the ${name} extension`, { id: 'extensions-more' })}"></vaadin-icon>
             </div>
         `;
     }
 
     _renderConfigFilterIcon(){
+        const name = this.name;
         if(this.configFilter){
             return html`<a href="configuration-form-editor?filter=${this.configFilter}" class="config">
-                    <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" title="Configuration for the ${this.name} extension"></vaadin-icon>
+                    <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" title="${msg(str`Configuration for the ${name} extension`, { id: 'extensions-config' })}"></vaadin-icon>
                 </a>`;
         }else{
             return html`<span></span>`;
@@ -215,59 +219,59 @@ export class QwcExtension extends observeState(LitElement) {
             ${this._renderLogo()}
             <table>
                 <tr>
-                    <td><b>Name</b></td>
+                    <td><b>${msg('Name', { id: 'extensions-name' })}</b></td>
                     <td>${this.name}</td>
                 </tr>
                 <tr>
-                    <td><b>Namespace</b></td>
+                    <td><b>${msg('Namespace', { id: 'extensions-namespace' })}</b></td>
                     <td>${this.namespace}</td>
                 </tr>
                 <tr>
-                    <td><b>Description</b></td>
-                    <td>${this.description}</td>
+                    <td><b>${msg('Description', { id: 'extensions-description' })}</b></td>
+                    <td>${msg(this.description, {id: this.namespace + '-meta-description'})}</td>
                 </tr>
                 <tr>
-                    <td><b>Guide</b></td>
+                    <td><b>${msg('Guide', { id: 'extensions-guide-label' })}</b></td>
                     <td>${this._renderGuideDetails()}</td>
                 </tr>
                 <tr>
-                    <td><b>Artifact</b></td>
+                    <td><b>${msg('Artifact', { id: 'extensions-artifact' })}</b></td>
                     <td>${this._renderArtifact()}</td>
                 </tr>
                 <tr>
-                    <td><b>Short name</b></td>
+                    <td><b>${msg('Short name', { id: 'extensions-short-name' })}</b></td>
                     <td>${this.shortName}</td>
                 </tr>        
                 <tr>
-                    <td><b>Keywords</b></td>
+                    <td><b>${msg('Keywords', { id: 'extensions-keywords' })}</b></td>
                     <td>${this._renderKeywordsDetails()}</td>
                 </tr>        
                 <tr>
-                    <td><b>Status</b></td>
+                    <td><b>${msg('Status', { id: 'extensions-status' })}</b></td>
                     <td><qui-badge level="${this._statusLevel()}" small><span>${this.status.toUpperCase()}</span></qui-badge></td>
                 </tr>        
                 <tr>
-                    <td><b>Config Filter</b></td>
+                    <td><b>${msg('Config Filter', { id: 'extensions-config-filter' })}</b></td>
                     <td>${this.configFilter}</td>
                 </tr>
                 <tr>
-                    <td><b>Categories</b></td>
+                    <td><b>${msg('Categories', { id: 'extensions-categories' })}</b></td>
                     <td>${this.categories}</td>
                 </tr>
                 <tr>
-                    <td><b>Unlisted</b></td>
+                    <td><b>${msg('Unlisted', { id: 'extensions-unlisted' })}</b></td>
                     <td>${this.unlisted}</td>
                 </tr>
                 <tr>
-                    <td><b>Built with</b></td>
+                    <td><b>${msg('Built with', { id: 'extensions-built-with' })}</b></td>
                     <td>${this.builtWith}</td>
                 </tr>
                 <tr>
-                    <td><b>Provides capabilities</b></td>
+                    <td><b>${msg('Provides capabilities', { id: 'extensions-capabilities' })}</b></td>
                     <td>${this.providesCapabilities}</td>
                 </tr>
                 <tr>
-                    <td><b>Extension dependencies</b></td>
+                    <td><b>${msg('Extension dependencies', { id: 'extensions-dependencies' })}</b></td>
                     <td>${this._renderExtensionDependencies()}</td>
                 </tr>
             </table>
@@ -285,7 +289,7 @@ export class QwcExtension extends observeState(LitElement) {
         if(connectionState.current.isConnected && this.installed){
             return html`<vaadin-button style="width: 100%;" theme="secondary error" @click="${this._uninstall}">
                         <vaadin-icon icon="font-awesome-solid:trash-can" slot="prefix"></vaadin-icon>
-                        Remove this extension
+                        ${msg('Remove this extension', { id: 'extensions-remove' })}
                     </vaadin-button>`;
         }
     }
@@ -296,7 +300,7 @@ export class QwcExtension extends observeState(LitElement) {
         this.jsonRpc.removeExtension({extensionArtifactId:this.artifact}).then(jsonRpcResponse => {
             let outcome = jsonRpcResponse.result;
             if(!outcome){
-                notifier.showErrorMessage(name + " removal failed");
+                notifier.showErrorMessage(name + " " + msg('removal in progress', { id: 'extensions-removing' }));
             }
         });
     }
@@ -344,7 +348,7 @@ export class QwcExtension extends observeState(LitElement) {
           const options = {
             detail: {name},
             bubbles: true,
-            composed: true,
+            composed: true
           };
           this.dispatchEvent(new CustomEvent('favourite', options));
         }

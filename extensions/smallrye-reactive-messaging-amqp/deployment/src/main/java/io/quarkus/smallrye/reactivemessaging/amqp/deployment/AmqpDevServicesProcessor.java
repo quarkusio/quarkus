@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 
@@ -291,7 +292,7 @@ public class AmqpDevServicesProcessor {
 
         public AmqpDevServiceCfg(AmqpDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
-            this.imageName = devServicesConfig.imageName();
+            this.imageName = devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("amqp"));
             this.fixedExposedPort = devServicesConfig.port().orElse(0);
             this.extra = devServicesConfig.extraArgs();
             this.shared = devServicesConfig.shared();

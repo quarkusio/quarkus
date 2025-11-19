@@ -110,6 +110,10 @@
         <!-- Artemis test dependencies -->
         <artemis.version>2.44.0</artemis.version>
 
+        <!-- Dev Services Images -->
+        <!-- TODO switch to apache/activemq-artemis to match the artemis version-->
+        <amqp.image>quay.io/artemiscloud/activemq-artemis-broker:1.0.25</amqp.image>
+
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 

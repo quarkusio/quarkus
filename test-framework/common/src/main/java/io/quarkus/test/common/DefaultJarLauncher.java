@@ -56,6 +56,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private Process quarkusProcess;
 
     private boolean isSsl;
+    private Path logFile;
 
     @Override
     public void init(JarArtifactLauncher.JarInitContext initContext) {
@@ -74,9 +75,10 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(LogRuntimeConfig.class);
+        logFile = logRuntimeConfig.file().path().toPath();
         if (startedFunction != null) {
             IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
-                    waitTimeSeconds, logRuntimeConfig.file().path().toPath());
+                    waitTimeSeconds, logFile);
             isSsl = result.isSsl();
         } else {
             ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
@@ -107,6 +109,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     public void start(String[] programArgs, boolean handleIo) throws IOException {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        logFile = logRuntimeConfig.file().path().toPath();
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         List<String> args = new ArrayList<>();
@@ -120,12 +123,12 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);
             args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // this won't be correct when using the random port but it's really only used by us for the rest client
+            // tests
             // in the main module, since those tests hit the application itself
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }
-        File logPath = logRuntimeConfig.file().path();
-        args.add("-Dquarkus.log.file.path=" + logPath.getAbsolutePath());
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
         args.add("-Dquarkus.log.file.enabled=true");
         args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
@@ -141,12 +144,12 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
         try {
-            Files.deleteIfExists(logPath.toPath());
-            if (logPath.getParent() != null) {
-                Files.createDirectories(logPath.toPath().getParent());
+            Files.deleteIfExists(logFile);
+            if (logFile.getParent() != null) {
+                Files.createDirectories(logFile.getParent());
             }
         } catch (FileSystemException e) {
-            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
         }
 
         if (handleIo) {
@@ -189,6 +192,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
+        LauncherUtil.toStdOut(logFile);
         LauncherUtil.destroyProcess(quarkusProcess);
     }
+
 }

@@ -11,6 +11,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     private final Map<String, String> systemProps = new HashMap<>();
 
     private boolean isSsl;
+    private Path logFile;
 
     @Override
     public void init(NativeImageInitContext initContext) {
@@ -105,6 +107,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         Supplier<Boolean> startedSupplier = createStartedSupplier(); // keep the legacy SPI handling
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(LogRuntimeConfig.class);
+        logFile = logRuntimeConfig.file().path().toPath();
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         if (startedSupplier != null) {
             waitForStartedSupplier(startedSupplier, quarkusProcess, waitTimeSeconds);
@@ -140,8 +143,8 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             // in the main module, since those tests hit the application itself
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }
-        File logPath = logRuntimeConfig.file().path();
-        args.add("-Dquarkus.log.file.path=" + logPath.getAbsolutePath());
+        logFile = logRuntimeConfig.file().path().toPath();
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
         args.add("-Dquarkus.log.file.enabled=true");
         args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
@@ -154,12 +157,12 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
 
         try {
-            Files.deleteIfExists(logPath.toPath());
-            if (logPath.getParent() != null) {
-                Files.createDirectories(logPath.toPath().getParent());
+            Files.deleteIfExists(logFile);
+            if (logFile.getParent() != null) {
+                Files.createDirectories(logFile.getParent());
             }
         } catch (FileSystemException e) {
-            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
         }
 
         if (handleIo) {
@@ -294,6 +297,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
     @Override
     public void close() {
+        LauncherUtil.toStdOut(logFile);
         LauncherUtil.destroyProcess(quarkusProcess);
     }
 }

@@ -283,9 +283,9 @@ However, in production, you will run your own Infinispan (or Red Hat Data Grid).
 
 Let's start an Infinispan server on the port 11222 using:
 
-[source, shell]
+[source, shell, subs=attributes+]
 ----
-docker run -it -p 11222:11222 -e USER="admin" -e PASS="password" quay.io/infinispan/server:latest
+docker run -it -p 11222:11222 -e USER="admin" -e PASS="password" {infinispan-image}
 ----
 
 Then, open the `src/main/resources/application.properties` file and add:

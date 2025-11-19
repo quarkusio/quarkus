@@ -209,12 +209,12 @@ You can disable the sharing with `quarkus.infinispan-client.devservices.shared=f
 Dev Services for Infinispan supports xref:compose-dev-services.adoc[Compose Dev Services].
 It relies on a `compose-devservices.yml`, such as:
 
-[source,yaml]
+[source,yaml,subs=attributes+]
 ----
 name: test-project
 services:
   infinispan:
-    image: quay.io/infinispan/server:15.0.18.Final
+    image: {infinispan-image}
     ports:
       - '11222'
     environment:

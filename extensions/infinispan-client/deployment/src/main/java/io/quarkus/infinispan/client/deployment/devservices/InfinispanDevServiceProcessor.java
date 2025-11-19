@@ -1,9 +1,9 @@
 package io.quarkus.infinispan.client.deployment.devservices;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 import static org.infinispan.server.test.core.InfinispanContainer.DEFAULT_USERNAME;
-import static org.infinispan.server.test.core.InfinispanContainer.IMAGE_BASENAME;
 
 import java.io.Closeable;
 import java.time.Duration;
@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
-import org.infinispan.commons.util.Version;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.BindMode;
@@ -240,7 +239,8 @@ public class InfinispanDevServiceProcessor {
                 .map(containerAddress -> getRunningDevService(clientName, containerAddress.getId(), null,
                         containerAddress.getUrl(), DEFAULT_USERNAME, DEFAULT_PASSWORD, properties)) // TODO can this be always right ?
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(devServicesConfig.imageName().orElse(IMAGE_BASENAME), "infinispan", "datagrid"),
+                        List.of(devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("infinispan")),
+                                "infinispan", "datagrid"),
                         DEFAULT_INFINISPAN_PORT, launchMode, useSharedNetwork)
                         .map(address -> getRunningDevService(clientName, address, properties)))
                 .orElseGet(infinispanServerSupplier);
@@ -290,7 +290,7 @@ public class InfinispanDevServiceProcessor {
 
         public QuarkusInfinispanContainer(String clientName, InfinispanDevServicesConfig config,
                 LaunchMode launchMode, String defaultNetworkId, boolean useSharedNetwork) {
-            super(config.imageName().orElse(IMAGE_BASENAME + ":" + Version.getUnbrandedVersion()));
+            super(config.imageName().orElseGet(() -> getDefaultImageNameFor("infinispan")));
             this.fixedExposedPort = config.port();
             this.useSharedNetwork = useSharedNetwork;
             if (launchMode == DEVELOPMENT) {

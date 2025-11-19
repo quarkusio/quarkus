@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
@@ -70,6 +71,7 @@ public interface InfinispanDevServicesConfig {
      * The image to use.
      * Note that only official Infinispan images are supported.
      */
+    @ConfigDocDefault(value = "`{infinispan-image}`", escape = false)
     Optional<String> imageName();
 
     /**

@@ -118,6 +118,7 @@
         <rabbitmq.image>rabbitmq:3.12-management</rabbitmq.image>
         <pulsar.image>apachepulsar/pulsar:3.2.4</pulsar.image>
         <redis.image>redis:7</redis.image>
+        <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>

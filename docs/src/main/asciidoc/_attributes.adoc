@@ -24,6 +24,7 @@
 :narayana-lra-image: ${narayana-lra.image}
 :mongo-image: ${mongo.image}
 :rabbitmq-image: ${rabbitmq.image}
+:pulsar-image: ${pulsar.image}
 :jandex-version: ${jandex.version}
 :jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
 :kotlin-version: ${kotlin.version}

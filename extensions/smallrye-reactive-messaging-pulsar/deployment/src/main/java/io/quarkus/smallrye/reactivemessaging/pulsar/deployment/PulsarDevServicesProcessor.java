@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 
@@ -276,7 +277,7 @@ public class PulsarDevServicesProcessor {
 
         public PulsarDevServiceCfg(PulsarDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
-            this.imageName = devServicesConfig.imageName();
+            this.imageName = devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("pulsar"));
             this.fixedExposedPort = devServicesConfig.port().orElse(0);
             this.shared = devServicesConfig.shared();
             this.serviceName = devServicesConfig.serviceName();

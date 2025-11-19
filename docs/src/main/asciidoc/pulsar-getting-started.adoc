@@ -398,14 +398,14 @@ Open `http://localhost:8080/quotes.html` in your browser and request some quotes
 When not running in dev or test mode, you will need to start your Pulsar broker.
 You can follow the instructions from the https://pulsar.apache.org/docs/3.0.x/getting-started-docker/[Run a standalone Pulsar cluster in Docker] or create a `docker-compose.yaml` file with the following content:
 
-[source, yaml]
+[source, yaml ,subs=attributes+]
 ----
 version: '3.8'
 
 services:
 
   pulsar:
-    image: apachepulsar/pulsar:3.2.4
+    image: {pulsar-image}
     command: [
       "sh", "-c",
       "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss"

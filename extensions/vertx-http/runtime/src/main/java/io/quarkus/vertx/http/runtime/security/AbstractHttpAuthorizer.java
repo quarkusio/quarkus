@@ -24,9 +24,12 @@ import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -64,6 +67,12 @@ abstract class AbstractHttpAuthorizer {
             return;
         }
 
+        final Context context;
+        if (VertxContext.isOnDuplicatedContext()) {
+            context = Vertx.currentContext();
+        } else {
+            context = null;
+        }
         doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null)
                 .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
@@ -72,7 +81,11 @@ abstract class AbstractHttpAuthorizer {
                             return;
                         }
                         if (checkResult.isPermitted()) {
-                            routingContext.next();
+                            if (context != null) {
+                                context.runOnContext(unused -> routingContext.next());
+                            } else {
+                                routingContext.next();
+                            }
                         } else {
                             // if this is invoked, there is a bug in our code because all the denied checks must result
                             // in the DoDenyException exception

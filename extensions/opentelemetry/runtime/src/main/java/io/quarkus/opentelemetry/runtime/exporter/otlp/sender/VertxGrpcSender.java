@@ -27,7 +27,9 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterUtil;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
@@ -303,12 +305,33 @@ public final class VertxGrpcSender implements GrpcSender {
 
                                         @Override
                                         public String getStatusDescription() {
-                                            return status.toString();
+                                            return status.name();
                                         }
 
                                         @Override
                                         public byte[] getResponseMessage() {
-                                            return null;// fixme
+                                            if (response == null) {
+                                                return null;
+                                            }
+                                            Promise<String> promise = Promise.promise();
+                                            StringBuilder sb = new StringBuilder();
+                                            response.handler(msg -> {
+                                                sb.append(msg.toString());
+                                            });
+                                            response.endHandler(v -> {
+                                                // Done reading stream
+                                                promise.complete(sb.toString());
+                                            });
+                                            response.exceptionHandler(promise::fail);
+                                            String result = promise.future()
+                                                    .timeout(exportTimeout.toMillis(), MILLISECONDS)
+                                                    .recover(throwable -> Future.succeededFuture(
+                                                            "Response error: " + throwable.getMessage()))
+                                                    .result();
+                                            if (result == null || result.isEmpty()) {
+                                                return null;
+                                            }
+                                            return result.getBytes(StandardCharsets.UTF_8);
                                         }
                                     });
                                 } else {

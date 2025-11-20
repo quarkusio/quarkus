@@ -12,6 +12,7 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 /**
@@ -214,6 +215,13 @@ public interface TestConfig {
      * Allowed values are: jar, native
      */
     Optional<String> integrationTestArtifactType();
+
+    /**
+     * The REST Assured client timeout for testing.
+     */
+    @WithDefault("30s")
+    @WithName("http.test-timeout")
+    Duration httpTestTimeout();
 
     interface Profile {
         /**

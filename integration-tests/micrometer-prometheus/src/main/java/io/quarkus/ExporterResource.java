@@ -40,4 +40,16 @@ public class ExporterResource {
         }
         return search.timers().size();
     }
+
+    @Path("/client/count")
+    @Produces(MediaType.APPLICATION_JSON)
+    @GET
+    public Integer countClientRequests(@QueryParam("clientName") String clientName) {
+        final Search search = registry
+                .find("http.client.requests");
+        if (clientName != null) {
+            search.tag("clientName", clientName);
+        }
+        return search.timers().size();
+    }
 }

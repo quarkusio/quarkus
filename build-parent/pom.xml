@@ -115,9 +115,9 @@
         <amqp.image>quay.io/artemiscloud/activemq-artemis-broker:1.0.25</amqp.image>
         <apicurio-registry.image>quay.io/apicurio/apicurio-registry-mem:2.6.13.Final</apicurio-registry.image>
         <narayana-lra.image>quay.io/jbosstm/lra-coordinator:latest</narayana-lra.image>
-        <rabbitmq.image>rabbitmq:3.12-management</rabbitmq.image>
-        <pulsar.image>apachepulsar/pulsar:3.2.4</pulsar.image>
-        <redis.image>redis:7</redis.image>
+        <rabbitmq.image>docker.io/rabbitmq:3.12-management</rabbitmq.image>
+        <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
+        <redis.image>docker.io/redis:7</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
 
         <!-- Code Coverage Properties-->

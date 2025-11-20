@@ -11,6 +11,11 @@
 :mandrel-flavor: ${mandrel.image-tag-for-documentation}
 :surefire-version: ${version.surefire.plugin}
 :gradle-version: ${gradle-wrapper.version}
+:db2-image: ${db2.image}
+:mariadb-image: ${mariadb.image}
+:mssql-image: ${mssql.image}
+:oracle-image: ${oracle.image}
+:postgres-image: ${postgres.image}
 :elasticsearch-version: ${elasticsearch-server.version}
 :elasticsearch-image: ${elasticsearch.image}
 :opensearch-image: ${opensearch.image}

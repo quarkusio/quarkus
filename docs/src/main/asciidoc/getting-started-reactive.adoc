@@ -300,12 +300,12 @@ To run the application, don’t forget to start a database and provide the confi
 
 For example, you can use Docker to run your database:
 
-[source, bash]
+[source, bash, subs=attributes+]
 ----
 docker run -it --rm=true \
     --name postgres-quarkus -e POSTGRES_USER=quarkus \
     -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=fruits \
-    -p 5432:5432 postgres:14.1
+    -p 5432:5432 {postgres-image}
 ----
 
 Then, launch the application using:

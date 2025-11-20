@@ -66,6 +66,18 @@ public interface ElasticsearchCommonBuildTimeConfig {
         Optional<String> imageName();
 
         /**
+         * The Elasticsearch container image to use.
+         *
+         * Defaults depend on the configured `distribution`:
+         *
+         * * For the `elastic` distribution: {elasticsearch-image}
+         * * For the `opensearch` distribution: {opensearch-image}
+         *
+         * @asciidoclet
+         */
+        //Optional<String> imageKibanaName();
+
+        /**
          * The value for the ES_JAVA_OPTS env variable.
          *
          * @asciidoclet

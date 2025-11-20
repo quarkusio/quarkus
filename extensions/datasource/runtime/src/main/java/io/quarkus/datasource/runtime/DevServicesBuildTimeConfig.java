@@ -26,17 +26,17 @@ public interface DevServicesBuildTimeConfig {
 
     /**
      * The container image name for container-based Dev Service providers.
-     * <p>
+     *
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
-     * <p>
+     *
      * Defaults depend on the configured `datasource`:
-     * <p>
-     * * DB2: {db2-image}
-     * * MariaDB: {mariadb-image}
-     * * Microsoft SQL Server: {mssql-image}
-     * * MySQL: {mysql-image}
-     * * Oracle Express Edition: {oracle-image}
-     * * PostgreSQL: {postgres-image}
+     *
+     * * DB2: `{db2-image}`
+     * * MariaDB: `{mariadb-image}`
+     * * Microsoft SQL Server: `{mssql-image}`
+     * * MySQL: `{mysql-image}`
+     * * Oracle Express Edition: `{oracle-image}`
+     * * PostgreSQL: `{postgres-image}`
      *
      * @asciidoclet
      */

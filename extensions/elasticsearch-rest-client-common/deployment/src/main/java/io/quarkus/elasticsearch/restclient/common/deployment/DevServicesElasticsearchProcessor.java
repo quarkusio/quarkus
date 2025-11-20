@@ -114,6 +114,7 @@ public class DevServicesElasticsearchProcessor {
             devService = startElasticsearchDevServices(dockerStatusBuildItem, composeProjectBuildItem,
                     configuration.devservices(), buildItemsConfig, launchMode, useSharedNetwork, devServicesConfig.timeout());
             //BS
+
             startDashboardDevServices(dockerStatusBuildItem, composeProjectBuildItem, configuration.devservices(),
                     buildItemsConfig, launchMode, useSharedNetwork, devServicesConfig.timeout());
             //End BS
@@ -293,8 +294,10 @@ public class DevServicesElasticsearchProcessor {
 
             String defaultNetworkId = composeProjectBuildItem.getDefaultNetworkId();
             CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
-                    ? createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork)
-                    : createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork);
+                    ? createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
+                            composeProjectBuildItem)
+                    : createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
+                            composeProjectBuildItem);
             GenericContainer<?> container = createdContainer.genericContainer();
 
             if (config.serviceName() != null) {
@@ -302,7 +305,8 @@ public class DevServicesElasticsearchProcessor {
                 container.withLabel(Labels.QUARKUS_DEV_SERVICE, config.serviceName());
             }
             if (config.port().isPresent()) {
-                container.setPortBindings(List.of(config.port().get() + ":" + ELASTICSEARCH_PORT));
+                //TODO port mapping configuration
+                container.setPortBindings(List.of(KIBANA_PORT + ":" + KIBANA_PORT));
             }
             timeout.ifPresent(container::withStartupTimeout);
             container.withEnv(config.containerEnv());
@@ -310,10 +314,10 @@ public class DevServicesElasticsearchProcessor {
             container.start();
 
             var httpHost = createdContainer.hostName + ":"
-                    + (useSharedNetwork ? ELASTICSEARCH_PORT : container.getMappedPort(ELASTICSEARCH_PORT));
+                    + (useSharedNetwork ? KIBANA_PORT : container.getMappedPort(KIBANA_PORT));
             return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
-                    new ContainerShutdownCloseable(container, "Elasticsearch"),
+                    new ContainerShutdownCloseable(container, "Kibana"),
                     buildPropertiesMap(buildItemConfig, httpHost));
         };
 
@@ -335,6 +339,9 @@ public class DevServicesElasticsearchProcessor {
 
         // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
         container.addEnv("xpack.security.enabled", "false");
+        // disable enrollment token to allow Kibana in a non-interactive automated way
+        container.addEnv("xpack.security.enrollment.enabled", "false");
+        container.addEnv("discovery.type", "single-node");
         // Disable disk-based shard allocation thresholds:
         // in a single-node setup they just don't make sense,
         // and lead to problems on large disks with little space left.
@@ -368,7 +375,8 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private CreatedContainer createKibanaContainer(ElasticsearchDevServicesBuildTimeConfig config,
-            DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork) {
+            DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork,
+            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem) {
         //Create Generic Kibana container
         GenericContainer<?> container = new GenericContainer<>(
                 resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/kibana/kibana"));
@@ -377,8 +385,22 @@ public class DevServicesElasticsearchProcessor {
                 DEV_SERVICE_KIBANA);
         String elasticsearchHostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
                 DEV_SERVICE_ELASTICSEARCH);
+        container.setExposedPorts(List.of(KIBANA_PORT));
 
-        container.addEnv("ELASTICSEARCH_HOSTS", "http://" + elasticsearchHostName + ":9200");
+        final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
+                config.serviceName(),
+                config.shared(),
+                launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
+                        ELASTICSEARCH_PORT,
+                        launchMode.getLaunchMode(), useSharedNetwork));
+
+        maybeContainerAddress
+                .map(containerAddress -> ("http://" + containerAddress.getHost() + ":" + containerAddress.getPort())
+                        .replace("localhost", "host.docker.internal"))
+                .ifPresent(addressStr -> container.addEnv("ELASTICSEARCH_HOSTS",
+                        addressStr));
         container.addEnv("ELASTICSEARCH_USERNAME", "kibana_system");
         container.addEnv("ELASTICSEARCH_PASSWORD", "test");
 

@@ -10,14 +10,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevConsoleOidcNoDiscoveryJsonRPCTest extends DevUIJsonRPCTest {
+public class DevUIOidcNoDiscoveryJsonRPCTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar.addAsResource(createApplicationProperties(),
                     "application.properties"));
 
-    public DevConsoleOidcNoDiscoveryJsonRPCTest() {
+    public DevUIOidcNoDiscoveryJsonRPCTest() {
         super("quarkus-oidc");
     }
 

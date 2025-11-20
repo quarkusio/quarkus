@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.net.ssl.HostnameVerifier;
@@ -39,6 +40,7 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.config.SmallRyeConfig;
+import io.vertx.core.http.HttpClientOptions;
 
 public class RestClientCDIDelegateBuilder<T> {
 
@@ -87,6 +89,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureShared(builder);
         configureLogging(builder);
         configureCustomProperties(builder);
+        configureClientOptionsCustomizer(builder);
     }
 
     private void configureLogging(QuarkusRestClientBuilder builder) {
@@ -445,6 +448,18 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
+    }
+
+    private void configureClientOptionsCustomizer(QuarkusRestClientBuilder builder) {
+        builder.httpClientOptionsCustomizer(new Consumer<>() {
+            @Override
+            public void accept(HttpClientOptions httpClientOptions) {
+                String metricsName = httpClientOptions.getMetricsName();
+                if (metricsName == null || metricsName.isEmpty()) {
+                    httpClientOptions.setMetricsName("rest-client|" + configKey);
+                }
+            }
+        });
     }
 
     @SafeVarargs

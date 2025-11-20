@@ -6,6 +6,7 @@ import java.security.KeyStore;
 import java.time.Duration;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -283,6 +284,12 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder
      */
     QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions);
+
+    /**
+     * Specifies a callback which will be invoked after Quarkus has populated {@link HttpClientOptions} but before Vert.x uses
+     * it to create {@link io.vertx.core.http.HttpClient}
+     */
+    QuarkusRestClientBuilder httpClientOptionsCustomizer(Consumer<HttpClientOptions> httpClientOptionsCustomizer);
 
     /**
      * Specifies the client logger to use.

@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -54,6 +55,7 @@ import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.smallrye.config.SmallRyeConfig;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.ProxyType;
 import io.vertx.core.net.SSLOptions;
@@ -96,6 +98,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String userAgent;
     private Boolean disableDefaultMapper;
     private Boolean enableCompression;
+    private Consumer<HttpClientOptions> clientOptionsCustomizer;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -298,6 +301,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl enableCompression(boolean enableCompression) {
         this.enableCompression = enableCompression;
+        return this;
+    }
+
+    public RestClientBuilderImpl clientOptionsCustomizer(Consumer<HttpClientOptions> clientOptionsCustomizer) {
+        clientBuilder.clientOptionsCustomizer(clientOptionsCustomizer);
         return this;
     }
 

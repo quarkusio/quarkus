@@ -56,11 +56,11 @@ Let's see how to use Compose Dev Services with examples ranging from simple to m
 In a Quarkus project already configured to use the `quarkus-jdbc-postgresql` extension,
 you can create a `compose-devservices.yml` file in the root of the project and define a custom service using Compose:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: postgres:17
+    image: {postgres-image}
     healthcheck:
       test: pg_isready -U myuser -d mydb
       interval: 5s
@@ -84,11 +84,11 @@ and the application datasource will be configured by extracting connection infor
 
 For more complex scenarios, you can define custom networks and service dependencies:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: postgres:17
+    image: {postgres-image}
     ports:
       - '5432'
     environment:
@@ -101,7 +101,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   cache:
-    image: redis:7
+    image: {redis-image}
     command: redis-server --save 60 1 --loglevel warning
     ports:
       - '6379'
@@ -111,7 +111,7 @@ services:
       - db
 
   message-broker:
-    image: rabbitmq:3-management
+    image: {rabbitmq-image}
     ports:
       - '5672'
       - '15672'
@@ -294,11 +294,11 @@ quarkus.compose.devservices.files=src/main/docker/base-compose.yml,src/main/dock
 With profiles, Compose files can define a set of active profiles so that started services are adjusted for various usages and environments.
 You can specify the profiles to activate by setting the `quarkus.compose.devservices.profiles` property in the `application.properties` file:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: postgres:17
+    image: {postgres-image}
     profiles:
       - dev
       - local
@@ -319,11 +319,11 @@ services:
 
 You can configure Compose Dev Services to not discover specific services by adding the `io.quarkus.devservices.compose.ignore` label to the service in your Compose file:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: postgres:17
+    image: {postgres-image}
     labels:
       io.quarkus.devservices.compose.ignore: true
     ports:
@@ -345,11 +345,11 @@ Compose Dev Services provides several ways to ensure services are ready before y
 Compose Dev Services respects the health checks defined in your Compose file.
 It's recommended to configure health checks for your services to ensure they are ready before your application tries to use them:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: postgres:17
+    image: {postgres-image}
     healthcheck:
       test: pg_isready -U myuser -d mydb
       interval: 5s
@@ -419,11 +419,11 @@ This property sets the maximum time to wait for all Dev Services to start. The d
 Compose Dev Services starts services in the order they are defined in the Compose file.
 If you need to start services in a specific order, you can use the `depends_on` attribute:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: postgres:17
+    image: {postgres-image}
     ports:
       - '5432'
     environment:
@@ -444,11 +444,11 @@ services:
 Compose Dev Services automatically exposes the configuration of discovered services to your application.
 For example, when a database service is discovered with the following compose service description:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 services:
   db:
-    image: mysql:17
+    image: {mysql-image}
     ports:
       - '9906:3306'
     labels:

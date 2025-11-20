@@ -3775,13 +3775,6 @@
                 <version>${commons-logging-jboss-logging.version}</version>
             </dependency>
             <dependency>
-                <!-- NOTE: this dependency exists in order to help users who are using the old GAV for logging -->
-                <!-- The version doesn't need to be a property since it will be locked at 1.2.0.Final forever -->
-                <groupId>org.jboss.logmanager</groupId>
-                <artifactId>jboss-logmanager-embedded</artifactId>
-                <version>1.2.0.Final</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>jboss-logmanager</artifactId>
                 <version>${jboss-logmanager.version}</version>
@@ -4862,12 +4855,6 @@
                 <artifactId>jandex-gizmo2</artifactId>
                 <version>${jandex.version}</version>
             </dependency>
-            <!-- this is a relocation to io.smallrye:jandex, for consumers who didn't move yet -->
-            <dependency>
-                <groupId>org.jboss</groupId>
-                <artifactId>jandex</artifactId>
-                <version>${jandex.version}</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.jboss.logging</groupId>
@@ -5620,18 +5607,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <!-- this artifact has been relocated to com.mysql:mysql-connector-j -->
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
-                <version>${mysql-jdbc.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.google.protobuf</groupId>
-                        <artifactId>protobuf-java</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>com.mysql</groupId>
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-jdbc.version}</version>
@@ -5833,7 +5808,7 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-core</artifactId>
+                <artifactId>infinispan-counter-api</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
@@ -5843,45 +5818,12 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-server-hotrod</artifactId>
-                <version>${infinispan.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-remote-query-server</artifactId>
-                <version>${infinispan.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-commons-test</artifactId>
-                <version>${infinispan.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-core</artifactId>
-                <version>${infinispan.version}</version>
-                <type>test-jar</type>
-                <classifier>jakarta</classifier>
-            </dependency>
-            <dependency>
-                <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-server-hotrod</artifactId>
-                <version>${infinispan.version}</version>
-                <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>org.infinispan</groupId>
                 <artifactId>infinispan-commons</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
                 <artifactId>infinispan-query</artifactId>
-                <version>${infinispan.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-objectfilter</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>

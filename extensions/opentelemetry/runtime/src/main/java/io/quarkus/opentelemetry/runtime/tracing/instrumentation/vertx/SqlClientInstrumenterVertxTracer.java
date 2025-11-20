@@ -152,7 +152,7 @@ public class SqlClientInstrumenterVertxTracer implements
         }
 
         @Override
-        public String getDbSystem(final QueryTrace queryTrace) {
+        public String getDbSystemName(final QueryTrace queryTrace) {
             return queryTrace.system();
         }
 

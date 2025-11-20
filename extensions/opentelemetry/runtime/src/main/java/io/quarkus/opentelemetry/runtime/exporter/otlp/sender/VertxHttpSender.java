@@ -14,13 +14,15 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
-import io.opentelemetry.exporter.internal.http.HttpSender;
-import io.opentelemetry.exporter.internal.marshal.Marshaler;
+import org.jboss.logging.Logger;
+
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.internal.ThrottlingLogger;
+import io.opentelemetry.sdk.common.export.HttpResponse;
+import io.opentelemetry.sdk.common.export.HttpSender;
+import io.opentelemetry.sdk.common.export.MessageWriter;
+import io.opentelemetry.sdk.common.internal.ThrottlingLogger;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
@@ -33,6 +35,8 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.impl.HttpClientBuilderImpl;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.tracing.TracingPolicy;
 
 public final class VertxHttpSender implements HttpSender {
@@ -41,8 +45,10 @@ public final class VertxHttpSender implements HttpSender {
     public static final String METRICS_PATH = "/v1/metrics";
     public static final String LOGS_PATH = "/v1/logs";
 
-    private static final Logger internalLogger = Logger.getLogger(VertxHttpSender.class.getName());
-    private static final ThrottlingLogger logger = new ThrottlingLogger(internalLogger);
+    private static final Logger log = Logger.getLogger(VertxHttpSender.class.getName());
+
+    private static final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
+            java.util.logging.Logger.getLogger(VertxHttpSender.class.getName()));
 
     private static final int MAX_ATTEMPTS = 3;
 
@@ -73,7 +79,15 @@ public final class VertxHttpSender implements HttpSender {
                 .setDefaultPort(getPort(baseUri))
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this http client
         clientOptionsCustomizer.accept(httpClientOptions);
-        this.client = vertx.createHttpClient(httpClientOptions);
+        this.client = (new HttpClientBuilderImpl((VertxInternal) vertx))
+                .with(httpClientOptions)
+                .with(httpClientOptions.getPoolOptions())
+                .withConnectHandler(connection -> {
+                    connection.exceptionHandler(thw -> {
+                        throttlingLogger.log(Level.WARNING, "Connection handler exception: ", thw);
+                    });
+                })
+                .build();
     }
 
     private final AtomicBoolean isShutdown = new AtomicBoolean();
@@ -94,24 +108,23 @@ public final class VertxHttpSender implements HttpSender {
     }
 
     @Override
-    public void send(Marshaler marshaler,
-            int contentLength,
-            Consumer<Response> onHttpResponseRead,
+    public void send(MessageWriter requestBodyWriter,
+            Consumer<HttpResponse> onHttpResponseRead,
             Consumer<Throwable> onError) {
         if (isShutdown.get()) {
             return;
         }
 
-        String marshalerType = marshaler.getClass().getSimpleName();
+        String writerType = requestBodyWriter.getClass().getSimpleName();
         String requestURI = basePath + signalPath;
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
-                contentLength, onHttpResponseRead,
-                onError, marshaler, 1, isShutdown::get);
+                onHttpResponseRead,
+                onError, requestBodyWriter, 1, isShutdown::get);
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
-                failOnClientRequest(marshalerType, throwable, onError);
+                failOnClientRequest(writerType, throwable, onError);
             }
         });
     }
@@ -122,7 +135,7 @@ public final class VertxHttpSender implements HttpSender {
                 + type
                 + ". The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
-        logger.log(Level.WARNING, message);
+        throttlingLogger.log(Level.WARNING, message);
         onError.accept(t);
     }
 
@@ -167,7 +180,7 @@ public final class VertxHttpSender implements HttpSender {
     @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     public CompletableResultCode shutdown() {
         if (!isShutdown.compareAndSet(false, true)) {
-            logger.log(Level.FINE, "Calling shutdown() multiple times.");
+            throttlingLogger.log(Level.FINE, "Calling shutdown() multiple times.");
             return shutdownResult;
         }
 
@@ -187,7 +200,7 @@ public final class VertxHttpSender implements HttpSender {
                         }
                     });
         } catch (RejectedExecutionException e) {
-            internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
+            log.debug("Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
             // which we need to handle
             shutdownResult.fail();
@@ -201,10 +214,9 @@ public final class VertxHttpSender implements HttpSender {
         private final Map<String, String> headers;
         private final boolean compressionEnabled;
         private final String contentType;
-        private final int contentLength;
-        private final Consumer<Response> onHttpResponseRead;
+        private final Consumer<HttpResponse> onHttpResponseRead;
         private final Consumer<Throwable> onError;
-        private final Marshaler marshaler;
+        private final MessageWriter requestBodyWriter;
 
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
@@ -213,10 +225,9 @@ public final class VertxHttpSender implements HttpSender {
                 String requestURI, Map<String, String> headers,
                 boolean compressionEnabled,
                 String contentType,
-                int contentLength,
-                Consumer<Response> onHttpResponseRead,
+                Consumer<HttpResponse> onHttpResponseRead,
                 Consumer<Throwable> onError,
-                Marshaler marshaler,
+                MessageWriter requestBodyWriter,
                 int attemptNumber,
                 Supplier<Boolean> isShutdown) {
             this.client = client;
@@ -224,10 +235,9 @@ public final class VertxHttpSender implements HttpSender {
             this.headers = headers;
             this.compressionEnabled = compressionEnabled;
             this.contentType = contentType;
-            this.contentLength = contentLength;
             this.onHttpResponseRead = onHttpResponseRead;
             this.onError = onError;
-            this.marshaler = marshaler;
+            this.requestBodyWriter = requestBodyWriter;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
         }
@@ -255,19 +265,19 @@ public final class VertxHttpSender implements HttpSender {
                                             return;
                                         }
                                     }
-                                    onHttpResponseRead.accept(new Response() {
+                                    onHttpResponseRead.accept(new HttpResponse() {
                                         @Override
-                                        public int statusCode() {
+                                        public int getStatusCode() {
                                             return clientResponse.statusCode();
                                         }
 
                                         @Override
-                                        public String statusMessage() {
+                                        public String getStatusMessage() {
                                             return clientResponse.statusMessage();
                                         }
 
                                         @Override
-                                        public byte[] responseBody() {
+                                        public byte[] getResponseBody() {
                                             return bodyResult.result().getBytes();
                                         }
                                     });
@@ -299,18 +309,18 @@ public final class VertxHttpSender implements HttpSender {
             })
                     .putHeader("Content-Type", contentType);
 
-            Buffer buffer = Buffer.buffer(contentLength);
+            Buffer buffer = Buffer.buffer(requestBodyWriter.getContentLength());
             OutputStream os = new BufferOutputStream(buffer);
             if (compressionEnabled) {
                 clientRequest.putHeader("Content-Encoding", "gzip");
                 try (var gzos = new GZIPOutputStream(os)) {
-                    marshaler.writeBinaryTo(gzos);
+                    requestBodyWriter.writeMessage(gzos);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
             } else {
                 try {
-                    marshaler.writeBinaryTo(os);
+                    requestBodyWriter.writeMessage(os);
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -327,8 +337,8 @@ public final class VertxHttpSender implements HttpSender {
 
         public ClientRequestSuccessHandler newAttempt() {
             return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
-                    contentType, contentLength, onHttpResponseRead,
-                    onError, marshaler, attemptNumber + 1, isShutdown);
+                    contentType, onHttpResponseRead,
+                    onError, requestBodyWriter, attemptNumber + 1, isShutdown);
         }
     }
 }

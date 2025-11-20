@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "io.opentelemetry.sdk.internal.RandomSupplier")
+@TargetClass(className = "io.opentelemetry.sdk.common.internal.RandomSupplier")
 final class RandomSupplier {
 
     @Substitute

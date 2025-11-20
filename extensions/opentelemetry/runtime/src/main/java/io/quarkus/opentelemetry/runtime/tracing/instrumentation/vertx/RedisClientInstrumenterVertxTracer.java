@@ -181,7 +181,7 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         @Override
-        public String getDbSystem(final CommandTrace commandTrace) {
+        public String getDbSystemName(final CommandTrace commandTrace) {
             return REDIS;
         }
 
@@ -194,7 +194,7 @@ public class RedisClientInstrumenterVertxTracer implements
 
         @Override
         public String getDbNamespace(CommandTrace commandTrace) {
-            return null;
+            return commandTrace.dbIndex();
         }
 
         // kept for compatibility reasons

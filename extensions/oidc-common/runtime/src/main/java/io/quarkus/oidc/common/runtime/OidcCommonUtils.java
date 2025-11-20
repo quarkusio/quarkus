@@ -246,6 +246,10 @@ public class OidcCommonUtils {
         return removeLastPathSeparator(oidcConfig.authServerUrl().get());
     }
 
+    private static String removeAudienceTrailingSlash(Credentials.Jwt jwtConfig, String value) {
+        return !jwtConfig.keepAudienceTrailingSlash() ? removeLastPathSeparator(value) : value;
+    }
+
     private static String removeLastPathSeparator(String value) {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
@@ -435,9 +439,8 @@ public class OidcCommonUtils {
                 .claims(additionalClaims(oidcConfig.credentials().jwt().claims()))
                 .issuer(oidcConfig.credentials().jwt().issuer().orElse(oidcConfig.clientId().get()))
                 .subject(oidcConfig.credentials().jwt().subject().orElse(oidcConfig.clientId().get()))
-                .audience(oidcConfig.credentials().jwt().audience().isPresent()
-                        ? removeLastPathSeparator(oidcConfig.credentials().jwt().audience().get())
-                        : tokenRequestUri)
+                .audience(removeAudienceTrailingSlash(oidcConfig.credentials().jwt(),
+                        oidcConfig.credentials().jwt().audience().orElse(tokenRequestUri)))
                 .expiresIn(oidcConfig.credentials().jwt().lifespan()).jws();
         if (oidcConfig.credentials().jwt().tokenKeyId().isPresent()) {
             jwtSignatureBuilder.keyId(oidcConfig.credentials().jwt().tokenKeyId().get());

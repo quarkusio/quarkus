@@ -7,6 +7,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  * The qualifier does not encapsulate the target service coordinates, but information that given the right context can be mapped
  * to coordinates.
  */
+@Deprecated(forRemoval = true, since = "3.19")
 public final class ServiceBindingQualifierBuildItem extends MultiBuildItem {
 
     private final String id;

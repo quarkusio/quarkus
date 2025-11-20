@@ -6,4 +6,4 @@ metadata:
   - "kubernetes-service-binding"
   categories:
   - "cloud"
-  status: "preview"
+  status: "deprecated"

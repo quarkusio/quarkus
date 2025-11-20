@@ -36,6 +36,12 @@ public interface ElasticsearchCommonBuildTimeConfig {
         Optional<Boolean> enabled();
 
         /**
+         * Kibana configuration for Dev Services.
+         */
+        @ConfigDocSection
+        KibanaDevServicesConfig kibana();
+
+        /**
          * Optional fixed port the dev service will listen to.
          * <p>
          * If not defined, the port will be chosen randomly.
@@ -148,6 +154,19 @@ public interface ElasticsearchCommonBuildTimeConfig {
         enum Distribution {
             ELASTIC,
             OPENSEARCH
+        }
+
+        @ConfigGroup
+        interface KibanaDevServicesConfig {
+            /**
+             * Whether the Kibana Dev Service should start with the application in dev mode or tests.
+             * <p>
+             * Kibana Dev Services are disabled by default when Elasticsearch Dev Services are enabled.
+             *
+             * @asciidoclet
+             */
+            @WithDefault("false")
+            boolean enabled();
         }
     }
 }

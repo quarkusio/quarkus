@@ -262,6 +262,12 @@ public class DevServicesElasticsearchProcessor {
             return null;
         }
 
+        if (!config.kibana().enabled()) {
+            // Kibana explicitly disabled
+            log.debug("Not starting Kibana Dev Service, as it has been disabled in the config.");
+            return null;
+        }
+
         for (String hostsConfigProperty : buildItemConfig.hostsConfigProperties) {
             // Check if elasticsearch hosts property is set
             if (ConfigUtils.isPropertyNonEmpty(hostsConfigProperty)) {

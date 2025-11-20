@@ -261,6 +261,7 @@ https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[Stand
 
 |quarkus.oidc.credentials.jwt.token-key-id ||The token key id (`kid`) header value
 |quarkus.oidc.credentials.jwt.audience |OIDC token endpoint address|Audience (`aud`) claim value
+|quarkus.oidc.credentials.jwt.keep-audience-trailing-slash |false|Whether to keep a trailing slash in the audience value
 |quarkus.oidc.credentials.jwt.issuer |OIDC client id|Issuer (`iss`) claim value
 |quarkus.oidc.credentials.jwt.subject |OIDC client id|Subject (`sub`) cliam value
 |quarkus.oidc.credentials.jwt.lifespan |10 seconds|Lifespan added to the `issued at` (`iat`) claim value to calculate the expiry (`exp`) claim value
@@ -269,6 +270,7 @@ https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[Stand
 
 `quarkus.oidc.credentials.jwt.token-key-id` can be used to set a key identifier (`kid`) header value to help the OIDC provider with fidning a token verification key.
 All other properties listed in the table above can be used to customize JWT claim values.
+
 
 ==== JWT Bearer
 

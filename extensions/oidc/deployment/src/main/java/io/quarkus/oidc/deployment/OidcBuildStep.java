@@ -41,12 +41,14 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
+import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
@@ -105,6 +107,7 @@ import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
@@ -138,6 +141,7 @@ public class OidcBuildStep {
             DotNames.INJECTABLE_INSTANCE);
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
+    private static final DotName TRACER = DotName.createSimple(Tracer.class);
     private static final DotName AUTHENTICATION_CONTEXT_NAME = DotName.createSimple(AuthenticationContext.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
@@ -353,17 +357,19 @@ public class OidcBuildStep {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initTenantConfigBean(OidcRecorder recorder) {
+    void initTenantConfigBean(OidcRecorder recorder, Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem) {
         recorder.initTenantConfigBean();
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     SyntheticBeanBuildItem setup(OidcRecorder recorder, CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem,
+            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry()))
+                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
+                        isOtelSdkEnabled(openTelemetrySdkBuildItem)))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
@@ -565,5 +571,10 @@ public class OidcBuildStep {
         public boolean getAsBoolean() {
             return config.enabled() && config.defaultTokenCacheEnabled();
         }
+    }
+
+    public static Optional<RuntimeValue<Boolean>> isOtelSdkEnabled(Optional<OpenTelemetrySdkBuildItem> buildItem) {
+        // optional is empty if the extension is disabled at build time
+        return buildItem.isPresent() ? Optional.of(buildItem.get().isRuntimeEnabled()) : Optional.empty();
     }
 }

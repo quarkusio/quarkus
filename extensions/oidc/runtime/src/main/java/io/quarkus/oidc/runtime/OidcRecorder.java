@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -60,16 +61,26 @@ public class OidcRecorder {
 
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
-            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry) {
+            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
+            Optional<RuntimeValue<Boolean>> otelEnabled) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
                 final OidcImpl oidc = new OidcImpl(oidcConfig.getValue());
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
-                return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled());
+                return new TenantConfigBean(vertx.get(),
+                        registry.get(),
+                        oidc,
+                        isOtelSdkEnabled(otelEnabled),
+                        securityConfig.getValue().events().enabled());
             }
+
         };
+    }
+
+    private static boolean isOtelSdkEnabled(Optional<RuntimeValue<Boolean>> otelEnabled) {
+        return otelEnabled.isPresent() ? otelEnabled.get().getValue() : false;
     }
 
     public void initTenantConfigBean() {

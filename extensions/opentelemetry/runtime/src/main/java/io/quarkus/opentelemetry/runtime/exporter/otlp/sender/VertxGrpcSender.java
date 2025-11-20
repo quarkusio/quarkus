@@ -294,7 +294,7 @@ public final class VertxGrpcSender implements GrpcSender {
                             public void handle(Void ignored) {
                                 GrpcStatus status = getStatus(response);
                                 if (status == GrpcStatus.OK) {
-                                    //                                    onResponse.accept(GrpcResponse.create(status.code, status.toString()));
+                                    // onResponse.accept(GrpcResponse.create(status.code, status.toString()));
                                     onResponse.accept(new GrpcResponse() {
                                         @Override
                                         public GrpcStatusCode getStatusCode() {

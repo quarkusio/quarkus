@@ -72,7 +72,7 @@ jobs:
         run: |
           ss -ln
           sudo service mysql stop || true
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
       - name: Get SHA

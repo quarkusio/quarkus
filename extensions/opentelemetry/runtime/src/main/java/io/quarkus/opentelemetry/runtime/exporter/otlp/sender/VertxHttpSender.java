@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 import io.opentelemetry.exporter.http.HttpRequestBodyWriter;
+import io.opentelemetry.exporter.http.HttpResponse;
 import io.opentelemetry.exporter.http.HttpSender;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
@@ -95,7 +96,7 @@ public final class VertxHttpSender implements HttpSender {
 
     @Override
     public void send(HttpRequestBodyWriter requestBodyWriter,
-            Consumer<io.opentelemetry.exporter.http.HttpResponse> onHttpResponseRead,
+            Consumer<HttpResponse> onHttpResponseRead,
             Consumer<Throwable> onError) {
         if (isShutdown.get()) {
             return;
@@ -200,7 +201,7 @@ public final class VertxHttpSender implements HttpSender {
         private final Map<String, String> headers;
         private final boolean compressionEnabled;
         private final String contentType;
-        private final Consumer<io.opentelemetry.exporter.http.HttpResponse> onHttpResponseRead;
+        private final Consumer<HttpResponse> onHttpResponseRead;
         private final Consumer<Throwable> onError;
         private final HttpRequestBodyWriter requestBodyWriter;
 
@@ -211,7 +212,7 @@ public final class VertxHttpSender implements HttpSender {
                 String requestURI, Map<String, String> headers,
                 boolean compressionEnabled,
                 String contentType,
-                Consumer<io.opentelemetry.exporter.http.HttpResponse> onHttpResponseRead,
+                Consumer<HttpResponse> onHttpResponseRead,
                 Consumer<Throwable> onError,
                 HttpRequestBodyWriter requestBodyWriter,
                 int attemptNumber,
@@ -251,7 +252,7 @@ public final class VertxHttpSender implements HttpSender {
                                             return;
                                         }
                                     }
-                                    onHttpResponseRead.accept(new io.opentelemetry.exporter.http.HttpResponse() {
+                                    onHttpResponseRead.accept(new HttpResponse() {
                                         @Override
                                         public int getStatusCode() {
                                             return clientResponse.statusCode();

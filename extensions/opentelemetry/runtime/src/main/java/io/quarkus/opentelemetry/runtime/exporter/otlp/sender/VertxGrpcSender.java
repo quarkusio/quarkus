@@ -17,9 +17,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
-import io.opentelemetry.exporter.internal.grpc.GrpcResponse;
-import io.opentelemetry.exporter.internal.grpc.GrpcSender;
-import io.opentelemetry.exporter.internal.marshal.Marshaler;
+import io.opentelemetry.exporter.grpc.GrpcMessageWriter;
+import io.opentelemetry.exporter.grpc.GrpcResponse;
+import io.opentelemetry.exporter.grpc.GrpcSender;
+import io.opentelemetry.exporter.grpc.GrpcStatusCode;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterUtil;
@@ -88,15 +89,17 @@ public final class VertxGrpcSender implements GrpcSender {
     }
 
     @Override
-    public void send(Marshaler request, Consumer onSuccess, Consumer onError) {
+    public void send(GrpcMessageWriter messageWriter,
+            Consumer<GrpcResponse> onResponse,
+            Consumer<Throwable> onError) {
         if (isShutdown.get()) {
             return;
         }
 
-        final String marshalerType = request.getClass().getSimpleName();
+        final String marshalerType = messageWriter.getClass().getSimpleName();
         var onSuccessHandler = new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled,
-                request,
-                loggedUnimplemented, logger, marshalerType, onSuccess, onError, 1, grpcEndpointPath,
+                messageWriter,
+                loggedUnimplemented, logger, marshalerType, onResponse, onError, 1, grpcEndpointPath,
                 isShutdown::get, exportTimeout);
 
         initiateSend(client, server, MAX_ATTEMPTS, onSuccessHandler, exportTimeout, new Consumer<>() {
@@ -195,11 +198,11 @@ public final class VertxGrpcSender implements GrpcSender {
         private final Map<String, String> headers;
         private final boolean compressionEnabled;
 
-        private final Marshaler marshaler;
+        private final GrpcMessageWriter messageWriter;
         private final AtomicBoolean loggedUnimplemented;
         private final ThrottlingLogger logger;
         private final String type;
-        private final Consumer<GrpcResponse> onSuccess;
+        private final Consumer<GrpcResponse> onResponse;
         private final Consumer<Throwable> onError;
         private final String grpcEndpointPath;
 
@@ -211,11 +214,11 @@ public final class VertxGrpcSender implements GrpcSender {
                 SocketAddress server,
                 Map<String, String> headers,
                 boolean compressionEnabled,
-                Marshaler marshaler,
+                GrpcMessageWriter messageWriter,
                 AtomicBoolean loggedUnimplemented,
                 ThrottlingLogger logger,
                 String type,
-                Consumer<GrpcResponse> onSuccess,
+                Consumer<GrpcResponse> onResponse,
                 Consumer<Throwable> onError,
                 int attemptNumber,
                 String grpcEndpointPath,
@@ -226,11 +229,11 @@ public final class VertxGrpcSender implements GrpcSender {
             this.grpcEndpointPath = grpcEndpointPath;
             this.headers = headers;
             this.compressionEnabled = compressionEnabled;
-            this.marshaler = marshaler;
+            this.messageWriter = messageWriter;
             this.loggedUnimplemented = loggedUnimplemented;
             this.logger = logger;
             this.type = type;
-            this.onSuccess = onSuccess;
+            this.onResponse = onResponse;
             this.onError = onError;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
@@ -255,10 +258,10 @@ public final class VertxGrpcSender implements GrpcSender {
             }
 
             try {
-                int messageSize = marshaler.getBinarySerializedSize();
+                int messageSize = messageWriter.contentLength();
                 Buffer buffer = Buffer.buffer(messageSize);
                 var os = new BufferOutputStream(buffer);
-                marshaler.writeBinaryTo(os);
+                messageWriter.writeMessage(os);
                 request.send(buffer).onSuccess(new Handler<>() {
                     @Override
                     public void handle(GrpcClientResponse<Buffer, Buffer> response) {
@@ -291,7 +294,23 @@ public final class VertxGrpcSender implements GrpcSender {
                             public void handle(Void ignored) {
                                 GrpcStatus status = getStatus(response);
                                 if (status == GrpcStatus.OK) {
-                                    onSuccess.accept(GrpcResponse.create(status.code, status.toString()));
+                                    //                                    onResponse.accept(GrpcResponse.create(status.code, status.toString()));
+                                    onResponse.accept(new GrpcResponse() {
+                                        @Override
+                                        public GrpcStatusCode getStatusCode() {
+                                            return GrpcStatusCode.fromValue(status.code);
+                                        }
+
+                                        @Override
+                                        public String getStatusDescription() {
+                                            return status.toString();
+                                        }
+
+                                        @Override
+                                        public byte[] getResponseMessage() {
+                                            return null;// fixme
+                                        }
+                                    });
                                 } else {
                                     handleError(status, response);
                                 }
@@ -447,8 +466,8 @@ public final class VertxGrpcSender implements GrpcSender {
         }
 
         public ClientRequestOnSuccessHandler newAttempt() {
-            return new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled, marshaler,
-                    loggedUnimplemented, logger, type, onSuccess, onError, attemptNumber + 1,
+            return new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled, messageWriter,
+                    loggedUnimplemented, logger, type, onResponse, onError, attemptNumber + 1,
                     grpcEndpointPath, isShutdown, exportTimeout);
         }
     }

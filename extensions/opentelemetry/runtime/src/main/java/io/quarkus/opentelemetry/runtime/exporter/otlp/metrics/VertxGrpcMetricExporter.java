@@ -16,11 +16,11 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 
 public class VertxGrpcMetricExporter implements MetricExporter {
 
-    private final GrpcExporter<MetricsRequestMarshaler> delegate;
+    private final GrpcExporter delegate;
     private final AggregationTemporalitySelector aggregationTemporalitySelector;
     private final DefaultAggregationSelector defaultAggregationSelector;
 
-    public VertxGrpcMetricExporter(GrpcExporter<MetricsRequestMarshaler> grpcExporter,
+    public VertxGrpcMetricExporter(GrpcExporter grpcExporter,
             AggregationTemporalitySelector aggregationTemporalitySelector,
             DefaultAggregationSelector defaultAggregationSelector) {
         this.delegate = grpcExporter;

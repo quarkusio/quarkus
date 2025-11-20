@@ -1,11 +1,13 @@
-package io.quarkus.micrometer.runtime.binder;
+package io.quarkus.micrometer.runtime.binder.vertx;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientResponseFilter;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -13,16 +15,20 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
+import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
+import io.vertx.core.http.HttpClientOptions;
 
 /**
- * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data.
+ * A client filter for the Quarkus REST Client that records Micrometer data
  */
 @Unremovable
 @Provider
 @SuppressWarnings("unused") // this is used by io.quarkus.micrometer.deployment.binder.HttpBinderProcessor
-public class RestClientMetricsFilter implements ClientRequestFilter, ClientResponseFilter {
+public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFilter,
+        ResteasyReactiveClientResponseFilter {
 
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";
     private final MeterRegistry registry = Metrics.globalRegistry;
@@ -30,13 +36,6 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     private final HttpBinderConfiguration httpMetricsConfig;
 
     private final Meter.MeterProvider<Timer> timer;
-
-    // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
-    // In the classic Rest Client this is the constructor called whereas in the Reactive one,
-    // the constructor using HttpBinderConfiguration is called.
-    public RestClientMetricsFilter() {
-        this(Arc.container().instance(HttpBinderConfiguration.class).get());
-    }
 
     @Inject
     public RestClientMetricsFilter(final HttpBinderConfiguration httpMetricsConfig) {
@@ -48,7 +47,7 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     }
 
     @Override
-    public void filter(final ClientRequestContext requestContext) {
+    public void filter(ResteasyReactiveClientRequestContext requestContext) {
         if (!httpMetricsConfig.isClientEnabled()) {
             return;
         }
@@ -59,7 +58,7 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     }
 
     @Override
-    public void filter(final ClientRequestContext requestContext, final ClientResponseContext responseContext) {
+    public void filter(ResteasyReactiveClientRequestContext requestContext, ClientResponseContext responseContext) {
         if (!httpMetricsConfig.isClientEnabled()) {
             return;
         }
@@ -93,12 +92,18 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
         return (RequestMetricInfo) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
     }
 
-    private Tag clientName(ClientRequestContext requestContext) {
-        String host = requestContext.getUri().getHost();
-        if (host == null) {
-            host = "none";
+    private Tag clientName(ResteasyReactiveClientRequestContext requestContext) {
+        String host = null;
+        HttpClientOptions httpClientOptions = requestContext.unwrap(HttpClientOptions.class);
+        if ((httpClientOptions != null) && httpClientOptions.getMetricsName() != null) {
+            host = VertxMeterBinderAdapter.extractClientName(httpClientOptions.getMetricsName());
+        } else {
+            if (requestContext.getUri().getHost() != null) {
+                host = requestContext.getUri().getHost();
+            }
         }
-        return Tag.of("clientName", host);
+
+        return Tag.of("clientName", host != null ? host : "none");
     }
 
     static class RestClientMetricInfo extends RequestMetricInfo {

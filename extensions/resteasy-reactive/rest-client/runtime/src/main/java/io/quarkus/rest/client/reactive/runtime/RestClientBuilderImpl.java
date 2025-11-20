@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -39,6 +40,7 @@ import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
+import org.jboss.resteasy.reactive.client.impl.VertxRequestCustomizingClientBuilder;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -51,9 +53,12 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
+import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.smallrye.config.SmallRyeConfig;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.ProxyType;
 import io.vertx.core.net.SSLOptions;
@@ -62,7 +67,7 @@ import io.vertx.core.net.TrustOptions;
 /**
  * Builder implementation for MicroProfile Rest Client
  */
-public class RestClientBuilderImpl implements RestClientBuilder {
+public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCustomizingClientBuilder<RestClientBuilderImpl> {
 
     private static final String DEFAULT_MAPPER_DISABLED = "microprofile.rest.client.disable.default.mapper";
     private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
@@ -96,6 +101,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String userAgent;
     private Boolean disableDefaultMapper;
     private Boolean enableCompression;
+    private Consumer<HttpClientOptions> clientOptionsCustomizer;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -299,6 +305,43 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     public RestClientBuilderImpl enableCompression(boolean enableCompression) {
         this.enableCompression = enableCompression;
         return this;
+    }
+
+    @Override
+    public RestClientBuilderImpl httpClientOptions(Class<? extends HttpClientOptions> httpClientOptionsClass) {
+        HttpClientOptions bean = BeanGrabber.getBeanIfDefined(httpClientOptionsClass);
+        if (bean == null) {
+            throw new IllegalArgumentException("Failed to instantiate the HTTP client options " + httpClientOptionsClass
+                    + ". Make sure the bean is properly configured for CDI injection.");
+        }
+
+        return httpClientOptions(bean);
+    }
+
+    @Override
+    public RestClientBuilderImpl httpClientOptions(HttpClientOptions httpClientOptions) {
+        register(new HttpClientOptionsContextResolver(httpClientOptions));
+        return this;
+    }
+
+    public RestClientBuilderImpl clientOptionsCustomizer(Consumer<HttpClientOptions> clientOptionsCustomizer) {
+        clientBuilder.clientOptionsCustomizer(clientOptionsCustomizer);
+        return this;
+    }
+
+    @Override
+    public RestClientBuilderImpl httpClientOptionsCustomizer(Consumer<HttpClientOptions> httpClientOptionsCustomizer) {
+        return clientOptionsCustomizer(httpClientOptionsCustomizer);
+    }
+
+    public RestClientBuilderImpl clientRequestCustomizer(Consumer<HttpClientRequest> clientRequestCustomizer) {
+        clientBuilder.clientRequestCustomizer(clientRequestCustomizer);
+        return this;
+    }
+
+    @Override
+    public RestClientBuilderImpl httpClientRequestCustomizer(Consumer<HttpClientRequest> httpClientOptionsCustomizer) {
+        return clientRequestCustomizer(httpClientOptionsCustomizer);
     }
 
     @Override

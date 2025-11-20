@@ -105,7 +105,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     public ClientMetrics<RequestTracker, EventTiming, HttpRequest, HttpResponse> createEndpointMetrics(
             SocketAddress remoteAddress, int maxPoolSize) {
         String remote = NetworkMetrics.toString(remoteAddress);
-        return new ClientMetrics<RequestTracker, EventTiming, HttpRequest, HttpResponse>() {
+        return new ClientMetrics<>() {
             @Override
             public EventTiming enqueueRequest() {
                 queue.increment();
@@ -119,22 +119,29 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             }
 
             @Override
-            public RequestTracker requestBegin(String uri, HttpRequest request) {
-                RequestTracker handler = new RequestTracker(tags, remote, request);
-                String path = handler.getNormalizedUriPath(
+            public RequestTracker init() {
+                return new RequestTracker();
+            }
+
+            @Override
+            public void requestBegin(RequestTracker requestMetric, String uri, HttpRequest request) {
+                requestMetric.request = request;
+                requestMetric.tags = tags.and(
+                        Tag.of("address", remote),
+                        HttpCommonTags.method(request.method().name()),
+                        HttpCommonTags.uri(request.uri(), null, -1, false));
+                String path = requestMetric.getNormalizedUriPath(
                         config.getServerMatchPatterns(),
                         config.getServerIgnorePatterns());
                 if (path != null) {
                     pending.increment();
-                    handler.timer = new EventTiming(null);
-                    return handler;
+                    requestMetric.timer = new EventTiming(null);
                 }
-                return null;
             }
 
             @Override
             public void requestEnd(RequestTracker tracker, long bytesWritten) {
-                if (tracker == null) {
+                if (!shouldTrack(tracker)) {
                     return;
                 }
                 if (tracker.requestEnded()) {
@@ -144,7 +151,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public void requestReset(RequestTracker tracker) {
-                if (tracker == null) {
+                if (!shouldTrack(tracker)) {
                     return;
                 }
                 pending.decrement();
@@ -161,9 +168,10 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
             @Override
             public void responseEnd(RequestTracker tracker, long bytesRead) {
-                if (tracker == null) {
+                if (!shouldTrack(tracker)) {
                     return;
                 }
+                // TODO determine if we should continue based on the metadata
                 if (tracker.responseEnded()) {
                     pending.decrement();
                 }
@@ -218,14 +226,29 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
         }
     }
 
-    public static class RequestTracker extends RequestMetricInfo {
-        private final Tags tags;
-        private final HttpRequest request;
+    private boolean shouldTrack(RequestTracker tracker) {
+        if ((tracker == null) || tracker.timer == null) {
+            return false;
+        }
+        if (tracker.isIgnored()) {
+            return false;
+        }
+        return true;
+    }
+
+    public static class RequestTracker extends RequestMetricInfo implements IgnorableMetric {
+
+        Tags tags;
+        HttpRequest request;
         private EventTiming timer;
         HttpResponse response;
         private boolean responseEnded;
         private boolean requestEnded;
         private boolean reset;
+        private volatile boolean ignored;
+
+        public RequestTracker() {
+        }
 
         RequestTracker(Tags origin, String address, HttpRequest request) {
             this.request = request;
@@ -251,6 +274,16 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
         public String getNormalizedUriPath(Map<Pattern, String> serverMatchPatterns, List<Pattern> serverIgnorePatterns) {
             return super.getNormalizedUriPath(serverMatchPatterns, serverIgnorePatterns, request.uri());
+        }
+
+        @Override
+        public void markAsIgnored() {
+            ignored = true;
+        }
+
+        @Override
+        public boolean isIgnored() {
+            return ignored;
         }
     }
 

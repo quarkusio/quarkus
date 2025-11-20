@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -110,7 +111,8 @@ public class ClientImpl implements Client {
             MultiQueryParamMode multiQueryParamMode,
             LoggingScope loggingScope,
             ClientLogger clientLogger, String userAgent,
-            String tlsConfigName) {
+            String tlsConfigName,
+            List<Consumer<HttpClientRequest>> clientRequestCustomizers) {
         this.userAgent = userAgent;
         this.tlsConfigName = tlsConfigName;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
@@ -216,11 +218,12 @@ public class ClientImpl implements Client {
             });
         }
 
-        handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(),
-                options.getMaxChunkSize(),
+        handlerChain = new HandlerChain(options, isCaptureStacktrace(configuration),
                 followRedirects,
                 loggingScope,
-                clientContext.getMultipartResponsesData(), clientLogger);
+                clientContext.getMultipartResponsesData(),
+                clientLogger,
+                clientRequestCustomizers);
     }
 
     public HttpClient getVertxHttpClient() {

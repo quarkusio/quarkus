@@ -55,19 +55,16 @@ public class QuarkusProjectHelper {
                 buildTool = BuildTool.MAVEN;
             }
             if (BuildTool.MAVEN.equals(buildTool)) {
+                cachedProject = getQuarkusMavenProject(projectDir, log);
+            } else {
+                final ExtensionCatalog catalog;
                 try {
-                    return MavenProjectBuildFile.getProject(projectDir, log, null);
-                } catch (RegistryResolutionException e) {
-                    throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
+                    catalog = resolveExtensionCatalog();
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
                 }
+                cachedProject = getProject(projectDir, catalog, buildTool, JavaVersion.NA, log);
             }
-            final ExtensionCatalog catalog;
-            try {
-                catalog = resolveExtensionCatalog();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
-            }
-            cachedProject = getProject(projectDir, catalog, buildTool, JavaVersion.NA, log);
         }
 
         return cachedProject;
@@ -118,11 +115,7 @@ public class QuarkusProjectHelper {
 
     public static QuarkusProject getProject(Path projectDir, BuildTool buildTool) {
         if (BuildTool.MAVEN.equals(buildTool)) {
-            try {
-                return MavenProjectBuildFile.getProject(projectDir, messageWriter(), null);
-            } catch (RegistryResolutionException e) {
-                throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
-            }
+            return getQuarkusMavenProject(projectDir, messageWriter());
         }
         final ExtensionCatalog catalog;
         try {
@@ -132,6 +125,14 @@ public class QuarkusProjectHelper {
         }
 
         return getProject(projectDir, catalog, buildTool, JavaVersion.NA, messageWriter());
+    }
+
+    public static QuarkusProject getQuarkusMavenProject(Path projectDir, MessageWriter log) {
+        try {
+            return MavenProjectBuildFile.getProject(projectDir, log, null);
+        } catch (RegistryResolutionException e) {
+            throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
+        }
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,

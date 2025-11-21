@@ -2,6 +2,9 @@ package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -59,19 +63,21 @@ public class DevServicesElasticsearchProcessor {
     static final String DEV_SERVICE_LABEL = "quarkus-dev-service-elasticsearch";
     static final String NEW_DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch";
     static final int ELASTICSEARCH_PORT = 9200;
-    static final int KIBANA_PORT = 5601;
+    static final int DASHBOARD_PORT = 5601;
 
     private static final ContainerLocator elasticsearchContainerLocator = locateContainerWithLabels(ELASTICSEARCH_PORT,
             DEV_SERVICE_LABEL, NEW_DEV_SERVICE_LABEL);
-    private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(KIBANA_PORT,
+    private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT,
             DEV_SERVICE_LABEL, NEW_DEV_SERVICE_LABEL);
 
     private static final Distribution DEFAULT_DISTRIBUTION = Distribution.ELASTIC;
     private static final String DEV_SERVICE_ELASTICSEARCH = "elasticsearch";
-    private static final String DEV_SERVICE_KIBANA = "kibana";
     private static final String DEV_SERVICE_OPENSEARCH = "opensearch";
+    private static final String DEV_SERVICE_DASHBOARDS = "opensearch-dashboards";
+    private static final String DEV_SERVICE_KIBANA = "kibana";
 
     static volatile RunningDevService devService;
+    static volatile RunningDevService devDashboardService;
     static volatile ElasticsearchCommonBuildTimeConfig cfg;
     static volatile boolean first = true;
 
@@ -113,11 +119,11 @@ public class DevServicesElasticsearchProcessor {
                     devServicesSharedNetworkBuildItem);
             devService = startElasticsearchDevServices(dockerStatusBuildItem, composeProjectBuildItem,
                     configuration.devservices(), buildItemsConfig, launchMode, useSharedNetwork, devServicesConfig.timeout());
-            //BS
 
-            startDashboardDevServices(dockerStatusBuildItem, composeProjectBuildItem, configuration.devservices(),
+            devDashboardService = startDashboardDevServices(dockerStatusBuildItem, composeProjectBuildItem,
+                    configuration.devservices(),
                     buildItemsConfig, launchMode, useSharedNetwork, devServicesConfig.timeout());
-            //End BS
+
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -138,6 +144,9 @@ public class DevServicesElasticsearchProcessor {
             Runnable closeTask = () -> {
                 if (devService != null) {
                     shutdownElasticsearch();
+                }
+                if (devDashboardService != null) {
+                    shutdownDashboard();
                 }
                 first = true;
                 devService = null;
@@ -168,6 +177,18 @@ public class DevServicesElasticsearchProcessor {
                 devService.close();
             } catch (Throwable e) {
                 log.error("Failed to stop the Elasticsearch server", e);
+            } finally {
+                devService = null;
+            }
+        }
+    }
+
+    private void shutdownDashboard() {
+        if (devService != null) {
+            try {
+                devDashboardService.close();
+            } catch (Throwable e) {
+                log.error("Failed to stop the Dashboard", e);
             } finally {
                 devService = null;
             }
@@ -262,7 +283,7 @@ public class DevServicesElasticsearchProcessor {
             return null;
         }
 
-        if (!config.kibana().enabled()) {
+        if (!config.dashboard().enabled()) {
             // Kibana explicitly disabled
             log.debug("Not starting Kibana Dev Service, as it has been disabled in the config.");
             return null;
@@ -284,7 +305,7 @@ public class DevServicesElasticsearchProcessor {
         }
 
         Distribution resolvedDistribution = resolveDistribution(config, buildItemConfig);
-        DockerImageName resolvedImageName = resolveKibanaImageName(config, resolvedDistribution);
+        DockerImageName resolvedImageName = resolveDashboardImageName(config, resolvedDistribution);
 
         final Optional<ContainerAddress> maybeContainerAddress = dashboardContainerLocator.locateContainer(
                 config.serviceName(),
@@ -292,7 +313,7 @@ public class DevServicesElasticsearchProcessor {
                 launchMode.getLaunchMode())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
-                        KIBANA_PORT,
+                        DASHBOARD_PORT,
                         launchMode.getLaunchMode(), useSharedNetwork));
 
         // Starting the server
@@ -302,7 +323,7 @@ public class DevServicesElasticsearchProcessor {
             CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
                     ? createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
                             composeProjectBuildItem)
-                    : createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
+                    : createDashboardsContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
                             composeProjectBuildItem);
             GenericContainer<?> container = createdContainer.genericContainer();
 
@@ -310,17 +331,16 @@ public class DevServicesElasticsearchProcessor {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName());
                 container.withLabel(Labels.QUARKUS_DEV_SERVICE, config.serviceName());
             }
-            if (config.port().isPresent()) {
-                //TODO port mapping configuration
-                container.setPortBindings(List.of(KIBANA_PORT + ":" + KIBANA_PORT));
+            if (config.dashboard().port().isPresent()) {
+                container.setPortBindings(List.of(config.dashboard().port().get() + ":" + DASHBOARD_PORT));
             }
             timeout.ifPresent(container::withStartupTimeout);
-            container.withEnv(config.containerEnv());
+            container.withEnv(config.dashboard().containerEnv());
             container.withReuse(config.reuse());
             container.start();
 
             var httpHost = createdContainer.hostName + ":"
-                    + (useSharedNetwork ? KIBANA_PORT : container.getMappedPort(KIBANA_PORT));
+                    + (useSharedNetwork ? DASHBOARD_PORT : container.getMappedPort(DASHBOARD_PORT));
             return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     new ContainerShutdownCloseable(container, "Kibana"),
@@ -389,9 +409,7 @@ public class DevServicesElasticsearchProcessor {
 
         String kibanaHostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
                 DEV_SERVICE_KIBANA);
-        String elasticsearchHostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
-                DEV_SERVICE_ELASTICSEARCH);
-        container.setExposedPorts(List.of(KIBANA_PORT));
+        container.setExposedPorts(List.of(DASHBOARD_PORT));
 
         final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
                 config.serviceName(),
@@ -407,9 +425,37 @@ public class DevServicesElasticsearchProcessor {
                         .replace("localhost", "host.docker.internal"))
                 .ifPresent(addressStr -> container.addEnv("ELASTICSEARCH_HOSTS",
                         addressStr));
-        container.addEnv("ELASTICSEARCH_USERNAME", "kibana_system");
-        container.addEnv("ELASTICSEARCH_PASSWORD", "test");
+        container.addEnv("NODE_OPTIONS", config.dashboard().nodeOpts());
+        return new CreatedContainer(container, kibanaHostName);
+    }
 
+    private CreatedContainer createDashboardsContainer(ElasticsearchDevServicesBuildTimeConfig config,
+            DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork,
+            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+        //Create Generic Kibana container
+        GenericContainer<?> container = new GenericContainer<>(
+                resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch-dashboards"));
+
+        String kibanaHostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
+                DEV_SERVICE_DASHBOARDS);
+        container.setExposedPorts(List.of(DASHBOARD_PORT));
+
+        final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
+                config.serviceName(),
+                config.shared(),
+                launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
+                        ELASTICSEARCH_PORT,
+                        launchMode.getLaunchMode(), useSharedNetwork));
+
+        maybeContainerAddress
+                .map(containerAddress -> ("http://" + containerAddress.getHost() + ":" + containerAddress.getPort())
+                        .replace("localhost", "host.docker.internal"))
+                .ifPresent(addressStr -> container.addEnv("OPENSEARCH_HOSTS",
+                        addressStr));
+        container.addEnv("NODE_OPTIONS", config.dashboard().nodeOpts());
+        container.addEnv("DISABLE_SECURITY_DASHBOARDS_PLUGIN", "true");
         return new CreatedContainer(container, kibanaHostName);
     }
 
@@ -424,11 +470,27 @@ public class DevServicesElasticsearchProcessor {
                         : DEV_SERVICE_OPENSEARCH)));
     }
 
-    private DockerImageName resolveKibanaImageName(ElasticsearchDevServicesBuildTimeConfig config,
+    private DockerImageName resolveDashboardImageName(ElasticsearchDevServicesBuildTimeConfig config,
             Distribution resolvedDistribution) {
-        return DockerImageName.parse("docker.io/elastic/kibana:9.1.5");
-        //return DockerImageName.parse(
-        //        config.imageKibanaName().orElseThrow(() -> new RuntimeException("Image name for Kibana is not configured")));
+        return DockerImageName.parse(config.dashboard().imageName().orElseGet(() -> loadProperties(
+                Distribution.ELASTIC.equals(resolvedDistribution)
+                        ? DEV_SERVICE_ELASTICSEARCH
+                        : DEV_SERVICE_OPENSEARCH)
+                .getProperty("default.dashboard.image")));
+    }
+
+    private static Properties loadProperties(String devserviceName) {
+        var fileName = devserviceName + "-devservice.properties";
+        try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
+            if (in == null) {
+                throw new IllegalArgumentException(fileName + " not found on classpath");
+            }
+            var properties = new Properties();
+            properties.load(in);
+            return properties;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private Distribution resolveDistribution(ElasticsearchDevServicesBuildTimeConfig config,

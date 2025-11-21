@@ -152,6 +152,7 @@ image::devui_layout_settings.png[Dev UI Settings]
 The settings page is a dialog that contains settings for Dev UI:
 
 - Theme (Change between Desktop/Light/Dark
+- Locale (Change to another supported language/locale)
 - Bugs / Feature requests
 - Storage (Manage local browser storage used in Dev UI)
 - Dev MCP (Enable your Dev Mode to expose a MCP Server)
@@ -619,6 +620,214 @@ export class QwcMyExtensionPage extends QwcHotReloadElement {
 }
 ----
 
+===== Add i18n to your pages
+
+Quarkus Dev UI supports full internationalization (i18n).
+To enable this in your extension, you must externalize all user-visible text into translation files.
+
+All translation files must be placed under:
+
+`<extension>/deployment/src/main/resources/dev-ui/i18n/`
+
+====== Translation file layout
+
+Each translation file is a plain JavaScript module following one of these naming patterns:
+
+* `languagecode.js`
+* `languagecode-COUNTRYCODE.js`
+
+The base *language* file contains translations common to all dialects.
+A *country-specific* file contains only the keys that differ from the base.
+
+For example, English:
+
+* `en.js` — base English
+* `en-US.js` — American English (only overrides)
+* `en-GB.js` — British English (only overrides)
+
+French follows the same pattern:
+
+* `fr.js` — base French
+* `fr-FR.js` — France-specific
+* `fr-CA.js` — Canada-specific
+
+A list of locale codes can be found here: https://simplelocalize.io/data/locales/
+
+Quarkus Dev UI defaults to English.
+If the user’s browser locale is supported, that locale becomes the active default.
+Users may also manually change the locale from the Dev UI settings dialog.
+
+====== Translation file format
+
+Each translation file must export a constant named `templates` containing key–value pairs:
+
+[source,javascript]
+----
+export const templates = {
+    'myextension-some-key': 'Some translated value'
+};
+----
+
+All keys must follow this naming convention:
+
+`<extensionArtifactId>-<id>`
+
+where `<extensionArtifactId>` is taken from the `<artifactId>` of your extension’s runtime module.
+
+Example (Agroal):
+
+[source,xml]
+----
+<artifactId>quarkus-agroal</artifactId>
+----
+
+All translation keys must therefore start with:
+
+`quarkus-agroal-`
+
+*Required keys*
+
+1. Metadata
+
+To translate the extension description (taken from the <description> element of your runtime POM), define:
+
+`<extensionArtifactId>-meta-description`
+
+Example:
+
+[source,javascript]
+----
+'quarkus-agroal-meta-description': 'JDBC Datasources and connection pooling'
+----
+
+1. Page titles
+
+Each Dev UI page (created with CardPageBuildItem) needs a translation key for its title.
+
+For a page titled "Database view" in Agroal:
+
+[source,java]
+----
+cardPageBuildItem.addPage(Page.webComponentPageBuilder()
+        .icon("font-awesome-solid:database")
+        .title("Database view")
+        .componentLink("qwc-agroal-datasource.js"));
+----
+
+The translation key becomes `quarkus-agroal-database_view`.
+(for the title, spaces replaced with underscores, lower-case.)
+
+Example entry:
+
+[source,javascript]
+----
+'quarkus-agroal-database_view': 'Database view'
+----
+
+1. General text
+
+All other user-visible strings in your JS code should also be externalized.
+
+Example:
+
+[source,javascript]
+----
+import { str } from '@lit/localize';
+
+export const templates = {
+    // Metadata
+    'quarkus-agroal-meta-description': 'JDBC Datasources and connection pooling',
+
+    // Pages
+    'quarkus-agroal-database_view': 'Database view',
+
+    // General
+    'quarkus-agroal-fetching-data-sources': 'Fetching data sources...'
+};
+----
+
+*Updating your JavaScript pages*
+
+To use translations inside your Lit components, update your code as follows.
+
+1. Import the localization helpers
+
+[source,javascript]
+----
+import { msg, str, updateWhenLocaleChanges } from 'localization';
+----
+
+- msg: lookup a translation key
+- str: create dynamic strings with variables
+- updateWhenLocaleChanges: tells Lit to re-render automatically when language changes
+
+1. Register for locale changes
+
+Add the following in your constructor:
+
+[source,javascript]
+----
+constructor() {
+    super();
+    updateWhenLocaleChanges(this);
+}
+----
+
+1. Replace inline text with translation lookups
+
+Before:
+
+[source,javascript]
+----
+return this._renderProgressBar('Fetching data sources...');
+----
+
+After:
+
+[source,javascript]
+----
+return this._renderProgressBar(
+    msg('Fetching data sources...', { id: 'quarkus-agroal-fetching-data-sources' })
+);
+----
+
+If the key does not exist in the current locale, the fallback text ('Fetching data sources...') is used automatically.
+
+Examples:
+
+[source,javascript]
+----
+// en.js
+'quarkus-agroal-fetching-data-sources': 'Fetching data sources...'
+
+// fr.js
+'quarkus-agroal-fetching-data-sources': 'Récupération des sources de données…'
+----
+
+1.1 Using variables inside translations
+
+For dynamic messages, wrap the default string in str:
+
+[source,javascript]
+----
+} catch (error) {
+    notifier.showErrorMessage(
+        msg(str`Failed to save file: ${error}`, { id: 'quarkus-agroal-file-save-failed' })
+    );
+}
+----
+
+In translation files, use positional variables (${0}, ${1}, …):
+
+[source,javascript]
+----
+// en.js
+'quarkus-agroal-file-save-failed': str`Failed to save file: ${0}`,
+
+// fr.js
+'quarkus-agroal-file-save-failed': str`Échec de l’enregistrement du fichier : ${0}`,
+----
+
 ===== UI Components
 
 ====== Vaadin Web Components
@@ -770,7 +979,7 @@ this.storageControl.set('height', 123); // Set some val
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
 
-======= Per Application
+*Per Application*
 
 You can narrow the score of the storage further by the current application:
 
@@ -779,7 +988,7 @@ You can narrow the score of the storage further by the current application:
 storageControl = new StorageController(this, true); // Passing in true will scope per application
 ----
 
-======= Storage Setting
+*Storage Setting*
 
 Users can have a raw view on the storage in the settings page:
 

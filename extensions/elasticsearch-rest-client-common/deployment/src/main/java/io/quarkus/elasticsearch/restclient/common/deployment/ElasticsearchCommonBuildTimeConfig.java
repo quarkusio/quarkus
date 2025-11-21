@@ -36,12 +36,6 @@ public interface ElasticsearchCommonBuildTimeConfig {
         Optional<Boolean> enabled();
 
         /**
-         * Kibana configuration for Dev Services.
-         */
-        @ConfigDocSection
-        KibanaDevServicesConfig kibana();
-
-        /**
          * Optional fixed port the dev service will listen to.
          * <p>
          * If not defined, the port will be chosen randomly.
@@ -151,15 +145,21 @@ public interface ElasticsearchCommonBuildTimeConfig {
         @WithDefault("true")
         boolean reuse();
 
+        /**
+         * Kibana configuration for Dev Services.
+         */
+        @ConfigDocSection
+        DashboardDevServicesConfig dashboard();
+
         enum Distribution {
             ELASTIC,
             OPENSEARCH
         }
 
         @ConfigGroup
-        interface KibanaDevServicesConfig {
+        interface DashboardDevServicesConfig {
             /**
-             * Whether the Kibana Dev Service should start with the application in dev mode or tests.
+             * Whether the Dashboard Dev Service should start with the application in dev mode or tests.
              * <p>
              * Kibana Dev Services are disabled by default when Elasticsearch Dev Services are enabled.
              *
@@ -167,6 +167,39 @@ public interface ElasticsearchCommonBuildTimeConfig {
              */
             @WithDefault("false")
             boolean enabled();
+
+            /**
+             * Optional fixed port the dev service will listen to.
+             * <p>
+             * If not defined, the port will be chosen randomly.
+             */
+            Optional<Integer> port();
+
+            /**
+             * The Elasticsearch container image to use.
+             *
+             * Defaults depend on the configured `distribution`:
+             *
+             * * For the `elastic` distribution: {kibana-image}
+             * * For the `opensearch` distribution: {dashboardimage}
+             *
+             * @asciidoclet
+             */
+            Optional<String> imageName();
+
+            /**
+             * Environment variables that are passed to the container.
+             */
+            @ConfigDocMapKey("environment-variable-name")
+            Map<String, String> containerEnv();
+
+            /**
+             * The value for the NODE_OPTIONS env variable.
+             *
+             * @asciidoclet
+             */
+            @WithDefault(" ")
+            String nodeOpts();
         }
     }
 }

@@ -34,14 +34,25 @@ public class PlantResource {
                 .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')").execute())
                 .await().indefinitely();
 
+        System.out.println("DEBUG setupDb");
         additionalClient.query("DROP TABLE IF EXISTS vegetables").execute()
                 .flatMap(r -> client
-                        .query("CREATE TABLE legumes (id INTEGER NOT NULL GENERATED AS IDENTITY, name VARCHAR(50) NOT NULL)")
+                        .query("CREATE TABLE veg (id INTEGER NOT NULL GENERATED AS IDENTITY, name VARCHAR(50) NOT NULL)")
                         .execute())
-                .flatMap(r -> client.query("INSERT INTO legumes (name) VALUES ('Cumcumber')").execute())
-                .flatMap(r -> client.query("INSERT INTO legumes (name) VALUES ('Broccoli')").execute())
-                .flatMap(r -> client.query("INSERT INTO legumes (name) VALUES ('Leeks')").execute())
+                .flatMap(r -> client.query("INSERT INTO veg (name) VALUES ('Cumcumber')").execute())
+                .flatMap(r -> client.query("INSERT INTO veg (name) VALUES ('Broccoli')").execute())
+                .flatMap(r -> client.query("INSERT INTO veg (name) VALUES ('Leeks')").execute())
                 .await().indefinitely();
+        System.out.println("DEBUG done setupDb");
+        additionalClient.query("SELECT * FROM veg ORDER BY name").execute()
+                .map(rowSet -> {
+                    JsonArray jsonArray = new JsonArray();
+                    for (Row row : rowSet) {
+                        jsonArray.add(toJson(row));
+                    }
+                    return jsonArray;
+                }).invoke(a -> System.out.println("DEBUG db contents " + a.encodePrettily()));
+
     }
 
     @GET
@@ -59,9 +70,9 @@ public class PlantResource {
     }
 
     @GET
-    @Path("/legumes/")
-    public CompletionStage<JsonArray> listLegumes() {
-        return additionalClient.query("SELECT * FROM legumes ORDER BY name").execute()
+    @Path("/veg/")
+    public CompletionStage<JsonArray> listveg() {
+        return additionalClient.query("SELECT * FROM veg ORDER BY name").execute()
                 .map(rowSet -> {
                     JsonArray jsonArray = new JsonArray();
                     for (Row row : rowSet) {

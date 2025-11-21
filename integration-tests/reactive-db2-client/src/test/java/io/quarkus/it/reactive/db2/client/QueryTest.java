@@ -23,9 +23,9 @@ public class QueryTest {
     }
 
     @Test
-    public void testListAllLegumes() {
+    public void testListAllveg() {
         given()
-                .when().get("/plants/legumes/")
+                .when().get("/plants/veg/")
                 .then()
                 .statusCode(200)
                 .body(

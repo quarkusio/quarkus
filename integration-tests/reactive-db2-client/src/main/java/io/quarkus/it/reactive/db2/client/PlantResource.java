@@ -20,7 +20,7 @@ public class PlantResource {
     Pool client;
 
     @Inject
-    @ReactiveDataSource("additional")
+    @ReactiveDataSource("extra")
     Pool additionalClient;
 
     @PostConstruct

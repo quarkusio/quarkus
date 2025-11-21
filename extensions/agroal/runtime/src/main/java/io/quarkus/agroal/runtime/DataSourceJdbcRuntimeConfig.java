@@ -39,7 +39,7 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * The datasource pool maximum size
      */
-    @WithDefault("20")
+    @WithDefault("50")
     int maxSize();
 
     /**

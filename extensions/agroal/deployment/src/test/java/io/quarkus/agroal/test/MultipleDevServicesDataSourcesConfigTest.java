@@ -42,13 +42,13 @@ public class MultipleDevServicesDataSourcesConfigTest {
         testDataSource(DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME, defaultDataSource,
                 "jdbc:h2:tcp://localhost:" + extractPort(defaultDataSource) + "/mem:"
                         + DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME + ";DB_CLOSE_DELAY=-1",
-                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 20);
+                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 50);
         testDataSource("users", dataSource1,
                 "jdbc:h2:tcp://localhost:" + extractPort(dataSource1) + "/mem:users;DB_CLOSE_DELAY=-1",
-                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 20);
+                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 50);
         testDataSource("inventory", dataSource2,
                 "jdbc:h2:tcp://localhost:" + extractPort(dataSource2) + "/mem:inventory;DB_CLOSE_DELAY=-1",
-                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 20);
+                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 50);
     }
 
     public int extractPort(AgroalDataSource ds) {

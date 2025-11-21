@@ -49,7 +49,7 @@ public class DevServicesPostgresqlDatasourceTestCase {
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:postgresql:"));
         assertEquals("quarkus", configuration.connectionFactoryConfiguration().principal().getName());
-        assertEquals(20, configuration.maxSize());
+        assertEquals(50, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(PostgreSQLExceptionSorter.class);
 
         try (Connection connection = dataSource.getConnection()) {

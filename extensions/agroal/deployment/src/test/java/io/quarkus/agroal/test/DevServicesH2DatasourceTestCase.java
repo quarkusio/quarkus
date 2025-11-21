@@ -43,7 +43,7 @@ public class DevServicesH2DatasourceTestCase {
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:h2:"));
         assertEquals(DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME,
                 configuration.connectionFactoryConfiguration().principal().getName());
-        assertEquals(20, configuration.maxSize());
+        assertEquals(50, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(ExceptionSorter.emptyExceptionSorter().getClass());
 
         try (Connection connection = dataSource.getConnection()) {

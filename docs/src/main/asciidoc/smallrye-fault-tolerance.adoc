@@ -576,7 +576,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.9.2/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.10.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -608,15 +608,15 @@ quarkus.fault-tolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.9.2/reference/programmatic-api.html[programmatic API] is present and integrated with the declarative, annotation-based API.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.10.0/reference/programmatic-api.html[programmatic API] is present and integrated with the declarative, annotation-based API.
 You can use the `Guard`, `TypedGuard` and `@ApplyGuard` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.
 
 Metrics are automatically discovered and integrated.
 If your application uses the Quarkus extension for Micrometer, SmallRye Fault Tolerance will emit metrics to Micrometer.
-If your application uses the Quarkus extension for SmallRye Metrics, SmallRye Fault Tolerance will emit metrics to MicroProfile Metrics.
-Otherwise, SmallRye Fault Tolerance metrics will be disabled.
+Otherwise, SmallRye Fault Tolerance will emit metrics to MicroProfile Metrics, OpenTelemetry Metrics, or both, depending on which Quarkus extensions are present.
+If no Quarkus metrics extension is present, SmallRye Fault Tolerance metrics will be disabled.
 
 [[configuration-reference]]
 == Configuration reference

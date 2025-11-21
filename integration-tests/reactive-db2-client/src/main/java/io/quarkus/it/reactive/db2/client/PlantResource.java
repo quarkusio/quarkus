@@ -52,6 +52,7 @@ public class PlantResource {
                     }
                     return jsonArray;
                 }).invoke(a -> System.out.println("DEBUG db contents " + a.encodePrettily()));
+        System.out.println("DEBUG done diagnostic query");
 
     }
 
@@ -72,6 +73,11 @@ public class PlantResource {
     @GET
     @Path("/veg/")
     public CompletionStage<JsonArray> listveg() {
+        try {
+            Thread.sleep(30 * 1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return additionalClient.query("SELECT * FROM veg ORDER BY name").execute()
                 .map(rowSet -> {
                     JsonArray jsonArray = new JsonArray();

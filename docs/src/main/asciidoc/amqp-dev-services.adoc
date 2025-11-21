@@ -50,9 +50,9 @@ You can set the port by configuring the `quarkus.amqp.devservices.port` property
 Dev Services for AMQP uses https://quay.io/repository/artemiscloud/activemq-artemis-broker[activemq-artemis-broker] images.
 You can configure the image and version using the `quarkus.amqp.devservices.image-name` property:
 
-[source, properties]
+[source, properties, subs=attributes+]
 ----
-quarkus.amqp.devservices.image-name=quay.io/artemiscloud/activemq-artemis-broker:latest
+quarkus.amqp.devservices.image-name={amqp-image}
 ----
 
 IMPORTANT: The configured image must be _compatible_ with the `activemq-artemis-broker` one.
@@ -65,12 +65,12 @@ The ports 5672 and 8161 (web console) are exposed.
 Dev Services for AMQP supports xref:compose-dev-services.adoc[Compose Dev Services].
 It relies on a `compose-devservices.yml`, such as:
 
-[source,yaml]
+[source,yaml,subs=attributes+]
 ----
 name: <application name>
 services:
   artemis:
-    image: quay.io/artemiscloud/activemq-artemis-broker:1.0.28
+    image: {amqp-image}
     ports:
       - "5672"
       - "8161"

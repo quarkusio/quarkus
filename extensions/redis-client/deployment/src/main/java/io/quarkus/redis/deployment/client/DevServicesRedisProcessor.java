@@ -1,6 +1,7 @@
 package io.quarkus.redis.deployment.client;
 
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.redis.runtime.client.config.RedisConfig.HOSTS;
 import static io.quarkus.redis.runtime.client.config.RedisConfig.getPropertyName;
@@ -38,7 +39,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
 
-    private static final String REDIS_IMAGE = "docker.io/redis:7";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
 
@@ -84,8 +84,10 @@ public class DevServicesRedisProcessor {
                                     .serviceName(name)
                                     .serviceConfig(redisConfig)
                                     .startable(() -> new QuarkusPortRedisContainer(
-                                            DockerImageName.parse(redisConfig.imageName().orElse(REDIS_IMAGE))
-                                                    .asCompatibleSubstituteFor(REDIS_IMAGE),
+                                            DockerImageName
+                                                    .parse(redisConfig.imageName()
+                                                            .orElseGet(() -> getDefaultImageNameFor("redis")))
+                                                    .asCompatibleSubstituteFor("redis"),
                                             redisConfig.port(),
                                             composeProjectBuildItem.getDefaultNetworkId(),
                                             useSharedNetwork)
@@ -128,7 +130,7 @@ public class DevServicesRedisProcessor {
             boolean useSharedNetwork) {
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(devServicesConfig.imageName().orElse("redis")),
+                        List.of(devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("redis"))),
                         REDIS_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();

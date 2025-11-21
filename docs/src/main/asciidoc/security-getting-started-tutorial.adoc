@@ -308,7 +308,7 @@ You can configure it to use plain text or custom passwords.
 * For custom iterations: `BcryptUtil.bcryptHash(password, iterationCount)` where higher iterations (12-14) provide more security but slower performance.
 ====
 
-- For more information about configuring passwords and roles, see xref:configure-the-application[Configure the application]. 
+- For more information about configuring passwords and roles, see xref:configure-the-application[Configure the application].
 - For more information on hashing passwords and available options, see xref:security-jpa.adoc#password-storage-and-hashing[Password storage and hashing].
 
 [NOTE]
@@ -534,11 +534,11 @@ Then, compile and run your application in either JVM or native mode.
 
 === Start the PostgreSQL server
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
            -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
-           -p 5432:5432 postgres:17
+           -p 5432:5432 {postgres-image}
 ----
 
 === Compile and run the application

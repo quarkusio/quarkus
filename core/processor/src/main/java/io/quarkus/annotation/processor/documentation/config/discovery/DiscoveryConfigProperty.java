@@ -13,6 +13,7 @@ public class DiscoveryConfigProperty {
     private final SourceElementType sourceElementType;
     private final String defaultValue;
     private final String defaultValueForDoc;
+    private final boolean escapeDefaultValueForDoc;
     private final Deprecation deprecation;
     private final String mapKey;
     private final boolean unnamedMapKey;
@@ -24,8 +25,8 @@ public class DiscoveryConfigProperty {
 
     public DiscoveryConfigProperty(String path, String sourceType, String sourceElementName,
             SourceElementType sourceElementType,
-            String defaultValue,
-            String defaultValueForDoc, Deprecation deprecation, String mapKey, boolean unnamedMapKey,
+            String defaultValue, String defaultValueForDoc, boolean escapeDefaultValueForDoc,
+            Deprecation deprecation, String mapKey, boolean unnamedMapKey,
             ResolvedType type, boolean converted, boolean enforceHyphenateEnumValue,
             boolean section, boolean sectionGenerated) {
         this.path = path;
@@ -34,6 +35,7 @@ public class DiscoveryConfigProperty {
         this.sourceElementType = sourceElementType;
         this.defaultValue = defaultValue;
         this.defaultValueForDoc = defaultValueForDoc;
+        this.escapeDefaultValueForDoc = escapeDefaultValueForDoc;
         this.deprecation = deprecation;
         this.mapKey = mapKey;
         this.unnamedMapKey = unnamedMapKey;
@@ -66,6 +68,10 @@ public class DiscoveryConfigProperty {
 
     public String getDefaultValueForDoc() {
         return defaultValueForDoc;
+    }
+
+    public boolean isEscapeDefaultValueForDoc() {
+        return escapeDefaultValueForDoc;
     }
 
     public Deprecation getDeprecation() {
@@ -150,6 +156,7 @@ public class DiscoveryConfigProperty {
         private final ResolvedType type;
         private String defaultValue;
         private String defaultValueForDoc;
+        private boolean escapeDefaultValueForDoc = true;
         private Deprecation deprecation;
         private String mapKey;
         private boolean unnamedMapKey = false;
@@ -177,6 +184,11 @@ public class DiscoveryConfigProperty {
 
         public Builder defaultValueForDoc(String defaultValueForDoc) {
             this.defaultValueForDoc = defaultValueForDoc;
+            return this;
+        }
+
+        public Builder escapeDefaultValueForDoc(boolean escapeDefaultValueForDoc) {
+            this.escapeDefaultValueForDoc = escapeDefaultValueForDoc;
             return this;
         }
 
@@ -220,7 +232,7 @@ public class DiscoveryConfigProperty {
             }
 
             return new DiscoveryConfigProperty(name, sourceType, sourceElementName, sourceElementType, defaultValue,
-                    defaultValueForDoc,
+                    defaultValueForDoc, escapeDefaultValueForDoc,
                     deprecation, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
         }
     }

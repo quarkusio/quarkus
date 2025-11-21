@@ -1,5 +1,6 @@
 package io.quarkus.apicurio.registry.devservice;
 
+import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 
@@ -234,7 +235,7 @@ public class DevServicesApicurioRegistryProcessor {
 
         public ApicurioRegistryDevServiceCfg(ApicurioRegistryDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled().orElse(true);
-            this.imageName = config.imageName();
+            this.imageName = config.imageName().orElseGet(() -> getDefaultImageNameFor("apicurio-registry"));
             this.fixedExposedPort = config.port().orElse(0);
             this.shared = config.shared();
             this.serviceName = config.serviceName();

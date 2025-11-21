@@ -1392,7 +1392,7 @@ The Testcontainers library usually return connection strings without respecting 
 
 The following example illustrates the use with PostgreSQL, but the approach is applicable to all containers.
 
-[source,java]
+[source,java,subs=attributes+]
 ----
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -1417,7 +1417,7 @@ public class CustomResource implements QuarkusTestResourceLifecycleManager, DevS
     @Override
     public Map<String, String> start() {
         // start a container making sure to call withNetworkMode() with the value of containerNetworkId if present
-        container = new PostgreSQLContainer<>("postgres:latest").withLogConsumer(outputFrame -> {});
+        container = new PostgreSQLContainer<>("{postgres-image}").withLogConsumer(outputFrame -> {});
 
         // apply the network to the container
         containerNetworkId.ifPresent(container::withNetworkMode);

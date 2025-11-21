@@ -55,9 +55,10 @@ By default, Quarkus uses the default image for the current version of Testcontai
 An example file is shown below:
 
 .src/main/resources/container-license-acceptance.txt
+[source,subs=attributes+]
 ----
-ibmcom/db2:11.5.0.0a
-mcr.microsoft.com/mssql/server:2022-latest
+{db2-image}
+{mssql-image}
 ----
 
 === Capturing Logs
@@ -249,14 +250,14 @@ psql -h localhost -p <random port> -U quarkus
 
 The random port can be found with `docker ps`
 
-[source, bash]
+[source, bash, subs=attributes+]
 ----
 docker ps
 
 # returns something like this:
 
 CONTAINER ID   IMAGE           [..]    PORTS                                         [..]
-b826e3a168c4   postgres:14.2   [..]    0.0.0.0:49174->5432/tcp, :::49174->5432/tcp   [..] <1>
+b826e3a168c4   {postgres-image}   [..]    0.0.0.0:49174->5432/tcp, :::49174->5432/tcp   [..] <1>
 ----
 <1> The random port is `49174`.
 
@@ -283,10 +284,10 @@ docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Labels}}\t{{.Ports}}
 
 An example output using Dev Services for PostgreSQL is the following:
 
-[source, bash]
+[source, bash, subs=attributes+]
 ----
 CONTAINER ID   IMAGE          LABELS                                                                        PORTS
-a7034c91a392   postgres:14    org.testcontainers.sessionId=xyz,datasource=default,org.testcontainers=true   0.0.0.0:49154->5432/tcp, :::49154->5432/tcp
+a7034c91a392   {postgres-image}     org.testcontainers.sessionId=xyz,datasource=default,org.testcontainers=true   0.0.0.0:49154->5432/tcp, :::49154->5432/tcp
 ----
 
 In the labels tab, we see that Quarkus added the datasource label, which can be very useful in differentiating containers when multiple
@@ -299,12 +300,12 @@ Dev Services have been started.
 The Database Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
 It relies on a `compose-devservices.yml`, such as:
 
-[source,yaml]
+[source,yaml,subs=attributes+]
 ----
 name: <application name>
 services:
   postgresql:
-    image: docker.io/postgres:17
+    image: {postgres-image}
     ports:
       - "5432"
     environment:
@@ -312,7 +313,7 @@ services:
       POSTGRES_PASSWORD: quarkus
       POSTGRES_DB: quarkus
   oracle:
-    image: docker.io/gvenzl/oracle-free:23-slim-faststart
+    image: {oracle-image}
     ports:
       - "1521"
     environment:
@@ -323,7 +324,7 @@ services:
     labels:
       io.quarkus.devservices.compose.wait_for.logs: .*DATABASE IS READY TO USE.*
   mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: {mssql-image}
     ports:
       - "1433"
     environment:

@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
@@ -40,6 +41,7 @@ public interface KeycloakDevServicesConfig {
      * ends with `-legacy`.
      * Override with `quarkus.keycloak.devservices.keycloak-x-image`.
      */
+    @ConfigDocDefault(value = "`{keycloak-image}`", escape = false)
     Optional<String> imageName();
 
     /**

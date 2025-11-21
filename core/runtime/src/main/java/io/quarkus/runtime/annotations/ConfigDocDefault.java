@@ -22,4 +22,6 @@ import io.smallrye.config.ConfigMapping;
 public @interface ConfigDocDefault {
 
     String value();
+
+    boolean escape() default true;
 }

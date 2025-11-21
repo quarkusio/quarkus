@@ -1,8 +1,10 @@
 package io.quarkus.narayana.lra.deployment.devservice;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.smallrye.config.WithDefault;
 
@@ -26,8 +28,8 @@ public interface LRACoordinatorDevServicesBuildTimeConfig {
     /**
      * Optional override of the LRA coordinator container image to use.
      */
-    @WithDefault("quay.io/jbosstm/lra-coordinator:7.2.2.Final-3.25.0")
-    String imageName();
+    @ConfigDocDefault(value = "`{narayana-lra-image}`", escape = false)
+    Optional<String> imageName();
 
     /**
      * Indicates if the LRA coordinator managed by Quarkus Dev Services is shared.

@@ -81,9 +81,9 @@ If you start the application in dev mode, Quarkus provides you with a https://qu
 
 You might also start a database up front:
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
-docker run -it --rm=true --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
+docker run -it --rm=true --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 {postgres-image}
 ----
 ====
 

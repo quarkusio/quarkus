@@ -419,14 +419,14 @@ Open `http://localhost:8080/quotes.html` in your browser and request some quotes
 When not running in dev or test mode, you will need to start your RabbitMQ broker.
 You can follow the instructions from the https://hub.docker.com/_/rabbitmq[RabbitMQ Docker website] or create a `docker-compose.yaml` file with the following content:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
 version: '2'
 
 services:
 
   rabbit:
-    image: rabbitmq:3.12-management
+    image: {rabbitmq-image}
     ports:
       - "5672:5672"
     networks:

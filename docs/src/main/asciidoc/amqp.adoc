@@ -366,14 +366,14 @@ Open `http://localhost:8080/quotes.html` in your browser and request some quotes
 When not running in dev or test mode, you will need to start your AMQP broker.
 You can follow the instructions from the https://activemq.apache.org/components/artemis/documentation/latest/using-server.html[Apache ActiveMQ Artemis website] or create a `docker-compose.yaml` file with the following content:
 
-[source, yaml]
+[source, yaml ,subs=attributes+]
 ----
 version: '2'
 
 services:
 
   artemis:
-    image: quay.io/artemiscloud/activemq-artemis-broker:1.0.25
+    image: {amqp-image}
     ports:
       - "8161:8161"
       - "61616:61616"

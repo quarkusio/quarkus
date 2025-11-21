@@ -225,8 +225,9 @@ If you like, use your container tool to see what containers are running.
 For example, if you're using Docker, run `docker ps`, and for podman, run `podman ps`.
 You should see something like the following:
 
+[source,bash,subs=attributes+]
 ----
-ff88dcedd899  docker.io/library/postgres:14  postgres -c fsync...  20 minutes ago  Up 20 minutes  0.0.0.0:34789->5432/tcp  nostalgic_bassi
+ff88dcedd899  {postgres-image}  postgres -c fsync...  20 minutes ago  Up 20 minutes  0.0.0.0:34789->5432/tcp  nostalgic_bassi
 ----
 
 Stop Quarkus and run `docker ps` again.

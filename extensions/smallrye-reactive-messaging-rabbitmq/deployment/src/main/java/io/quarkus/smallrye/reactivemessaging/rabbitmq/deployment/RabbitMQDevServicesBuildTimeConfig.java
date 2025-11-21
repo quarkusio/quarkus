@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
@@ -140,8 +141,8 @@ public interface RabbitMQDevServicesBuildTimeConfig {
      * Note that only official RabbitMQ images are supported.
      * Specifically, the image repository must end with {@code rabbitmq}.
      */
-    @WithDefault("rabbitmq:3.12-management")
-    String imageName();
+    @ConfigDocDefault(value = "`{rabbitmq-image}`", escape = false)
+    Optional<String> imageName();
 
     /**
      * Indicates if the RabbitMQ broker managed by Quarkus Dev Services is shared.

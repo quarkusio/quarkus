@@ -58,8 +58,8 @@ public interface ElasticsearchCommonBuildTimeConfig {
          *
          * Defaults depend on the configured `distribution`:
          *
-         * * For the `elastic` distribution: {elasticsearch-image}
-         * * For the `opensearch` distribution: {opensearch-image}
+         * * For the `elastic` distribution: `{elasticsearch-image}`
+         * * For the `opensearch` distribution: `{opensearch-image}`
          *
          * @asciidoclet
          */

@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for MongoDB
+include::_attributes.adoc[]
 
 Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
 What that means practically, is that if you have not configured `quarkus.mongodb.connection-string` nor `quarkus.mongodb.hosts`, Quarkus will automatically start a MongoDB container when
@@ -35,12 +36,12 @@ You can disable the sharing with `quarkus.mongodb.devservices.shared=false`.
 The MongoDB Dev Services supports xref:compose-dev-services.adoc[Compose Dev Services].
 It relies on a `compose-devservices.yml`, such as:
 
-[source,yaml]
+[source,yaml,subs=attributes+]
 ----
 name: <application name>
 services:
   mongo:
-    image: docker.io/mongo:7.0
+    image: {mongo-image}
     ports:
       - "27017"
 ----

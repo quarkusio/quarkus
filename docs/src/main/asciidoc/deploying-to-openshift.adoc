@@ -67,6 +67,15 @@ To build and deploy your applications as a container image that runs inside your
 This extension also generates {openshift} resources such as image streams, build configuration, deployment, and service definitions.
 If your application includes the `quarkus-smallrye-health` extension, {openshift} can access the health endpoint and verify the startup, liveness, and readiness of your application.
 
+[IMPORTANT]
+====
+From {project-name} 3.8, the `DeploymentConfig` object, deprecated in OpenShift, is also deprecated in {project-name}.
+`Deployment` is the default and preferred deployment kind for the `quarkus-openshift` extension.
+If you redeploy applications that you deployed before by using `DeploymentConfig`, by default, those applications use `Deployment` but do not remove the previous `DeploymentConfig`.
+This leads to a deployment of both new and old applications, so, you must remove the old `DeploymentConfig` manually.
+However, if you want to continue to use `DeploymentConfig`, it is still possible to do so by explicitly setting `quarkus.openshift.deployment-kind` to `DeploymentConfig`.
+====
+
 .Prerequisites
 
 * You have a Quarkus Maven project.

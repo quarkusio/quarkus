@@ -21,7 +21,7 @@ If you don't want to run PostgreSQL as a Dev Service, you can start your own Pos
 You can then run the tests as follows (either with `-Dnative` or not):
 
 ```
-mvn clean install -Dtest-containers -Dpostgres.url=jdbc:postgresql://...
+mvn clean install -Dtest-containers -Dquarkus.datasource.jdbc.url=jdbc:postgresql://...
 ```
 
-If you have specific requirements, you can also define a specific connection URL with `-Dpostgres.url=jdbc:postgresql://...`.
+If you have specific requirements, you can also define a specific connection URL with `-Dquarkus.datasource.jdbc.url=jdbc:postgresql://...`.

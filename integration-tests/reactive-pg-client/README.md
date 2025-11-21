@@ -24,4 +24,4 @@ You can then run the tests as follows (either with `-Dnative` or not):
 mvn clean install -Dtest-containers
 ```
 
-You will need to pass in properties with the details of the external service. For example, you can define a specific connection URL with `-Dreactive-postgres.url=vertx-reactive:postgresql://:5431/hibernate_orm_test`.
+You will need to pass in properties with the details of the external service. For example, you can define a specific connection URL with `-Dquarkus.datasource.reactive.url=vertx-reactive:postgresql://:5431/hibernate_orm_test`.

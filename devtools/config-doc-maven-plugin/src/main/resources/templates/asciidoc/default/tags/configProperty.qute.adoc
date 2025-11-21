@@ -1,14 +1,20 @@
-a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension, additionalAnchorPrefix)}]] [.property-path]##link:#{configProperty.toAnchor(extension, additionalAnchorPrefix)}[`{configProperty.path.property}`]##
+a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension, additionalAnchorPrefix)}]] [.property-path]##link:#{configProperty.toAnchor(extension, additionalAnchorPrefix)}[{#if configProperty.deprecated}[.line-through]#{/if}`{configProperty.path.property}`{#if configProperty.deprecated}#{/if}]##
 {#propertyCopyButton configProperty.path.property /}
 
 {#for additionalPath in configProperty.additionalPaths}
 
-`{additionalPath.property}`
+{#if configProperty.deprecated}[.line-through]#{/if}`{additionalPath.property}`{#if configProperty.deprecated}#{/if}
 {#propertyCopyButton additionalPath.property /}
 {/for}
 
 [.description]
 --
+{#if configProperty.deprecation}
+{#let deprecatedReason=configProperty.formatDeprecatedReason(extension, context)}
+_This property is deprecated{#if configProperty.deprecation.since} since `{configProperty.deprecation.since}`{/if}{#if deprecatedReason}: {deprecatedReason}{/if}._
+
+{/let}
+{/if}
 {configProperty.formatDescription(extension, context).escapeCellContent.or("")}
 {#envVar configProperty /}
 --

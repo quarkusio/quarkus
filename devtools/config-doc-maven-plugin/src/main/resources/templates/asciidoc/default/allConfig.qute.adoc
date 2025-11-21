@@ -9,7 +9,6 @@ h|Type
 h|Default
 
 {#for configRootEntry in extensionConfigRootsEntry.value}
-{#if configRootEntry.value.nonDeprecatedItems}
 {#let displayConfigRootDescription=configRootEntry.key.displayConfigRootDescription(extensionConfigRootsEntry.value.size)}
 {#if displayConfigRootDescription}
 h|[.configroot-name]##{configRootEntry.key.description.escapeCellContent}##
@@ -18,7 +17,6 @@ h|Default
 
 {/if}
 {#for item in configRootEntry.value.items}
-{#if !item.deprecated}
 {#if item.isSection}
 {#configSection context=context configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
 
@@ -26,10 +24,8 @@ h|Default
 {#configProperty context=context configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {/if}
-{/if}
 {/for}
 {/let}
-{/if}
 {/for}
 {/for}
 |===

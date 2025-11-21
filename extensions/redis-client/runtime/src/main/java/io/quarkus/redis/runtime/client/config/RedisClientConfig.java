@@ -153,6 +153,13 @@ public interface RedisClientConfig {
     Optional<ProtocolVersion> preferredProtocolVersion();
 
     /**
+     * The TTL of the topology cache. A topology cache is used by a clustered Redis client
+     * and a sentinel Redis client to prevent constantly sending topology discovery commands
+     * ({@code CLUSTER SLOTS} or {@code SENTINEL ...}).
+     * <p>
+     * This setting is only meaningful in case of a clustered Redis client and a sentinel
+     * Redis client and has no effect otherwise.
+     *
      * @deprecated use {@code quarkus.redis.topology-cache-ttl}
      */
     @Deprecated(forRemoval = true, since = "3.30")

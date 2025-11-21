@@ -15,7 +15,7 @@ jobs:
     env:
       MAVEN_OPTS: -Xmx6g -XX:MaxMetaspaceSize=2g
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: main
       - name: Get SHA

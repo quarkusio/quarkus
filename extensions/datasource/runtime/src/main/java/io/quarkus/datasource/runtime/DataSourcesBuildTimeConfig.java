@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -53,18 +54,14 @@ public interface DataSourcesBuildTimeConfig {
      * Only here to detect configuration errors.
      * <p>
      * This used to be runtime but we don't really care, we just want to catch invalid configurations.
-     *
-     * @deprecated
      */
-    @Deprecated
+    @ConfigDocIgnore
     Optional<String> url();
 
     /**
      * Only here to detect configuration errors.
-     *
-     * @deprecated
      */
-    @Deprecated
+    @ConfigDocIgnore
     Optional<String> driver();
 
     default boolean hasNamedDataSources() {

@@ -9,25 +9,43 @@ public interface ConfigItemCollection {
     List<AbstractConfigItem> getItems();
 
     @JsonIgnore
+    default List<ConfigProperty> getProperties() {
+        return getItems().stream()
+                .filter(i -> i instanceof ConfigProperty)
+                .map(ConfigProperty.class::cast)
+                .toList();
+    }
+
+    @JsonIgnore
+    default List<ConfigSection> getSections() {
+        return getItems().stream()
+                .filter(i -> i instanceof ConfigSection)
+                .map(ConfigSection.class::cast)
+                .toList();
+    }
+
+    @JsonIgnore
     default List<AbstractConfigItem> getNonDeprecatedItems() {
         return getItems().stream()
                 .filter(i -> (i instanceof ConfigSection)
-                        ? !i.isDeprecated() && ((ConfigSection) i).getNonDeprecatedItems().size() > 0
+                        ? !i.isDeprecated() && !((ConfigSection) i).getNonDeprecatedItems().isEmpty()
                         : !i.isDeprecated())
                 .toList();
     }
 
     @JsonIgnore
-    default List<AbstractConfigItem> getNonDeprecatedProperties() {
+    default List<ConfigProperty> getNonDeprecatedProperties() {
         return getItems().stream()
                 .filter(i -> i instanceof ConfigProperty && !i.isDeprecated())
+                .map(ConfigProperty.class::cast)
                 .toList();
     }
 
     @JsonIgnore
-    default List<AbstractConfigItem> getNonDeprecatedSections() {
+    default List<ConfigSection> getNonDeprecatedSections() {
         return getItems().stream()
                 .filter(i -> i instanceof ConfigSection && !i.isDeprecated())
+                .map(ConfigSection.class::cast)
                 .toList();
     }
 

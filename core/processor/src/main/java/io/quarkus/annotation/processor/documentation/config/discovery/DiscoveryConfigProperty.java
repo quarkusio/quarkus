@@ -181,7 +181,7 @@ public class DiscoveryConfigProperty {
         }
 
         public Builder deprecated(String since, String replacement, String reason) {
-            this.deprecation = new Deprecation(since, replacement, reason);
+            this.deprecation = new Deprecation(since, replacement);
             return this;
         }
 

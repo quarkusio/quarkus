@@ -7,7 +7,7 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
-{#for item in configItemCollection.nonDeprecatedItems}
+{#for item in configItemCollection.items}
 {#if item.isSection}
 {#configSection context=context configSection=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=false /}
 

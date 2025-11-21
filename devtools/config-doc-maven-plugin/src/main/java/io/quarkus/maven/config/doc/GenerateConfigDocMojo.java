@@ -384,6 +384,14 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDeprecatedReason")
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> formatter.formatDeprecatedReason((ConfigProperty) ctx.getBase(),
+                                (Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join(),
+                                (Context) ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigProperty.class)
                         .applyToName("formatDefaultValue")
                         .applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatDefaultValue((ConfigProperty) ctx.getBase()))

@@ -201,7 +201,9 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     }
 
     private void hintEnableExtensions() {
-        if (!bootstrapSessionListener.isEnabled()) {
+        //Make sure to only emit this warning on the "build" goal: it's too early to check the state
+        //on bootstrapSessionListener otherwise, and too much nagging is probably not useful anyway.
+        if ("build".equals(mojoExecution.getMojoDescriptor().getGoal()) && !bootstrapSessionListener.isEnabled()) {
             super.getLog().warn("The Maven extensions for the Quarkus Maven plugin are not enabled for this build. " +
                     "We recommend enabling this, so that the plugin can verify essential build settings have been configured as required. "
                     +

@@ -389,7 +389,8 @@ public class UndertowDeploymentRecorder {
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
-        undertowOptions.set(UndertowOptions.RECORD_REQUEST_START_TIME, servletRuntimeConfig.getValue().recordRequestStartTime());
+        undertowOptions.set(UndertowOptions.RECORD_REQUEST_START_TIME,
+                servletRuntimeConfig.getValue().recordRequestStartTime());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
         Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
@@ -413,8 +414,8 @@ public class UndertowDeploymentRecorder {
                     event.request().pause();
                 }
 
-            boolean disallowedMethod = !disallowedMethods.isEmpty()
-                    && disallowedMethods.contains(event.request().method().name());
+                boolean disallowedMethod = !disallowedMethods.isEmpty()
+                        && disallowedMethods.contains(event.request().method().name());
 
                 if (disallowedMethod) {
                     event.response().setStatusCode(StatusCodes.METHOD_NOT_ALLOWED);

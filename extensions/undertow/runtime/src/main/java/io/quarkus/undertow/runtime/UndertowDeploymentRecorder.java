@@ -394,15 +394,24 @@ public class UndertowDeploymentRecorder {
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
+        undertowOptions.set(UndertowOptions.RECORD_REQUEST_START_TIME,
+                servletRuntimeConfig.getValue().recordRequestStartTime());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
         Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
                 ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get())
                 : Collections.emptySet();
+        Set<String> disallowedMethods = servletRuntimeConfig.getValue().disallowedMethods().orElse(Set.of());
 
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
+                // Check if the HTTP method is disallowed
+                if (!disallowedMethods.isEmpty() && disallowedMethods.contains(event.request().method().name())) {
+                    event.response().setStatusCode(405).end("Method Not Allowed");
+                    return;
+                }
+
                 if (!event.request().isEnded()) {
                     event.request().pause();
                 }

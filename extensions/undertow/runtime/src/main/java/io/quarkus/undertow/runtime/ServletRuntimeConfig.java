@@ -1,6 +1,7 @@
 package io.quarkus.undertow.runtime;
 
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -34,4 +35,17 @@ public interface ServletRuntimeConfig {
      */
     @WithDefault("1000")
     int maxParameters();
+
+    /**
+     * If Servlet should record the start time of requests.
+     * This is useful for logging and observability.
+     */
+    @WithDefault("true")
+    boolean recordRequestStartTime();
+
+    /**
+     * The HTTP methods that should be disallowed.
+     * This is useful for security hardening by disabling potentially dangerous HTTP methods like TRACE.
+     */
+    Optional<Set<String>> disallowedMethods();
 }

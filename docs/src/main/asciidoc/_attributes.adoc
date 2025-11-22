@@ -14,6 +14,7 @@
 :db2-image: ${db2.image}
 :mariadb-image: ${mariadb.image}
 :mssql-image: ${mssql.image}
+:mysql-image: ${mysql.image}
 :oracle-image: ${oracle.image}
 :postgres-image: ${postgres.image}
 :elasticsearch-version: ${elasticsearch-server.version}

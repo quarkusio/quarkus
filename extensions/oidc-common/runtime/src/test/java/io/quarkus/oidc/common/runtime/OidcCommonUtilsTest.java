@@ -56,10 +56,51 @@ public class OidcCommonUtilsTest {
         cfg.setClientId("client");
         cfg.credentials.jwt.claims.put("scope", "read,write");
         PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
-        String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
+        String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://some.service.com", key);
         JsonObject json = decodeJwtContent(jwt);
         String scope = json.getString("scope");
         assertEquals("read,write", scope);
+        assertEquals("http://some.service.com", json.getString("aud"));
+    }
+
+    @Test
+    public void testSignWithAudience() throws Exception {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.audience = Optional.of("https://server.example.com");
+
+        PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
+        String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
+        JsonObject json = decodeJwtContent(jwt);
+        assertEquals("https://server.example.com", json.getString("aud"));
+    }
+
+    @Test
+    public void testSignWithAudienceRemoveTrailingSlash() throws Exception {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.audience = Optional.of("https://server.example.com/");
+
+        PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
+        String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
+        JsonObject json = decodeJwtContent(jwt);
+        assertEquals("https://server.example.com", json.getString("aud"));
+    }
+
+    @Test
+    public void testSignWithAudienceKeepTrailingSlash() throws Exception {
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
+        cfg.setClientId("client");
+        cfg.credentials.jwt.audience = Optional.of("https://server.example.com/");
+        cfg.credentials.jwt.keepAudienceTrailingSlash = true;
+
+        PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
+        String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
+        JsonObject json = decodeJwtContent(jwt);
+        assertEquals("https://server.example.com/", json.getString("aud"));
     }
 
     public static JsonObject decodeJwtContent(String jwt) {

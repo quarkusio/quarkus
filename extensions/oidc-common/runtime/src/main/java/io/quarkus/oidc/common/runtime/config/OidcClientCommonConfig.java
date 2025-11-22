@@ -210,6 +210,12 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
             Optional<String> audience();
 
             /**
+             * Whether to keep a trailing slash `/` in the {@link #audience()} value.
+             */
+            @WithDefault("false")
+            boolean keepAudienceTrailingSlash();
+
+            /**
              * The key identifier of the signing key added as a JWT `kid` header.
              */
             Optional<String> tokenKeyId();

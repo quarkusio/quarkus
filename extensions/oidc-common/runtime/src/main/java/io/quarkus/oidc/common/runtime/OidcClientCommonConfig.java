@@ -331,6 +331,11 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             }
 
             @Override
+            public boolean keepAudienceTrailingSlash() {
+                return keepAudienceTrailingSlash;
+            }
+
+            @Override
             public Optional<String> tokenKeyId() {
                 return tokenKeyId;
             }
@@ -433,6 +438,11 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
              * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
              */
             public Optional<String> audience = Optional.empty();
+
+            /**
+             * Whether to keep a trailing slash `/` in the {@link #audience()} value.
+             */
+            public boolean keepAudienceTrailingSlash = false;
 
             /**
              * The key identifier of the signing key added as a JWT `kid` header.
@@ -575,6 +585,7 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
                 keyId = mapping.keyId();
                 keyPassword = mapping.keyPassword();
                 audience = mapping.audience();
+                keepAudienceTrailingSlash = mapping.keepAudienceTrailingSlash();
                 tokenKeyId = mapping.tokenKeyId();
                 issuer = mapping.issuer();
                 subject = mapping.subject();

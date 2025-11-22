@@ -6,12 +6,7 @@ import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EventListener;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
@@ -394,11 +389,23 @@ public class UndertowDeploymentRecorder {
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
+        undertowOptions.set(UndertowOptions.RECORD_REQUEST_START_TIME,
+                servletRuntimeConfig.getValue().recordRequestStartTime());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
         Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
                 ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get())
                 : Collections.emptySet();
+
+        Set<String> disallowedMethods = servletRuntimeConfig.getValue().disallowedMethods()
+                .map(list -> {
+                    Set<String> result = new java.util.HashSet<>();
+                    for (String m : list) {
+                        result.add(m.trim().toUpperCase(Locale.ROOT));
+                    }
+                    return result;
+                })
+                .orElse(Collections.emptySet());
 
         return new Handler<RoutingContext>() {
             @Override
@@ -407,6 +414,14 @@ public class UndertowDeploymentRecorder {
                     event.request().pause();
                 }
 
+                boolean disallowedMethod = !disallowedMethods.isEmpty()
+                        && disallowedMethods.contains(event.request().method().name());
+
+                if (disallowedMethod) {
+                    event.response().setStatusCode(StatusCodes.METHOD_NOT_ALLOWED);
+                    event.response().end();
+                    return;
+                }
                 //we handle auth failure directly
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
 

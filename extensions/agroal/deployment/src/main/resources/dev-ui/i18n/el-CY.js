@@ -1,0 +1,26 @@
+import { str } from '@lit/localize';
+
+export const templates = {
+    'quarkus-agroal-meta-description': 'JDBC Δεδομένα και διαχείριση σύνδεσης',
+    'quarkus-agroal-fetching-data-sources': 'Φόρτωση πηγών δεδομένων...',
+    'quarkus-agroal-loading': 'Φόρτωση',
+    'quarkus-agroal-import-sql-script': 'Εισαγωγή SQL Σεναρίου',
+    'quarkus-agroal-generate-more-data': 'Χρησιμοποιήστε τον Βοηθό Quarkus για να δημιουργήσετε περισσότερα δεδομένα.',
+    'quarkus-agroal-generating-more-data': 'Ο Quarkus Assistant δημιουργεί περισσότερα δεδομένα ... παρακαλώ περιμένετε',
+    'quarkus-agroal-generating-data': 'Ο Quarkus Assistant δημιουργεί δεδομένα ... παρακαλώ περιμένετε',
+    'quarkus-agroal-file-saved': 'Το αρχείο αποθηκεύτηκε επιτυχώς',
+    'quarkus-agroal-copied-to-clipboard': 'Αντιγράφηκε στο πρόχειρο με επιτυχία!',
+    'quarkus-agroal-no-active-datasource': 'Δεν βρέθηκε καμία ενεργή τοπική προέλευση δεδομένων.',
+    'quarkus-agroal-datasource-label': 'Πηγή Δεδομένων',
+    'quarkus-agroal-create-import-sql': 'Δημιουργία import.sql από τα τρέχοντα δεδομένα',
+    'quarkus-agroal-generate-er-diagram-title': 'Δημιουργήστε ένα Διάγραμμα ER για τους πίνακες.',
+    'quarkus-agroal-start-watching': 'Άρχισε να παρακολουθείς',
+    'quarkus-agroal-fetching-data': 'Ανακτώντας δεδομένα ...',
+    'quarkus-agroal-generate-some-data-title': 'Χρησιμοποιήστε τον Βοηθό Quarkus για να δημιουργήσετε κάποια δεδομένα.',
+    'quarkus-agroal-generate-some-data': 'Δημιουργία δεδομένων',
+    'quarkus-agroal-generating-er-diagram': 'Δημιουργία Διαγράμματος ER ... παρακαλώ περιμένετε',
+    'quarkus-agroal-no-tables-found': 'Δεν βρέθηκαν πίνακες',
+    'quarkus-agroal-file-save-failed': str`Αποτυχία αποθήκευσης του αρχείου: ${0}`,
+    'quarkus-agroal-copy-failed': str`Δεν μπόρεσα να αντιγράψω το κείμενο: ${0}`,
+    'quarkus-agroal-using-sql': str`Χρησιμοποιώντας το SQL "${0}"`,
+};

@@ -37,6 +37,16 @@ public class OidcClientCredentialsTestCase {
     }
 
     @Test
+    public void testClientSecretBasicAuthSchemeRefresh() {
+        doTestGetTokenClient("named-1");
+    }
+
+    @Test
+    public void testClientSecretPostMethodRefresh() {
+        doTestGetTokenClient("named-2");
+    }
+
+    @Test
     public void testGetTokensOnDemand() {
         String[] tokens = RestAssured.when().get("/clients/tokenOnDemand").body().asString().split(" ");
         assertTokensNotNull(tokens);

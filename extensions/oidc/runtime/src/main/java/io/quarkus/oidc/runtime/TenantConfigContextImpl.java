@@ -21,6 +21,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.Redirect;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.mutiny.Uni;
 
 final class TenantConfigContextImpl implements TenantConfigContext {
     private static final Logger LOG = Logger.getLogger(TenantConfigContextImpl.class);
@@ -59,26 +60,23 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
     private final boolean ready;
 
-    TenantConfigContextImpl(OidcProvider client, OidcTenantConfig config) {
-        this(client, config, true);
-    }
-
-    TenantConfigContextImpl(OidcProvider provider, OidcTenantConfig config, boolean ready) {
+    TenantConfigContextImpl(OidcProvider provider, OidcTenantConfig config, boolean ready, Credentials credentials) {
         this.provider = provider;
         this.oidcConfig = config;
         this.redirectFilters = getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class));
         this.ready = ready;
 
-        boolean isService = OidcUtils.isServiceApp(config);
-        stateCookieEncryptionKey = !isService && providerIsNoNull(provider) ? createStateSecretKey(config)
-                : null;
-        sessionCookieEncryptionKey = !isService && providerIsNoNull(provider)
-                ? createTokenEncSecretKey(config, provider)
-                : null;
-        internalIdTokenSigningKey = !isService && providerIsNoNull(provider)
-                ? generateIdTokenSecretKey(config, provider)
-                : null;
-        tokenDecryptionKey = providerIsNoNull(provider) ? createTokenDecryptionKey(provider) : null;
+        if (credentials == null) {
+            this.stateCookieEncryptionKey = null;
+            this.sessionCookieEncryptionKey = null;
+            this.tokenDecryptionKey = null;
+            this.internalIdTokenSigningKey = null;
+        } else {
+            this.stateCookieEncryptionKey = credentials.stateCookieEncryptionKey();
+            this.sessionCookieEncryptionKey = credentials.sessionCookieEncryptionKey();
+            this.tokenDecryptionKey = credentials.tokenDecryptionKey();
+            this.internalIdTokenSigningKey = credentials.internalIdTokenSigningKey();
+        }
     }
 
     TenantConfigContextImpl(TenantConfigContext tenantConfigContext, OidcTenantConfig oidcConfig) {
@@ -101,7 +99,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         return provider != null && provider.client != null;
     }
 
-    private static Key createTokenDecryptionKey(OidcProvider provider) {
+    private static Key createTokenDecryptionKey(OidcProvider provider, String clientSecret) {
         Key key = null;
 
         OidcTenantConfig oidcConfig = provider.oidcConfig;
@@ -119,17 +117,14 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         if (oidcConfig.token().decryptIdToken().orElse(false) || oidcConfig.token().decryptAccessToken()) {
             if (provider.client.getClientJwtKey() != null) {
                 key = provider.client.getClientJwtKey();
-            } else {
-                String clientSecret = OidcCommonUtils.clientSecret(provider.oidcConfig.credentials());
-                if (clientSecret != null) {
-                    key = OidcUtils.createSecretKeyFromDigest(clientSecret);
-                }
+            } else if (clientSecret != null) {
+                key = OidcUtils.createSecretKeyFromDigest(clientSecret);
             }
         }
         return key;
     }
 
-    private static SecretKey createStateSecretKey(OidcTenantConfig config) {
+    private static SecretKey createStateSecretKey(OidcTenantConfig config, String possiblePkceSecret) {
         if (config.authentication().pkceRequired().orElse(false) || config.authentication().nonceRequired()) {
             String stateSecret = null;
             if (config.authentication().pkceSecret().isPresent() && config.authentication().stateSecret().isPresent()) {
@@ -144,7 +139,6 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
             if (stateSecret == null) {
                 LOG.debug("'quarkus.oidc.authentication.state-secret' is not configured");
-                String possiblePkceSecret = OidcCommonUtils.getClientOrJwtSecret(config.credentials());
                 if (possiblePkceSecret != null && possiblePkceSecret.length() < 32) {
                     LOG.debug("Client secret is less than 32 characters long, the state secret will be generated");
                 } else {
@@ -177,14 +171,14 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         return null;
     }
 
-    private static SecretKey createTokenEncSecretKey(OidcTenantConfig config, OidcProvider provider) {
+    private static SecretKey createTokenEncSecretKey(OidcTenantConfig config, OidcProvider provider, String clientOrJwtSecret) {
         if (config.tokenStateManager().encryptionRequired()) {
             String encSecret = null;
             if (config.tokenStateManager().encryptionSecret().isPresent()) {
                 encSecret = config.tokenStateManager().encryptionSecret().get();
             } else {
                 LOG.debug("'quarkus.oidc.token-state-manager.encryption-secret' is not configured");
-                encSecret = OidcCommonUtils.getClientOrJwtSecret(config.credentials());
+                encSecret = clientOrJwtSecret;
             }
             try {
                 if (encSecret != null) {
@@ -221,10 +215,10 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         return null;
     }
 
-    private static SecretKey generateIdTokenSecretKey(OidcTenantConfig config, OidcProvider provider) {
+    private static SecretKey generateIdTokenSecretKey(OidcTenantConfig config, OidcProvider provider,
+            String clientOrJwtSecret) {
         try {
-            return (!config.authentication().idTokenRequired().orElse(true)
-                    && OidcCommonUtils.getClientOrJwtSecret(config.credentials()) == null
+            return (!config.authentication().idTokenRequired().orElse(true) && clientOrJwtSecret == null
                     && provider.client.getClientJwtKey() == null) ? OidcCommonUtils.generateSecretKey() : null;
         } catch (Exception ex) {
             throw new OIDCException(ex);
@@ -313,5 +307,57 @@ final class TenantConfigContextImpl implements TenantConfigContext {
             combined.addAll(all);
             return combined;
         }
+    }
+
+    record Credentials(SecretKey stateCookieEncryptionKey, SecretKey sessionCookieEncryptionKey,
+            SecretKey internalIdTokenSigningKey, Key tokenDecryptionKey) {
+    }
+
+    static Uni<TenantConfigContext> createReady(OidcProvider provider, OidcTenantConfig config) {
+        if (providerIsNoNull(provider)) {
+            final Uni<Credentials> credentialsUni;
+            if (provider.client != null) {
+                var tokenDecryptionKey = createTokenDecryptionKey(provider, provider.client.getClientSecret());
+                final Credentials credentials;
+                if (OidcUtils.isServiceApp(config)) {
+                    credentials = new Credentials(null, null, null, tokenDecryptionKey);
+                } else {
+                    credentials = createCredentials(provider, config, provider.client.getClientOrJwtSecret(),
+                            tokenDecryptionKey);
+                }
+                credentialsUni = Uni.createFrom().item(credentials);
+            } else if (OidcUtils.isServiceApp(config)) {
+                credentialsUni = OidcCommonUtils.clientSecret(config.credentials())
+                        .map(clientSecret -> createTokenDecryptionKey(provider, clientSecret))
+                        .map(tdk -> new Credentials(null, null, null, tdk));
+            } else {
+                credentialsUni = OidcCommonUtils.clientSecret(config.credentials())
+                        .onItem().transformToUni(clientSecret -> {
+                            if (clientSecret != null) {
+                                LOG.debug("Creating credentials for client secret");
+                                var tokenDecryptionKey = createTokenDecryptionKey(provider, clientSecret);
+                                var credentials = createCredentials(provider, config, clientSecret, tokenDecryptionKey);
+                                return Uni.createFrom().item(credentials);
+                            } else {
+                                LOG.debug("Creating credentials for JWT secret");
+                                var tokenDecryptionKey = createTokenDecryptionKey(provider, null);
+                                return OidcCommonUtils.jwtSecret(config.credentials())
+                                        .map(jwtSecret -> createCredentials(provider, config, jwtSecret, tokenDecryptionKey));
+                            }
+                        });
+            }
+            return credentialsUni.map(credentials -> new TenantConfigContextImpl(provider, config, true, credentials));
+        } else {
+            return Uni.createFrom().item(new TenantConfigContextImpl(provider, config, true, null));
+        }
+    }
+
+    private static Credentials createCredentials(OidcProvider provider, OidcTenantConfig config, String clientSecret,
+            Key tokenDecryptionKey) {
+        var stateCookieEncryptionKey = createStateSecretKey(config, clientSecret);
+        var sessionCookieEncryptionKey = createTokenEncSecretKey(config, provider, clientSecret);
+        var internalIdTokenSigningKey = generateIdTokenSecretKey(config, provider, clientSecret);
+        return new Credentials(stateCookieEncryptionKey, sessionCookieEncryptionKey,
+                internalIdTokenSigningKey, tokenDecryptionKey);
     }
 }

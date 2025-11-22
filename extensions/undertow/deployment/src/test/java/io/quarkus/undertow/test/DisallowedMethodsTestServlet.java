@@ -14,4 +14,3 @@ public class DisallowedMethodsTestServlet extends HttpServlet {
         resp.getWriter().write("ok");
     }
 }
-

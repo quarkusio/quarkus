@@ -124,6 +124,11 @@ public class NativeImageBuildStep {
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             NativeImageRunnerBuildItem nativeImageRunner,
             List<NativeMonitoringBuildItem> nativeMonitoringBuildItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImagePropertiesBuildItem> nativeImagePropertiesItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageReflectConfigBuildItem> nativeImageReflectConfigItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageResourceConfigBuildItem> nativeImageResourceConfigItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageJniConfigBuildItem> nativeImageJniConfigItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageProxyConfigBuildItem> nativeImageProxyConfigItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Path outputDir;
@@ -157,6 +162,11 @@ public class NativeImageBuildStep {
                 .setNativeImageFeatures(nativeImageFeatures)
                 .setContainerBuild(nativeImageRunner.isContainerBuild())
                 .setNativeMonitoringOptions(nativeMonitoringBuildItems)
+                .setNativeImagePropertiesItems(nativeImagePropertiesItems)
+                .setNativeImageReflectConfigItems(nativeImageReflectConfigItems)
+                .setNativeImageResourceConfigItems(nativeImageResourceConfigItems)
+                .setNativeImageJniConfigItems(nativeImageJniConfigItems)
+                .setNativeImageProxyConfigItems(nativeImageProxyConfigItems)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
 
@@ -212,6 +222,11 @@ public class NativeImageBuildStep {
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
             List<NativeMonitoringBuildItem> nativeMonitoringItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImagePropertiesBuildItem> nativeImagePropertiesItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageReflectConfigBuildItem> nativeImageReflectConfigItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageResourceConfigBuildItem> nativeImageResourceConfigItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageJniConfigBuildItem> nativeImageJniConfigItems,
+            List<io.quarkus.deployment.builditem.nativeimage.NativeImageProxyConfigBuildItem> nativeImageProxyConfigItems,
             NativeImageRunnerBuildItem nativeImageRunner) {
         if (nativeConfig.debug().enabled()) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -274,6 +289,11 @@ public class NativeImageBuildStep {
                     .setNativeImageFeatures(nativeImageFeatures)
                     .setContainerBuild(isContainerBuild)
                     .setNativeImageAgentConfigDirectory(nativeImageAgentConfigDirectoryBuildItem)
+                    .setNativeImagePropertiesItems(nativeImagePropertiesItems)
+                    .setNativeImageReflectConfigItems(nativeImageReflectConfigItems)
+                    .setNativeImageResourceConfigItems(nativeImageResourceConfigItems)
+                    .setNativeImageJniConfigItems(nativeImageJniConfigItems)
+                    .setNativeImageProxyConfigItems(nativeImageProxyConfigItems)
                     .build();
 
             List<String> nativeImageArgs = commandAndExecutable.args;
@@ -599,6 +619,11 @@ public class NativeImageBuildStep {
             private List<UnsupportedOSBuildItem> unsupportedOSes;
             private List<NativeImageFeatureBuildItem> nativeImageFeatures;
             private List<NativeMonitoringBuildItem> nativeMonitoringItems;
+            private List<io.quarkus.deployment.builditem.nativeimage.NativeImagePropertiesBuildItem> nativeImagePropertiesItems;
+            private List<io.quarkus.deployment.builditem.nativeimage.NativeImageReflectConfigBuildItem> nativeImageReflectConfigItems;
+            private List<io.quarkus.deployment.builditem.nativeimage.NativeImageResourceConfigBuildItem> nativeImageResourceConfigItems;
+            private List<io.quarkus.deployment.builditem.nativeimage.NativeImageJniConfigBuildItem> nativeImageJniConfigItems;
+            private List<io.quarkus.deployment.builditem.nativeimage.NativeImageProxyConfigBuildItem> nativeImageProxyConfigItems;
             private Path outputDir;
             private String runnerJarName;
             private String pie = "";
@@ -709,6 +734,31 @@ public class NativeImageBuildStep {
 
             public Builder setNativeMonitoringOptions(List<NativeMonitoringBuildItem> options) {
                 this.nativeMonitoringItems = options;
+                return this;
+            }
+
+            public Builder setNativeImagePropertiesItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImagePropertiesBuildItem> items) {
+                this.nativeImagePropertiesItems = items;
+                return this;
+            }
+
+            public Builder setNativeImageReflectConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageReflectConfigBuildItem> items) {
+                this.nativeImageReflectConfigItems = items;
+                return this;
+            }
+
+            public Builder setNativeImageResourceConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageResourceConfigBuildItem> items) {
+                this.nativeImageResourceConfigItems = items;
+                return this;
+            }
+
+            public Builder setNativeImageJniConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageJniConfigBuildItem> items) {
+                this.nativeImageJniConfigItems = items;
+                return this;
+            }
+
+            public Builder setNativeImageProxyConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageProxyConfigBuildItem> items) {
+                this.nativeImageProxyConfigItems = items;
                 return this;
             }
 
@@ -1013,6 +1063,15 @@ public class NativeImageBuildStep {
 
                 nativeImageAgentConfigDirectory
                         .ifPresent(dir -> nativeImageArgs.add("-H:ConfigurationFileDirectories=" + dir.getDirectory()));
+
+                // Process parsed META-INF/native-image metadata from dependencies
+                if (nativeImagePropertiesItems != null) {
+                    for (var item : nativeImagePropertiesItems) {
+                        for (String arg : item.getArgs()) {
+                            nativeImageArgs.add(arg);
+                        }
+                    }
+                }
 
                 for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
                     nativeImageArgs.add("--exclude-config");

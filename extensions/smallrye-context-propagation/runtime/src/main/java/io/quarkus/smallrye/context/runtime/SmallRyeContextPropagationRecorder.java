@@ -3,12 +3,14 @@ package io.quarkus.smallrye.context.runtime;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
@@ -23,6 +25,7 @@ import io.smallrye.context.SmallRyeContextManager;
 import io.smallrye.context.SmallRyeManagedExecutor;
 import io.smallrye.context.SmallRyeThreadContext;
 import io.smallrye.context.impl.DefaultValues;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 /**
  * The runtime value service used to create values related to the MP-JWT services
@@ -163,6 +166,13 @@ public class SmallRyeContextPropagationRecorder {
         });
         //Avoid leaking the classloader:
         SmallRyeContextPropagationRecorder.builder = null;
+
+        Infrastructure.setCompletableFutureWrapper(new UnaryOperator<CompletableFuture<?>>() {
+            public CompletableFuture<?> apply(CompletableFuture<?> t) {
+                SmallRyeThreadContext threadContext = SmallRyeThreadContext.getCurrentThreadContextOrDefaultContexts();
+                return threadContext.copy(t);
+            }
+        });
     }
 
     public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {

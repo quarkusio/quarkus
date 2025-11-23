@@ -249,6 +249,26 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Checkout SR-CP snapshot
+        uses: actions/checkout@v5
+        with:
+          repository: smallrye/smallrye-context-propagation
+          ref: completable-future-rewrite
+          path: custom-sr-cp
+      - name: Build and install SR-CP snapshot
+        working-directory: custom-sr-cp
+        run: |
+          mvn -B -DskipTests install
+      - name: Checkout Mutiny snapshot
+        uses: actions/checkout@v5
+        with:
+          repository: fromage/smallrye-mutiny
+          ref: cf-cancel-rework
+          path: custom-mutiny
+      - name: Build and install Mutiny snapshot
+        working-directory: custom-mutiny
+        run: |
+          mvn -B -DskipTests install
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
@@ -333,9 +353,9 @@ jobs:
       - name: Tar .m2 content pushed to subsequent jobs
         run: |
           if [ -d .m2/.develocity/build-cache ]; then
-            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/repository/io/smallrye .m2/.develocity/build-cache
           else
-            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
+            tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/repository/io/smallrye
           fi
       - name: Upload .m2 content pushed to subsequent jobs
         uses: actions/upload-artifact@v5

@@ -6,6 +6,7 @@ import java.security.KeyStore;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -243,6 +244,13 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
         delegate.register(new HttpClientOptionsContextResolver(httpClientOptions));
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder httpClientOptionsCustomizer(
+            Consumer<HttpClientOptions> httpClientOptionsCustomizer) {
+        delegate.clientOptionsCustomizer(httpClientOptionsCustomizer);
         return this;
     }
 

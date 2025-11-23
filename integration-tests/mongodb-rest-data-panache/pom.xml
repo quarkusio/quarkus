@@ -21,6 +21,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
         <!-- Service Binding - This isn't necessary to any Kafka functionality, but we want to test that Quarkus provides the proper config from a mock service binding -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -51,6 +55,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mongodb-rest-data-panache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

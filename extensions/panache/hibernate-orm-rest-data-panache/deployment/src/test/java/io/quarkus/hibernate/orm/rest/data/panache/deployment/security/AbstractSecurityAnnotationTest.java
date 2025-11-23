@@ -1,7 +1,4 @@
-package io.quarkus.hibernate.orm.rest.data.panache.deployment;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.hasSize;
+package io.quarkus.hibernate.orm.rest.data.panache.deployment.security;
 
 import java.util.List;
 
@@ -9,27 +6,24 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import io.quarkus.hibernate.orm.rest.data.panache.PanacheEntityResource;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.rest.data.panache.ResourceProperties;
-import io.quarkus.security.Authenticated;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class AuthenticatedMethodTest {
+abstract class AbstractSecurityAnnotationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Item.class, ItemsResource.class)
                     .addAsResource(new StringAsset(
                             """
                                             insert into item(id, name) values (1, 'first');
                                             insert into item(id, name) values (2, 'second');
+                                            insert into piece(id, name) values (1, 'first');
+                                            insert into piece(id, name) values (2, 'second');
                                     """),
                             "import.sql"))
             .setForcedDependencies(List.of(
@@ -41,6 +35,8 @@ public class AuthenticatedMethodTest {
             .overrideConfigKey("quarkus.security.users.embedded.plain-text", "true")
             .overrideConfigKey("quarkus.security.users.embedded.users.foo", "foo")
             .overrideConfigKey("quarkus.security.users.embedded.roles.foo", "user")
+            .overrideConfigKey("quarkus.security.users.embedded.users.bar", "bar")
+            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin")
             .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:mem:test")
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create");
 
@@ -51,47 +47,10 @@ public class AuthenticatedMethodTest {
         public String name;
     }
 
-    @ResourceProperties(path = "items")
-    public interface ItemsResource extends PanacheEntityResource<Item, Long> {
+    @Entity
+    @Table(name = "piece")
+    public static class Piece extends PanacheEntity {
 
-        @Authenticated
-        boolean delete(Long id);
+        public String name;
     }
-
-    @Test
-    void test() {
-        // list method is not protected so we should get an HTTP 200 even if no user is specified
-        given().accept("application/json")
-                .when()
-                .get("/items")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(2));
-
-        // delete method is protected so we should get an HTTP 401 when no user is specified
-        given().accept("application/json")
-                .when()
-                .delete("/items/1")
-                .then()
-                .statusCode(401);
-
-        // delete method is protected so we should get an HTTP 401 when a wrong username and password is specified
-        given().auth().preemptive()
-                .basic("foo", "foo2")
-                .accept("application/json")
-                .when()
-                .delete("/items/1")
-                .then()
-                .statusCode(401);
-
-        // delete method is protected so we should get an HTTP 204 when the proper username and password are specified
-        given().auth().preemptive()
-                .basic("foo", "foo")
-                .accept("application/json")
-                .when()
-                .delete("/items/1")
-                .then()
-                .statusCode(204);
-    }
-
 }

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -77,6 +78,23 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      * A map of application config that is dependent on the started service
      */
     private final Map<String, Function<Startable, String>> applicationConfigProvider;
+    private final List<DevServicesResultBuildItem> dependencies;
+
+    private DevServicesResultBuildItem(String name, String description, String serviceName, Object serviceConfig,
+            Map<String, String> config, Supplier<Startable> startableSupplier, Consumer<Startable> postStartAction,
+            Map<String, Function<Startable, String>> applicationConfigProvider,
+            List<DevServicesResultBuildItem> dependencies) {
+        this.name = name;
+        this.description = description;
+        this.containerId = null;
+        this.config = config == null ? Collections.emptyMap() : Collections.unmodifiableMap(config);
+        this.serviceName = serviceName;
+        this.serviceConfig = serviceConfig;
+        this.startableSupplier = startableSupplier;
+        this.postStartAction = postStartAction;
+        this.applicationConfigProvider = applicationConfigProvider;
+        this.dependencies = dependencies;
+    }
 
     public static DiscoveredServiceBuilder discovered() {
         return new DiscoveredServiceBuilder();
@@ -108,6 +126,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.applicationConfigProvider = null;
         this.startableSupplier = null;
         this.postStartAction = null;
+        this.dependencies = null;
     }
 
     /**
@@ -131,6 +150,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.startableSupplier = startableSupplier;
         this.postStartAction = postStartAction;
         this.applicationConfigProvider = applicationConfigProvider;
+        this.dependencies = null;
+
     }
 
     public String getName() {
@@ -186,6 +207,14 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         return map;
     }
 
+    public List<DevServicesResultBuildItem> getDependencies() {
+        return dependencies;
+    }
+
+    public boolean hasDependencies() {
+        return dependencies != null && !dependencies.isEmpty();
+    }
+
     public static class DiscoveredServiceBuilder {
         private String name;
         private String containerId;
@@ -239,6 +268,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Supplier<? extends Startable> startableSupplier;
         private Consumer<? extends Startable> postStartAction;
         private Map<String, Function<Startable, String>> applicationConfigProvider;
+        private List<DevServicesResultBuildItem> dependencies;
 
         public OwnedServiceBuilder<T> name(String name) {
             this.name = name;
@@ -275,6 +305,16 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public OwnedServiceBuilder<T> dependency(DevServicesResultBuildItem devServicesResultBuildItem) {
+            this.dependencies = List.of(devServicesResultBuildItem);
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> dependency(List<DevServicesResultBuildItem> devServicesResultBuildItems) {
+            this.dependencies = devServicesResultBuildItems;
+            return this;
+        }
+
         @SuppressWarnings("unchecked")
         public <S extends Startable> OwnedServiceBuilder<S> startable(Supplier<S> startableSupplier) {
             this.startableSupplier = startableSupplier;
@@ -306,7 +346,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider);
+                    applicationConfigProvider, dependencies);
         }
 
         private static boolean isClassAvailable(String className) {

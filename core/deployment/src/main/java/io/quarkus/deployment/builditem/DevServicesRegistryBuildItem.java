@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -83,8 +84,22 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             List<DevServicesCustomizerBuildItem> customizers,
             ClassLoader augmentClassLoader) {
         closeRemainingRunningServices(services);
+        startSelectedServices(services, customizers, augmentClassLoader, dr -> !dr.hasDependencies());
+
+        // Now start everything with a dependency
+        // This won't handle the case where the dependencies also have dependencies, but that can be a follow-on work item if people ask for it
+        // I think we could implement it by getting the actual dependencies and seeing if any of them are also in the list of things we're starting, and then recursing
+        startSelectedServices(services, customizers, augmentClassLoader,
+                DevServicesResultBuildItem::hasDependencies);
+
+    }
+
+    private void startSelectedServices(Collection<DevServicesResultBuildItem> services,
+            List<DevServicesCustomizerBuildItem> customizers, ClassLoader augmentClassLoader,
+            Predicate<? super DevServicesResultBuildItem> filter) {
         CompletableFuture.allOf(services.stream()
                 .filter(DevServicesResultBuildItem::isStartable)
+                .filter(filter)
                 .map(serv -> CompletableFuture.runAsync(() -> {
                     // We need to set the context classloader to the augment classloader, so that the dev services can be started with the right classloader
                     if (augmentClassLoader != null) {

@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
+import io.quarkus.runtime.graal.GraalVM;
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.runtime.util.StringUtil;
 import io.smallrye.config.ConfigValidationException;
@@ -86,6 +87,13 @@ public class ApplicationLifecycleManager {
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+    /*
+     * After GraalVM/Mandrel 24.2, JCMD becomes available. The Quarkus thread dumper handles SIGQUIT which
+     * interferes with JCMD. To avoid this problem, Quarkus must disable its signal handler and instead use the thread
+     * dumper built into GraalVM for versions beyond 24.2.
+     */
+    private static final boolean shouldRegisterHandler = ImageMode.current() == ImageMode.NATIVE_BUILD
+            && GraalVM.Version.getCurrent().compareTo(GraalVM.Version.VERSION_24_2_0) < 0;
 
     public static final String QUARKUS_APPCDS_GENERATE_PROP = "quarkus.appcds.generate";
 
@@ -278,7 +286,8 @@ public class ApplicationLifecycleManager {
     }
 
     private static void registerHooks(final BiConsumer<Integer, Throwable> exitCodeHandler) {
-        if (ImageMode.current() == ImageMode.NATIVE_RUN && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
+        if (shouldRegisterHandler && ImageMode.current() == ImageMode.NATIVE_RUN
+                && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
             registerSignalHandlers(exitCodeHandler);
         }
         shutdownHookThread = new ShutdownHookThread();

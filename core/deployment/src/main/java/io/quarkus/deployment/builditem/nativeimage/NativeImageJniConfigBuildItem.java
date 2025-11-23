@@ -43,8 +43,10 @@ public final class NativeImageJniConfigBuildItem extends MultiBuildItem {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         NativeImageJniConfigBuildItem that = (NativeImageJniConfigBuildItem) o;
         return Objects.equals(sourceJar, that.sourceJar) &&
                 Objects.equals(sourceResource, that.sourceResource) &&

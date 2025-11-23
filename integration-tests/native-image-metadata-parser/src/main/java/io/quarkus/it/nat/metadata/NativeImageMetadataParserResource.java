@@ -1,10 +1,13 @@
 package io.quarkus.it.nat.metadata;
 
+import java.util.Locale;
 import java.util.ResourceBundle;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * Test resource for native-image metadata parsing.
@@ -13,15 +16,11 @@ import jakarta.ws.rs.PathParam;
 public class NativeImageMetadataParserResource {
 
     @GET
-    @Path("/test")
-    public String test() {
-        return "Native image metadata parser test";
-    }
-
-    @GET
-    @Path("/bundle/{locale}")
-    public String getBundleMessage(@PathParam("locale") String locale) {
-        ResourceBundle bundle = ResourceBundle.getBundle("messages", new java.util.Locale(locale));
-        return bundle.getString("greeting");
+    @Path("/access-resource-bundle/{locale}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String accessResourceBundle(@PathParam("locale") String localeString) {
+        Locale locale = new Locale(localeString);
+        ResourceBundle bundle = ResourceBundle.getBundle("messages", locale);
+        return bundle.getString("hello");
     }
 }

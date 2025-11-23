@@ -1,11 +1,8 @@
 package io.quarkus.deployment.steps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -25,7 +22,8 @@ public class NativeImageMetadataParserStepTest {
 
     @Test
     public void testParseArgsQuoted() {
-        List<String> args = NativeImageMetadataParserStep.parseArgs("-H:IncludeLocales=\"en,ar\" -H:+ReportExceptionStackTraces");
+        List<String> args = NativeImageMetadataParserStep
+                .parseArgs("-H:IncludeLocales=\"en,ar\" -H:+ReportExceptionStackTraces");
         assertEquals(List.of("-H:IncludeLocales=\"en,ar\"", "-H:+ReportExceptionStackTraces"), args);
     }
 
@@ -37,8 +35,10 @@ public class NativeImageMetadataParserStepTest {
 
     @Test
     public void testParseArgsComplex() {
-        List<String> args = NativeImageMetadataParserStep.parseArgs("-H:IncludeLocales=\"en,ar\" -Dprop=\"value with spaces\" -H:+ReportExceptionStackTraces");
-        assertEquals(List.of("-H:IncludeLocales=\"en,ar\"", "-Dprop=\"value with spaces\"", "-H:+ReportExceptionStackTraces"), args);
+        List<String> args = NativeImageMetadataParserStep
+                .parseArgs("-H:IncludeLocales=\"en,ar\" -Dprop=\"value with spaces\" -H:+ReportExceptionStackTraces");
+        assertEquals(List.of("-H:IncludeLocales=\"en,ar\"", "-Dprop=\"value with spaces\"", "-H:+ReportExceptionStackTraces"),
+                args);
     }
 
     @Test
@@ -63,7 +63,7 @@ public class NativeImageMetadataParserStepTest {
     public void testParseArgsUnclosedQuote() {
         // This should still work - unclosed quotes are preserved as-is
         List<String> args = NativeImageMetadataParserStep.parseArgs("-H:IncludeLocales=\"en,ar -H:+ReportExceptionStackTraces");
-        assertEquals(List.of("-H:IncludeLocales=\"en,ar", "-H:+ReportExceptionStackTraces"), args);
+        assertEquals(List.of("-H:IncludeLocales=\"en,ar -H:+ReportExceptionStackTraces"), args);
     }
 
     @Test

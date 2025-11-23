@@ -737,27 +737,32 @@ public class NativeImageBuildStep {
                 return this;
             }
 
-            public Builder setNativeImagePropertiesItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImagePropertiesBuildItem> items) {
+            public Builder setNativeImagePropertiesItems(
+                    List<io.quarkus.deployment.builditem.nativeimage.NativeImagePropertiesBuildItem> items) {
                 this.nativeImagePropertiesItems = items;
                 return this;
             }
 
-            public Builder setNativeImageReflectConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageReflectConfigBuildItem> items) {
+            public Builder setNativeImageReflectConfigItems(
+                    List<io.quarkus.deployment.builditem.nativeimage.NativeImageReflectConfigBuildItem> items) {
                 this.nativeImageReflectConfigItems = items;
                 return this;
             }
 
-            public Builder setNativeImageResourceConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageResourceConfigBuildItem> items) {
+            public Builder setNativeImageResourceConfigItems(
+                    List<io.quarkus.deployment.builditem.nativeimage.NativeImageResourceConfigBuildItem> items) {
                 this.nativeImageResourceConfigItems = items;
                 return this;
             }
 
-            public Builder setNativeImageJniConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageJniConfigBuildItem> items) {
+            public Builder setNativeImageJniConfigItems(
+                    List<io.quarkus.deployment.builditem.nativeimage.NativeImageJniConfigBuildItem> items) {
                 this.nativeImageJniConfigItems = items;
                 return this;
             }
 
-            public Builder setNativeImageProxyConfigItems(List<io.quarkus.deployment.builditem.nativeimage.NativeImageProxyConfigBuildItem> items) {
+            public Builder setNativeImageProxyConfigItems(
+                    List<io.quarkus.deployment.builditem.nativeimage.NativeImageProxyConfigBuildItem> items) {
                 this.nativeImageProxyConfigItems = items;
                 return this;
             }

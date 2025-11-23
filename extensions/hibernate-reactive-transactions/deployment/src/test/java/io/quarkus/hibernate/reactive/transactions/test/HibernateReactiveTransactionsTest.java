@@ -1,0 +1,119 @@
+package io.quarkus.hibernate.reactive.transactions.test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.hibernate.reactive.transactions.runtime.TransactionalInterceptorRequired;
+import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
+import io.smallrye.mutiny.Uni;
+
+public class HibernateReactiveTransactionsTest {
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar
+                    .addClasses(Hero.class, TransactionalInterceptorRequired.class)
+                    .addAsResource("initialTransactionData.sql", "import.sql"))
+            .withConfigurationResource("application.properties");
+
+    @Inject
+    Mutiny.SessionFactory sessionFactory;
+
+    /**
+     * This test shows how to use hibernate reactive .withTransaction to set transactional boundaries
+     * Below there's testReactiveAnnotationTransaction which is the same test but with @Transactional
+     *
+     * @param asserter
+     */
+    @Test
+    @RunOnVertxContext
+    public void testReactiveManualTransaction(UniAsserter asserter) {
+        // initialTransactionData.sql
+        Long heroId = 60L;
+
+        // First update, make sure it's committed
+        asserter.assertThat(
+                () -> sessionFactory.withTransaction(session -> updateHero(session, heroId, "updatedNameCommitted"))
+                        // 2nd endpoint call
+                        .chain(() -> sessionFactory.withTransaction(session -> session.find(Hero.class, heroId))),
+                h -> assertThat(h.name).isEqualTo("updatedNameCommitted"));
+
+        // Second update, make sure there's a rollback
+        asserter.assertThat(
+                () -> sessionFactory.withTransaction(session -> {
+                    return updateHero(session, heroId, "this name won't appear")
+                            .onItem().invoke(h -> {
+                                throw new RuntimeException("Failing update");
+                            });
+                }).onFailure().recoverWithNull()
+                        .chain(() -> sessionFactory.withTransaction(session -> session.find(Hero.class, heroId))),
+                h -> {
+                    assertThat(h.name).isEqualTo("updatedNameCommitted");
+                });
+    }
+
+    @Inject
+    Mutiny.Session session;
+
+    /*
+     * This is the same test as #testReactiveManualTransaction but instead of manually calling sessionFactory.withTransaction
+     * We use the annotation @Transactional
+     */
+    @Test
+    @RunOnVertxContext
+    public void testReactiveAnnotationTransaction(UniAsserter asserter) {
+        // initialTransactionData.sql
+        Long heroId = 50L;
+
+        // First update, make sure it's committed
+        asserter.assertThat(
+                () -> updateWithCommit(heroId, "updatedNameCommitted")
+                        .chain(() -> findHero(heroId)),
+                h -> {
+                    assertThat(h.name).isEqualTo("updatedNameCommitted");
+                });
+
+        // Second update, make sure there's a rollback
+        asserter.assertThat(
+                () -> transactionalUpdateWithRollback(heroId, "this name won't appear")
+                        .onFailure().recoverWithNull()
+                        .chain(() -> findHero(heroId)),
+                h -> {
+                    assertThat(h.name).isEqualTo("updatedNameCommitted");
+                });
+    }
+
+    @Transactional
+    public Uni<Hero> findHero(Long previousHeroId) {
+        return session.find(Hero.class, previousHeroId);
+    }
+
+    @Transactional
+    public Uni<Hero> updateWithCommit(Long previousHeroId, String newName) {
+        return updateHero(session, previousHeroId, newName);
+    }
+
+    @Transactional
+    public Uni<Hero> transactionalUpdateWithRollback(Long previousHeroId, String newName) {
+        return updateHero(session, previousHeroId, newName)
+                .onItem().invoke(h -> {
+                    throw new RuntimeException("Failing update");
+                });
+    }
+
+    public Uni<Hero> updateHero(Mutiny.Session session, Long id, String newName) {
+        return session.find(Hero.class, id)
+                .map(h -> {
+                    h.setName(newName);
+                    return h;
+                }).call(() -> session.flush());
+    }
+}

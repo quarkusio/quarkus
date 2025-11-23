@@ -27,9 +27,10 @@ public class ORMReactiveCompatbilityDifferentNamedDataSourceNamedPersistenceUnit
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
             ))
-            .withConfigurationResource("application-unittest-both-named.properties")
+            .withConfigurationResource("application-unittest-both-named-different.properties")
 
             // Reactive named datasource
+            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".jdbc", "false")
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".reactive", "true")
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".username", USERNAME_PWD)

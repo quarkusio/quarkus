@@ -97,14 +97,23 @@ class ReactiveDataSourceProcessor {
     @BuildStep
     void produceReactiveDataSourceBuildItem(
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
-            BuildProducer<ReactiveDataSourceBuildItem> dataSource) {
+            BuildProducer<ReactiveDataSourceBuildItem> deprecatedDataSourceBuildItem,
+            BuildProducer<io.quarkus.reactive.datasource.spi.ReactiveDataSourceBuildItem> dataSource) {
         if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
             // No datasource has been configured so bail out
             return;
         }
 
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
-            dataSource.produce(new ReactiveDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
+            deprecatedDataSourceBuildItem.produce(new ReactiveDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
+                    aggregatedBuildTimeConfigBuildItem.getDbKind(),
+                    aggregatedBuildTimeConfigBuildItem.isDefault(),
+                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion()));
+        }
+
+        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
+            dataSource.produce(new io.quarkus.reactive.datasource.spi.ReactiveDataSourceBuildItem(
+                    aggregatedBuildTimeConfigBuildItem.getName(),
                     aggregatedBuildTimeConfigBuildItem.getDbKind(),
                     aggregatedBuildTimeConfigBuildItem.isDefault(),
                     aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion()));

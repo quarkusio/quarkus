@@ -25,7 +25,7 @@ public class ConfigRoot implements ConfigItemCollection {
 
     private final String overriddenDocFileName;
     private final List<AbstractConfigItem> items = new ArrayList<>();
-    private final Set<String> qualifiedNames = new TreeSet<>();
+    private final Set<String> binaryNames = new TreeSet<>();
 
     public ConfigRoot(Extension extension, String prefix, String overriddenDocPrefix, String overriddenDocFileName) {
         this.extension = extension;
@@ -47,12 +47,12 @@ public class ConfigRoot implements ConfigItemCollection {
         return overriddenDocFileName;
     }
 
-    public void addQualifiedName(String qualifiedName) {
-        qualifiedNames.add(qualifiedName);
+    public void addBinaryName(String binaryName) {
+        binaryNames.add(binaryName);
     }
 
-    public Set<String> getQualifiedNames() {
-        return Collections.unmodifiableSet(qualifiedNames);
+    public Set<String> getBinaryNames() {
+        return Collections.unmodifiableSet(binaryNames);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ConfigRoot implements ConfigItemCollection {
     }
 
     public void merge(ConfigRoot other) {
-        this.qualifiedNames.addAll(other.getQualifiedNames());
+        this.binaryNames.addAll(other.getBinaryNames());
 
         Map<String, ConfigSection> existingConfigSections = new HashMap<>();
         collectConfigSections(existingConfigSections, this);

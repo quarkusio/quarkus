@@ -13,22 +13,22 @@ import io.quarkus.annotation.processor.documentation.config.model.JavadocElement
 public class ConfigCollector {
 
     /**
-     * Key is qualified name of the class + "." + element name (for instance field or method name)
+     * Key is binary name of the class + "." + element name (for instance field or method name)
      */
     private final Map<String, JavadocElement> javadocElements = new TreeMap<>();
 
     /**
-     * Key is the qualified name of the class.
+     * Key is the binary name of the class.
      */
     private final Map<String, DiscoveryConfigRoot> configRoots = new TreeMap<>();
 
     /**
-     * Key is the qualified name of the class.
+     * Key is the binary name of the class.
      */
     private final Map<String, DiscoveryConfigGroup> resolvedConfigGroups = new TreeMap<>();
 
     /**
-     * Key is the qualified name of the class.
+     * Key is the binary name of the class.
      */
     private final Map<String, EnumDefinition> resolvedEnums = new TreeMap<>();
 
@@ -41,7 +41,7 @@ public class ConfigCollector {
     }
 
     public void addConfigRoot(DiscoveryConfigRoot configRoot) {
-        configRoots.put(configRoot.getQualifiedName(), configRoot);
+        configRoots.put(configRoot.getBinaryName(), configRoot);
     }
 
     public Collection<DiscoveryConfigRoot> getConfigRoots() {
@@ -49,7 +49,7 @@ public class ConfigCollector {
     }
 
     public void addResolvedConfigGroup(DiscoveryConfigGroup configGroup) {
-        resolvedConfigGroups.put(configGroup.getQualifiedName(), configGroup);
+        resolvedConfigGroups.put(configGroup.getBinaryName(), configGroup);
     }
 
     public Collection<DiscoveryConfigGroup> getResolvedConfigGroups() {
@@ -69,7 +69,7 @@ public class ConfigCollector {
     }
 
     public void addResolvedEnum(EnumDefinition enumDefinition) {
-        resolvedEnums.put(enumDefinition.qualifiedName(), enumDefinition);
+        resolvedEnums.put(enumDefinition.binaryName(), enumDefinition);
     }
 
     public boolean isEnum(String className) {
@@ -103,7 +103,7 @@ public class ConfigCollector {
         sb.append("=======================================================\n\n");
 
         for (DiscoveryConfigRoot configRoot : configRoots.values()) {
-            sb.append("- " + configRoot.getQualifiedName() + "\n");
+            sb.append("- " + configRoot.getBinaryName() + "\n");
             sb.append(configRoot.toString("  "));
             sb.append("\n\n===\n\n");
         }
@@ -116,7 +116,7 @@ public class ConfigCollector {
         sb.append("=======================================================\n\n");
 
         for (DiscoveryConfigGroup configGroup : resolvedConfigGroups.values()) {
-            sb.append("- " + configGroup.getQualifiedName() + "\n");
+            sb.append("- " + configGroup.getBinaryName() + "\n");
             sb.append(configGroup.toString("  "));
             sb.append("\n\n===\n\n");
         }

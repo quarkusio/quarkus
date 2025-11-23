@@ -13,6 +13,7 @@ import io.quarkus.annotation.processor.documentation.config.merger.JavadocReposi
 import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.ConfigRootKey;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
+import io.quarkus.annotation.processor.documentation.config.model.EnumAcceptedValues.EnumAcceptedValue;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
@@ -108,7 +109,7 @@ abstract class AbstractFormatter implements Formatter {
                         .collect(Collectors.joining(", "));
             } else {
                 typeContent = configProperty.getEnumAcceptedValues().values().values().stream()
-                        .map(v -> v.configValue())
+                        .map(EnumAcceptedValue::configValue)
                         .collect(Collectors.joining("`, `", "`", "`"));
             }
         } else {

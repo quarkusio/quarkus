@@ -4,11 +4,11 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
@@ -16,13 +16,19 @@ public final class JacksonMappers {
 
     private static final ObjectWriter JSON_OBJECT_WRITER = new ObjectMapper()
             .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
-            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
             .setLocale(Locale.US)
             .setTimeZone(TimeZone.getTimeZone("UTC"))
             .setSerializationInclusion(JsonInclude.Include.NON_DEFAULT).writerWithDefaultPrettyPrinter();
+    private static final ObjectReader JSON_OBJECT_READER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .registerModule(new ParameterNamesModule()).reader();
     private static final ObjectWriter YAML_OBJECT_WRITER = new ObjectMapper(new YAMLFactory())
+            .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+            .setLocale(Locale.US)
+            .setTimeZone(TimeZone.getTimeZone("UTC"))
             .setSerializationInclusion(JsonInclude.Include.NON_DEFAULT).writer();
     private static final ObjectReader YAML_OBJECT_READER = new ObjectMapper(new YAMLFactory())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .registerModule(new ParameterNamesModule()).reader();
 
     private JacksonMappers() {
@@ -30,6 +36,10 @@ public final class JacksonMappers {
 
     public static ObjectWriter jsonObjectWriter() {
         return JSON_OBJECT_WRITER;
+    }
+
+    public static ObjectReader jsonObjectReader() {
+        return JSON_OBJECT_READER;
     }
 
     public static ObjectWriter yamlObjectWriter() {

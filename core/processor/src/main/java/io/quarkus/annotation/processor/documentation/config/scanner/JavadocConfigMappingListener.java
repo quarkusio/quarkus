@@ -54,7 +54,7 @@ public class JavadocConfigMappingListener implements ConfigAnnotationListener {
         }
 
         configCollector.addJavadocElement(
-                configRoot.getQualifiedName().toString(),
+                utils.element().getBinaryName(configRoot),
                 new JavadocElement(parsedJavadocSection.title(), parsedJavadocSection.format(), null,
                         parsedJavadocSection.deprecated()));
 
@@ -82,7 +82,7 @@ public class JavadocConfigMappingListener implements ConfigAnnotationListener {
             }
 
             configCollector.addJavadocElement(
-                    clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),
+                    utils.element().getBinaryName(clazz) + Markers.DOT + method.getSimpleName().toString(),
                     new JavadocElement(parsedJavadocSection.title(), parsedJavadocSection.format(), null,
                             parsedJavadocSection.deprecated()));
         } else {
@@ -97,7 +97,7 @@ public class JavadocConfigMappingListener implements ConfigAnnotationListener {
             }
 
             configCollector.addJavadocElement(
-                    clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),
+                    utils.element().getBinaryName(clazz) + Markers.DOT + method.getSimpleName().toString(),
                     new JavadocElement(parsedJavadoc.description(), parsedJavadoc.format(), parsedJavadoc.since(),
                             parsedJavadoc.deprecated()));
         }
@@ -127,7 +127,7 @@ public class JavadocConfigMappingListener implements ConfigAnnotationListener {
             }
 
             configCollector.addJavadocElement(
-                    enumTypeElement.getQualifiedName().toString() + Markers.DOT + enumElement.getSimpleName()
+                    utils.element().getBinaryName(enumTypeElement) + Markers.DOT + enumElement.getSimpleName()
                             .toString(),
                     new JavadocElement(parsedJavadoc.description(), parsedJavadoc.format(), parsedJavadoc.since(),
                             parsedJavadoc.deprecated()));

@@ -7,6 +7,7 @@ public class ResetMockitoMocksAfterEachCallback implements QuarkusTestAfterEachC
 
     @Override
     public void afterEach(QuarkusTestMethodContext context) {
+        System.out.println("AfterEach ejecutando: ResetMockitoMocksAfterEachCallback");
         MockitoMocksTracker.reset(context.getTestInstance());
     }
 }

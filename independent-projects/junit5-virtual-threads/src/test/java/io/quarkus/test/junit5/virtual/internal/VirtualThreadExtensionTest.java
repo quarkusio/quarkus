@@ -16,6 +16,7 @@ import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExecutableInvoker;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.MediaType;
@@ -87,6 +88,7 @@ class VirtualThreadExtensionTest {
     }
 
     @Test
+    @DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*", disabledReason = "Semeru doesn't support JFR yet")
     void afterEachShouldPinButNoEvents() throws NoSuchMethodException {
         extensionContext.setMethod(TestClass.class.getDeclaredMethod("methodShouldPinButDoesnt"));
         assertThatThrownBy(() -> extension.afterEach(extensionContext))
@@ -236,7 +238,7 @@ class VirtualThreadExtensionTest {
         }
     }
 
-    private static class TestCollector extends Collector {
+    private static class TestCollector extends JfrCollector {
         private final List<RecordedEvent> mockEvents;
 
         private TestCollector(List<RecordedEvent> mockEvents) {

@@ -164,6 +164,34 @@
                         <quarkus.devservices.enabled>false</quarkus.devservices.enabled>
                     </systemPropertyVariables>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/DevUI*.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <!-- Isolate Dev UI tests in a specific run to work around memory issues on Semeru -->
+                    <execution>
+                        <id>dev-ui-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>-Xmx1536M</argLine>
+                            <includes>
+                                <include>**/DevUI*.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

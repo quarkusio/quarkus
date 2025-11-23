@@ -6,12 +6,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevConsoleOidcJsonRPCTest extends DevUIJsonRPCTest {
+public class DevUIOidcJsonRPCTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
-    public DevConsoleOidcJsonRPCTest() {
+    public DevUIOidcJsonRPCTest() {
         super("quarkus-oidc");
     }
 

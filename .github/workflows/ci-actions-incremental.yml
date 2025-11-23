@@ -604,14 +604,23 @@ jobs:
           - {
             name: "17",
             java-version: 17,
+            java-distribution: "temurin",
             os-name: "ubuntu-latest",
             tag: "maven-jdk-17"
           }
           - {
             name: "17 Windows",
             java-version: 17,
+            java-distribution: "temurin",
             os-name: "windows-latest",
             tag: "maven-jdk-17-windows"
+          }
+          - {
+            name: "21 Semeru",
+            java-version: 21,
+            java-distribution: "semeru",
+            os-name: "ubuntu-latest",
+            tag: "maven-jdk-21-semeru"
           }
     steps:
       - uses: runs-on/action@v2
@@ -646,7 +655,7 @@ jobs:
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.4
@@ -809,20 +818,30 @@ jobs:
           - {
             name: "17",
             java-version: 17,
+            java-distribution: "temurin",
             os-name: "ubuntu-latest",
             tag: "devtools-jdk-17"
           }
           - {
             name: "21",
             java-version: 21,
+            java-distribution: "temurin",
             os-name: "ubuntu-latest",
             tag: "devtools-jdk-21"
           }
           - {
             name: "17 Windows",
             java-version: 17,
+            java-distribution: "temurin",
             os-name: "windows-latest",
             tag: "devtools-jdk-17-windows"
+          }
+          - {
+            name: "21 Semeru",
+            java-version: 21,
+            java-distribution: "semeru",
+            os-name: "ubuntu-latest",
+            tag: "devtools-jdk-21-semeru"
           }
     steps:
       - uses: runs-on/action@v2
@@ -852,7 +871,7 @@ jobs:
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.4
@@ -913,19 +932,29 @@ jobs:
             name: "17",
             java-version: 17,
             os-name: "ubuntu-latest",
+            java-distribution: "temurin",
             tag: "kubernetes-jdk-17"
           }
           - {
             name: "21",
             java-version: 21,
+            java-distribution: "temurin",
             os-name: "ubuntu-latest",
             tag: "kubernetes-jdk-21"
           }
           - {
             name: "17 Windows",
             java-version: 17,
+            java-distribution: "temurin",
             os-name: "windows-latest",
             tag: "kubernetes-jdk-17-windows"
+          }
+          - {
+            name: "21 Semeru",
+            java-version: 21,
+            java-distribution: "semeru",
+            os-name: "ubuntu-latest",
+            tag: "kubernetes-jdk-21-semeru"
           }
     steps:
       - uses: runs-on/action@v2
@@ -955,7 +984,7 @@ jobs:
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.4

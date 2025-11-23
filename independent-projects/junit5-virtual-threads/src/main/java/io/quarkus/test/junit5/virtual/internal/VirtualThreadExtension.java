@@ -5,6 +5,7 @@ import static io.quarkus.test.junit5.virtual.internal.Collector.CARRIER_PINNED_E
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -20,18 +21,21 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 import io.quarkus.test.junit5.virtual.ShouldNotPin;
 import io.quarkus.test.junit5.virtual.ShouldPin;
 import io.quarkus.test.junit5.virtual.ThreadPinnedEvents;
+import io.smallrye.common.annotation.SuppressForbidden;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedFrame;
 
 public class VirtualThreadExtension
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
+    private static final Logger LOGGER = Logger.getLogger(VirtualThreadExtension.class.getName());
+
     public static final String _COLLECTOR_KEY = "collector";
     private ExtensionContext.Namespace namespace;
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) {
-        Collector collector = new Collector();
+        Collector collector = Collector.create();
         namespace = ExtensionContext.Namespace.create("loom-unit");
         var store = extensionContext.getStore(namespace);
         store.put(_COLLECTOR_KEY, collector);
@@ -104,6 +108,7 @@ public class VirtualThreadExtension
     }
 
     @Override
+    @SuppressForbidden(reason = "java.util.logging is authorized here")
     public void afterEach(ExtensionContext extensionContext) {
         Method method = extensionContext.getRequiredTestMethod();
         Class<?> clazz = extensionContext.getRequiredTestClass();
@@ -111,7 +116,15 @@ public class VirtualThreadExtension
             return;
         }
         var store = extensionContext.getStore(namespace);
-        List<RecordedEvent> captured = store.get(_COLLECTOR_KEY, Collector.class).stop();
+        Collector collector = store.get(_COLLECTOR_KEY, Collector.class);
+
+        if (!collector.isRecording()) {
+            LOGGER.warning(
+                    "Recording JFR events is not supported by this VM, @ShouldPin and @ShouldNotPin annotations are not enforced.");
+            return;
+        }
+
+        List<RecordedEvent> captured = collector.stop();
         List<RecordedEvent> pinEvents = captured.stream()
                 .filter(re -> re.getEventType().getName().equals(CARRIER_PINNED_EVENT_NAME)).collect(Collectors.toList());
 

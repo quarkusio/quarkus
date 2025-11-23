@@ -5,6 +5,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,6 +17,7 @@ import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleShouldNotPi
 import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleShouldNotPinOnSuperClassTest;
 import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleShouldPinOnSuperClassTest;
 
+@DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*", disabledReason = "Semeru doesn't support JFR yet")
 public class ShouldPinTest {
 
     @ParameterizedTest

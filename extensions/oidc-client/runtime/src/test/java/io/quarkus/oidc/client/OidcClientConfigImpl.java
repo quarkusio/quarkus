@@ -91,6 +91,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_LIFESPAN,
         CREDENTIALS_JWT_ASSERTION,
         CREDENTIALS_JWT_AUDIENCE,
+        CREDENTIALS_JWT_KEEP_AUDIENCE_TRAILING_SLASH,
         CREDENTIALS_JWT_TOKEN_ID,
         JWT_BEARER_TOKEN_PATH,
         REFRESH_INTERVAL
@@ -263,6 +264,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
                     public Optional<String> audience() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_AUDIENCE, true);
                         return Optional.empty();
+                    }
+
+                    @Override
+                    public boolean keepAudienceTrailingSlash() {
+                        invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_KEEP_AUDIENCE_TRAILING_SLASH, true);
+                        return false;
                     }
 
                     @Override

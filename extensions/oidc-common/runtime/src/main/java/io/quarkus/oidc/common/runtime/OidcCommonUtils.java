@@ -246,6 +246,10 @@ public class OidcCommonUtils {
         return removeLastPathSeparator(oidcConfig.authServerUrl().get());
     }
 
+    private static String removeAudienceTrailingSlash(Credentials.Jwt jwtConfig, String value) {
+        return !jwtConfig.keepAudienceTrailingSlash() ? removeLastPathSeparator(value) : value;
+    }
+
     private static String removeLastPathSeparator(String value) {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
@@ -436,7 +440,8 @@ public class OidcCommonUtils {
                 .issuer(oidcConfig.credentials().jwt().issuer().orElse(oidcConfig.clientId().get()))
                 .subject(oidcConfig.credentials().jwt().subject().orElse(oidcConfig.clientId().get()))
                 .audience(oidcConfig.credentials().jwt().audience().isPresent()
-                        ? removeLastPathSeparator(oidcConfig.credentials().jwt().audience().get())
+                        ? removeAudienceTrailingSlash(oidcConfig.credentials().jwt(),
+                                oidcConfig.credentials().jwt().audience().get())
                         : tokenRequestUri)
                 .expiresIn(oidcConfig.credentials().jwt().lifespan()).jws();
         if (oidcConfig.credentials().jwt().tokenKeyId().isPresent()) {

@@ -42,6 +42,7 @@ public class OidcClientCommonConfigBuilderTest {
         assertTrue(jwt.keyId().isEmpty());
         assertTrue(jwt.keyPassword().isEmpty());
         assertTrue(jwt.audience().isEmpty());
+        assertFalse(jwt.keepAudienceTrailingSlash());
         assertTrue(jwt.tokenKeyId().isEmpty());
         assertTrue(jwt.issuer().isEmpty());
         assertTrue(jwt.subject().isEmpty());

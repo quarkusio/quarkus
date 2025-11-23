@@ -86,6 +86,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CREDENTIALS_JWT_LIFESPAN,
         CREDENTIALS_JWT_ASSERTION,
         CREDENTIALS_JWT_AUDIENCE,
+        CREDENTIALS_JWT_KEEP_AUDIENCE_TRAILING_SLASH,
         CREDENTIALS_JWT_TOKEN_ID,
         PROVIDER,
         JWKS,
@@ -1119,6 +1120,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                     public Optional<String> audience() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_AUDIENCE, true);
                         return Optional.empty();
+                    }
+
+                    @Override
+                    public boolean keepAudienceTrailingSlash() {
+                        invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_KEEP_AUDIENCE_TRAILING_SLASH, true);
+                        return false;
                     }
 
                     @Override

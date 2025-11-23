@@ -1949,6 +1949,37 @@ Please refer to the corresponding https://hibernate.org/repositories/[Hibernate 
 and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
 guides to learn what else they have to offer.
 
+==== Secure Jakarta Data repositories
+
+Quarkus Security can secure Jakarta Data Repositories with security annotations.
+
+.Example Jakarta Data repository with method-level security annotation
+[source,java]
+----
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> {
+
+    @RolesAllowed("admin")
+    @Delete
+    void delete(String name);
+
+}
+----
+
+.Example Jakarta Data repository with class-level security annotation
+[source,java]
+----
+@Authenticated
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> {
+
+    @Delete
+    void delete(String name); <1>
+
+}
+----
+<1> Only the methods directly declared on the `MyRepository` interface require authentication. Methods inherited from `CrudRepository`, such as the `insert` method, are not secured by the interface-level annotation.
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate ORM
 

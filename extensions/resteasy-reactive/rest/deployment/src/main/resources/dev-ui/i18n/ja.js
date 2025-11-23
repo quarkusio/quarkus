@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'ビルド時処理とVert.xを利用したJakarta RESTの実装。',
+    'quarkus-rest-endpoints': 'エンドポイント',
+    'quarkus-rest-endpoint_scores': 'エンドポイントスコア',
+    'quarkus-rest-exception_mappers': '例外マッパー',
+    'quarkus-rest-parameter_converter_providers': 'パラメーターコンバータープロバイダー',
+    'quarkus-rest-no-rest-endpoints': 'RESTエンドポイントはありません。',
+    'quarkus-rest-learn-rest': 'Quarkus RESTを使ってRESTサービスを書く方法を学ぼう。',
+    'quarkus-rest-produces': '生成します',
+    'quarkus-rest-consumes': '消費する',
+    'quarkus-rest-resource-class': 'リソースクラス',
+    'quarkus-rest-priority': '優先度',
+    'quarkus-rest-exception': '例外',
+    'quarkus-rest-mapper': 'マッパー',
+    'quarkus-rest-class-name': 'クラス名',
+};

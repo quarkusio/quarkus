@@ -125,6 +125,14 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         }
     }
 
+    protected void setTestSuccessful() {
+        setTestFailed(null);
+    }
+
+    protected void setTestAborted(Throwable failure) {
+        setTestFailed(failure);
+    }
+
     protected void setTestFailed(Throwable failure) {
         try {
             this.testErrorCause = failure;

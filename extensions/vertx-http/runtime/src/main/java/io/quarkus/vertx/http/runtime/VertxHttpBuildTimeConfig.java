@@ -1,6 +1,5 @@
 package io.quarkus.vertx.http.runtime;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -68,12 +67,6 @@ public interface VertxHttpBuildTimeConfig {
      */
     @WithDefault("q")
     String nonApplicationRootPath();
-
-    /**
-     * The REST Assured client timeout for testing.
-     */
-    @WithDefault("30s")
-    Duration testTimeout();
 
     /**
      * If enabled then the response body is compressed if the {@code Content-Type} header is set and the value is a compressed

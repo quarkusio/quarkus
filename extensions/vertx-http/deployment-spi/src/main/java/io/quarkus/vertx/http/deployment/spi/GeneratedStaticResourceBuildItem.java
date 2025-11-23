@@ -70,7 +70,7 @@ public final class GeneratedStaticResourceBuildItem extends MultiBuildItem {
 
     public boolean isFile() {
         return file != null;
-    };
+    }
 
     public byte[] getContent() {
         return this.content;

@@ -42,7 +42,7 @@ public class DevServicesDB2DatasourceTestCase {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:db2:"));
         assertEquals("quarkus", configuration.connectionFactoryConfiguration().principal().getName());
-        assertEquals(20, configuration.maxSize());
+        assertEquals(50, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(DB2ExceptionSorter.class);
 
         try (Connection connection = dataSource.getConnection()) {

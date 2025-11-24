@@ -49,7 +49,7 @@ public class DevServicesMySQLDatasourceTestCase {
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:mysql:"));
         assertEquals("quarkus", configuration.connectionFactoryConfiguration().principal().getName());
-        assertEquals(20, configuration.maxSize());
+        assertEquals(50, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(MySQLExceptionSorter.class);
 
         try (Connection connection = dataSource.getConnection()) {

@@ -49,7 +49,7 @@ public class DevServicesOracleDatasourceTestCase {
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:oracle:"));
         assertEquals("quarkus", configuration.connectionFactoryConfiguration().principal().getName());
-        assertEquals(20, configuration.maxSize());
+        assertEquals(50, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(OracleExceptionSorter.class);
 
         try (Connection connection = dataSource.getConnection()) {

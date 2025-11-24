@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'एक जकार्ता REST कार्यान्वयन जो निर्माण समय प्रसंस्करण और वर्ट.x का उपयोग करता है।',
+    'quarkus-rest-endpoints': 'एंडपॉइंट्स',
+    'quarkus-rest-endpoint_scores': 'एंडपॉइंट स्कोर',
+    'quarkus-rest-exception_mappers': 'अपवाद मैपर',
+    'quarkus-rest-parameter_converter_providers': 'पैरामीटर रूपांतरक प्रदाता',
+    'quarkus-rest-no-rest-endpoints': 'आपके पास कोई REST एंडपॉइंट नहीं हैं।',
+    'quarkus-rest-learn-rest': 'क्वार्कस REST के साथ REST सेवाएँ लिखने के बारे में जानें।',
+    'quarkus-rest-produces': 'उत्पन्न करता है',
+    'quarkus-rest-consumes': 'उपभोग करता है',
+    'quarkus-rest-resource-class': 'संसाधन वर्ग',
+    'quarkus-rest-priority': 'प्राथमिकता',
+    'quarkus-rest-exception': 'अपवाद',
+    'quarkus-rest-mapper': 'मैपर',
+    'quarkus-rest-class-name': 'क्लास नाम',
+};

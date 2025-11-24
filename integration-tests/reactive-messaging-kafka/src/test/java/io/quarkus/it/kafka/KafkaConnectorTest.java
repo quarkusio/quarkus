@@ -29,6 +29,9 @@ import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+// this test class needs to be executed first, since it relies on number of kafka messages send
+// these messages are send during each test class execution and cannot be easily removed
+@Order(1)
 public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Person>> TYPE_REF = new TypeRef<List<Person>>() {

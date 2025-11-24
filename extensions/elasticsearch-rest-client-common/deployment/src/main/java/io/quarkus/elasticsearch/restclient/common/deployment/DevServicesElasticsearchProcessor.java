@@ -16,7 +16,9 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.GenericContainer;
@@ -289,15 +291,6 @@ public class DevServicesElasticsearchProcessor {
             return null;
         }
 
-        for (String hostsConfigProperty : buildItemConfig.hostsConfigProperties) {
-            // Check if elasticsearch hosts property is set
-            if (ConfigUtils.isPropertyNonEmpty(hostsConfigProperty)) {
-                log.debugf("Not starting Dashboard Dev Services for Elasticsearch, the %s property is configured.",
-                        hostsConfigProperty);
-                return null;
-            }
-        }
-
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker is not working, cannot start the Kibana/OpenSearch dashboards dev service.");
             return null;
@@ -305,6 +298,28 @@ public class DevServicesElasticsearchProcessor {
 
         Distribution resolvedDistribution = resolveDistribution(config, buildItemConfig);
         DockerImageName resolvedImageName = resolveDashboardImageName(config, resolvedDistribution);
+
+        final Optional<ContainerAddress> maybeContainerAddressSearchBackend = elasticsearchContainerLocator.locateContainer(
+                config.serviceName(),
+                config.shared(),
+                launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
+                        ELASTICSEARCH_PORT,
+                        launchMode.getLaunchMode(), useSharedNetwork));
+
+        Set<String> opensearchHosts;
+        if (buildItemConfig.hostsConfigProperties.stream().anyMatch(ConfigUtils::isPropertyNonEmpty)) {
+            opensearchHosts = buildItemConfig.hostsConfigProperties.stream().filter(ConfigUtils::isPropertyNonEmpty)
+                    .flatMap(property -> ConfigProvider.getConfig().getValues(property, String.class).stream())
+                    .map(host -> "http://" + host.replace("localhost", "host.docker.internal"))
+                    .collect(Collectors.toSet());
+        } else {
+            opensearchHosts = maybeContainerAddressSearchBackend.map(containerAddress -> Set
+                    .of(("http://" + containerAddress.getHost() + ":" + containerAddress.getPort())
+                            .replace("localhost", "host.docker.internal")))
+                    .orElseGet(() -> Set.of());
+        }
 
         final Optional<ContainerAddress> maybeContainerAddress = dashboardContainerLocator.locateContainer(
                 config.serviceName(),
@@ -321,9 +336,9 @@ public class DevServicesElasticsearchProcessor {
             String defaultNetworkId = composeProjectBuildItem.getDefaultNetworkId();
             CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
                     ? createKibanaContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
-                            composeProjectBuildItem)
+                            composeProjectBuildItem, opensearchHosts)
                     : createDashboardsContainer(config, resolvedImageName, defaultNetworkId, useSharedNetwork, launchMode,
-                            composeProjectBuildItem);
+                            composeProjectBuildItem, opensearchHosts);
             GenericContainer<?> container = createdContainer.genericContainer();
 
             if (config.serviceName() != null) {
@@ -401,7 +416,8 @@ public class DevServicesElasticsearchProcessor {
 
     private CreatedContainer createKibanaContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork,
-            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            Set<String> elasticsearchHosts) {
         //Create Generic Kibana container
         GenericContainer<?> container = new GenericContainer<>(
                 resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/kibana/kibana"));
@@ -409,28 +425,18 @@ public class DevServicesElasticsearchProcessor {
         String kibanaHostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
                 DEV_SERVICE_KIBANA);
         container.setExposedPorts(List.of(DASHBOARD_PORT));
-
-        final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
-                config.serviceName(),
-                config.shared(),
-                launchMode.getLaunchMode())
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
-                        ELASTICSEARCH_PORT,
-                        launchMode.getLaunchMode(), useSharedNetwork));
-
-        maybeContainerAddress
-                .map(containerAddress -> ("http://" + containerAddress.getHost() + ":" + containerAddress.getPort())
-                        .replace("localhost", "host.docker.internal"))
-                .ifPresent(addressStr -> container.addEnv("ELASTICSEARCH_HOSTS",
-                        addressStr));
+        if (!elasticsearchHosts.isEmpty()) {
+            container.addEnv("ELASTICSEARCH_HOSTS",
+                    "[" + elasticsearchHosts.stream().map(url -> "\"" + url + "\"").collect(Collectors.joining(",")) + "]");
+        }
         container.addEnv("NODE_OPTIONS", config.dashboard().nodeOpts());
         return new CreatedContainer(container, kibanaHostName);
     }
 
     private CreatedContainer createDashboardsContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, String defaultNetworkId, boolean useSharedNetwork,
-            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+            LaunchModeBuildItem launchMode, DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            Set<String> opensearchHosts) {
         //Create Generic Kibana container
         GenericContainer<?> container = new GenericContainer<>(
                 resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch-dashboards"));
@@ -438,21 +444,10 @@ public class DevServicesElasticsearchProcessor {
         String kibanaHostName = ConfigureUtil.configureNetwork(container, defaultNetworkId, useSharedNetwork,
                 DEV_SERVICE_DASHBOARDS);
         container.setExposedPorts(List.of(DASHBOARD_PORT));
-
-        final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
-                config.serviceName(),
-                config.shared(),
-                launchMode.getLaunchMode())
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
-                        ELASTICSEARCH_PORT,
-                        launchMode.getLaunchMode(), useSharedNetwork));
-
-        maybeContainerAddress
-                .map(containerAddress -> ("http://" + containerAddress.getHost() + ":" + containerAddress.getPort())
-                        .replace("localhost", "host.docker.internal"))
-                .ifPresent(addressStr -> container.addEnv("OPENSEARCH_HOSTS",
-                        addressStr));
+        if (!opensearchHosts.isEmpty()) {
+            container.addEnv("OPENSEARCH_HOSTS",
+                    "[" + opensearchHosts.stream().map(url -> "\"" + url + "\"").collect(Collectors.joining(",")) + "]");
+        }
         container.addEnv("NODE_OPTIONS", config.dashboard().nodeOpts());
         container.addEnv("DISABLE_SECURITY_DASHBOARDS_PLUGIN", "true");
         return new CreatedContainer(container, kibanaHostName);

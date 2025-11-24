@@ -325,6 +325,16 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return classes(true);
         }
 
+        /**
+         * @deprecated This is a no-op and was kept for a couple more versions for extension compatibility (e.g. for
+         *             Blaze-Persistence).
+         *             We should be able to drop it in 3.31 but let's check before doing so.
+         */
+        @Deprecated(forRemoval = true)
+        public Builder finalFieldsWritable(boolean finalFieldsWritable) {
+            return this;
+        }
+
         public Builder weak(boolean weak) {
             this.weak = weak;
             return this;

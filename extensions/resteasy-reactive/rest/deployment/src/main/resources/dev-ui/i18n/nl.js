@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'Een Jakarta REST-implementatie die gebruikmaakt van build-tijdverwerking en Vert.x.',
+    'quarkus-rest-endpoints': 'Eindpunten',
+    'quarkus-rest-endpoint_scores': 'Eindpunt scores',
+    'quarkus-rest-exception_mappers': 'Uitzonderingsmappers',
+    'quarkus-rest-parameter_converter_providers': 'Parameter converterproviders',
+    'quarkus-rest-no-rest-endpoints': 'U heeft geen REST-eindpunten.',
+    'quarkus-rest-learn-rest': 'Leer hoe je REST-diensten schrijft met Quarkus REST',
+    'quarkus-rest-produces': 'Produceert',
+    'quarkus-rest-consumes': 'Consumeert',
+    'quarkus-rest-resource-class': 'Hulpbronclass',
+    'quarkus-rest-priority': 'Prioriteit',
+    'quarkus-rest-exception': 'Uitzondering',
+    'quarkus-rest-mapper': 'Mapper',
+    'quarkus-rest-class-name': 'Klasnaam',
+};

@@ -1,0 +1,15 @@
+export const templates = {
+    'quarkus-messaging-meta-description': 'Produceer en consumeer berichten en implementeer evenementgestuurde en datastreamingtoepassingen.',
+    'quarkus-smallrye-reactive-messaging-channels': 'Kanalen',
+    'quarkus-smallrye-reactive-messaging-loading-channels': 'Kanalen laden...',
+    'quarkus-smallrye-reactive-messaging-channel': 'Kanaal',
+    'quarkus-smallrye-reactive-messaging-publishers': 'Uitgever(s)',
+    'quarkus-smallrye-reactive-messaging-subscribers': 'Abonnee(s)',
+    'quarkus-smallrye-reactive-messaging-no-subscribers': 'Geen abonnees',
+    'quarkus-smallrye-reactive-messaging-no-publishers': 'Geen uitgevers',
+    'quarkus-smallrye-reactive-messaging-publisher': 'uitgever',
+    'quarkus-smallrye-reactive-messaging-subscriber': 'abonnee',
+    'quarkus-smallrye-reactive-messaging-processor': 'processor',
+    'quarkus-smallrye-reactive-messaging-connector': 'verbinding',
+    'quarkus-smallrye-reactive-messaging-emitter': 'uitgever',
+};

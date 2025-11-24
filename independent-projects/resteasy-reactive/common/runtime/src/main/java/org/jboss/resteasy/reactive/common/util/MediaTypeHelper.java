@@ -127,25 +127,6 @@ public class MediaTypeHelper {
             if (!isWildcardCompositeSubtype(mediaType.getSubtype()) && isWildcardCompositeSubtype(mediaType2.getSubtype()))
                 return 1;
 
-            int numNonQ = 0;
-            if (mediaType.getParameters() != null) {
-                numNonQ = mediaType.getParameters().size();
-                if (wasQ)
-                    numNonQ--;
-            }
-
-            int numNonQ2 = 0;
-            if (mediaType2.getParameters() != null) {
-                numNonQ2 = mediaType2.getParameters().size();
-                if (wasQ2)
-                    numNonQ2--;
-            }
-
-            if (numNonQ < numNonQ2)
-                return -1;
-            if (numNonQ > numNonQ2)
-                return 1;
-
             return 0;
         }
     }
@@ -165,7 +146,22 @@ public class MediaTypeHelper {
         if (hasAtMostOneItem(types)) {
             return;
         }
-        types.sort(Q_COMPARATOR);
+        // Stable sort: preserve original order when comparator returns 0
+        List<IndexedMediaType> indexed = new ArrayList<>(types.size());
+        for (int i = 0; i < types.size(); i++) {
+            indexed.add(new IndexedMediaType(types.get(i), i));
+        }
+        indexed.sort(new Comparator<IndexedMediaType>() {
+            @Override
+            public int compare(IndexedMediaType a, IndexedMediaType b) {
+                int cmp = Q_COMPARATOR.compare(a.mediaType, b.mediaType);
+                return cmp != 0 ? cmp : Integer.compare(a.originalIndex, b.originalIndex);
+            }
+        });
+        types.clear();
+        for (IndexedMediaType imt : indexed) {
+            types.add(imt.mediaType);
+        }
     }
 
     public static void sortByQSWeight(List<MediaType> types) {
@@ -364,5 +360,8 @@ public class MediaTypeHelper {
         }
 
         return count;
+    }
+
+    private record IndexedMediaType(MediaType mediaType, int originalIndex) {
     }
 }

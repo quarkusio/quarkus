@@ -287,6 +287,7 @@ public class HeaderUtil {
                 list.add(MediaTypeHelper.valueOf(accept.trim()));
             }
         }
+        // Sort by weight (q) while preserving header-provided order on total ties
         MediaTypeHelper.sortByWeight(list);
         return list;
     }

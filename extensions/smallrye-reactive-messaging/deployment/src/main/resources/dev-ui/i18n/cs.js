@@ -1,5 +1,5 @@
 export const templates = {
-    'quarkus-messaging-meta-description': 'Vytvářejte a spotřebovávejte zprávy a implementujte aplikace založené na událostech a streamování dat.',
+    'quarkus-messaging-meta-description': 'Odesílejte a přijímejte zprávy a implementujte aplikace založené na událostech a streamování dat.',
     'quarkus-smallrye-reactive-messaging-channels': 'Kanály',
     'quarkus-smallrye-reactive-messaging-loading-channels': 'Načítání kanálů...',
     'quarkus-smallrye-reactive-messaging-channel': 'Kanál',
@@ -11,5 +11,5 @@ export const templates = {
     'quarkus-smallrye-reactive-messaging-subscriber': 'odběratel',
     'quarkus-smallrye-reactive-messaging-processor': 'procesor',
     'quarkus-smallrye-reactive-messaging-connector': 'konektor',
-    'quarkus-smallrye-reactive-messaging-emitter': 'vysílač',
+    'quarkus-smallrye-reactive-messaging-emitter': 'emitter',
 };

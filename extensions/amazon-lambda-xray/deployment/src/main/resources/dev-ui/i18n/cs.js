@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-amazon-lambda-xray-meta-description': 'Povolit X-Ray pro běh s podporou Quarkus Lambda',
+    'quarkus-amazon-lambda-xray-meta-description': 'Povolit X-Ray běžet s podporou Quarkus Lambda',
 };

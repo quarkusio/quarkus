@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-elytron-security-ldap-meta-description': 'Zabezpečte své aplikace pomocí uživatelského jména/hesla přes LDAP.',
+    'quarkus-elytron-security-ldap-meta-description': 'Zabezpečte své aplikace uložením uživatelských dat na LDAP serveru.',
 };

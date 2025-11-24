@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-messaging-amqp-meta-description': 'Připojit k AMQP s reaktivním zasíláním zpráv',
+    'quarkus-messaging-amqp-meta-description': 'Podpora AMQP protokolu pro reaktivní messaging',
 };

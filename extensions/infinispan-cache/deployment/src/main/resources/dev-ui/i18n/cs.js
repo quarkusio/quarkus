@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-infinispan-cache-meta-description': 'Implementuje SPI pro quarkus-cache',
+    'quarkus-infinispan-cache-meta-description': 'Implementace Quarkus Cache SPI používající Infinispan',
 };

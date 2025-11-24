@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-awt-meta-description': 'Povolit použití AWT a Java2D',
+    'quarkus-awt-meta-description': 'Podpora nástrojů AWT a Java2D',
 };

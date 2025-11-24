@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-reactive-routes-meta-description': 'REST framework poskytující model trasování pro definici neblokujících koncových bodů',
+    'quarkus-reactive-routes-meta-description': 'Framework poskytující model trasování pro definici neblokujících endpointů',
 };

@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-narayana-stm-meta-description': 'Nabídnout podporu pro Softwarovou tranzakční paměť (STM)',
+    'quarkus-narayana-stm-meta-description': 'Podpora pro Softwarovou transakční paměť (STM, Software Transactional Memory)',
 };

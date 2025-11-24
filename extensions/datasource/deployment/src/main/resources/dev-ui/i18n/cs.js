@@ -6,5 +6,5 @@ export const templates = {
     'quarkus-datasource-loading-datasources': 'Načítání datových zdrojů...',
     'quarkus-datasource-name': 'Jméno',
     'quarkus-datasource-action': 'Akce',
-    'quarkus-datasource-cleared': str`Datový zdroj ${0} byl vymazán.`,
+    'quarkus-datasource-cleared': str`Datový zdroj ${0} byl promazán.`,
 };

@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-messaging-kafka-meta-description': 'Připojit se k Nibiru pomocí reaktivního zasílání zpráv',
+    'quarkus-messaging-kafka-meta-description': 'Podpora Apache Kafka protokolu pro reaktivní messaging',
 };

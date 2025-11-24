@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-elasticsearch-java-client-meta-description': 'Připojte se k clustru Elasticsearch pomocí Java klienta.',
+    'quarkus-elasticsearch-java-client-meta-description': 'Připojte se ke clusteru Elasticsearch pomocí Java klienta.',
 };

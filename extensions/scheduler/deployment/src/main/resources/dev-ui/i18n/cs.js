@@ -1,6 +1,6 @@
 export const templates = {
     'quarkus-scheduler-meta-description': 'Plánujte úkoly a práce',
-    'quarkus-scheduler-cron_builder': 'Tvůrce Cronu',
+    'quarkus-scheduler-cron_builder': 'Cron Builder',
     'quarkus-scheduler-scheduled_methods': 'Naplánované metody',
     'quarkus-scheduler-scheduler': 'Plánovač',
     'quarkus-scheduler-describe-cron': 'Popište cron, který chcete vytvořit.',

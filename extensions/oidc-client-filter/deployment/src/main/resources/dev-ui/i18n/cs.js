@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-resteasy-client-oidc-filter-meta-description': 'Použijte filtr RESTEasy Client pro získání a obnovení přístupových tokenů s OpenID Connect Client a odešlete je jako HTTP Authorization Bearer tokeny.',
+    'quarkus-resteasy-client-oidc-filter-meta-description': 'Integrace OpenID Connect klienta pro autentizaci RESTEasy klientů',
 };

@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-vertx-meta-description': 'Píšete reaktivní aplikace s API Vert.x',
+    'quarkus-vertx-meta-description': 'Pište reaktivní aplikace s Vert.x API',
 };

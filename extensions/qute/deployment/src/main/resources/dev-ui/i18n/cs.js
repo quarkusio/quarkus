@@ -1,5 +1,5 @@
 export const templates = {
-    'quarkus-qute-meta-description': 'Nabídněte podporu pro šablonování pro web, e-maily atd. zpřístupněním v době vytváření, typově bezpečným způsobem.',
+    'quarkus-qute-meta-description': 'Šablonování pro web, e-maily atd. typově bezpečným způsobem.',
     'quarkus-qute-templates': 'Šablony',
     'quarkus-qute-extension_methods': 'Rozšíření metod',
     'quarkus-qute-template_data': 'Šablonová data',
@@ -16,7 +16,7 @@ export const templates = {
     'quarkus-qute-target-class': 'Cílová třída',
     'quarkus-qute-ignore-members': 'Ignorovat členy',
     'quarkus-qute-only-properties': 'Pouze vlastnosti',
-    'quarkus-qute-template-globals-description': '<translation error>',
+    'quarkus-qute-template-globals-description': 'Globální proměnné dostupné pro všechny šablony',
     'quarkus-qute-name': 'Jméno',
     'quarkus-qute-target': 'Cíl',
 };

@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-spring-di-meta-description': 'Definujte svou závislostní injektáž pomocí Spring DI',
+    'quarkus-spring-di-meta-description': 'Injektujte závislosti pomocí Spring DI API',
 };

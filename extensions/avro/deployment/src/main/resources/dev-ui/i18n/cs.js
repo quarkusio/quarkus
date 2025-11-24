@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-avro-meta-description': 'Poskytněte podporu pro systém serializace dat Avro.',
+    'quarkus-avro-meta-description': 'Podpora pro systém serializace dat Avro.',
 };

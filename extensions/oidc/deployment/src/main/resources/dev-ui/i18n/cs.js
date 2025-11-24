@@ -55,7 +55,7 @@ export const templates = {
     'quarkus-oidc-id-token-label': 'ID token',
     'quarkus-oidc-access-token-label': 'přístupový token',
     'quarkus-oidc-header': 'Hlava',
-    'quarkus-oidc-claims': 'Nároky',
+    'quarkus-oidc-claims': 'Claims',
     'quarkus-oidc-signature': 'Podpis',
     'quarkus-oidc-encrypted-key': 'Zašifrovaný klíč',
     'quarkus-oidc-init-vector': 'Iniciační vektor',

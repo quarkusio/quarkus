@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-messaging-mqtt-meta-description': 'Připojit se k MQTT pomocí reaktivního zasílání zpráv',
+    'quarkus-messaging-mqtt-meta-description': 'Podpora MQTT protokolu pro reactive messaging',
 };

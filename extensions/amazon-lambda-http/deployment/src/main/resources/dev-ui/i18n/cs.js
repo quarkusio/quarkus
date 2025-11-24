@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-amazon-lambda-http-meta-description': 'Povolit aplikacím napsaným pro kontejner servletů běžet v AWS Lambda',
+    'quarkus-amazon-lambda-http-meta-description': 'Povolit aplikacím napsaným pro servletový kontejner běžet v AWS Lambda',
 };

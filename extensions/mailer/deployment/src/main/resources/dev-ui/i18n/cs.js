@@ -1,3 +1,3 @@
 export const templates = {
-    'quarkus-mailer-meta-description': 'Odeslat e-maily',
+    'quarkus-mailer-meta-description': 'Odesílejte e-maily',
 };

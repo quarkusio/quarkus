@@ -7,6 +7,7 @@ import jakarta.annotation.Priority;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.common.MapBackedConfigSource;
 
@@ -23,6 +24,12 @@ public class OverrideJdbcUrlBuildTimeConfigSource extends MapBackedConfigSource 
             return super.getValue(propertyName);
         }
 
+        boolean someotherprofile = ConfigUtils.isProfileActive("someotherprofile");
+        // This config source should only kick in when the custom profile is active, or dev services get disabled for all tests
+        if (!someotherprofile) {
+            return super.getValue(propertyName);
+        }
+
         boolean isBuildTime = false;
         for (ConfigSource configSource : ConfigProvider.getConfig().getConfigSources()) {
             if (configSource.getName().equals("PropertiesConfigSource[source=Build system]")) {
@@ -31,10 +38,13 @@ public class OverrideJdbcUrlBuildTimeConfigSource extends MapBackedConfigSource 
             }
         }
 
+        //  Originally, the JDBC Extension queried the JDBC URL value at build time to either start or skip the DevService. In cases where the URL was an expansion, this would fail if the expansion is not available at build time. In the original issue, the JDBC URL was set as an expansion in Vault, only available at runtime.
+        // To simulate the original issue, the source sets quarkus.datasource.jdbc.url at build time, and sets it to an 'impossible' expansion.
         if (isBuildTime) {
-            return "${postgres.url}";
+            return "${arbitrary.unavailable.value}";
         }
 
+        // To keep things working, we can then either return nothing at runtime so that we default to the normal application config, or return valid config at runtime.
         return super.getValue(propertyName);
     }
 }

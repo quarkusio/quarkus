@@ -57,11 +57,27 @@ public interface RecorderContext {
     /**
      * Creates a RuntimeValue object that represents an object created via the default constructor.
      * <p>
-     * This object can be passed into recorders, but must not be used directly at deployment time
+     * This object can be passed into recorders, but must not be used directly at deployment time.
+     * <p>
+     * The default identifier is {@code HashUtil.sha1(className)}.
+     * If this identifier is not unique in your codebase, use {@link #newInstance(String, String)}
+     * to define a more specific identifier.
      *
-     * @param name The name of the class
+     * @param className The name of the class
      * @param <T> The type of the class
      * @return The class instance proxy
      */
-    <T> RuntimeValue<T> newInstance(String name);
+    <T> RuntimeValue<T> newInstance(String className);
+
+    /**
+     * Creates a RuntimeValue object that represents an object created via the default constructor.
+     * <p>
+     * This object can be passed into recorders, but must not be used directly at deployment time
+     *
+     * @param className The name of the class
+     * @param identifier An identifier for the instance, must be unique to the codebase
+     * @param <T> The type of the class
+     * @return The class instance proxy
+     */
+    <T> RuntimeValue<T> newInstance(String className, String identifier);
 }

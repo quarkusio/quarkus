@@ -151,9 +151,12 @@ public class MediaTypeHelper {
         for (int i = 0; i < types.size(); i++) {
             indexed.add(new IndexedMediaType(types.get(i), i));
         }
-        indexed.sort((a, b) -> {
-            int cmp = Q_COMPARATOR.compare(a.mediaType, b.mediaType);
-            return cmp != 0 ? cmp : Integer.compare(a.originalIndex, b.originalIndex);
+        indexed.sort(new Comparator<IndexedMediaType>() {
+            @Override
+            public int compare(IndexedMediaType a, IndexedMediaType b) {
+                int cmp = Q_COMPARATOR.compare(a.mediaType, b.mediaType);
+                return cmp != 0 ? cmp : Integer.compare(a.originalIndex, b.originalIndex);
+            }
         });
         types.clear();
         for (IndexedMediaType imt : indexed) {
@@ -359,13 +362,6 @@ public class MediaTypeHelper {
         return count;
     }
 
-    private static class IndexedMediaType {
-        final MediaType mediaType;
-        final int originalIndex;
-
-        IndexedMediaType(MediaType mediaType, int originalIndex) {
-            this.mediaType = mediaType;
-            this.originalIndex = originalIndex;
-        }
+    private record IndexedMediaType(MediaType mediaType, int originalIndex) {
     }
 }

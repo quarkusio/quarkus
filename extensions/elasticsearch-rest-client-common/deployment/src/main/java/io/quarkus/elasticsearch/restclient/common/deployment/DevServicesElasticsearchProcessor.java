@@ -311,7 +311,7 @@ public class DevServicesElasticsearchProcessor {
                 config.shared(),
                 launchMode.getLaunchMode())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
+                        List.of(resolvedImageName.getUnversionedPart(), "kibana", "opensearch-dashboards"),
                         DASHBOARD_PORT,
                         launchMode.getLaunchMode(), useSharedNetwork));
 

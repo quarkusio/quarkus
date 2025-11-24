@@ -184,7 +184,7 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private void shutdownDashboard() {
-        if (devService != null) {
+        if (devDashboardService != null) {
             try {
                 devDashboardService.close();
             } catch (Throwable e) {

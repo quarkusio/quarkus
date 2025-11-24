@@ -44,9 +44,9 @@ public class CacheTest {
         assertEquals("4::5", render(true, null));
         cache.invalidateAll().await().indefinitely();
         assertThrows(IllegalStateException.class, () -> render(true, null));
-        // The failure is cached
-        assertThrows(IllegalStateException.class, () -> render(false, null));
-        assertEquals("6::7", render(false, "bravo"));
+        // The failure is not cached
+        assertEquals("6::7", render(false, null));
+        assertEquals("6::8", render(false, "bravo"));
     }
 
     private String render(boolean fail, String key) {

@@ -316,7 +316,7 @@ public class DevServicesElasticsearchProcessor {
                         launchMode.getLaunchMode(), useSharedNetwork));
 
         // Starting the server
-        final Supplier<RunningDevService> defaultElasticsearchSupplier = () -> {
+        final Supplier<RunningDevService> defaultDashboardsSupplier = () -> {
 
             String defaultNetworkId = composeProjectBuildItem.getDefaultNetworkId();
             CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
@@ -352,7 +352,7 @@ public class DevServicesElasticsearchProcessor {
                         containerAddress.getId(),
                         null,
                         buildPropertiesMap(buildItemConfig, containerAddress.getUrl())))
-                .orElseGet(defaultElasticsearchSupplier);
+                .orElseGet(defaultDashboardsSupplier);
     }
 
     private CreatedContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,

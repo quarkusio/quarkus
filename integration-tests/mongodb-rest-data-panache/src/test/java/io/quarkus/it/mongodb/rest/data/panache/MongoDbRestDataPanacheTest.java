@@ -260,6 +260,20 @@ class MongoDbRestDataPanacheTest {
                 .then().statusCode(204);
     }
 
+    @Test
+    void shouldRequirePermissions() {
+        given().accept("application/json")
+                .when().get("/secured-authors/" + dostoevsky.id)
+                .then().statusCode(401);
+        given().accept("application/json")
+                .auth().preemptive().basic("joe", "doe")
+                .when().get("/secured-authors/" + dostoevsky.id)
+                .then().statusCode(200)
+                .and().body("id", is(equalTo(dostoevsky.id.toString())))
+                .and().body("name", is(equalTo(dostoevsky.name)))
+                .and().body("dob", is(equalTo(dostoevsky.dob.toString())));
+    }
+
     private Author createTestAuthor(String name, String dob) {
         return given().contentType(MediaType.APPLICATION_JSON)
                 .and().accept(MediaType.APPLICATION_JSON)

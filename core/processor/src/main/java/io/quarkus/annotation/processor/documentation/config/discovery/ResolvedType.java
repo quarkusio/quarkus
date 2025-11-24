@@ -30,6 +30,10 @@ public record ResolvedType(
         return (TypeElement) ((DeclaredType) unwrappedType).asElement();
     }
 
+    public boolean isWrapped() {
+        return wrapperType != null;
+    }
+
     @Override
     public final String toString() {
         return unwrappedType.toString();
@@ -43,7 +47,7 @@ public record ResolvedType(
     public static ResolvedType ofDeclaredType(TypeMirror type, String binaryName,
             String qualifiedName, String simpleName,
             boolean isInterface, boolean isClass, boolean isEnum, boolean isDuration, boolean isConfigGroup) {
-        return new ResolvedType(type, type, binaryName, qualifiedName, simpleName, false, false, false, false, false,
+        return new ResolvedType(null, type, binaryName, qualifiedName, simpleName, false, false, false, false, false,
                 true, isInterface, isClass, isEnum, isDuration, isConfigGroup);
     }
 

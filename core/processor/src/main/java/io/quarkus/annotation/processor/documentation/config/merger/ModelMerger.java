@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor.documentation.config.merger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import io.quarkus.annotation.processor.Outputs;
@@ -43,7 +45,7 @@ public final class ModelMerger {
      * target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories) {
-        return mergeModel(javadocRepository, buildOutputDirectories, false);
+        return mergeModel(javadocRepository, new BuildOutputDirectoriesModelReader(buildOutputDirectories), false);
     }
 
     /**
@@ -51,7 +53,7 @@ public final class ModelMerger {
      * target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(List<Path> buildOutputDirectories, boolean mergeCommonOrInternalExtensions) {
-        return mergeModel(null, buildOutputDirectories, mergeCommonOrInternalExtensions);
+        return mergeModel(null, new BuildOutputDirectoriesModelReader(buildOutputDirectories), mergeCommonOrInternalExtensions);
     }
 
     /**
@@ -60,70 +62,72 @@ public final class ModelMerger {
      */
     public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories,
             boolean mergeCommonOrInternalExtensions) {
+        return mergeModel(javadocRepository, new BuildOutputDirectoriesModelReader(buildOutputDirectories),
+                mergeCommonOrInternalExtensions);
+    }
+
+    /**
+     * Merge all the resolved models obtained from a list of classpath elements.
+     */
+    public static MergedModel mergeModelFromClassPathElements(JavadocRepository javadocRepository, List<Path> classPathElements,
+            boolean mergeCommonOrInternalExtensions) {
+        return mergeModel(javadocRepository, new ClassPathElementsModelReader(classPathElements),
+                mergeCommonOrInternalExtensions);
+    }
+
+    /**
+     * Merge all the resolved models obtained from the provided {@link ModelReader}.
+     */
+    private static MergedModel mergeModel(JavadocRepository javadocRepository, ModelReader modelReader,
+            boolean mergeCommonOrInternalExtensions) {
         // keyed on extension and then top level prefix
-        Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots = new HashMap<>();
+        final Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots = new HashMap<>();
         // keyed on file name
-        Map<String, ConfigRoot> configRootsInSpecificFile = new TreeMap<>();
+        final Map<String, ConfigRoot> configRootsInSpecificFile = new TreeMap<>();
         // keyed on extension
-        Map<Extension, List<ConfigSection>> generatedConfigSections = new HashMap<>();
+        final Map<Extension, List<ConfigSection>> generatedConfigSections = new HashMap<>();
 
-        for (Path buildOutputDirectory : buildOutputDirectories) {
-            Path resolvedModelPath = buildOutputDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_MODEL);
-            if (!Files.isReadable(resolvedModelPath)) {
-                continue;
-            }
+        modelReader.consume(resolvedModel -> {
+            for (ConfigRoot configRoot : resolvedModel.getConfigRoots()) {
+                if (configRoot.getOverriddenDocFileName() != null) {
+                    ConfigRoot existingConfigRootInSpecificFile = configRootsInSpecificFile
+                            .get(configRoot.getOverriddenDocFileName());
 
-            try (InputStream resolvedModelIs = Files.newInputStream(resolvedModelPath)) {
-                ResolvedModel resolvedModel = JacksonMappers.yamlObjectReader().readValue(resolvedModelIs,
-                        ResolvedModel.class);
+                    if (existingConfigRootInSpecificFile == null) {
+                        configRootsInSpecificFile.put(configRoot.getOverriddenDocFileName(), configRoot);
+                    } else {
+                        if (!existingConfigRootInSpecificFile.getExtension().equals(configRoot.getExtension())
+                                || !existingConfigRootInSpecificFile.getPrefix().equals(configRoot.getPrefix())) {
+                            throw new IllegalStateException(
+                                    "Two config roots with different extensions or prefixes cannot be merged in the same specific config file: "
+                                            + configRoot.getOverriddenDocFileName());
+                        }
 
-                if (resolvedModel.getConfigRoots() == null || resolvedModel.getConfigRoots().isEmpty()) {
+                        existingConfigRootInSpecificFile.merge(configRoot);
+                    }
+
                     continue;
                 }
 
-                for (ConfigRoot configRoot : resolvedModel.getConfigRoots()) {
-                    if (configRoot.getOverriddenDocFileName() != null) {
-                        ConfigRoot existingConfigRootInSpecificFile = configRootsInSpecificFile
-                                .get(configRoot.getOverriddenDocFileName());
+                Map<ConfigRootKey, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(
+                        normalizeExtension(configRoot.getExtension(), mergeCommonOrInternalExtensions),
+                        e -> new TreeMap<>());
 
-                        if (existingConfigRootInSpecificFile == null) {
-                            configRootsInSpecificFile.put(configRoot.getOverriddenDocFileName(), configRoot);
-                        } else {
-                            if (!existingConfigRootInSpecificFile.getExtension().equals(configRoot.getExtension())
-                                    || !existingConfigRootInSpecificFile.getPrefix().equals(configRoot.getPrefix())) {
-                                throw new IllegalStateException(
-                                        "Two config roots with different extensions or prefixes cannot be merged in the same specific config file: "
-                                                + configRoot.getOverriddenDocFileName());
-                            }
+                ConfigRootKey configRootKey = getConfigRootKey(javadocRepository, configRoot);
+                ConfigRoot existingConfigRoot = extensionConfigRoots.get(configRootKey);
 
-                            existingConfigRootInSpecificFile.merge(configRoot);
-                        }
-
-                        continue;
-                    }
-
-                    Map<ConfigRootKey, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(
-                            normalizeExtension(configRoot.getExtension(), mergeCommonOrInternalExtensions),
-                            e -> new TreeMap<>());
-
-                    ConfigRootKey configRootKey = getConfigRootKey(javadocRepository, configRoot);
-                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(configRootKey);
-
-                    if (existingConfigRoot == null) {
-                        extensionConfigRoots.put(configRootKey, configRoot);
-                    } else {
-                        existingConfigRoot.merge(configRoot);
-                    }
+                if (existingConfigRoot == null) {
+                    extensionConfigRoots.put(configRootKey, configRoot);
+                } else {
+                    existingConfigRoot.merge(configRoot);
                 }
-            } catch (IOException e) {
-                throw new IllegalStateException("Unable to parse: " + resolvedModelPath, e);
             }
-        }
+        });
 
         // note that the configRoots are now sorted by extension name
-        configRoots = retainBestExtensionKey(configRoots);
+        final Map<Extension, Map<ConfigRootKey, ConfigRoot>> normalizedConfigRoots = retainBestExtensionKey(configRoots);
 
-        for (Entry<Extension, Map<ConfigRootKey, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
+        for (Entry<Extension, Map<ConfigRootKey, ConfigRoot>> extensionConfigRootsEntry : normalizedConfigRoots.entrySet()) {
             List<ConfigSection> extensionGeneratedConfigSections = generatedConfigSections
                     .computeIfAbsent(extensionConfigRootsEntry.getKey(), e -> new ArrayList<>());
 
@@ -132,7 +136,7 @@ public final class ModelMerger {
             }
         }
 
-        return new MergedModel(configRoots, configRootsInSpecificFile, generatedConfigSections);
+        return new MergedModel(normalizedConfigRoots, configRootsInSpecificFile, generatedConfigSections);
     }
 
     private static Extension normalizeExtension(Extension extension, boolean mergeCommonOrInternalExtensions) {
@@ -163,7 +167,7 @@ public final class ModelMerger {
             }
 
             return extension;
-        }, e -> e.getValue(), (k1, k2) -> k1, TreeMap::new));
+        }, Entry::getValue, (k1, k2) -> k1, TreeMap::new));
     }
 
     private static void collectGeneratedConfigSections(List<ConfigSection> extensionGeneratedConfigSections,
@@ -197,7 +201,7 @@ public final class ModelMerger {
 
         String description = null;
 
-        for (String qualifiedName : configRoot.getQualifiedNames()) {
+        for (String qualifiedName : configRoot.getBinaryNames()) {
             Optional<JavadocElement> javadocElement = javadocRepository.getElement(qualifiedName);
 
             if (javadocElement.isEmpty()) {
@@ -229,5 +233,74 @@ public final class ModelMerger {
         }
 
         return javadoc.substring(0, dotIndex);
+    }
+
+    private static class BuildOutputDirectoriesModelReader implements ModelReader {
+
+        private final List<Path> buildOutputDirectories;
+
+        private BuildOutputDirectoriesModelReader(List<Path> buildOutputDirectories) {
+            this.buildOutputDirectories = buildOutputDirectories;
+        }
+
+        @Override
+        public void consume(Consumer<ResolvedModel> consumer) {
+            for (Path buildOutputDirectory : buildOutputDirectories) {
+                Path resolvedModelPath = buildOutputDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_MODEL);
+                if (!Files.isReadable(resolvedModelPath)) {
+                    continue;
+                }
+
+                try (InputStream resolvedModelIs = Files.newInputStream(resolvedModelPath)) {
+                    ResolvedModel resolvedModel = JacksonMappers.yamlObjectReader().readValue(resolvedModelIs,
+                            ResolvedModel.class);
+
+                    if (resolvedModel.getConfigRoots() == null || resolvedModel.getConfigRoots().isEmpty()) {
+                        continue;
+                    }
+
+                    consumer.accept(resolvedModel);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Unable to parse: " + resolvedModelPath, e);
+                }
+            }
+        }
+    }
+
+    private static class ClassPathElementsModelReader implements ModelReader {
+
+        private final List<Path> classPathElements;
+
+        private ClassPathElementsModelReader(List<Path> classPathElements) {
+            this.classPathElements = classPathElements;
+        }
+
+        @Override
+        public void consume(Consumer<ResolvedModel> consumer) {
+            for (Path classPathElement : classPathElements) {
+                Path resolvedModelPath = classPathElement.resolve(Outputs.META_INF_QUARKUS_CONFIG_MODEL_JSON);
+                if (!Files.isReadable(resolvedModelPath)) {
+                    continue;
+                }
+
+                try (InputStream resolvedModelIs = Files.newInputStream(resolvedModelPath)) {
+                    ResolvedModel resolvedModel = JacksonMappers.jsonObjectReader().readValue(resolvedModelIs,
+                            ResolvedModel.class);
+
+                    if (resolvedModel.getConfigRoots() == null || resolvedModel.getConfigRoots().isEmpty()) {
+                        continue;
+                    }
+
+                    consumer.accept(resolvedModel);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Unable to parse: " + resolvedModelPath, e);
+                }
+            }
+        }
+    }
+
+    private interface ModelReader {
+
+        void consume(Consumer<ResolvedModel> consumer);
     }
 }

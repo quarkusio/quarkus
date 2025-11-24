@@ -10,6 +10,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigGroup;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigProperty;
@@ -131,7 +132,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
         Map<String, AnnotationMirror> methodAnnotations = utils.element().getAnnotations(method);
 
         String sourceElementName = method.getSimpleName().toString();
-        DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
+        DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(utils.element().getBinaryName(clazz),
                 sourceElementName, SourceElementType.METHOD, resolvedType);
 
         String name = ConfigNamingUtil.hyphenate(sourceElementName);
@@ -174,8 +175,10 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
             }
         }
 
-        if (methodAnnotations.containsKey(Types.ANNOTATION_CONFIG_WITH_CONVERTER)) {
-            builder.converted();
+        AnnotationMirror withConverterAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_WITH_CONVERTER);
+        if (withConverterAnnotation != null && !withConverterAnnotation.getElementValues().values().isEmpty()) {
+            builder.converter(utils.element().getBinaryName(
+                    (TypeMirror) withConverterAnnotation.getElementValues().values().iterator().next().getValue()));
         }
 
         handleCommonPropertyAnnotations(builder, methodAnnotations, resolvedType, sourceElementName);
@@ -214,8 +217,8 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
             enumConstants.put(enumElement.getSimpleName().toString(), new EnumConstant(explicitValue));
         }
 
-        EnumDefinition enumDefinition = new EnumDefinition(enumTypeElement.getQualifiedName().toString(),
-                enumConstants);
+        EnumDefinition enumDefinition = new EnumDefinition(utils.element().getBinaryName(enumTypeElement),
+                enumTypeElement.getQualifiedName().toString(), enumConstants);
         configCollector.addResolvedEnum(enumDefinition);
     }
 

@@ -8,7 +8,7 @@ import java.util.Map;
  * At resolution, the enum will get contextualized to how it's consumed in the config property (and for instance, might be
  * hyphenated if needed).
  */
-public record EnumDefinition(String qualifiedName, Map<String, EnumConstant> constants) {
+public record EnumDefinition(String binaryName, String qualifiedName, Map<String, EnumConstant> constants) {
 
     public record EnumConstant(String explicitValue) {
 

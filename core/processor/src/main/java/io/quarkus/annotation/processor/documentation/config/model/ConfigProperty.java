@@ -23,6 +23,7 @@ public final class ConfigProperty extends AbstractConfigItem {
     private final boolean unnamedMapKey;
     private final boolean withinMap;
     private final boolean converted;
+    private final String converterBinaryName;
     private final boolean isEnum;
     private final EnumAcceptedValues enumAcceptedValues;
 
@@ -32,13 +33,14 @@ public final class ConfigProperty extends AbstractConfigItem {
     private final String javadocSiteLink;
 
     public ConfigProperty(ConfigPhase phase, String sourceType, String sourceElementName, SourceElementType sourceElementType,
-            PropertyPath path, List<PropertyPath> additionalPaths, String type, String typeDescription, boolean map,
-            boolean list, boolean optional, boolean secret,
-            String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, @JsonProperty("enum") boolean isEnum,
-            EnumAcceptedValues enumAcceptedValues,
+            PropertyPath path, List<PropertyPath> additionalPaths,
+            String originalType, String type, String typeDescription,
+            boolean map, boolean list, boolean optional, boolean secret,
+            String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, String converterBinaryName,
+            @JsonProperty("enum") boolean isEnum, EnumAcceptedValues enumAcceptedValues,
             String defaultValue, boolean escapeDefaultValue, String javadocSiteLink,
             Deprecation deprecation) {
-        super(sourceType, sourceElementName, sourceElementType, path, type, deprecation);
+        super(sourceType, sourceElementName, sourceElementType, path, originalType, type, deprecation);
         this.phase = phase;
         this.additionalPaths = additionalPaths != null ? Collections.unmodifiableList(additionalPaths) : List.of();
         this.typeDescription = typeDescription;
@@ -50,6 +52,7 @@ public final class ConfigProperty extends AbstractConfigItem {
         this.unnamedMapKey = unnamedMapKey;
         this.withinMap = withinMap;
         this.converted = converted;
+        this.converterBinaryName = converterBinaryName;
         this.isEnum = isEnum;
         this.enumAcceptedValues = enumAcceptedValues;
         this.defaultValue = defaultValue;
@@ -109,6 +112,10 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     public boolean isConverted() {
         return converted;
+    }
+
+    public String getConverterBinaryName() {
+        return converterBinaryName;
     }
 
     public boolean isEnum() {

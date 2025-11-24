@@ -18,7 +18,7 @@ public class DiscoveryConfigProperty {
     private final String mapKey;
     private final boolean unnamedMapKey;
     private final ResolvedType type;
-    private final boolean converted;
+    private final String converterBinaryName;
     private final boolean enforceHyphenateEnumValue;
     private final boolean section;
     private final boolean sectionGenerated;
@@ -27,7 +27,7 @@ public class DiscoveryConfigProperty {
             SourceElementType sourceElementType,
             String defaultValue, String defaultValueForDoc, boolean escapeDefaultValueForDoc,
             Deprecation deprecation, String mapKey, boolean unnamedMapKey,
-            ResolvedType type, boolean converted, boolean enforceHyphenateEnumValue,
+            ResolvedType type, String converterBinaryName, boolean enforceHyphenateEnumValue,
             boolean section, boolean sectionGenerated) {
         this.path = path;
         this.sourceType = sourceType;
@@ -40,7 +40,7 @@ public class DiscoveryConfigProperty {
         this.mapKey = mapKey;
         this.unnamedMapKey = unnamedMapKey;
         this.type = type;
-        this.converted = converted;
+        this.converterBinaryName = converterBinaryName;
         this.enforceHyphenateEnumValue = enforceHyphenateEnumValue;
         this.section = section;
         this.sectionGenerated = sectionGenerated;
@@ -95,7 +95,11 @@ public class DiscoveryConfigProperty {
     }
 
     public boolean isConverted() {
-        return converted;
+        return converterBinaryName != null;
+    }
+
+    public String getConverterBinaryName() {
+        return converterBinaryName;
     }
 
     public boolean isEnforceHyphenateEnumValue() {
@@ -135,8 +139,8 @@ public class DiscoveryConfigProperty {
         if (unnamedMapKey) {
             sb.append(prefix + "unnamedMapKey = true\n");
         }
-        if (converted) {
-            sb.append(prefix + "converted = true\n");
+        if (converterBinaryName != null) {
+            sb.append(prefix + "converterBinaryName = " + converterBinaryName + "\n");
         }
 
         return sb.toString();
@@ -160,7 +164,7 @@ public class DiscoveryConfigProperty {
         private Deprecation deprecation;
         private String mapKey;
         private boolean unnamedMapKey = false;
-        private boolean converted = false;
+        private String converterBinaryName;
         private boolean enforceHyphenateEnumValue = false;
         private boolean section = false;
         private boolean sectionGenerated = false;
@@ -207,8 +211,8 @@ public class DiscoveryConfigProperty {
             return this;
         }
 
-        public Builder converted() {
-            this.converted = true;
+        public Builder converter(String converterBinaryName) {
+            this.converterBinaryName = converterBinaryName;
             return this;
         }
 
@@ -233,7 +237,8 @@ public class DiscoveryConfigProperty {
 
             return new DiscoveryConfigProperty(name, sourceType, sourceElementName, sourceElementType, defaultValue,
                     defaultValueForDoc, escapeDefaultValueForDoc,
-                    deprecation, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
+                    deprecation, mapKey, unnamedMapKey, type, converterBinaryName,
+                    enforceHyphenateEnumValue, section, sectionGenerated);
         }
     }
 }

@@ -12,17 +12,19 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
     protected final SourceElementType sourceElementType;
     protected final Path path;
 
+    // we use the binary names
+    protected final String originalType;
     protected final String type;
 
     protected Deprecation deprecation;
 
     public AbstractConfigItem(String sourceType, String sourceElementName, SourceElementType sourceElementType, Path path,
-            String type,
-            Deprecation deprecation) {
+            String originalType, String type, Deprecation deprecation) {
         this.sourceType = sourceType;
         this.sourceElementName = sourceElementName;
         this.sourceElementType = sourceElementType;
         this.path = path;
+        this.originalType = originalType;
         this.type = type;
         this.deprecation = deprecation;
     }
@@ -35,6 +37,7 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
         return sourceElementName;
     }
 
+    @Deprecated(since = "3.30", forRemoval = true)
     public SourceElementType getSourceElementType() {
         return sourceElementType;
     }
@@ -47,6 +50,10 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
     @JsonIgnore
     public String getPath$$bridge() {
         return path.property();
+    }
+
+    public String getOriginalType() {
+        return originalType;
     }
 
     public String getType() {

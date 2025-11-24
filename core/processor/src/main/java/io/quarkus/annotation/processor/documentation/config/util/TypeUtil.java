@@ -16,12 +16,20 @@ public final class TypeUtil {
      * Replaces Java primitive wrapper types with primitive types
      */
     public static String unbox(String type) {
-        String mapping = Types.PRIMITIVE_WRAPPERS.get(type);
+        String mapping = Types.WRAPPERS_TO_PRIMITIVES.get(type);
         return mapping == null ? type : mapping;
     }
 
     public static boolean isPrimitiveWrapper(String type) {
-        return Types.PRIMITIVE_WRAPPERS.containsKey(type);
+        return Types.WRAPPERS_TO_PRIMITIVES.containsKey(type);
+    }
+
+    public static String primitiveToWrapper(String type) {
+        if (Types.PRIMITIVES_TO_WRAPPERS.containsKey(type)) {
+            return Types.PRIMITIVES_TO_WRAPPERS.get(type);
+        }
+
+        return type;
     }
 
     public static String getAlias(String qualifiedName) {

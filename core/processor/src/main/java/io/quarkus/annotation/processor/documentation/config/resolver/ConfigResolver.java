@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -74,7 +75,7 @@ public class ConfigResolver {
                     discoveryConfigRoot.getOverriddenDocPrefix(), discoveryConfigRoot.getOverriddenDocFileName());
             Map<String, ConfigSection> existingRootConfigSections = new TreeMap<>();
 
-            configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
+            configRoot.addBinaryName(discoveryConfigRoot.getBinaryName());
 
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
                     configRoot, 0, false, false, null);
@@ -99,10 +100,14 @@ public class ConfigResolver {
         Deprecation deprecation = discoveryConfigProperty.getDeprecation() != null ? discoveryConfigProperty.getDeprecation()
                 : context.getDeprecation();
 
-        String typeQualifiedName = discoveryConfigProperty.getType().qualifiedName();
+        String typeBinaryName = discoveryConfigProperty.getType().binaryName();
+        String javadocSiteLink = JavadocUtil.getJavadocSiteLink(typeBinaryName);
+        String originalTypeBinaryName = discoveryConfigProperty.getType().isWrapped()
+                ? utils.element().getBinaryName(discoveryConfigProperty.getType().wrapperType())
+                : utils.element().getBinaryName(discoveryConfigProperty.getType().unwrappedType());
 
-        if (configCollector.isResolvedConfigGroup(typeQualifiedName)) {
-            DiscoveryConfigGroup discoveryConfigGroup = configCollector.getResolvedConfigGroup(typeQualifiedName);
+        if (configCollector.isResolvedConfigGroup(typeBinaryName)) {
+            DiscoveryConfigGroup discoveryConfigGroup = configCollector.getResolvedConfigGroup(typeBinaryName);
 
             String potentiallyMappedPath = path;
             if (discoveryConfigProperty.getType().isMap()) {
@@ -136,7 +141,7 @@ public class ConfigResolver {
                 } else {
                     configSection = new ConfigSection(discoveryConfigProperty.getSourceType(),
                             discoveryConfigProperty.getSourceElementName(), discoveryConfigProperty.getSourceElementType(),
-                            new SectionPath(path), typeQualifiedName,
+                            new SectionPath(path), originalTypeBinaryName, typeBinaryName,
                             context.getSectionLevel(), discoveryConfigProperty.isSectionGenerated(), deprecation);
                     context.getItemCollection().addItem(configSection);
                     existingRootConfigSections.put(path, configSection);
@@ -154,7 +159,6 @@ public class ConfigResolver {
                 resolveProperty(configRoot, existingRootConfigSections, phase, configGroupContext, configGroupProperty);
             }
         } else {
-            String typeBinaryName = discoveryConfigProperty.getType().binaryName();
             String typeSimplifiedName = discoveryConfigProperty.getType().simplifiedName();
 
             // if the property has a converter, we don't hyphenate the values (per historical rules, not exactly sure of the reason)
@@ -166,15 +170,15 @@ public class ConfigResolver {
 
             EnumAcceptedValues enumAcceptedValues = null;
             if (discoveryConfigProperty.getType().isEnum()) {
-                EnumDefinition enumDefinition = configCollector.getResolvedEnum(typeQualifiedName);
+                EnumDefinition enumDefinition = configCollector.getResolvedEnum(typeBinaryName);
                 Map<String, EnumAcceptedValue> localAcceptedValues = enumDefinition.constants().entrySet().stream()
                         .collect(Collectors.toMap(
-                                e -> e.getKey(),
+                                Entry::getKey,
                                 e -> new EnumAcceptedValue(e.getValue().hasExplicitValue() ? e.getValue().explicitValue()
                                         : (hyphenateEnumValues ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
                                                 : e.getKey())),
                                 (x, y) -> y, LinkedHashMap::new));
-                enumAcceptedValues = new EnumAcceptedValues(enumDefinition.qualifiedName(), localAcceptedValues);
+                enumAcceptedValues = new EnumAcceptedValues(enumDefinition.binaryName(), localAcceptedValues);
             }
 
             String potentiallyMappedPath = path;
@@ -184,7 +188,7 @@ public class ConfigResolver {
             if (discoveryConfigProperty.getType().isMap()) {
                 // it is a leaf pass through map, it is always optional
                 optional = true;
-                typeQualifiedName = utils.element().getQualifiedName(discoveryConfigProperty.getType().wrapperType());
+                typeBinaryName = utils.element().getBinaryName(discoveryConfigProperty.getType().wrapperType());
                 typeSimplifiedName = utils.element().simplifyGenericType(discoveryConfigProperty.getType().wrapperType());
 
                 potentiallyMappedPath += ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey());
@@ -192,7 +196,7 @@ public class ConfigResolver {
                         .map(p -> p + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()))
                         .collect(Collectors.toCollection(ArrayList::new));
             } else if (discoveryConfigProperty.getType().isList()) {
-                typeQualifiedName = utils.element().getQualifiedName(discoveryConfigProperty.getType().wrapperType());
+                typeBinaryName = utils.element().getBinaryName(discoveryConfigProperty.getType().wrapperType());
             }
 
             PropertyPath propertyPath = new PropertyPath(potentiallyMappedPath,
@@ -207,14 +211,15 @@ public class ConfigResolver {
                     discoveryConfigProperty.getSourceElementName(),
                     discoveryConfigProperty.getSourceElementType(),
                     propertyPath, additionalPropertyPaths,
-                    typeQualifiedName, typeSimplifiedName,
+                    originalTypeBinaryName, typeBinaryName, typeSimplifiedName,
                     discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),
                     optional, secret, discoveryConfigProperty.getMapKey(),
                     discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),
                     discoveryConfigProperty.isConverted(),
+                    discoveryConfigProperty.getConverterBinaryName(),
                     discoveryConfigProperty.getType().isEnum(),
                     enumAcceptedValues, defaultValue, discoveryConfigProperty.isEscapeDefaultValueForDoc(),
-                    JavadocUtil.getJavadocSiteLink(typeBinaryName),
+                    javadocSiteLink,
                     deprecation);
             context.getItemCollection().addItem(configProperty);
         }

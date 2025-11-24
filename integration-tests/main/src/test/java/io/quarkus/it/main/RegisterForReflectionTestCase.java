@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.DisabledOnSemeru;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -53,6 +54,7 @@ public class RegisterForReflectionTestCase {
     }
 
     @Test
+    @DisabledOnSemeru(reason = "The lambda name will be empty on Semeru. As there's little chance we will use Semeru to build a native executable, we can skip this test.")
     public void testLambdaCapturing() {
         final String resourceLambda = BASE_PKG + ".ResourceLambda";
 

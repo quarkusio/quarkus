@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'Implementace Jakarta REST využívající zpracování za běhu a Vert.x.',
+    'quarkus-rest-endpoints': 'Koncové body',
+    'quarkus-rest-endpoint_scores': 'Skóre koncového bodu',
+    'quarkus-rest-exception_mappers': 'Mappery výjimek',
+    'quarkus-rest-parameter_converter_providers': 'Poskytovatelé převodníků parametrů',
+    'quarkus-rest-no-rest-endpoints': 'Nemáte žádné REST koncové body.',
+    'quarkus-rest-learn-rest': 'Naučte se, jak psát REST služby s Quarkus REST.',
+    'quarkus-rest-produces': 'Produkuje',
+    'quarkus-rest-consumes': 'Spotřebovává',
+    'quarkus-rest-resource-class': 'Třída zdroje',
+    'quarkus-rest-priority': 'Priorita',
+    'quarkus-rest-exception': 'Výjimka',
+    'quarkus-rest-mapper': 'Převodník',
+    'quarkus-rest-class-name': 'Název třídy',
+};

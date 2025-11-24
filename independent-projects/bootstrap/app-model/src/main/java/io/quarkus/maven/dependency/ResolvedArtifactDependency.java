@@ -4,8 +4,10 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import io.quarkus.bootstrap.model.MappableCollectionFactory;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -80,6 +82,13 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
     }
 
     @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap();
+        ResolvedDependencyBuilder.putInMap(this, map, factory);
+        return map;
+    }
+
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
@@ -93,9 +102,8 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
             return true;
         if (!super.equals(obj))
             return false;
-        if (!(obj instanceof ResolvableDependency))
+        if (!(obj instanceof ResolvableDependency other))
             return false;
-        ResolvableDependency other = (ResolvableDependency) obj;
         return Objects.equals(module, other.getWorkspaceModule()) && Objects.equals(paths, other.getResolvedPaths());
     }
 
@@ -104,7 +112,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
         final StringBuilder buf = new StringBuilder();
         buf.append(toGACTVString()).append(paths);
         if (module != null) {
-            buf.append(" " + module);
+            buf.append(" ").append(module);
         }
         return buf.toString();
     }

@@ -17,13 +17,13 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-import io.quarkus.builder.Json;
-import io.quarkus.builder.JsonReader;
-import io.quarkus.builder.JsonTransform;
-import io.quarkus.builder.json.JsonMember;
-import io.quarkus.builder.json.JsonObject;
-import io.quarkus.builder.json.JsonString;
-import io.quarkus.builder.json.JsonValue;
+import io.quarkus.bootstrap.json.Json;
+import io.quarkus.bootstrap.json.JsonMember;
+import io.quarkus.bootstrap.json.JsonObject;
+import io.quarkus.bootstrap.json.JsonReader;
+import io.quarkus.bootstrap.json.JsonString;
+import io.quarkus.bootstrap.json.JsonTransform;
+import io.quarkus.bootstrap.json.JsonValue;
 
 /**
  * Post-processes native image agent generated configuration to trim any unnecessary configuration.
@@ -94,7 +94,7 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
                 + resourceSkipPattern);
         final String original = Files.readString(base.resolve(name));
         final JsonObject jsonRead = JsonReader.of(original).read();
-        final Json.JsonObjectBuilder jsonBuilder = Json.object(false, true);
+        final Json.JsonObjectBuilder jsonBuilder = Json.object();
         jsonBuilder.transform(jsonRead, transform);
 
         try (BufferedWriter writer = new BufferedWriter(

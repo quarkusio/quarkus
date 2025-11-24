@@ -54,8 +54,8 @@ import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
-import io.quarkus.bootstrap.workspace.DefaultSourceDir;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
+import io.quarkus.bootstrap.workspace.LazySourceDir;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
@@ -643,7 +643,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
         final List<SourceDir> resources = new ArrayList<>(resourceDirs.size());
         for (Map.Entry<File, Path> e : resourceDirs.entrySet()) {
-            resources.add(new DefaultSourceDir(e.getKey().toPath(), e.getValue(), null));
+            resources.add(new LazySourceDir(e.getKey().toPath(), e.getValue(), null));
         }
         module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resources));
     }
@@ -698,7 +698,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             // we are looking for the root dirs containing sources
             if (visitor.getRelativePath().getSegments().length == 1) {
                 final File srcDir = visitor.getFile().getParentFile();
-                sourceDirs.add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(),
+                sourceDirs.add(new LazySourceDir(srcDir.toPath(), destDir.toPath(),
                         findGeneratedSourceDir(destDir, sourceSet),
                         Map.of("compiler", task.getName())));
             }

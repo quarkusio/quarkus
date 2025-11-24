@@ -20,8 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.builder.Json.JsonArrayBuilder;
-import io.quarkus.builder.Json.JsonObjectBuilder;
+import io.quarkus.bootstrap.json.Json;
+import io.quarkus.bootstrap.json.Json.JsonArrayBuilder;
+import io.quarkus.bootstrap.json.Json.JsonObjectBuilder;
 import io.quarkus.builder.item.BuildItem;
 
 public class BuildMetrics {

@@ -32,6 +32,11 @@ public class MutableXxJvmOption extends MutableBaseJvmOption<MutableXxJvmOption>
     }
 
     @Override
+    protected String getPropertyGroupPrefix() {
+        return PROPERTY_GROUP_PREFIX;
+    }
+
+    @Override
     protected String getQuarkusExtensionPropertyPrefix() {
         return COMPLETE_PROPERTY_PREFIX;
     }

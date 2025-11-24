@@ -1,14 +1,41 @@
 package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * Extension Dev mode configuration options
  */
-public class ExtensionDevModeConfig implements Serializable {
+public class ExtensionDevModeConfig implements Serializable, Mappable {
+
+    static ExtensionDevModeConfig fromMap(Map<String, Object> map) {
+        JvmOptions jvmOptions = null;
+        Collection<Map<String, Object>> jvmOptionsMap = (Collection<Map<String, Object>>) map
+                .get(BootstrapConstants.MAPPABLE_JVM_OPTIONS);
+        if (jvmOptionsMap != null) {
+            final JvmOptionsBuilder optionsBuilder = new JvmOptionsBuilder();
+            for (Map<String, Object> jvmOptionMap : jvmOptionsMap) {
+                optionsBuilder.addAllToGroup(
+                        jvmOptionMap.get(BootstrapConstants.MAPPABLE_JVM_OPTION_GROUP_PREFIX).toString(),
+                        jvmOptionMap.get(BootstrapConstants.MAPPABLE_NAME).toString(),
+                        (Collection<String>) jvmOptionMap.get(BootstrapConstants.MAPPABLE_VALUES));
+            }
+            jvmOptions = optionsBuilder.build();
+        }
+
+        final Collection<String> lockOptions = (Collection<String>) map.get(BootstrapConstants.MAPPABLE_LOCK_JVM_OPTIONS);
+
+        return new ExtensionDevModeConfig(
+                ArtifactKey.fromString(map.get(BootstrapConstants.MAPPABLE_EXTENSION).toString()),
+                jvmOptions,
+                lockOptions == null ? Set.of() : new HashSet<>(lockOptions));
+    }
 
     private final ArtifactKey extensionKey;
     private final JvmOptions jvmOptions;
@@ -46,5 +73,18 @@ public class ExtensionDevModeConfig implements Serializable {
      */
     public Set<String> getLockJvmOptions() {
         return lockJvmOptions;
+    }
+
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap(3);
+        map.put(BootstrapConstants.MAPPABLE_EXTENSION, extensionKey.toGacString());
+        if (!jvmOptions.isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_JVM_OPTIONS, Mappable.iterableAsMaps(jvmOptions, factory));
+        }
+        if (!lockJvmOptions.isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_LOCK_JVM_OPTIONS, Mappable.toStringCollection(lockJvmOptions, factory));
+        }
+        return map;
     }
 }

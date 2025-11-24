@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 
 /**
  * Helper class used to expose build tool used by the project
@@ -115,7 +115,7 @@ public class BuildToolHelper {
             final ApplicationModel model = QuarkusGradleModelFactory.create(
                     getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
                     mode, jvmArgs, tasks);
-            BootstrapUtils.exportModel(model, "TEST".equalsIgnoreCase(mode));
+            ApplicationModelSerializer.exportGradleModel(model, "TEST".equalsIgnoreCase(mode));
             return model;
         }
         return null;
@@ -126,7 +126,7 @@ public class BuildToolHelper {
         if (isGradleProject(projectRoot)) {
             final ApplicationModel model = QuarkusGradleModelFactory
                     .createForTasks(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(), DEVMODE_REQUIRED_TASKS);
-            BootstrapUtils.exportModel(model, false);
+            ApplicationModelSerializer.exportGradleModel(model, false);
             return model;
         }
         return null;

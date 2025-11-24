@@ -5,17 +5,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Application dependency model. Allows to explore application dependencies,
  * Quarkus platforms found in the project configuration and Quarkus platform configuration properties.
  */
-public interface ApplicationModel {
+public interface ApplicationModel extends Mappable {
 
     /**
      * Main application artifact
@@ -155,10 +157,9 @@ public interface ApplicationModel {
     }
 
     private static void collectModules(WorkspaceModule module, Map<WorkspaceModuleId, WorkspaceModule> collected) {
-        if (module == null) {
+        if (module == null || collected.putIfAbsent(module.getId(), module) != null) {
             return;
         }
-        collected.putIfAbsent(module.getId(), module);
 
         WorkspaceModule parent = module.getParent();
         if (parent != null) {
@@ -166,11 +167,9 @@ public interface ApplicationModel {
         }
 
         for (Dependency d : module.getDirectDependencyConstraints()) {
-            if (!Dependency.SCOPE_IMPORT.equals(d.getScope())
-                    || !(d instanceof ResolvedDependency)) {
-                continue;
+            if (Dependency.SCOPE_IMPORT.equals(d.getScope()) && (d instanceof ResolvedDependency resolved)) {
+                collectModules(resolved.getWorkspaceModule(), collected);
             }
-            collectModules(((ResolvedDependency) d).getWorkspaceModule(), collected);
         }
     }
 
@@ -180,4 +179,34 @@ public interface ApplicationModel {
      * @return extension Dev mode configuration options
      */
     Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
+
+    @Override
+    default Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap();
+        map.put(BootstrapConstants.MAPPABLE_APP_ARTIFACT, getAppArtifact().asMap(factory));
+        map.put(BootstrapConstants.MAPPABLE_DEPENDENCIES,
+                Mappable.iterableAsMaps(
+                        getDependenciesWithAnyFlag(DependencyFlags.DEPLOYMENT_CP | DependencyFlags.COMPILE_ONLY),
+                        factory));
+        map.put(BootstrapConstants.MAPPABLE_PLATFORM_IMPORTS, getPlatforms().asMap(factory));
+        if (!getExtensionCapabilities().isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_CAPABILITIES, Mappable.asMaps(getExtensionCapabilities(), factory));
+        }
+        if (!getReloadableWorkspaceDependencies().isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_LOCAL_PROJECTS,
+                    Mappable.toStringCollection(getReloadableWorkspaceDependencies(), factory));
+        }
+        if (!getRemovedResources().isEmpty()) {
+            final Map<ArtifactKey, Set<String>> removedResources = getRemovedResources();
+            final Map<String, Object> mappedExcludedResources = factory.newMap(removedResources.size());
+            for (Map.Entry<ArtifactKey, Set<String>> entry : removedResources.entrySet()) {
+                mappedExcludedResources.put(entry.getKey().toString(), Mappable.toStringCollection(entry.getValue(), factory));
+            }
+            map.put(BootstrapConstants.MAPPABLE_EXCLUDED_RESOURCES, mappedExcludedResources);
+        }
+        if (!getExtensionDevModeConfig().isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_EXTENSION_DEV_CONFIG, Mappable.asMaps(getExtensionDevModeConfig(), factory));
+        }
+        return map;
+    }
 }

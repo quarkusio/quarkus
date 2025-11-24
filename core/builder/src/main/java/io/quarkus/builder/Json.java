@@ -19,8 +19,11 @@ import io.quarkus.builder.json.JsonString;
 import io.quarkus.builder.json.JsonValue;
 
 /**
- * A simple JSON string generator.
+ * @deprecated since 3.31.0 in favor of io.quarkus.bootstrap.json.Json
+ *
+ *             A simple JSON string generator.
  */
+@Deprecated(forRemoval = true)
 public final class Json {
 
     private static final String OBJECT_START = "{";

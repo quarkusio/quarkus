@@ -75,6 +75,7 @@ public abstract class AbstractDbTokenStateManagerTest {
                     textPage.getContent());
 
             assertTokenStateCount(1);
+            assertTokensAreEncryptedInDB();
 
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
@@ -95,6 +96,22 @@ public abstract class AbstractDbTokenStateManagerTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.is(tokenStateCount.toString()));
+    }
+
+    protected void assertTokensAreEncryptedInDB() {
+        String expectedTokenEncryptionStatus = """
+                id token encrypted: %1$s, access token encrypted: %1$s, refresh token encrypted: %1$s
+                """.formatted(tokenEncryptionStatus()).trim();
+        RestAssured
+                .given()
+                .get("public/db-state-manager-tokens")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is(expectedTokenEncryptionStatus));
+    }
+
+    protected boolean tokenEncryptionStatus() {
+        return true;
     }
 
     protected static WebClient createWebClient() {

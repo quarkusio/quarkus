@@ -151,9 +151,9 @@ public class OidcDbTokenStateManagerProcessor {
             case REACTIVE_DB2_CLIENT:
                 createTableDdl = "CREATE TABLE oidc_db_token_state_manager ("
                         + "id VARCHAR(100) NOT NULL PRIMARY KEY, "
-                        + "id_token VARCHAR(4000), "
-                        + "access_token VARCHAR(4000), "
-                        + "refresh_token VARCHAR(4000), "
+                        + "id_token VARCHAR(5000), "
+                        + "access_token VARCHAR(5000), "
+                        + "refresh_token VARCHAR(5000), "
                         + "access_token_expires_in BIGINT, "
                         + "access_token_scope VARCHAR(100), "
                         + "expires_in BIGINT NOT NULL)";
@@ -162,9 +162,9 @@ public class OidcDbTokenStateManagerProcessor {
             case REACTIVE_ORACLE_CLIENT:
                 createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager ("
                         + "id VARCHAR2(100), "
-                        + "id_token VARCHAR2(4000), "
-                        + "access_token VARCHAR2(4000), "
-                        + "refresh_token VARCHAR2(4000), "
+                        + "id_token VARCHAR2(5000), "
+                        + "access_token VARCHAR2(5000), "
+                        + "refresh_token VARCHAR2(5000), "
                         + "access_token_expires_in NUMBER, "
                         + "access_token_scope VARCHAR2(100), "
                         + "expires_in NUMBER NOT NULL, "

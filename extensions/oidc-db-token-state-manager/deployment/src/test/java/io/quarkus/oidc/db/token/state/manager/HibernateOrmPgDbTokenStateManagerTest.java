@@ -68,6 +68,11 @@ public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateM
         }
     }
 
+    @Override
+    protected boolean tokenEncryptionStatus() {
+        return false;
+    }
+
     @Test
     public void testExpiredTokenDeletion() {
         assertTokenStateCount(0);

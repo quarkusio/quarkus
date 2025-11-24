@@ -299,8 +299,7 @@ public class DevServicesElasticsearchProcessor {
         }
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
-            log.warnf("Docker isn't working, please configure the Elasticsearch hosts property (%s).",
-                    displayProperties(buildItemConfig.hostsConfigProperties));
+            log.warn("Docker is not working, cannot start the Kibana/OpenSearch dashboards dev service.");
             return null;
         }
 

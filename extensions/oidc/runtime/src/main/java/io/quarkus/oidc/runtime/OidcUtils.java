@@ -1025,4 +1025,66 @@ public final class OidcUtils {
             currentPos = nextPos;
         }
     }
+
+    public static String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
+        if (oidcConfig.tokenStateManager().encryptionRequired()) {
+            TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
+            try {
+                KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
+                        .valueOf(oidcConfig.tokenStateManager().encryptionAlgorithm().name());
+                return encryptString(token, configContext.getSessionCookieEncryptionKey(), encAlgorithm);
+            } catch (Exception ex) {
+                throw new AuthenticationFailedException(ex);
+            }
+        }
+        return token;
+    }
+
+    public static String decryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
+        if (oidcConfig.tokenStateManager().encryptionRequired()) {
+            TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
+            try {
+                KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
+                        .valueOf(oidcConfig.tokenStateManager().encryptionAlgorithm().name());
+                return decryptString(token, configContext.getSessionCookieEncryptionKey(), encAlgorithm);
+            } catch (Exception ex) {
+                throw new AuthenticationFailedException(ex);
+            }
+        }
+        return token;
+    }
+
+    public static AuthorizationCodeTokens decryptTokens(RoutingContext context, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens) {
+        AuthorizationCodeTokens newTokens = new AuthorizationCodeTokens();
+        if (tokens.getIdToken() != null) {
+            newTokens.setIdToken(OidcUtils.decryptToken(tokens.getIdToken(), context, oidcConfig));
+        }
+        if (tokens.getAccessToken() != null) {
+            newTokens.setAccessToken(OidcUtils.decryptToken(tokens.getAccessToken(), context, oidcConfig));
+        }
+        if (tokens.getRefreshToken() != null) {
+            newTokens.setRefreshToken(OidcUtils.decryptToken(tokens.getRefreshToken(), context, oidcConfig));
+        }
+        newTokens.setAccessTokenScope(tokens.getAccessTokenScope());
+        newTokens.setAccessTokenExpiresIn(tokens.getAccessTokenExpiresIn());
+        return newTokens;
+    }
+
+    public static AuthorizationCodeTokens encryptTokens(RoutingContext context, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens) {
+        AuthorizationCodeTokens newTokens = new AuthorizationCodeTokens();
+        if (tokens.getIdToken() != null) {
+            newTokens.setIdToken(OidcUtils.encryptToken(tokens.getIdToken(), context, oidcConfig));
+        }
+        if (tokens.getAccessToken() != null) {
+            newTokens.setAccessToken(OidcUtils.encryptToken(tokens.getAccessToken(), context, oidcConfig));
+        }
+        if (tokens.getRefreshToken() != null) {
+            newTokens.setRefreshToken(OidcUtils.encryptToken(tokens.getRefreshToken(), context, oidcConfig));
+        }
+        newTokens.setAccessTokenScope(tokens.getAccessTokenScope());
+        newTokens.setAccessTokenExpiresIn(tokens.getAccessTokenExpiresIn());
+        return newTokens;
+    }
 }

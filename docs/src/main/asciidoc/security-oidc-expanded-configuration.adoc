@@ -604,14 +604,14 @@ Currently, only a `Cache-Control` `no-store` directive that prohibits caching th
 After the authorization code flow is finished, ID token, access token, and refresh token must be retained to support the user session.
 
 By defaut, Quarkus OIDC stores all three tokens in an encrypted session cookie, making Quarkus OIDC stateless.
-Quarkus OIDC also provides the stateful xref:security-oidc-code-flow-authentication.adoc#db-token-state-manager[Database TokenStateManager] to store tokens in your database of choice and the xref:security-oidc-code-flow-authentication.adoc#redis-token-state-manager[Redis TokenStateManager] to store them in the Redis cache. Users can also register custom `quarkus.oidc.TokenStateManager` to store these tokens as required.
+Quarkus OIDC also provides the stateful xref:security-oidc-code-flow-authentication.adoc#db-token-state-manager[Database TokenStateManager] to store tokens in your database of choice and the xref:security-oidc-code-flow-authentication.adoc#redis-token-state-manager[Redis TokenStateManager] to store them in the Redis cache. Users can also register custom `io.quarkus.oidc.TokenStateManager` to store these tokens as required.
 
 .Default TokenStateManager
 [options="header"]
 |====
 |Property | Default |Description
 
-|quarkus.oidc.token-state-manager.encryption-required |true| Encrypt session cookie by default
+|quarkus.oidc.token-state-manager.encryption-required |true| Encrypt session cookie by default, also see the note below
 |quarkus.oidc.token-state-manager.encryption-secret || Encryption secret, with falling back to the client secret and finally a generated secret key
 |quarkus.oidc.token-state-manager.encryption-algorithm |A256GCMKW| Encryption algorithm
 |quarkus.oidc.token-state-manager.split-tokens |false| Cookie per token
@@ -631,6 +631,15 @@ The encrypted session cookie with up to three tokens may exceed a 4096 bytes coo
 For example, you can do `quarkus.oidc.token-state-manager.strategy=id-refresh-tokens` which means that your application is not intending to use an access token directly or propagate it to downstream services, all it wants is to use ID token to interact with the user and keep refreshing the session.
 
 If your application does not need to use access tokens but only interact with the authenticated user who must always re-authenticate when the session expires, consider `quarkus.oidc.token-state-manager.strategy=idtoken` - which retains ID token only, ignoring both access and refresh tokens.
+
+[NOTE]
+====
+`quarkus.oidc.token-state-manager.encryption-required` and two other related properties, `quarkus.oidc.token-state-manager.encryption-secret` and `quarkus.oidc.token-state-manager.encryption-algorithm`, are also effective when custom `io.quarkus.oidc.TokenStateManager` is used, including xref:security-oidc-code-flow-authentication.adoc#db-token-state-manager[Database TokenStateManager] and xref:security-oidc-code-flow-authentication.adoc#redis-token-state-manager[Redis TokenStateManager]. 
+
+Given that `quarkus.oidc.token-state-manager.encryption-required` is set to `true` by default, a custom `io.quarkus.oidc.TokenStateManager` implementation must encrypt tokens before storing them by default. However, it does not have to encrypt tokens itself, they will be encrypted by the time it is asked to store them.
+
+A custom `io.quarkus.oidc.TokenStateManager` implementation that does not want tokens encrypted by default can disable it with `quarkus.oidc.token-state-manager.encryption-required=false`.
+====
 
 [[logout-properties]]
 == Logout
@@ -1231,7 +1240,7 @@ You can register a `quarkus.oidc.UserInfoCache` provider to support a custom `Us
 === TokenStateManager
 
 As discussed in the <<token-state-manager>> section above, Quarkus OIDC already provides stateless (default) and stateful options for storing  authorization code flow tokens.
-You can also provide your own custom `quarkus.oidc.TokenStateManager` implementation.
+You can also provide your own custom `io.quarkus.oidc.TokenStateManager` implementation.
 
 === Request, response and redirect filters
 

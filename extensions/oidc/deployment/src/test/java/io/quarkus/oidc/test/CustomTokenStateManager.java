@@ -10,6 +10,7 @@ import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -24,7 +25,9 @@ public class CustomTokenStateManager implements TokenStateManager {
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
             AuthorizationCodeTokens sessionContent, OidcRequestContext<String> requestContext) {
-        return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent, requestContext)
+        return tokenStateManager.createTokenState(routingContext, oidcConfig,
+                OidcUtils.decryptTokens(routingContext, oidcConfig, sessionContent),
+                requestContext)
                 .map(t -> (t + "|custom"));
     }
 
@@ -35,7 +38,8 @@ public class CustomTokenStateManager implements TokenStateManager {
             throw new IllegalStateException();
         }
         String defaultState = tokenState.substring(0, tokenState.length() - 7);
-        return tokenStateManager.getTokens(routingContext, oidcConfig, defaultState, requestContext);
+        return tokenStateManager.getTokens(routingContext, oidcConfig, defaultState, requestContext)
+                .map(t -> OidcUtils.encryptTokens(routingContext, oidcConfig, t));
     }
 
     @Override

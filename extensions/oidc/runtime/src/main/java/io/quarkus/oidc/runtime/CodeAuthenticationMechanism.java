@@ -350,15 +350,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         })
                 .chain(new Function<AuthorizationCodeTokens, Uni<? extends SecurityIdentity>>() {
                     @Override
-                    public Uni<? extends SecurityIdentity> apply(AuthorizationCodeTokens session) {
-                        context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
-                        context.put(AuthorizationCodeTokens.class.getName(), session);
+                    public Uni<? extends SecurityIdentity> apply(AuthorizationCodeTokens tokens) {
+                        AuthorizationCodeTokens decryptedtokens = decryptTokens(context, configContext.oidcConfig(), tokens);
+                        context.put(OidcConstants.ACCESS_TOKEN_VALUE, decryptedtokens.getAccessToken());
+                        context.put(AuthorizationCodeTokens.class.getName(), decryptedtokens);
                         // Default token state manager may have encrypted ID token when it was saved in a cookie
-                        final String currentIdToken = decryptIdToken(configContext, session.getIdToken());
+                        final String currentIdToken = decryptIdToken(configContext, decryptedtokens.getIdToken());
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(currentIdToken,
                                         isInternalIdToken(currentIdToken, configContext)))
-                                .call(new LogoutCall(context, configContext, session.getIdToken())).onFailure()
+                                .call(new LogoutCall(context, configContext, decryptedtokens.getIdToken())).onFailure()
                                 .recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
                                     @Override
                                     public Uni<? extends SecurityIdentity> apply(Throwable t) {
@@ -408,7 +409,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             if (isRpInitiatedLogout(context, configContext)) {
                                                 LOG.debug("Session has expired, performing an RP initiated logout");
                                                 fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED_SESSION_EXPIRED,
-                                                        Map.of(SecurityEvent.SESSION_TOKENS_PROPERTY, session));
+                                                        Map.of(SecurityEvent.SESSION_TOKENS_PROPERTY, decryptedtokens));
                                                 return Uni.createFrom().item((SecurityIdentity) null)
                                                         .call(() -> buildLogoutRedirectUriUni(context, configContext,
                                                                 currentIdToken));
@@ -418,12 +419,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                         "Token has expired, token refresh is not allowed, redirecting to re-authenticate");
                                                 return refreshIsNotPossible(context, configContext, t);
                                             }
-                                            if (session.getRefreshToken() == null) {
+                                            if (decryptedtokens.getRefreshToken() == null) {
                                                 LOG.debug(
                                                         "Token has expired, token refresh is not possible because the refresh token is null");
                                                 return refreshIsNotPossible(context, configContext, t);
                                             }
-                                            if (OidcUtils.isJwtTokenExpired(session.getRefreshToken())) {
+                                            if (OidcUtils.isJwtTokenExpired(decryptedtokens.getRefreshToken())) {
                                                 LOG.debug(
                                                         "Token has expired, token refresh is not possible because the refresh token has expired");
                                                 return refreshIsNotPossible(context, configContext, t);
@@ -431,7 +432,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debug("Token has expired, trying to refresh it");
                                             return refreshSecurityIdentity(configContext,
                                                     currentIdToken,
-                                                    session.getRefreshToken(),
+                                                    decryptedtokens.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, false, null);
                                         } else {
@@ -441,18 +442,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             if (isLogout(context, configContext, currentIdentity)) {
                                                 // No need to refresh the token since the user is requesting a logout
                                                 return Uni.createFrom().item(currentIdentity).call(
-                                                        new LogoutCall(context, configContext, session.getIdToken()));
+                                                        new LogoutCall(context, configContext, decryptedtokens.getIdToken()));
                                             }
 
                                             // Token has nearly expired, try to refresh
 
-                                            if (session.getRefreshToken() == null) {
+                                            if (decryptedtokens.getRefreshToken() == null) {
                                                 LOG.debug(
                                                         "Token auto-refresh is required but is not possible because the refresh token is null");
                                                 return autoRefreshIsNotPossible(context, configContext, currentIdentity, t);
                                             }
 
-                                            if (OidcUtils.isJwtTokenExpired(session.getRefreshToken())) {
+                                            if (OidcUtils.isJwtTokenExpired(decryptedtokens.getRefreshToken())) {
                                                 LOG.debug(
                                                         "Token auto-refresh is required but is not possible because the refresh token has expired");
                                                 return autoRefreshIsNotPossible(context, configContext, currentIdentity, t);
@@ -461,7 +462,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debug("Token auto-refresh is starting");
                                             return refreshSecurityIdentity(configContext,
                                                     currentIdToken,
-                                                    session.getRefreshToken(),
+                                                    decryptedtokens.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, true,
                                                     currentIdentity);
@@ -1077,9 +1078,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(TenantConfigContext.class.getName(), configContext);
                         // Just in case, remove the stale Back-Channel Logout data if the previous session was not terminated correctly
                         resolver.getBackChannelLogoutTokens().remove(configContext.oidcConfig().tenantId().get());
-
+                        AuthorizationCodeTokens encryptedTokens = encryptTokens(context, configContext.oidcConfig(), tokens);
                         return resolver.getTokenStateManager()
-                                .createTokenState(context, configContext.oidcConfig(), tokens, createTokenStateRequestContext)
+                                .createTokenState(context, configContext.oidcConfig(), encryptedTokens,
+                                        createTokenStateRequestContext)
                                 .map(new Function<String, Void>() {
 
                                     @Override
@@ -1129,6 +1131,24 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                 });
 
+    }
+
+    private AuthorizationCodeTokens encryptTokens(RoutingContext context, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens) {
+        if (!(resolver.getTokenStateManager() instanceof DefaultTokenStateManager)
+                && oidcConfig.tokenStateManager().encryptionRequired()) {
+            return OidcUtils.encryptTokens(context, oidcConfig, tokens);
+        }
+        return tokens;
+    }
+
+    private AuthorizationCodeTokens decryptTokens(RoutingContext context, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens) {
+        if (!(resolver.getTokenStateManager() instanceof DefaultTokenStateManager)
+                && oidcConfig.tokenStateManager().encryptionRequired()) {
+            return OidcUtils.decryptTokens(context, oidcConfig, tokens);
+        }
+        return tokens;
     }
 
     private void fireEvent(SecurityEvent.Type eventType, SecurityIdentity securityIdentity) {

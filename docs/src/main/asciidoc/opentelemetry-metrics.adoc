@@ -537,10 +537,6 @@ See the main xref:opentelemetry.adoc#resource[OpenTelemetry Guide resources] sec
 
 == Automatic instrumentation
 
-=== Microprofile 2.0
-
-We provide automatic instrumentation for JVM metrics and HTTP server requests metrics according to the https://github.com/eclipse/microprofile-telemetry/blob/2.0/spec/src/main/asciidoc/metrics.adoc[Microprofile Metrics 2.0 specification].
-
 These metrics can be disabled by setting the following properties to `false`:
 
 [source,properties]

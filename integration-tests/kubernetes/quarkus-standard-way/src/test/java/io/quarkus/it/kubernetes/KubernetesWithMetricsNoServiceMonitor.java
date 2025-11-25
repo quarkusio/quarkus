@@ -31,7 +31,6 @@ public class KubernetesWithMetricsNoServiceMonitor {
             .setRun(true)
             .setLogFileName("k8s.log")
             .overrideConfigKey("quarkus.http.port", "9090")
-            .overrideConfigKey("quarkus.smallrye-metrics.path", "/met")
             .overrideConfigKey("quarkus.kubernetes.prometheus.generate-service-monitor", "false")
             .overrideConfigKey("quarkus.kubernetes.prometheus.prefix", "example.io")
             .setForcedDependencies(List.of(

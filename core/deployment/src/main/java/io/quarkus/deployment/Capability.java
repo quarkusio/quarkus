@@ -101,7 +101,7 @@ public interface Capability {
     String KUBERNETES_CLIENT = QUARKUS_PREFIX + ".kubernetes.client";
 
     /**
-     * @deprecated Use more precise capability {@link Capability#SMALLRYE_METRICS}
+     * @deprecated Use more precise capability
      * @see io.quarkus.deployment.metrics.MetricsCapabilityBuildItem
      */
     @Deprecated
@@ -129,7 +129,6 @@ public interface Capability {
 
     String SCHEDULER = QUARKUS_PREFIX + ".scheduler";
 
-    String SMALLRYE_METRICS = QUARKUS_PREFIX + ".smallrye.metrics";
     String SMALLRYE_HEALTH = QUARKUS_PREFIX + ".smallrye.health";
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + ".smallrye.openapi";
     String SMALLRYE_GRAPHQL = QUARKUS_PREFIX + ".smallrye.graphql";

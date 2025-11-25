@@ -37,11 +37,6 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-internal</artifactId>
             <scope>test</scope>
         </dependency>

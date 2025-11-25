@@ -148,7 +148,6 @@ updates:
       - dependency-name: org.eclipse.microprofile.graphql:microprofile-graphql-tck
       - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
       - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
-      - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
       - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
@@ -212,8 +211,6 @@ updates:
       - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]

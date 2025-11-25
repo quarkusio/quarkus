@@ -184,10 +184,6 @@ public class SmallRyeFaultToleranceProcessor {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
             metricsProviders++;
         } else {
-            if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-                builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
-                metricsProviders++;
-            }
             if (openTelemetrySdk.map(OpenTelemetrySdkBuildItem::isMetricsBuildTimeEnabled).orElse(false)) {
                 builder.addBeanClass("io.smallrye.faulttolerance.metrics.OpenTelemetryProvider");
                 metricsProviders++;

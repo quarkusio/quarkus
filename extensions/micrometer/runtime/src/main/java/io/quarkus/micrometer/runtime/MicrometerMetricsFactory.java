@@ -24,8 +24,7 @@ public class MicrometerMetricsFactory implements MetricsFactory {
 
     @Override
     public boolean metricsSystemSupported(String name) {
-        return MetricsFactory.MICROMETER.equals(name) ||
-                (MetricsFactory.MP_METRICS.equals(name) && config.binder().mpMetrics().enabled().orElse(false));
+        return MetricsFactory.MICROMETER.equals(name);
     }
 
     /**

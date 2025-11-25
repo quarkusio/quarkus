@@ -322,7 +322,6 @@
                 <module>vertx-graphql</module>
                 <module>smallrye-config</module>
                 <module>smallrye-context-propagation</module>
-                <module>smallrye-metrics</module>
                 <module>smallrye-graphql</module>
                 <module>smallrye-graphql-client</module>
                 <module>smallrye-graphql-client-keycloak</module>
@@ -364,7 +363,6 @@
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
                 <module>elasticsearch-java-client</module>
-                <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>

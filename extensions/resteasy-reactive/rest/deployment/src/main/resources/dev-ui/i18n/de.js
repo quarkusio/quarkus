@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'Eine Jakarta REST-Implementierung, die eine Buildzeitverarbeitung und Vert.x nutzt.',
+    'quarkus-rest-endpoints': 'Endpunkte',
+    'quarkus-rest-endpoint_scores': 'Endpunktwerte',
+    'quarkus-rest-exception_mappers': 'Ausnahme-Mappings',
+    'quarkus-rest-parameter_converter_providers': 'Parameter-Konverter-Anbieter',
+    'quarkus-rest-no-rest-endpoints': 'Sie haben keine REST-Endpunkte.',
+    'quarkus-rest-learn-rest': 'Erfahren Sie, wie Sie REST-Dienste mit Quarkus REST erstellen.',
+    'quarkus-rest-produces': 'Erzeugt',
+    'quarkus-rest-consumes': 'Verbrauchen',
+    'quarkus-rest-resource-class': 'Ressourcenklasse',
+    'quarkus-rest-priority': 'Priorität',
+    'quarkus-rest-exception': 'Ausnahme',
+    'quarkus-rest-mapper': 'Mapper',
+    'quarkus-rest-class-name': 'Klassenname',
+};

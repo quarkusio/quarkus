@@ -2759,6 +2759,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         public boolean enabled;
         public Optional<String> resource = Optional.empty();
+        public Optional<Set<String>> scopes = Optional.empty();
         public Optional<String> authorizationServer = Optional.empty();
         public boolean forceHttpsScheme = true;
 
@@ -2770,6 +2771,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public Optional<String> resource() {
             return resource;
+        }
+
+        @Override
+        public Optional<Set<String>> scopes() {
+            return scopes;
         }
 
         @Override
@@ -2785,6 +2791,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata mapping) {
             enabled = mapping.enabled();
             resource = mapping.resource();
+            scopes = mapping.scopes();
             authorizationServer = mapping.authorizationServer();
             forceHttpsScheme = mapping.forceHttpsScheme();
         }

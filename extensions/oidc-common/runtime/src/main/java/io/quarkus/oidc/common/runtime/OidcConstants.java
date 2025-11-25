@@ -112,5 +112,6 @@ public final class OidcConstants {
 
     public static final String RESOURCE_METADATA_WELL_KNOWN_PATH = "/.well-known/oauth-protected-resource";
     public static final String RESOURCE_METADATA_RESOURCE = "resource";
+    public static final String RESOURCE_METADATA_SCOPES = "scopes_supported";
     public static final String RESOURCE_METADATA_AUTHORIZATION_SERVERS = "authorization_servers";
 }

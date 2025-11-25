@@ -163,6 +163,11 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<String> resource();
 
         /**
+         * Supported scopes.
+         */
+        Optional<Set<String>> scopes();
+
+        /**
          * Authorization server URL.
          * 'quarkus.oidc.auth-server-url' property value is reported by default.
          */

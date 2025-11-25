@@ -163,6 +163,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE,
         RESOURCE_METADATA_ENABLED,
         RESOURCE_METADATA_RESOURCE,
+        RESOURCE_METADATA_SCOPES,
         RESOURCE_METADATA_AUTHORIZATION_SERVER,
         RESOURCE_METADATA_FORCE_HTTPS_SCHEME,
         LOGOUT_PATH,
@@ -620,6 +621,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             @Override
             public Optional<String> resource() {
                 invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_RESOURCE, true);
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Set<String>> scopes() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_SCOPES, true);
                 return Optional.empty();
             }
 

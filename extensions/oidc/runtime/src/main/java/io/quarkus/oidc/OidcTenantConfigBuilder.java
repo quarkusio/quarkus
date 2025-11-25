@@ -865,13 +865,14 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public static final class ResourceMetadataBuilder {
 
-        private record ResourceMetadataImpl(boolean enabled, Optional<String> resource,
+        private record ResourceMetadataImpl(boolean enabled, Optional<String> resource, Optional<Set<String>> scopes,
                 Optional<String> authorizationServer, boolean forceHttpsScheme) implements ResourceMetadata {
         }
 
         private final OidcTenantConfigBuilder builder;
         private boolean enabled;
         private Optional<String> resource;
+        private Optional<Set<String>> scopes;
         private Optional<String> authorizationServer;
         private boolean forceHttpsScheme;
 
@@ -883,6 +884,8 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             this.builder = Objects.requireNonNull(builder);
             this.enabled = builder.resourceMetadata.enabled();
             this.resource = builder.resourceMetadata.resource();
+            this.scopes = builder.resourceMetadata.scopes().isEmpty() ? Optional.empty()
+                    : Optional.of(Set.copyOf(builder.resourceMetadata.scopes().get()));
             this.authorizationServer = builder.resourceMetadata.authorizationServer();
             this.forceHttpsScheme = builder.resourceMetadata.forceHttpsScheme();
         }
@@ -911,6 +914,23 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          */
         public ResourceMetadataBuilder resource(String resource) {
             this.resource = Optional.ofNullable(resource);
+            return this;
+        }
+
+        /**
+         * @param scopes {@link ResourceMetadata#scopes()}
+         * @return this builder
+         */
+        public ResourceMetadataBuilder scopes(String scope) {
+            return this.scopes(Set.of(scope));
+        }
+
+        /**
+         * @param scopes {@link ResourceMetadata#scopes()}
+         * @return this builder
+         */
+        public ResourceMetadataBuilder scopes(Set<String> scopes) {
+            this.scopes = Optional.ofNullable(scopes);
             return this;
         }
 
@@ -952,7 +972,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return built ResourceMetadata
          */
         public ResourceMetadata build() {
-            return new ResourceMetadataImpl(enabled, resource, authorizationServer, forceHttpsScheme);
+            return new ResourceMetadataImpl(enabled, resource, scopes, authorizationServer, forceHttpsScheme);
         }
     }
 

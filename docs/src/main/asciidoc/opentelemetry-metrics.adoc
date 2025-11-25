@@ -32,7 +32,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this guide, we create a straightforward REST application to demonstrate distributed tracing.
+In this guide, we create a straightforward REST application to demonstrate metrics.
 
 == Solution
 

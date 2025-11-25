@@ -5851,7 +5851,6 @@
                 <artifactId>infinispan-core</artifactId>
                 <version>${infinispan.version}</version>
                 <type>test-jar</type>
-                <classifier>jakarta</classifier>
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>

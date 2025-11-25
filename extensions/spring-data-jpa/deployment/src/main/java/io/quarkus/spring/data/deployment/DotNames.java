@@ -157,7 +157,7 @@ public final class DotNames {
     public static final DotName INSTANT = DotName.createSimple(Instant.class.getName());
     public static final DotName ZONED_DATETIME = DotName.createSimple(ZonedDateTime.class.getName());
 
-    // https://docs.jboss.org/hibernate/stable/orm/userguide/html_single/Hibernate_User_Guide.html#basic
+    // https://docs.hibernate.org/stable/orm/userguide/html_single/#basic
     // Should be in sync with org.hibernate.type.BasicTypeRegistry
     public static final Set<DotName> HIBERNATE_PROVIDED_BASIC_TYPES = new HashSet<>(Arrays.asList(
             STRING, CLASS,

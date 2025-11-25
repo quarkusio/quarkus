@@ -1299,28 +1299,6 @@ When `SomeBusinessException` occurs, the error output will contain the Error cod
 
 <1> The error code
 
-== Additional Notes
-
-If you are using the `smallrye-graphql` extension and the `micrometer` metrics extension is present and metrics are
-enabled, you may encounter a `java.lang.NoClassDefFoundError` as some versions of the `smallrye-graphql` extension
-have runtime requirements on the Microprofile Metrics API.  Add the following MicroProfile Metrics API dependency
-to resolve the issue:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>org.eclipse.microprofile.metrics</groupId>
-    <artifactId>microprofile-metrics-api</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("org.eclipse.microprofile.metrics:microprofile-metrics-api")
-----
-
 == Conclusion
 
 SmallRye GraphQL enables clients to retrieve the exact data that is

@@ -1041,24 +1041,6 @@
     "artifact" : "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt::jar:999-SNAPSHOT",
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
-    "name" : "SmallRye Metrics",
-    "description" : "Expose metrics for your services",
-    "metadata" : {
-      "short-name" : "metrics",
-      "keywords" : [ "smallrye-metrics", "metrics", "metric", "prometheus", "monitoring" ],
-      "guide" : "https://quarkus.io/guides/microprofile-metrics",
-      "categories" : [ "observability" ],
-      "status" : "stable",
-      "config" : [ "quarkus.smallrye-metrics.", "mp.metrics." ],
-      "built-with-quarkus-core" : "999-SNAPSHOT",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.metrics" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
-    },
-    "artifact" : "io.quarkus:quarkus-smallrye-metrics::jar:999-SNAPSHOT",
-    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
-  }, {
     "name" : "SmallRye OpenAPI",
     "description" : "Document your REST APIs with OpenAPI - comes with Swagger UI",
     "metadata" : {

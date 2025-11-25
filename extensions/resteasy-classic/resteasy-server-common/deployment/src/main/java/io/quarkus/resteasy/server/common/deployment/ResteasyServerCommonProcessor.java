@@ -89,7 +89,6 @@ import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
 /**
  * Processor that builds the RESTEasy server configuration.
@@ -162,20 +161,6 @@ public class ResteasyServerCommonProcessor {
         @WithDefault("/")
         @WithConverter(NormalizeRootHttpPathConverter.class)
         String path();
-
-        /**
-         * Whether detailed JAX-RS metrics should be enabled if the smallrye-metrics
-         * extension is present.
-         * <p>
-         * See <a href=
-         * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
-         * Metrics: Optional REST metrics</a>.
-         *
-         * @deprecated Use {@code quarkus.smallrye-metrics.jaxrs.enabled} instead.
-         */
-        @Deprecated(forRemoval = true)
-        @WithName("metrics.enabled")
-        Optional<Boolean> metricsEnabled();
 
         /**
          * Ignore all explicit JAX-RS {@link Application} classes.

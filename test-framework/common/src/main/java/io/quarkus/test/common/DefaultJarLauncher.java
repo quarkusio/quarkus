@@ -1,7 +1,7 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
-import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
+import static io.quarkus.test.common.LauncherUtil.registerRuntimeValues;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 
@@ -83,7 +83,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         } else {
             ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
                     waitTimeSeconds);
-            updateConfigForPort(result.getPort());
+            registerRuntimeValues(result.getPort());
             isSsl = result.isSsl();
         }
     }

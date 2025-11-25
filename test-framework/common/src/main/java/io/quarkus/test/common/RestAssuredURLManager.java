@@ -5,10 +5,13 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.runtime.RuntimeValues;
+import io.quarkus.runtime.RuntimeValues.RuntimeKey;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Utility class that sets the rest assured port to the default test port and meaningful timeouts.
@@ -45,15 +48,6 @@ public class RestAssuredURLManager {
 
     }
 
-    private static int getPortFromConfig(int defaultValue, String... keys) {
-        for (String key : keys) {
-            Optional<Integer> port = ConfigProvider.getConfig().getOptionalValue(key, Integer.class);
-            if (port.isPresent())
-                return port.get();
-        }
-        return defaultValue;
-    }
-
     public static void setURL(boolean useSecureConnection) {
         setURL(useSecureConnection, null, null);
     }
@@ -71,17 +65,24 @@ public class RestAssuredURLManager {
             return;
         }
 
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+
         oldPort = RestAssured.port;
         if (port == null) {
-            port = useSecureConnection ? getPortFromConfig(DEFAULT_HTTPS_PORT, "quarkus.http.test-ssl-port")
-                    : getPortFromConfig(DEFAULT_HTTP_PORT, "quarkus.lambda.mock-event-server.test-port",
-                            "quarkus.http.test-port");
+            if (useSecureConnection) {
+                port = RuntimeValues.get(RuntimeKey.intKey("quarkus.http.test-ssl-port"), DEFAULT_HTTPS_PORT);
+            } else {
+                // TODO - We shouldn't leak extension configuration here
+                port = config
+                        .getOptionalValue("quarkus.lambda.mock-event-server.test-port", int.class)
+                        .orElse(RuntimeValues.get(RuntimeKey.intKey("quarkus.http.test-port"), DEFAULT_HTTP_PORT));
+            }
         }
         RestAssured.port = port;
 
         oldBaseURI = RestAssured.baseURI;
         final String protocol = useSecureConnection ? "https://" : "http://";
-        String host = ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class)
+        String host = config.getOptionalValue("quarkus.http.host", String.class)
                 .orElse("localhost");
         if (host.equals("0.0.0.0")) {
             host = "localhost";
@@ -89,7 +90,7 @@ public class RestAssuredURLManager {
         RestAssured.baseURI = protocol + host;
 
         oldBasePath = RestAssured.basePath;
-        Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path",
+        Optional<String> basePath = config.getOptionalValue("quarkus.http.root-path",
                 String.class);
         if (basePath.isPresent() || additionalPath != null) {
             StringBuilder bp = new StringBuilder();
@@ -117,12 +118,12 @@ public class RestAssuredURLManager {
 
         oldRestAssuredConfig = RestAssured.config();
 
-        Duration timeout = ConfigProvider.getConfig()
+        Duration timeout = config
                 .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
         configureTimeouts(timeout);
 
         oldRequestSpecification = RestAssured.requestSpecification;
-        if (ConfigProvider.getConfig()
+        if (config
                 .getOptionalValue("quarkus.test.rest-assured.enable-logging-on-failure", Boolean.class).orElse(true)) {
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         }

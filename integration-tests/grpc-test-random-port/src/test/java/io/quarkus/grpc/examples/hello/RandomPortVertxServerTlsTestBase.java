@@ -21,6 +21,6 @@ abstract class RandomPortVertxServerTlsTestBase extends RandomPortTestBase {
 
     @Override
     protected String serverPortProperty() {
-        return "quarkus.https.test-port";
+        return "quarkus.http.test-ssl-port";
     }
 }

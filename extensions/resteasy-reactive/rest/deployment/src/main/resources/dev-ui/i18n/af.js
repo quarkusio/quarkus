@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': '\'n Jakarta REST-implementasie wat boutydverwerking en Vert.x benut.',
+    'quarkus-rest-endpoints': 'Eindpunte',
+    'quarkus-rest-endpoint_scores': 'Eindpunt punte',
+    'quarkus-rest-exception_mappers': 'Uitsondering Mapperis',
+    'quarkus-rest-parameter_converter_providers': 'Parameter omsetter verskaffers',
+    'quarkus-rest-no-rest-endpoints': 'Jy het geen REST eindpunte nie.',
+    'quarkus-rest-learn-rest': 'Leer hoe om REST-dienste te skryf met Quarkus REST',
+    'quarkus-rest-produces': 'Produseer',
+    'quarkus-rest-consumes': 'Verbruikers',
+    'quarkus-rest-resource-class': 'Hulpbron Klas',
+    'quarkus-rest-priority': 'Prioriteit',
+    'quarkus-rest-exception': 'Uitgezondering',
+    'quarkus-rest-mapper': 'Kaartmaker',
+    'quarkus-rest-class-name': 'Klasnaam',
+};

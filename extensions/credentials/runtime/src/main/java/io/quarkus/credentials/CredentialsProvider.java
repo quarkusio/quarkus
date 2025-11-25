@@ -12,6 +12,17 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
  * <p>
  * The default implementation of asynchronous variant invokes the synchronous {@link #getCredentials(String)} on a worker
  * thread.
+ * <p>
+ * Note that there is a price to pay for offloading a task to a worker thread.
+ * Nevertheless, if the implementation of the synchronous {@link #getCredentials(String)} involves blocking APIs, it is the
+ * right thing to do.
+ * Otherwise, it could block an event-loop thread, which
+ * <a href="https://quarkus.io/guides/duplicated-context#the-reactive-model"><strong>MUST</strong> be avoided</a>.
+ * <p>
+ * When the implementation does not invoke blocking APIs, prefer overriding the asynchronous
+ * {@link #getCredentialsAsync(String)}, instead of the synchronous variant.
+ * For example, if a provider caches credentials in memory and refreshes them in the background, it is not necessary to switch
+ * to a worker thread to read them.
  */
 public interface CredentialsProvider {
 

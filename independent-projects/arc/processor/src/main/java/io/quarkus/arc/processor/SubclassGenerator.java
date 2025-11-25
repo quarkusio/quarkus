@@ -110,7 +110,7 @@ public class SubclassGenerator extends AbstractGenerator {
         }
 
         boolean isApplicationClass = applicationClassPredicate.test(bean.getBeanClass())
-                || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
+                || bean.hasBoundDecoratorMatching(applicationClassPredicate);
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.SUBCLASS : null,
                 generateSources);

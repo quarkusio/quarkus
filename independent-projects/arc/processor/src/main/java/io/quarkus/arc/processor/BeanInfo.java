@@ -523,9 +523,9 @@ public class BeanInfo implements InjectionTargetInfo {
         return bound;
     }
 
-    boolean hasBoundDecoratorWhichIsApplicationClass(Predicate<DotName> isApplicationClass) {
+    boolean hasBoundDecoratorMatching(Predicate<DotName> predicate) {
         for (DecoratorInfo decorator : getBoundDecorators()) {
-            if (isApplicationClass.test(decorator.getImplClazz().name())) {
+            if (predicate.test(decorator.getImplClazz().name())) {
                 return true;
             }
         }

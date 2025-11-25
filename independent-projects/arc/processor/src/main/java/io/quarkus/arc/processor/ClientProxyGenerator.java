@@ -105,8 +105,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(getApplicationClassTestName(bean))
-                || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
+        boolean isApplicationClass = applicationClassPredicate.test(getApplicationClassTestName(bean));
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.CLIENT_PROXY : null, generateSources);
 

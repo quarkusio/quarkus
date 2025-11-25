@@ -451,12 +451,11 @@ However, thread locals are not propagated.
 == Virtual thread names
 
 Virtual threads are created without a thread name by default, which is not practical to identify the execution for debugging and logging purposes.
-Quarkus managed virtual threads are named and prefixed with `quarkus-virtual-thread-`.
-You can customize this prefix, or disable the naming altogether configuring an empty value:
+Quarkus managed virtual threads can have customized prefix by setting:
 
 [source, properties]
 ----
-quarkus.virtual-threads.name-prefix=
+quarkus.virtual-threads.name-prefix=<your prefix or an empty value>
 
 ----
 

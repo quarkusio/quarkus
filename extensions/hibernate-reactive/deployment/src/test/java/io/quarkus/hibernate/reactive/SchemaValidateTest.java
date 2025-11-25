@@ -41,7 +41,7 @@ public class SchemaValidateTest {
         assertThat(t)
                 .extracting(SchemaValidateTest::getSelfAndCauses, InstanceOfAssertFactories.stream(Throwable.class))
                 .anySatisfy(e -> assertThat(e)
-                        .hasMessageContaining("Schema-validation: missing table [" + Hero.TABLE + "]")
+                        .hasMessageContaining("Schema validation: missing table [" + Hero.TABLE + "]")
                         .extracting(e2 -> e2.getClass().getName()).isEqualTo(SchemaManagementException.class.getName()));
     }
 

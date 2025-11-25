@@ -317,7 +317,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         }
 
         for (ProvidedService<?> providedService : recordedState.getProvidedServices()) {
-            if (!runtimeInitiatedServiceClasses.contains(providedService.getServiceRole())) {
+            if (!runtimeInitiatedServiceClasses.contains(providedService.serviceRole())) {
                 serviceRegistryBuilder.addService(providedService);
             }
         }

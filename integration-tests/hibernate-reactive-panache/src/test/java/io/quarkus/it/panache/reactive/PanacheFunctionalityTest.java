@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
-import jakarta.persistence.PersistenceException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -299,8 +298,12 @@ public class PanacheFunctionalityTest {
     @RunOnVertxContext
     @Test
     @Order(300)
-    public void testPersistenceException(UniAsserter asserter) {
-        asserter.assertFailedWith(() -> Panache.withTransaction(() -> new Person().delete()), PersistenceException.class);
+    public void testDeleteUnmanaged(UniAsserter asserter) {
+        // This used to throw PersistenceException but that was invalid,
+        // see https://github.com/hibernate/hibernate-reactive/commit/10b0d421ae6a554528f1239ad74cde5a4400bf5d
+        // If you're wondering why we're testing this:
+        // apparently we're actually testing UniAsserter here, see https://github.com/quarkusio/quarkus/pull/18794
+        asserter.assertFailedWith(() -> Panache.withTransaction(() -> new Person().delete()), IllegalArgumentException.class);
     }
 
     @Test

@@ -24,6 +24,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
@@ -57,9 +58,14 @@ public class DB2DevServicesProcessor {
                         DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
                 Supplier<RunningDevServicesDatasource> maybe = () -> {
+                    // We just use this to enable a workaround, so:
+                    boolean podman = ContainerRuntimeUtil.detectContainerRuntime(
+                            false, // Don't fail if container runtime can't be found.
+                            true // Be silent.
+                    ).isPodman();
                     QuarkusDb2Container container = new QuarkusDb2Container(containerConfig.getImageName(),
                             containerConfig.getFixedExposedPort(), composeProjectBuildItem.getDefaultNetworkId(),
-                            useSharedNetwork);
+                            useSharedNetwork, podman);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
                     container.withUsername(effectiveUsername)
@@ -101,15 +107,17 @@ public class DB2DevServicesProcessor {
     private static class QuarkusDb2Container extends Db2Container {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
+        private final boolean podman;
 
         private final String hostName;
 
         public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort,
-                String defaultNetworkId, boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork, boolean podman) {
             super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")))
                     .asCompatibleSubstituteFor(DockerImageName.parse("icr.io/db2_community/db2")));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            this.podman = podman;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "db2");
         }
 
@@ -125,6 +133,16 @@ public class DB2DevServicesProcessor {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), DB2_PORT);
             } else {
                 addExposedPorts(DB2_PORT);
+            }
+
+            // Workaround for DB2 not starting on Podman
+            // See https://github.com/quarkusio/quarkus/issues/33104#issuecomment-3131453891
+            // Since this probably leads to DB2 not storing data where it should be stored,
+            // we only use this when there are no mounts.
+            // When using mounts, developers might still face https://github.com/quarkusio/quarkus/issues/33104
+            // -- but then again, maybe not, considering reports on that issue that explicit mounts fix the issue.
+            if (podman && !getEnvMap().containsKey("PERSISTENT_HOME") && getBinds().isEmpty()) {
+                addEnv("PERSISTENT_HOME", "false");
             }
         }
 

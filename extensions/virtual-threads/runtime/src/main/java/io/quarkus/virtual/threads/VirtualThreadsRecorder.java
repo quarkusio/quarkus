@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -115,11 +116,6 @@ public class VirtualThreadsRecorder {
         Method ofVirtual = Thread.class.getMethod("ofVirtual");
         Object vtb = ofVirtual.invoke(VirtualThreadsRecorder.class);
         Class<?> vtbClass = Class.forName("java.lang.Thread$Builder$OfVirtual");
-        // .name()
-        if (prefix != null) {
-            Method name = vtbClass.getMethod("name", String.class, long.class);
-            vtb = name.invoke(vtb, prefix, 0);
-        }
         // .uncaughtExceptionHandler()
         Method uncaughtHandler = vtbClass.getMethod("uncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
         vtb = uncaughtHandler.invoke(vtb, new Thread.UncaughtExceptionHandler() {
@@ -131,9 +127,25 @@ public class VirtualThreadsRecorder {
         // .factory()
         Method factory = vtbClass.getMethod("factory");
         ThreadFactory tf = (ThreadFactory) factory.invoke(vtb);
+        ThreadFactory namingFactory = null;
+        // .name()
+        if (prefix != null) {
+            // why this is not using name(prefix, 0)?
+            // see https://bugs.openjdk.org/browse/JDK-8372410
+            var tid = new AtomicLong();
+            namingFactory = new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable task) {
+                    // this is going to apply the uncaught exception handler as well
+                    var newVT = tf.newThread(task);
+                    newVT.setName(prefix + tid.getAndIncrement());
+                    return newVT;
+                }
+            };
+        }
 
         return (ExecutorService) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class)
-                .invoke(VirtualThreadsRecorder.class, tf);
+                .invoke(VirtualThreadsRecorder.class, namingFactory != null ? namingFactory : tf);
     }
 
     /**

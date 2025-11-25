@@ -186,8 +186,8 @@ public interface ElasticsearchCommonBuildTimeConfig {
              *
              * @asciidoclet
              */
-            @WithDefault(" ")
-            String nodeOpts();
+
+            Optional<String> nodeOpts();
         }
     }
 }

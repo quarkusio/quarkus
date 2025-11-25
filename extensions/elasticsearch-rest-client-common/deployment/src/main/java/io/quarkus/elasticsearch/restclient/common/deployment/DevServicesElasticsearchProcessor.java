@@ -429,7 +429,7 @@ public class DevServicesElasticsearchProcessor {
             container.addEnv("ELASTICSEARCH_HOSTS",
                     "[" + elasticsearchHosts.stream().map(url -> "\"" + url + "\"").collect(Collectors.joining(",")) + "]");
         }
-        container.addEnv("NODE_OPTIONS", config.dashboard().nodeOpts());
+        config.dashboard().nodeOpts().ifPresent(nodeOpts -> container.addEnv("NODE_OPTIONS", nodeOpts));
         return new CreatedContainer(container, kibanaHostName);
     }
 
@@ -448,7 +448,8 @@ public class DevServicesElasticsearchProcessor {
             container.addEnv("OPENSEARCH_HOSTS",
                     "[" + opensearchHosts.stream().map(url -> "\"" + url + "\"").collect(Collectors.joining(",")) + "]");
         }
-        container.addEnv("NODE_OPTIONS", config.dashboard().nodeOpts());
+
+        config.dashboard().nodeOpts().ifPresent(nodeOpts -> container.addEnv("NODE_OPTIONS", nodeOpts));
         container.addEnv("DISABLE_SECURITY_DASHBOARDS_PLUGIN", "true");
         return new CreatedContainer(container, kibanaHostName);
     }

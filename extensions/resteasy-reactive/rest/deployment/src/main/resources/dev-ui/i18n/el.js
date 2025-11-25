@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'Μία υλοποίηση Jakarta REST που αξιοποιεί την επεξεργασία χρόνου κατασκευής και το Vert.x.',
+    'quarkus-rest-endpoints': 'Σημεία Τερματισμού',
+    'quarkus-rest-endpoint_scores': 'Δείκτες τερματικού',
+    'quarkus-rest-exception_mappers': 'Χάρτες Εξαιρέσεων',
+    'quarkus-rest-parameter_converter_providers': 'Παροχείς μετατροπής παραμέτρων',
+    'quarkus-rest-no-rest-endpoints': 'Δεν έχετε κανένα REST endpoint.',
+    'quarkus-rest-learn-rest': 'Μάθετε πώς να γράφετε Υπηρεσίες REST με το Quarkus REST',
+    'quarkus-rest-produces': 'Παράγει',
+    'quarkus-rest-consumes': 'Καταναλώνει',
+    'quarkus-rest-resource-class': 'Κλάση Πόρου',
+    'quarkus-rest-priority': 'Προτεραιότητα',
+    'quarkus-rest-exception': 'Εξαίρεση',
+    'quarkus-rest-mapper': 'Χάρτης',
+    'quarkus-rest-class-name': 'Όνομα Κλάσης',
+};

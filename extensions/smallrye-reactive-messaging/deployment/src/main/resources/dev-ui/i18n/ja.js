@@ -1,0 +1,15 @@
+export const templates = {
+    'quarkus-messaging-meta-description': 'メッセージを生成および消費し、イベント駆動型およびデータストリーミングアプリケーションを実装します。',
+    'quarkus-smallrye-reactive-messaging-channels': 'チャネル',
+    'quarkus-smallrye-reactive-messaging-loading-channels': 'チャンネルを読み込んでいます...',
+    'quarkus-smallrye-reactive-messaging-channel': 'チャンネル',
+    'quarkus-smallrye-reactive-messaging-publishers': '発行者',
+    'quarkus-smallrye-reactive-messaging-subscribers': 'サブスクライバー(s)',
+    'quarkus-smallrye-reactive-messaging-no-subscribers': '購読者はいません',
+    'quarkus-smallrye-reactive-messaging-no-publishers': 'パブリッシャーはありません',
+    'quarkus-smallrye-reactive-messaging-publisher': '発行者',
+    'quarkus-smallrye-reactive-messaging-subscriber': '購読者',
+    'quarkus-smallrye-reactive-messaging-processor': 'プロセッサ',
+    'quarkus-smallrye-reactive-messaging-connector': 'コネクタ',
+    'quarkus-smallrye-reactive-messaging-emitter': 'エミッター',
+};

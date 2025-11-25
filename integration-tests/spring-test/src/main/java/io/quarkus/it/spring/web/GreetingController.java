@@ -26,9 +26,4 @@ public class GreetingController {
     public ResponseEntity<Greeting> responseEntityGreeting(@PathVariable String message, @RequestParam String suffix) {
         return ResponseEntity.ok(greetingService.greet(message + suffix));
     }
-    //
-    //    @PostMapping(path = "/person")
-    //    public Greeting newGreeting(@RequestBody Person person) {
-    //        return new Greeting("hello " + person.getName());
-    //    }
 }

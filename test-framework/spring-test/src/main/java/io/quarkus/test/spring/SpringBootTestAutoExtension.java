@@ -18,25 +18,20 @@ public class SpringBootTestAutoExtension extends QuarkusTestExtension {
 
         Class<?> testClass = context.getRequiredTestClass();
 
-        // Detecta si tiene @SpringBootTest (la de Spring original)
         boolean hasSpringBootTest = hasSpringBootTestAnnotation(testClass);
 
-        if (hasSpringBootTest) {
-            System.out.println("✅ Spring Boot Test Annotation detected");
-
-            // Procesa la configuración de @SpringBootTest
-            processSpringBootTestConfiguration(testClass);
-
-            // CRÍTICO: Llama a super.beforeAll() para activar Quarkus
-            System.out.println("🚀 Activando Quarkus...");
-            super.beforeAll(context);
-            System.out.println("✅ Quarkus activado!");
-
-        } else {
-            System.out.println("ℹ️ No @SpringBootTest detected, skipping");
-            // Si no tiene @SpringBootTest, no hacemos nada
-            // Esto permite que otros tests normales funcionen sin interferencia
-        }
+//        if (hasSpringBootTest) {
+//            System.out.println("Spring Boot Test Annotation detected");
+//
+//            processSpringBootTestConfiguration(testClass);
+//
+//            System.out.println("🚀 Triggering Quarkus...");
+//            super.beforeAll(context);
+//            System.out.println("Quarkus triggered!");
+//
+//        } else {
+//            System.out.println("No @SpringBootTest detected, skipping");
+//        }
     }
 
     private boolean hasSpringBootTestAnnotation(Class<?> testClass) {
@@ -47,7 +42,7 @@ public class SpringBootTestAutoExtension extends QuarkusTestExtension {
             return testClass.isAnnotationPresent(springBootTestClass);
 
         } catch (ClassNotFoundException e) {
-            // La anotación de Spring no está en el classpath
+            // @SpringBootTest is not in the classpath
             return false;
         }
     }
@@ -60,24 +55,11 @@ public class SpringBootTestAutoExtension extends QuarkusTestExtension {
             Annotation annotation = testClass.getAnnotation(springBootTestClass);
 
             if (annotation != null) {
-                // Usa reflection para leer el atributo 'properties'
-                java.lang.reflect.Method propertiesMethod = springBootTestClass.getMethod("properties");
-                String[] properties = (String[]) propertiesMethod.invoke(annotation);
-
-                System.out.println("📝 Procesando properties de @SpringBootTest:");
-                for (String property : properties) {
-                    System.out.println("   - " + property);
-
-                    // Aplica como system property
-                    String[] parts = property.split("=", 2);
-                    if (parts.length == 2) {
-                        System.setProperty(parts[0].trim(), parts[1].trim());
-                    }
-                }
+                System.out.println("@SpringBootTest found ");
             }
 
         } catch (Exception e) {
-            System.err.println("⚠️ Error procesando @SpringBootTest: " + e.getMessage());
+            System.err.println("⚠️ Error processing @SpringBootTest: " + e.getMessage());
             e.printStackTrace();
         }
     }

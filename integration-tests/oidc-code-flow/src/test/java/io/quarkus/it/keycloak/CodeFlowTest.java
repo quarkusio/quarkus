@@ -18,9 +18,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -142,7 +144,7 @@ public class CodeFlowTest {
             checkHealth();
 
             // Static default tenant
-            checkResourceMetadata(null, "/realms/quarkus");
+            checkResourceMetadata(null, "/realms/quarkus", null);
         }
     }
 
@@ -498,7 +500,7 @@ public class CodeFlowTest {
             assertEquals("Unexpected 401", ex.getMessage());
         }
         // Static `tenant-nonce` tenant with custom resource path
-        checkResourceMetadata("metadata", ":8080/q/oidc");
+        checkResourceMetadata("metadata", ":8080/q/oidc", Set.of("read"));
     }
 
     private void doTestCodeFlowNonce(boolean wrongRedirect) throws Exception {
@@ -918,7 +920,8 @@ public class CodeFlowTest {
             webClient.getCookieManager().clearCookies();
 
             // Static `tenant-refresh` tenant
-            checkResourceMetadata("tenant-refresh", "/realms/logout-realm");
+            checkResourceMetadata("tenant-refresh", "/realms/logout-realm", Set.of("read", "write"));
+
         }
     }
 
@@ -1844,7 +1847,7 @@ public class CodeFlowTest {
         return sessionCookie.getValue().split("\\|")[0];
     }
 
-    private static void checkResourceMetadata(String resource, String authorizationServerSuffix) {
+    private static void checkResourceMetadata(String resource, String authorizationServerSuffix, Set<String> scopes) {
         Response metadataResponse = RestAssured.when()
                 .get("http://localhost:8081" + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH
                         + (resource == null ? "" : "/" + resource));
@@ -1857,5 +1860,11 @@ public class CodeFlowTest {
         String authorizationServer = jsonAuthorizarionServers.getString(0);
         assertTrue(authorizationServer.startsWith("http://localhost:"));
         assertTrue(authorizationServer.endsWith(authorizationServerSuffix));
+
+        if (scopes != null) {
+            JsonArray scopesArray = jsonMetadata.getJsonArray(OidcConstants.RESOURCE_METADATA_SCOPES);
+            assertEquals(scopes.size(), scopesArray.size());
+            assertEquals(scopes, scopesArray.stream().collect(Collectors.toSet()));
+        }
     }
 }

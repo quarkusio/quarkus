@@ -1310,6 +1310,7 @@ In turn, a client that requested the protected resource metadata can use its pro
 
 |quarkus.oidc.resource-metadata.enabled |false|Enable resource metadata properties
 |quarkus.oidc.resource-metadata.resource ||Resource identifier
+|quarkus.oidc.resource-metadata.scopes ||Supported scopes
 |quarkus.oidc.resource-metadata.authorization-server ||Authorization server URL
 |quarkus.oidc.resource-metadata.force-https-scheme |true|Force that a resource identifier URL has an HTTPS scheme
 |====

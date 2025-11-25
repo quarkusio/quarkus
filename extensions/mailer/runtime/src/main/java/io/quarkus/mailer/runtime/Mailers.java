@@ -54,6 +54,7 @@ public class Mailers {
     private final Map<String, io.vertx.mutiny.ext.mail.MailClient> mutinyClients;
     private final Map<String, MockMailboxImpl> mockMailboxes;
     private final Map<String, MutinyMailerImpl> mutinyMailers;
+    private final MailersRuntimeConfig mailersRuntimeConfig;
 
     public Mailers(Vertx vertx, io.vertx.mutiny.core.Vertx mutinyVertx, MailersRuntimeConfig mailersRuntimeConfig,
             LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry,
@@ -111,6 +112,7 @@ public class Mailers {
         this.mutinyClients = Collections.unmodifiableMap(localMutinyClients);
         this.mockMailboxes = Collections.unmodifiableMap(localMockMailboxes);
         this.mutinyMailers = Collections.unmodifiableMap(localMutinyMailers);
+        this.mailersRuntimeConfig = mailersRuntimeConfig;
     }
 
     public MailClient mailClientFromName(String name) {
@@ -122,7 +124,8 @@ public class Mailers {
     }
 
     public Mailer mailerFromName(String name) {
-        return new BlockingMailerImpl(reactiveMailerFromName(name));
+        MailerRuntimeConfig config = mailersRuntimeConfig.mailers().get(name);
+        return new BlockingMailerImpl(reactiveMailerFromName(name), config.timeout());
     }
 
     public ReactiveMailer reactiveMailerFromName(String name) {

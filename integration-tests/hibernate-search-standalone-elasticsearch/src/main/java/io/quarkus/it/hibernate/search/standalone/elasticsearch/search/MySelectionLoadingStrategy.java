@@ -16,7 +16,7 @@ import org.hibernate.search.mapper.pojo.standalone.loading.SelectionLoadingStrat
 
 import io.quarkus.it.hibernate.search.standalone.elasticsearch.search.stub.DatastoreConnectionStub;
 
-// See https://docs.jboss.org/hibernate/search/7.1/reference/en-US/html_single/#mapping-entitydefinition-loading-selection
+// See https://docs.hibernate.org/search/7.1/reference/en-US/html_single/#mapping-entitydefinition-loading-selection
 public class MySelectionLoadingStrategy<E>
         implements SelectionLoadingStrategy<E> {
     private final Class<E> rootEntityType;

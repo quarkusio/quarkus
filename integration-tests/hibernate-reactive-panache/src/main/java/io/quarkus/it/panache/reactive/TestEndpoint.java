@@ -2341,7 +2341,7 @@ public class TestEndpoint {
     @WithTransaction
     public Uni<String> testBug26308() {
         return testBug26308Query("from Person2 p left join fetch p.address")
-                // This cannot work, see https://docs.jboss.org/hibernate/orm/7.0/migration-guide/migration-guide.html#create-query
+                // This cannot work, see https://docs.hibernate.org/orm/7.0/migration-guide/#create-query
                 //.flatMap(p -> testBug26308Query("from Person2 p left join p.address"))
                 // This must be used instead:
                 .flatMap(p -> testBug26308Query("from Person2 this left join this.address"))

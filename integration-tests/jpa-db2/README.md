@@ -4,7 +4,7 @@
 
 By default, the tests of this module are disabled.
 
-To run the tests in a standard JVM with DB2 started as a Docker container, you can run the following command:
+To run the tests in a standard JVM with DB2 started as a Dev Service, you can run the following command:
 
 ```
 mvn verify -Dtest-containers -Dstart-containers

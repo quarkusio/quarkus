@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Hibernate Reactive - DB2</name>
     <description>Hibernate Reactive related tests running with the DB2 database</description>
 
-    <properties>
-        <reactive-db2.url>vertx-reactive:db2://localhost:50005/hreact</reactive-db2.url>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -92,6 +88,12 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -151,97 +153,6 @@
             </build>
         </profile>
 
-        <profile>
-            <id>docker-db2</id>
-            <activation>
-                <property>
-                    <name>start-containers</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>${db2.image}</name>
-                                    <alias>quarkus-test-db2</alias>
-                                    <run>
-                                        <network>
-                                            <mode>bridge</mode>
-                                        </network>
-                                        <privileged>true</privileged>
-                                        <ports>
-                                            <port>50005:50000</port>
-                                        </ports>
-                                        <env>
-                                        	<DB2INSTANCE>hreact</DB2INSTANCE>
-                                        	<DB2INST1_PASSWORD>hreact</DB2INST1_PASSWORD>
-                                        	<DBNAME>hreact</DBNAME>
-                                        	<LICENSE>accept</LICENSE>
-                                        	<!-- These help the DB2 container start faster -->
-                                        	<AUTOCONFIG>false</AUTOCONFIG>
-                                        	<ARCHIVE_LOGS>false</ARCHIVE_LOGS>
-                                        	<PERSISTENT_HOME>false</PERSISTENT_HOME>
-                                        </env>
-                                        <log>
-                                            <prefix>DB2:</prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
-                                            <log>.*INSTANCE.*</log>
-                                            <!-- Unfortunately booting DB2 is slow, needs to set a generous (15m) timeout;
-                                             it generally starts in 2-3 minutes, but it's been occasionally slightly above 10m -->
-                                            <time>900000</time>
-                                            <!-- Kill the container, if it doesn't stop before this given time
-                                             duration since a graceful stop was issued -->
-                                            <kill>300000</kill>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docker-prune</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${docker-prune.location}</executable>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 
 

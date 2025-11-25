@@ -130,7 +130,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.13.4</junit.jupiter.version>
-        <infinispan.version>16.0.1</infinispan.version>
+        <infinispan.version>16.0.2</infinispan.version>
         <infinispan.protostream.version>6.0.1</infinispan.protostream.version>
         <caffeine.version>3.2.3</caffeine.version>
         <netty.version>4.1.128.Final</netty.version>
@@ -5833,7 +5833,7 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-server-testdriver-core</artifactId>
+                <artifactId>testcontainers-infinispan</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>

@@ -78,7 +78,7 @@
 
         <dependency>
             <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-server-testdriver-core</artifactId>
+            <artifactId>testcontainers-infinispan</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

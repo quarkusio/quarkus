@@ -3,7 +3,7 @@ package io.quarkus.infinispan.client.deployment.devservices;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
-import static org.infinispan.server.test.core.InfinispanContainer.DEFAULT_USERNAME;
+import static org.infinispan.testcontainers.InfinispanContainer.DEFAULT_USERNAME;
 
 import java.io.Closeable;
 import java.time.Duration;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
-import org.infinispan.server.test.core.InfinispanContainer;
+import org.infinispan.testcontainers.InfinispanContainer;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.BindMode;
 

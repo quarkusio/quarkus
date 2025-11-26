@@ -17,7 +17,7 @@ import io.quarkus.devui.tests.DevUIJsonRPCTest;
 public class ContinuousTestingClient {
     private static final int DEFAULT_PORT = 8080;
 
-    long runtToWaitFor = 1;
+    long runToWaitFor = 1;
     final String host;
 
     protected static String getDefaultHost(int port) {
@@ -40,18 +40,18 @@ public class ContinuousTestingClient {
         try {
             Awaitility.waitAtMost(2, TimeUnit.MINUTES).pollInterval(200, TimeUnit.MILLISECONDS).until(() -> {
                 TestStatus ts = getTestStatus();
-                if (ts.getLastRun() > runtToWaitFor) {
+                if (ts.getLastRun() > runToWaitFor) {
                     throw new RuntimeException(
-                            "Waiting for run " + runtToWaitFor + " but run " + ts.getLastRun() + " has already occurred");
+                            "Waiting for run " + runToWaitFor + " but run " + ts.getLastRun() + " has already occurred");
                 }
-                boolean runComplete = ts.getLastRun() == runtToWaitFor;
+                boolean runComplete = ts.getLastRun() == runToWaitFor;
                 if (runComplete && ts.getRunning() > 0) {
                     //there is a small chance of a race, where changes are picked up twice, due to how filesystems work
                     //this works around it by waiting for the next run
-                    runtToWaitFor = ts.getRunning();
+                    runToWaitFor = ts.getRunning();
                     return false;
                 } else if (runComplete) {
-                    runtToWaitFor++;
+                    runToWaitFor++;
                 }
                 return runComplete;
             });
@@ -60,10 +60,12 @@ public class ContinuousTestingClient {
             TestStatus ts;
             try {
                 ts = getTestStatus();
+            } catch (RuntimeException ex) {
+                throw ex;
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
-            throw new ConditionTimeoutException("Failed to wait for test run " + runtToWaitFor + " " + ts, e);
+            throw new ConditionTimeoutException("Failed to wait for test run " + runToWaitFor + " " + ts, e);
         }
     }
 
@@ -87,6 +89,8 @@ public class ContinuousTestingClient {
 
             return new TestStatus(lastRun, running, testsRun, testsPassed, testsFailed, testsSkipped, totalTestsPassed,
                     totalTestsFailed, totalTestsSkipped);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

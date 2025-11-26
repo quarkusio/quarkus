@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.fs.util.FileSystemProviders;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 
@@ -67,7 +68,8 @@ public class QuarkusCompiler implements Closeable {
 
         final boolean skipReloadableArtifacts = !application.hasReloadableArtifacts();
 
-        for (ResolvedDependency i : application.getApplicationModel().getRuntimeDependencies()) {
+        for (ResolvedDependency i : application.getApplicationModel()
+                .getDependenciesWithAnyFlag(DependencyFlags.COMPILE_ONLY | DependencyFlags.RUNTIME_CP)) {
             if (skipReloadableArtifacts) {
                 paths.addAll(i.getContentTree().getRoots());
             } else {

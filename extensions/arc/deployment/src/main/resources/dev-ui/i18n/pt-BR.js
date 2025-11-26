@@ -1,17 +1,5 @@
 export const templates = {
-    'quarkus-arc-category-declaring-bean-of-producer': 'declarando bean de um produtor',
-    'quarkus-arc-zoom-in': 'Aumentar zoom',
-    'quarkus-arc-zoom-out': 'Diminuir zoom',
-    'quarkus-arc-search': 'Buscar',
-    'quarkus-arc-bean': 'Feijão',
-    'quarkus-arc-associated-interceptors': 'Interceptores Associados',
-    'quarkus-arc-loading-fired-events': 'Carregando evento disparado do ArC...',
     'quarkus-arc-skip-context-lifecycle-events': 'Ignorar monitoramento de eventos do ciclo de vida do contexto',
-    'quarkus-arc-interceptor-class': 'Classe do Interceptor',
-    'quarkus-arc-bindings': 'Vinculações',
-    'quarkus-arc-interception-types': 'Tipos de Interceptação',
-    'quarkus-arc-filter-out-quarkus-beans': 'Filtrar beans do Quarkus',
-    'quarkus-arc-invocations': 'Chamadas',
-    'quarkus-arc-removed-interceptors': 'Interceptores removidos',
-    'quarkus-arc-interceptor': 'Interceptador',
+    'quarkus-arc-zoom-in': 'Aumentar zoom',
+    'quarkus-arc-zoom-out': 'Diminuir zoom'
 };

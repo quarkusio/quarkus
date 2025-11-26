@@ -154,19 +154,18 @@ public class DevServicesProcessor {
 
     // Because the devservices runtime module is new and the ecosystem needs time to catch up, don't die if the runtime module isn't available
     @BuildStep(onlyIf = { IsRuntimeModuleAvailable.class })
-    public RunTimeConfigBuilderBuildItem registerDevResourcesConfigSource(
-            List<DevServicesResultBuildItem> devServicesRequestBuildItems) {
+    public void registerDevResourcesConfigSource(BuildProducer<RunTimeConfigBuilderBuildItem> runtimeConfigBuilders) {
         // Once all the dev services are registered, we can share config
         try {
             // Use reflection, since we don't have an explicit dependency on the runtime module (because dependent extensions may not have that dependency)
-            Class<?> builderClass = Class
-                    .forName(IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS);
-            return new RunTimeConfigBuilderBuildItem(builderClass);
+            runtimeConfigBuilders
+                    .produce(new RunTimeConfigBuilderBuildItem(Class.forName(IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS)));
+            runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(
+                    Class.forName("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigBuilder")));
         } catch (ClassNotFoundException e) {
             // Should never happen, because of the guard, as long as the runtime module is not a direct dependency of this module
             throw new RuntimeException(e);
         }
-
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })

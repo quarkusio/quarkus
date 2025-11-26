@@ -13,7 +13,7 @@ import io.smallrye.config.WithDefault;
 public interface VirtualThreadsConfig {
 
     /**
-     * Virtual thread names. The name of the virtual thread will be the prefix followed by a unique number.
+     * Virtual thread name. The name of the virtual thread will be the prefix.
      */
     @WithDefault("quarkus-virtual-thread")
     Optional<String> namePrefix();

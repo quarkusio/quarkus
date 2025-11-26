@@ -29,7 +29,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 
 import jakarta.annotation.Priority;
 
@@ -69,7 +68,6 @@ import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingWriter;
@@ -120,12 +118,10 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
 public class ConfigGenerationBuildStep {
-    private static final MethodDescriptor CONFIG_BUILDER = MethodDescriptor.ofMethod(
-            ConfigBuilder.class, "configBuilder",
-            SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class);
-    private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(
-            SmallRyeConfigBuilder.class, "withSources",
-            SmallRyeConfigBuilder.class, ConfigSource[].class);
+    private static final MethodDescriptor CONFIG_BUILDER = MethodDescriptor.ofMethod(ConfigBuilder.class,
+            "configBuilder", SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class);
+    private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "withSources", SmallRyeConfigBuilder.class, ConfigSource[].class);
 
     @BuildStep
     void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
@@ -158,7 +154,10 @@ public class ConfigGenerationBuildStep {
             ResultHandle map = clinit.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
             MethodDescriptor put = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
             for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getBuildTimeRunTimeValues().entrySet()) {
-                clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()), clinit.load(entry.getValue().getValue()));
+                if (entry.getValue().getValue() != null) {
+                    clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
+                            clinit.load(entry.getValue().getValue()));
+                }
             }
 
             ResultHandle defaultValuesSource = clinit.newInstance(
@@ -273,14 +272,18 @@ public class ConfigGenerationBuildStep {
         allMappings.addAll(configItem.getReadResult().getRunTimeMappings());
         allMappings.removeAll(ignoreMappings);
 
+        Set<ConfigClass> buildTimeRuntimeMappings = new LinkedHashSet<>(
+                configItem.getReadResult().getBuildTimeRunTimeMappings());
+        buildTimeRuntimeMappings.removeAll(ignoreMappings);
+
         // Shared components
-        Map<Object, FieldDescriptor> sharedFields = generateSharedConfig(generatedClass, converters, allMappings);
+        Map<Object, FieldDescriptor> sharedFields = generateSharedConfig(
+                generatedClass,
+                combinedIndex,
+                converters, allMappings, buildTimeRuntimeMappings);
 
         // For Static Init Config
-        Set<ConfigClass> staticMappings = new LinkedHashSet<>();
-        staticMappings.addAll(staticSafeConfigMappings(configMappings));
-        staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
-        staticMappings.removeAll(ignoreMappings);
+        Set<ConfigClass> staticMappings = new LinkedHashSet<>(staticSafeConfigMappings(configMappings));
         Set<String> staticCustomizers = new LinkedHashSet<>(staticSafeServices(configCustomizers));
         staticCustomizers.add(StaticInitConfigBuilder.class.getName());
 
@@ -297,6 +300,7 @@ public class ConfigGenerationBuildStep {
                 staticSafeServices(configSourceFactories),
                 secretKeyHandlers,
                 staticSafeServices(secretKeyHandlerFactories),
+                buildTimeRuntimeMappings,
                 Set.of(),
                 staticMappings,
                 configItem.getReadResult().getMappingsIgnorePaths(),
@@ -330,6 +334,7 @@ public class ConfigGenerationBuildStep {
                 configSourceFactories,
                 secretKeyHandlers,
                 secretKeyHandlerFactories,
+                buildTimeRuntimeMappings,
                 staticMappings,
                 runTimeMappings,
                 configItem.getReadResult().getMappingsIgnorePaths(),
@@ -404,26 +409,18 @@ public class ConfigGenerationBuildStep {
             excludedConfigKeys.add(item.getConfigKey());
         }
 
-        Map<String, ConfigValue> values = new TreeMap<>();
-        BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
-        for (Map.Entry<String, ConfigValue> entry : readResult.getAllBuildTimeValues().entrySet()) {
+        List<ConfigValue> values = new ArrayList<>();
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getBuildTimeRunTimeValues().entrySet()) {
             if (excludedConfigKeys.contains(entry.getKey())) {
                 continue;
             }
-            if (readResult.getRunTimeValues().containsKey(entry.getKey())) {
-                continue;
-            }
-            values.putIfAbsent(entry.getKey(), entry.getValue());
-        }
 
-        for (Map.Entry<String, ConfigValue> entry : readResult.getBuildTimeRunTimeValues().entrySet()) {
-            if (excludedConfigKeys.contains(entry.getKey())) {
-                continue;
-            }
-            if (readResult.getRunTimeValues().containsKey(entry.getKey())) {
-                continue;
-            }
-            values.put(entry.getKey(), entry.getValue());
+            ConfigValue value = entry.getValue();
+            values.add(ConfigValue.builder()
+                    .withName(value.getName())
+                    .withValue(value.getValue())
+                    .withConfigSourceOrdinal(value.getConfigSourceOrdinal())
+                    .build());
         }
 
         recorder.handleConfigChange(values);
@@ -594,6 +591,11 @@ public class ConfigGenerationBuildStep {
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
+    private static final MethodDescriptor NEW_BUILDER = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
+    private static final MethodDescriptor BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "build", SmallRyeConfig.class);
+    private static final MethodDescriptor GET_CONFIG_MAPPING = MethodDescriptor.ofMethod(SmallRyeConfig.class,
+            "getConfigMapping", Object.class, Class.class, String.class);
     private static final MethodDescriptor BUILDER_CUSTOMIZER = MethodDescriptor.ofMethod(SmallRyeConfigBuilderCustomizer.class,
             "configBuilder",
             void.class, SmallRyeConfigBuilder.class);
@@ -632,6 +634,10 @@ public class ConfigGenerationBuildStep {
             void.class, SmallRyeConfigBuilder.class, ConfigClass.class);
     private static final MethodDescriptor WITH_MAPPING_INSTANCE = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withMappingInstance",
+            void.class, SmallRyeConfigBuilder.class, ConfigClass.class, Object.class);
+    private static final MethodDescriptor WITH_MAPPING_INSTANCE_FROM_CONFIG = MethodDescriptor.ofMethod(
+            AbstractConfigBuilder.class,
+            "withMappingInstance",
             void.class, SmallRyeConfigBuilder.class, ConfigClass.class);
     private static final MethodDescriptor WITH_MAPPING_IGNORE = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withMappingIgnore",
@@ -658,8 +664,10 @@ public class ConfigGenerationBuildStep {
 
     private static Map<Object, FieldDescriptor> generateSharedConfig(
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            CombinedIndexBuildItem combinedIndex,
             Set<String> converters,
-            Set<ConfigClass> mappings) {
+            Set<ConfigClass> mappings,
+            Set<ConfigClass> staticMappings) {
 
         Map<Object, FieldDescriptor> fields = new HashMap<>();
         try (ClassCreator classCreator = ClassCreator.builder()
@@ -681,11 +689,12 @@ public class ConfigGenerationBuildStep {
                 fields.put(converter, converterField);
             }
 
-            int mappingIndex = 0;
+            int configClassIndex = 0;
             for (ConfigClass mapping : mappings) {
-                FieldDescriptor mappingField = classCreator.getFieldCreator("mapping$" + mappingIndex++, ConfigClass.class)
+                FieldDescriptor configClassField = classCreator
+                        .getFieldCreator("configClass$" + configClassIndex++, ConfigClass.class)
                         .setModifiers(ACC_STATIC).getFieldDescriptor();
-                clinit.writeStaticField(mappingField, clinit.invokeStaticMethod(CONFIG_CLASS,
+                clinit.writeStaticField(configClassField, clinit.invokeStaticMethod(CONFIG_CLASS,
                         clinit.load(mapping.getType().getName()), clinit.load(mapping.getPrefix())));
 
                 // Cache implementation types of nested elements
@@ -695,7 +704,37 @@ public class ConfigGenerationBuildStep {
                     clinit.invokeStaticMethod(ENSURE_LOADED, clinit.load(configMappingMetadata.getInterfaceType().getName()));
                 }
 
-                fields.put(mapping, mappingField);
+                fields.put(mapping, configClassField);
+            }
+
+            // init build and runtime fixed mappings
+            ResultHandle configBuilder = clinit.newInstance(NEW_BUILDER);
+            clinit.invokeStaticMethod(MethodDescriptor.ofMethod(AbstractConfigBuilder.class, "withSharedBuilder", void.class,
+                    SmallRyeConfigBuilder.class), configBuilder);
+            for (String converter : converters) {
+                ClassInfo converterClass = combinedIndex.getComputingIndex().getClassByName(converter);
+                Type type = getConverterType(converterClass, combinedIndex);
+                AnnotationInstance priorityAnnotation = converterClass.annotation(PRIORITY_NAME);
+                int priority = priorityAnnotation != null ? priorityAnnotation.value().asInt() : 100;
+
+                clinit.invokeStaticMethod(WITH_CONVERTER, configBuilder,
+                        clinit.load(type.name().toString()),
+                        clinit.load(priority),
+                        clinit.readStaticField(fields.get(converter)));
+            }
+            for (ConfigClass mapping : staticMappings) {
+                clinit.invokeStaticMethod(WITH_MAPPING, configBuilder, clinit.readStaticField(fields.get(mapping)));
+            }
+            clinit.invokeStaticMethod(WITH_BUILDER, configBuilder, clinit.newInstance(
+                    MethodDescriptor.ofConstructor("io.quarkus.runtime.generated.BuildTimeRunTimeFixedConfigSourceBuilder")));
+            ResultHandle config = clinit.invokeVirtualMethod(BUILD, configBuilder);
+            int mappingIndex = 0;
+            for (ConfigClass mapping : staticMappings) {
+                FieldDescriptor mappingField = classCreator.getFieldCreator("mapping$" + mappingIndex++, mapping.getType())
+                        .setModifiers(ACC_STATIC).getFieldDescriptor();
+                clinit.writeStaticField(mappingField, clinit.invokeVirtualMethod(GET_CONFIG_MAPPING, config,
+                        clinit.loadClass(mapping.getType()), clinit.load(mapping.getPrefix())));
+                fields.put(fields.get(mapping), mappingField);
             }
 
             clinit.returnVoid();
@@ -720,6 +759,7 @@ public class ConfigGenerationBuildStep {
             Set<String> configSourceFactories,
             Set<String> secretKeyHandlers,
             Set<String> secretKeyHandlerFactories,
+            Set<ConfigClass> mappingsShared,
             Set<ConfigClass> mappingsInstances,
             Set<ConfigClass> mappings,
             Set<String> mappingsIgnorePaths,
@@ -808,9 +848,17 @@ public class ConfigGenerationBuildStep {
                         method.newInstance(MethodDescriptor.ofConstructor(secretKeyHandlerFactory)));
             }
 
+            for (ConfigClass mappingShared : mappingsShared) {
+                FieldDescriptor configClassField = sharedFields.get(mappingShared);
+                FieldDescriptor mappingInstanceField = sharedFields.get(configClassField);
+                method.invokeStaticMethod(WITH_MAPPING_INSTANCE, configBuilder, method.readStaticField(configClassField),
+                        method.readStaticField(mappingInstanceField));
+            }
+
             for (ConfigClass mappingInstance : mappingsInstances) {
-                method.invokeStaticMethod(WITH_MAPPING_INSTANCE, configBuilder,
-                        method.readStaticField(sharedFields.get(mappingInstance)));
+                FieldDescriptor configClassField = sharedFields.get(mappingInstance);
+                method.invokeStaticMethod(WITH_MAPPING_INSTANCE_FROM_CONFIG, configBuilder,
+                        method.readStaticField(configClassField));
             }
 
             mappings.removeAll(mappingsInstances);

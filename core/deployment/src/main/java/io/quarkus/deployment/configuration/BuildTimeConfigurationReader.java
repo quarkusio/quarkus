@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
@@ -20,7 +21,6 @@ import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingInterceptor;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -49,8 +49,6 @@ import io.smallrye.config.common.AbstractConfigSource;
  * A configuration reader.
  */
 public final class BuildTimeConfigurationReader {
-    private static final Logger log = Logger.getLogger("io.quarkus.config.build");
-
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
     private static List<Class<?>> collectConfigRoots(ClassLoader classLoader) throws IOException, ClassNotFoundException {
@@ -240,6 +238,18 @@ public final class BuildTimeConfigurationReader {
                             }
                         }
                     });
+
+            // Set all defaults from build time runtime mappings as recorded build time runtime values
+            for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
+                for (Entry<String, String> entry : buildTimeRunTimeMapping.getProperties().entrySet()) {
+                    buildTimeRunTimeValues.put(entry.getKey(),
+                            ConfigValue.builder()
+                                    .withName(entry.getKey())
+                                    .withValue(entry.getValue())
+                                    .withConfigSourceOrdinal(-Integer.MAX_VALUE)
+                                    .build());
+                }
+            }
 
             Set<PropertyName> buildTimeNames = mappingsToNames(buildTimeMappings).keySet();
             Set<PropertyName> buildTimeRunTimeNames = mappingsToNames(buildTimeRunTimeMappings).keySet();

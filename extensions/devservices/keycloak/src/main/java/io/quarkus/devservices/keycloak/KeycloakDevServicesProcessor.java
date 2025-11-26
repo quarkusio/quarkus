@@ -889,7 +889,6 @@ public class KeycloakDevServicesProcessor {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
-        client.setRedirectUris(List.of("*"));
         client.setPublicClient(false);
         client.setSecret(oidcClientSecret);
         client.setDirectAccessGrantsEnabled(true);
@@ -897,6 +896,7 @@ public class KeycloakDevServicesProcessor {
         client.setImplicitFlowEnabled(true);
         client.setEnabled(true);
         client.setRedirectUris(List.of("*"));
+        client.setWebOrigins(List.of("*"));
         client.setDefaultClientScopes(List.of("microprofile-jwt", "basic"));
 
         return client;

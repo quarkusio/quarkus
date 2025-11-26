@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -14,7 +15,9 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.util.BootstrapUtils;
@@ -80,7 +83,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
         CuratedApplication curatedApplication = null;
         QuarkusClassLoader deploymentClassLoader = null;
         try {
-            curatedApplication = bootstrapApplication(launchMode);
+            curatedApplication = bootstrapApplication(launchMode, this::addResourcesDirToBootstrap);
             deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
@@ -138,6 +141,13 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             }
         }
         return builder.build();
+    }
+
+    private void addResourcesDirToBootstrap(QuarkusBootstrap.Builder builder) {
+        File resourcesDir = new File(mavenProject().getBasedir(), "src/main/resources");
+        if (resourcesDir.exists()) {
+            builder.addAdditionalApplicationArchive(new AdditionalDependency(resourcesDir.toPath(), false, false));
+        }
     }
 
     private Path generatedSourcesDir(boolean test) {

@@ -58,6 +58,8 @@ import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
+import com.fasterxml.jackson.databind.Module;
+
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -308,6 +310,19 @@ public final class HibernateOrmProcessor {
         } else {
             return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
         }
+    }
+
+    @BuildStep
+    public void allowJacksonModuleDiscovery(Capabilities capabilities,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnits,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+        if (capabilities.isMissing(Capability.JACKSON) || persistenceUnits.isEmpty()) {
+            // We won't be using Hibernate's default FormatMapper relying on Jackson for sure
+            return;
+        }
+        // Hibernate's default FormatMapper relying on Jackson requires
+        // service loading to discover modules in the classpath.
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(Module.class.getName()));
     }
 
     @BuildStep

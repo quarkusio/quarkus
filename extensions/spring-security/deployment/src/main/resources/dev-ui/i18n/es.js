@@ -1,0 +1,3 @@
+export const templates = {
+    'quarkus-spring-security-meta-description': 'Asegura tu aplicación con anotaciones de Spring Security.',
+};

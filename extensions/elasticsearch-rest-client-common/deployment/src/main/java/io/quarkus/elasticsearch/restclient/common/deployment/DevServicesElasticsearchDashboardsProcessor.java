@@ -75,6 +75,7 @@ public class DevServicesElasticsearchDashboardsProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
+            List<DevservicesElasticsearchConnectionBuildItem> elasticsearchConnectionBuildItems,
             DevServicesConfig devServicesConfig,
             List<DevservicesElasticsearchBuildItem> devservicesElasticsearchBuildItems) throws BuildException {
 
@@ -104,7 +105,8 @@ public class DevServicesElasticsearchDashboardsProcessor {
 
             devDashboardService = startDashboardDevServices(dockerStatusBuildItem, composeProjectBuildItem,
                     configuration.devservices(),
-                    buildItemsConfig, launchMode, useSharedNetwork, devServicesConfig.timeout());
+                    buildItemsConfig, elasticsearchConnectionBuildItems, launchMode, useSharedNetwork,
+                    devServicesConfig.timeout());
             if (devDashboardService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -147,6 +149,7 @@ public class DevServicesElasticsearchDashboardsProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             ElasticsearchDevServicesBuildTimeConfig config,
             DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
+            List<DevservicesElasticsearchConnectionBuildItem> elasticsearchConnectionBuildItems,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) throws BuildException {
         if (!config.enabled().orElse(true)) {
             // explicitly disabled
@@ -177,31 +180,13 @@ public class DevServicesElasticsearchDashboardsProcessor {
                     .collect(Collectors.toSet());
         } else {
             Optional<ContainerAddress> maybeContainerAddressSearchBackend = Optional.empty();
-            log.info("no elasticsearch hosts config property found, waiting for the elasticsearch container to be started");
-            for (int i = 0; i < LOCATE_BACKEND_MAX_RETRIES; i++) {
-                maybeContainerAddressSearchBackend = elasticsearchContainerLocator.locateContainer(
-                        config.serviceName(),
-                        config.shared(),
-                        launchMode.getLaunchMode())
-                        .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                                List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
-                                ELASTICSEARCH_PORT,
-                                launchMode.getLaunchMode(), useSharedNetwork));
-                if (maybeContainerAddressSearchBackend.isPresent()) {
-                    break;
-                }
-                try {
-                    Thread.sleep((long) (LOCATE_BACKEND_INITIAL_WAIT_MILLIS * Math.pow(2, i)));
-                    log.infof("waiting for the elasticsearch container to be started, attempt %d of %d", i + 1,
-                            LOCATE_BACKEND_MAX_RETRIES);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            opensearchHosts = maybeContainerAddressSearchBackend.map(containerAddress -> Set
-                    .of(("http://" + containerAddress.getHost() + ":" + containerAddress.getPort())
-                            .replace("localhost", "host.docker.internal")))
-                    .orElseGet(() -> Set.of());
+            log.info(
+                    "no elasticsearch hosts config property found, using the host of theelasticsearch dev services container to connect");
+
+            opensearchHosts = elasticsearchConnectionBuildItems.stream()
+                    .map(connection -> ("http://" + connection.getHost() + ":" + connection.getPort())
+                            .replace("localhost", "host.docker.internal"))
+                    .collect(Collectors.toSet());
         }
 
         final Optional<ContainerAddress> maybeContainerAddress = dashboardContainerLocator.locateContainer(

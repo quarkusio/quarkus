@@ -25,6 +25,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -74,6 +75,7 @@ public class DevServicesElasticsearchProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig,
+            BuildProducer<DevservicesElasticsearchConnectionBuildItem> connectionBuildItemProducer,
             List<DevservicesElasticsearchBuildItem> devservicesElasticsearchBuildItems) throws BuildException {
 
         if (devservicesElasticsearchBuildItems.isEmpty()) {
@@ -100,7 +102,8 @@ public class DevServicesElasticsearchProcessor {
             boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                     devServicesSharedNetworkBuildItem);
             devService = startElasticsearchDevServices(dockerStatusBuildItem, composeProjectBuildItem,
-                    configuration.devservices(), buildItemsConfig, launchMode, useSharedNetwork, devServicesConfig.timeout());
+                    configuration.devservices(), buildItemsConfig, connectionBuildItemProducer, launchMode, useSharedNetwork,
+                    devServicesConfig.timeout());
 
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
@@ -158,6 +161,7 @@ public class DevServicesElasticsearchProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             ElasticsearchDevServicesBuildTimeConfig config,
             DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
+            BuildProducer<DevservicesElasticsearchConnectionBuildItem> connectionBuildItemProducer,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) throws BuildException {
         if (!config.enabled().orElse(true)) {
             // explicitly disabled
@@ -214,6 +218,8 @@ public class DevServicesElasticsearchProcessor {
 
             var httpHost = createdContainer.hostName + ":"
                     + (useSharedNetwork ? ELASTICSEARCH_PORT : container.getMappedPort(ELASTICSEARCH_PORT));
+            connectionBuildItemProducer.produce(new DevservicesElasticsearchConnectionBuildItem(createdContainer.hostName,
+                    container.getMappedPort(ELASTICSEARCH_PORT)));
             return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     new ContainerShutdownCloseable(container, "Elasticsearch"),

@@ -25,8 +25,8 @@ public class Routes {
     String hello() {
         assertThatTheBinderIsAvailable();
         VirtualThreadsAssertions.assertEverything();
-        // Quarkus specific - each VT has a unique name
-        return Thread.currentThread().getName();
+        // Quarkus specific - all VTs shares the same prefix
+        return Thread.currentThread().getName() + '-' + Thread.currentThread().getId();
     }
 
     @Route

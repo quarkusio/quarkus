@@ -198,7 +198,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
                 OidcEndpoint.Type.CLIENT_REGISTRATION);
         if (resp.statusCode() == 200 || resp.statusCode() == 201) {
             JsonObject json = buffer.toJsonObject();
-            LOG.debugf("Client has been succesfully registered: %s", json.toString());
+            LOG.debugf("Client has been successfully registered: %s", json.toString());
 
             String registrationClientUri = (String) json.remove(OidcConstants.REGISTRATION_CLIENT_URI);
             String registrationToken = (String) json.remove(OidcConstants.REGISTRATION_ACCESS_TOKEN);

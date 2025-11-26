@@ -34,7 +34,7 @@ public class ReactiveServerFilters {
 
     /**
      * This will execute regardless of a processing failure or not.
-     * If there was a failure, we need to check if the start event was not commited
+     * If there was a failure, we need to check if the start event was not committed
      * (which happens when request was not matched to any resource method) and if so, commit it.
      */
     @ServerResponseFilter

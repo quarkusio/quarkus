@@ -208,13 +208,13 @@ public class KubernetesDeployer {
             Optional<GenericKubernetesResource> conflictingResource = findConflictingResource(client, deploymentTarget,
                     list.getItems());
             if (conflictingResource.isPresent()) {
-                String messsage = "Skipping deployment of " + deploymentTarget.getDeploymentResourceKind() + " "
+                String message = "Skipping deployment of " + deploymentTarget.getDeploymentResourceKind() + " "
                         + conflictingResource.get().getMetadata().getName() + " because a "
                         + conflictingResource.get().getKind() + " with the same name exists.";
-                log.warn(messsage);
+                log.warn(message);
                 log.warn("This may occur when switching deployment targets, or when the default deployment target is changed.");
                 log.warn("Please remove conflicting resource and try again.");
-                throw new IllegalStateException(messsage);
+                throw new IllegalStateException(message);
             }
 
             list.getItems().stream().filter(distinctByResourceKey()).forEach(i -> {

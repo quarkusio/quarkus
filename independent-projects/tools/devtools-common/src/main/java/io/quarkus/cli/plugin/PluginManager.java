@@ -138,7 +138,7 @@ public class PluginManager {
      * Removes a {@link Plugin} by name.
      * The catalog from which the plugin will be removed is selected
      * based on where the plugin is found. If plugin is found in both catalogs
-     * the project catalog is prefered.
+     * the project catalog is preferred.
      *
      * @param name The name of the plugin to remove.
      * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
@@ -151,7 +151,7 @@ public class PluginManager {
      * Removes a {@link Plugin} by name.
      * The catalog from which the plugin will be removed is selected
      * based on where the plugin is found. If plugin is found in both catalogs
-     * the project catalog is prefered.
+     * the project catalog is preferred.
      *
      * @param name The name of the plugin to remove.
      * @param userCatalog Flag to only use the user catalog.
@@ -188,7 +188,7 @@ public class PluginManager {
      * Removes a {@link Plugin} by name.
      * The catalog from which the plugin will be removed is selected
      * based on where the plugin is found. If plugin is found in both catalogs
-     * the project catalog is prefered.
+     * the project catalog is preferred.
      *
      * @param plugin The plugin to remove
      * @return The removed plugin wrapped in Optional, empty if no plugin was removed.
@@ -201,7 +201,7 @@ public class PluginManager {
      * Removes a {@link Plugin} by name.
      * The catalog from which the plugin will be removed is selected
      * based on where the plugin is found. If plugin is found in both catalogs
-     * the project catalog is prefered.
+     * the project catalog is preferred.
      *
      * @param plugin The plugin to remove
      * @param userCatalog Flag to only use the user catalog.

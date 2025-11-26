@@ -31,8 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -465,13 +465,13 @@ class ComponentContainer {
                 }
 
                 if (!bytecodeTransformers.isEmpty()) {
-                    Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> map = bytecodeTransformers.stream()
+                    Map<String, List<BytecodeTransformer>> map = bytecodeTransformers.stream()
                             .collect(Collectors.groupingBy(BytecodeTransformer::getClassToTransform,
-                                    Collectors.mapping(BytecodeTransformer::getVisitorFunction, Collectors.toList())));
+                                    Collectors.mapping(Function.identity(), Collectors.toList())));
 
-                    for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : map.entrySet()) {
+                    for (Map.Entry<String, List<BytecodeTransformer>> entry : map.entrySet()) {
                         String className = entry.getKey();
-                        List<BiFunction<String, ClassVisitor, ClassVisitor>> transformations = entry.getValue();
+                        List<BytecodeTransformer> transformers = entry.getValue();
 
                         String classFileName = className.replace('.', '/') + ".class";
                         byte[] bytecode;
@@ -481,11 +481,20 @@ class ComponentContainer {
                             }
                             bytecode = in.readAllBytes();
                         }
+                        // Apply input transformers first
+                        for (BytecodeTransformer t : transformers) {
+                            if (t.getInputTransformer() != null) {
+                                bytecode = t.getInputTransformer().apply(className, bytecode);
+                            }
+                        }
+                        // Then apply ASM visitors
                         ClassReader reader = new ClassReader(bytecode);
                         ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                         ClassVisitor visitor = writer;
-                        for (BiFunction<String, ClassVisitor, ClassVisitor> transformation : transformations) {
-                            visitor = transformation.apply(className, visitor);
+                        for (BytecodeTransformer t : transformers) {
+                            if (t.getVisitorFunction() != null) {
+                                visitor = t.getVisitorFunction().apply(className, visitor);
+                            }
                         }
                         reader.accept(visitor, 0);
                         bytecode = writer.toByteArray();

@@ -103,7 +103,7 @@ public class QuarkusComponentTestClassLoader extends ClassLoader {
         return new Bytecode(bytecode);
     }
 
-    private static boolean mustDelegateToParent(String name) {
+    public static boolean mustDelegateToParent(String name) {
         return name.startsWith("java.")
                 || name.startsWith("jdk.")
                 || name.startsWith("javax.")
@@ -117,6 +117,7 @@ public class QuarkusComponentTestClassLoader extends ClassLoader {
                 || name.startsWith("org.jboss.logging")
                 || name.startsWith("org.jboss.logmanager")
                 || name.startsWith("org.slf4j")
+                || name.startsWith("org.jacoco")
                 || PARENT_CL_CLASSES.contains(name);
     }
 

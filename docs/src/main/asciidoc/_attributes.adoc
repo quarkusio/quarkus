@@ -67,11 +67,11 @@
 :quickstarts-blob-url: ${quickstarts-base-url}/blob/main
 :quickstarts-tree-url: ${quickstarts-base-url}/tree/main
 // .
-:hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/userguide/html_single/Hibernate_User_Guide.html
-:hibernate-orm-javadocs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/javadocs/
-:hibernate-orm-dialect-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
-:hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
-:hibernate-validator-docs-url: https://docs.jboss.org/hibernate/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
+:hibernate-orm-docs-url: https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/userguide/html_single/
+:hibernate-orm-javadocs-url: https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/javadocs/
+:hibernate-orm-dialect-docs-url: https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
+:hibernate-search-docs-url: https://docs.hibernate.org/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
+:hibernate-validator-docs-url: https://docs.hibernate.org/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
 :jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}#a6072
 // .
 :amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html

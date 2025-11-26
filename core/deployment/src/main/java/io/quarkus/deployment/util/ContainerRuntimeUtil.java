@@ -20,7 +20,7 @@ public final class ContainerRuntimeUtil {
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
     private static final String CONTAINER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
             .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
-    private static final Pattern PODMAN_PATTERN = Pattern.compile("^podman(?:\\.exe)? version.*", Pattern.DOTALL);
+    private static final Pattern PODMAN_PATTERN = Pattern.compile("^podman(?i:\\.exe)? version.*", Pattern.DOTALL);
 
     /**
      * Static variable is not used because the class gets loaded by different classloaders at

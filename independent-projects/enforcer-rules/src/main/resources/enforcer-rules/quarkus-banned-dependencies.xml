@@ -110,6 +110,8 @@
                 <!-- svm artifact, shouldn't be used as it's not public API. Use the -->
                 <!-- org.graalvm.sdk:graal-sdk dependency instead -->
                 <exclude>org.graalvm.nativeimage:svm</exclude>
+                <!-- moved to com.mysql:mysql-connector-j -->
+                <exclude>mysql:mysql-connector-java</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

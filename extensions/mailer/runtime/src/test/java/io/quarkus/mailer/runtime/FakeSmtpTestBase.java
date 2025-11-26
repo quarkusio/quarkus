@@ -313,6 +313,11 @@ public class FakeSmtpTestBase {
             return false;
         }
 
+        @Override
+        public Duration timeout() {
+            return Duration.ofSeconds(60);
+        }
+
     }
 
 }

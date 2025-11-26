@@ -261,4 +261,17 @@ public interface MailerRuntimeConfig {
      */
     @WithDefault("false")
     boolean logInvalidRecipients();
+
+    /**
+     * Sets the timeout duration for blocking mailer operations.
+     * When using the blocking mailer ({@link io.quarkus.mailer.Mailer} interface), this timeout determines how long to wait
+     * for the mail to be sent before throwing a {@link java.util.concurrent.TimeoutException}.
+     * <p>
+     * This prevents indefinite thread blocking when SMTP servers are misconfigured or unreachable.
+     * A value of 0 means no timeout (wait indefinitely) - which is not recommended.
+     * <p>
+     * Default is 60 seconds.
+     */
+    @WithDefault("PT60S")
+    Duration timeout();
 }

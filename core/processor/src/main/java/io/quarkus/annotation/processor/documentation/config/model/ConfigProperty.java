@@ -137,6 +137,13 @@ public final class ConfigProperty extends AbstractConfigItem {
 
         ConfigProperty other = (ConfigProperty) o;
 
+        // let's put the deprecated properties last
+        if (isDeprecated() && !other.isDeprecated()) {
+            return 1;
+        } else if (!isDeprecated() && other.isDeprecated()) {
+            return -1;
+        }
+
         if (isWithinMap()) {
             if (other.isWithinMap()) {
                 return ConfigPhase.COMPARATOR.compare(phase, other.getPhase());

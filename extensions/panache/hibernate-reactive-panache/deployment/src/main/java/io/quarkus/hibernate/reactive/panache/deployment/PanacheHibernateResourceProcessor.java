@@ -121,7 +121,12 @@ public final class PanacheHibernateResourceProcessor {
                 continue;
             List<org.jboss.jandex.Type> typeParameters = JandexUtil
                     .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
-            panacheEntities.add(typeParameters.get(0).name().toString());
+            var entityTypeName = typeParameters.get(0).name();
+            panacheEntities.add(entityTypeName.toString());
+            // Also add subclasses, so that they get resolved to a persistence unit.
+            for (var subclass : index.getIndex().getAllKnownSubclasses(entityTypeName)) {
+                panacheEntities.add(subclass.name().toString());
+            }
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {

@@ -114,6 +114,9 @@ public class QuarkusComponentTestClassLoader extends ClassLoader {
                 || name.startsWith("org.xml.")
                 || name.startsWith("org.junit.")
                 || name.startsWith("org.mockito.")
+                || name.startsWith("org.jboss.logging")
+                || name.startsWith("org.jboss.logmanager")
+                || name.startsWith("org.slf4j")
                 || PARENT_CL_CLASSES.contains(name);
     }
 

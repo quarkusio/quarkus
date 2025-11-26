@@ -50,10 +50,7 @@ public final class LauncherUtil {
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .redirectInput(ProcessBuilder.Redirect.INHERIT);
         pb.environment().putAll(env);
-        Process process = pb.start();
-        //        new Thread(new ProcessReader(process.getInputStream())).start();
-        //        new Thread(new ProcessReader(process.getErrorStream())).start();
-        return process;
+        return pb.start();
     }
 
     /**
@@ -221,6 +218,16 @@ public final class LauncherUtil {
             System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
             System.clearProperty("test.url"); // make sure the old value does not interfere with setting the new one
             System.setProperty("test.url", TestHTTPResourceManager.getUri());
+        }
+    }
+
+    static void toStdOut(Path log) {
+        if (log != null) {
+            try (var r = Files.newBufferedReader(log, StandardCharsets.UTF_8)) {
+                r.lines().forEach(System.out::println);
+            } catch (IOException ignored) {
+                System.err.println("Unable to write process output");
+            }
         }
     }
 

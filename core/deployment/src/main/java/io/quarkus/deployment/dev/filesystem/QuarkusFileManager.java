@@ -19,6 +19,8 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
             if (context.getGeneratedSourcesDirectory() != null) {
+                // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/51178)
+                ensureDirectory(context.getGeneratedSourcesDirectory());
                 this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
             }
             if (context.getAnnotationProcessorPaths() != null) {
@@ -38,6 +40,8 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
             if (context.getGeneratedSourcesDirectory() != null) {
+                // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/51178)
+                ensureDirectory(context.getGeneratedSourcesDirectory());
                 this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
             }
             if (context.getAnnotationProcessorPaths() != null) {
@@ -52,11 +56,14 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
 
     private void ensureDirectories(Iterable<File> directories) {
         for (File directory : directories) {
-            if (!directory.exists()) {
-                final boolean success = directory.mkdirs();
-                if (!success) {
-                    throw new RuntimeException("Cannot create directory " + directory);
-                }
+            ensureDirectory(directory);
+        }
+    }
+
+    private void ensureDirectory(File directory) {
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw new RuntimeException("Cannot create directory " + directory);
             }
         }
     }

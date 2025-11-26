@@ -17,6 +17,8 @@ public interface Formatter {
         return formatDescription(configProperty);
     }
 
+    String formatDeprecatedReason(ConfigProperty configProperty, Extension extension, Context context);
+
     String formatTypeDescription(ConfigProperty configProperty, Context context);
 
     String formatDefaultValue(ConfigProperty configProperty);

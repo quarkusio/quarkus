@@ -19,6 +19,7 @@ public class DevUIHibernateReactiveSmokeTest extends AbstractDevUIHibernateOrmTe
                             quarkus.datasource.username=hibernate_orm_test
                             quarkus.datasource.password=hibernate_orm_test
                             quarkus.datasource.reactive.url=vertx-reactive:postgresql://localhost:5431/hibernate_orm_test
+                            quarkus.hibernate-orm.database.start-offline=true
                             quarkus.hibernate-orm.blocking=false
                             """),
                             "application.properties"));

@@ -66,6 +66,28 @@ abstract class AbstractFormatter implements Formatter {
     }
 
     @Override
+    public String formatDeprecatedReason(ConfigProperty configProperty, Extension extension, Context context) {
+        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getSourceType(),
+                configProperty.getSourceElementName());
+
+        if (javadocElement.isEmpty()) {
+            return null;
+        }
+
+        String deprecatedReason = JavadocTransformer.transform(javadocElement.get().deprecated(), JavadocFormat.JAVADOC,
+                javadocFormat());
+        if (deprecatedReason == null || deprecatedReason.isBlank()) {
+            return null;
+        }
+
+        if (deprecatedReason.endsWith(".")) {
+            return deprecatedReason.substring(0, deprecatedReason.length() - 1);
+        }
+
+        return deprecatedReason;
+    }
+
+    @Override
     public String formatTypeDescription(ConfigProperty configProperty, Context context) {
         String typeContent = "";
 

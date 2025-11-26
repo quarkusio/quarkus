@@ -2,7 +2,10 @@ package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_ELASTICSEARCH;
+import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_LABEL;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_OPENSEARCH;
+import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.ELASTICSEARCH_PORT;
+import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.NEW_DEV_SERVICE_LABEL;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.buildPropertiesMap;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.getElasticsearchHosts;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.resolveDistribution;
@@ -51,14 +54,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesElasticsearchProcessor {
     private static final Logger log = Logger.getLogger(DevServicesElasticsearchProcessor.class);
-
-    /**
-     * Label to add to shared Dev Service for Elasticsearch running in containers.
-     * This allows other applications to discover the running service and use it instead of starting a new instance.
-     */
-    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-elasticsearch";
-    static final String NEW_DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch";
-    static final int ELASTICSEARCH_PORT = 9200;
 
     private static final ContainerLocator elasticsearchContainerLocator = locateContainerWithLabels(ELASTICSEARCH_PORT,
             DEV_SERVICE_LABEL, NEW_DEV_SERVICE_LABEL);

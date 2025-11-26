@@ -9,7 +9,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -394,11 +396,27 @@ public class UndertowDeploymentRecorder {
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
+        undertowOptions.set(UndertowOptions.RECORD_REQUEST_START_TIME,
+                servletRuntimeConfig.getValue().recordRequestStartTime());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
         Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
                 ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get())
                 : Collections.emptySet();
+
+        Set<String> disallowedMethods;
+        Optional<Set<String>> configured = servletRuntimeConfig.getValue().disallowedMethods();
+        if (configured.isPresent()) {
+            Set<String> normalized = new HashSet<>();
+            for (String method : configured.get()) {
+                if (method != null && !method.isBlank()) {
+                    normalized.add(method.trim().toUpperCase(Locale.ROOT));
+                }
+            }
+            disallowedMethods = normalized;
+        } else {
+            disallowedMethods = Collections.emptySet();
+        }
 
         return new Handler<RoutingContext>() {
             @Override
@@ -407,6 +425,14 @@ public class UndertowDeploymentRecorder {
                     event.request().pause();
                 }
 
+                boolean disallowedMethod = !disallowedMethods.isEmpty()
+                        && disallowedMethods.contains(event.request().method().name());
+
+                if (disallowedMethod) {
+                    event.response().setStatusCode(StatusCodes.METHOD_NOT_ALLOWED).end("Method Not Allowed");
+                    event.response().end();
+                    return;
+                }
                 //we handle auth failure directly
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
 
@@ -450,6 +476,7 @@ public class UndertowDeploymentRecorder {
                         }
                     });
                 }
+
             }
         };
     }
@@ -822,9 +849,8 @@ public class UndertowDeploymentRecorder {
         }
 
         /**
-         * Encode the bytes into a String with a slightly modified Base64-algorithm
-         * This code was written by Kevin Kelley <kelley@ruralnet.net>
-         * and adapted by Thomas Peuss <jboss@peuss.de>
+         * Encode the bytes into a String with a slightly modified Base64-algorithm This code was written by Kevin Kelley
+         * <kelley@ruralnet.net> and adapted by Thomas Peuss <jboss@peuss.de>
          *
          * @param data The bytes you want to encode
          * @return the encoded String

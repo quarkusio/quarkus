@@ -89,7 +89,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated use DevServicesResultBuildItem.builder() instead
+     * @deprecated use {@link DevServicesResultBuildItem#owned()} or {@link DevServicesResultBuildItem#discovered()} instead
      */
     @Deprecated
     public DevServicesResultBuildItem(String name, String containerId, Map<String, String> config) {
@@ -97,7 +97,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated use DevServicesResultBuildItem.builder() instead
+     * @deprecated use {@link DevServicesResultBuildItem#owned()} or {@link DevServicesResultBuildItem#discovered()} instead
      */
     @Deprecated
     public DevServicesResultBuildItem(String name, String description, String containerId, Map<String, String> config) {
@@ -114,7 +114,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated use DevServicesResultBuildItem.builder() instead
+     * @deprecated use {@link DevServicesResultBuildItem#owned()} or {@link DevServicesResultBuildItem#discovered()} instead
      */
     @Deprecated
     public DevServicesResultBuildItem(String name,
@@ -161,6 +161,11 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         return serviceName;
     }
 
+    /**
+     * {@see OwnedServiceBuilder#serviceConfig}
+     *
+     * @return the identifying configuration
+     */
     public Object getServiceConfig() {
         return serviceConfig;
     }
@@ -289,6 +294,20 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             this.serviceName = serviceName;
             return this;
         }
+
+        /**
+         * Declares the configuration of this service. This is used as a uniqueness identifier to establish whether
+         * services should be restarted, for example between live reloads.
+         * Usually it would be the config object passed in to the build step,
+         * but if the reuse semantics are different, it could be a subset or superset of that object.
+         * If you want your service to be restarted when the config is different, and re-used otherwise, pass
+         * through your config. If you want it to be always restarted on live reloads, you could pass through something like a
+         * random number. If you want the service to never be restarted, you could pass through a constant.
+         *
+         * @param serviceConfig an object with defining characteristics of the service. It will be reflectively compared to the
+         *        previous configuration.
+         * @return a builder, for chaining
+         */
 
         public OwnedServiceBuilder<T> serviceConfig(Object serviceConfig) {
             this.serviceConfig = serviceConfig;

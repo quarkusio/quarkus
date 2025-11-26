@@ -69,7 +69,9 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
             return;
         }
         QuarkusConsole.removeOutputFilter(this);
-        sl.close();
+        if (sl != null) {
+            sl.close();
+        }
     }
 
     public void closeAndDumpCaptured() {
@@ -77,7 +79,9 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
             return;
         }
         QuarkusConsole.removeOutputFilter(this);
-        sl.close();
+        if (sl != null) {
+            sl.close();
+        }
         for (var i : toDump) {
             QuarkusConsole.INSTANCE.write(true, i);
         }
@@ -92,7 +96,9 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
         Thread current = Thread.currentThread();
         if (current == this.thread || additionalThreadPredicate.test(current)) {
             toDump.add(s);
-            sl.setMessage(MessageFormat.BLUE + name + MessageFormat.RESET + " " + s.replace("\n", ""));
+            if (sl != null) {
+                sl.setMessage(MessageFormat.BLUE + name + MessageFormat.RESET + " " + s.replace("\n", ""));
+            }
             return false;
         }
         return true;

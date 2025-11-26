@@ -62,8 +62,8 @@ export class QwcGraphqlGenerateClient extends LitElement {
         this._loading = false;
 
         this.languages = [
-            {label: msg('Java (Quarkus)', { id: 'quarkus-smallrye-graphql-java-quarkus' }), value: 'Java', mode: 'java', context: msg('This code should be valid Quarkus Java code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one', { id: 'quarkus-smallrye-graphql-java-context' })},
-            {label: msg('Kotlin (Quarkus)', { id: 'quarkus-smallrye-graphql-kotlin-quarkus' }), value: 'Kotlin', mode: 'java', context: msg('This code should be valid Quarkus Kotlin code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one', { id: 'quarkus-smallrye-graphql-kotlin-context' })},
+            {label: msg('Java (Quarkus)', { id: 'quarkus-smallrye-graphql-java-quarkus' }), value: 'Java', mode: 'java', context: 'This code should be valid Quarkus Java code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one'},
+            {label: msg('Kotlin (Quarkus)', { id: 'quarkus-smallrye-graphql-kotlin-quarkus' }), value: 'Kotlin', mode: 'java', context: 'This code should be valid Quarkus Kotlin code that use the quarkus-smallrye-graphql-client extension and the dynamic client, not the typesafe one'},
             {label: msg('Javascript', { id: 'quarkus-smallrye-graphql-javascript' }), value: 'Javascript', mode: 'js', context: ''},
             {label: msg('TypeScript', { id: 'quarkus-smallrye-graphql-typescript' }), value: 'Typecript', mode: 'ts', context: ''},
             {label: msg('C#', { id: 'quarkus-smallrye-graphql-csharp' }), value: 'C#', mode: 'cs', context: ''},

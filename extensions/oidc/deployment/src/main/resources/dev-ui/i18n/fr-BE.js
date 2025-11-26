@@ -1,0 +1,18 @@
+export const templates = {
+    'quarkus-oidc-meta-description': 'Vérifiez les jetons d\'accès Bearer et authentifiez les utilisateurs avec le flux de code d\'autorisation',
+    'quarkus-oidc-swagger-ui': 'Swagger UI',
+    'quarkus-oidc-client-id': 'Identifiant client',
+    'quarkus-oidc-log-into-spa-title': 'Connectez-vous à l\'application à page unique pour obtenir des jetons d\'accès et d\'identifiant.',
+    'quarkus-oidc-log-into-spa': 'Se connecter à l\'application monopage',
+    'quarkus-oidc-click-logout-start-again': 'Cliquez pour vous déconnecter et recommencer',
+    'quarkus-oidc-encoded': 'Codé',
+    'quarkus-oidc-encoded-id': 'Codé',
+    'quarkus-oidc-test-your-service': 'Testez votre service',
+    'quarkus-oidc-swagger-ui-button': 'Swagger UI',
+    'quarkus-oidc-test-graphql-ui-button': 'Tester dans l\'UI GraphQL',
+    'quarkus-oidc-test-with-id-token': 'Tester avec le jeton ID',
+    'quarkus-oidc-test': 'Essayer',
+    'quarkus-oidc-client-credentials': 'Identifiants du client',
+    'quarkus-oidc-id-token-label': 'Jeton d\'identité',
+    'quarkus-oidc-claims': 'Réclamations',
+};

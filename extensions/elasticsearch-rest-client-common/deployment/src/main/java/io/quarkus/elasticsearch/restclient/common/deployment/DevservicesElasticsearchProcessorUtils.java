@@ -1,13 +1,9 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 
 import org.testcontainers.utility.DockerImageName;
 
@@ -18,8 +14,15 @@ import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommon
 
 final class DevservicesElasticsearchProcessorUtils {
 
+    /**
+     * Label to add to shared Dev Service for Elasticsearch running in containers.
+     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     */
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-elasticsearch";
+    static final String NEW_DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch";
     static final String DEV_SERVICE_ELASTICSEARCH = "elasticsearch";
     static final String DEV_SERVICE_OPENSEARCH = "opensearch";
+    static final int ELASTICSEARCH_PORT = 9200;
     static final Distribution DEFAULT_DISTRIBUTION = Distribution.ELASTIC;
 
     private DevservicesElasticsearchProcessorUtils() {
@@ -29,20 +32,6 @@ final class DevservicesElasticsearchProcessorUtils {
             RunningDevService devService) {
         String hostsConfigProperty = buildItemsConfiguration.hostsConfigProperties.stream().findAny().get();
         return devService.getConfig().get(hostsConfigProperty);
-    }
-
-    static Properties loadProperties(String devserviceName) {
-        var fileName = devserviceName + "-devservice.properties";
-        try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
-            if (in == null) {
-                throw new IllegalArgumentException(fileName + " not found on classpath");
-            }
-            var properties = new Properties();
-            properties.load(in);
-            return properties;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     static Distribution resolveDistribution(ElasticsearchDevServicesBuildTimeConfig config,

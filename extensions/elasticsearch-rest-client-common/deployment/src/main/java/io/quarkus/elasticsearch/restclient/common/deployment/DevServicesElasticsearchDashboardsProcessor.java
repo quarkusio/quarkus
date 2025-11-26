@@ -1,14 +1,11 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevServicesElasticsearchProcessor.DEV_SERVICE_LABEL;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevServicesElasticsearchProcessor.ELASTICSEARCH_PORT;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevServicesElasticsearchProcessor.NEW_DEV_SERVICE_LABEL;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_ELASTICSEARCH;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_OPENSEARCH;
+import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_LABEL;
+import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.ELASTICSEARCH_PORT;
+import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.NEW_DEV_SERVICE_LABEL;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.buildPropertiesMap;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.getElasticsearchHosts;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.loadProperties;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.resolveDistribution;
 
 import java.time.Duration;
@@ -56,12 +53,12 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class DevServicesElasticsearchDashboardsProcessor {
     private static final Logger log = Logger.getLogger(DevServicesElasticsearchDashboardsProcessor.class);
     static final int DASHBOARD_PORT = 5601;
+    private static final String DEV_SERVICE_KIBANA = "elasticsearch-kibana";
     private static final String DEV_SERVICE_DASHBOARDS = "opensearch-dashboards";
     private static final ContainerLocator elasticsearchContainerLocator = locateContainerWithLabels(ELASTICSEARCH_PORT,
             DEV_SERVICE_LABEL, NEW_DEV_SERVICE_LABEL);
     private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT,
             DEV_SERVICE_LABEL, NEW_DEV_SERVICE_LABEL);
-    private static final String DEV_SERVICE_KIBANA = "kibana";
     private static final int LOCATE_BACKEND_MAX_RETRIES = 5;
     private static final int LOCATE_BACKEND_INITIAL_WAIT_MILLIS = 5000;
     static volatile RunningDevService devDashboardService;
@@ -300,11 +297,10 @@ public class DevServicesElasticsearchDashboardsProcessor {
 
     static DockerImageName resolveDashboardImageName(ElasticsearchDevServicesBuildTimeConfig config,
             Distribution resolvedDistribution) {
-        return DockerImageName.parse(config.dashboard().imageName().orElseGet(() -> loadProperties(
+        return DockerImageName.parse(config.imageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor(
                 Distribution.ELASTIC.equals(resolvedDistribution)
-                        ? DEV_SERVICE_ELASTICSEARCH
-                        : DEV_SERVICE_OPENSEARCH)
-                .getProperty("default.dashboard.image")));
+                        ? DEV_SERVICE_KIBANA
+                        : DEV_SERVICE_DASHBOARDS)));
     }
 
     private void shutdownElasticsearchDashboards() {

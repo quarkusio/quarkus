@@ -1,6 +1,7 @@
 package io.quarkus.undertow.runtime;
 
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -34,4 +35,17 @@ public interface ServletRuntimeConfig {
      */
     @WithDefault("1000")
     int maxParameters();
+
+    /**
+     * A list of HTTP methods that are disallowed for servlet requests.
+     * Requests using these methods will be rejected before being processed.
+     */
+    Optional<Set<String>> disallowedMethods();
+
+    /**
+     * Whether to record the request start time for each HTTP request.
+     * Useful for access logs and response time metrics.
+     */
+    @WithDefault("false")
+    boolean recordRequestStartTime();
 }

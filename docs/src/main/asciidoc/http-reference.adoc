@@ -636,3 +636,36 @@ Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` 
 | `10000` | `ROUTE_ORDER_DEFAULT` | Default route order (i.e. Static Resources, Servlet).
 | `20000` | `ROUTE_ORDER_AFTER_DEFAULT` | Route without priority over the default route (add an offset from this value)
 |===
+
+=== Undertow configuration
+
+The following configuration properties are available when using the Undertow servlet extension.
+
+[cols="3,1,1,5",options="header"]
+|===
+|Configuration property |Type |Default |Description
+
+|`quarkus.undertow.disallowed-methods`
+|list of string
+|`<empty>`
+|A list of HTTP methods that should be rejected with `405 Method Not Allowed`.
+Useful for disabling insecure methods such as `TRACE` or `TRACK`.
+
+Example:
+----
+quarkus.undertow.disallowed-methods=TRACE,TRACK
+----
+
+|`quarkus.undertow.record-request-start-time`
+|boolean
+|false
+|If enabled, Undertow records the request start timestamp.
+Useful for timing, logging and request tracing.
+
+|`quarkus.undertow.max-parameters`
+|int
+|1000
+|Maximum number of allowed HTTP parameters.
+Provides protection against parameter-based DoS attacks.
+
+|===

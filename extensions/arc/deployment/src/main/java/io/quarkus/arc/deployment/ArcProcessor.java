@@ -866,8 +866,15 @@ public class ArcProcessor {
         }
 
         @Override
-        public void accept(BytecodeTransformer t) {
-            bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
+        public void accept(BytecodeTransformer transformer) {
+            if (transformer.getVisitorFunction() != null) {
+                bytecodeTransformer.produce(
+                        new BytecodeTransformerBuildItem(transformer.getClassToTransform(), transformer.getVisitorFunction()));
+            } else if (transformer.getInputTransformer() != null) {
+                bytecodeTransformer.produce(new BytecodeTransformerBuildItem.Builder()
+                        .setClassToTransform(transformer.getClassToTransform())
+                        .setInputTransformer(transformer.getInputTransformer()).build());
+            }
         }
     }
 }

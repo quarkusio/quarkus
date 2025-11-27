@@ -55,7 +55,7 @@
         <gizmo.version>1.9.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <mutiny.version>3.0.1</mutiny.version>
+        <mutiny.version>3.0.3</mutiny.version>
         <smallrye-common.version>2.14.0</smallrye-common.version>
         <vertx.version>4.5.22</vertx.version>
         <rest-assured.version>5.5.6</rest-assured.version>

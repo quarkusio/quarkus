@@ -23,7 +23,7 @@ import io.smallrye.config.SmallRyeConfig;
 public class ConfigRecorder {
     private static final Logger log = Logger.getLogger(ConfigRecorder.class);
 
-    public void handleConfigChange(Map<String, ConfigValue> buildTimeRuntimeValues) {
+    public void handleConfigChange(List<ConfigValue> buildTimeRuntimeValues) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         // Disable the BuildTime RunTime Fixed (has the highest ordinal), because a lookup will get the expected value,
         // and we have no idea if the user tried to override it in another source.
@@ -36,16 +36,20 @@ public class ConfigRecorder {
         }
 
         List<String> mismatches = new ArrayList<>();
-        for (Map.Entry<String, ConfigValue> entry : buildTimeRuntimeValues.entrySet()) {
-            ConfigValue currentValue = config.getConfigValue(entry.getKey());
-            // Check for changes. Also, we only have a change if the source ordinal is higher
-            // The config value can be null (for ex. if the property uses environment variables not available at build time)
-            if (currentValue.getValue() != null && !Objects.equals(entry.getValue().getValue(), currentValue.getValue())
-                    && entry.getValue().getSourceOrdinal() < currentValue.getSourceOrdinal()) {
+        for (ConfigValue buildTimeRuntimeValue : buildTimeRuntimeValues) {
+            String propertyName = buildTimeRuntimeValue.getName();
+            ConfigValue currentValue = config.getConfigValue(propertyName);
+            // Check for changes:
+            // - the config source position check tell us if the value is actually present in the config even if null
+            // - compare the ordinals of the recorded to the current value, if higher or equals there is a tentative override
+            // - compare the actual config values, if different there is a mismatch
+            if (currentValue.getConfigSourcePosition() > 0
+                    && currentValue.getSourceOrdinal() >= buildTimeRuntimeValue.getSourceOrdinal()
+                    && !Objects.equals(buildTimeRuntimeValue.getValue(), currentValue.getValue())) {
                 mismatches.add(
-                        " - " + entry.getKey() + " is set to '" + currentValue.getValue()
+                        " - " + propertyName + " is set to '" + currentValue.getValue()
                                 + "' but it is build time fixed to '"
-                                + entry.getValue().getValue() + "'. Did you change the property " + entry.getKey()
+                                + buildTimeRuntimeValue.getValue() + "'. Did you change the property " + propertyName
                                 + " after building the application?");
             }
         }

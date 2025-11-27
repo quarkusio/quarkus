@@ -1,6 +1,7 @@
 package io.quarkus.extest.runtime.config;
 
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -23,6 +24,11 @@ public interface TestMappingBuildTimeRunTime {
      * A Map of Map.
      */
     Map<String, Map<String, String>> mapMap();
+
+    /**
+     * An Optional
+     */
+    Optional<String> optional();
 
     interface Group {
         /**

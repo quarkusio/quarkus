@@ -61,7 +61,7 @@ jobs:
             -Ddevelocity.cache.local.enabled=false \
             -Ddevelocity.cache.remote.enabled=false \
             -Ddokka \
-            -Prelocations \
+            -Prelocations,snapshots \
             clean deploy
       - name: Delete Local Artifacts From Cache
         shell: bash

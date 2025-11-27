@@ -47,6 +47,7 @@ final class MethodsCandidate implements AccessorCandidate {
                                 }
                             } catch (Exception e) {
                                 result.completeExceptionally(e);
+                                return;
                             }
                         }
                         // No method matches the parameter types

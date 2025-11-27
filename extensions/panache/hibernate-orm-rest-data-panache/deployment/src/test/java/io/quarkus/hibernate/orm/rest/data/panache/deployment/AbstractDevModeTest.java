@@ -4,10 +4,12 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.response.Response;
 
+@Tag(TestTags.DEVMODE)
 public abstract class AbstractDevModeTest {
 
     @Test

@@ -231,7 +231,9 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        log.debugf("Facade classloader loading %s", name);
+        // Debuggers, beware: If the same class is loaded with the same FacadeClassLoader instance using Class.forName(), a cached copy will be returned,
+        // and nothing will be logged here; it will look like classloading didn't happen, but the problem is actually a stale instance
+        log.debugf("Facade classloader loading %s for the first time\n", name);
 
         if (peekingClassLoader == null) {
             throw new RuntimeException("Attempted to load classes with a closed classloader: " + this);

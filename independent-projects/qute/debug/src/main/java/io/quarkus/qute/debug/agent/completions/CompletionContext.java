@@ -10,8 +10,8 @@ import java.util.Set;
 import org.eclipse.lsp4j.debug.CompletionItem;
 import org.eclipse.lsp4j.debug.CompletionItemType;
 import org.eclipse.lsp4j.debug.CompletionsResponse;
-
 import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
+import io.quarkus.qute.MethodSignatureBuilder;
 import io.quarkus.qute.debug.agent.resolvers.ValueResolverContext;
 
 /**
@@ -26,7 +26,7 @@ import io.quarkus.qute.debug.agent.resolvers.ValueResolverContext;
  * {@link CompletionItem}. Can be converted into a {@link CompletionsResponse}.
  * </p>
  */
-public class CompletionContext implements ValueResolverContext {
+public class CompletionContext implements ValueResolverContext<CompletionItem> {
 
     /** Empty array of completion items for DAP responses. */
     public static final CompletionItem[] EMPTY_COMPLETION_ITEMS = new CompletionItem[0];
@@ -66,51 +66,47 @@ public class CompletionContext implements ValueResolverContext {
     }
 
     @Override
-    public void addMethod(Method method) {
+    public CompletionItem addMethod(Method method) {
         CompletionItem item = new CompletionItem();
-        StringBuilder signature = new StringBuilder(method.getName());
-        signature.append("(");
-
         var parameters = method.getParameters();
-        int selectionStart = parameters.length > 0 ? signature.length() : -1;
-        int selectionLength = -1;
-
+        MethodSignatureBuilder signature = new MethodSignatureBuilder(method.getName(), parameters.length, false);
         for (int i = 0; i < parameters.length; i++) {
-            if (i > 0) {
-                signature.append(",");
-            }
             String arg = parameters[i].getName();
-            signature.append(arg);
-            if (i == 0) {
-                selectionLength = arg.length();
-            }
+            signature.addParam(arg);
         }
-        signature.append(")");
         item.setLabel(signature.toString());
         item.setType(CompletionItemType.METHOD);
+        int selectionStart = signature.getSelectionStart();
+        int selectionLength = signature.getSelectionLength();
         if (selectionStart != -1) {
             item.setSelectionStart(selectionStart);
             item.setSelectionLength(selectionLength);
         }
         add(item);
+        return item;
     }
 
     @Override
-    public void addProperty(Field field) {
+    public CompletionItem addProperty(Field field) {
         CompletionItem item = new CompletionItem();
         item.setLabel(field.getName());
         item.setType(CompletionItemType.FIELD);
         add(item);
+        return item;
     }
 
     @Override
-    public void addProperty(String property) {
-        add(createItem(property, CompletionItemType.PROPERTY));
+    public CompletionItem addProperty(String property) {
+        CompletionItem item = createItem(property, CompletionItemType.PROPERTY);
+        add(item);
+        return item;
     }
 
     @Override
-    public void addMethod(String method) {
-        add(createItem(method, CompletionItemType.FUNCTION));
+    public CompletionItem addMethod(String method) {
+        CompletionItem item = createItem(method, CompletionItemType.METHOD);
+        add(item);
+        return item;
     }
 
     /** Adds a completion item if it is not already present. */

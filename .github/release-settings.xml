@@ -49,6 +49,13 @@
                 </pluginRepository>
             </pluginRepositories>
         </profile>
+        <profile>
+          <id>snapshots</id>
+          <properties>
+            <!-- https://docs.aws.amazon.com/codeartifact/latest/ug/maven-troubleshooting.html#disable-parallel-puts -->
+            <aether.connector.basic.parallelPut>false</aether.connector.basic.parallelPut>
+          </properties>
+        </profile>
     </profiles>
     <activeProfiles>
         <activeProfile>google-mirror</activeProfile>

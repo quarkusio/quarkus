@@ -65,6 +65,35 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <!-- These tests seem to leak metaspace memory
+                                 so we run them in a separate, short-lived JVM -->
+                            <excludedGroups>devmode</excludedGroups>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>devmode-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <!-- These tests seem to leak metaspace memory
+                                 so we run them in a separate, short-lived JVM -->
+                            <groups>devmode</groups>
+                            <!-- We could consider setting reuseForks=false if we
+                                 really need to run every single test in its own JVM -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>

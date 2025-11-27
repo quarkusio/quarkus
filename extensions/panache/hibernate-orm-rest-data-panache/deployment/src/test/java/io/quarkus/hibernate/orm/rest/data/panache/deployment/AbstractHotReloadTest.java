@@ -2,10 +2,12 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 
 import static io.restassured.RestAssured.given;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.QuarkusDevModeTest;
 
+@Tag(TestTags.DEVMODE)
 public abstract class AbstractHotReloadTest {
 
     protected abstract QuarkusDevModeTest getTestArchive();

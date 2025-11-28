@@ -21,6 +21,7 @@ include::{includes}/observability-include.adoc[]
 [NOTE]
 ====
 - OpenTelemetry Metrics is considered _tech preview_ and is disabled by default.
+- Automatic metrics instrumentation in Quarkus is handled by xref:telemetry-micrometer.adoc[Micrometer] and the xref:telemetry-micrometer-to-opentelemetry.adoc[quarkus-micrometer-opentelemetry] extension bridges those metrics into OpenTelemetry.
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] is available with signal independent information about the OpenTelemetry extension.
 - If you search more information about OpenTelemetry Tracing, please refer to the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide].
 ====

@@ -23,6 +23,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.ResolvedJVMRequirements;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -51,6 +52,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
     protected final List<GeneratedClassBuildItem> generatedClasses;
     protected final List<GeneratedResourceBuildItem> generatedResources;
     protected final Set<ArtifactKey> removedArtifactKeys;
+    protected final ResolvedJVMRequirements jvmRequirements;
 
     public AbstractJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -61,7 +63,8 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             TransformedClassesBuildItem transformedClasses,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            Set<ArtifactKey> removedArtifactKeys) {
+            Set<ArtifactKey> removedArtifactKeys,
+            ResolvedJVMRequirements jvmRequirements) {
         this.curateOutcome = curateOutcome;
         this.outputTarget = outputTarget;
         this.applicationInfo = applicationInfo;
@@ -72,7 +75,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
         this.removedArtifactKeys = removedArtifactKeys;
-
+        this.jvmRequirements = jvmRequirements;
         checkConsistency(generatedClasses);
     }
 
@@ -204,6 +207,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
      */
     protected static void generateManifest(ArchiveCreator archiveCreator, final String classPath, PackageConfig config,
             ResolvedDependency appArtifact,
+            ResolvedJVMRequirements jvmRequirements,
             String mainClassName,
             ApplicationInfoBuildItem applicationInfo)
             throws IOException {
@@ -211,8 +215,8 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
 
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        // JDK 24+ needs --add-opens=java.base/java.lang=ALL-UNNAMED for org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals()
-        attributes.put(new Attributes.Name("Add-Opens"), "java.base/java.lang");
+
+        jvmRequirements.renderAddOpensElementToJarManifest(attributes);
 
         for (Map.Entry<String, String> attribute : config.jar().manifest().attributes().entrySet()) {
             attributes.putValue(attribute.getKey(), attribute.getValue());

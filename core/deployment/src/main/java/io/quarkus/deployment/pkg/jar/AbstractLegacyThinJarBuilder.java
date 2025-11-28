@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 import org.jboss.logging.Logger;
 
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.deployment.ResolvedJVMRequirements;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -49,9 +50,10 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys,
-            ExecutorService executorService) {
+            ExecutorService executorService,
+            ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys);
+                generatedClasses, generatedResources, removedArtifactKeys, jvmRequirements);
 
         this.executorService = executorService;
     }
@@ -77,7 +79,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, mainClass.getClassName(),
+            generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact, jvmRequirements,
+                    mainClass.getClassName(),
                     applicationInfo);
 
             copyCommonContent(archiveCreator, services, ignoredEntriesPredicate);

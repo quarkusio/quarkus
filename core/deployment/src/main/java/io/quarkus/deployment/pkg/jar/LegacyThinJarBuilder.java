@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.deployment.ResolvedJVMRequirements;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -36,9 +37,10 @@ public class LegacyThinJarBuilder extends AbstractLegacyThinJarBuilder<JarBuildI
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys,
-            ExecutorService executorService) {
+            ExecutorService executorService,
+            ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, executorService);
+                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
     }
 
     public JarBuildItem build() throws IOException {

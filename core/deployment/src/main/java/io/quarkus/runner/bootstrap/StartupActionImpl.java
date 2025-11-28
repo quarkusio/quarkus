@@ -30,6 +30,7 @@ import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.builder.BuildResult;
+import io.quarkus.deployment.ResolvedJVMRequirements;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
@@ -42,6 +43,7 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
+import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
@@ -65,6 +67,8 @@ public class StartupActionImpl implements StartupAction {
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
     private final DevServicesRegistryBuildItem devServicesRegistry;
 
+    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.create();
+
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
 
@@ -77,6 +81,12 @@ public class StartupActionImpl implements StartupAction {
         devServicesResults = buildResult.consumeMulti(DevServicesResultBuildItem.class);
         devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
+
+        // Adjust JVM module requirements for this app TODO check we do this in live-reload / test modes ONLY
+        {
+            final ResolvedJVMRequirements jvmRequirements = buildResult.consume(ResolvedJVMRequirements.class);
+            jvmRequirements.applyJavaModuleConfigurationToRuntime(jvmModulesReconfigurer);
+        }
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();

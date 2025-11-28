@@ -400,6 +400,9 @@ public class DevModeCommandLineBuilder {
 
         setJvmOptions();
         args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+        args.add("--add-opens=java.base/java.lang.invoke=ALL-UNNAMED");
+        args.add("--add-exports=java.base/jdk.internal.module=ALL-UNNAMED");
+        args.add("-XX:+EnableDynamicAgentLoading");//Useful for AgentBasedModulesReconfigurer; should we use -agent and load it explicitly?
 
         outputDir.mkdirs();
 

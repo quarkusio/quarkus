@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.deployment.ResolvedJVMRequirements;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -46,10 +47,11 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             Set<ArtifactKey> removedArtifactKeys,
-            ExecutorService executorService) {
+            ExecutorService executorService,
+            ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
                 augmentGeneratedClasses(generatedClasses, nativeImageResources), generatedResources,
-                augmentRemovedArtifactKeys(removedArtifactKeys), executorService);
+                augmentRemovedArtifactKeys(removedArtifactKeys), executorService, jvmRequirements);
     }
 
     public NativeImageSourceJarBuildItem build() throws IOException {

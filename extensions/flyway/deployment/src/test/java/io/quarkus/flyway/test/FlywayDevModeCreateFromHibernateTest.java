@@ -38,7 +38,11 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(FlywayDevModeCreateFromHibernateTest.class, Endpoint.class, Fruit.class)
                     .addAsResource(new StringAsset(
-                            "quarkus.flyway.locations=db/create"), "application.properties"));
+                            """
+                                    quarkus.flyway.locations=db/create
+                                    quarkus.flyway.migrate-at-start=true
+                                    quarkus.flyway.baseline-on-migrate=true
+                                    quarkus.flyway.clean-at-start=true"""), "application.properties"));
 
     @Test
     public void testGenerateMigrationFromHibernate() throws Exception {

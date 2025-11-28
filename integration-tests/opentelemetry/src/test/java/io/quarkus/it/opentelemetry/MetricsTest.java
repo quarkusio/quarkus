@@ -104,6 +104,16 @@ public class MetricsTest {
                     .containsAll(allMetrics.stream().map(MetricToAssert::name).toList());
         });
 
+        Set<String> flakyMetrics = new HashSet<>();
+        flakyMetrics.add("jvm.memory.used_after_last_gc");
+        flakyMetrics.add("jvm.cpu.limit");
+        flakyMetrics.add("jvm.cpu.recent_utilization");
+        flakyMetrics.add("jvm.system.cpu.utilization");
+        if (JdkUtil.isSemeru()) {
+            // this one has been flaky on CI with Semeru
+            flakyMetrics.add("jvm.memory.used");
+        }
+
         allMetrics.forEach(metricToAssert -> {
 
             // metric is there and has at least 1 reading
@@ -113,11 +123,7 @@ public class MetricsTest {
                             .hasSizeGreaterThan(0));
 
             // skip assertions from flaky metrics
-            if (!metricToAssert.name().equals("jvm.memory.used_after_last_gc") &&
-                    !metricToAssert.name().equals("jvm.cpu.limit") &&
-                    !metricToAssert.name().equals("jvm.cpu.recent_utilization") &&
-                    !metricToAssert.name().equals("jvm.system.cpu.utilization")) {
-
+            if (!flakyMetrics.contains(metricToAssert.name())) {
                 // Correct values might take some time to register
                 await().atMost(10, SECONDS).untilAsserted(() -> assertThat(getLastReading(metricToAssert))
                         .withFailMessage("Metric must be greater than 0: " + metricToAssert.name)

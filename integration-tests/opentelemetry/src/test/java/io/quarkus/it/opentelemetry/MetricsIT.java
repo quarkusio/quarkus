@@ -5,9 +5,11 @@ import static io.opentelemetry.sdk.metrics.data.MetricDataType.LONG_SUM;
 
 import java.util.Set;
 
+import io.quarkus.test.junit.DisabledOnSemeru;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
+@DisabledOnSemeru(reason = "JFR is not supported on Semeru yet")
 public class MetricsIT extends MetricsTest {
 
     @Override

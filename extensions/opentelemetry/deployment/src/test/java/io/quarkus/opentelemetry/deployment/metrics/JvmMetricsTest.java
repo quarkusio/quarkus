@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.test.DisabledOnSemeru;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
@@ -31,6 +32,7 @@ import io.restassured.RestAssured;
 /**
  * Validate all JVM metrics being produced.
  */
+@DisabledOnSemeru(reason = "JFR is not supported on Semeru yet")
 public class JvmMetricsTest extends BaseJvmMetricsTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()

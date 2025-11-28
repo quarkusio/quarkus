@@ -8,6 +8,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.RoutingUtils;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.vertx.web.Route;
 import io.vertx.core.AsyncResult;
@@ -22,7 +23,7 @@ import io.vertx.ext.web.RoutingContext;
 public abstract class RouteHandler implements Handler<RoutingContext> {
 
     private static final String REQUEST_CONTEXT_STATE = "__cdi_req_ctx";
-
+    private static final String REACTIVE_ROUTES_KEY = "quarkus-reactive-routes";
     private final Event<SecurityIdentity> securityIdentityEvent;
     private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
@@ -69,6 +70,7 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
                 ContextState state = context.get(REQUEST_CONTEXT_STATE);
                 // Activate the context, i.e. set the thread locals, state can be null
                 requestContext.activate(state);
+                RoutingUtils.assumeCdiRequestContext(context, REACTIVE_ROUTES_KEY);
                 currentVertxRequest.setCurrent(context);
                 if (currentIdentityAssociation != null) {
                     if (user != null) {
@@ -90,14 +92,18 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
                     context.addEndHandler(new Handler<AsyncResult<Void>>() {
                         @Override
                         public void handle(AsyncResult<Void> result) {
-                            requestContext.destroy(endState);
+                            if (RoutingUtils.isCdiRequestContextOwner(context, REACTIVE_ROUTES_KEY)) {
+                                requestContext.destroy(endState);
+                            }
                         }
                     });
                 }
                 invoke(context);
             } finally {
-                // Deactivate the context, i.e. cleanup the thread locals
-                requestContext.deactivate();
+                if (RoutingUtils.isCdiRequestContextOwner(context, REACTIVE_ROUTES_KEY)) {
+                    // Deactivate the context, i.e. cleanup the thread locals
+                    requestContext.deactivate();
+                }
             }
         }
     }

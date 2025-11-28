@@ -105,11 +105,6 @@ public class HibernateReactiveRecorder {
                 return new MutinySessionDelegator() {
                     @Override
                     public Mutiny.Session delegate() {
-
-                        // TODO check we're in @Transactional
-                        // TODO get the session from vert.x context or open it (similar to Panache.getSession)
-                        // To open, use SessionFactory#openSessionWithLazyConnectionOpening -> returns Mutiny.Session
-
                         return getSession(persistenceUnitName);
                     }
                 };

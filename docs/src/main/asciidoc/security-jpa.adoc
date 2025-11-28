@@ -222,6 +222,31 @@ For more information about proactive authentication, see the Quarkus xref:securi
 
 include::{generated-dir}/config/quarkus-security-jpa.adoc[opts=optional, leveloffset=+2]
 
+[[programmatic-set-up]]
+== Set up Basic authentication with Jakarta Persistence programmatically
+
+The `io.quarkus.vertx.http.security.HttpSecurity` CDI event allows to configure the Basic authentication mechanism programmatically.
+If there is more than one `IdentityProvider` handling the `io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest` request, you can configure the Basic authentication to use the Jakarta Persistence `IdentityProvider` like in the example below:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import static io.quarkus.security.jpa.SecurityJpa.jpa;
+
+import jakarta.enterprise.event.Observes;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+
+public class HttpSecurityConfiguration {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.basic(jpa());
+    }
+
+}
+----
+
 == References
 
 * xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]

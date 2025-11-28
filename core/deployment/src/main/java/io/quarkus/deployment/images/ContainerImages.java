@@ -23,7 +23,7 @@ public class ContainerImages {
     /**
      * UBI 9 version
      */
-    public static final String UBI9_VERSION = "9.6";
+    public static final String UBI9_VERSION = "9.7";
 
     /**
      * Version used for more UBI8 Java images.

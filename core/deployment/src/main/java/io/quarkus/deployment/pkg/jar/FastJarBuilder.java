@@ -56,6 +56,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
@@ -409,8 +410,20 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         if (runtimeArtifacts.containsKey(appDep.getKey())) {
             return;
         }
+        Set<GACT> forceUseArtifactIdOnlyAsNameSet = packageConfig.jar().forceUseArtifactIdOnlyAsName()
+                .orElse(Collections.emptySet());
+        boolean forceUseArtifactIdOnlyAsName = forceUseArtifactIdOnlyAsNameSet.stream()
+                .anyMatch(gact -> gact.getGroupId().equals(appDep.getGroupId())
+                        && gact.getArtifactId().equals(appDep.getArtifactId())
+                        && gact.getType().equals(appDep.getType())
+                        && gact.getClassifier().equals(appDep.getClassifier()));
         for (Path resolvedDep : appDep.getResolvedPaths()) {
-            final String fileName = FastJarFormat.getJarFileName(appDep, resolvedDep);
+            String fileName;
+            if (forceUseArtifactIdOnlyAsName) {
+                fileName = appDep.getArtifactId() + "." + appDep.getType();
+            } else {
+                fileName = FastJarFormat.getJarFileName(appDep, resolvedDep);
+            }
             final Path targetPath;
 
             if (allowParentFirst && parentFirstArtifacts.contains(appDep.getKey())) {

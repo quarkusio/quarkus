@@ -4,6 +4,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.sqlclient.PrepareOptions;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.PreparedStatement;
@@ -14,6 +15,14 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
+import java.util.Optional;
+
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.CURRENT_TRANSACTION_KEY;
+
+/**
+ * This is a delegate for a simple SqlConnection that avoids closing the connection before
+ * the transaction is committed. See Future<Void> close()
+ **/
 public class TransactionalContextConnection implements SqlConnection {
     private final SqlConnection connection;
 
@@ -103,10 +112,16 @@ public class TransactionalContextConnection implements SqlConnection {
     @Override
     public Future<Void> close() {
 
-        // Do not actually close this connection as the TransactionalInterceptor should commit the tx first
+        // Register closing this connection after TransactionalInterceptor commit the transaction
+        Optional<Transaction> optTransaction = getTransactionFromVertxContext();
+        optTransaction.ifPresent(t -> t.completion().onComplete(h -> connection.close()));
 
-        //        return connection.close();
-        //
+        // Do not close the connection here
         return Future.succeededFuture();
     }
+
+    Optional<Transaction> getTransactionFromVertxContext() {
+        return Optional.ofNullable(Vertx.currentContext().getLocal(CURRENT_TRANSACTION_KEY));
+    }
+
 }

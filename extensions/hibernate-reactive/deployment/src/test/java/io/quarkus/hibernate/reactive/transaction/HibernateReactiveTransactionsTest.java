@@ -6,6 +6,8 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.reactive.mutiny.Mutiny;
+
+import io.vertx.mutiny.sqlclient.Pool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,6 +31,9 @@ public class HibernateReactiveTransactionsTest {
     @Inject
     Mutiny.SessionFactory sessionFactory;
 
+    @Inject
+    Pool pool;
+
     /**
      * This test shows how to use hibernate reactive .withTransaction to set transactional boundaries
      * Below there's testReactiveAnnotationTransaction which is the same test but with @Transactional
@@ -40,6 +45,8 @@ public class HibernateReactiveTransactionsTest {
     public void testReactiveManualTransaction(UniAsserter asserter) {
         // initialTransactionData.sql
         Long heroId = 60L;
+
+        int originalPoolSize = pool.size();
 
         // First update, make sure it's committed
         asserter.assertThat(
@@ -60,6 +67,13 @@ public class HibernateReactiveTransactionsTest {
                 h -> {
                     assertThat(h.name).isEqualTo("updatedNameCommitted");
                 });
+
+        // Verify pool size is back to initial (connection returned)
+        asserter.execute(() -> {
+            int nowSize = pool.size();
+            assertThat(originalPoolSize).isEqualTo(nowSize);
+        });
+
     }
 
     @Inject
@@ -74,6 +88,8 @@ public class HibernateReactiveTransactionsTest {
     public void testReactiveAnnotationTransaction(UniAsserter asserter) {
         // initialTransactionData.sql
         Long heroId = 50L;
+
+        int originalPoolSize = pool.size();
 
         // First update, make sure it's committed
         asserter.assertThat(
@@ -91,6 +107,15 @@ public class HibernateReactiveTransactionsTest {
                 h -> {
                     assertThat(h.name).isEqualTo("updatedNameCommitted");
                 });
+
+        // Verify pool size is back to initial (connection returned)
+        // Actually with quarkus.datasource.reactive.max-size=1 specified in application-reactive-transaction.properties
+        // if we don't close the connections the test will hang while acquiring the new connection after the first update
+        // Better test it anyway
+        asserter.execute(() -> {
+            int nowSize = pool.size();
+            assertThat(originalPoolSize).isEqualTo(nowSize);
+        });
     }
 
     @Transactional

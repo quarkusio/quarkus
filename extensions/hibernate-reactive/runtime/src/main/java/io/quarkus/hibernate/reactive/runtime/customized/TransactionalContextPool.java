@@ -23,7 +23,7 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 
 /**
- * A pool that handles transaction based on Vert.x context set by the @Transactional interceptor.
+ * A connection pool that handles transaction based on Vert.x context set by the @Transactional interceptor.
  */
 public class TransactionalContextPool implements Pool {
 

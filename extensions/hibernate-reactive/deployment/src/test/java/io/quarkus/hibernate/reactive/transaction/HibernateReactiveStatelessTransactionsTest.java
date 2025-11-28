@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
+import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
+import io.quarkus.reactive.transaction.TransactionalInterceptorRequired;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -25,8 +27,9 @@ public class HibernateReactiveStatelessTransactionsTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(Hero.class)
+                    .addClasses(TransactionalInterceptorRequired.class, AfterWorkTransactionStrategy.class)
                     .addAsResource("initialTransactionData.sql", "import.sql"))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application-reactive-transaction.properties");
 
     @Inject
     Mutiny.SessionFactory sessionFactory;

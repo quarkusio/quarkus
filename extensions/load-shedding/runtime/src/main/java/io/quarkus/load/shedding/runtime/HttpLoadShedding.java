@@ -21,7 +21,7 @@ public class HttpLoadShedding {
         }
 
         router.route().order(-1_000_000_000).handler(ctx -> {
-            if (detector.isOverloaded() && priority.shedLoad(ctx.request())) {
+            if (detector.isOverloaded() && priority.shedLoad(ctx)) {
                 HttpServerResponse response = ctx.response();
                 response.setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code());
                 response.headers().add(HttpHeaderNames.CONNECTION, "close");

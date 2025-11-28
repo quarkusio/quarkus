@@ -15,6 +15,9 @@ include::_attributes.adoc[]
 include::{includes}/extension-status.adoc[]
 
 Load shedding is the practice of detecting service overload and rejecting requests.
+By rejecting requests when overloaded, load shedding keeps the application alive.
+With priority load shedding, the application even keeps working, albeit in a degraded state: only a fraction of requests is handled, others are rejected early.
+You should consider using it if your application runs in a dynamic environment with a real risk of getting overloaded and is not fronted by another service that sheds load already.
 
 In Quarkus, the `quarkus-load-shedding` extension provides a load shedding mechanism.
 
@@ -37,7 +40,21 @@ To use the load shedding extension, you need to add the `io.quarkus:quarkus-load
 implementation("io.quarkus:quarkus-load-shedding")
 ----
 
-No configuration is required, though the possible configuration options are described below.
+When added, load shedding is enabled.
+It can be disabled by setting `quarkus.load-shedding.enabled` to `false`.
+
+There are 2 variants of load shedding: pure and priority-based.
+Pure load shedding rejects all requests when overload is detected.
+Priority load shedding only rejects a fraction of requests even if overload is detected, based on application-defined criteria.
+By default, priority load shedding is enabled.
+It can be disabled by setting `quarkus.load-shedding.priority.enabled` to `false.`
+
+There are 2 ways of customizing priority load shedding:
+
+* By implementing `io.quarkus.load.shedding.RequestPrioritizer`, the application can decide which requests can be rejected early on and which requests can only be rejected when there's no other choice.
+* By implementing `io.quarkus.load.shedding.RequestClassifier`, the application can classify requests into cohorts which are rejected independently.
+
+Other configuration options are described below, although they should typically be left untouched.
 
 == The load shedding algorithm
 
@@ -50,24 +67,26 @@ The load shedding algorithm has 2 parts:
 
 To detect whether the current service is overloaded, an adaptation of TCP Vegas is used.
 
-The algorithm starts with 100 allowed concurrent requests.
-For each request, it compares the number of current requests with the allowed limit and if the limit is exceeded, an overload situation is signalled.
+This algorithm starts with a configurable limit of in-flight requests, by default 100.
+If the current number of concurrent in-flight requests reaches the limit, overload situation is signalled.
 
-If the limit is not exceeded, or if priority load shedding determines that the request should not be rejected (see below), the request is allowed.
-When it finishes, its duration is compared with the lowest duration seen so far to estimate a queue size.
-If the queue size is lower than _alpha_, the current limit is increased, but only up to a given maximum, by default 1000.
-If the queue size is greater than _beta_, the current limit is decreased.
-Otherwise, the current limit is kept intact.
+That is not very interesting, but the algorithm dynamically adjusts the limit based on the size of the request queue.
+If the queue is short, more requests can be handled and the limit increases; if the queue is long, fewer requests can be handled and the limit decreases.
+The limit cannot be increased indefinitely; there's a configurable maximum, by default 1000.
 
-Alpha and beta are computed by multiplying the configurable constants with a base 10 logarithm of the current limit.
-
-After some number of requests, which can be modified by configuring the _probe_ factor, the lowest duration seen is reset to the last seen duration of a request.
+There's no actual queue of requests that we could monitor, though, so the algorithm estimates the current length of a request queue based on previously seen response times.
+The longer recent requests take, compared to the recent lowest response time, the longer the queue is supposed to be.
 
 === Priority load shedding
 
 If an overload situation is signalled, priority load shedding is invoked.
 
-By default, priority load shedding is enabled, which means a request is only rejected if the current CPU load is high enough.
+If priority load shedding is disabled, there's nothing to do and all requests are rejected immediately.
+However, by default, priority load shedding is enabled, which means a request is only rejected if the current CPU load is high enough.
+
+NOTE: Priority load shedding is currently always based on CPU load.
+Other mechanisms are possible (such as network utilization), but currently not implemented.
+
 To determine whether a request should be rejected, 2 attributes are considered:
 
 * request priority
@@ -75,11 +94,12 @@ To determine whether a request should be rejected, 2 attributes are considered:
 
 There are 5 statically defined priorities and 128 cohorts, which amounts to 640 request groups in total.
 
-After both priority and cohort are assigned to a request, a request group number is computed: `group = priority * num_cohorts + cohort`.
-Then, the group number is compared to a simple cubic function of current CPU load, where `load` is a number between 0 and 1: `num_groups * (1 - load^3)`.
-If the group number is higher, the request is rejected, otherwise it is allowed even in an overload situation.
+After both priority and cohort are assigned to a request, a request group number is computed.
+The group number is smaller for higher priority requests and higher for lower priority requests.
+If the group number is higher that the current CPU load, the request is rejected, otherwise it is allowed even in an overload situation.
 
-If priority load shedding is disabled, all requests are rejected in an overload situation.
+NOTE: The group number is actually not compared to the CPU load directly; instead, it is compared to a function of CPU load.
+The function is `(1 - load^3) * 640`, where `load` is the CPU load as a number between 0.0 and 1.0, and 640 is a number of requests group as mentioned above.
 
 ==== Customizing request priority
 
@@ -130,6 +150,7 @@ Netflix Technology Blog:
 
 * https://netflixtechblog.medium.com/performance-under-load-3e6fa9a60581[Performance Under Load]
 * https://netflixtechblog.com/keeping-netflix-reliable-using-prioritized-load-shedding-6cc827b02f94[Keeping Netflix Reliable Using Prioritized Load Shedding]
+* https://netflixtechblog.com/enhancing-netflix-reliability-with-service-level-prioritized-load-shedding-e735e6ce8f7d[Enhancing Netflix Reliability with Service-Level Prioritized Load Shedding]
 
 Uber Engineering Blog:
 
@@ -148,3 +169,8 @@ Google Cloud Blog:
 CodeReliant Blog:
 
 * https://www.codereliant.io/load-shedding/[Load Shedding for High Traffic Systems]
+
+TCP Vegas:
+
+* https://www.geeksforgeeks.org/computer-networks/basic-concept-of-tcp-vegas/[Basic concept of TCP-Vegas]
+* TCP Congestion Control: A Systems Approach, https://tcpcc.systemsapproach.org/avoidance.html[Chapter 5: Avoidance-Based Algorithms]

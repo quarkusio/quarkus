@@ -7,10 +7,10 @@ import io.quarkus.load.shedding.RequestPrioritizer;
 import io.quarkus.load.shedding.RequestPriority;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 @Singleton
-public class ManagementRequestPrioritizer implements RequestPrioritizer<HttpServerRequest> {
+public class ManagementRequestPrioritizer implements RequestPrioritizer<RoutingContext> {
     private final String managementPath;
 
     @Inject
@@ -34,14 +34,14 @@ public class ManagementRequestPrioritizer implements RequestPrioritizer<HttpServ
 
     @Override
     public boolean appliesTo(Object request) {
-        if (managementPath != null && request instanceof HttpServerRequest httpRequest) {
-            return httpRequest.path().startsWith(managementPath);
+        if (managementPath != null && request instanceof RoutingContext ctx) {
+            return ctx.normalizedPath().startsWith(managementPath);
         }
         return false;
     }
 
     @Override
-    public RequestPriority priority(HttpServerRequest request) {
+    public RequestPriority priority(RoutingContext request) {
         return RequestPriority.CRITICAL;
     }
 }

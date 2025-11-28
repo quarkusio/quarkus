@@ -13,6 +13,8 @@ package io.quarkus.load.shedding;
  * rules must be followed. That is, if multiple implementations are provided with different
  * {@link jakarta.annotation.Priority} values, only the implementations with the highest
  * priority are retained.
+ * <p>
+ * For HTTP requests, the type of the request ({@code R}) is {@link io.vertx.ext.web.RoutingContext}.
  *
  * @param <R> type of the request
  */

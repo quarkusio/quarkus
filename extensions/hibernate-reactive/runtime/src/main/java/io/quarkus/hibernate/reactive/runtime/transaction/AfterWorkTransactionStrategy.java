@@ -13,7 +13,7 @@ public class AfterWorkTransactionStrategy implements AfterWorkStrategy<Void> {
     public Uni<Void> getAfterWorkActions(Context context) {
         return Uni.combine().all().unis(
                 HibernateReactiveRecorder.OPENED_SESSIONS_STATE.closeAllOpenedSessions(context),
-                HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATLESS.closeAllOpenedSessions(context))
+                HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.closeAllOpenedSessions(context))
                 .discardItems();
     }
 }

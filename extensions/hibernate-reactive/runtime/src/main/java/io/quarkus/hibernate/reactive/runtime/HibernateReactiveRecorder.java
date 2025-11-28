@@ -34,7 +34,7 @@ public class HibernateReactiveRecorder {
     }
 
     public static final OpenedSessionsState<Mutiny.Session> OPENED_SESSIONS_STATE = new OpenedSessionsStateStatefulImpl();
-    public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATLESS = new OpenedSessionsStateStatelessImpl();
+    public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATELESS = new OpenedSessionsStateStatelessImpl();
 
     /**
      * The feature needs to be initialized, even if it's not enabled.
@@ -156,7 +156,7 @@ public class HibernateReactiveRecorder {
     public static Mutiny.StatelessSession getStatelessSession(String persistenceUnitName) {
         Context context = Vertx.currentContext();
 
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedSession = OPENED_SESSIONS_STATE_STATLESS
+        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedSession = OPENED_SESSIONS_STATE_STATELESS
                 .getOpenedSession(context, persistenceUnitName);
         // reuse the existing reactive session
         if (openedSession.isPresent()) {
@@ -167,7 +167,7 @@ public class HibernateReactiveRecorder {
                     + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
                     + "\n\t- you may need to annotate the business method with @Transactional");
         } else {
-            return OPENED_SESSIONS_STATE_STATLESS.createNewSession(persistenceUnitName, context);
+            return OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
         }
     }
 

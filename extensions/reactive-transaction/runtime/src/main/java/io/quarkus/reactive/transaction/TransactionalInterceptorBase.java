@@ -29,6 +29,19 @@ public abstract class TransactionalInterceptorBase {
     // Used in this class and in TransactionalContextPool to store and get the lazily created Transaction
     public static final String CURRENT_TRANSACTION_KEY = "reactive.transaction.currentTransaction";
 
+    // This key is used to indicate the method was annotated with @Transactional
+    // And will open a session and a transaction lazy when the first operation requrires a reactive session
+    // Check HibernateReactiveRecorder.sessionSupplier to see where the session is injected
+    // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor field
+    private static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
+
+    // This key is used by Panache internally it's the marker key the WithSessionOnDemand intereceptor uses
+    public static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
+
+    // This key is used by Panache internally it's the marker key the WithTransaction intereceptor uses
+    public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
+
+
     private static final Logger LOG = Logger.getLogger(TransactionalInterceptorBase.class);
 
     private static final String ERROR_MSG = "@Transactional reactive support requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
@@ -129,18 +142,6 @@ public abstract class TransactionalInterceptorBase {
     public static boolean isUniReturnType(InvocationContext context) {
         return context.getMethod().getReturnType().equals(Uni.class);
     }
-
-    // This key is used to indicate the method was annotated with @Transactional
-    // And will open a session and a transaction lazy when the first operation requrires a reactive session
-    // Check HibernateReactiveRecorder.sessionSupplier to see where the session is injected
-    // TODO Luca find a way to remove the duplication between this field and TransactionalInterceptor field
-    private static final String TRANSACTIONAL_METHOD_KEY = "hibernate.reactive.methodTransactional";
-
-    // This key is used by Panache internally it's the marker key the WithSessionOnDemand intereceptor uses
-    public static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
-
-    // This key is used by Panache internally it's the marker key the WithTransaction intereceptor uses
-    public static final String WITH_TRANSACTION_METHOD_KEY = "hibernate.reactive.withTransaction";
 
     protected <T> Uni<T> withTransactionalSessionOnDemand(Supplier<Uni<T>> work) {
         Context context = vertxContext();

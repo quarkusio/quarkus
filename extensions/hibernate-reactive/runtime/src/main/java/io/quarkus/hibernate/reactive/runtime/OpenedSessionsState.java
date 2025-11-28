@@ -37,7 +37,7 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
             k -> createSessionFactory(k));
 
     protected OpenedSessionsState() {
-        sessionOnDemandKey = "hibernate.reactive.panache.sessionOnDemandOpened" + getSessionType().getName();
+        sessionOnDemandKey = "hibernate.reactive.openedSessionState." + getSessionType().getName();
     }
 
     public record SessionWithKey<T>(org.hibernate.reactive.context.Context.Key<T> key, T session) {

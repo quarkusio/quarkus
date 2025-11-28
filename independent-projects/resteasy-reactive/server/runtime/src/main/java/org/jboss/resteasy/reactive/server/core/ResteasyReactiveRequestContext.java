@@ -442,8 +442,10 @@ public abstract class ResteasyReactiveRequestContext
      * This method ensures that no more handlers will run and that all the resources tied to the request are closed
      */
     private void discardRemaining() {
-        setPosition(getHandlers().length);
-        close();
+        int length = getHandlers().length;
+        if (length > 0) {
+            setPosition(length);
+        }
     }
 
     public LazyResponse getResponse() {
@@ -1352,13 +1354,8 @@ public abstract class ResteasyReactiveRequestContext
 
         @Override
         public void run() {
-            try {
-                context.discardRemaining();
-            } catch (Exception ignored) {
-
-            } finally {
-                context = null;
-            }
+            context.discardRemaining();
+            context = null;
         }
     }
 }

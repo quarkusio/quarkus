@@ -2,6 +2,7 @@ package io.quarkus.hibernate.reactive.panache.test.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
 import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,10 @@ public class MixWithTransactionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addDefaultPackage().addClass(TransactionalInterceptorRequired.class));
+            .withApplicationRoot((jar) ->
+                    jar
+                            .addClasses(TransactionalInterceptorRequired.class, AfterWorkTransactionStrategy.class)
+            );
 
     @Test
     @RunOnVertxContext

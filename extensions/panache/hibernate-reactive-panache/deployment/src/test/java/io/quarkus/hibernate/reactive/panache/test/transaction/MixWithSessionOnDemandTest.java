@@ -2,13 +2,13 @@ package io.quarkus.hibernate.reactive.panache.test.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
 import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
+import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
 import io.quarkus.reactive.transaction.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -19,10 +19,8 @@ public class MixWithSessionOnDemandTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) ->
-                    jar
-                            .addClasses(TransactionalInterceptorRequired.class, AfterWorkTransactionStrategy.class)
-            );
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(TransactionalInterceptorRequired.class, AfterWorkTransactionStrategy.class));
 
     @Test
     @RunOnVertxContext

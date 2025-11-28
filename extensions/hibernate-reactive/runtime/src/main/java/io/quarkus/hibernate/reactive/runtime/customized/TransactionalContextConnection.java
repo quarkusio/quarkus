@@ -1,5 +1,9 @@
 package io.quarkus.hibernate.reactive.runtime.customized;
 
+import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.CURRENT_TRANSACTION_KEY;
+
+import java.util.Optional;
+
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -14,10 +18,6 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
-
-import java.util.Optional;
-
-import static io.quarkus.reactive.transaction.TransactionalInterceptorBase.CURRENT_TRANSACTION_KEY;
 
 /**
  * This is a delegate for a simple SqlConnection that avoids closing the connection before

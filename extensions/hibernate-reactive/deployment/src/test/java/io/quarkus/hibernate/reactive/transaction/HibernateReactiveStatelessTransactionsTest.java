@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
-import io.quarkus.reactive.transaction.TransactionalInterceptorRequired;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -14,6 +12,8 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
+import io.quarkus.reactive.transaction.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;

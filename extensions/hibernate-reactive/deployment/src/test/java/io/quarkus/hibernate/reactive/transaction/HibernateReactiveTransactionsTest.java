@@ -6,8 +6,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-
-import io.vertx.mutiny.sqlclient.Pool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,6 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.sqlclient.Pool;
 
 public class HibernateReactiveTransactionsTest {
 

@@ -2,8 +2,8 @@ package io.quarkus.hibernate.reactive.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import io.quarkus.builder.Version;
-import io.quarkus.maven.dependency.Dependency;
+import java.util.List;
+
 import jakarta.inject.Inject;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.TransactionManager;
@@ -14,12 +14,12 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
-
-import java.util.List;
 
 public class DisableJTATransactionTest {
 
@@ -30,8 +30,7 @@ public class DisableJTATransactionTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-narayana-jta", Version.getVersion())
-            ));
+                    Dependency.of("io.quarkus", "quarkus-narayana-jta", Version.getVersion())));
 
     @Test
     @RunOnVertxContext

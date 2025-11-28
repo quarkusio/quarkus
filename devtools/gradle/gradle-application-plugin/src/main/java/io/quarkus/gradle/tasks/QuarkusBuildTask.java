@@ -380,7 +380,15 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         }
     }
 
-    private Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {
+    /**
+     * Filters resolved Gradle configuration for properties in the Quarkus namespace
+     * (as in start with <code>quarkus.</code>). This avoids exposing configuration that may contain secrets or
+     * passwords not related to Quarkus (for instance environment variables storing sensitive data for other systems).
+     *
+     * @param appArtifact the application dependency to retrive the quarkus application name and version.
+     * @return a filtered view of the configuration only with <code>quarkus.</code> names.
+     */
+    protected Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {
         Map<String, String> buildSystemProperties = new HashMap<>();
         buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
@@ -390,11 +398,6 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
             buildSystemProperties.putIfAbsent("quarkus.package.output-timestamp", "1970-01-02T00:00:00Z");
         }
 
-        for (Map.Entry<String, String> entry : getExtensionView().getForcedProperties().get().entrySet()) {
-            if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {
-                buildSystemProperties.put(entry.getKey(), entry.getValue());
-            }
-        }
         for (Map.Entry<String, String> entry : getExtensionView().getQuarkusBuildProperties().get().entrySet()) {
             if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {
                 buildSystemProperties.put(entry.getKey(), entry.getValue());
@@ -414,23 +417,19 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
         for (String value : quarkusValues) {
             Expression expression = Expression.compile(value, LENIENT_SYNTAX, NO_TRIM, NO_SMART_BRACES, DOUBLE_COLON);
             for (String reference : expression.getReferencedStrings()) {
-                String expanded = getExtensionView().getForcedProperties().get().get(reference);
+                String expanded = getExtensionView().getQuarkusBuildProperties().get().get(reference);
                 if (expanded != null) {
                     buildSystemProperties.put(reference, expanded);
                     continue;
                 }
 
-                expanded = getExtensionView().getQuarkusBuildProperties().get().get(reference);
-                if (expanded != null) {
-                    buildSystemProperties.put(reference, expanded);
-                    continue;
-                }
                 expanded = (String) getExtensionView().getProjectProperties().get().get(reference);
                 if (expanded != null) {
                     buildSystemProperties.put(reference, expanded);
                 }
             }
         }
+
         return buildSystemProperties;
     }
 }

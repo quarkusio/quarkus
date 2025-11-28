@@ -105,7 +105,6 @@ public class BeforeTestAction implements Action<Task> {
                 extensionView.getForcedProperties(),
                 extensionView.getProjectProperties(),
                 extensionView.getQuarkusBuildProperties(),
-                extensionView.getQuarkusRelevantProjectProperties(),
                 manifestAttributes,
                 manifestSections,
                 extensionView.getNativeBuild(),

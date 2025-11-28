@@ -27,6 +27,8 @@ import io.vertx.sqlclient.Transaction;
  */
 public class TransactionalContextPool implements Pool {
 
+    private static final Logger LOG = Logger.getLogger(TransactionalContextPool.class);
+
     private final Pool delegate;
 
     public TransactionalContextPool(Pool delegate) {
@@ -51,8 +53,6 @@ public class TransactionalContextPool implements Pool {
             });
         }
     }
-
-    private static final Logger LOG = Logger.getLogger(TransactionalContextPool.class);
 
     @Override
     public Future<SqlConnection> getConnection() {

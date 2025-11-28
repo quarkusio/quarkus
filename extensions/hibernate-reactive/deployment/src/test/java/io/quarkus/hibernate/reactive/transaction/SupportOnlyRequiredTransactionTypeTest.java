@@ -2,6 +2,13 @@ package io.quarkus.hibernate.reactive.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkus.hibernate.reactive.runtime.transaction.AfterWorkTransactionStrategy;
+import io.quarkus.reactive.transaction.TransactionalInterceptorMandatory;
+import io.quarkus.reactive.transaction.TransactionalInterceptorNever;
+import io.quarkus.reactive.transaction.TransactionalInterceptorNotSupported;
+import io.quarkus.reactive.transaction.TransactionalInterceptorRequired;
+import io.quarkus.reactive.transaction.TransactionalInterceptorRequiresNew;
+import io.quarkus.reactive.transaction.TransactionalInterceptorSupports;
 import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
@@ -16,7 +23,16 @@ public class SupportOnlyRequiredTransactionTypeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addDefaultPackage());
+            .withApplicationRoot(jar ->
+                    jar.addDefaultPackage()
+                            .addClasses(
+                                    TransactionalInterceptorNever.class,
+                                    TransactionalInterceptorSupports.class,
+                                    TransactionalInterceptorRequiresNew.class,
+                                    TransactionalInterceptorMandatory.class,
+                                    TransactionalInterceptorNotSupported.class)
+
+            );
 
     private static final String ERROR_MESSAGE = "@Transactional on Reactive methods supports only Transactional.TxType.REQUIRED";
 

@@ -1,7 +1,7 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
-import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
+import static io.quarkus.test.common.LauncherUtil.registerRuntimeValues;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
@@ -308,7 +308,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             log.info("Wait for server to start by capturing listening data...");
             final ListeningAddress result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
             log.infof("Server started on port %s", result.getPort());
-            updateConfigForPort(result.getPort());
+            registerRuntimeValues(result.getPort());
             isSsl = result.isSsl();
         }
     }

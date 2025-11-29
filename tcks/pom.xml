@@ -104,7 +104,6 @@
                 <module>microprofile-health</module>
                 <module>microprofile-jwt</module>
                 <module>microprofile-graphql</module>
-                <module>microprofile-metrics</module>
                 <module>microprofile-reactive-messaging</module>
                 <module>microprofile-rest-client</module>
                 <module>microprofile-rest-client-reactive</module>

@@ -45,7 +45,7 @@ The most common ones are class-based beans:
 ----
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.metrics.annotation.Counted;
+import io.micrometer.core.annotation.Counted;
 
 @ApplicationScoped <1>
 public class Translator {
@@ -53,7 +53,7 @@ public class Translator {
     @Inject
     Dictionary dictionary; <2>
 
-    @Counted  <3>
+    @Counted(value = "translate.method.counted") <3>
     String translate(String sentence) {
       // ...
     }
@@ -61,7 +61,7 @@ public class Translator {
 ----
 <1> This is a scope annotation. It tells the container which context to associate the bean instance with. In this particular case, a *single bean instance* is created for the application and used by all other beans that inject `Translator`.
 <2> This is a field injection point. It tells the container that `Translator` depends on the `Dictionary` bean. If there is no matching bean the build fails.
-<3> This is an interceptor binding annotation. In this case, the annotation comes from the MicroProfile Metrics. The relevant interceptor intercepts the invocation and updates the relevant metrics. We will talk about <<interceptors,interceptors>> later.
+<3> This is an interceptor binding annotation. In this case, the annotation comes from Micrometer. The relevant interceptor intercepts the invocation and updates the relevant metrics. We will talk about <<interceptors,interceptors>> later.
 
 [[typesafe_resolution]]
 == Nice. How does the dependency resolution work? I see no names or identifiers.

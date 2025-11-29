@@ -11,6 +11,11 @@
     <name>Quarkus - Bootstrap - Test BOM</name>
     <description>This BOM contains only test scoped dependencies for the bootstrap project's testsuite</description>
     <packaging>pom</packaging>
+
+    <modules>
+        <module>junit6-bom</module>
+    </modules>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

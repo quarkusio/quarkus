@@ -25,6 +25,12 @@
         <module>junit5-component</module>
         <module>junit5-mockito</module>
         <module>junit5-mockito-config</module>
+        <module>junit6-config</module>
+        <module>junit6-internal</module>
+        <module>junit6</module>
+        <module>junit6-component</module>
+        <module>junit6-mockito</module>
+        <module>junit6-mockito-config</module>
         <module>vertx</module>
         <module>hibernate-reactive-panache</module>
         <module>amazon-lambda</module>

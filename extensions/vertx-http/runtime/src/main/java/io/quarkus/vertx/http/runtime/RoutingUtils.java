@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.util.Objects;
 import java.util.Set;
 
 import io.vertx.core.http.HttpHeaders;
@@ -10,8 +11,33 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 public final class RoutingUtils {
 
+    private static final String CURRENT_CDI_REQUEST_CTX_OWNER = "io.quarkus.vertx.http.runtime#current-cdi-req-ctx-owner";
+
     private RoutingUtils() throws IllegalAccessException {
         throw new IllegalAccessException("Avoid direct instantiation");
+    }
+
+    /**
+     * Assumes ownership of the currently active CDI request context.
+     * Thus, code invoked (even asynchronously) from previous route handlers shouldn't deactivate it.
+     *
+     * @param ctx RoutingContext
+     * @param owner typically a route handler that needs CDI request context active
+     */
+    public static void assumeCdiRequestContext(RoutingContext ctx, String owner) {
+        ctx.put(CURRENT_CDI_REQUEST_CTX_OWNER, Objects.requireNonNull(owner));
+    }
+
+    /**
+     * Enables route handlers to determine if they can deactivate/destroy CDI request context without impacting
+     * any other extension.
+     *
+     * @param ctx RoutingContext
+     * @param owner typically a route handler that needs CDI request context active
+     * @return true if the CDI request context is owned by the {@code owner}
+     */
+    public static boolean isCdiRequestContextOwner(RoutingContext ctx, String owner) {
+        return owner.equals(ctx.get(CURRENT_CDI_REQUEST_CTX_OWNER));
     }
 
     /**

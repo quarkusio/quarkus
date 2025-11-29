@@ -47,6 +47,7 @@ import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveSecurityContext;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.RoutingUtils;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
@@ -60,6 +61,7 @@ import io.vertx.ext.web.RoutingContext;
 public class ServletRequestContext extends ResteasyReactiveRequestContext
         implements ServerHttpRequest, ServerHttpResponse, ResponseCommitListener {
 
+    private static final String QUARKUS_REST_SERVLET_KEY = "quarkus-rest-servlet";
     private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
             ServletRequestContext::createEvent);
     final RoutingContext context;
@@ -136,6 +138,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         if (user != null) {
             fireSecurityIdentity(user.getSecurityIdentity());
         }
+    }
+
+    @Override
+    protected void onPreRequestScopeActivation() {
+        RoutingUtils.assumeCdiRequestContext(context, QUARKUS_REST_SERVLET_KEY);
     }
 
     static void fireSecurityIdentity(SecurityIdentity identity) {

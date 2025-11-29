@@ -33,7 +33,9 @@ This will allow Quarkus based applications to be observable by tools and service
 
 [NOTE]
 ====
-Automatic metrics instrumentation in Quarkus is done by the xref:telemetry-micrometer.adoc[Quarkus Micrometer extension]. We plan to provide, in the future, a bridge for those metrics to be available in OpenTelemetry as well.
+Automatic metrics instrumentation in Quarkus is done by the xref:telemetry-micrometer.adoc[Quarkus Micrometer extension].
+
+The xref:telemetry-micrometer-to-opentelemetry.adoc[quarkus-micrometer-opentelemetry] extension enables the use and export of Micrometer metrics via OpenTelemetry.
 ====
 
 Quarkus supports the OpenTelemetry Autoconfiguration. The configurations match what you can see at

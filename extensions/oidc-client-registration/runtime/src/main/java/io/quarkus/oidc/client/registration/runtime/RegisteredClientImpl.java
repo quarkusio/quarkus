@@ -191,7 +191,7 @@ public class RegisteredClientImpl implements RegisteredClient {
                 OidcEndpoint.Type.REGISTERED_CLIENT);
         if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
             io.vertx.core.json.JsonObject json = buffer.toJsonObject();
-            LOG.debugf("Client metadata has been succesfully updated: %s", json.toString());
+            LOG.debugf("Client metadata has been successfully updated: %s", json.toString());
 
             String newRegistrationClientUri = (String) json.remove(OidcConstants.REGISTRATION_CLIENT_URI);
             String newRegistrationToken = (String) json.remove(OidcConstants.REGISTRATION_ACCESS_TOKEN);
@@ -212,7 +212,7 @@ public class RegisteredClientImpl implements RegisteredClient {
         Buffer buffer = OidcCommonUtils.filterHttpResponse(requestProps, resp, responseFilters,
                 OidcEndpoint.Type.REGISTERED_CLIENT);
         if (resp.statusCode() == 200) {
-            LOG.debug("Client has been succesfully deleted");
+            LOG.debug("Client has been successfully deleted");
             return Uni.createFrom().voidItem();
         } else {
             String errorMessage = buffer.toString();

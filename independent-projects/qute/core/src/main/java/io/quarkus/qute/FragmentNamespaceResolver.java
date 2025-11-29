@@ -51,7 +51,7 @@ public class FragmentNamespaceResolver implements NamespaceResolver, EngineListe
         Template template = null;
         int idx = id.lastIndexOf('$');
         if (idx != -1) {
-            // the part before the last occurence of a dollar sign is the template identifier
+            // the part before the last occurrence of a dollar sign is the template identifier
             String templateId = id.substring(0, idx);
             Engine e = engine;
             if (e == null) {
@@ -61,7 +61,7 @@ public class FragmentNamespaceResolver implements NamespaceResolver, EngineListe
             if (template == null) {
                 throw new TemplateException("Template not found: " + templateId);
             }
-            // the part after the last occurence of a dollar sign is the fragment identifier
+            // the part after the last occurrence of a dollar sign is the fragment identifier
             id = id.substring(idx + 1);
         } else {
             template = context.resolutionContext().getTemplate();

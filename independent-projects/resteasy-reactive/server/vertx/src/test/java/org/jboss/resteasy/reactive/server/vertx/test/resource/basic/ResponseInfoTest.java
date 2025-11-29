@@ -25,8 +25,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * @tpChapter Integration tests
  * @tpSince RESTEasy 3.0.16
  */
-@DisplayName("Reponse Info Test")
-public class ReponseInfoTest {
+@DisplayName("Response Info Test")
+public class ResponseInfoTest {
 
     static Client client;
 
@@ -46,7 +46,7 @@ public class ReponseInfoTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, ReponseInfoTest.class);
+                    war.addClasses(PortProviderUtil.class, ResponseInfoTest.class);
                     // Use of PortProviderUtil in the deployment
                     war.addClasses(ResponseInfoResource.class);
                     return war;
@@ -54,7 +54,7 @@ public class ReponseInfoTest {
             });
 
     private void basicTest(String path) {
-        WebTarget base = client.target(PortProviderUtil.generateURL(path, ReponseInfoTest.class.getSimpleName()));
+        WebTarget base = client.target(PortProviderUtil.generateURL(path, ResponseInfoTest.class.getSimpleName()));
         Response response = base.request().get();
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         assertEquals(true, response.readEntity(boolean.class));

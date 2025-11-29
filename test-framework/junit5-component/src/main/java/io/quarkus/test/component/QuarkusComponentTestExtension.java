@@ -425,7 +425,7 @@ public class QuarkusComponentTestExtension
             try {
                 Arc.shutdown();
             } catch (Exception e) {
-                LOG.error("An error occured during ArC shutdown: " + e);
+                LOG.error("An error occurred during ArC shutdown: " + e);
             }
             MockBeanCreator.clear();
             ConfigBeanCreator.clear();

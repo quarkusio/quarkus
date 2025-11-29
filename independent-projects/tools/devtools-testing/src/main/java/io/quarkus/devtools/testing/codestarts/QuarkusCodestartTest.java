@@ -225,7 +225,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
      * <br>
      * <br>
      *
-     * Very usefull to check if a file contains a specific String:
+     * Very useful to check if a file contains a specific String:
      * <br>
      * Example:<br>
      * codestartTest.assertThatGeneratedFile(JAVA, "README.md").satisfies(checkContains("./mvnw quarkus:dev

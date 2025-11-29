@@ -480,7 +480,7 @@ public class IncludeSectionHelper implements SectionHelper {
             }
             int idx = templateId.lastIndexOf('$');
             if (idx != -1) {
-                // the part after the last occurence of a dollar sign is the fragment identifier
+                // the part after the last occurrence of a dollar sign is the fragment identifier
                 String fragmentId = templateId.substring(idx + 1, templateId.length());
                 if (FragmentSectionHelper.Factory.FRAGMENT_PATTERN.matcher(fragmentId).matches()) {
                     return fragmentId;

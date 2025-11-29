@@ -46,7 +46,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
      * Verify that each certificate file exists and that the key store and trust store are correctly configured.
      * When aliases are set, aliases are validated.
      *
-     * @param providerBucketNames the bucket names from {@link Identifier @Identifer} annotations on any
+     * @param providerBucketNames the bucket names from {@link Identifier @Identifier} annotations on any
      *        {@link KeyStoreProvider} or {@link TrustStoreProvider} beans
      * @param vertx the Vert.x instance
      */

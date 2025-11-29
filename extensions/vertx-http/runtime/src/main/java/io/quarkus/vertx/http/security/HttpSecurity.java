@@ -1,13 +1,16 @@
 package io.quarkus.vertx.http.security;
 
 import java.security.Permission;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
@@ -128,6 +131,19 @@ public interface HttpSecurity {
     HttpSecurity mechanism(HttpAuthenticationMechanism mechanism);
 
     /**
+     * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.
+     *
+     * @param mechanism {@link HttpAuthenticationMechanism}
+     * @param identityProviders {@link IdentityProvider}s that should be used for authentication instead
+     *        {@link IdentityProvider}s registered as CDI beans; if this parameter is null, the global providers are used
+     * @param identityAugmentors {@link SecurityIdentityAugmentor}s that should be used to augment {@link SecurityIdentity}
+     *        instead of the {@link SecurityIdentityAugmentor}s registered as CDI beans; this parameter is optional
+     * @return HttpSecurity
+     */
+    HttpSecurity mechanism(HttpAuthenticationMechanism mechanism, Collection<IdentityProvider<?>> identityProviders,
+            SecurityIdentityAugmentor... identityAugmentors);
+
+    /**
      * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
      * This method is a shortcut for {@code mechanism(Basic.create())}.
      *
@@ -143,6 +159,16 @@ public interface HttpSecurity {
      * @return HttpSecurity
      */
     HttpSecurity basic(String authenticationRealm);
+
+    /**
+     * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
+     * This method is a shortcut for {@code mechanism(Basic.create(), identityProviders)}.
+     *
+     * @param identityProviders such as the Quarkus Security JPA {@link IdentityProvider}s
+     * @return HttpSecurity
+     * @see #mechanism(HttpAuthenticationMechanism, Collection, SecurityIdentityAugmentor...)
+     */
+    HttpSecurity basic(Collection<IdentityProvider<?>> identityProviders);
 
     /**
      * Registers the mutual TLS client authentication mechanism in addition to all other global authentication mechanisms.

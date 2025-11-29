@@ -15,6 +15,9 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.proxy.ProxyType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -139,10 +142,32 @@ public class SmallRyeGraphQLClientRecorder {
                     transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
                 });
 
-        quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
-        quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
-        quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
-        quarkusConfig.proxyPassword().ifPresent(transformed::setProxyPassword);
+        if (quarkusConfig.proxyHost().isPresent()) {
+            // use the deprecated proxy settings if they are set
+            quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
+            quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
+            quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
+            quarkusConfig.proxyPassword().ifPresent(transformed::setProxyPassword);
+        } else {
+            // use the proxy configuration registry
+            resolveProxyConfiguration(quarkusConfig)
+                    .ifPresent(proxyConfiguration -> {
+                        transformed.setProxyHost(proxyConfiguration.host());
+                        transformed.setProxyPort(proxyConfiguration.port());
+                        proxyConfiguration.username().ifPresent(transformed::setProxyUsername);
+                        proxyConfiguration.password().ifPresent(transformed::setProxyPassword);
+                        // TODO: these properties will need to be supported on the smallrye-graphql side first
+                        proxyConfiguration.nonProxyHosts().ifPresent(x -> {
+                            org.jboss.logging.Logger.getLogger(this.getClass()).warn(
+                                    "Non-proxy hosts setting is not yet supported by the GraphQL client extension and will be ignored.");
+                        });
+                        if (proxyConfiguration.type() != ProxyType.HTTP) {
+                            throw new ConfigurationException(
+                                    "Only HTTP proxy type is supported by the GraphQL client extension at the moment.");
+                        }
+                    });
+        }
+
         quarkusConfig.maxRedirects().ifPresent(transformed::setMaxRedirects);
         quarkusConfig.executeSingleResultOperationsOverWebsocket()
                 .ifPresent(transformed::setExecuteSingleOperationsOverWebsocket);
@@ -184,6 +209,34 @@ public class SmallRyeGraphQLClientRecorder {
                 if (quarkusConfig.tlsConfigurationName().isPresent()) {
                     throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
                             + "' was specified, but no TLS configuration registry could be found.");
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<ProxyConfiguration> resolveProxyConfiguration(GraphQLClientConfig clientConfig) {
+        if (Arc.container() != null) {
+            ProxyConfigurationRegistry proxyConfigurationRegistry = Arc.container().select(ProxyConfigurationRegistry.class)
+                    .orNull();
+            if (proxyConfigurationRegistry != null) {
+                if (clientConfig.proxyConfigurationName().isPresent()) {
+                    // explicit proxy config
+                    Optional<ProxyConfiguration> namedConfig = proxyConfigurationRegistry
+                            .get(clientConfig.proxyConfigurationName());
+                    if (namedConfig.isEmpty()) {
+                        throw new ConfigurationException("Proxy configuration '" + clientConfig.proxyConfigurationName().get()
+                                + "' was specified, but it does not exist.");
+                    }
+                    return namedConfig;
+                } else {
+                    // no explicit proxy config -> get the default proxy configuration if it exists
+                    return proxyConfigurationRegistry.get(Optional.empty());
+                }
+            } else {
+                if (clientConfig.proxyConfigurationName().isPresent()) {
+                    throw new ConfigurationException("Proxy configuration '" + clientConfig.proxyConfigurationName().get()
+                            + "' was specified, but no Proxy configuration registry could be found.");
                 }
             }
         }

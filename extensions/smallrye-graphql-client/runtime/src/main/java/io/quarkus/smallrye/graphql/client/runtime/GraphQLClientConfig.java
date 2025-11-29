@@ -49,23 +49,46 @@ public interface GraphQLClientConfig {
     OptionalInt websocketInitializationTimeout();
 
     /**
-     * Hostname of the proxy to use.
+     * The name of the proxy configuration to use.
+     * This setting is ignored if {@code proxy-host} is set.
+     *
+     * If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.
+     * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+     * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown
+     * at runtime.
      */
+    Optional<String> proxyConfigurationName();
+
+    /**
+     * Hostname of the proxy to use.
+     *
+     * @deprecated Use {@code proxy-configuration-name} instead.
+     */
+    @Deprecated(since = "3.31.0", forRemoval = true)
     Optional<String> proxyHost();
 
     /**
      * Port number of the proxy to use.
+     *
+     * @deprecated Use {@code proxy-configuration-name} instead.
      */
+    @Deprecated(since = "3.31.0", forRemoval = true)
     OptionalInt proxyPort();
 
     /**
      * Username for the proxy to use.
+     *
+     * @deprecated Use {@code proxy-configuration-name} instead.
      */
+    @Deprecated(since = "3.31.0", forRemoval = true)
     Optional<String> proxyUsername();
 
     /**
      * Password for the proxy to use.
+     *
+     * @deprecated Use {@code proxy-configuration-name} instead.
      */
+    @Deprecated(since = "3.31.0", forRemoval = true)
     Optional<String> proxyPassword();
 
     /**

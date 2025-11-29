@@ -1,5 +1,6 @@
 package io.quarkus.qute.debug.variables;
 
+import static io.quarkus.qute.debug.adapter.RegisterDebugServerAdapter.findAvailableSocketPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -17,7 +18,6 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.debug.RenderTemplateInThread;
 import io.quarkus.qute.debug.adapter.RegisterDebugServerAdapter;
 import io.quarkus.qute.debug.client.DAPClient;
-import io.quarkus.qute.debug.client.DebuggerUtils;
 import io.quarkus.qute.debug.data.Item;
 
 public class VariablesTest {
@@ -26,7 +26,7 @@ public class VariablesTest {
 
     @Test
     public void debuggingTemplate() throws Exception {
-        int port = DebuggerUtils.findAvailableSocketPort();
+        int port = findAvailableSocketPort();
 
         // Server side :
         // - create a Qute engine and set the debugging port as 1234

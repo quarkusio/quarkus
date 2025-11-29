@@ -20,6 +20,7 @@ import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.testcontainers.InfinispanContainer;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -334,8 +335,9 @@ public class InfinispanDevServiceProcessor {
             }
 
             config.artifacts().ifPresent(a -> withArtifacts(a.toArray(new String[0])));
-
+            super.setWaitStrategy(Wait.forLogMessage(".*Infinispan Server.*started.*", 1));
             withCommand(command);
+
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "infinispan");
         }
 

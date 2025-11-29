@@ -5,15 +5,20 @@ import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWOR
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -37,6 +42,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
@@ -64,10 +70,12 @@ import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
+import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpCertificateUpdateEventListener;
+import io.quarkus.vertx.http.runtime.HttpStaticDirHandler;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
@@ -206,6 +214,96 @@ class VertxHttpProcessor {
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         return KubernetesPortBuildItem.fromRuntimeConfiguration("management", "quarkus.management.port", 9000,
                 managementBuildTimeConfig.enabled());
+    }
+
+    @BuildStep
+    RouteBuildItem registerHttpStaticDirRoute(
+            VertxHttpBuildTimeConfig httpConfig,
+            List<GeneratedStaticResourceBuildItem> items) {
+
+        var local = httpConfig.httpStaticDirConfig();
+        if (!local.enabled()) {
+            return null;
+        }
+
+        Map<String, String> map = new HashMap<>();
+        for (GeneratedStaticResourceBuildItem i : items) {
+            if (i.isFile()) {
+                map.put(i.getEndpoint(), i.getFileAbsolutePath());
+            }
+        }
+
+        if (map.isEmpty()) {
+            return null;
+        }
+
+        String basePath = local.normalizedEndpoint();
+
+        return RouteBuildItem.builder()
+                .route(basePath + "/*")
+                .handler(new HttpStaticDirHandler(map))
+                .build();
+    }
+
+    @BuildStep
+    void registerHttpStaticDir(VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticResources) {
+
+        var localStatic = httpBuildTimeConfig.httpStaticDirConfig();
+        if (!localStatic.enabled()) {
+            return;
+        }
+
+        final String basePath = localStatic.normalizedEndpoint();
+        String dir = localStatic.normalizedPath();
+        Path root = Path.of(dir).normalize().toAbsolutePath();
+        if (!Files.isDirectory(root)) {
+            return;
+        }
+
+        try (Stream<Path> paths = Files.walk(root)) {
+
+            paths.filter(Files::isRegularFile).forEach(file -> {
+
+                Path relative = root.relativize(file).normalize();
+                String relativeUnix = relative.toString().replace('\\', '/');
+                if (relativeUnix.contains("..")) {
+                    return;
+                }
+                String endpoint = basePath + "/" + relativeUnix;
+                generatedStaticResources.produce(
+                        new GeneratedStaticResourceBuildItem(endpoint, file));
+
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(
+                    "Failed to register local static resources from directory " + root, e);
+        }
+    }
+
+    @BuildStep
+    void watchHttpStaticDirForDev(VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+
+        var localStatic = httpBuildTimeConfig.httpStaticDirConfig();
+
+        if (!localStatic.enabled()) {
+            return;
+        }
+
+        String dir = localStatic.normalizedPath();
+
+        if (dir.isBlank()) {
+            return;
+        }
+
+        String normalizedDir = Path.of(dir).normalize().toAbsolutePath().toString();
+
+        watchedFiles.produce(
+                HotDeploymentWatchedFileBuildItem.builder()
+                        .setLocationPredicate(path -> path.startsWith(normalizedDir))
+                        .setRestartNeeded(false)
+                        .build());
     }
 
     @BuildStep

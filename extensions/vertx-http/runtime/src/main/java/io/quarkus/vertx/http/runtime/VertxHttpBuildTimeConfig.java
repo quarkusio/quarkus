@@ -115,4 +115,13 @@ public interface VertxHttpBuildTimeConfig {
      * The compression level used when compression support is enabled.
      */
     OptionalInt compressionLevel();
+
+    /**
+     * Static resources served directly from a local directory using Quarkus's static resource mechanism
+     * (via {@code GeneratedStaticResourceBuildItem}).
+     *
+     * @return configuration for serving local static resources
+     */
+    @WithName("static-dir")
+    HttpStaticDirConfig httpStaticDirConfig();
 }

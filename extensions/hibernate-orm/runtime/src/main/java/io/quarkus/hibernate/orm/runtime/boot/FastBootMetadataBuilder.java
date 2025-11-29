@@ -14,7 +14,6 @@ import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATE
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
-import static org.hibernate.internal.CoreLogging.messageLogger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -50,7 +49,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jpa.boot.internal.StandardJpaScanEnvironmentImpl;
 import org.hibernate.jpa.boot.spi.JpaSettings;
@@ -65,6 +63,7 @@ import org.hibernate.service.Service;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
 import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
+import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
@@ -98,7 +97,7 @@ public class FastBootMetadataBuilder {
     @Deprecated
     private static final String ALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
 
-    private static final CoreMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
+    private static final Logger LOG = Logger.getLogger(FastBootMetadataBuilder.class);
 
     private final PersistenceUnitDescriptor persistenceUnit;
     private final BuildTimeSettings buildTimeSettings;
@@ -268,7 +267,8 @@ public class FastBootMetadataBuilder {
 
         if (readBooleanConfigurationValue(cfg, AvailableSettings.FLUSH_BEFORE_COMPLETION)) {
             cfg.put(AvailableSettings.FLUSH_BEFORE_COMPLETION, "false");
-            LOG.definingFlushBeforeCompletionIgnoredInHem(AvailableSettings.FLUSH_BEFORE_COMPLETION);
+            // TODO Luca review this
+            //            LOG.definingFlushBeforeCompletionIgnoredInHem(AvailableSettings.FLUSH_BEFORE_COMPLETION);
         }
 
         // Quarkus specific
@@ -607,7 +607,8 @@ public class FastBootMetadataBuilder {
         }
         boolean hasTransactionStrategy = configurationValues.containsKey(TRANSACTION_COORDINATOR_STRATEGY);
         if (hasTransactionStrategy) {
-            LOG.overridingTransactionStrategyDangerous(TRANSACTION_COORDINATOR_STRATEGY);
+            // TODO Luca review this
+            //            LOG.overridingTransactionStrategyDangerous(TRANSACTION_COORDINATOR_STRATEGY);
         } else {
             if (transactionType == PersistenceUnitTransactionType.JTA) {
                 configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY,

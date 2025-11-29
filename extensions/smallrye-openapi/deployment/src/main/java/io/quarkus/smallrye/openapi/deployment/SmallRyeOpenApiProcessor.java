@@ -121,6 +121,7 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiDocument;
+import io.smallrye.openapi.api.OperationHandler;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.api.constants.SecurityConstants;
 import io.smallrye.openapi.api.util.MergeUtil;
@@ -881,7 +882,13 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
-    private void handleOperation(Operation operation, ClassInfo classInfo, MethodInfo method) {
+    /**
+     * Callback invoked by the smallrye-open-api annotation scanner for each discovered API
+     * operation. We use this to set a (private) extension in the OpenAPI model which is then
+     * used by the {@link OperationFilter} to match operations with the security and
+     * tag information discovered earlier in the build by this class.
+     */
+    private void addMethodReferenceExtension(Operation operation, ClassInfo classInfo, MethodInfo method) {
         String methodRef = createUniqueMethodReference(classInfo, method);
         operation.addExtension(OperationFilter.EXT_METHOD_REF, methodRef);
     }
@@ -906,6 +913,16 @@ public class SmallRyeOpenApiProcessor {
                 .map(IgnoreStaticDocumentBuildItem::getUrlIgnorePattern)
                 .toList();
 
+        /*
+         * Only add method references if the OperationFilter is enabled. Otherwise,
+         * they are not needed.
+         */
+        OperationHandler operationHandler = openAPIBuildItems.stream()
+                .map(AddToOpenAPIDefinitionBuildItem::getOASFilter)
+                .anyMatch(OperationFilter.class::isInstance)
+                        ? this::addMethodReferenceExtension
+                        : OperationHandler.DEFAULT;
+
         SmallRyeOpenAPI.Builder builder = SmallRyeOpenAPI.builder()
                 .withConfig(config)
                 .withIndex(index)
@@ -926,7 +943,7 @@ public class SmallRyeOpenApiProcessor {
                 .withScannerFilter(getScannerFilter(capabilities, index))
                 .withContextRootResolver(getContextRootResolver(config, capabilities, httpRootPathBuildItem))
                 .withTypeConverter(getTypeConverter(index, capabilities))
-                .withOperationHandler(this::handleOperation)
+                .withOperationHandler(operationHandler)
                 .enableUnannotatedPathParameters(capabilities.isPresent(Capability.RESTEASY_REACTIVE))
                 .enableStandardFilter(false)
                 .withFilters(openAPIBuildItems.stream()

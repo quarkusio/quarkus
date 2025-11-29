@@ -15,6 +15,8 @@
 
 package io.quarkus.vertx.http.accesslog;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -69,7 +71,7 @@ public class AccessLogFileTestCase {
                         p.setProperty("quarkus.http.access-log.base-file-name", "server");
                         p.setProperty("quarkus.http.access-log.log-directory", logDirectory.toAbsolutePath().toString());
                         p.setProperty("quarkus.http.access-log.pattern", "long");
-                        p.setProperty("quarkus.http.access-log.exclude-pattern", "/health|/liveliness");
+                        p.setProperty("quarkus.http.access-log.exclude-pattern", "^(/health|/liveliness)$");
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                         p.store(out, null);
 
@@ -105,6 +107,8 @@ public class AccessLogFileTestCase {
         final RequestSpecification requestSpec = new RequestSpecBuilder().setConfig(http10Config).build();
         final String paramValue = UUID.randomUUID().toString();
         RestAssured.given(requestSpec).get("/health"); //should be ignored
+        // test a non-normalized path
+        RestAssured.given(requestSpec).get("/test/../health"); //should be ignored
         RestAssured.given(requestSpec).get("/liveliness"); //should be ignored
         RestAssured.given(requestSpec).get("/does-not-exist?foo=" + paramValue);
 
@@ -119,17 +123,14 @@ public class AccessLogFileTestCase {
                         Path path = logDirectory.resolve("server.log");
                         Assertions.assertTrue(Files.exists(path));
                         String data = Files.readString(path);
-                        Assertions.assertFalse(data.contains("/health"));
-                        Assertions.assertFalse(data.contains("/liveliness"));
-                        Assertions.assertTrue(data.contains("/does-not-exist"));
-                        Assertions.assertTrue(data.contains("?foo=" + paramValue),
-                                "access log is missing query params");
-                        Assertions.assertFalse(data.contains("?foo=" + paramValue + "?foo=" + paramValue),
-                                "access log contains duplicated query params");
-                        Assertions.assertTrue(data.contains("HTTP/1.0"),
-                                "HTTP/1.0 protocol value is missing in the access log");
-                        Assertions.assertTrue(data.contains("Accept: */*"),
-                                "Accept header is missing in the access log");
+                        assertThat(data).doesNotContain("/health", "/liveliness");
+                        assertThat(data).contains("/does-not-exist");
+                        assertThat(data).contains("?foo=" + paramValue).describedAs("access log is missing query params");
+                        assertThat(data).doesNotContain("?foo=" + paramValue + "?foo=" + paramValue)
+                                .describedAs("access log contains duplicated query params");
+                        assertThat(data).contains("HTTP/1.0")
+                                .describedAs("HTTP/1.0 protocol value is missing in the access log");
+                        assertThat(data).contains("Accept: */*").describedAs("Accept header is missing in the access log");
                     }
                 });
     }

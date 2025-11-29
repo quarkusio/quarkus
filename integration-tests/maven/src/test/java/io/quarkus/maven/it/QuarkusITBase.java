@@ -17,13 +17,14 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
 // meant to test that @QuarkusIntegrationTest can properly launch jars
 abstract class QuarkusITBase extends MojoTestBase {
 
-    void doTest(String projectName, String profile) throws MavenInvocationException, IOException {
+    File doTest(String projectName, String profile, String additionalBuildParameter)
+            throws MavenInvocationException, IOException {
         File testDir = initProject("projects/reactive-routes", "projects/" + projectName);
         RunningInvoker packageInvocation = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult packageInvocationResult = packageInvocation
                 .execute(Arrays.asList("package", "-B",
-                        "-D" + profile), Collections.emptyMap());
+                        "-D" + profile, additionalBuildParameter), Collections.emptyMap());
 
         await().atMost(3, TimeUnit.MINUTES)
                 .until(() -> packageInvocationResult.getProcess() != null && !packageInvocationResult.getProcess().isAlive());
@@ -39,5 +40,10 @@ abstract class QuarkusITBase extends MojoTestBase {
                 .until(() -> integrationTestsInvocationResult.getProcess() != null
                         && !integrationTestsInvocationResult.getProcess().isAlive());
         assertThat(integrationTestsInvocation.log()).containsIgnoringCase("BUILD SUCCESS");
+        return testDir;
+    }
+
+    File doTest(String projectName, String profile) throws MavenInvocationException, IOException {
+        return doTest(projectName, profile, "");
     }
 }

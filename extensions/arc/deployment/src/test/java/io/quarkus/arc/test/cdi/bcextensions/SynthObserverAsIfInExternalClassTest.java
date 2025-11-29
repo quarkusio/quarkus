@@ -48,6 +48,11 @@ public class SynthObserverAsIfInExternalClassTest {
         assertTrue(MySyntheticObserver.notified);
     }
 
+    @Test
+    public void testNonAppArchive() {
+        assertTrue(SomeClassInExternalLibrary.class.getClassLoader().getName().contains("Quarkus Base Runtime ClassLoader"));
+    }
+
     @ApplicationScoped
     public static class MyBean {
         @Inject

@@ -38,6 +38,20 @@
             <artifactId>arc-processor</artifactId>
         </dependency>
 
+        <!--
+          - The following 2 dependencies must NOT be test-scoped, because test-scoped dependencies
+          - are always loaded by the Runtime CL (not by Base Runtime CL) and so are considered
+          - application archives. All tests using them require a NON-application archive.
+          -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-test-supplement</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
@@ -46,16 +60,6 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-test-supplement</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Used to test wrong @Singleton detection -->

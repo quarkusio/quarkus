@@ -415,10 +415,8 @@ public class BeanInfo implements InjectionTargetInfo {
                     break;
                 }
             }
-            if (index != -1) {
-                if (index != (decoratorMethods.size() - 1)) {
-                    next.put(methodDescOf(entry.getKey()), decoratorMethods.get(index + 1));
-                }
+            if (index != -1 && index != (decoratorMethods.size() - 1)) {
+                next.put(methodDescOf(entry.getKey()), decoratorMethods.get(index + 1));
             }
         }
         return next;
@@ -525,9 +523,9 @@ public class BeanInfo implements InjectionTargetInfo {
         return bound;
     }
 
-    boolean hasBoundDecoratorWhichIsApplicationClass(Predicate<DotName> isApplicationClass) {
+    boolean hasBoundDecoratorMatching(Predicate<DotName> predicate) {
         for (DecoratorInfo decorator : getBoundDecorators()) {
-            if (isApplicationClass.test(decorator.getImplClazz().name())) {
+            if (predicate.test(decorator.getImplClazz().name())) {
                 return true;
             }
         }
@@ -841,36 +839,33 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     private List<DecoratorMethod> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
-        List<Type> methodParams = method.parameterTypes();
         List<DecoratorMethod> matching = new ArrayList<>(decorators.size());
-        for (DecoratorInfo decorator : decorators) {
+        IndexView index = beanDeployment.getBeanArchiveIndex();
+        outermost: for (DecoratorInfo decorator : decorators) {
             for (Type decoratedType : decorator.getDecoratedTypes()) {
-                ClassInfo decoratedTypeClass = decorator.getDeployment().getBeanArchiveIndex()
-                        .getClassByName(decoratedType.name());
-                if (decoratedTypeClass == null) {
-                    throw new DefinitionException(
-                            "The class of the decorated type " + decoratedType + " was not found in the index");
+                ClassInfo decoratedInterface = index.getClassByName(decoratedType.name());
+                if (decoratedInterface == null) {
+                    throw new DefinitionException("Decorated interface " + decoratedType.name() + " not found in the index");
                 }
 
-                Map<String, Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedTypeClass,
-                        decorator);
+                Map<String, Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedInterface, decorator);
 
-                for (MethodInfo decoratedMethod : decoratedTypeClass.methods()) {
+                // it's enough to look at methods declared directly on the decorated interface,
+                // because its superinterfaces are present in the set of decorated types
+                for (MethodInfo decoratedMethod : decoratedInterface.methods()) {
                     if (!method.name().equals(decoratedMethod.name())) {
                         continue;
                     }
-                    List<Type> decoratedMethodParams = decoratedMethod.parameterTypes();
-                    if (methodParams.size() != decoratedMethodParams.size()) {
+                    if (method.parametersCount() != decoratedMethod.parametersCount()) {
                         continue;
                     }
+
                     // Match the resolved parameter types
                     boolean matches = true;
-                    decoratedMethodParams = Types.getResolvedParameters(decoratedTypeClass, resolvedTypeParameters,
-                            decoratedMethod,
-                            beanDeployment.getBeanArchiveIndex());
-                    methodParams = Types.getResolvedParameters(decoratedTypeClass, resolvedTypeParameters,
-                            method,
-                            beanDeployment.getBeanArchiveIndex());
+                    List<Type> decoratedMethodParams = Types.getResolvedParameters(decoratedInterface, resolvedTypeParameters,
+                            decoratedMethod, index);
+                    List<Type> methodParams = Types.getResolvedParameters(decoratedInterface, resolvedTypeParameters,
+                            method, index);
                     for (int i = 0; i < methodParams.size(); i++) {
                         BeanResolver resolver = beanDeployment.getDelegateInjectionPointResolver();
                         Type decoratedParam = decoratedMethodParams.get(i);
@@ -886,6 +881,12 @@ public class BeanInfo implements InjectionTargetInfo {
                     }
                     if (matches) {
                         matching.add(new DecoratorMethod(decorator, decoratedMethod));
+                        // It is possible that multiple methods from one decorator match, in case multiple decorated
+                        // types of the decorator declare the same method. It doesn't matter which one we remember,
+                        // because all decorated methods (public methods on decorated types, which are all interfaces)
+                        // are virtual and are invoked as such and virtual invocation has consistent semantics
+                        // regardless of which exact method declaration is named by the invoked method descriptor.
+                        continue outermost;
                     }
                 }
             }

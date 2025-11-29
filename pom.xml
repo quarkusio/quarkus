@@ -82,7 +82,7 @@
         <hibernate-tools.version>7.1.6.Final</hibernate-tools.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.76.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
+        <grpc.version>1.77.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
                                             <!-- com.google.auth -->
                                             <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>

@@ -300,6 +300,15 @@ public class VertxHttpRecorder {
                 router.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT).blockingHandler(hotReplacementHandler);
             }
 
+            router.route().last().handler(rc -> {
+                rc.response()
+                        .setStatusCode(500)
+                        .putHeader("Content-Type", "text/plain")
+                        .end("Dev mode startup failed – Application deployment did not complete successfully.");
+            });
+
+            rootHandler = router;
+
             Handler<HttpServerRequest> root = router;
             LiveReloadConfig liveReloadConfig = config.getConfigMapping(LiveReloadConfig.class);
             if (liveReloadConfig.password().isPresent()

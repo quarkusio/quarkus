@@ -3,6 +3,8 @@ package io.quarkus.maven.dependency;
 import java.io.Serializable;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class GACT implements ArtifactKey, Serializable {
 
     private static final long serialVersionUID = 2860156541775021365L;
@@ -65,6 +67,7 @@ public class GACT implements ArtifactKey, Serializable {
         this(groupId, artifactId, classifier, null);
     }
 
+    @JsonCreator
     public GACT(String groupId, String artifactId, String classifier, String type) {
         this.groupId = groupId;
         this.artifactId = artifactId;

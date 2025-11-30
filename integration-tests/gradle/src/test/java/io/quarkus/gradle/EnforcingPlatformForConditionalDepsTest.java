@@ -1,6 +1,5 @@
 package io.quarkus.gradle;
 
-import static io.quarkus.gradle.util.AppModelDeserializer.deserializeAppModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.Dependency;
 
 /**
@@ -135,7 +135,7 @@ public class EnforcingPlatformForConditionalDepsTest extends QuarkusGradleWrappe
         var projectDir = getProjectDir(CONSUMER_PROJECT_PATH);
         var fullTaskName = ":%s:quarkusGenerateDevAppModel".formatted(moduleDirName);
         runGradleWrapper(projectDir, "clean", fullTaskName);
-        var appModel = deserializeAppModel(
+        var appModel = BootstrapUtils.deserializeQuarkusModel(
                 projectDir.toPath().resolve(moduleDirName + "/build/quarkus/application-model/quarkus-app-dev-model.dat"));
         var conditionalArtifacts = ((Collection<? extends Dependency>) appModel.getDependencies()).stream()
                 .filter(d -> GROUP_IDS_TO_TEST.contains(d.getGroupId()))

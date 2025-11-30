@@ -3,6 +3,8 @@ package io.quarkus.maven.dependency;
 import java.io.Serializable;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class GACTV implements ArtifactCoords, Serializable {
 
     private static final long serialVersionUID = -8362130311897578173L;
@@ -61,6 +63,7 @@ public class GACTV implements ArtifactCoords, Serializable {
         this(groupId, artifactId, DEFAULT_CLASSIFIER, type, version);
     }
 
+    @JsonCreator
     public GACTV(String groupId, String artifactId, String classifier, String type, String version) {
         this.groupId = groupId;
         this.artifactId = artifactId;

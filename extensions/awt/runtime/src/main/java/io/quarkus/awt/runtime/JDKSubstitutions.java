@@ -11,6 +11,8 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
+import io.smallrye.common.os.OS;
+
 /**
  * Getting .pfb/.pfa files to work would require additional runtime re-init adjustments.
  * We are not doing that unless there is an explicit demand.
@@ -52,6 +54,15 @@ final class Target_sun_awt_FontConfiguration {
         try {
             Files.createDirectories(Path.of(javaHome.toString(), "conf", "fonts"));
             Files.createDirectories(Path.of(javaHome.toString(), "lib"));
+
+            // On Windows, copy the resource windows-fontconfig.properties to JAVA_HOME\lib\fontconfig.properties
+            if (OS.WINDOWS.isCurrent()) {
+                var inputStream = JDKSubstitutions.class.getResourceAsStream("/windows-fontconfig.properties");
+                var fontConfigPath = Path.of(javaHome.toString(), "lib", "fontconfig.properties");
+                if (inputStream != null && Files.notExists(fontConfigPath)) {
+                    Files.copy(inputStream, fontConfigPath);
+                }
+            }
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to set tmp java.home for FontConfig Quarkus AWT usage in " + javaHome, e);
         }

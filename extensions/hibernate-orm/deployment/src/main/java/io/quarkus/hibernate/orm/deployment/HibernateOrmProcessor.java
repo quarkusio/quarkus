@@ -10,6 +10,8 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.js
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.xmlMapperKind;
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofClassAnnotation;
+import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofMethodAnnotation;
 
 import java.io.IOException;
 import java.net.URL;
@@ -44,6 +46,9 @@ import jakarta.enterprise.inject.Default;
 import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.xml.bind.JAXBElement;
 
+import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
+import org.hibernate.annotations.processing.SQL;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
@@ -150,6 +155,7 @@ import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandida
 import io.quarkus.reactive.datasource.spi.ReactiveDataSourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
@@ -171,9 +177,16 @@ public final class HibernateOrmProcessor {
 
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
 
+    /**
+     * Collection of Hibernate annotations for which, if detected on interface, Hibernate processor generates repository.
+     */
+    public static final Set<Class<?>> HIBERNATE_REPOSITORY_ANNOTATIONS = Set.of(Find.class, HQL.class, SQL.class);
+
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
+
+    private static final String JAKARTA_DATA_REPOSITORY_ANNOTATION = "jakarta.data.repository.Repository";
 
     @BuildStep
     NativeImageFeatureBuildItem registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {
@@ -853,6 +866,16 @@ public final class HibernateOrmProcessor {
             reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .constructors(false).methods().build());
+        }
+    }
+
+    @BuildStep
+    void registerJakartaDataRepositorySecurityAnnotations(Capabilities capabilities,
+            BuildProducer<SecuredInterfaceAnnotationBuildItem> securedInterfaceAnnotationProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            securedInterfaceAnnotationProducer.produce(ofClassAnnotation(JAKARTA_DATA_REPOSITORY_ANNOTATION));
+            HIBERNATE_REPOSITORY_ANNOTATIONS
+                    .forEach(annotation -> securedInterfaceAnnotationProducer.produce(ofMethodAnnotation(annotation)));
         }
     }
 

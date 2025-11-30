@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.normalizeChannelName;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,10 +27,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorBuildItem;
-import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
-import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.Incoming;
-import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration.Outgoing;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 
 public class WiringHelper {
@@ -52,23 +50,54 @@ public class WiringHelper {
     }
 
     static void produceIncomingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        Incoming incoming = config.getConfigMapping(ReactiveMessagingConfiguration.class).incoming().get(name);
-        if (incoming != null && incoming.enabled() && incoming.connector().isPresent()) {
-            producer.produce(ChannelBuildItem.incoming(name, incoming.connector().get()));
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.INCOMING, name);
+        if (managingConnector.isPresent()) {
+            if (isChannelEnabled(ChannelDirection.INCOMING, name)) {
+                producer.produce(ChannelBuildItem.incoming(name, managingConnector.get()));
+            }
         } else {
             producer.produce(ChannelBuildItem.incoming(name, null));
         }
     }
 
     static void produceOutgoingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        Outgoing outgoing = config.getConfigMapping(ReactiveMessagingConfiguration.class).outgoing().get(name);
-        if (outgoing != null && outgoing.enabled() && outgoing.connector().isPresent()) {
-            producer.produce(ChannelBuildItem.outgoing(name, outgoing.connector().get()));
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.OUTGOING, name);
+        if (managingConnector.isPresent()) {
+            if (isChannelEnabled(ChannelDirection.OUTGOING, name)) {
+                producer.produce(ChannelBuildItem.outgoing(name, managingConnector.get()));
+            }
         } else {
             producer.produce(ChannelBuildItem.outgoing(name, null));
         }
+    }
+
+    /**
+     * Gets the name of the connector managing the channel if any.
+     * This method looks inside the application configuration.
+     *
+     * @param direction the direction (incoming or outgoing)
+     * @param channel the channel name
+     * @return an optional with the connector name if the channel is managed, empty otherwise
+     */
+    static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
+        return ConfigProvider.getConfig().getOptionalValue(
+                "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".connector",
+                String.class);
+    }
+
+    /**
+     * Checks if the given channel is enabled / disabled in the configuration
+     *
+     * @param direction the direction (incoming or outgoing)
+     * @param channel the channel name
+     * @return {@code true} if the channel is enabled, {@code false} otherwise
+     */
+    static boolean isChannelEnabled(ChannelDirection direction, String channel) {
+        return ConfigProvider.getConfig()
+                .getOptionalValue(
+                        "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".enabled",
+                        Boolean.class)
+                .orElse(true);
     }
 
     /**

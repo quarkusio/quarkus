@@ -3,14 +3,14 @@ package io.quarkus.vertx.http.runtime.filters;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.vertx.core.http.HttpConnection;
-import io.vertx.core.http.HttpVersion;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.runtime.shutdown.ShutdownListener;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 
 public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpServerRequest> {
 

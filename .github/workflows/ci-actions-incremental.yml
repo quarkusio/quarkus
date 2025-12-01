@@ -257,9 +257,9 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.push.ref }}-${{ github.event.pull_request.head.sha || github.event.push.head }}
+          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
           restore-keys: |
-            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.push.ref }}-
+            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.ref }}-
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -512,9 +512,9 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.push.ref }}-${{ github.event.pull_request.head.sha || github.event.push.head }}
+          key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
           restore-keys: |
-            develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.push.ref }}-
+            develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.4
         with:

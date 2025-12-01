@@ -321,7 +321,7 @@ public interface ReactiveTransactionalListCommands<K, V> extends ReactiveTransac
      * Requires Redis 1.0.0
      *
      * @param key the key
-     * @param count the number of occurence to remove, following the given rules:
+     * @param count the number of occurrence to remove, following the given rules:
      *        if count > 0: Remove elements equal to element moving from head to tail.
      *        if count < 0: Remove elements equal to element moving from tail to head.
      *        if count = 0: Remove all elements equal to element.

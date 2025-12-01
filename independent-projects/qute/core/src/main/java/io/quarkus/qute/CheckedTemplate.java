@@ -69,8 +69,8 @@ import java.lang.annotation.Target;
  * denotes a fragment of a type-safe template.
  * It's possible to ignore the fragments and effectively disable this feature via {@link CheckedTemplate#ignoreFragments()}.
  * <p>
- * The name of the fragment is derived from the annotated element name. The part before the last occurence of a dollar sign
- * {@code $} is the method name of the related type-safe template. The part after the last occurence of a dollar sign is the
+ * The name of the fragment is derived from the annotated element name. The part before the last occurrence of a dollar sign
+ * {@code $} is the method name of the related type-safe template. The part after the last occurrence of a dollar sign is the
  * fragment identifier - the strategy defined by the relevant {@link CheckedTemplate#defaultName()} is used.
  * <p>
  * Parameters of the annotated element are validated. The required names and types are derived from the relevant fragment

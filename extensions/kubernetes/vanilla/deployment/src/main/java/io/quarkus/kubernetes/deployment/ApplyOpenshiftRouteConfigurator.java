@@ -14,7 +14,7 @@ public class ApplyOpenshiftRouteConfigurator extends Configurator<OpenshiftConfi
 
     @Override
     public void visit(OpenshiftConfigFluent config) {
-        // The route needs to be configured wether it's exposed or not.
+        // The route needs to be configured whether it's exposed or not.
         // This is needed to support user provided routes.
         var routeBuilder = config.editOrNewRoute();
         routeBuilder.withExpose(routeConfig.expose());

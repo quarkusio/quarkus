@@ -58,7 +58,7 @@ public class OpenApiJsonRpcService {
             ```
 
             Don't use ResourceNameHereClient as the name for the generated code (it's just an example). Derive a sensible name from the schema provided.
-            Your reponse should only contain one field called `code` that contains a value with only the {{language}} code, nothing else, no explanation, and do not put the code in backticks.
+            Your response should only contain one field called `code` that contains a value with only the {{language}} code, nothing else, no explanation, and do not put the code in backticks.
             The {{language}} code must run and be valid.
 
             Example response: `{code: 'package foo.bar; // more code here'}`

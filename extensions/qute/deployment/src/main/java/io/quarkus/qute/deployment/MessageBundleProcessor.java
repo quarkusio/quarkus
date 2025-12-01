@@ -154,7 +154,7 @@ public class MessageBundleProcessor {
                             name = MessageBundle.DEFAULT_NAME;
                         } else {
                             // The name starts with the DEFAULT_NAME followed by an underscore, followed by simple names of all
-                            // declaring classes in the hierarchy seperated by underscores
+                            // declaring classes in the hierarchy separated by underscores
                             List<String> names = new ArrayList<>();
                             names.add(DotNames.simpleName(bundleClass));
                             DotName enclosingName = bundleClass.enclosingClass();

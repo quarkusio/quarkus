@@ -556,7 +556,7 @@ public class QuteProcessor {
         }
         String name = getTargetName(target);
         if (checkedFragment) {
-            // the name is the part before the last occurence of a dollar sign
+            // the name is the part before the last occurrence of a dollar sign
             name = name.substring(0, name.lastIndexOf('$'));
         }
         return defaultedName(defaultName, name);
@@ -570,7 +570,7 @@ public class QuteProcessor {
             return null;
         }
         String name = getTargetName(target);
-        // the id is the part after the last occurence of a dollar sign
+        // the id is the part after the last occurrence of a dollar sign
         int idx = name.lastIndexOf('$');
         if (idx == -1 || idx == name.length()) {
             return null;
@@ -2142,7 +2142,7 @@ public class QuteProcessor {
             // with priorities of application globals that are regenerated during each hot reload
             // Therefore, the initial priority is increased by the number of all globals ever found
             // For example, if there are three globals [A, B, C] (A and C are non-application classes)
-            // The intial priority during the first hot reload will be "-1000 + 3 = 997"
+            // The initial priority during the first hot reload will be "-1000 + 3 = 997"
             // If a global D is added afterwards, the initial priority during the subsequent hot reload will be "-1000 + 4 = 996"
             // If the global D is removed, the initial priority will still remain "-1000 + 4 = 996"
             // This way we can be sure that the priorities assigned to A and C will never conflict with priorities of B and D or any other application global class

@@ -61,7 +61,7 @@ An example file is shown below:
 {mssql-image}
 ----
 
-Alternatively, add these to configurations:
+Alternatively, add these entries to your `application.properties`:
 
 [source,properties]
 ----

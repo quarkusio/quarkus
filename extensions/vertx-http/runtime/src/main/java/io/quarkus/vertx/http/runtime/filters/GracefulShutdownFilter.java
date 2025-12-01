@@ -74,6 +74,10 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
     private static void sendGoAwayForHttp2(HttpConnection connection) {
         // GO_AWAY + 0 (NO_ERROR) = graceful shutdown; client will stop creating new streams on this connection
         connection.goAway(0);
+        connection.shutdownHandler(v -> {
+            // All streams are closed, close the connection
+            connection.close();
+        });
     }
 
     @Override

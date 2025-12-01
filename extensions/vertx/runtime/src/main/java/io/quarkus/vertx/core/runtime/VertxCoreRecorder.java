@@ -29,6 +29,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.*;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
@@ -91,10 +92,13 @@ public class VertxCoreRecorder {
 
     private final RuntimeValue<VertxConfiguration> vertxConfig;
     private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
+    private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
-    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig) {
+    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig,
+            RuntimeValue<ShutdownConfig> shutdownConfig) {
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
+        this.shutdownConfig = shutdownConfig;
     }
 
     public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
@@ -433,7 +437,14 @@ public class VertxCoreRecorder {
                 }
             });
             try {
-                latch.await();
+                // Use configured shutdown timeout or default to 10 seconds
+                long timeoutMillis = shutdownConfig.getValue().timeout()
+                        .map(duration -> duration.toMillis())
+                        .orElse(10000L);
+                boolean completed = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+                if (!completed) {
+                    LOGGER.warn("Vert.x shutdown timed out after " + timeoutMillis + "ms");
+                }
                 if (problem.get() != null) {
                     throw new IllegalStateException("Error when closing Vert.x instance", problem.get());
                 }

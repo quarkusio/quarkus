@@ -269,58 +269,49 @@ public class ContinuousTestingProcessor {
     private void registerGetResultsMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
                 .methodName("getResults")
-                .description("Get the full results of a Continuous testing test run")
                 .function(ignored -> {
-                    try {
-                        Optional<TestSupport> ts = TestSupport.instance();
-                        if (testsDisabled(launchModeBuildItem, ts)) {
-                            return null;
-                        }
-                        TestSupport testSupport = ts.get();
-                        TestRunResults testRunResults = testSupport.getResults();
-
-                        if (testRunResults == null) {
-                            return null;
-                        }
-
-                        return testRunResults;
-
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    return continuousTestingResults(launchModeBuildItem);
                 })
                 .build();
     }
 
     /**
      * Duplicate of getResults but using a MCP friendly version of TestRunResults.
-     * TODO to consolidate with getResults after we evaluate other usage
      */
     private void registerGetResultsMCPMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
         actions.actionBuilder()
-                .methodName("getResultsMCP")
+                .methodName("getContinuousTestingResults")
                 .description("Get the results of a Continuous testing test run")
                 .enableMcpFuctionByDefault()
                 .function(ignored -> {
-                    try {
-                        Optional<TestSupport> ts = TestSupport.instance();
-                        if (testsDisabled(launchModeBuildItem, ts)) {
-                            return null;
-                        }
-                        TestSupport testSupport = ts.get();
-                        TestRunResults testRunResults = testSupport.getResults();
-
-                        if (testRunResults == null) {
-                            return null;
-                        }
-
-                        return new TrimmedTestRunResult(testRunResults);
-
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    TestRunResults continuousTestingResults = continuousTestingResults(launchModeBuildItem);
+                    if (continuousTestingResults != null) {
+                        return new TrimmedTestRunResult(continuousTestingResults);
+                    } else {
+                        return null;
                     }
                 })
                 .build();
+    }
+
+    private TestRunResults continuousTestingResults(LaunchModeBuildItem launchModeBuildItem) throws RuntimeException {
+        try {
+            Optional<TestSupport> ts = TestSupport.instance();
+            if (testsDisabled(launchModeBuildItem, ts)) {
+                return null;
+            }
+            TestSupport testSupport = ts.get();
+            TestRunResults testRunResults = testSupport.getResults();
+
+            if (testRunResults == null) {
+                return null;
+            }
+
+            return testRunResults;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static final String NAMESPACE = "devui-continuous-testing";

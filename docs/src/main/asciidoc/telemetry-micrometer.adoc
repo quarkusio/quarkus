@@ -34,6 +34,7 @@ Quarkus extensions:
 
 - micrometer
 - micrometer-registry-prometheus
+- micrometer-opentelemetry
 
 link:https://github.com/quarkiverse/quarkus-micrometer-registry[Quarkiverse extensions] (may be incomplete):
 
@@ -126,9 +127,37 @@ implementation("com.acme:custom-micrometer-registry")
 You will then need to specify your own provider to configure and initialize the
 MeterRegistry, as discussed in the next section.
 
+=== Send Micrometer metrics through OpenTelemetry
+
+The xref:telemetry-micrometer-to-opentelemetry.adoc[quarkus-micrometer-opentelemetry] extension allows to use the Micrometer API and all existing automatic instrumentation available in Quarkus while sending all the telemetry with OpenTelemetry.
+
+This is achieved with a Micrometer registry implemented with the OpenTelemetry SDK, allowing integration of Micrometer Metrics, OpenTelemetry Traces and Logs into a unified telemetry output using the OTLP protocol.
+
+If you already have your Quarkus project configured, you can add the `quarkus-micrometer-opentelemetry` extension to your project by running the following command in your project base directory:
+
+:add-extension-extensions: micrometer-opentelemetry
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-micrometer-opentelemetry</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-micrometer-opentelemetry")
+----
+
 === Create a customized MeterRegistry
 
-Use a custom `@Produces` method to create and configure a your own `MeterRegistry` if you need to.
+Use a custom `@Produces` method to create and configure your own `MeterRegistry` if you need to.
 
 The following example customizes the line format used for StatsD:
 

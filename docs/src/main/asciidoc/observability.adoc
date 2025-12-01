@@ -128,7 +128,7 @@ The xref:jfr.adoc[`quarkus-jfr`] extension can generate observability related ev
 
 === Metrics
 
-Quarkus has been using Micrometer to collect metrics from the application for a long time. Almost all the out-of-the-box metrics instrumentation in Quarkus are implemented with Micrometer.
+Quarkus has been using Micrometer to collect metrics from the application for a long time. Almost all the out-of-the-box metrics instrumentation in Quarkus are implemented with the xref:telemetry-micrometer.adoc[Micrometer] extension.
 
 More recently, OpenTelemetry Metrics has become available in the xref:opentelemetry.adoc[`quarkus-opentelemetry`] extension, but it's disabled by default because metrics semantic conventions are not stable yet.
 

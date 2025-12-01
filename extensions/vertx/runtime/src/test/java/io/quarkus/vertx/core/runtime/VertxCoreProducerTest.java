@@ -38,7 +38,7 @@ public class VertxCoreProducerTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        recorder = new VertxCoreRecorder(new RuntimeValue<>(), new RuntimeValue<>());
+        recorder = new VertxCoreRecorder(new RuntimeValue<>(), new RuntimeValue<>(), new RuntimeValue<>());
     }
 
     @AfterEach

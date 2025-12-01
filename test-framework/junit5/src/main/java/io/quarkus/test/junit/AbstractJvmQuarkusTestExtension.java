@@ -182,7 +182,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             } else if (isEclipse) {
                 // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257; fixed in Eclipse 4.37
                 log.error(
-                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the Eclipse IDE. To work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
+                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in older versions of the Eclipse IDE. Please upgrade to at least version 2025-09. Alternatively, to work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
                                 + context.getRequiredTestClass().getName()
                                 + "]` in the program arguments. Running the whole package, or running individual test methods, will also work without any extra configuration.");
             } else {
@@ -201,7 +201,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                                     + context.getRequiredTestClass().getName()
                                     + "]` in the program arguments. "
                             : "Internal error: Test class was loaded with an unexpected classloader ("
-                                    + TestConfig.class.getClassLoader() + ") or the thread context classloader ("
+                                    + context.getRequiredTestClass().getClassLoader() + ") or the thread context classloader ("
                                     + Thread.currentThread().getContextClassLoader() + ") was incorrect.";
             throw new IllegalStateException(message, e);
         } finally {

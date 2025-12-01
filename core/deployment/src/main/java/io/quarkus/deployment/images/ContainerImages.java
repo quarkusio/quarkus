@@ -9,7 +9,7 @@ import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
  * <p>
  * - {@code x_IMAGE_NAME} - the name of the image without the version (e.g. {@code registry.access.redhat.com/ubi9/ubi-minimal})
  * - {@code x_VERSION} - the version of the image (e.g. {@code 9.5})
- * - {@code x} - the full image name (e.g. {@code registry.access.redhat.com/ubi9/ubi-minimal:9.6})
+ * - {@code x} - the full image name (e.g. {@code registry.access.redhat.com/ubi9/ubi-minimal:9.7})
  */
 public class ContainerImages {
 
@@ -23,7 +23,7 @@ public class ContainerImages {
     /**
      * UBI 9 version
      */
-    public static final String UBI9_VERSION = "9.6";
+    public static final String UBI9_VERSION = "9.7";
 
     /**
      * Version used for more UBI8 Java images.

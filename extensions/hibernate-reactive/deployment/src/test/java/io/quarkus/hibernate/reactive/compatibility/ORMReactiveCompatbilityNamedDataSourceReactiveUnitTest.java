@@ -21,7 +21,6 @@ public class ORMReactiveCompatbilityNamedDataSourceReactiveUnitTest extends Comp
             .withApplicationRoot((jar) -> jar
                     .addClasses(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .withConfigurationResource("application-unittest-onlyreactive-named.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "named-datasource")
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive", "true")

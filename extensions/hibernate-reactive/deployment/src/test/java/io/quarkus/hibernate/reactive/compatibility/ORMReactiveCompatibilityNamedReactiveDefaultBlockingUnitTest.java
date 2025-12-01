@@ -24,7 +24,6 @@ public class ORMReactiveCompatibilityNamedReactiveDefaultBlockingUnitTest extend
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
             ))
-            .withConfigurationResource("application-unittest-both-named-reactive-and-default-blocking.properties")
             // If we want the named PU to be reactive only we need to explicitly disable the blocking the JDBC data source
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".jdbc", "false")
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive", "true")

@@ -3,6 +3,7 @@ package io.quarkus.devui.deployment.menu;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,7 +72,8 @@ public class ExtensionsProcessor {
 
             BuildTimeActionBuildItem buildTimeActions = new BuildTimeActionBuildItem(NAMESPACE);
             getCategories(buildTimeActions);
-            getInstallableExtensions(buildTimeActions);
+            getInstallableExtensions(buildTimeActions); // For Dev UI
+            listInstallableExtensions(buildTimeActions); // For Dev MCP
             getInstalledNamespaces(buildTimeActions);
             removeExtension(buildTimeActions);
             addExtension(buildTimeActions);
@@ -107,29 +109,54 @@ public class ExtensionsProcessor {
         buildTimeActions
                 .actionBuilder().methodName(new Object() {
                 }.getClass().getEnclosingMethod().getName())
+                .function(ignored -> {
+                    return CompletableFuture.supplyAsync(() -> {
+                        return listExtensionInQuarkusProject();
+                    });
+                })
+                .build();
+    }
+
+    private void listInstallableExtensions(BuildTimeActionBuildItem buildTimeActions) {
+        buildTimeActions
+                .actionBuilder().methodName(new Object() {
+                }.getClass().getEnclosingMethod().getName())
                 .description(
                         "Get all extensions that can be added to the current project (i.e it's not currently added to the pom)")
                 .function(ignored -> {
                     return CompletableFuture.supplyAsync(() -> {
-                        try {
-                            QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
-                                    .installed(false)
-                                    .all(false)
-                                    .format("object")
-                                    .execute();
 
-                            if (outcome.isSuccess()) {
-                                return outcome.getResult();
-                            }
-
-                            return null;
-                        } catch (QuarkusCommandException e) {
-                            throw new RuntimeException(e);
+                        List<Map<String, String>> filtered = new ArrayList<>();
+                        for (io.quarkus.registry.catalog.Extension e : listExtensionInQuarkusProject()) {
+                            Map<String, String> entry = new HashMap<>();
+                            entry.put("name", e.getName());
+                            entry.put("description", e.getDescription());
+                            entry.put("extensionArtifactId", e.getArtifact().toCompactCoords());
+                            filtered.add(entry);
                         }
+                        return filtered;
                     });
                 })
                 .enableMcpFuctionByDefault()
                 .build();
+    }
+
+    private List<io.quarkus.registry.catalog.Extension> listExtensionInQuarkusProject() throws RuntimeException {
+        try {
+            QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
+                    .installed(false)
+                    .all(false)
+                    .format("object")
+                    .execute();
+
+            if (outcome.isSuccess()) {
+                return (List) outcome.getResult();
+            }
+
+            return null;
+        } catch (QuarkusCommandException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void getInstalledNamespaces(BuildTimeActionBuildItem buildTimeActions) {
@@ -188,12 +215,7 @@ public class ExtensionsProcessor {
                             QuarkusCommandOutcome outcome = new RemoveExtensions(getQuarkusProject())
                                     .extensions(Set.of(extensionArtifactId))
                                     .execute();
-
-                            if (outcome.isSuccess()) {
-                                return true;
-                            } else {
-                                return false;
-                            }
+                            return outcome.isSuccess();
                         } catch (QuarkusCommandException e) {
                             throw new RuntimeException(e);
                         }

@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.quarkus.vertx.http.runtime.RoutingUtils;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
@@ -23,6 +24,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactiveRequestContext {
 
+    private static final String QUARKUS_REST_KEY = "quarkus-rest";
     final CurrentIdentityAssociation association;
     boolean userSetup = false;
 
@@ -49,6 +51,11 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
                 association.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
             }
         }
+    }
+
+    @Override
+    protected void onPreRequestScopeActivation() {
+        RoutingUtils.assumeCdiRequestContext(context, QUARKUS_REST_KEY);
     }
 
     @Override

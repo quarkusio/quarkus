@@ -610,10 +610,11 @@ public class SubclassGenerator extends AbstractGenerator {
         }
 
         Map<MethodDesc, DecoratorMethod> nextDecorators = bean.getNextDecorators(decorator);
-        List<DecoratorInfo> decoratorParameters = new ArrayList<>();
+        Set<DecoratorInfo> decoratorParametersSet = new HashSet<>();
         for (DecoratorMethod decoratorMethod : nextDecorators.values()) {
-            decoratorParameters.add(decoratorMethod.decorator);
+            decoratorParametersSet.add(decoratorMethod.decorator);
         }
+        List<DecoratorInfo> decoratorParameters = new ArrayList<>(decoratorParametersSet);
         Collections.sort(decoratorParameters);
 
         List<ClassDesc> delegateSubclassCtorParams = new ArrayList<>();
@@ -807,19 +808,19 @@ public class SubclassGenerator extends AbstractGenerator {
         LocalVar cc = subclassCtor.localVar("cc", subclassCtor.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD, ccParam));
 
         // Create new delegate subclass instance
-        Expr[] params = new Expr[1 + decoratorParameters.size()];
-        params[0] = subclass.this_();
-        int paramIdx = 1;
+        Expr[] args = new Expr[1 + decoratorParameters.size()];
+        args[0] = subclass.this_();
+        int argIndex = 1;
         for (DecoratorInfo decoratorParameter : decoratorParameters) {
             LocalVar decoratorVar = decoratorToLocalVar.get(decoratorParameter.getIdentifier());
             if (decoratorVar == null) {
                 throw new IllegalStateException("Decorator var must not be null");
             }
-            params[paramIdx] = decoratorVar;
-            paramIdx++;
+            args[argIndex] = decoratorVar;
+            argIndex++;
         }
         Expr delegateSubclassInstance = subclassCtor.new_(ConstructorDesc.of(
-                delegateSubclass, delegateSubclassCtorParams), params);
+                delegateSubclass, delegateSubclassCtorParams), args);
 
         // Set the DecoratorDelegateProvider to satisfy the delegate IP
         LocalVar prev = subclassCtor.localVar("prev", subclassCtor.invokeStatic(

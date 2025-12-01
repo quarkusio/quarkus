@@ -254,12 +254,12 @@ jobs:
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline
       - name: Cache Develocity local cache
         uses: actions/cache@v4
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.push.ref }}-${{ github.event.pull_request.head.sha || github.event.push.head }}
           restore-keys: |
-            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number }}-
+            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number || github.event.push.ref }}-
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -509,12 +509,12 @@ jobs:
         run: tar -xzf m2-content.tgz -C ~
       - name: Cache Develocity local cache
         uses: actions/cache@v4
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.push.ref }}-${{ github.event.pull_request.head.sha || github.event.push.head }}
           restore-keys: |
-            develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number }}-
+            develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.push.ref }}-
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.4
         with:

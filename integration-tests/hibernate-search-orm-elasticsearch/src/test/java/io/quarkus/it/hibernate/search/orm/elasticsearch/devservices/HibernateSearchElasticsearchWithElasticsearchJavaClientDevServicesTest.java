@@ -30,7 +30,7 @@ public class HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesT
         public Map<String, String> getConfigOverrides() {
             Map<String, String> config = new HashMap<>();
             config.put("quarkus.elasticsearch.devservices.enabled", "true");
-            config.put("quarkus.hibernate-search-orm.elasticsearch.version", "9.1");
+            config.put("quarkus.hibernate-search-orm.elasticsearch.version", "9.2");
             return config;
         }
 

@@ -5,6 +5,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
@@ -28,10 +29,19 @@ public class LogStreamJsonRPCService {
     }
 
     @NonBlocking
-    @JsonRpcDescription("Get a short Quarkus application log file history (last 60 lines)")
     public List<JsonObject> history() {
         LogStreamBroadcaster logStreamBroadcaster = Arc.container().instance(LogStreamBroadcaster.class).get();
         LinkedBlockingQueue<JsonObject> history = logStreamBroadcaster.getHistory();
+        return new ArrayList<>(history);
+    }
+
+    @JsonRpcDescription("Get a short Quarkus application log file history (last 60 lines)")
+    public List<String> logHistory() {
+        LogStreamBroadcaster logStreamBroadcaster = Arc.container().instance(LogStreamBroadcaster.class).get();
+        LinkedBlockingQueue<String> history = logStreamBroadcaster.getHistory().stream()
+                .map(LogStreamJsonRPCService::toLogLine)
+                .collect(Collectors.toCollection(LinkedBlockingQueue::new));
+
         return new ArrayList<>(history);
     }
 
@@ -94,6 +104,16 @@ public class LogStreamJsonRPCService {
         LOG.info("Log level updated [" + loggerName + "] changed to [" + levelValue + "]");
 
         return getLogger(loggerName);
+    }
+
+    private static String toLogLine(JsonObject json) {
+        return String.format(
+                "%s %s [%s] (%s) %s",
+                json.getString("timestamp"),
+                json.getString("level"),
+                json.getString("loggerName"),
+                json.getString("threadName"),
+                json.getString("formattedMessage"));
     }
 
     private String getConfiguredLogLevel(Logger logger) {

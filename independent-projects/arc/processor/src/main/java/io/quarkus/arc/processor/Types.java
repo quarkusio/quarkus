@@ -493,10 +493,10 @@ public final class Types {
         return types;
     }
 
-    static Map<String, Type> resolveDecoratedTypeParams(ClassInfo decoratedTypeClass, DecoratorInfo decorator) {
+    static Map<String, Type> resolveDecoratedTypeParams(ClassInfo decoratedInterface, DecoratorInfo decorator) {
         // A decorated type can declare type parameters
         // For example Converter<String> should result in a T -> String mapping
-        List<TypeVariable> typeParameters = decoratedTypeClass.typeParameters();
+        List<TypeVariable> typeParameters = decoratedInterface.typeParameters();
         Map<String, org.jboss.jandex.Type> resolvedTypeParameters = Collections.emptyMap();
         if (!typeParameters.isEmpty()) {
             resolvedTypeParameters = new HashMap<>();

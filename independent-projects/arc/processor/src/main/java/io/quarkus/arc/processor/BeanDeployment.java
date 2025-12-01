@@ -52,6 +52,9 @@ import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.Types.TypeClosure;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.Expr;
 
 public class BeanDeployment {
@@ -519,6 +522,7 @@ public class BeanDeployment {
         // First, validate all beans internally
         validateBeans(errors, bytecodeTransformerConsumer);
         validateInterceptorsAndDecorators(errors, bytecodeTransformerConsumer);
+        validateNonAppBeansWithAppDecorators(errors, bytecodeTransformerConsumer);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (Throwable error : errors) {
             validationContext.addDeploymentProblem(error);
@@ -1787,6 +1791,97 @@ public class BeanDeployment {
             }
             error.append(separator).append(separator).append(separator).append(separator).append("\n");
             errors.add(new DeploymentException(error.toString()));
+        }
+    }
+
+    private void validateNonAppBeansWithAppDecorators(List<Throwable> errors,
+            Consumer<BytecodeTransformer> bytecodeTransformer) {
+        for (BeanInfo bean : beans) {
+            boolean isNonAppBeanWithAppDecorators = bean.isClassBean() // only class-based beans can be decorated
+                    && !applicationClassPredicate.test(bean.getBeanClass())
+                    && bean.hasBoundDecoratorMatching(applicationClassPredicate);
+
+            if (!isNonAppBeanWithAppDecorators) {
+                continue;
+            }
+
+            // in case of a non-app bean with app decorators, we only turn the generated `_Bean` and `_Subclass`
+            // classes into app classes, so the only thing we need to transform here are injection points
+            //
+            // we specifically do _not_ turn the generated `_ClientProxy` class into app class,
+            // so method invocations on normal scoped beans work even if the methods are not `public`
+            //
+            // producers, disposers and observers in non-app beans have their own generated classes
+            // which are _non-app_, so there's no cross-classloader access
+
+            Set<AnnotationTarget> nonPublicInjectionPoints = new HashSet<>();
+            for (InjectionPointInfo ip : bean.getAllInjectionPoints()) {
+                AnnotationTarget target = ip.getAnnotationTarget();
+                if (target == null) {
+                    continue;
+                }
+
+                if (target.kind() == AnnotationTarget.Kind.FIELD
+                        && !Modifier.isPublic(target.asField().flags())) {
+                    nonPublicInjectionPoints.add(target);
+                } else if (target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                        && !Modifier.isPublic(target.asMethodParameter().method().flags())) {
+                    nonPublicInjectionPoints.add(target.asMethodParameter().method());
+                }
+            }
+
+            if (nonPublicInjectionPoints.isEmpty()) {
+                continue;
+            }
+
+            Collection<ClassInfo> beanSubclasses = getBeanArchiveIndex().getAllKnownSubclasses(bean.getBeanClass());
+            if (!beanSubclasses.isEmpty()) {
+                StringBuilder error = new StringBuilder();
+                error.append("Non-application bean ")
+                        .append(bean.getBeanClass())
+                        .append(" has bound application decorator(s):");
+                for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                    DotName decoratorName = decorator.getImplClazz().name();
+                    if (applicationClassPredicate.test(decoratorName)) {
+                        error.append("\n\t- ").append(decoratorName);
+                    }
+                }
+                error.append("\nThis bean has non-public injection point(s):");
+                for (AnnotationTarget ip : nonPublicInjectionPoints) {
+                    if (ip.kind() == AnnotationTarget.Kind.FIELD) {
+                        error.append("\n\t- field `").append(ip.asField().name()).append("`");
+                    } else if (ip.kind() == AnnotationTarget.Kind.METHOD) {
+                        error.append("\n\t- method `").append(ip.asMethod().name()).append("()`");
+                    }
+                }
+                error.append("\nBytecode transformation would be required to make these injection points public,")
+                        .append(" but the bean also has subclasses that could be broken:");
+                for (ClassInfo beanSubclass : beanSubclasses) {
+                    error.append("\n\t- ").append(beanSubclass.name());
+                }
+                error.append("\nThe only possible fix on the application side is removing the decorator(s).");
+                errors.add(new DeploymentException(error.toString()));
+            } else {
+                bytecodeTransformer.accept(new BytecodeTransformer(bean.getBeanClass().toString(), (name, visitor) -> {
+                    ClassTransformer transformer = new ClassTransformer(name);
+
+                    // turn non-`public` injection points into `public`
+                    for (AnnotationTarget ip : nonPublicInjectionPoints) {
+                        if (ip.kind() == AnnotationTarget.Kind.FIELD) {
+                            transformer.modifyField(FieldDescriptor.of(ip.asField()))
+                                    .removeModifiers(Modifier.PRIVATE | Modifier.PROTECTED)
+                                    .addModifiers(Modifier.PUBLIC);
+                        } else if (ip.kind() == AnnotationTarget.Kind.METHOD) {
+                            MethodDescriptor desc = MethodDescriptor.of(ip.asMethod());
+                            transformer.modifyMethod(desc)
+                                    .removeModifiers(Modifier.PRIVATE | Modifier.PROTECTED)
+                                    .addModifiers(Modifier.PUBLIC);
+                        }
+                    }
+
+                    return transformer.applyTo(visitor);
+                }));
+            }
         }
     }
 

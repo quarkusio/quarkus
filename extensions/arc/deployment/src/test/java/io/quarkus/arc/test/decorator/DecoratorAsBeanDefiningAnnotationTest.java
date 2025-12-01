@@ -1,6 +1,7 @@
 package io.quarkus.arc.test.decorator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.test.supplement.decorator.SomeDecorator;
 import io.quarkus.arc.test.supplement.decorator.SomeInterface;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
@@ -33,6 +35,11 @@ public class DecoratorAsBeanDefiningAnnotationTest {
     @Test
     public void test() {
         assertEquals("Delegated: SomeBean", bean.ping());
+    }
+
+    @Test
+    public void testNonAppArchive() {
+        assertTrue(SomeDecorator.class.getClassLoader().getName().contains("Quarkus Base Runtime ClassLoader"));
     }
 
     @Dependent

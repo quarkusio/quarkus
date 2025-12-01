@@ -222,7 +222,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(clazz.name())
                 || bean.isForceApplicationClass()
-                || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
+                || bean.hasBoundDecoratorMatching(applicationClassPredicate);
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 

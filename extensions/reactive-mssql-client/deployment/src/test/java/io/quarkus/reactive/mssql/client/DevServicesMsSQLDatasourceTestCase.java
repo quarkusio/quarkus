@@ -19,8 +19,7 @@ public class DevServicesMsSQLDatasourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("container-license-acceptance.txt"))
+            .withConfigurationResource("application.properties")
             // Expect no warnings from reactive
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     && record.getMessage().toLowerCase(Locale.ENGLISH).contains("reactive"))

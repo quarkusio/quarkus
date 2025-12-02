@@ -36,7 +36,7 @@
         <version.release.plugin>3.2.0</version.release.plugin>
         <version.resources.plugin>3.3.1</version.resources.plugin>
         <version.shade.plugin>3.6.1</version.shade.plugin>
-        <version.source.plugin>3.3.1</version.source.plugin>
+        <version.source.plugin>3.4.0</version.source.plugin>
         <version.surefire.plugin>3.5.4</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
         <version.versions.plugin>2.20.1</version.versions.plugin>

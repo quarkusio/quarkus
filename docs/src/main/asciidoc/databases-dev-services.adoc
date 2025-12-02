@@ -61,6 +61,17 @@ An example file is shown below:
 {mssql-image}
 ----
 
+Alternatively, add these entries to your `application.properties`:
+
+[source,properties]
+----
+# For mssql
+quarkus.datasource.devservices.container-env.ACCEPT_EULA=Y
+
+# For db2
+quarkus.datasource.devservices.container-env.LICENSE=accept
+----
+
 === Capturing Logs
 
 By default, logs of the underlying database are not exposed.

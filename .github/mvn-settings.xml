@@ -32,15 +32,11 @@
     </profile>
     <profile>
       <id>snapshots</id>
-      <properties>
-        <!-- https://docs.aws.amazon.com/codeartifact/latest/ug/maven-troubleshooting.html#disable-parallel-puts -->
-        <aether.connector.basic.parallelPut>false</aether.connector.basic.parallelPut>
-      </properties>
       <repositories>
         <repository>
-          <id>sonatype-maven-central</id>
-          <name>Sonatype Maven Central Snapshots</name>
-          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <id>jboss-community</id>
+          <name>JBoss Community Snapshots</name>
+          <url>https://repository.jboss.org/nexus/repository/quarkus-snapshots/</url>
           <layout>default</layout>
           <releases>
             <enabled>false</enabled>
@@ -54,9 +50,9 @@
       </repositories>
       <pluginRepositories>
         <pluginRepository>
-          <id>sonatype-maven-central</id>
-          <name>Sonatype Maven Central Snapshots</name>
-          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <id>jboss-community</id>
+          <name>JBoss Community Snapshots</name>
+          <url>https://repository.jboss.org/nexus/repository/quarkus-snapshots/</url>
           <layout>default</layout>
           <releases>
             <enabled>false</enabled>

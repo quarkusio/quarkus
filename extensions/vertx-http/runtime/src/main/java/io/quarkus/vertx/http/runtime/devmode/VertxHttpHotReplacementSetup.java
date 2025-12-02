@@ -32,6 +32,7 @@ import io.vertx.ext.web.RoutingContext;
 public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
 
     private volatile long nextUpdate;
+    private volatile Throwable tempDeploymentProblem;
     private HotReplacementContext hotReplacementContext;
 
     private static final long HOT_REPLACEMENT_INTERVAL = 2000;
@@ -104,6 +105,10 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 }
             });
         }
+        if (tempDeploymentProblem != null) {
+            handleDeploymentProblem(routingContext, tempDeploymentProblem);
+            return;
+        }
         if (hotReplacementContext.getDeploymentProblem() != null && routingContext.request().path().endsWith(CONFIG_FIX)) {
 
             routingContext.request().setExpectMultipart(true);
@@ -160,9 +165,12 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                             nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
                             Object currentState = VertxHttpRecorder.getCurrentApplicationState();
                             try {
+                                tempDeploymentProblem = hotReplacementContext.getDeploymentProblem();
                                 restart = hotReplacementContext.doScan(true);
                             } catch (Exception e) {
                                 throw new IllegalStateException("Unable to perform live reload scanning", e);
+                            } finally {
+                                tempDeploymentProblem = null;
                             }
                             if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
                                 //its possible a Kafka message or some other source triggered a reload,

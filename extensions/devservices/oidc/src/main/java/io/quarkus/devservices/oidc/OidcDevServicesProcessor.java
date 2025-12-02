@@ -761,7 +761,7 @@ public class OidcDevServicesProcessor {
 
     private static String createIdToken(String user, Set<String> roles, String clientId) {
         return Jwt.claims()
-                .expiresIn(Duration.ofDays(1))
+                .expiresIn(Duration.ofHours(1))
                 .issuedAt(Instant.now())
                 .issuer(baseURI)
                 .audience(clientId)
@@ -778,7 +778,7 @@ public class OidcDevServicesProcessor {
 
     private static String createAccessToken(String user, Set<String> roles, Set<String> scope) {
         return Jwt.claims()
-                .expiresIn(Duration.ofDays(1))
+                .expiresIn(Duration.ofHours(1))
                 .issuedAt(Instant.now())
                 .issuer(baseURI)
                 .subject(user)

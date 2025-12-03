@@ -29,6 +29,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -320,10 +322,15 @@ class HibernateSearchElasticsearchProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = HibernateSearchManagementEnabled.class)
-    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
+    void createManagementRoutes(Capabilities capabilities,
+            BuildProducer<RouteBuildItem> routes,
             HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchBuildTimeConfig hibernateSearchElasticsearchBuildTimeConfig) {
-
+        if (capabilities.isMissing(Capability.VERTX_HTTP)) {
+            throw new IllegalArgumentException(
+                    "Enabling Hibernate Search management endpoints, while there are no Vert.x HTTP capabilities " +
+                            "in the application, is not allowed.");
+        }
         String managementRootPath = hibernateSearchElasticsearchBuildTimeConfig.management().rootPath();
 
         routes.produce(RouteBuildItem.newManagementRoute(

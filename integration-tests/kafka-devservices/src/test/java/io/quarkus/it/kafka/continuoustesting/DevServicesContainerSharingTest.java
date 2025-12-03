@@ -2,7 +2,7 @@ package io.quarkus.it.kafka.continuoustesting;
 
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

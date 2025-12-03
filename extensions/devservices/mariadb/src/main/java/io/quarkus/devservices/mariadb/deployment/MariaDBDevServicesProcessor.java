@@ -11,7 +11,7 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.mariadb.MariaDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;

@@ -90,7 +90,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         result = null;
     }
 
-    private void prepare(ExtensionContext extensionContext) throws Exception {
+    private void prepare(ExtensionContext extensionContext, TestProfileAndProperties testProfileAndProperties)
+            throws Exception {
         Class<?> testClass = extensionContext.getRequiredTestClass();
         ensureNoInjectAnnotationIsUsed(testClass, "@QuarkusMainIntegrationTest");
 
@@ -103,7 +104,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
-        devServicesLaunchResult = handleDevServices(extensionContext, isDockerLaunch);
+        devServicesLaunchResult = handleDevServices(extensionContext, isDockerLaunch, testProfileAndProperties);
         devServicesProps = devServicesLaunchResult.properties();
 
         ExtensionContext root = extensionContext.getRoot();
@@ -119,21 +120,20 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 Class<?> requiredTestClass = context.getRequiredTestClass();
 
                 Map<String, String> sysPropRestore = getSysPropsToRestore();
-                TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+                TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile);
                 // prepare dev services after profile and properties have been determined
                 if (quarkusArtifactProperties == null) {
-                    prepare(context);
+                    prepare(context, testProfileAndProperties);
                 }
                 String artifactType = quarkusArtifactProperties.getProperty("type");
 
-                testResourceManager = new TestResourceManager(requiredTestClass, profile,
-                        copyEntriesFromProfile(testProfileAndProperties.testProfile,
+                testResourceManager = new TestResourceManager(
+                        requiredTestClass,
+                        profile,
+                        copyEntriesFromProfile(testProfileAndProperties.testProfile().orElse(null),
                                 context.getRequiredTestClass().getClassLoader()),
-                        testProfileAndProperties.testProfile != null
-                                && testProfileAndProperties.testProfile.disableGlobalTestResources());
-                testResourceManager.init(
-                        testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
-                                : null);
+                        testProfileAndProperties.isDisabledGlobalTestResources());
+                testResourceManager.init(testProfileAndProperties.testProfileClassName().orElse(null));
 
                 Map<String, String> additionalProperties = new HashMap<>();
 
@@ -148,7 +148,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                     }
                 }
 
-                additionalProperties.putAll(testProfileAndProperties.properties);
+                additionalProperties.putAll(testProfileAndProperties.properties());
                 //also make the dev services props accessible from the test
                 Map<String, String> resourceManagerProps = new HashMap<>(QuarkusMainIntegrationTestExtension.devServicesProps);
                 // Allow override of dev services props by integration test extensions

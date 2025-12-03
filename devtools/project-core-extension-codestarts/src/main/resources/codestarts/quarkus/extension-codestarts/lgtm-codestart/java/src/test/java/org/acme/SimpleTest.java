@@ -1,6 +1,6 @@
 package org.acme;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;

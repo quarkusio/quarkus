@@ -165,23 +165,19 @@ public class FastBootMetadataBuilder {
          * of the destroyed service registry in PreconfiguredServiceRegistryBuilder.
          *
          */
-        ssrBuilder.getPostBuildProvidedServices()
-                .forEach(serviceClass -> providedServices.add(
-                        new ProvidedService(
-                                serviceClass,
-                            standardServiceRegistry.getService(serviceClass)
-                        )));
+        for (Class<? extends Service> postBuildProvidedService : ssrBuilder.getPostBuildProvidedServices()) {
+            providedServices.add(new ProvidedService(postBuildProvidedService,
+                    standardServiceRegistry.getService(postBuildProvidedService)));
+        }
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
-
-        applyMappingContributors(metadataSources);
-
         // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
         // XML mappings, however, cannot be contributed through the scanner,
         // which only allows specifying mappings as files/resources,
         // and we really don't want any XML parsing here...
-        puDefinition.getXmlMappings()
-                .forEach(mapping -> metadataSources.addXmlBinding(mapping.toHibernateOrmBinding()));
+        for (RecordableXmlMapping mapping : puDefinition.getXmlMappings()) {
+            metadataSources.addXmlBinding(mapping.toHibernateOrmBinding());
+        }
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
@@ -653,10 +649,6 @@ public class FastBootMetadataBuilder {
         if (typeContributorList != null) {
             typeContributorList.getTypeContributors().forEach(metamodelBuilder::applyTypes);
         }
-    }
-
-    private void applyMappingContributors(MetadataSources metadataSources) {
-
     }
 
     private void applyMetadataBuilderContributor() {

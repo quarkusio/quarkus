@@ -164,6 +164,11 @@ Now we need to add JaCoCo to our project. To do this we need to add the followin
 ----
 testImplementation("io.quarkus:quarkus-jacoco")
 ----
+[source,gradle-kotlin,role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
+----
+testImplementation("io.quarkus:quarkus-jacoco")
+----
 
 This Quarkus extension takes care of everything that would usually be done via the JaCoCo Maven plugin, so no additional
 config is required.
@@ -264,6 +269,31 @@ test {
         destinationFile = layout.buildDirectory.file("jacoco-quarkus.exec").get().asFile <2>
     }
     jacocoTestReport.enabled = false <3>
+}
+----
+<1> Add the `jacoco` gradle plugin
+<2> This config tells it to ignore `@QuarkusTest` related classes, as they are loaded by `QuarkusClassLoader`
+<3> Set this config to `false` if you are also using the `quarkus-jacoco` extension and have at least one `@QuarkusTest`.  The default `jacocoTestReport` task can be skipped since `quarkus-jacoco` will generate the combined report of regular unit tests and `@QuarkusTest` classes since the execution data is recorded in the same file.
+****
+[role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
+****
+[source,gradle-kotlin,subs=attributes+]
+----
+plugins {
+    jacoco // <1>
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+    extensions.configure(JacocoTaskExtension::class) {
+        excludeClassLoaders = listOf("*QuarkusClassLoader") // <2>
+        destinationFile = layout.buildDirectory.file("jacoco-quarkus.exec").get().asFile // <2>
+    }
+}
+
+tasks.jacocoTestReport {
+    enabled = false // <3>
 }
 ----
 <1> Add the `jacoco` gradle plugin
@@ -459,6 +489,57 @@ jacocoTestCoverageVerification {
                     "org/example/package/**/*" <3>
             ])
         }))
+    }
+}
+----
+<1> `classDirectories` needs to be read after evaluation phase in Gradle
+<2> Currently, there is a bug in Gradle JaCoCo which requires the `excludes` to be specified in this manner - https://github.com/gradle/gradle/issues/14760.  Once this issue is fixed, excludes
+<3> Exclude all classes in `org/example/package` package
+****
+
+[role="secondary asciidoc-tabs-target-sync-gradle-kotlin"]
+.build.gradle.kts
+****
+[source, gradle-kotlin]
+----
+tasks.jacocoTestCoverageVerification {
+    executionData.setFrom("${layout.buildDirectory.get()}/jacoco-quarkus.exec")
+    violationRules {
+        rule {
+            limit {
+                counter = "INSTRUCTION"
+                value = "COVEREDRATIO"
+                minimum = 0.80.toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = 0.72.toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
+}
+----
+
+Excluding classes from the verification task can be configured as following:
+
+[source,gradle-kotlin]
+----
+afterEvaluate { // <1>
+    tasks.jacocoTestCoverageVerification {
+        classDirectories.setFrom(classDirectories.files.flatMap { // <2>
+            fileTree(it) {
+                exclude(
+                    listOf(
+                        "org/example/package/**/*" // <3>
+                    )
+                )
+            }
+        })
     }
 }
 ----

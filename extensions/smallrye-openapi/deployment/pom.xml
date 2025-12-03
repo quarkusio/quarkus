@@ -144,6 +144,16 @@
                     tests (using the 'default-test' execution), and one for the prod mode tests (this 'dev-mode' execution)
                     -->
                     <execution>
+                      <id>default-test</id>
+                      <configuration>
+                        <includes>
+                          <include>**/Test*.java</include>
+                          <include>**/*Test.java</include>
+                          <include>**/*Tests.java</include>
+                        </includes>
+                      </configuration>
+                    </execution>
+                    <execution>
                         <id>dev-mode</id>
                         <phase>test</phase>
                         <goals>
@@ -152,6 +162,17 @@
                         <configuration>
                             <includes>**/*DMT.java</includes>
                         </configuration>
+                    </execution>
+                    <!-- for now, run the TestCase in a separate surefire execution to try and minimize OOME issues -->
+                    <execution>
+                      <id>test-case</id>
+                      <phase>test</phase>
+                      <goals>
+                        <goal>test</goal>
+                      </goals>
+                      <configuration>
+                        <includes>**/*TestCase.java</includes>
+                      </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -67,6 +67,21 @@ public class PersistentLoginManager {
         }
     }
 
+    String getAndRemoveCookie(RoutingContext context) {
+        var restoreResult = restore(context, cookieName);
+        if (restoreResult != null) {
+            Cookie cookie = context.request().getCookie(cookieName);
+            cookie.setMaxAge(0);
+            cookie.setPath(cookiePath);
+            cookie.setValue("");
+            cookie.setSecure(context.request().isSSL());
+            cookie.setSameSite(cookieSameSite);
+            context.response().addCookie(cookie);
+            return restoreResult.getPrincipal();
+        }
+        return null;
+    }
+
     public RestoreResult restore(RoutingContext context) {
         return restore(context, cookieName);
     }
@@ -155,11 +170,15 @@ public class PersistentLoginManager {
             if (cookieDomain != null) {
                 cookie.setDomain(cookieDomain);
             }
-            context.addCookie(cookie);
+            context.response().addCookie(cookie);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+    }
+
+    void save(String value, RoutingContext context) {
+        save(value, context, cookieName, null, context.request().isSSL());
     }
 
     public void clear(RoutingContext ctx) {

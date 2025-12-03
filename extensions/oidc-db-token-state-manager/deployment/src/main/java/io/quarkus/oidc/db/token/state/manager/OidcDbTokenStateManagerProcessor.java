@@ -11,11 +11,11 @@ import static java.lang.String.format;
 
 import java.util.function.BooleanSupplier;
 
-import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -27,7 +27,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManager;
 import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManagerInitializer;
-import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManagerInitializer.OidcDbTokenStateManagerInitializerProperties;
+import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManagerInitializer.SupportedReactiveSqlClient;
 import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManagerRecorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -109,77 +109,17 @@ public class OidcDbTokenStateManagerProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    SyntheticBeanBuildItem createDbTokenStateInitializerProps(ReactiveSqlClientBuildItem sqlClientBuildItem,
+    BeanContainerListenerBuildItem createDbTokenStateInitializerProps(ReactiveSqlClientBuildItem sqlClientBuildItem,
             OidcDbTokenStateManagerRecorder recorder) {
-        final String createTableDdl;
-        final boolean supportsIfTableNotExists;
-        switch (sqlClientBuildItem.reactiveClient) {
-            case REACTIVE_PG_CLIENT:
-                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager (" +
-                        "id VARCHAR(100) PRIMARY KEY, " +
-                        "id_token VARCHAR, " +
-                        "access_token VARCHAR, " +
-                        "refresh_token VARCHAR, " +
-                        "access_token_expires_in BIGINT, " +
-                        "access_token_scope VARCHAR, " +
-                        "expires_in BIGINT NOT NULL)";
-                supportsIfTableNotExists = true;
-                break;
-            case REACTIVE_MYSQL_CLIENT:
-                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager ("
-                        + "id VARCHAR(100), "
-                        + "id_token VARCHAR(5000) NULL, "
-                        + "access_token VARCHAR(5000) NULL, "
-                        + "refresh_token VARCHAR(5000) NULL, "
-                        + "access_token_expires_in BIGINT NULL, "
-                        + "access_token_scope VARCHAR(100) NULL, "
-                        + "expires_in BIGINT NOT NULL, "
-                        + "PRIMARY KEY (id))";
-                supportsIfTableNotExists = true;
-                break;
-            case REACTIVE_MSSQL_CLIENT:
-                createTableDdl = "CREATE TABLE oidc_db_token_state_manager ("
-                        + "id NVARCHAR(100) PRIMARY KEY, "
-                        + "id_token NVARCHAR(MAX), "
-                        + "access_token NVARCHAR(MAX), "
-                        + "refresh_token NVARCHAR(MAX), "
-                        + "access_token_expires_in BIGINT, "
-                        + "access_token_scope NVARCHAR(100), "
-                        + "expires_in BIGINT NOT NULL)";
-                supportsIfTableNotExists = false;
-                break;
-            case REACTIVE_DB2_CLIENT:
-                createTableDdl = "CREATE TABLE oidc_db_token_state_manager ("
-                        + "id VARCHAR(100) NOT NULL PRIMARY KEY, "
-                        + "id_token VARCHAR(5000), "
-                        + "access_token VARCHAR(5000), "
-                        + "refresh_token VARCHAR(5000), "
-                        + "access_token_expires_in BIGINT, "
-                        + "access_token_scope VARCHAR(100), "
-                        + "expires_in BIGINT NOT NULL)";
-                supportsIfTableNotExists = false;
-                break;
-            case REACTIVE_ORACLE_CLIENT:
-                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager ("
-                        + "id VARCHAR2(100), "
-                        + "id_token VARCHAR2(5000), "
-                        + "access_token VARCHAR2(5000), "
-                        + "refresh_token VARCHAR2(5000), "
-                        + "access_token_expires_in NUMBER, "
-                        + "access_token_scope VARCHAR2(100), "
-                        + "expires_in NUMBER NOT NULL, "
-                        + "PRIMARY KEY (id))";
-                supportsIfTableNotExists = true;
-                break;
-            default:
-                throw new ConfigurationException("Unknown Reactive Sql Client " + sqlClientBuildItem.reactiveClient);
-        }
-        return SyntheticBeanBuildItem
-                .configure(OidcDbTokenStateManagerInitializerProperties.class)
-                .supplier(recorder.createDbTokenStateInitializerProps(createTableDdl, supportsIfTableNotExists))
-                .unremovable()
-                .scope(Dependent.class)
-                .done();
+        var supportedReactiveSqlClient = switch (sqlClientBuildItem.reactiveClient) {
+            case REACTIVE_PG_CLIENT -> SupportedReactiveSqlClient.POSTGRESQL;
+            case REACTIVE_MYSQL_CLIENT -> SupportedReactiveSqlClient.MYSQL;
+            case REACTIVE_MSSQL_CLIENT -> SupportedReactiveSqlClient.MSSQL;
+            case REACTIVE_DB2_CLIENT -> SupportedReactiveSqlClient.DB2;
+            case REACTIVE_ORACLE_CLIENT -> SupportedReactiveSqlClient.ORACLE;
+            default -> throw new ConfigurationException("Unknown Reactive Sql Client " + sqlClientBuildItem.reactiveClient);
+        };
+        return new BeanContainerListenerBuildItem(recorder.setSupportedReactiveSqlClient(supportedReactiveSqlClient));
     }
 
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)

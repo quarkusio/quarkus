@@ -23,4 +23,22 @@ public interface OidcDbTokenStateManagerRunTimeConfig {
      */
     @WithDefault("true")
     boolean createDatabaseTableIfNotExists();
+
+    /**
+     * ID token column size.
+     */
+    @WithDefault("5000")
+    int idTokenColumnSize();
+
+    /**
+     * Access token column size.
+     */
+    @WithDefault("5000")
+    int accessTokenColumnSize();
+
+    /**
+     * Refresh token column size.
+     */
+    @WithDefault("5000")
+    int refreshTokenColumnSize();
 }

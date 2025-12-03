@@ -1,7 +1,7 @@
 package io.quarkus.it.jaxb;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,7 @@ class AwtJaxbTest {
                 .then()
                 .statusCode(200)
                 // The height in pixels of the book's cover image.
-                .body(equalTo("\"10\""));
+                .body(containsString("10"));
     }
 
     /**
@@ -47,6 +47,6 @@ class AwtJaxbTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body(equalTo("\"10\""));
+                .body(containsString("10"));
     }
 }

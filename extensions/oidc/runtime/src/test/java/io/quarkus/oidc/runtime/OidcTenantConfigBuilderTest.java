@@ -153,7 +153,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(authentication.allowMultipleCodeFlows());
         assertFalse(authentication.failOnMissingStateParam());
         assertTrue(authentication.userInfoRequired().isEmpty());
-        assertEquals(5, authentication.sessionAgeExtension().toMinutes());
+        assertTrue(authentication.sessionAgeExtension().isEmpty());
         assertEquals(5, authentication.stateCookieAge().toMinutes());
         assertTrue(authentication.javaScriptAutoRedirect());
         assertTrue(authentication.idTokenRequired().isEmpty());
@@ -552,7 +552,7 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(authentication.allowMultipleCodeFlows());
         assertTrue(authentication.failOnMissingStateParam());
         assertTrue(authentication.userInfoRequired().orElseThrow());
-        assertEquals(77, authentication.sessionAgeExtension().toMinutes());
+        assertEquals(77, authentication.sessionAgeExtension().get().toMinutes());
         assertEquals(88, authentication.stateCookieAge().toMinutes());
         assertFalse(authentication.javaScriptAutoRedirect());
         assertFalse(authentication.idTokenRequired().orElseThrow());
@@ -1288,7 +1288,7 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(builtFirst.allowMultipleCodeFlows());
         assertTrue(builtFirst.failOnMissingStateParam());
         assertTrue(builtFirst.userInfoRequired().orElseThrow());
-        assertEquals(77, builtFirst.sessionAgeExtension().toMinutes());
+        assertEquals(77, builtFirst.sessionAgeExtension().get().toMinutes());
         assertEquals(88, builtFirst.stateCookieAge().toMinutes());
         assertFalse(builtFirst.javaScriptAutoRedirect());
         assertFalse(builtFirst.idTokenRequired().orElseThrow());
@@ -1338,7 +1338,7 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(builtSecond.allowMultipleCodeFlows());
         assertTrue(builtSecond.failOnMissingStateParam());
         assertTrue(builtSecond.userInfoRequired().orElseThrow());
-        assertEquals(77, builtSecond.sessionAgeExtension().toMinutes());
+        assertEquals(77, builtSecond.sessionAgeExtension().get().toMinutes());
         assertEquals(88, builtSecond.stateCookieAge().toMinutes());
         assertFalse(builtSecond.javaScriptAutoRedirect());
         assertFalse(builtSecond.idTokenRequired().orElseThrow());

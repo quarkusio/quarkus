@@ -6,21 +6,43 @@ package io.quarkus.bootstrap.resolver.maven;
 public interface ModelResolutionTaskRunner {
 
     /**
-     * Returns an instance of a non-blocking task runner.
+     * Returns an instance of a non-blocking task runner with an error handler
+     * that collects all task execution errors and throws a single error when all the tasks
+     * have finished.
      *
      * @return an instance of a non-blocking task runner
      */
     static ModelResolutionTaskRunner getNonBlockingTaskRunner() {
-        return new NonBlockingModelResolutionTaskRunner();
+        return getNonBlockingTaskRunner(new FailAtCompletionErrorHandler());
     }
 
     /**
-     * Returns an instance of a blocking task runner.
+     * Returns an instance of a non-blocking task runner with a custom error handler.
+     *
+     * @param errorHandler error handler
+     * @return an instance of non-blocking task runner
+     */
+    static ModelResolutionTaskRunner getNonBlockingTaskRunner(ModelResolutionTaskErrorHandler errorHandler) {
+        return new NonBlockingModelResolutionTaskRunner(errorHandler);
+    }
+
+    /**
+     * Returns an instance of a blocking task runner with no error handler.
+     * Exceptions thrown from tasks will be immediately propagated to the caller.
      *
      * @return an instance of a blocking task runner
      */
     static ModelResolutionTaskRunner getBlockingTaskRunner() {
         return BlockingModelResolutionTaskRunner.getInstance();
+    }
+
+    /**
+     * Returns an instance of a blocking task runner with a custom error handler.
+     *
+     * @return an instance of a blocking task runner
+     */
+    static ModelResolutionTaskRunner getBlockingTaskRunner(ModelResolutionTaskErrorHandler errorHandler) {
+        return BlockingModelResolutionTaskRunner.getInstance(errorHandler);
     }
 
     /**

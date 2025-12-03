@@ -142,7 +142,7 @@ public class AccessLogHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext rc) {
         if (excludePattern != null) {
-            Matcher m = excludePattern.matcher(rc.request().path());
+            Matcher m = excludePattern.matcher(rc.normalizedPath());
             if (m.matches()) {
                 rc.next();
                 return;

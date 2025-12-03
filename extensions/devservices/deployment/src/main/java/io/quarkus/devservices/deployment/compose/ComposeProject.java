@@ -449,7 +449,7 @@ public class ComposeProject {
         return networks.stream()
                 .filter(n -> DEFAULT_NETWORK_NAME.equals(n.getLabels().get(DOCKER_COMPOSE_NETWORK)))
                 // multiple networks can have the default label, but only one can have containers
-                .filter(n -> !n.getContainers().isEmpty())
+                .filter(n -> n.getContainers() != null && !n.getContainers().isEmpty())
                 .findFirst()
                 .map(Network::getId)
                 // this is not an id, but a useful fallback

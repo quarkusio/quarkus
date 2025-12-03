@@ -47,7 +47,7 @@ import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestHostLauncher;
@@ -90,7 +90,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 invokeAfterEachCallbacks(createQuarkusTestMethodContext(context));
             }
 
-            RestAssuredURLManager.clearURL();
+            RestAssuredStateManager.clearState();
             TestScopeManager.tearDown(true);
         }
     }
@@ -116,7 +116,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 invokeBeforeEachCallbacks(createQuarkusTestMethodContext(context));
             }
 
-            RestAssuredURLManager.setURL(ssl, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
+            RestAssuredStateManager.setURL(ssl, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
             TestScopeManager.setup(true);
         }
     }

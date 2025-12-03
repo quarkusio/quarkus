@@ -69,7 +69,7 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -404,7 +404,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (insecureAllowed.isPresent()) {
                     secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
                 }
-                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
                         .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
                 runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                         .getDeclaredMethod("setup", boolean.class).invoke(null, false);
@@ -524,8 +524,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             popMockContext();
             Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
             invokeAfterEachCallbacks(tuple.getKey(), tuple.getValue());
-            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                    .getDeclaredMethod("clearURL").invoke(null);
+            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
+                    .getDeclaredMethod("clearState").invoke(null);
             runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                     .getDeclaredMethod("tearDown", boolean.class).invoke(null, false);
 

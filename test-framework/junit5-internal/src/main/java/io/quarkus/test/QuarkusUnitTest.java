@@ -71,7 +71,7 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -851,8 +851,8 @@ public class QuarkusUnitTest
     public void afterEach(ExtensionContext context) throws Exception {
         if (runningQuarkusApplication != null) {
             //this kinda sucks, but everything is isolated, so we need to hook into everything via reflection
-            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                    .getDeclaredMethod("clearURL")
+            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
+                    .getDeclaredMethod("clearState")
                     .invoke(null);
         }
     }
@@ -864,7 +864,7 @@ public class QuarkusUnitTest
             return;
         }
         if (runningQuarkusApplication != null) {
-            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredStateManager.class.getName())
                     .getDeclaredMethod("setURL", boolean.class).invoke(null, useSecureConnection);
         } else {
             Optional<Class<?>> testClass = context.getTestClass();

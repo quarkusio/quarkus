@@ -81,7 +81,7 @@ public class WiringHelper {
      */
     static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
         return ConfigProvider.getConfig().getOptionalValue(
-                "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".connector",
+                "quarkus.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".connector",
                 String.class);
     }
 
@@ -95,7 +95,8 @@ public class WiringHelper {
     static boolean isChannelEnabled(ChannelDirection direction, String channel) {
         return ConfigProvider.getConfig()
                 .getOptionalValue(
-                        "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".enabled",
+                        "quarkus.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel)
+                                + ".enabled",
                         Boolean.class)
                 .orElse(true);
     }

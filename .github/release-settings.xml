@@ -20,11 +20,6 @@
             <id>quarkus-publish-snapshots</id>
             <username>${env.JBOSS_NEXUS_USERNAME}</username>
             <password>${env.JBOSS_NEXUS_PASSWORD}</password>
-            <configuration>
-                <njord.publisher>sonatype-cp</njord.publisher>
-                <njord.releaseUrl>njord:template:release-sca</njord.releaseUrl>
-                <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
-            </configuration>
         </server>
     </servers>
 

@@ -54,7 +54,7 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           ./mvnw -ntp -e -B --settings .github/release-settings.xml \
-            -Dnjord.autoPublish \
+            -Dnjord.enabled=false \
             -DskipTests -DskipITs -Dno-format -Dinvoker.skip=true \
             -Dno-test-modules \
             -Ddeploy-gradle-plugins \

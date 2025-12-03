@@ -21,6 +21,8 @@ public interface DebugConfig {
 
     /**
      * If set to true, writes a list of all reflective classes to META-INF
+     * <p>
+     * For fast-jar the META-INF is inside of quarkus-app/quarkus/generated-bytecode.jar
      */
     @WithDefault("false")
     boolean reflection();

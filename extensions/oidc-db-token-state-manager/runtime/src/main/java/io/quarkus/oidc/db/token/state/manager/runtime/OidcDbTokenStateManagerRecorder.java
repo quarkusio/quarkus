@@ -3,7 +3,8 @@ package io.quarkus.oidc.db.token.state.manager.runtime;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManagerInitializer.OidcDbTokenStateManagerInitializerProperties;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.oidc.db.token.state.manager.runtime.OidcDbTokenStateManagerInitializer.SupportedReactiveSqlClient;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.sqlclient.Pool;
 
@@ -27,13 +28,8 @@ public class OidcDbTokenStateManagerRecorder {
     }
 
     /* STATIC INIT */
-    public Supplier<OidcDbTokenStateManagerInitializerProperties> createDbTokenStateInitializerProps(String createTableDdl,
-            boolean supportsIfTableNotExists) {
-        return new Supplier<OidcDbTokenStateManagerInitializerProperties>() {
-            @Override
-            public OidcDbTokenStateManagerInitializerProperties get() {
-                return new OidcDbTokenStateManagerInitializerProperties(createTableDdl, supportsIfTableNotExists);
-            }
-        };
+    public BeanContainerListener setSupportedReactiveSqlClient(SupportedReactiveSqlClient supportedReactiveSqlClient) {
+        return container -> container.beanInstance(OidcDbTokenStateManagerInitializer.class)
+                .setSupportedReactiveSqlClient(supportedReactiveSqlClient);
     }
 }

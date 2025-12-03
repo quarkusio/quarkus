@@ -91,6 +91,16 @@ public class BearerAuthenticationOidcDevServicesTest {
                 .body(Matchers.containsString(" Bob"));
     }
 
+    @Test
+    void testTokenExpiration() {
+        RestAssured.given()
+                .auth().oauth2(getAccessToken("bob"))
+                .get("/secured/expires-in")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is(String.valueOf(5 * 60L))); // The default token expiration is 5 minutes
+    }
+
     private String getAccessToken(String user) {
         return oidcTestClient.getAccessToken(user, user);
     }

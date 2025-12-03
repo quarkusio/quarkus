@@ -329,7 +329,7 @@ include::{generated-dir}/config/quarkus-rest-csrf.adoc[leveloffset=+1, opts=opti
 [[csrf-prevention-programmatic-set-up]]
 == Configuring the CSRF prevention programmatically
 
-When the `quarkus-rest-csrf` extension is used, the `io.quarkus.vertx.http.security.HttpSecurity` CDI event allows you to customize the CSRF prevention programmatically:
+When the `quarkus-rest-csrf` extension is used together with the `quarkus-security` extension, the `io.quarkus.vertx.http.security.HttpSecurity` CDI event allows you to customize the CSRF prevention programmatically:
 
 [source,java]
 ----

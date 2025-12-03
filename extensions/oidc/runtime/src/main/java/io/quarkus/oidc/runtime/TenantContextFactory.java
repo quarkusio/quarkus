@@ -290,6 +290,11 @@ final class TenantContextFactory {
             if (oidcConfig.token().refreshTokenTimeSkew().isPresent()) {
                 oidcConfig.token.setRefreshExpired(true);
             }
+            if (oidcConfig.authentication().sessionAgeExtension().isPresent()
+                    && !oidcConfig.token().refreshExpired()) {
+                LOG.warn(
+                        "Session age extension will not be effective because 'quarkus.oidc.token.refresh-expired=true' is not set");
+            }
         }
 
         if (oidcConfig.tokenStateManager()

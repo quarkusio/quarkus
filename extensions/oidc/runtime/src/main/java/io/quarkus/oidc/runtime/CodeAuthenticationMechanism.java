@@ -7,6 +7,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
@@ -1065,16 +1066,29 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             LOG.error(error);
                             throw new AuthenticationCompletionException(error);
                         }
-                        long maxAge = idTokenJson.getLong("exp") - idTokenJson.getLong("iat");
-                        LOG.debugf("ID token is valid for %d seconds", maxAge);
+                        long idTokenAge = idTokenJson.getLong("exp") - idTokenJson.getLong("iat");
+                        LOG.debugf("Session age is initialized with ID token age of %d seconds", idTokenAge);
+                        long sessionAge = idTokenAge;
                         if (configContext.oidcConfig().token().lifespanGrace().isPresent()) {
-                            maxAge += configContext.oidcConfig().token().lifespanGrace().getAsInt();
+                            int lifespanGrace = configContext.oidcConfig().token().lifespanGrace().getAsInt();
+                            LOG.debugf("Adding token lifespan grace of %d seconds to the session age", lifespanGrace);
+                            sessionAge += lifespanGrace;
                         }
-                        if (configContext.oidcConfig().token().refreshExpired() && tokens.getRefreshToken() != null) {
-                            maxAge += configContext.oidcConfig().authentication().sessionAgeExtension().getSeconds();
+                        if (configContext.oidcConfig().token().refreshExpired()) {
+                            if (tokens.getRefreshToken() != null) {
+                                long sessionAgeExtension = configContext.oidcConfig().authentication().sessionAgeExtension()
+                                        .orElse(Duration.ofMinutes(5)).getSeconds();
+                                LOG.debugf("Extending the session age with %d seconds", sessionAgeExtension);
+                                sessionAge += sessionAgeExtension;
+                            } else {
+                                LOG.debug("Session age can not be extended becase a refresh token is not available");
+                            }
                         }
-                        final long sessionMaxAge = maxAge;
-                        context.put(SESSION_MAX_AGE_PARAM, maxAge);
+                        if (sessionAge != idTokenAge) {
+                            LOG.debugf("Final session age is %d seconds", sessionAge);
+                        }
+                        final long sessionMaxAge = sessionAge;
+                        context.put(SESSION_MAX_AGE_PARAM, sessionAge);
                         context.put(TenantConfigContext.class.getName(), configContext);
                         // Just in case, remove the stale Back-Channel Logout data if the previous session was not terminated correctly
                         resolver.getBackChannelLogoutTokens().remove(configContext.oidcConfig().tenantId().get());

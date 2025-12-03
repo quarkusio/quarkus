@@ -54,6 +54,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
@@ -78,6 +79,7 @@ import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterFilter;
 import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
+import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfigBuilderCustomizer;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
@@ -544,6 +546,13 @@ public class SmallRyeReactiveMessagingProcessor {
                             "io.quarkus.smallrye.reactivemessaging.runtime.kotlin.ApplicationCoroutineScope")
                     .setUnremovable().build());
         }
+    }
+
+    @BuildStep
+    void configCustomizer(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        // Config mapping between SmallRye / MP and Quarkus
+        serviceProvider.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(ReactiveMessagingConfigBuilderCustomizer.class.getName()));
     }
 
     private void ensureKotlinCoroutinesEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,

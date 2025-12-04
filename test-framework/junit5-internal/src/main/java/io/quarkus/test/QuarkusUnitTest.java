@@ -941,6 +941,33 @@ public class QuarkusUnitTest
     }
 
     /**
+     * Adds runtime configuration properties using a text block with "key=value" lines.
+     * Blank lines and lines starting with '#' are ignored.
+     *
+     * @param configBlock text block with configuration lines
+     * @return self
+     */
+    public QuarkusUnitTest withRuntimeConfiguration(String configBlock) {
+        Objects.requireNonNull(configBlock, "Configuration text block must not be null");
+
+        configBlock.lines()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                .forEach(line -> {
+                    int idx = line.indexOf('=');
+                    if (idx <= 0) {
+                        throw new IllegalArgumentException(
+                                "Invalid configuration line: '" + line + "'. Expected format 'key=value'");
+                    }
+                    String key = line.substring(0, idx).trim();
+                    String value = line.substring(idx + 1).trim();
+                    overrideRuntimeConfigKey(key, value);
+                });
+
+        return this;
+    }
+
+    /**
      * Overriden configuration properties take precedence over an {@code application.properties} asset added in the test
      * {@link JavaArchive}.
      *

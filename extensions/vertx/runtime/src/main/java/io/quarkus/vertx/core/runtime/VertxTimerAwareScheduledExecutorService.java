@@ -32,16 +32,16 @@ public final class VertxTimerAwareScheduledExecutorService extends ForwardingSch
         return delegate;
     }
 
-    // ------------------ ScheduledFuture over Vert.x Future ------------------ //
+    // ------------------ ScheduledFuture for timers ------------------ //
 
-    private static final class VertxFutureWrapper<T> implements ScheduledFuture<T> {
+    private static final class VertxTimerScheduledFuture<T> implements ScheduledFuture<T> {
 
         final Vertx vertx;
         final long timerId;
         volatile boolean cancelled;
 
         // Minimal wrapper class with just what is need to support cancellation
-        VertxFutureWrapper(Vertx vertx, long timerId) {
+        VertxTimerScheduledFuture(Vertx vertx, long timerId) {
             this.vertx = vertx;
             this.timerId = timerId;
         }
@@ -97,7 +97,7 @@ public final class VertxTimerAwareScheduledExecutorService extends ForwardingSch
                     command.run();
                 }
             });
-            return new VertxFutureWrapper<>(vertx, timerId);
+            return new VertxTimerScheduledFuture<>(vertx, timerId);
         }
         return delegate.schedule(command, delay, unit);
     }
@@ -113,7 +113,7 @@ public final class VertxTimerAwareScheduledExecutorService extends ForwardingSch
                     command.run();
                 }
             });
-            return new VertxFutureWrapper<Void>(vertx, timerId);
+            return new VertxTimerScheduledFuture<Void>(vertx, timerId);
         }
         return delegate.scheduleAtFixedRate(command, initialDelay, period, unit);
     }

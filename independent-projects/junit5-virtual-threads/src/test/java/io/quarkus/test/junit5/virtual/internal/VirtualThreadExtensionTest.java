@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -195,17 +196,22 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
-        public <T> Optional<T> getConfigurationParameter(String s, Function<String, T> function) {
+        public <T> Optional<T> getConfigurationParameter(String key,
+                Function<? super String, ? extends @Nullable T> transformer) {
             return Optional.empty();
         }
 
         @Override
         public void publishReportEntry(Map<String, String> map) {
-
         }
 
         @Override
         public TestStore getStore(Namespace namespace) {
+            return store;
+        }
+
+        @Override
+        public Store getStore(StoreScope scope, Namespace namespace) {
             return store;
         }
 
@@ -229,12 +235,11 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
-        public void publishDirectory(String name, ThrowingConsumer<Path> action) {
+        public void publishFile(String name, org.junit.jupiter.api.MediaType mediaType, ThrowingConsumer<Path> action) {
         }
 
         @Override
-        public Store getStore(StoreScope scope, Namespace namespace) {
-            return null;
+        public void publishDirectory(String name, ThrowingConsumer<Path> action) {
         }
     }
 
@@ -276,15 +281,29 @@ class VirtualThreadExtensionTest {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <K, V> Object getOrComputeIfAbsent(K key, Function<K, V> function) {
-            return store.computeIfAbsent(key, o -> function.apply((K) o));
+        public <V> V getOrDefault(Object key, Class<V> requiredType, V defaultValue) {
+            return requiredType.cast(store.getOrDefault(key, defaultValue));
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <K, V> V getOrComputeIfAbsent(K key, Function<K, V> function, Class<V> aClass) {
-            return aClass.cast(store.computeIfAbsent(key, o -> function.apply((K) o)));
+        public @Nullable <K, V> Object getOrComputeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator) {
+            return store.computeIfAbsent(key, o -> defaultCreator.apply((K) o));
+        }
+
+        @Override
+        public <K, V> Object computeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator) {
+            return store.computeIfAbsent(key, o -> defaultCreator.apply((K) o));
+        }
+
+        @Override
+        public <K, V> @Nullable V getOrComputeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator,
+                Class<V> requiredType) {
+            return requiredType.cast(store.computeIfAbsent(key, o -> defaultCreator.apply((K) o)));
+        }
+
+        @Override
+        public <K, V> V computeIfAbsent(K key, Function<? super K, ? extends V> defaultCreator, Class<V> requiredType) {
+            return requiredType.cast(store.computeIfAbsent(key, o -> defaultCreator.apply((K) o)));
         }
 
         @Override

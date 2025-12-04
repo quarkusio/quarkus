@@ -27,7 +27,6 @@
         <module>junit5-mockito-config</module>
         <module>vertx</module>
         <module>hibernate-reactive-panache</module>
-        <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>
         <module>maven</module>

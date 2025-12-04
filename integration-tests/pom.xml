@@ -289,7 +289,6 @@
                 <module>amazon-lambda-rest-reactive-routes</module>
                 <module>amazon-lambda-rest-funqy</module>
                 <module>amazon-lambda-rest-servlet</module>
-                <module>amazon-lambda-http-resteasy</module>
                 <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
                 <module>kubernetes</module>

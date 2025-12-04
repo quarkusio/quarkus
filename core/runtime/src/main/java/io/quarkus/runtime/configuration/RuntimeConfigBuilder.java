@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
+import io.quarkus.runtime.RuntimeValuesConfigSource;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
@@ -15,6 +16,7 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         new QuarkusConfigBuilderCustomizer().configBuilder(builder);
+        builder.withSources(new RuntimeValuesConfigSource());
         builder.withSources(new UuidConfigSource());
 
         builder.forClassLoader(Thread.currentThread().getContextClassLoader())

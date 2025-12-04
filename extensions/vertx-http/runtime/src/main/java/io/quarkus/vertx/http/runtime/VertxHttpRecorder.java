@@ -100,7 +100,6 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Closeable;
 import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
@@ -769,15 +768,10 @@ public class VertxHttpRecorder {
 
                             actualManagementPort = ar.result().actualPort();
                             if (actualManagementPort != httpManagementServerOptions.getPort()) {
-                                var managementPortSystemProperties = new PortSystemProperties();
-                                managementPortSystemProperties.set("management", actualManagementPort, launchMode);
-                                ((VertxInternal) vertx).addCloseHook(new Closeable() {
-                                    @Override
-                                    public void close(Promise<Void> completion) {
-                                        managementPortSystemProperties.restore();
-                                        completion.complete();
-                                    }
-                                });
+                                io.quarkus.vertx.http.runtime.HttpServer.setManagementPort(actualManagementPort);
+                                if (launchMode.isDevOrTest()) {
+                                    io.quarkus.vertx.http.runtime.HttpServer.setManagementTestPort(actualManagementPort);
+                                }
                             }
                             managementInterfaceFuture.complete(ar.result());
                         }
@@ -1180,9 +1174,6 @@ public class VertxHttpRecorder {
         private final HttpServerOptions httpsOptions;
         private final HttpServerOptions domainSocketOptions;
         private final LaunchMode launchMode;
-        private volatile boolean clearHttpProperty = false;
-        private volatile boolean clearHttpsProperty = false;
-        private volatile PortSystemProperties portSystemProperties;
         private final InsecureRequests insecureRequests;
         private final VertxHttpConfig quarkusConfig;
         private final AtomicInteger connectionCount;
@@ -1364,23 +1355,17 @@ public class VertxHttpRecorder {
                         if (https) {
                             actualHttpsPort = actualPort;
                             validateHttpPorts(actualHttpPort, actualHttpsPort);
+                            io.quarkus.vertx.http.runtime.HttpServer.setSecurePort(actualPort);
+                            if (launchMode.isDevOrTest()) {
+                                io.quarkus.vertx.http.runtime.HttpServer.setSecureTestPort(actualPort);
+                            }
                         } else {
                             actualHttpPort = actualPort;
                             validateHttpPorts(actualHttpPort, actualHttpsPort);
-                        }
-                        if (actualPort != options.getPort()) {
-                            // Override quarkus.http(s)?.(test-)?port
-                            String schema;
-                            if (https) {
-                                clearHttpsProperty = true;
-                                schema = "https";
-                            } else {
-                                clearHttpProperty = true;
-                                actualHttpPort = actualPort;
-                                schema = "http";
+                            io.quarkus.vertx.http.runtime.HttpServer.setPort(actualPort);
+                            if (launchMode.isDevOrTest()) {
+                                io.quarkus.vertx.http.runtime.HttpServer.setTestPort(actualPort);
                             }
-                            portSystemProperties = new PortSystemProperties();
-                            portSystemProperties.set(schema, actualPort, launchMode);
                         }
 
                         if (https && (quarkusConfig.ssl().certificate().reloadPeriod().isPresent())) {
@@ -1451,28 +1436,6 @@ public class VertxHttpRecorder {
 
             Handler<AsyncResult<Void>> handleClose = event -> {
                 if (remainingCount.decrementAndGet() == 0) {
-
-                    if (clearHttpProperty) {
-                        String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-port"
-                                : "quarkus.http.port";
-                        System.clearProperty(portPropertyName);
-                        if (launchMode.isDevOrTest()) {
-                            System.clearProperty(propertyWithProfilePrefix(portPropertyName));
-                        }
-
-                    }
-                    if (clearHttpsProperty) {
-                        String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-ssl-port"
-                                : "quarkus.http.ssl-port";
-                        System.clearProperty(portPropertyName);
-                        if (launchMode.isDevOrTest()) {
-                            System.clearProperty(propertyWithProfilePrefix(portPropertyName));
-                        }
-                    }
-                    if (portSystemProperties != null) {
-                        portSystemProperties.restore();
-                    }
-
                     stopFuture.complete();
                 }
             };
@@ -1486,10 +1449,6 @@ public class VertxHttpRecorder {
             if (domainSocketServer != null) {
                 domainSocketServer.close(handleClose);
             }
-        }
-
-        private String propertyWithProfilePrefix(String portPropertyName) {
-            return "%" + launchMode.getDefaultProfile() + "." + portPropertyName;
         }
 
         @Override

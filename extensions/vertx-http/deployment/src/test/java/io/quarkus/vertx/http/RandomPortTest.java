@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URL;
 
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.restassured.RestAssured;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;
@@ -30,6 +31,8 @@ public class RandomPortTest {
 
     @TestHTTPResource("test")
     URL url;
+    @Inject
+    VertxHttpConfig vertxHttpConfig;
 
     @Test
     public void portShouldNotBeZero() {
@@ -42,16 +45,17 @@ public class RandomPortTest {
         RestAssured.get("/app").then().body(Matchers.equalTo(Integer.toString(url.getPort())));
     }
 
+    @Test
+    void mappingPortIsZero() {
+        assertThat(vertxHttpConfig.testPort()).isZero();
+    }
+
     public static class AppClass {
-
-        @ConfigProperty(name = "quarkus.http.port")
-        String port;
-
         public void route(@Observes Router router) {
             router.route("/test").handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext event) {
-                    event.response().end(System.getProperty("quarkus.http.test-port"));
+                    event.response().end(ConfigProvider.getConfig().getValue("quarkus.http.test-port", String.class));
                 }
             });
             router.route("/app").handler(new Handler<RoutingContext>() {
@@ -62,5 +66,4 @@ public class RandomPortTest {
             });
         }
     }
-
 }

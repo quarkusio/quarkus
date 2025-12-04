@@ -37,8 +37,8 @@ public final class ElasticsearchClientProcessorUtil {
             BeanRegistrationPhaseBuildItem registrationPhase,
             Set<DotName> clientTypeNames, Set<DotName> configAnnotationNames) {
         Set<String> referencedNames = new HashSet<>();
-		// Always start with the default:
-		referencedNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
+        // Always start with the default:
+        referencedNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
         IndexView indexView = indexBuildItem.getIndex();
         for (DotName annotationName : configAnnotationNames) {
             for (AnnotationInstance annotation : indexView.getAnnotations(annotationName)) {

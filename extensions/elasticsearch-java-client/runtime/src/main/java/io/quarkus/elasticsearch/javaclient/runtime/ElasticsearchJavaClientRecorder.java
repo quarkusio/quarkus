@@ -15,11 +15,23 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
+import io.quarkus.elasticsearch.restclient.lowlevel.runtime.ElasticsearchClientRuntimeConfig;
+import io.quarkus.elasticsearch.restclient.lowlevel.runtime.ElasticsearchClientsRuntimeConfig;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.common.annotation.Identifier;
 
 @Recorder
 public class ElasticsearchJavaClientRecorder {
+
+    private final RuntimeValue<ElasticsearchJavaClientsRuntimeConfig> runtimeConfig;
+    private final RuntimeValue<ElasticsearchClientsRuntimeConfig> lowLevelRuntimeConfig;
+
+    public ElasticsearchJavaClientRecorder(RuntimeValue<ElasticsearchJavaClientsRuntimeConfig> runtimeConfig,
+            RuntimeValue<ElasticsearchClientsRuntimeConfig> lowLevelRuntimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+        this.lowLevelRuntimeConfig = lowLevelRuntimeConfig;
+    }
 
     public Function<SyntheticCreationalContext<ElasticsearchTransport>, ElasticsearchTransport> elasticsearchTransportSupplier(
             String clientName) {
@@ -55,8 +67,34 @@ public class ElasticsearchJavaClientRecorder {
         };
     }
 
-    public Supplier<ActiveResult> checkActiveHealthCheckSupplier(String clientName) {
-        return ActiveResult::active;
+    public Supplier<ActiveResult> checkActiveElasticsearchTransportSupplier(String clientName) {
+        return () -> {
+            ElasticsearchClientRuntimeConfig lowLevelClient = lowLevelRuntimeConfig.getValue().clients().get(clientName);
+            ElasticsearchJavaClientRuntimeConfig javaClient = runtimeConfig.getValue().clients().get(clientName);
+            if (!lowLevelClient.active()) {
+                if (javaClient.active().isPresent() && javaClient.active().get()) {
+                    throw new IllegalStateException("Elasticsearch Java client [" + clientName + "] is misconfigured. "
+                            + "Explicitly activating this Elasticsearch Java client, "
+                            + "while its corresponding low-level Elasticsearch REST client is deactivated ("
+                            + ElasticsearchClientBeanUtil.activeKey("quarkus.elasticsearch-java.", clientName) + "=false) "
+                            + "is not allowed.");
+                }
+                return ActiveResult.inactive("Elasticsearch Java client [" + clientName + "] is not active, " +
+                        "because the corresponding low-level REST client is deactivated through the configuration properties. "
+                        + "To activate this client, make sure that both "
+                        + ElasticsearchClientBeanUtil.activeKey("quarkus.elasticsearch-java.", clientName) + " and "
+                        + ElasticsearchClientBeanUtil.activeKey("quarkus.elasticsearch.", clientName)
+                        + " are set to true either implicitly (their default values) or explicitly.");
+            }
+            if (!javaClient.active().orElse(true)) {
+                return ActiveResult.inactive("Elasticsearch Java client [" + clientName + "] is not active, "
+                        + "because it is deactivated through configuration properties. "
+                        + "To activate this client, make sure that "
+                        + ElasticsearchClientBeanUtil.activeKey("quarkus.elasticsearch-java.", clientName)
+                        + " is set to true either implicitly (its default value) or explicitly.");
+            }
+            return ActiveResult.active();
+        };
     }
 
     private static <T, U> T getInjectedReference(SyntheticCreationalContext<U> context, Class<T> type, String clientName) {
@@ -64,9 +102,5 @@ public class ElasticsearchJavaClientRecorder {
             return context.getInjectedReference(type);
         }
         return context.getInjectedReference(type, Identifier.Literal.of(clientName));
-    }
-
-    public Supplier<ActiveResult> checkActiveElasticsearchTransportSupplier(String clientName) {
-        return ActiveResult::active;
     }
 }

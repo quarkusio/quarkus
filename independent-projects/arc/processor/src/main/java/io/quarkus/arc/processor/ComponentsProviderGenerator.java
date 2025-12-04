@@ -10,7 +10,6 @@ import java.lang.constant.ClassDesc;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,7 +41,6 @@ import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.Var;
 import io.quarkus.gizmo2.creator.BlockCreator;
-import io.quarkus.gizmo2.creator.ClassCreator;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
@@ -62,8 +60,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     static final String ADD_OBSERVERS = "addObservers";
     static final String ADD_REMOVED_BEANS = "addRemovedBeans";
     static final String ADD_BEANS = "addBeans";
-    private static final Comparator<BeanInfo> BEAN_INFO_COMPARATOR = Comparator.comparing(BeanInfo::getIdentifier);
-    private static final Comparator<ObserverInfo> OBSERVER_INFO_COMPARATOR = Comparator.comparing(ObserverInfo::getIdentifier);
+
+    private static final int BEAN_GROUP_SIZE = 30;
+    private static final int OBSERVER_GROUP_SIZE = 30;
+    private static final int REMOVED_BEAN_GROUP_SIZE = 5;
+    private static final int CONTAINER_SIZE = 10;
 
     private final AnnotationLiteralProcessor annotationLiterals;
     private final boolean detectUnusedFalsePositives;
@@ -123,26 +124,41 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 mc.returning(Components.class);
                 ParamVar currentContextFactory = mc.parameter("currentContextFactory", CurrentContextFactory.class);
                 mc.body(bc -> {
-                    // Break bean processing into multiple addBeans() methods
+                    // Break bean processing into multiple groups
+                    // Each group is represented by a static method addBeansX(); X corresponds to the group id
+                    // Several groups belong to a container - a class named like Foo_ComponentsProvider_addBeansY; Y corresponds to the container id
+
                     // Map<String, InjectableBean<?>>
                     LocalVar beanIdToBean = bc.localVar("beanIdToBean", bc.new_(HashMap.class));
-                    for (BeanGroup group : info.beanGroups()) {
-                        ClassMethodDesc desc = ClassMethodDesc.of(cc.type(), ADD_BEANS + group.id(),
-                                void.class, Map.class);
-                        bc.invokeVirtual(desc, cc.this_(), beanIdToBean);
+                    for (Container<BeanGroup> container : info.beans()) {
+                        for (BeanGroup group : container) {
+                            ClassMethodDesc desc = ClassMethodDesc.of(
+                                    ClassDesc.of(container.className(generatedName, ADD_BEANS)),
+                                    ADD_BEANS + group.id(),
+                                    void.class, Map.class);
+                            bc.invokeStatic(desc, beanIdToBean);
+                        }
                     }
-                    LocalVar beans = bc.localVar("beans", bc.withMap(beanIdToBean).values());
-                    generateAddBeans(cc, info, beanToGeneratedName);
 
-                    // Break observers processing into multiple addObservers() methods
+                    LocalVar beans = bc.localVar("beans", bc.withMap(beanIdToBean).values());
+                    generateAddBeans(generatedName, gizmo, info, beanToGeneratedName);
+
+                    // Break observer processing into multiple groups
+                    // Each group is represented by a static method addObserversX(); X corresponds to the group id
+                    // Several groups belong to a container - a class named like Foo_ComponentsProvider_addObserversY; Y corresponds to the container id
+
                     // List<InjectableObserverMethod<?>
                     LocalVar observers = bc.localVar("observers", bc.new_(ArrayList.class));
-                    for (ObserverGroup group : info.observerGroups()) {
-                        ClassMethodDesc desc = ClassMethodDesc.of(cc.type(), ADD_OBSERVERS + group.id(),
-                                void.class, Map.class, List.class);
-                        bc.invokeVirtual(desc, cc.this_(), beanIdToBean, observers);
+                    for (Container<ObserverGroup> container : info.observers()) {
+                        for (ObserverGroup group : container) {
+                            ClassMethodDesc desc = ClassMethodDesc.of(
+                                    ClassDesc.of(container.className(generatedName, ADD_OBSERVERS)),
+                                    ADD_OBSERVERS + group.id(),
+                                    void.class, Map.class, List.class);
+                            bc.invokeStatic(desc, beanIdToBean, observers);
+                        }
                     }
-                    generateAddObservers(cc, info, observerToGeneratedName);
+                    generateAddObservers(generatedName, gizmo, info, observerToGeneratedName);
 
                     // Custom contexts
                     // List<InjectableContext>
@@ -191,16 +207,23 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                             lc.body(lbc -> {
                                 LocalVar removedBeans = lbc.localVar("removedBeans", lbc.new_(ArrayList.class));
                                 LocalVar typeCache = lbc.localVar("typeCache", lbc.new_(HashMap.class));
-                                // Break removed beans processing into multiple addRemovedBeans() methods
-                                for (RemovedBeanGroup group : info.removedBeans()) {
-                                    ClassMethodDesc desc = ClassMethodDesc.of(cc.type(), ADD_REMOVED_BEANS + group.id(),
-                                            void.class, List.class, Map.class);
-                                    lbc.invokeStatic(desc, removedBeans, typeCache);
+
+                                // Break observer processing into multiple groups
+                                // Each group is represented by a static method addRemovedBeansX(); X corresponds to the group id
+                                // Several groups belong to a container - a class named like Foo_ComponentsProvider_addRemovedBeansY; Y corresponds to the container id
+                                for (Container<RemovedBeanGroup> container : info.removedBeans()) {
+                                    for (RemovedBeanGroup group : container) {
+                                        ClassMethodDesc desc = ClassMethodDesc.of(
+                                                ClassDesc.of(container.className(generatedName, ADD_REMOVED_BEANS)),
+                                                ADD_REMOVED_BEANS + group.id(),
+                                                void.class, List.class, Map.class);
+                                        lbc.invokeStatic(desc, removedBeans, typeCache);
+                                    }
                                 }
                                 lbc.return_(removedBeans);
                             });
                         }));
-                        generateAddRemovedBeans(cc, info);
+                        generateAddRemovedBeans(generatedName, gizmo, info);
                     } else {
                         removedBeansSupplier = bc.localVar("removedBeansSupplier",
                                 bc.new_(MethodDescs.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, bc.setOf()));
@@ -249,242 +272,266 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         });
     }
 
-    private void generateAddBeans(ClassCreator cc, CodeGenInfo info, Map<BeanInfo, String> beanToGeneratedName) {
+    private void generateAddBeans(String generatedName, Gizmo gizmo, CodeGenInfo info,
+            Map<BeanInfo, String> beanToGeneratedName) {
         Set<BeanInfo> processed = new HashSet<>();
 
-        for (BeanGroup group : info.beanGroups()) {
-            cc.method(ADD_BEANS + group.id(), mc -> {
-                mc.private_();
-                mc.returning(void.class);
-                ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
-                mc.body(bc -> {
-                    for (BeanInfo bean : group.beans()) {
-                        ClassDesc beanType = beanToGeneratedName.containsKey(bean)
-                                ? ClassDesc.of(beanToGeneratedName.get(bean))
-                                : null;
-                        if (beanType == null) {
-                            throw new IllegalStateException("No bean type found for: " + bean);
-                        }
-
-                        List<InjectionPointInfo> injectionPoints = bean.getInjections()
-                                .stream()
-                                .flatMap(i -> i.injectionPoints.stream())
-                                .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip))
-                                .toList();
-                        List<ClassDesc> params = new ArrayList<>();
-                        List<Expr> args = new ArrayList<>();
-
-                        if (bean.isProducer()) {
-                            params.add(ClassDesc.of(Supplier.class.getName()));
-                            if (processed.contains(bean.getDeclaringBean())) {
-                                args.add(bc.withMap(beanIdToBean).get(Const.of(bean.getDeclaringBean().getIdentifier())));
-                            } else {
-                                // Declaring bean was not processed yet - use MapValueSupplier
-                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
-                                        Const.of(bean.getDeclaringBean().getIdentifier())));
-                            }
-                        }
-                        for (InjectionPointInfo injectionPoint : injectionPoints) {
-                            params.add(ClassDesc.of(Supplier.class.getName()));
-                            if (processed.contains(injectionPoint.getResolvedBean())) {
-                                args.add(bc.withMap(beanIdToBean).get(
-                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
-                            } else {
-                                // Dependency was not processed yet - use MapValueSupplier
-                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
-                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
-                            }
-                        }
-                        if (bean.getDisposer() != null) {
-                            for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                                if (BuiltinBean.resolvesTo(injectionPoint)) {
-                                    continue;
+        for (Container<BeanGroup> container : info.beans()) {
+            gizmo.class_(container.className(generatedName, ADD_BEANS), cc -> {
+                cc.final_();
+                for (BeanGroup group : container) {
+                    cc.staticMethod(ADD_BEANS + group.id(), mc -> {
+                        mc.packagePrivate();
+                        mc.returning(void.class);
+                        ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
+                        mc.body(bc -> {
+                            for (BeanInfo bean : group.beans()) {
+                                ClassDesc beanType = beanToGeneratedName.containsKey(bean)
+                                        ? ClassDesc.of(beanToGeneratedName.get(bean))
+                                        : null;
+                                if (beanType == null) {
+                                    throw new IllegalStateException("No bean type found for: " + bean);
                                 }
-                                params.add(ClassDesc.of(Supplier.class.getName()));
-                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
-                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
-                            }
-                        }
-                        for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-                            params.add(ClassDesc.of(Supplier.class.getName()));
-                            if (processed.contains(interceptor)) {
-                                args.add(bc.withMap(beanIdToBean).get(Const.of(interceptor.getIdentifier())));
-                            } else {
-                                // Bound interceptor was not processed yet - use MapValueSupplier
-                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
-                                        Const.of(interceptor.getIdentifier())));
-                            }
-                        }
-                        for (DecoratorInfo decorator : bean.getBoundDecorators()) {
-                            params.add(ClassDesc.of(Supplier.class.getName()));
-                            if (processed.contains(decorator)) {
-                                args.add(bc.withMap(beanIdToBean).get(Const.of(decorator.getIdentifier())));
-                            } else {
-                                // Bound decorator was not processed yet - use MapValueSupplier
-                                args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
-                                        Const.of(decorator.getIdentifier())));
-                            }
-                        }
 
-                        // Foo_Bean bean = new Foo_Bean(bean3)
-                        Expr beanInstance = bc.new_(ConstructorDesc.of(beanType, params), args);
-                        // beans.put(id, bean)
-                        bc.withMap(beanIdToBean).put(Const.of(bean.getIdentifier()), beanInstance);
+                                List<InjectionPointInfo> injectionPoints = bean.getInjections()
+                                        .stream()
+                                        .flatMap(i -> i.injectionPoints.stream())
+                                        .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip))
+                                        .toList();
+                                List<ClassDesc> params = new ArrayList<>();
+                                List<Expr> args = new ArrayList<>();
 
-                        processed.add(bean);
-                    }
-
-                    bc.return_();
-                });
-            });
-        }
-    }
-
-    private void generateAddObservers(ClassCreator cc, CodeGenInfo info, Map<ObserverInfo, String> observerToGeneratedName) {
-        for (ObserverGroup group : info.observerGroups()) {
-            cc.method(ADD_OBSERVERS + group.id(), mc -> {
-                mc.private_();
-                mc.returning(void.class);
-                ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
-                ParamVar observers = mc.parameter("observers", List.class);
-                mc.body(bc -> {
-                    for (ObserverInfo observer : group.observers()) {
-                        ClassDesc observerType = observerToGeneratedName.containsKey(observer)
-                                ? ClassDesc.of(observerToGeneratedName.get(observer))
-                                : null;
-                        if (observerType == null) {
-                            throw new IllegalStateException("No observer type found for: " + observerType);
-                        }
-                        List<ClassDesc> params = new ArrayList<>();
-                        List<Expr> args = new ArrayList<>();
-
-                        if (!observer.isSynthetic()) {
-                            List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
-                                    .filter(ip -> !BuiltinBean.resolvesTo(ip))
-                                    .toList();
-                            // declaring bean
-                            params.add(ClassDesc.of(Supplier.class.getName()));
-                            args.add(bc.withMap(beanIdToBean).get(Const.of(observer.getDeclaringBean().getIdentifier())));
-                            // injections
-                            for (InjectionPointInfo injectionPoint : injectionPoints) {
-                                params.add(ClassDesc.of(Supplier.class.getName()));
-                                args.add(bc.withMap(beanIdToBean).get(
-                                        Const.of(injectionPoint.getResolvedBean().getIdentifier())));
-                            }
-                        }
-                        Expr observerInstance = bc.new_(ConstructorDesc.of(observerType, params), args);
-                        bc.withList(observers).add(observerInstance);
-                    }
-                    bc.return_();
-                });
-            });
-        }
-    }
-
-    private void generateAddRemovedBeans(ClassCreator cc, CodeGenInfo info) {
-        for (RemovedBeanGroup group : info.removedBeans()) {
-            cc.staticMethod(ADD_REMOVED_BEANS + group.id(), mc -> {
-                mc.public_(); // to allow access from an anonymous class
-                mc.returning(void.class);
-                ParamVar rtRemovedBeans = mc.parameter("removedBeans", List.class);
-                ParamVar typeCacheMap = mc.parameter("typeCache", Map.class);
-                mc.body(b0 -> {
-                    LocalVar tccl = b0.localVar("tccl",
-                            b0.invokeVirtual(MethodDescs.THREAD_GET_TCCL, b0.currentThread()));
-
-                    Map<AnnotationInstanceEquivalenceProxy, LocalVar> sharedQualifers = new HashMap<>();
-                    for (BeanInfo btRemovedBean : group.removedBeans()) {
-                        // Bean types
-                        LocalVar rtTypes = b0.localVar("types", b0.new_(HashSet.class));
-                        for (Type btType : btRemovedBean.getTypes()) {
-                            if (DotNames.OBJECT.equals(btType.name())) {
-                                // Skip java.lang.Object
-                                continue;
-                            }
-
-                            b0.try_(tc -> {
-                                tc.body(b1 -> {
-                                    try {
-                                        LocalVar rtType = RuntimeTypeCreator.of(b1)
-                                                .withCache(typeCacheMap)
-                                                .withTCCL(tccl)
-                                                .create(btType);
-                                        b1.withSet(rtTypes).add(rtType);
-                                    } catch (IllegalArgumentException e) {
-                                        throw new IllegalStateException("Unable to construct type for " + btRemovedBean
-                                                + ": " + e.getMessage());
-                                    }
-                                });
-                                tc.catch_(Throwable.class, "e", (b1, e) -> {
-                                    b1.invokeStatic(MethodDescs.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
-                                            Const.of(btType.toString()), e);
-                                });
-                            });
-                        }
-
-                        // Qualifiers
-                        LocalVar rtQualifiers;
-                        if (btRemovedBean.hasDefaultQualifiers() || btRemovedBean.getQualifiers().isEmpty()) {
-                            // No qualifiers or default qualifiers (@Any, @Default)
-                            rtQualifiers = b0.localVar("qualifiers", Const.ofNull(Set.class));
-                        } else {
-                            rtQualifiers = b0.localVar("qualifiers", b0.new_(HashSet.class));
-
-                            for (AnnotationInstance btQualifier : btRemovedBean.getQualifiers()) {
-                                if (DotNames.ANY.equals(btQualifier.name())) {
-                                    // Skip @Any
-                                    continue;
-                                }
-                                BuiltinQualifier btBuiltinQualifier = BuiltinQualifier.of(btQualifier);
-                                if (btBuiltinQualifier != null) {
-                                    // Use the literal instance for built-in qualifiers
-                                    b0.withSet(rtQualifiers).add(btBuiltinQualifier.getLiteralInstance());
-                                } else {
-                                    LocalVar rtSharedQualifier = sharedQualifers.get(btQualifier.createEquivalenceProxy());
-                                    if (rtSharedQualifier == null) {
-                                        // Create annotation literal first
-                                        ClassInfo btQualifierClass = btRemovedBean.getDeployment().getQualifier(
-                                                btQualifier.name());
-                                        LocalVar rtQualifier = b0.localVar("qualifier",
-                                                annotationLiterals.create(b0, btQualifierClass, btQualifier));
-                                        b0.withSet(rtQualifiers).add(rtQualifier);
-                                        sharedQualifers.put(btQualifier.createEquivalenceProxy(), rtQualifier);
+                                if (bean.isProducer()) {
+                                    params.add(ClassDesc.of(Supplier.class.getName()));
+                                    if (processed.contains(bean.getDeclaringBean())) {
+                                        args.add(bc.withMap(beanIdToBean)
+                                                .get(Const.of(bean.getDeclaringBean().getIdentifier())));
                                     } else {
-                                        b0.withSet(rtQualifiers).add(rtSharedQualifier);
+                                        // Declaring bean was not processed yet - use MapValueSupplier
+                                        args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                                Const.of(bean.getDeclaringBean().getIdentifier())));
                                     }
                                 }
+                                for (InjectionPointInfo injectionPoint : injectionPoints) {
+                                    params.add(ClassDesc.of(Supplier.class.getName()));
+                                    if (processed.contains(injectionPoint.getResolvedBean())) {
+                                        args.add(bc.withMap(beanIdToBean).get(
+                                                Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                                    } else {
+                                        // Dependency was not processed yet - use MapValueSupplier
+                                        args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                                Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                                    }
+                                }
+                                if (bean.getDisposer() != null) {
+                                    for (InjectionPointInfo injectionPoint : bean.getDisposer()
+                                            .getInjection().injectionPoints) {
+                                        if (BuiltinBean.resolvesTo(injectionPoint)) {
+                                            continue;
+                                        }
+                                        params.add(ClassDesc.of(Supplier.class.getName()));
+                                        args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                                Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                                    }
+                                }
+                                for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
+                                    params.add(ClassDesc.of(Supplier.class.getName()));
+                                    if (processed.contains(interceptor)) {
+                                        args.add(bc.withMap(beanIdToBean).get(Const.of(interceptor.getIdentifier())));
+                                    } else {
+                                        // Bound interceptor was not processed yet - use MapValueSupplier
+                                        args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                                Const.of(interceptor.getIdentifier())));
+                                    }
+                                }
+                                for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                                    params.add(ClassDesc.of(Supplier.class.getName()));
+                                    if (processed.contains(decorator)) {
+                                        args.add(bc.withMap(beanIdToBean).get(Const.of(decorator.getIdentifier())));
+                                    } else {
+                                        // Bound decorator was not processed yet - use MapValueSupplier
+                                        args.add(bc.new_(MethodDescs.MAP_VALUE_SUPPLIER_CONSTRUCTOR, beanIdToBean,
+                                                Const.of(decorator.getIdentifier())));
+                                    }
+                                }
+
+                                // Foo_Bean bean = new Foo_Bean(bean3)
+                                Expr beanInstance = bc.new_(ConstructorDesc.of(beanType, params), args);
+                                // beans.put(id, bean)
+                                bc.withMap(beanIdToBean).put(Const.of(bean.getIdentifier()), beanInstance);
+
+                                processed.add(bean);
                             }
-                        }
 
-                        InjectableBean.Kind kind;
-                        String description = null;
-                        if (btRemovedBean.isClassBean()) {
-                            // This is the default
-                            kind = null;
-                        } else if (btRemovedBean.isProducerField()) {
-                            kind = InjectableBean.Kind.PRODUCER_FIELD;
-                            description = btRemovedBean.getTarget().get().asField().declaringClass().name() + "#"
-                                    + btRemovedBean.getTarget().get().asField().name();
-                        } else if (btRemovedBean.isProducerMethod()) {
-                            kind = InjectableBean.Kind.PRODUCER_METHOD;
-                            description = btRemovedBean.getTarget().get().asMethod().declaringClass().name() + "#"
-                                    + btRemovedBean.getTarget().get().asMethod().name() + "()";
-                        } else {
-                            // unused interceptors/decorators are removed, but they are not treated
-                            // as unused beans and do not appear here
-                            kind = InjectableBean.Kind.SYNTHETIC;
-                        }
+                            bc.return_();
+                        });
+                    });
+                }
+            });
+        }
+    }
 
-                        Expr rtKind = kind != null
-                                ? Expr.staticField(FieldDesc.of(InjectableBean.Kind.class, kind.name()))
-                                : Const.ofNull(InjectableBean.Kind.class);
-                        Expr rtRemovedBean = b0.new_(MethodDescs.REMOVED_BEAN_IMPL, rtKind,
-                                description != null ? Const.of(description) : Const.ofNull(String.class),
-                                rtTypes, rtQualifiers);
-                        b0.withList(rtRemovedBeans).add(rtRemovedBean);
-                    }
-                    b0.return_();
-                });
+    private void generateAddObservers(String generatedName, Gizmo gizmo, CodeGenInfo info,
+            Map<ObserverInfo, String> observerToGeneratedName) {
+
+        for (Container<ObserverGroup> container : info.observers()) {
+            gizmo.class_(container.className(generatedName, ADD_OBSERVERS), cc -> {
+                cc.final_();
+                for (ObserverGroup group : container) {
+                    cc.staticMethod(ADD_OBSERVERS + group.id(), mc -> {
+                        mc.packagePrivate();
+                        mc.returning(void.class);
+                        ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
+                        ParamVar observers = mc.parameter("observers", List.class);
+                        mc.body(bc -> {
+                            for (ObserverInfo observer : group.observers()) {
+                                ClassDesc observerType = observerToGeneratedName.containsKey(observer)
+                                        ? ClassDesc.of(observerToGeneratedName.get(observer))
+                                        : null;
+                                if (observerType == null) {
+                                    throw new IllegalStateException("No observer type found for: " + observerType);
+                                }
+                                List<ClassDesc> params = new ArrayList<>();
+                                List<Expr> args = new ArrayList<>();
+
+                                if (!observer.isSynthetic()) {
+                                    List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
+                                            .filter(ip -> !BuiltinBean.resolvesTo(ip))
+                                            .toList();
+                                    // declaring bean
+                                    params.add(ClassDesc.of(Supplier.class.getName()));
+                                    args.add(bc.withMap(beanIdToBean)
+                                            .get(Const.of(observer.getDeclaringBean().getIdentifier())));
+                                    // injections
+                                    for (InjectionPointInfo injectionPoint : injectionPoints) {
+                                        params.add(ClassDesc.of(Supplier.class.getName()));
+                                        args.add(bc.withMap(beanIdToBean).get(
+                                                Const.of(injectionPoint.getResolvedBean().getIdentifier())));
+                                    }
+                                }
+                                Expr observerInstance = bc.new_(ConstructorDesc.of(observerType, params), args);
+                                bc.withList(observers).add(observerInstance);
+                            }
+                            bc.return_();
+                        });
+                    });
+                }
+            });
+        }
+    }
+
+    private void generateAddRemovedBeans(String generatedName, Gizmo gizmo, CodeGenInfo info) {
+        for (Container<RemovedBeanGroup> container : info.removedBeans()) {
+
+            gizmo.class_(container.className(generatedName, ADD_REMOVED_BEANS), cc -> {
+                cc.final_();
+
+                for (RemovedBeanGroup group : container) {
+                    cc.staticMethod(ADD_REMOVED_BEANS + group.id(), mc -> {
+                        mc.public_(); // to allow access from an anonymous class
+                        mc.returning(void.class);
+                        ParamVar rtRemovedBeans = mc.parameter("removedBeans", List.class);
+                        ParamVar typeCacheMap = mc.parameter("typeCache", Map.class);
+                        mc.body(b0 -> {
+                            LocalVar tccl = b0.localVar("tccl",
+                                    b0.invokeVirtual(MethodDescs.THREAD_GET_TCCL, b0.currentThread()));
+
+                            Map<AnnotationInstanceEquivalenceProxy, LocalVar> sharedQualifers = new HashMap<>();
+                            for (BeanInfo btRemovedBean : group.removedBeans()) {
+                                // Bean types
+                                LocalVar rtTypes = b0.localVar("types", b0.new_(HashSet.class));
+                                for (Type btType : btRemovedBean.getTypes()) {
+                                    if (DotNames.OBJECT.equals(btType.name())) {
+                                        // Skip java.lang.Object
+                                        continue;
+                                    }
+
+                                    b0.try_(tc -> {
+                                        tc.body(b1 -> {
+                                            try {
+                                                LocalVar rtType = RuntimeTypeCreator.of(b1)
+                                                        .withCache(typeCacheMap)
+                                                        .withTCCL(tccl)
+                                                        .create(btType);
+                                                b1.withSet(rtTypes).add(rtType);
+                                            } catch (IllegalArgumentException e) {
+                                                throw new IllegalStateException("Unable to construct type for " + btRemovedBean
+                                                        + ": " + e.getMessage());
+                                            }
+                                        });
+                                        tc.catch_(Throwable.class, "e", (b1, e) -> {
+                                            b1.invokeStatic(MethodDescs.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
+                                                    Const.of(btType.toString()), e);
+                                        });
+                                    });
+                                }
+
+                                // Qualifiers
+                                LocalVar rtQualifiers;
+                                if (btRemovedBean.hasDefaultQualifiers() || btRemovedBean.getQualifiers().isEmpty()) {
+                                    // No qualifiers or default qualifiers (@Any, @Default)
+                                    rtQualifiers = b0.localVar("qualifiers", Const.ofNull(Set.class));
+                                } else {
+                                    rtQualifiers = b0.localVar("qualifiers", b0.new_(HashSet.class));
+
+                                    for (AnnotationInstance btQualifier : btRemovedBean.getQualifiers()) {
+                                        if (DotNames.ANY.equals(btQualifier.name())) {
+                                            // Skip @Any
+                                            continue;
+                                        }
+                                        BuiltinQualifier btBuiltinQualifier = BuiltinQualifier.of(btQualifier);
+                                        if (btBuiltinQualifier != null) {
+                                            // Use the literal instance for built-in qualifiers
+                                            b0.withSet(rtQualifiers).add(btBuiltinQualifier.getLiteralInstance());
+                                        } else {
+                                            LocalVar rtSharedQualifier = sharedQualifers
+                                                    .get(btQualifier.createEquivalenceProxy());
+                                            if (rtSharedQualifier == null) {
+                                                // Create annotation literal first
+                                                ClassInfo btQualifierClass = btRemovedBean.getDeployment().getQualifier(
+                                                        btQualifier.name());
+                                                LocalVar rtQualifier = b0.localVar("qualifier",
+                                                        annotationLiterals.create(b0, btQualifierClass, btQualifier));
+                                                b0.withSet(rtQualifiers).add(rtQualifier);
+                                                sharedQualifers.put(btQualifier.createEquivalenceProxy(), rtQualifier);
+                                            } else {
+                                                b0.withSet(rtQualifiers).add(rtSharedQualifier);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                InjectableBean.Kind kind;
+                                String description = null;
+                                if (btRemovedBean.isClassBean()) {
+                                    // This is the default
+                                    kind = null;
+                                } else if (btRemovedBean.isProducerField()) {
+                                    kind = InjectableBean.Kind.PRODUCER_FIELD;
+                                    description = btRemovedBean.getTarget().get().asField().declaringClass().name() + "#"
+                                            + btRemovedBean.getTarget().get().asField().name();
+                                } else if (btRemovedBean.isProducerMethod()) {
+                                    kind = InjectableBean.Kind.PRODUCER_METHOD;
+                                    description = btRemovedBean.getTarget().get().asMethod().declaringClass().name() + "#"
+                                            + btRemovedBean.getTarget().get().asMethod().name() + "()";
+                                } else {
+                                    // unused interceptors/decorators are removed, but they are not treated
+                                    // as unused beans and do not appear here
+                                    kind = InjectableBean.Kind.SYNTHETIC;
+                                }
+
+                                Expr rtKind = kind != null
+                                        ? Expr.staticField(FieldDesc.of(InjectableBean.Kind.class, kind.name()))
+                                        : Const.ofNull(InjectableBean.Kind.class);
+                                Expr rtRemovedBean = b0.new_(MethodDescs.REMOVED_BEAN_IMPL, rtKind,
+                                        description != null ? Const.of(description) : Const.ofNull(String.class),
+                                        rtTypes, rtQualifiers);
+                                b0.withList(rtRemovedBeans).add(rtRemovedBean);
+                            }
+                            b0.return_();
+                        });
+                    });
+                }
             });
         }
     }
@@ -498,18 +545,35 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     record RemovedBeanGroup(int id, List<BeanInfo> removedBeans) {
     }
 
-    record CodeGenInfo(List<BeanGroup> beanGroups, List<ObserverGroup> observerGroups,
-            List<RemovedBeanGroup> removedBeans) {
+    record Container<GROUP>(int id, List<GROUP> groups) implements Iterable<GROUP> {
+
+        String className(String generatedName, String prefix) {
+            return generatedName + "_" + prefix + id();
+        }
+
+        @Override
+        public Iterator<GROUP> iterator() {
+            return groups().iterator();
+        }
+    }
+
+    record CodeGenInfo(List<Container<BeanGroup>> beans, List<Container<ObserverGroup>> observers,
+            List<Container<RemovedBeanGroup>> removedBeans) {
+
     }
 
     private CodeGenInfo preprocess(BeanDeployment deployment) {
         List<BeanInfo> beans = preprocessBeans(deployment);
-        List<BeanGroup> beanGroups = Grouping.of(beans, 30, BeanGroup::new);
+        List<BeanGroup> beanGroups = Grouping.of(beans, BEAN_GROUP_SIZE, BeanGroup::new);
+        List<Container<BeanGroup>> beanContainers = Grouping.of(beanGroups, CONTAINER_SIZE, Container::new);
         List<ObserverInfo> observers = orderedObservers(deployment.getObservers());
-        List<ObserverGroup> observerGroups = Grouping.of(observers, 30, ObserverGroup::new);
+        List<ObserverGroup> observerGroups = Grouping.of(observers, OBSERVER_GROUP_SIZE, ObserverGroup::new);
+        List<Container<ObserverGroup>> observerContainers = Grouping.of(observerGroups, CONTAINER_SIZE, Container::new);
         List<BeanInfo> removedBeans = orderedBeans(deployment.getRemovedBeans());
-        List<RemovedBeanGroup> removedBeanGroups = Grouping.of(removedBeans, 5, RemovedBeanGroup::new);
-        return new CodeGenInfo(beanGroups, observerGroups, removedBeanGroups);
+        List<RemovedBeanGroup> removedBeanGroups = Grouping.of(removedBeans, REMOVED_BEAN_GROUP_SIZE, RemovedBeanGroup::new);
+        List<Container<RemovedBeanGroup>> removedBeanContainers = Grouping.of(removedBeanGroups, CONTAINER_SIZE,
+                Container::new);
+        return new CodeGenInfo(beanContainers, observerContainers, removedBeanContainers);
     }
 
     private List<BeanInfo> preprocessBeans(BeanDeployment deployment) {

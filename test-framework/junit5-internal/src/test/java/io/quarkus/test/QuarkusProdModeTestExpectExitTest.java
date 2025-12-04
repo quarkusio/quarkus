@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import io.quarkus.runtime.annotations.QuarkusMain;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredStateManager;
 
 @TestMethodOrder(OrderAnnotation.class)
 public class QuarkusProdModeTestExpectExitTest {
@@ -40,7 +40,7 @@ public class QuarkusProdModeTestExpectExitTest {
         thenAppIsNotRunning();
         thenAppWasNotRestarted();
 
-        try (var urlMgrMock = Mockito.mockStatic(RestAssuredURLManager.class)) {
+        try (var urlMgrMock = Mockito.mockStatic(RestAssuredStateManager.class)) {
             whenStartApp();
             thenAppIsNotRunning();
             thenAppWasRestarted();

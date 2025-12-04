@@ -26,7 +26,7 @@ public class ApplicationPathHttpRootTest {
 
     @Test
     public void testResources() {
-        // Note that /foo is added automatically by RestAssuredURLManager
+        // Note that /foo is added automatically by RestAssuredStateManager
         RestAssured.when().get("/hello/world").then().body(Matchers.is("hello world"));
         RestAssured.when().get("/world").then().statusCode(404);
     }

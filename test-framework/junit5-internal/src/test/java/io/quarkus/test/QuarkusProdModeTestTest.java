@@ -11,7 +11,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredStateManager;
 
 @TestMethodOrder(OrderAnnotation.class)
 public class QuarkusProdModeTestTest {
@@ -27,7 +27,7 @@ public class QuarkusProdModeTestTest {
     public void shouldStopAndStartManually() {
         thenAppIsRunning();
 
-        try (var urlMgrMock = Mockito.mockStatic(RestAssuredURLManager.class)) {
+        try (var urlMgrMock = Mockito.mockStatic(RestAssuredStateManager.class)) {
             whenStopApp();
             thenAppIsNotRunning();
 
@@ -37,8 +37,8 @@ public class QuarkusProdModeTestTest {
             whenStopApp(); // stop again to verify in next test method that app was auto-restarted
             thenAppIsNotRunning();
 
-            urlMgrMock.verify(() -> RestAssuredURLManager.setURL(false, 8081));
-            urlMgrMock.verify(RestAssuredURLManager::clearURL, times(2));
+            urlMgrMock.verify(() -> RestAssuredStateManager.setURL(false, 8081));
+            urlMgrMock.verify(RestAssuredStateManager::clearState, times(2));
         }
     }
 

@@ -32,7 +32,8 @@ include::{includes}/prerequisites.adoc[]
 [CAUTION]
 ====
 Writing extension with any other than Java and Maven has **not** been tested by the Quarkus team so your mileage may vary
-if you stray off this path
+if you stray off this path. In particular, the guide assumes the invocation of `mvn plugin:version:goal` without having `pom.xml`
+in directory in advance, become stable https://maven.apache.org/docs/3.9.0/release-notes.html[only in Maven 3.9].
 ====
 
 == Basic Concepts

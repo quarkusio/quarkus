@@ -4,7 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -32,6 +32,7 @@ import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.elasticsearch.restclient.common.runtime.ElasticsearchClientBeanUtil;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
 import io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheckCondition;
 import io.quarkus.runtime.RuntimeValue;
@@ -175,20 +176,41 @@ public class ElasticsearchLowLevelClientRecorder {
         return new Supplier<ActiveResult>() {
             @Override
             public ActiveResult get() {
-                if (runtimeConfig.getValue().clients().get(clientName).discovery().enabled()) {
-                    return ActiveResult.active();
+                ActiveResult activeResult = checkActiveRestClientSupplier(clientName).get();
+                if (activeResult.value()) {
+                    if (runtimeConfig.getValue().clients().get(clientName).discovery().enabled()) {
+                        return ActiveResult.active();
+                    }
+                    return ActiveResult.inactive("Node discovery disabled by the client config.");
+                } else {
+                    return ActiveResult.inactive("Node discovery disabled as the corresponding rest client is not enabled.",
+                            activeResult);
                 }
-                return ActiveResult.inactive("Node discovery disabled by the client config.");
             }
         };
     }
 
     public Supplier<ActiveResult> checkActiveHealthCheckSupplier(String clientName) {
-        return ActiveResult::active;
+        return checkActiveRestClientSupplier(clientName);
     }
 
     public Supplier<ActiveResult> checkActiveRestClientSupplier(String clientName) {
-        return ActiveResult::active;
+        return () -> {
+            ElasticsearchClientRuntimeConfig lowLevelClient = runtimeConfig.getValue().clients().get(clientName);
+            if (!lowLevelClient.active()) {
+                return ActiveResult.inactive("Elasticsearch low-level REST client [" + clientName + "] is not active, " +
+                        "because it is deactivated through the configuration properties. " +
+                        "To activate this client, make sure that "
+                        + enableKey(clientName) +
+                        " is set to true either implicitly (its default values) or explicitly.");
+            }
+            return ActiveResult.active();
+        };
     }
 
+    static String enableKey(String client) {
+        return String.format(
+                Locale.ROOT, "quarkus.elasticsearch.%sactive",
+                ElasticsearchClientBeanUtil.isDefault(client) ? "" : "\"" + client + "\".");
+    }
 }

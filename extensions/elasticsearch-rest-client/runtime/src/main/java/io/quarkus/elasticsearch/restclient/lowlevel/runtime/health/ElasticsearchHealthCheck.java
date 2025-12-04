@@ -11,20 +11,24 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkus.arc.All;
+import io.quarkus.arc.InstanceHandle;
 
 @Readiness
 @ApplicationScoped
 public class ElasticsearchHealthCheck implements HealthCheck {
     @Inject
     @All
-    List<ElasticsearchHealthCheckCondition> conditions;
+    List<InstanceHandle<ElasticsearchHealthCheckCondition>> conditionHandles;
 
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Elasticsearch cluster health check").up();
         boolean isUp = true;
-        for (ElasticsearchHealthCheckCondition condition : conditions) {
-            ElasticsearchHealthCheckCondition.Status status = condition.check();
+        for (InstanceHandle<ElasticsearchHealthCheckCondition> handle : conditionHandles) {
+            if (!handle.getBean().isActive()) {
+                continue;
+            }
+            ElasticsearchHealthCheckCondition.Status status = handle.get().check();
             if (status.reason() != null || "red".equals(status.status())) {
                 isUp = false;
             }

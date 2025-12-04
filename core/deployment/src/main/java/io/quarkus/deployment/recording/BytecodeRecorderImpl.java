@@ -76,6 +76,7 @@ import io.quarkus.runtime.annotations.RelaxedValidation;
 import io.quarkus.runtime.types.GenericArrayTypeImpl;
 import io.quarkus.runtime.types.ParameterizedTypeImpl;
 import io.quarkus.runtime.types.WildcardTypeImpl;
+import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.common.constraint.Assert;
 
 /**
@@ -109,6 +110,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final AtomicInteger COUNT = new AtomicInteger();
     private static final String BASE_PACKAGE = "io.quarkus.runner.recorded.";
 
+    private static final Map<String, AtomicInteger> PROXY_COUNT = new ConcurrentHashMap<>();
     private static final String PROXY_KEY = "proxykey";
 
     private static final MethodDescriptor COLLECTION_ADD = ofMethod(Collection.class, "add", boolean.class, Object.class);
@@ -292,10 +294,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     @Override
-    public <T> RuntimeValue<T> newInstance(String name) {
+    public <T> RuntimeValue<T> newInstance(String className) {
+        return newInstance(className, HashUtil.sha1(className));
+    }
+
+    @Override
+    public <T> RuntimeValue<T> newInstance(String className, String identifier) {
         try {
-            ProxyInstance ret = getProxyInstance(RuntimeValue.class);
-            NewInstance instance = new NewInstance(name, ret.proxy, ret.key);
+            ProxyInstance ret = getProxyInstance(RuntimeValue.class, identifier);
+            NewInstance instance = new NewInstance(className, ret.proxy, ret.key);
             storedMethodCalls.add(instance);
             return (RuntimeValue<T>) ret.proxy;
         } catch (Exception e) {
@@ -361,7 +368,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (voidMethod) {
                     return null;
                 }
-                ProxyInstance instance = getProxyInstance(returnType);
+
+                String methodHash = HashUtil.sha1(method.toString());
+                ProxyInstance instance = getProxyInstance(returnType,
+                        methodHash + "_" + PROXY_COUNT.computeIfAbsent(methodHash, k -> new AtomicInteger()).incrementAndGet());
                 if (instance == null) {
                     return null;
                 }
@@ -401,7 +411,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         classesToUseRecordableConstructor.add(clazz);
     }
 
-    private ProxyInstance getProxyInstance(Class<?> returnType) throws InstantiationException, IllegalAccessException {
+    private ProxyInstance getProxyInstance(Class<?> returnType, String identifier)
+            throws InstantiationException, IllegalAccessException {
         boolean returnInterface = returnType.isInterface();
         ProxyFactory<?> proxyFactory = returnValueProxy.get(returnType);
         if (proxyFactory == null) {
@@ -418,7 +429,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
             returnValueProxy.put(returnType, proxyFactory = new ProxyFactory<>(proxyConfiguration));
         }
 
-        String key = PROXY_KEY + COUNT.incrementAndGet();
+        String key = PROXY_KEY + identifier;
+
         Object proxyInstance = proxyFactory.newInstance(new ReturnValueProxyInvocationHandler(key, returnType, staticInit));
         return new ProxyInstance(proxyInstance, key);
     }

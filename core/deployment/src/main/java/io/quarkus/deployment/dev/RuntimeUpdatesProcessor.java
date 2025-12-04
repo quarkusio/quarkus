@@ -87,7 +87,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private final Path applicationRoot;
     private final DevModeContext context;
-    private final QuarkusCompiler compiler;
+    private final GradleCompiler compiler;
     private final DevModeType devModeType;
     volatile Throwable compileProblem;
     volatile Throwable testCompileProblem;
@@ -139,7 +139,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private Timer testClassChangeTimer;
     volatile StatusLine compileOutput;
 
-    public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, QuarkusCompiler compiler,
+    public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, GradleCompiler compiler,
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
             BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification,
             BiFunction<String, byte[], byte[]> classTransformers,
@@ -361,7 +361,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     private ClassScanResult compileTestClasses() {
-        QuarkusCompiler testCompiler = testSupport.getCompiler();
+        GradleCompiler testCompiler = testSupport.getCompiler();
         ClassScanResult changedTestClassResult = new ClassScanResult();
         try {
             changedTestClassResult = checkForChangedClasses(testCompiler,
@@ -716,7 +716,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
      * - To avoid re-compiling on first run by ignoring all first time changes detected by
      * {@link RuntimeUpdatesProcessor#checkIfFileModified(Path, Map, boolean, boolean)} during the first scan.
      */
-    ClassScanResult checkForChangedClasses(QuarkusCompiler compiler,
+    ClassScanResult checkForChangedClasses(GradleCompiler compiler,
             Function<DevModeContext.ModuleInfo, DevModeContext.CompilationUnit> cuf, boolean firstScan,
             TimestampSet timestampSet, boolean compilingTests) {
         ClassScanResult classScanResult = new ClassScanResult();

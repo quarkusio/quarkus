@@ -44,7 +44,10 @@ public interface DebugConfig {
 
     /**
      * If set to true then dump the build metrics to a JSON file in the build directory.
+     *
+     * @deprecated Use {@link io.quarkus.runtime.BuilderConfig#Metrics()} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.31")
     @WithDefault("false")
     boolean dumpBuildMetrics();
 }

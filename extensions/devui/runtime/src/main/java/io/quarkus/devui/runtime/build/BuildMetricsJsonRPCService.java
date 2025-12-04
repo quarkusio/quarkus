@@ -22,8 +22,14 @@ public class BuildMetricsJsonRPCService {
     public BuildItems getBuildItems() {
         Map<String, Object> buildStepMetrics = buildStepMetrics();
         BuildItems buildItems = new BuildItems();
-        buildItems.items = (JsonArray) buildStepMetrics.get("items");
-        buildItems.itemsCount = (int) buildStepMetrics.get("itemsCount");
+        JsonArray items = (JsonArray) buildStepMetrics.get("items");
+        if (items != null) {
+            buildItems.items = items;
+            buildItems.itemsCount = (int) buildStepMetrics.get("itemsCount");
+            buildItems.enabled = true;
+        } else {
+            buildItems.enabled = false;
+        }
         return buildItems;
     }
 
@@ -38,6 +44,7 @@ public class BuildMetricsJsonRPCService {
         buildMetrics.numberOfThreads = threadSlotRecords.size();
         buildMetrics.duration = duration;
         buildMetrics.records = records;
+        buildMetrics.enabled = records != null;
 
         return buildMetrics;
     }
@@ -58,12 +65,14 @@ public class BuildMetricsJsonRPCService {
     }
 
     static class BuildMetrics {
+        public boolean enabled;
         public int numberOfThreads;
         public Long duration;
         public JsonArray records;
     }
 
     static class BuildItems {
+        public boolean enabled;
         public int itemsCount;
         public JsonArray items;
     }

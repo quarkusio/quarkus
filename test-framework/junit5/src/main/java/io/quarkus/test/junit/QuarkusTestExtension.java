@@ -47,6 +47,7 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.DynamicTestInvocationContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -859,7 +860,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     @Override
-    public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
+    public void interceptDynamicTest(Invocation<Void> invocation, DynamicTestInvocationContext invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
         // TODO check if this is needed; the earlier interceptor may already have done it
         if (runningQuarkusApplication == null) {
             invocation.proceed();

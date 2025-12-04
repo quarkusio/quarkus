@@ -672,6 +672,15 @@ Running it is as simple as executing `./target/elasticsearch-low-level-client-qu
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 
+[[client-active]]
+=== Activate/deactivate clients
+
+In some cases it may be useful to deactivate some of the REST clients detected at build time.
+To deactivate a client at runtime, set the `quarkus.elasticsearch[.optional client name].active` (for the low-level Elasticsearch REST client)
+or `quarkus.elasticsearch-java[.optional client name].active` (for the Java Elasticsearch client) to `false`.
+Deactivating a low-level Elasticsearch REST client automatically deactivate the corresponding Java Elasticsearch client,
+since it is using the low-level one as its transport for communication with the cluster.
+
 == Conclusion
 
 Accessing an Elasticsearch cluster from the low level REST client or the Elasticsearch Java client is easy with Quarkus as it provides easy configuration, CDI integration and native support for it.

@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -64,24 +63,6 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         this.testClass = initContext.testClass();
     }
 
-    private Supplier<Boolean> createStartedSupplier() {
-        List<NativeImageStartedNotifier> startedNotifiers = new ArrayList<>();
-        for (NativeImageStartedNotifier i : ServiceLoader.load(NativeImageStartedNotifier.class)) {
-            startedNotifiers.add(i);
-        }
-        if (!startedNotifiers.isEmpty()) {
-            return () -> {
-                for (NativeImageStartedNotifier i : startedNotifiers) {
-                    if (i.isNativeImageStarted()) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-        }
-        return null;
-    }
-
     @Override
     public LaunchResult runToCompletion(String[] args) {
         try {
@@ -104,14 +85,11 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
     public void start() throws IOException {
         start(new String[0], true);
-        Supplier<Boolean> startedSupplier = createStartedSupplier(); // keep the legacy SPI handling
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(LogRuntimeConfig.class);
         logFile = logRuntimeConfig.file().path().toPath();
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
-        if (startedSupplier != null) {
-            waitForStartedSupplier(startedSupplier, quarkusProcess, waitTimeSeconds);
-        } else if (startedFunction != null) {
+        if (startedFunction != null) {
             IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
                     waitTimeSeconds, logRuntimeConfig.file().path().toPath());
             isSsl = result.isSsl();

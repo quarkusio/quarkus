@@ -1,6 +1,7 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.deployment;
 
 import java.lang.annotation.Annotation;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -54,11 +55,23 @@ class ElasticsearchLowLevelClientProcessor {
     @BuildStep
     public void collectLowLevelClientReferences(CombinedIndexBuildItem indexBuildItem,
             BeanRegistrationPhaseBuildItem registrationPhase,
+            ElasticsearchBuildTimeConfig config,
             BuildProducer<ElasticsearchLowLevelClientReferenceBuildItem> references) {
+        Set<String> clientNames = new HashSet<>();
         for (String name : ElasticsearchClientProcessorUtil.collectReferencedClientNames(indexBuildItem, registrationPhase,
                 Set.of(REST_CLIENT),
                 Set.of(ELASTICSEARCH_CLIENT_CONFIG_ANNOTATION))) {
             references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(name));
+            clientNames.add(name);
+        }
+
+        // Because we may have not found some of the injections e.g. programmatic ones,
+        //  or the ones we add in synthetic beans, so we say that there should be at least some build-time prop
+        //  that we can work things out from:
+        for (String clientName : config.clients().keySet()) {
+            if (clientNames.add(clientName)) {
+                references.produce(new ElasticsearchLowLevelClientReferenceBuildItem(clientName));
+            }
         }
     }
 
@@ -75,7 +88,7 @@ class ElasticsearchLowLevelClientProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void generateElasticsearchBeans(
+    ConfiguredElasticsearchLowLevelClientBuildItem generateElasticsearchBeans(
             ElasticsearchLowLevelClientRecorder recorder,
             ElasticsearchBuildTimeConfig config,
             List<ElasticsearchLowLevelClientReferenceBuildItem> elasticsearchLowLevelClientReferenceBuildItems,
@@ -83,14 +96,23 @@ class ElasticsearchLowLevelClientProcessor {
             Capabilities capabilities) {
         boolean healthChecksPossible = capabilities.isPresent(Capability.SMALLRYE_HEALTH);
 
+        Set<String> clientNames = new HashSet<>();
         for (ElasticsearchLowLevelClientReferenceBuildItem buildItem : elasticsearchLowLevelClientReferenceBuildItems) {
             String clientName = buildItem.getName();
-            produceRestClientBean(clientName, recorder, producer);
-            produceRestClientSnifferBean(clientName, recorder, producer);
-            ElasticsearchLowLevelClientBuildTimeConfig clientConfig = config.clients().get(clientName);
-            if (healthChecksPossible && (clientConfig == null || clientConfig.healthEnabled())) {
-                produceHealthCheckBean(clientName, recorder, producer);
-            }
+            clientNames.add(clientName);
+            createRequiredBeans(clientName, recorder, config, producer, healthChecksPossible);
+        }
+
+        return new ConfiguredElasticsearchLowLevelClientBuildItem(clientNames);
+    }
+
+    private void createRequiredBeans(String clientName, ElasticsearchLowLevelClientRecorder recorder,
+            ElasticsearchBuildTimeConfig config, BuildProducer<SyntheticBeanBuildItem> producer, boolean healthChecksPossible) {
+        produceRestClientBean(clientName, recorder, producer);
+        produceRestClientSnifferBean(clientName, recorder, producer);
+        ElasticsearchLowLevelClientBuildTimeConfig clientConfig = config.clients().get(clientName);
+        if (healthChecksPossible && (clientConfig == null || clientConfig.healthEnabled())) {
+            produceHealthCheckBean(clientName, recorder, producer);
         }
     }
 
@@ -191,7 +213,7 @@ class ElasticsearchLowLevelClientProcessor {
         return configurator;
     }
 
-    public static AnnotationInstance qualifier(String clientName) {
+    private static AnnotationInstance qualifier(String clientName) {
         if (clientName == null || ElasticsearchClientBeanUtil.isDefault(clientName)) {
             return AnnotationInstance.builder(Default.class).build();
         } else {

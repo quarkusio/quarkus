@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -189,4 +190,5 @@ public class ElasticsearchLowLevelClientRecorder {
     public Supplier<ActiveResult> checkActiveRestClientSupplier(String clientName) {
         return ActiveResult::active;
     }
+
 }

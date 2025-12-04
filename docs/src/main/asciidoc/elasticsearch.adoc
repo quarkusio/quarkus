@@ -607,7 +607,7 @@ public class FruitService {
 	// ...
 }
 ----
-<1> We specify the name of the client through the `@Identifier` when injecting a `RestClient` inside the service.
+<1> We specify the name of the client through the `@Identifier` when injecting a `RestClient` within the service.
 
 Named Elasticsearch REST clients in this case can be configured as follows:
 
@@ -616,6 +616,29 @@ Named Elasticsearch REST clients in this case can be configured as follows:
 # configure the second Elasticsearch client
 quarkus.elasticsearch."second-elasticsearch-cluster".hosts=second-elasticsearch:9200
 ----
+
+It is also possible to use the named higher level Elasticsearch clients.
+The name of such client *must* match an existing, configured lower-level REST client.
+
+[source,java]
+----
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.smallrye.common.annotation.Identifier;
+
+@ApplicationScoped
+public class FruitService {
+    @Inject
+    @Identifier("second-elasticsearch-cluster") // <1>
+    ElasticsearchClient client;
+
+	// ...
+}
+----
+<1> We specify the name of the client through the `@Identifier` when injecting a `ElasticsearchClient` within the service.
 
 == Hibernate Search Elasticsearch
 

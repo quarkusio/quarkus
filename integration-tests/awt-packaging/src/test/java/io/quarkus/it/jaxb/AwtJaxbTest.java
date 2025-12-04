@@ -1,41 +1,37 @@
 package io.quarkus.it.jaxb;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
 
-import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.amazon.lambda.test.LambdaClient;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class AwtJaxbTest {
-
-    public static final String BOOK_WITH_IMAGE = "<book>" +
-            "<cover>iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAIElEQVR4XmNgGCngPxSgi6MAZAU4FeOUQAdEKwQBdKsBOgof4SXid6kAAAAASUVORK5CYII=</cover>"
-            +
-            "<title>Foundation</title>" +
-            "</book>";
+class AwtJaxbTest {
+    static final String BOOK_WITH_IMAGE = """
+            {
+                "title": "Foundation",
+                "cover": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAIElEQVR4XmNgGCngPxSgi6MAZAU4FeOUQAdEKwQBdKsBOgof4SXid6kAAAAASUVORK5CYII="
+            }
+            """;
 
     /**
      * Smoke tests that we have .so files
      * copied over from the remote build container.
      */
     @Test
-    public void book() {
+    void book() {
         given()
                 .when()
-                .header("Content-Type", APPLICATION_XML)
+                .contentType("application/json")
                 .body(BOOK_WITH_IMAGE)
                 .when()
-                .post("/jaxb/book")
+                .post("/book")
                 .then()
-                .statusCode(HttpStatus.SC_ACCEPTED)
+                .statusCode(200)
                 // The height in pixels of the book's cover image.
-                .body(is("10"));
+                .body(equalTo("\"10\""));
     }
 
     /**
@@ -43,8 +39,14 @@ public class AwtJaxbTest {
      * least some sense, but it doesn't talk to real AWS API.
      */
     @Test
-    public void testLambdaStream() {
-        assertEquals("10", LambdaClient.invoke(String.class, BOOK_WITH_IMAGE));
+    void lambda() {
+        given().baseUri("http://localhost:8082")
+                .contentType("application/json")
+                .body(BOOK_WITH_IMAGE)
+                .when()
+                .post()
+                .then()
+                .statusCode(200)
+                .body(equalTo("\"10\""));
     }
-
 }

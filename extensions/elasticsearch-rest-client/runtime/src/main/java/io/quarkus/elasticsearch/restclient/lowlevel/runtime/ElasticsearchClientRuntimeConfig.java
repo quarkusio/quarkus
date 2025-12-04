@@ -11,12 +11,11 @@ import io.smallrye.config.WithDefault;
 @ConfigGroup
 public interface ElasticsearchClientRuntimeConfig {
 
-    // TODO: MB#1 implement this ?
-    //	/**
-    //	 * Defines if the client is enabled.
-    //	 */
-    //	@WithDefault("true")
-    //	boolean enabled();
+    /**
+     * Defines whether the client should be active at runtime.
+     */
+    @WithDefault("true")
+    boolean active();
 
     /**
      * The list of hosts of the Elasticsearch servers.

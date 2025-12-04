@@ -68,7 +68,7 @@ Quarkus can serve static files from a local filesystem directory (outside of Jav
 This is configured via the `quarkus.http.static-dir.*` properties.
 
 
-To expose the contents of a `public/` path under the `/static` endpoint:
+To expose the contents of a `static/` directory under the `/static` endpoint:
 
 [source,properties]
 ----

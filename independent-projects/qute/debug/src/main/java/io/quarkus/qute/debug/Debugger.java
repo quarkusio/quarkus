@@ -15,10 +15,12 @@ import org.eclipse.lsp4j.debug.StackTraceResponse;
 import org.eclipse.lsp4j.debug.Thread;
 import org.eclipse.lsp4j.debug.Variable;
 
+import io.quarkus.qute.debug.client.JavaSourceResolver;
+
 /**
  * Qute debugger API.
  */
-public interface Debugger {
+public interface Debugger extends JavaSourceResolver {
 
     /**
      * Returns the current state of the remote debugger for a given thread.

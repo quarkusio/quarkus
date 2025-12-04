@@ -10,13 +10,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.lsp4j.debug.launch.DSPLauncher;
-import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.debug.DebugLauncher;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder.EngineListener;
 import io.quarkus.qute.debug.agent.DebuggeeAgent;
+import io.quarkus.qute.debug.client.QuteDebugProtocolClient;
 import io.quarkus.qute.trace.TemplateEvent;
 import io.quarkus.qute.trace.TraceListener;
 
@@ -279,8 +279,8 @@ public class RegisterDebugServerAdapter implements EngineListener {
             launcherFuture.cancel(true);
         }
 
-        Launcher<IDebugProtocolClient> launcher = DSPLauncher.createServerLauncher(server, client.getInputStream(),
-                client.getOutputStream(), executor, null);
+        Launcher<QuteDebugProtocolClient> launcher = DebugLauncher.createLauncher(server, QuteDebugProtocolClient.class,
+                client.getInputStream(), client.getOutputStream(), executor, null);
 
         var clientProxy = launcher.getRemoteProxy();
         server.connect(clientProxy);

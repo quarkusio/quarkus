@@ -129,6 +129,7 @@ import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.SetSectionHelper;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateContents;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
@@ -2627,6 +2628,7 @@ public class QuteProcessor {
                             .path(getCheckedTemplatePath(index.getIndex(), checkedTemplateAnnotation, fragmentId, target)
                                     + suffix)
                             .extensionInfo(target.toString())
+                            .source(JandexElementUriBuilder.getSource(target, TemplateContents.class))
                             .build());
                     continue;
                 }
@@ -2643,6 +2645,7 @@ public class QuteProcessor {
                             .path(getCheckedTemplatePath(index.getIndex(), checkedTemplateAnnotation, fragmentId,
                                     method.declaringClass(), method) + suffix)
                             .extensionInfo(method.toString())
+                            .source(JandexElementUriBuilder.getSource(method, TemplateContents.class))
                             .build());
                     continue;
                 }

@@ -21,14 +21,18 @@ import java.nio.file.Path;
  */
 public class FileSource extends RemoteSource {
 
+    public FileSource(URI uri, String templateId) {
+        this(uri, templateId, 0);
+    }
+
     /**
      * Creates a new {@link FileSource} for a Qute template located on the local filesystem.
      *
      * @param uri the URI of the template file (must use the {@code file:} scheme)
      * @param templateId the Qute template identifier
      */
-    public FileSource(URI uri, String templateId) {
-        super(uri, templateId);
+    protected FileSource(URI uri, String templateId, int startLine) {
+        super(uri, templateId, startLine);
 
         // Initialize the DAP "path" field so the client can open the file.
         try {

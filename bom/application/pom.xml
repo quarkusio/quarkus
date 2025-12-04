@@ -3905,23 +3905,18 @@
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-client</artifactId>
+                <artifactId>apicurio-registry-schema-resolver</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-jsonschema-serde</artifactId>
+                <artifactId>apicurio-registry-jsonschema-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-common-rest-client-vertx</artifactId>
-                <version>${apicurio-common-rest-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

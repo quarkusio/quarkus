@@ -28,7 +28,7 @@ public final class ElasticsearchClientProcessorUtil {
     /**
      * Collect referenced names for a given type of Elasticsearch client:
      * <ul>
-     * <li>All injected clients with the @Default, @Named or @ElasticsearchClientName qualifiers</li>
+     * <li>All injected clients with the @Default or @Identifier qualifiers</li>
      * <li>All configuration classes that are expected to target a given client,
      * e.g. @ElasticsearchClientConfig</li>
      * </ul>
@@ -37,6 +37,8 @@ public final class ElasticsearchClientProcessorUtil {
             BeanRegistrationPhaseBuildItem registrationPhase,
             Set<DotName> clientTypeNames, Set<DotName> configAnnotationNames) {
         Set<String> referencedNames = new HashSet<>();
+		// Always start with the default:
+		referencedNames.add(ElasticsearchClientBeanUtil.DEFAULT_ELASTICSEARCH_CLIENT_NAME);
         IndexView indexView = indexBuildItem.getIndex();
         for (DotName annotationName : configAnnotationNames) {
             for (AnnotationInstance annotation : indexView.getAnnotations(annotationName)) {

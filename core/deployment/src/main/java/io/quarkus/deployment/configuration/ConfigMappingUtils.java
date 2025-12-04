@@ -28,7 +28,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.smallrye.config.ConfigMapping;
@@ -140,9 +139,7 @@ public class ConfigMappingUtils {
             additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
                     classBytes));
             ReflectiveClassBuildItem.Builder reflection = ReflectiveClassBuildItem.builder(mappingMetadata.getClassName());
-            if (NativeImageFutureDefault.COMPLETE_REFLECTION_TYPES.isEnabled(nativeConfig)) {
-                reflection.methods();
-            }
+            reflection.methods();
             reflectiveClasses.produce(reflection
                     .reason(ConfigMappingUtils.class.getName())
                     .build());

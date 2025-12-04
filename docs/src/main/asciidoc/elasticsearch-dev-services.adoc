@@ -8,9 +8,9 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Start Elasticsearch automatically in dev and test modes
 :topics: data,search,elasticsearch,nosql,dev-services,testing,dev-mode
-:extensions: io.quarkus:quarkus-elasticsearch-java-client,io.quarkus:quarkus-elasticsearch-rest-client,io.quarkus:quarkus-hibernate-search-orm-elasticsearch
+:extensions: io.quarkus:quarkus-elasticsearch-java-client,io.quarkus:quarkus-elasticsearch-rest-client,io.quarkus:quarkus-hibernate-search-orm-elasticsearch,io.quarkus:quarkus-hibernate-search-standalone-elasticsearch
 
-If any Elasticsearch-related extension is present (e.g. `quarkus-elasticsearch-rest-client` or `quarkus-hibernate-search-orm-elasticsearch`),
+If any Elasticsearch-related extension is present (e.g. `quarkus-elasticsearch-rest-client`, `quarkus-hibernate-search-orm-elasticsearch` or `quarkus-hibernate-search-standalone-elasticsearch`),
 Dev Services for Elasticsearch automatically starts an Elasticsearch server in dev mode and when running tests.
 So, you don't have to start a server manually.
 The application is configured automatically.
@@ -24,6 +24,7 @@ Dev Services for Elasticsearch is automatically enabled unless:
 - the hosts property is configured, depending on the extension used it can be:
     - `quarkus.elasticsearch.hosts`
     - `quarkus.hibernate-search-orm.elasticsearch.hosts`
+    - `quarkus.hibernate-search-standalone.elasticsearch.hosts`
 
 Dev Services for Elasticsearch relies on Docker to start the server.
 If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
@@ -141,9 +142,15 @@ you can disable this feature for a specific Dev Service by setting the configura
 xref:elasticsearch-dev-services.adoc#quarkus-elasticsearch-rest-client_quarkus-elasticsearch-devservices_quarkus-elasticsearch-devservices-reuse[`quarkus.elasticsearch.devservices.reuse`]
 to `false`.
 
+== Multiple Elasticsearch service instances
+
+Dev services for Elasticsearch can start multiple instances as necessary.
+Currently this is only compatible with the `quarkus-elasticsearch-rest-client` extension.
+A separate Dev Service will be started for each named Elasticsearch REST client.
+
 == Current limitations
 
-Currently, only the default backend for Hibernate Search Elasticsearch is supported, because Dev Services for Elasticsearch can only start one Elasticsearch container.
+Currently, only the default backend for Hibernate Search Elasticsearch is supported.
 
 == Configuration reference
 

@@ -3,6 +3,7 @@ module io.quarkus.qute.debug {
 
     requires org.eclipse.lsp4j.debug;
     requires org.eclipse.lsp4j.jsonrpc;
+    requires org.eclipse.lsp4j.jsonrpc.debug;
 
     exports io.quarkus.qute.debug;
     exports io.quarkus.qute.debug.adapter;

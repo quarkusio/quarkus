@@ -42,23 +42,29 @@ import org.eclipse.lsp4j.debug.VariablesArguments;
 import org.eclipse.lsp4j.debug.VariablesResponse;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
 import io.quarkus.qute.debug.Debugger;
 import io.quarkus.qute.debug.DebuggerListener;
 import io.quarkus.qute.debug.StoppedEvent;
 import io.quarkus.qute.debug.ThreadEvent;
 import io.quarkus.qute.debug.agent.DebuggeeAgent;
+import io.quarkus.qute.debug.client.EventBasedJavaSourceResolver;
+import io.quarkus.qute.debug.client.JavaSourceLocationEventResponse;
+import io.quarkus.qute.debug.client.JavaSourceResolver;
+import io.quarkus.qute.debug.client.QuteDebugProtocolClient;
 
 /**
  * Debug Adapter Protocol (DAP) server implementation for Qute debugging.
  * <p>
- * This adapter connects the {@link DebuggeeAgent} (responsible for template execution debugging)
- * with an external DAP client, such as VS Code or IntelliJ. It translates events and requests
- * between Qute's internal debugging system and the standardized DAP interface.
+ * This adapter connects the {@link DebuggeeAgent} (responsible for template
+ * execution debugging) with an external DAP client, such as VS Code or
+ * IntelliJ. It translates events and requests between Qute's internal debugging
+ * system and the standardized DAP interface.
  * </p>
  * <p>
- * It supports breakpoints, stack traces, variable inspection, evaluation, stepping, pausing,
- * resuming, and other typical debugging features.
+ * It supports breakpoints, stack traces, variable inspection, evaluation,
+ * stepping, pausing, resuming, and other typical debugging features.
  * </p>
  */
 public class DebugServerAdapter implements IDebugProtocolServer {
@@ -73,8 +79,8 @@ public class DebugServerAdapter implements IDebugProtocolServer {
     private final Map<Integer, Thread> threads = new HashMap<>();
 
     /**
-     * Creates a new {@link DebugServerAdapter} and registers listeners
-     * to forward debugger events to the DAP client.
+     * Creates a new {@link DebugServerAdapter} and registers listeners to forward
+     * debugger events to the DAP client.
      *
      * @param agent the Qute debugging agent
      */
@@ -114,6 +120,16 @@ public class DebugServerAdapter implements IDebugProtocolServer {
     @Override
     public CompletableFuture<Capabilities> initialize(InitializeRequestArguments args) {
         return CompletableFuture.supplyAsync(() -> {
+            boolean supportsReverseRequests = args == null || !"vscode".equals(args.getClientID());
+            if (!supportsReverseRequests) {
+                JavaSourceResolver resolver = ((DebuggeeAgent) agent).getJavaSourceResolver();
+                if (resolver != null && !(resolver instanceof EventBasedJavaSourceResolver)) {
+                    // Client does not support any known Java source resolution (e.g., VS
+                    // Code without reverse support)
+                    ((DebuggeeAgent) agent)
+                            .setJavaSourceResolver(new EventBasedJavaSourceResolver((QuteDebugProtocolClient) client));
+                }
+            }
             Capabilities capabilities = new Capabilities();
             capabilities.setSupportsCompletionsRequest(Boolean.TRUE);
             capabilities.setSupportsConditionalBreakpoints(Boolean.TRUE);
@@ -123,13 +139,19 @@ public class DebugServerAdapter implements IDebugProtocolServer {
     }
 
     /**
-     * Associates a DAP client with this adapter and enables the debugger agent.
+     * Associates a DAP client with this adapter and configures the appropriate
+     * JavaSourceResolver based on the client type.
      *
-     * @param client the DAP client
+     * @param client the connected DAP client
      */
     public void connect(IDebugProtocolClient client) {
         this.client = client;
         this.agent.setEnabled(true);
+
+        if (client instanceof JavaSourceResolver javaSourceResolver) {
+            // Any client implementing JavaSourceResolver → supports reverse requests
+            ((DebuggeeAgent) agent).setJavaSourceResolver(javaSourceResolver);
+        }
     }
 
     /**
@@ -331,8 +353,9 @@ public class DebugServerAdapter implements IDebugProtocolServer {
     public CompletableFuture<SourceResponse> source(SourceArguments args) {
         return CompletableFuture.supplyAsync(() -> {
             var source = args.getSource();
-            return agent.getSourceReference(source != null && source.getSourceReference() != null ? source.getSourceReference()
-                    : args.getSourceReference());
+            return agent.getSourceReference(
+                    source != null && source.getSourceReference() != null ? source.getSourceReference()
+                            : args.getSourceReference());
         });
     }
 
@@ -407,5 +430,14 @@ public class DebugServerAdapter implements IDebugProtocolServer {
         ExitedEventArguments args = new ExitedEventArguments();
         client.exited(args);
         client.terminated(new TerminatedEventArguments());
+    }
+
+    @JsonRequest("qute/onJavaSourceResolved")
+    public CompletableFuture<Void> onJavaSourceResolved(JavaSourceLocationEventResponse response) {
+        JavaSourceResolver resolver = ((DebuggeeAgent) agent).getJavaSourceResolver();
+        if (resolver instanceof EventBasedJavaSourceResolver eventBasedJavaSourceResolver) {
+            eventBasedJavaSourceResolver.handleResponse(response);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 }

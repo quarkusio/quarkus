@@ -65,6 +65,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-datasource-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

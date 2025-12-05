@@ -34,6 +34,14 @@ The filter then adds CORS headers to the HTTP response, informing browsers about
 For preflight requests, the filter returns an HTTP response immediately.
 For regular CORS requests, the filter denies access with an HTTP 403 status if the request violates the configured policy; otherwise, the filter forwards the request to the destination if the policy allows it.
 
+[NOTE]
+====
+Despite its name the CORS filter may also prevent CSRF attacks based on link:https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#using-standard-headers-to-verify-origin[Origin verification].
+Therefore, since an [Origin](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin) header is expected to be set by the browser for cross-origin JavaScript and HTML form requests, you may want to consider using it instead of the xref:security-csrf-prevention.adoc[REST CSRF filter].
+
+You must confirm that the browser does set an `Origin` header for cross-origin requests when accessing your application, especially with HTML forms, before using the CORS filter to prevent CSRF  with the link:https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#using-standard-headers-to-verify-origin[Origin verification].
+====
+
 For detailed configuration options, see the following Configuration Properties section.
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.cors.adoc[leveloffset=+1, opts=optional]

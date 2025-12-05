@@ -315,6 +315,7 @@ public class BeanGenerator extends AbstractGenerator {
             generateIsAlternative(cc, bean);
             generateIsReserve(cc, bean);
             generateIsEager(cc, bean);
+            generateIsAutoClose(cc, bean);
             generateGetPriority(cc, bean);
             if (bean.isProducer()) {
                 generateGetDeclaringBean(cc, declaringProviderSupplierField);
@@ -1471,20 +1472,60 @@ public class BeanGenerator extends AbstractGenerator {
             Map<InjectionPointInfo, FieldDesc> injectionPointToProviderField, boolean isApplicationClass, String baseName,
             String targetPackage) {
 
+        MethodDesc destroySynthDesc;
+        if (bean.isSynthetic() && bean.getDestroyerConsumer() != null) {
+            destroySynthDesc = cc.method("destroySynthetic", mc -> {
+                ParamVar instance = mc.parameter("instance", classDescOf(bean.getProviderType()));
+                ParamVar ccParam = mc.parameter("cc", CreationalContext.class);
+                mc.body(bc -> {
+                    LocalVar synthCC = createSyntheticCreationalContext(cc, bean, injectionPointToProviderField, ccParam, bc);
+
+                    bean.getDestroyerConsumer().accept(new BeanConfiguratorBase.DestroyGeneration() {
+                        @Override
+                        public ClassCreator beanClass() {
+                            return cc;
+                        }
+
+                        @Override
+                        public BlockCreator destroyMethod() {
+                            return bc;
+                        }
+
+                        @Override
+                        public Var destroyedInstance() {
+                            return instance;
+                        }
+
+                        @Override
+                        public Var syntheticCreationalContext() {
+                            return synthCC;
+                        }
+                    });
+
+                    if (!bc.done()) {
+                        bc.return_();
+                    }
+                });
+            });
+        } else {
+            destroySynthDesc = null;
+        }
+
         MethodDesc destroyDesc = cc.method("destroy", mc -> {
             mc.returning(void.class);
             ParamVar providerParam = mc.parameter("provider", classDescOf(bean.getProviderType()));
             ParamVar ccParam = mc.parameter("creationalContext", CreationalContext.class);
             mc.body(b0 -> {
+                // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
+                // they may pass us a client proxy
+                Var instance = bean.getScope().isNormal()
+                        ? b0.localVar("instance", b0.invokeStatic(MethodDescs.CLIENT_PROXY_UNWRAP, providerParam))
+                        : providerParam;
+
                 b0.try_(tc -> {
                     tc.body(b1 -> {
                         if (bean.isClassBean()) {
                             if (!bean.isInterceptor()) {
-                                // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
-                                // they may pass us a client proxy
-                                LocalVar instance = b1.localVar("instance",
-                                        b1.invokeStatic(MethodDescs.CLIENT_PROXY_UNWRAP, providerParam));
-
                                 class PreDestroyGenerator {
                                     void generate(BlockCreator bc, Var instance) {
                                         // PreDestroy callbacks
@@ -1525,6 +1566,8 @@ public class BeanGenerator extends AbstractGenerator {
                                     ClassDesc subclass = ClassDesc.of(SubclassGenerator.generatedName(
                                             bean.getProviderType().name(), baseName));
 
+                                    Expr subclassInstance = b1.cast(instance, subclass);
+
                                     // if there _is_ some `@PreDestroy` interceptor, however, we'll reify the chain of `@PreDestroy`
                                     // callbacks into a `Runnable` that we pass into the interceptor chain to be called
                                     // by the last `proceed()` call:
@@ -1544,13 +1587,9 @@ public class BeanGenerator extends AbstractGenerator {
                                     });
 
                                     b1.invokeVirtual(ClassMethodDesc.of(subclass, SubclassGenerator.DESTROY_METHOD_NAME,
-                                            void.class, Runnable.class), instance, runnable);
+                                            void.class, Runnable.class), subclassInstance, runnable);
                                 }
                             }
-
-                            // ctx.release()
-                            b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, ccParam);
-                            b1.return_();
                         } else if (bean.getDisposer() != null) {
                             // Invoke the disposer method
                             // declaringProvider.get(new CreationalContextImpl<>()).dispose()
@@ -1585,7 +1624,7 @@ public class BeanGenerator extends AbstractGenerator {
                                     .getInjection().injectionPoints.iterator();
                             for (int i = 0; i < disposerMethod.parametersCount(); i++) {
                                 if (i == disposedParamPosition) {
-                                    disposerArgs[i] = providerParam;
+                                    disposerArgs[i] = instance;
                                 } else {
                                     InjectionPointInfo injectionPoint = injectionPointsIterator.next();
                                     Expr providerSupplier = cc.this_().field(injectionPointToProviderField.get(injectionPoint));
@@ -1631,34 +1670,8 @@ public class BeanGenerator extends AbstractGenerator {
                                 b1.invokeInterface(MethodDescs.INJECTABLE_BEAN_DESTROY, declaringProvider,
                                         declaringProviderInstance, parentCC);
                             }
-                            // ctx.release()
-                            b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, ccParam);
-                            b1.return_();
-                        } else if (bean.isSynthetic()) {
-                            LocalVar synthCC = createSyntheticCreationalContext(cc, bean, injectionPointToProviderField,
-                                    ccParam, b1);
-
-                            bean.getDestroyerConsumer().accept(new BeanConfiguratorBase.DestroyGeneration() {
-                                @Override
-                                public ClassCreator beanClass() {
-                                    return cc;
-                                }
-
-                                @Override
-                                public BlockCreator destroyMethod() {
-                                    return b1;
-                                }
-
-                                @Override
-                                public Var destroyedInstance() {
-                                    return providerParam;
-                                }
-
-                                @Override
-                                public Var syntheticCreationalContext() {
-                                    return synthCC;
-                                }
-                            });
+                        } else if (bean.isSynthetic() && destroySynthDesc != null) {
+                            b1.invokeVirtual(destroySynthDesc, cc.this_(), instance, ccParam);
                         }
                     });
                     tc.catch_(Throwable.class, "e", (b1, e) -> {
@@ -1676,6 +1689,61 @@ public class BeanGenerator extends AbstractGenerator {
                         });
                     });
                 });
+
+                if (bean.isSubclassRequired()) {
+                    // marking the `*_Subclass` instance as destroyed, because invoking `AutoCloseable.close()`
+                    // during bean destruction is not business method invocation
+                    ClassDesc subclass = ClassDesc.of(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName));
+                    b0.invokeVirtual(ClassMethodDesc.of(subclass, SubclassGenerator.MARK_DESTROYED_METHOD_NAME, void.class),
+                            b0.cast(instance, subclass));
+                }
+
+                if (bean.isAutoClose()) {
+                    b0.try_(tc -> {
+                        tc.body(b1 -> {
+                            b1.ifInstanceOf(instance, AutoCloseable.class, (b2, cast) -> {
+                                b2.invokeInterface(MethodDescs.AUTO_CLOSEABLE_CLOSE, cast);
+                            });
+                        });
+                        tc.catch_(Throwable.class, "e", (b1, e) -> {
+                            Const error = Const.of("Error occurred while destroying instance of " + bean);
+                            LocalVar logger = b1.localVar("logger",
+                                    Expr.staticField(FieldDesc.of(UncaughtExceptions.class, "LOGGER")));
+                            Expr isDebugEnabled = b1.invokeVirtual(MethodDesc.of(Logger.class, "isDebugEnabled", boolean.class),
+                                    logger);
+                            b1.ifElse(isDebugEnabled, b2 -> {
+                                b2.invokeVirtual(
+                                        MethodDesc.of(Logger.class, "error", void.class, Object.class, Throwable.class),
+                                        logger, error, e);
+                            }, b2 -> {
+                                b2.invokeVirtual(MethodDesc.of(Logger.class, "error", void.class, Object.class), logger,
+                                        StringBuilderGen.ofNew(b2).append(error).append(": ").append(e).toString_());
+                            });
+                        });
+                    });
+                }
+
+                b0.try_(tc -> {
+                    tc.body(b1 -> {
+                        // ctx.release()
+                        b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, ccParam);
+                    });
+                    tc.catch_(Throwable.class, "e", (b1, e) -> {
+                        Const error = Const.of("Error occurred while destroying instance of " + bean);
+                        LocalVar logger = b1.localVar("logger",
+                                Expr.staticField(FieldDesc.of(UncaughtExceptions.class, "LOGGER")));
+                        Expr isDebugEnabled = b1.invokeVirtual(MethodDesc.of(Logger.class, "isDebugEnabled", boolean.class),
+                                logger);
+                        b1.ifElse(isDebugEnabled, b2 -> {
+                            b2.invokeVirtual(MethodDesc.of(Logger.class, "error", void.class, Object.class, Throwable.class),
+                                    logger, error, e);
+                        }, b2 -> {
+                            b2.invokeVirtual(MethodDesc.of(Logger.class, "error", void.class, Object.class), logger,
+                                    StringBuilderGen.ofNew(b2).append(error).append(": ").append(e).toString_());
+                        });
+                    });
+                });
+
                 b0.return_();
             });
         });
@@ -1846,6 +1914,18 @@ public class BeanGenerator extends AbstractGenerator {
     protected void generateIsEager(ClassCreator cc, BeanInfo bean) {
         if (bean.isEager()) {
             cc.method("isEager", mc -> {
+                mc.returning(boolean.class);
+                mc.body(BlockCreator::returnTrue);
+            });
+        }
+    }
+
+    /**
+     * @see InjectableBean#isAutoClose()
+     */
+    protected void generateIsAutoClose(ClassCreator cc, BeanInfo bean) {
+        if (bean.isAutoClose()) {
+            cc.method("isAutoClose", mc -> {
                 mc.returning(boolean.class);
                 mc.body(BlockCreator::returnTrue);
             });

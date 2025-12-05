@@ -1018,6 +1018,7 @@ public class BeanDeployment {
                 List<AnnotationInstance> parentStereotypes = new ArrayList<>();
                 boolean isNamed = false;
                 boolean isEager = false;
+                boolean isAutoClose = false;
 
                 for (AnnotationInstance annotation : annotationStore.getAnnotations(stereotypeClass)) {
                     if (DotNames.ALTERNATIVE.equals(annotation.name())) {
@@ -1038,6 +1039,8 @@ public class BeanDeployment {
                         isNamed = true;
                     } else if (DotNames.EAGER.equals(annotation.name())) {
                         isEager = true;
+                    } else if (DotNames.AUTO_CLOSE.equals(annotation.name())) {
+                        isAutoClose = true;
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
                         priority = annotation.value().asInt();
                     } else {
@@ -1063,7 +1066,7 @@ public class BeanDeployment {
                 boolean isAdditionalStereotype = additionalStereotypes.contains(stereotypeName);
                 boolean isInherited = stereotypeClass.declaredAnnotation(DotNames.INHERITED) != null;
                 stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, isReserve,
-                        priority, isNamed, isEager, isAdditionalStereotype, stereotypeClass, isInherited,
+                        priority, isNamed, isEager, isAutoClose, isAdditionalStereotype, stereotypeClass, isInherited,
                         parentStereotypes));
             }
         }

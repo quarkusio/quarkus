@@ -120,6 +120,11 @@ class BeanInfoImpl implements BeanInfo {
     }
 
     @Override
+    public boolean isAutoClose() {
+        return arcBeanInfo.isAutoClose();
+    }
+
+    @Override
     public String name() {
         return arcBeanInfo.getName();
     }

@@ -201,7 +201,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                 fc.setType(pseudoBeanClass);
             });
 
-            FieldDesc constructedField = cc.field(SubclassGenerator.FIELD_NAME_CONSTRUCTED, fc -> {
+            FieldDesc aliveField = cc.field(SubclassGenerator.FIELD_NAME_ALIVE, fc -> {
                 fc.private_();
                 fc.final_();
                 fc.setType(boolean.class);
@@ -276,13 +276,13 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                         bc.invokeVirtual(desc, cc.this_(), interceptorChainMap, bindingsMap);
                     }
 
-                    bc.set(cc.this_().field(constructedField), Const.of(true));
+                    bc.set(cc.this_().field(aliveField), Const.of(true));
                     bc.return_();
                 });
             });
 
             for (MethodGroup group : info.methodGroups()) {
-                createInitMetadataMethod(cc, pseudoBeanClass, implementingInterface, constructedField, delegateField, group,
+                createInitMetadataMethod(cc, pseudoBeanClass, implementingInterface, aliveField, delegateField, group,
                         forwardingMethods, interceptorChainKeys, bindingKeys);
             }
 
@@ -308,7 +308,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
                             // Skip delegation if proxy is not constructed yet
                             // This is not necessary when intercepting interfaces, because interfaces cannot have constructors
                             // Similarly, this is not necessary when intercepting `Object`, because its constructor does nothing
-                            b0.ifNot(cc.this_().field(constructedField), b1 -> {
+                            b0.ifNot(cc.this_().field(aliveField), b1 -> {
                                 if (method.isAbstract()) {
                                     b1.throw_(IllegalStateException.class, "Cannot invoke abstract method");
                                 } else {
@@ -330,7 +330,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
     }
 
     private void createInitMetadataMethod(ClassCreator cc, ClassDesc pseudoBeanClass, boolean isInterface,
-            FieldDesc constructedField, FieldDesc delegateField, MethodGroup group,
+            FieldDesc aliveField, FieldDesc delegateField, MethodGroup group,
             Map<MethodDesc, MethodDesc> forwardingMethods, Map<List<InterceptorInfo>, String> interceptorChainKeys,
             Map<Set<AnnotationInstanceEquivalenceProxy>, String> bindingKeys) {
 
@@ -418,7 +418,7 @@ public class InterceptionProxyGenerator extends AbstractGenerator {
 
                     // Finally create the intercepted method
                     MethodDesc forwardDescriptor = forwardingMethods.get(methodDesc);
-                    SubclassGenerator.createInterceptedMethod(method, cc, metadataField, constructedField,
+                    SubclassGenerator.createInterceptedMethod(method, cc, metadataField, aliveField,
                             forwardDescriptor, () -> cc.this_().field(delegateField));
                 }
 

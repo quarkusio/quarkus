@@ -25,6 +25,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
     boolean isReserve;
     Integer priority;
     boolean isEager;
+    boolean isAutoClose;
     String name;
     Set<DotName> stereotypes = new HashSet<>();
     Set<TypeAndQualifiers> injectionPoints = new HashSet<>();
@@ -105,6 +106,12 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
     @Override
     public SyntheticBeanBuilder<T> eager(boolean isEager) {
         this.isEager = isEager;
+        return this;
+    }
+
+    @Override
+    public SyntheticBeanBuilder<T> autoClose(boolean isAutoClose) {
+        this.isAutoClose = isAutoClose;
         return this;
     }
 

@@ -14,10 +14,10 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import io.apicurio.registry.serde.SerdeConfig;
 import io.apicurio.registry.serde.avro.AvroKafkaDeserializer;
-import io.apicurio.registry.serde.avro.AvroKafkaSerdeConfig;
 import io.apicurio.registry.serde.avro.AvroKafkaSerializer;
+import io.apicurio.registry.serde.avro.AvroSerdeConfig;
+import io.apicurio.registry.serde.config.SerdeConfig;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
@@ -124,7 +124,7 @@ public class AvroKafkaCreator {
         Properties props = getGenericConsumerProperties(bootstrap, groupdIdConfig);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
         props.put(SerdeConfig.REGISTRY_URL, apicurio);
-        props.put(AvroKafkaSerdeConfig.USE_SPECIFIC_AVRO_READER, true);
+        props.put(AvroSerdeConfig.USE_SPECIFIC_AVRO_READER, true);
         return props;
     }
 

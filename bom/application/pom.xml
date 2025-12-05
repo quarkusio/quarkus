@@ -194,8 +194,7 @@
         <log4j2-api.version>2.25.2</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.1.Final</log4j-jboss-logmanager.version>
         <avro.version>1.12.0</avro.version>
-        <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
-        <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
+        <apicurio-registry.version>3.1.2</apicurio-registry.version>
         <testcontainers.version>2.0.2</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.7.0</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
@@ -3923,23 +3922,18 @@
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-client</artifactId>
+                <artifactId>apicurio-registry-schema-resolver</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-jsonschema-serde</artifactId>
+                <artifactId>apicurio-registry-jsonschema-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-common-rest-client-vertx</artifactId>
-                <version>${apicurio-common-rest-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

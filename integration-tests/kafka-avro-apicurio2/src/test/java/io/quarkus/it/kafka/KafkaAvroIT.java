@@ -2,8 +2,7 @@ package io.quarkus.it.kafka;
 
 import org.junit.jupiter.api.BeforeAll;
 
-import io.apicurio.registry.rest.client.RegistryClientFactory;
-import io.apicurio.rest.client.VertxHttpClientProvider;
+import io.apicurio.registry.resolver.client.RegistryClientFacadeFactory;
 import io.quarkus.it.kafka.avro.AvroKafkaCreator;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -23,7 +22,7 @@ public class KafkaAvroIT extends KafkaAvroTestBase {
     @BeforeAll
     public static void setUp() {
         // this is for the test JVM, which also uses Kafka client, which in turn also interacts with the registry
-        RegistryClientFactory.setProvider(new VertxHttpClientProvider(Vertx.vertx()));
+        RegistryClientFacadeFactory.vertx = Vertx.vertx();
     }
 
 }

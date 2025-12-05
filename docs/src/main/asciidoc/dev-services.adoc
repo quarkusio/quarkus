@@ -174,7 +174,7 @@ The Elasticsearch Dev Service will be enabled when one of the Elasticsearch base
 is present in your application, and the server address has not been explicitly configured.
 More information can be found in the xref:elasticsearch-dev-services.adoc[Elasticsearch Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-elasticsearch-rest-client_quarkus.elasticsearch.devservices.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-rest-client_quarkus.elasticsearch.adoc[opts=optional, leveloffset=+1]
 
 === Observability
 

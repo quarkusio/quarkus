@@ -20,9 +20,7 @@ public class PeriodicSizeRotatingLoggingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-periodic-size-file-log-rotating.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("PeriodicSizeRotatingLoggingTest.log");
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void periodicSizeRotatingConfigurationTest() {

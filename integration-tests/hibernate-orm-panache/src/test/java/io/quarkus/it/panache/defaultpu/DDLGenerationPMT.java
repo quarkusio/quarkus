@@ -24,7 +24,6 @@ public class DDLGenerationPMT {
             .setApplicationName("ddl-generation")
             .setApplicationVersion(Version.getVersion())
             .setRun(true)
-            .setLogFileName("ddl-generation-test.log")
             .withConfigurationResource("ddlgeneration.properties");
 
     @ProdBuildResults

@@ -20,9 +20,7 @@ public class PeriodicRotatingLoggingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-periodic-file-log-rotating.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("PeriodicRotatingLoggingTest.log");
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void periodicRotatingConfigurationTest() {

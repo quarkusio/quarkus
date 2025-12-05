@@ -60,7 +60,6 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -197,12 +196,6 @@ public class QuarkusDevModeTest
 
     public QuarkusDevModeTest setCodeGenSources(String... codeGenSources) {
         this.codeGenSources = Arrays.asList(codeGenSources);
-        return this;
-    }
-
-    @Deprecated(forRemoval = true)
-    public QuarkusDevModeTest setLogFileName(String logFileName) {
-        PropertyTestUtil.setLogFileProperty(logFileName);
         return this;
     }
 

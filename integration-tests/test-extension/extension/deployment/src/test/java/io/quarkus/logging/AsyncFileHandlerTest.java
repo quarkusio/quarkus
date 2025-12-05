@@ -20,9 +20,7 @@ public class AsyncFileHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-file-log.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncFileHandlerTest.log");
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void asyncFileHandlerConfigurationTest() {

@@ -20,9 +20,7 @@ public class AsyncConsoleHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-console-log.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncConsoleHandlerTest.log");
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void asyncConsoleHandlerConfigurationTest() {

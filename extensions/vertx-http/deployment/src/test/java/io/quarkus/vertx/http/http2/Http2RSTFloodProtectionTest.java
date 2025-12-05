@@ -44,7 +44,7 @@ public class Http2RSTFloodProtectionTest {
             quarkus.http.ssl.certificate.key-store-password=secret
             """;
 
-    @TestHTTPResource(value = "/ping", ssl = true)
+    @TestHTTPResource(value = "/ping", tls = true)
     URL sslUrl;
 
     @TestHTTPResource(value = "/ping")

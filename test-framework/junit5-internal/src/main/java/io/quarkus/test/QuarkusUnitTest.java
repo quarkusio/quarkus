@@ -69,7 +69,6 @@ import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
@@ -258,12 +257,6 @@ public class QuarkusUnitTest
 
     public QuarkusUnitTest addClassLoaderEventListener(ClassLoaderEventListener listener) {
         this.classLoadListeners.add(listener);
-        return this;
-    }
-
-    @Deprecated(forRemoval = true)
-    public QuarkusUnitTest setLogFileName(String logFileName) {
-        PropertyTestUtil.setLogFileProperty(logFileName);
         return this;
     }
 

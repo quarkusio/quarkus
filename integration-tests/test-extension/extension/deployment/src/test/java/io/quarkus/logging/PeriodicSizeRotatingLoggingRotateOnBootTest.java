@@ -16,15 +16,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class PeriodicSizeRotatingLoggingRotateOnBootTest {
 
-    private static final String FILE_NAME = PeriodicSizeRotatingLoggingRotateOnBootTest.class.getSimpleName() + ".log";
-
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-periodic-size-file-log-rotating-rotate-on-boot.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName(FILE_NAME);
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void periodicSizeRotatingConfigurationTest() {

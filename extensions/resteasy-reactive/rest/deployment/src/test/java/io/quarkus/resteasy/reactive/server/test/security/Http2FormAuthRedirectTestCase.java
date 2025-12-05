@@ -28,7 +28,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 public class Http2FormAuthRedirectTestCase {
 
-    @TestHTTPResource(value = "/j_security_check", ssl = true)
+    @TestHTTPResource(value = "/j_security_check", tls = true)
     URL sslUrl;
 
     @RegisterExtension

@@ -20,9 +20,7 @@ public class AsyncSyslogHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-syslog.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncSyslogHandlerTest.log");
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void asyncSyslogHandlerConfigurationTest() throws NullPointerException {

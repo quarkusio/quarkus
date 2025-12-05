@@ -20,9 +20,7 @@ public class SizeRotatingLoggingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-size-file-log-rotating.properties")
             .withApplicationRoot((jar) -> jar
-                    .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("SizeRotatingLoggingTest.log");
+                    .addClass(LoggingTestsHelper.class));
 
     @Test
     public void sizeRotatingConfigurationTest() {

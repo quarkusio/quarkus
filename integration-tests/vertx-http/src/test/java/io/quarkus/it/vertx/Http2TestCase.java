@@ -29,10 +29,10 @@ public class Http2TestCase {
 
     protected static final String PING_DATA = "12345678";
 
-    @TestHTTPResource(value = "/ping", ssl = true)
+    @TestHTTPResource(value = "/ping", tls = true)
     URL sslUrl;
 
-    @TestHTTPResource(value = "/ping", ssl = false)
+    @TestHTTPResource(value = "/ping")
     URL url;
 
     @Test

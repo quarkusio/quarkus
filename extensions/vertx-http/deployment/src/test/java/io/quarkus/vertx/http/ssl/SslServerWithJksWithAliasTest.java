@@ -26,7 +26,7 @@ import io.vertx.ext.web.Router;
         Format.PEM }, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost")))
 public class SslServerWithJksWithAliasTest {
 
-    @TestHTTPResource(value = "/ssl", ssl = true)
+    @TestHTTPResource(value = "/ssl", tls = true)
     URL url;
 
     @RegisterExtension

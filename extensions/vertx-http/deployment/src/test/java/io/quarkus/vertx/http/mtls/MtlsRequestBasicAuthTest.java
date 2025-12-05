@@ -39,7 +39,7 @@ public class MtlsRequestBasicAuthTest {
             quarkus.http.auth.proactive=true
             """;
 
-    @TestHTTPResource(value = "/mtls", ssl = true)
+    @TestHTTPResource(value = "/mtls", tls = true)
     URL url;
 
     @RegisterExtension

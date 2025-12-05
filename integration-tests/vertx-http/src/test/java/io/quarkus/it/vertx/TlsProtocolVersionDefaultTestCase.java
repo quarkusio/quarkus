@@ -20,7 +20,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @QuarkusTest
 public class TlsProtocolVersionDefaultTestCase {
 
-    @TestHTTPResource(value = "/hello", ssl = true)
+    @TestHTTPResource(value = "/hello", tls = true)
     String url;
 
     @Inject

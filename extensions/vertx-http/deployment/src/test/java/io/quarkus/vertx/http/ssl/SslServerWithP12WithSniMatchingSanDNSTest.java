@@ -32,7 +32,7 @@ import io.vertx.ext.web.client.WebClientOptions;
         }))
 public class SslServerWithP12WithSniMatchingSanDNSTest {
 
-    @TestHTTPResource(value = "/ssl", ssl = true)
+    @TestHTTPResource(value = "/ssl", tls = true)
     URL url;
 
     @RegisterExtension

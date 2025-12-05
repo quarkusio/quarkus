@@ -47,9 +47,6 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * {@link org.junit.jupiter.api.ClassOrderer.Random org.junit.jupiter.api.ClassOrderer$Random} will order the test classes
  * within one group randomly instead by class name.
  * <p/>
- * {@link #getCustomOrderKey(ClassDescriptor, ClassOrdererContext)} can be overridden to provide a custom order number for a
- * given test class, e.g. based on {@link org.junit.jupiter.api.Tag} or something else.
- * <p/>
  * Limitations:
  * <ul>
  * <li>Only JUnit5 test classes are subject to ordering, e.g. ArchUnit test classes are not passed to this orderer.</li>
@@ -187,8 +184,7 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
         // second pass: apply the actual Quarkus aware ordering logic, using the first pass indices as order key suffixes
         classDescriptors.sort(Comparator.comparing(classDescriptor -> {
             var secondaryOrderSuffix = firstPassIndexMap.get(classDescriptor);
-            Optional<String> customOrderKey = getCustomOrderKey(classDescriptor, context, secondaryOrderSuffix)
-                    .or(() -> getCustomOrderKey(classDescriptor, context));
+            Optional<String> customOrderKey = getCustomOrderKey(classDescriptor, context, secondaryOrderSuffix);
             if (customOrderKey.isPresent()) {
                 return customOrderKey.get();
             }
@@ -275,19 +271,6 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                 .getAnnotationsByType(WithTestResource.class))
                 .map(WithTestResource::value)
                 .noneMatch(resource.value()::equals);
-    }
-
-    /**
-     * Template method that provides an optional custom order key for the given {@code classDescriptor}.
-     *
-     * @param classDescriptor the respective test class
-     * @param context for config lookup
-     * @return optional custom order key for the given test class
-     * @deprecated use {@link #getCustomOrderKey(ClassDescriptor, ClassOrdererContext, String)} instead
-     */
-    @Deprecated(forRemoval = true, since = "2.7.0.CR1")
-    protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context) {
-        return Optional.empty();
     }
 
     /**

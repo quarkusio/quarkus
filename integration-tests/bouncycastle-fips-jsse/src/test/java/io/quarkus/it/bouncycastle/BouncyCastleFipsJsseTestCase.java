@@ -36,7 +36,7 @@ public class BouncyCastleFipsJsseTestCase {
 
     static final Logger LOG = Logger.getLogger(BouncyCastleFipsJsseTestCase.class);
 
-    @TestHTTPResource(ssl = true)
+    @TestHTTPResource(tls = true)
     URL url;
 
     @Test

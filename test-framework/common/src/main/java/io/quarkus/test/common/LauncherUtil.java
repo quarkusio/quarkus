@@ -20,9 +20,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.smallrye.common.os.OS;
 
@@ -31,11 +28,6 @@ public final class LauncherUtil {
     public static final int LOG_CHECK_INTERVAL = 50;
 
     private LauncherUtil() {
-    }
-
-    @Deprecated(forRemoval = true, since = "3.17")
-    public static Config installAndGetSomeConfig() {
-        return ConfigProvider.getConfig();
     }
 
     /**

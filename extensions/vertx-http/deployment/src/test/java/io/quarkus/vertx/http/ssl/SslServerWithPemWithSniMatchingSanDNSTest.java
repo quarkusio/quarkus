@@ -33,7 +33,7 @@ import io.vertx.ext.web.client.WebClientOptions;
         }))
 public class SslServerWithPemWithSniMatchingSanDNSTest {
 
-    @TestHTTPResource(value = "/ssl", ssl = true)
+    @TestHTTPResource(value = "/ssl", tls = true)
     URL url;
 
     private static final String configuration = """

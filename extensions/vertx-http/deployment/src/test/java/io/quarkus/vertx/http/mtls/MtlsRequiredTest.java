@@ -37,10 +37,10 @@ public class MtlsRequiredTest {
             quarkus.http.auth.permission.default.policy=authenticated
             """;
 
-    @TestHTTPResource(value = "/mtls", ssl = true)
+    @TestHTTPResource(value = "/mtls", tls = true)
     URL url;
 
-    @TestHTTPResource(value = "/mtls", ssl = false)
+    @TestHTTPResource(value = "/mtls")
     URL urlNoTls;
 
     @RegisterExtension

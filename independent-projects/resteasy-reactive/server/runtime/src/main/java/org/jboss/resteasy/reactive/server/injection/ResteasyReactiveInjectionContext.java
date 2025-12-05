@@ -1,9 +1,11 @@
 package org.jboss.resteasy.reactive.server.injection;
 
+// IMPORTANT: these methods are called by bytecode generation in ClassInjectorTransformer: do not modify their signatures
+// without also changing their call-sites there
 public interface ResteasyReactiveInjectionContext {
     Object getHeader(String name, boolean single);
 
-    Object getQueryParameter(String name, boolean single, boolean encoded, String separator);
+    Object getQueryParameter(String name, boolean single, boolean encoded, boolean allowEmpty, String separator);
 
     String getPathParameter(String name, boolean encoded);
 
@@ -11,7 +13,7 @@ public interface ResteasyReactiveInjectionContext {
 
     String getCookieParameter(String name);
 
-    Object getFormParameter(String name, boolean single, boolean encoded);
+    Object getFormParameter(String name, boolean single, boolean encoded, boolean allowEmpty);
 
     <T> T unwrap(Class<T> theType);
 

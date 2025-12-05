@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
-import io.quarkus.test.common.DevServicesContext;
+import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestConfigUtil;
@@ -66,7 +67,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private static boolean failedBoot;
 
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
-    private static boolean ssl;
 
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
@@ -74,7 +74,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private static Class<?> currentJUnitTestClass;
 
     private static Map<String, String> devServicesProps;
-    private static String containerNetworkId;
 
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
@@ -115,8 +114,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             if (!isBeforeEachCallbacksEmpty()) {
                 invokeBeforeEachCallbacks(createQuarkusTestMethodContext(context));
             }
-
-            RestAssuredStateManager.setURL(ssl, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
+            QuarkusTestExtensionState state = getState(context);
+            state.getListeningAddress().ifPresent(new Consumer<ListeningAddress>() {
+                @Override
+                public void accept(ListeningAddress listeningAddress) {
+                    RestAssuredStateManager.setURL(listeningAddress.isSsl(), listeningAddress.getPort(),
+                            QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
+                }
+            });
             TestScopeManager.setup(true);
         }
     }
@@ -204,26 +209,25 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
 
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile);
             // prepare dev services after profile and properties have been determined
             ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
-                    isDockerLaunch);
+                    isDockerLaunch, testProfileAndProperties);
 
             devServicesProps = devServicesLaunchResult.properties();
-            containerNetworkId = devServicesLaunchResult.networkId();
             for (String devServicesProp : devServicesProps.keySet()) {
                 sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
             }
 
-            testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
-                    copyEntriesFromProfile(testProfileAndProperties.testProfile,
+            testResourceManager = new TestResourceManager(
+                    requiredTestClass,
+                    quarkusTestProfile,
+                    copyEntriesFromProfile(testProfileAndProperties.testProfile().orElse(null),
                             context.getRequiredTestClass().getClassLoader()),
-                    testProfileAndProperties.testProfile != null
-                            && testProfileAndProperties.testProfile.disableGlobalTestResources(),
-                    devServicesProps, containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
-            testResourceManager.init(
-                    testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
-                            : null);
+                    testProfileAndProperties.isDisabledGlobalTestResources(),
+                    devServicesProps,
+                    Optional.ofNullable(devServicesLaunchResult.networkId()));
+            testResourceManager.init(testProfileAndProperties.testProfileClassName().orElse(null));
 
             if (isCallbacksEnabledForIntegrationTests()) {
                 populateCallbacks(requiredTestClass.getClassLoader());
@@ -242,7 +246,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 }
             }
 
-            additionalProperties.putAll(testProfileAndProperties.properties);
+            additionalProperties.putAll(testProfileAndProperties.properties());
             //we also make the dev services config accessible from the test itself
             Map<String, String> resourceManagerProps = new HashMap<>(QuarkusIntegrationTestExtension.devServicesProps);
             // Allow override of dev services props by integration test extensions
@@ -305,12 +309,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
 
             activateLogging();
-            startLauncher(launcher, additionalProperties, () -> ssl = true);
+            Optional<ListeningAddress> listeningAddress = startLauncher(launcher, additionalProperties);
 
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());
             IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, resource,
-                    AbstractTestWithCallbacksExtension::clearCallbacks, sysPropRestore);
+                    AbstractTestWithCallbacksExtension::clearCallbacks, listeningAddress, sysPropRestore);
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             return state;
@@ -400,28 +404,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         @Override
         public ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult() {
             return devServicesLaunchResult;
-        }
-    }
-
-    private static class DefaultQuarkusIntegrationTestContext implements DevServicesContext {
-
-        private final Map<String, String> devServicesProperties;
-        private final Optional<String> containerNetworkId;
-
-        private DefaultQuarkusIntegrationTestContext(Map<String, String> devServicesProperties,
-                Optional<String> containerNetworkId) {
-            this.devServicesProperties = devServicesProperties;
-            this.containerNetworkId = containerNetworkId;
-        }
-
-        @Override
-        public Map<String, String> devServicesProperties() {
-            return devServicesProperties;
-        }
-
-        @Override
-        public Optional<String> containerNetworkId() {
-            return containerNetworkId;
         }
     }
 

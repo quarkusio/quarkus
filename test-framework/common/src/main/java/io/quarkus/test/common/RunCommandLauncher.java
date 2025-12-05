@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -110,7 +111,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     }
 
     @Override
-    public void start() throws IOException {
+    public Optional<ListeningAddress> start() throws IOException {
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         Path logFile = logFilePath;
@@ -161,10 +162,8 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
             LauncherUtil.destroyProcess(quarkusProcess, true);
             throw new RuntimeException("Unable to start target quarkus application " + this.waitTimeSeconds + "s");
         }
-    }
 
-    public boolean listensOnSsl() {
-        return false;
+        return Optional.empty();
     }
 
     public void includeAsSysProps(Map<String, String> systemProps) {

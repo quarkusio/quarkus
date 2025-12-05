@@ -4,8 +4,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.TestResourceManager;
 
 public class QuarkusTestExtensionState implements AutoCloseable {
@@ -17,6 +19,7 @@ public class QuarkusTestExtensionState implements AutoCloseable {
     private Thread shutdownHook;
     private final Runnable clearCallbacks;
     private Throwable testErrorCause;
+    private Optional<ListeningAddress> listeningAddress;
 
     // We need to move this between classloaders, and NewSerializingDeepClone can't clone this
     // Instead, clone by brute force and knowledge of internals
@@ -78,6 +81,11 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         return clearCallbacks;
     }
 
+    public Optional<ListeningAddress> getListeningAddress() {
+        return listeningAddress;
+    }
+
+    @Deprecated(forRemoval = true)
     public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
         this.testResourceManager = testResourceManager;
         this.resource = resource;
@@ -91,8 +99,25 @@ public class QuarkusTestExtensionState implements AutoCloseable {
                 }
             }
         }, "Quarkus Test Cleanup Shutdown task");
-        Runtime.getRuntime()
-                .addShutdownHook(shutdownHook);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+    }
+
+    public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks,
+            Optional<ListeningAddress> listeningAddress) {
+        this.testResourceManager = testResourceManager;
+        this.resource = resource;
+        this.clearCallbacks = clearCallbacks;
+        this.shutdownHook = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    QuarkusTestExtensionState.this.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }, "Quarkus Test Cleanup Shutdown task");
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        this.listeningAddress = listeningAddress;
     }
 
     public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks,
@@ -100,7 +125,6 @@ public class QuarkusTestExtensionState implements AutoCloseable {
         this.testResourceManager = testResourceManager;
         this.resource = resource;
         this.clearCallbacks = clearCallbacks;
-
         this.shutdownHook = shutdownHook;
     }
 

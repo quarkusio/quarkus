@@ -1,7 +1,6 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
-import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 
@@ -15,6 +14,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -55,7 +55,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private final Map<String, String> systemProps = new HashMap<>();
     private Process quarkusProcess;
 
-    private boolean isSsl;
     private Path logFile;
 
     @Override
@@ -70,21 +69,20 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.generateAotFile = initContext.generateAotFile();
     }
 
-    public void start() throws IOException {
+    @Override
+    public Optional<ListeningAddress> start() throws IOException {
         start(new String[0], true);
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(LogRuntimeConfig.class);
         logFile = logRuntimeConfig.file().path().toPath();
         if (startedFunction != null) {
-            IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, quarkusProcess,
-                    waitTimeSeconds, logFile);
-            isSsl = result.isSsl();
+            waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logFile);
+            return Optional.empty();
         } else {
             ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(),
                     waitTimeSeconds);
-            updateConfigForPort(result.getPort());
-            isSsl = result.isSsl();
+            return Optional.of(result);
         }
     }
 
@@ -110,7 +108,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
         logFile = logRuntimeConfig.file().path().toPath();
-        System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
@@ -178,11 +175,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
         // just assume 'java' is on the system path
         return "java";
-    }
-
-    @Override
-    public boolean listensOnSsl() {
-        return isSsl;
     }
 
     @Override

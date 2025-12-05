@@ -67,6 +67,7 @@ public class BuildMetricsDevUIController {
         Map<String, JsonObject> stepIdToRecord = new HashMap<>();
         Map<Integer, JsonObject> recordIdToRecord = new HashMap<>();
         Map<String, List<JsonObject>> threadToRecords = new HashMap<>();
+        Map<String, List<JsonObject>> itemToSteps = new HashMap<>();
         long buildDuration = 0;
         LocalTime buildStarted = null;
 
@@ -80,10 +81,11 @@ public class BuildMetricsDevUIController {
                 JsonArray records = data.getJsonArray("records");
                 for (Object record : records) {
                     JsonObject recordObj = (JsonObject) record;
+                    String stepId = recordObj.getString("stepId");
                     recordObj.put("encodedStepId", URLEncoder.encode(recordObj.getString("stepId"),
                             StandardCharsets.UTF_8.toString()));
                     String thread = recordObj.getString("thread");
-                    stepIdToRecord.put(recordObj.getString("stepId"), recordObj);
+                    stepIdToRecord.put(stepId, recordObj);
                     recordIdToRecord.put(recordObj.getInteger("id"), recordObj);
                     List<JsonObject> steps = threadToRecords.get(thread);
                     if (steps == null) {
@@ -91,10 +93,40 @@ public class BuildMetricsDevUIController {
                         threadToRecords.put(thread, steps);
                     }
                     steps.add(recordObj);
+                    JsonArray producedItems = recordObj.getJsonArray("producedItems");
+                    if (producedItems != null) {
+                        for (int i = 0; i < producedItems.size(); i++) {
+                            JsonObject r = producedItems.getJsonObject(i);
+                            String item = r.getString("item");
+                            long count = r.getLong("count");
+                            List<JsonObject> producers = itemToSteps.get(item);
+                            if (producers == null) {
+                                producers = new ArrayList<>();
+                                itemToSteps.put(item, producers);
+                            }
+                            producers.add(new JsonObject()
+                                    .put("stepId", stepId)
+                                    .put("count", count));
+                        }
+                    }
+                }
+
+                JsonArray items = data.getJsonArray("items");
+                for (int i = 0; i < items.size(); i++) {
+                    JsonObject item = items.getJsonObject(i);
+                    List<JsonObject> producers = itemToSteps.get(item.getString("class"));
+                    if (producers != null) {
+                        List<JsonObject> topProducers = producers.stream()
+                                .sorted(this::compareProducer)
+                                .limit(10)
+                                .toList();
+                        item.put("topProducers", topProducers);
+                        item.put("totalProducers", producers.size());
+                    }
                 }
 
                 metrics.put("records", records);
-                metrics.put("items", data.getJsonArray("items"));
+                metrics.put("items", items);
                 metrics.put("itemsCount", data.getInteger("itemsCount"));
                 metrics.put("duration", buildDuration);
             } catch (IOException e) {
@@ -147,6 +179,10 @@ public class BuildMetricsDevUIController {
         metrics.put("threadSlotRecords", threadToSlotRecords);
 
         return metrics;
+    }
+
+    private int compareProducer(JsonObject o1, JsonObject o2) {
+        return Long.compare(o2.getLong("count"), o1.getLong("count"));
     }
 
     DependencyGraph buildDependencyGraph(JsonObject step, Map<String, JsonObject> stepIdToRecord,

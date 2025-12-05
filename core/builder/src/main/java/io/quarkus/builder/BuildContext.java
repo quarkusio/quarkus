@@ -227,7 +227,7 @@ public final class BuildContext {
                 throw Messages.msg.cannotMulti(id);
             }
         }
-        execution.getMetrics().buildItemProduced(value);
+        execution.getMetrics().buildItemProduced(stepInfo, value);
     }
 
     void depFinished() {

@@ -2,7 +2,7 @@ import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/grid';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import { columnBodyRenderer, gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/icon';
 import '@vaadin/text-field';
@@ -41,12 +41,24 @@ export class QwcBuildItems extends QwcHotReloadElement {
 
       .datatable {
         width: 100%;
-      }`;
+      }
+      
+      .build-item-detail {
+        padding: 1em;
+      }
+      
+      .caption {
+        font-weight: bold;
+      }
+      
+      `;
 
   static properties = {
+    _enabled: {state: true},
     _buildItems: { state: true },
     _count: { state: false },
-    _filtered: {state: true, type: Array}
+    _filtered: {state: true, type: Array},
+    _detailsOpenedItem: {state: true, type: Array}
   };
 
   constructor() {
@@ -57,6 +69,7 @@ export class QwcBuildItems extends QwcHotReloadElement {
 
   hotReload(){
     this.jsonRpc.getBuildItems().then(e => {
+      this._enabled = e.result.enabled;
       this._buildItems = e.result.items;
       this._count = e.result.itemsCount;
       this._filtered = this._buildItems;
@@ -64,9 +77,13 @@ export class QwcBuildItems extends QwcHotReloadElement {
   }  
 
   render() {
-      if (this._buildItems && this._filtered) {
+      if (!this._enabled) {
+              return html`
+              Build metrics not enabled.
+              `;
+      } else if (this._buildItems && this._filtered) {
           return this._render();
-      }else {
+      } else {
           return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
                 <div>${msg('Loading build items...', { id: 'buildmetrics-loading-items' })}</div>
@@ -109,7 +126,15 @@ export class QwcBuildItems extends QwcHotReloadElement {
                     @value-changed="${(e) => this._filter(e)}">
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
             </vaadin-text-field>
-            <vaadin-grid .items="${this._filtered}" class="datatable" theme="row-stripes">
+            <vaadin-grid .items="${this._filtered}" 
+                .detailsOpenedItems="${this._detailsOpenedItem}"
+                @active-item-changed="${(event) => {
+                                const buildItem = event.detail.value;
+                                this._detailsOpenedItem = buildItem ? [buildItem] : [];
+                                }}"
+                ${gridRowDetailsRenderer(this._buildItemDetailRenderer, [])}
+                class="datatable" 
+                theme="row-stripes">
                 <vaadin-grid-sort-column resizable
                                     header="${msg('Build item', { id: 'buildmetrics-item' })}"
                                     path="class"
@@ -122,9 +147,41 @@ export class QwcBuildItems extends QwcHotReloadElement {
                 </vaadin-grid-sort-column>
             </vaadin-grid></div>`;
   }
+  
+  _buildItemDetailRenderer(item) {
+        if (!item.topProducers) {
+            return html`<div class="build-item-detail">
+                Top producers not collected. Use <code>-Dquarkus.builder.metrics.extended-capture=true</code> to get more information.
+                </div>` 
+          }
+          return html`
+                    <div class="build-item-detail">
+                        <div class="caption">Top 10 producers out of ${item.totalProducers} total</div>
+                        <vaadin-grid 
+                          .items="${item.topProducers}"
+                          all-rows-visible
+                          theme="no-border">
+                                        <vaadin-grid-column auto-width resizable flex-grow="0"
+                                            header="${msg('Build step', { id: 'buildmetrics-buildstep' })}"
+                                            ${columnBodyRenderer(this._renderBuildStep, [])}>
+                                        </vaadin-grid-column>
+                                        <vaadin-grid-column auto-width resizable flex-grow="0"
+                                            header="${msg('Count', { id: 'buildmetrics-count' })}"
+                                            path="count">
+                                        </vaadin-grid-column>
+                        </vaadin-grid>
+                        </div>
+         `
+  }
 
+  _renderBuildStep(producer) {
+    return html`<code>${producer.stepId}</code>`;
+  }
+
+  
   _classRenderer(item) {
     return html`<code>${item.class}</code>`;
   }
+  
 }
 customElements.define('qwc-build-items', QwcBuildItems);

@@ -204,9 +204,13 @@ This can be achieved by adding the following system property: `-Dquarkus.debug.p
 
 There is also a nice visualization of build steps available in the Dev UI located here: <http://localhost:8080/q/dev/build-steps>.
 
-If you want to have the same visualization of build steps processing when building your application, you can use the `quarkus.debug.dump-build-metrics=true` property.
-For example using `mvn package -Dquarkus.debug.dump-build-metrics=true`, will generate a `build-metrics.json` in your `target` repository that you can process via the quarkus-build-report application available here <https://github.com/mkouba/quarkus-build-report>.
+If you want to have a similar visualization of build steps processing when building your application, you can use the `quarkus.builder.metrics.enabled` property.
+For example using `mvn package -Dquarkus.builder.metrics.enabled=true`, will generate a `build-metrics.json` in your `target` repository.
+The generated file can be processed with the `quarkus-build-report` application available here <https://github.com/mkouba/quarkus-build-report>.
 This application will generate a `report.html` that you can open in your browser.
+
+There is also the `quarkus.builder.metrics.extended-capture` config property.
+If set to `true` then the collection of metrics is enhanced but the size of the generated JSON file may grow significantly.
 
 ## What about Windows?
 

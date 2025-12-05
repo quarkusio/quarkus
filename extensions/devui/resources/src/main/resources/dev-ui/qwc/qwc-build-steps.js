@@ -2,7 +2,7 @@ import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/grid';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import { columnBodyRenderer, gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/icon';
 import '@vaadin/text-field';
@@ -57,13 +57,17 @@ export class QwcBuildSteps extends QwcHotReloadElement {
         overflow: hidden;
         height: 100%;
       }
+      .build-step-detail {
+        padding: 1em;
+      }
       `;
 
   static properties = {
     _buildMetrics: { state: true },
     _selectedBuildStep: {state: true},
     _showBuildStepsExecutionGraph: {state: true},
-    _filtered: {state: true, type: Array}
+    _filtered: {state: true, type: Array},
+    _detailsOpenedItem: {state: true, type: Array}
   };
 
   constructor() {
@@ -71,6 +75,7 @@ export class QwcBuildSteps extends QwcHotReloadElement {
     updateWhenLocaleChanges(this);
     this._buildMetrics = null;
     this._selectedBuildStep = null;
+    this._detailsOpenedItem = [];
     this._showBuildStepsExecutionGraph = false;
     this.hotReload();
   }
@@ -83,9 +88,13 @@ export class QwcBuildSteps extends QwcHotReloadElement {
   }  
 
   render() {
-      if (this._buildMetrics && this._filtered) {
+      if (this._buildMetrics && !this._buildMetrics.enabled) {
+          return html`
+          Build metrics not enabled.
+          `;
+      } else if (this._buildMetrics && this._filtered) {
         return this._render();
-      }else {
+      } else {
           return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
                 <div>${msg('Loading build steps...', { id: 'buildmetrics-loading-steps' })}</div>
@@ -149,7 +158,16 @@ export class QwcBuildSteps extends QwcHotReloadElement {
                     @value-changed="${(e) => this._filter(e)}">
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
             </vaadin-text-field>
-            <vaadin-grid .items="${this._filtered}" class="datatable" theme="row-stripes">
+            <vaadin-grid 
+                .items="${this._filtered}" 
+                .detailsOpenedItems="${this._detailsOpenedItem}"
+                @active-item-changed="${(event) => {
+                    const buildStep = event.detail.value;
+                    this._detailsOpenedItem = buildStep ? [buildStep] : [];
+                    }}"
+                ${gridRowDetailsRenderer(this._buildStepDetailRenderer, [])}
+                class="datatable" 
+                theme="row-stripes">
                 <vaadin-grid-sort-column resizable
                                     header="${msg('Build step', { id: 'buildmetrics-step' })}"
                                     path="stepId"
@@ -179,6 +197,34 @@ export class QwcBuildSteps extends QwcHotReloadElement {
                       ></vaadin-grid-column>
 
             </vaadin-grid></div>`;
+  }
+  
+  _buildStepDetailRenderer(buildStep) {
+      if (!buildStep.producedItems) {
+        return html`<div class="build-step-detail">
+            Produced build items not collected. Use <code>-Dquarkus.builder.metrics.extended-capture=true</code> to get more information.
+            </div>` 
+      }
+      return html`<div class="build-step-detail">
+                    <vaadin-grid 
+                      .items="${buildStep.producedItems}"
+                      all-rows-visible
+                      theme="no-border">
+                                    <vaadin-grid-column auto-width resizable flex-grow="0"
+                                        header="${msg('Produced build item', { id: 'buildmetrics-builditem' })}"
+                                        ${columnBodyRenderer(this._renderBuildItem, [])}>
+                                    </vaadin-grid-column>
+                                    <vaadin-grid-column auto-width resizable flex-grow="0"
+                                        header="${msg('Count', { id: 'buildmetrics-count' })}"
+                                        path="count">
+                                    </vaadin-grid-column>
+                    </vaadin-grid>
+                    </div>
+     `
+  }
+  
+  _renderBuildItem(record) {
+    return html`<code>${record.item}</code>`;
   }
 
   _renderBuildStepGraph(){

@@ -32,6 +32,10 @@ public interface BeanDestroyer<T> {
         throw new InjectionException("Destruction logic not implemented");
     }
 
+    /**
+     * @deprecated use {@code BeanConfigurator.autoClose()} instead
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     class CloseableDestroyer implements BeanDestroyer<Closeable> {
         @Override
         public void destroy(Closeable instance, SyntheticCreationalContext<Closeable> creationalContext) {
@@ -43,6 +47,10 @@ public interface BeanDestroyer<T> {
         }
     }
 
+    /**
+     * @deprecated use {@code BeanConfigurator.autoClose()} instead
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     class AutoCloseableDestroyer implements BeanDestroyer<AutoCloseable> {
         @Override
         public void destroy(AutoCloseable instance, SyntheticCreationalContext<AutoCloseable> creationalContext) {

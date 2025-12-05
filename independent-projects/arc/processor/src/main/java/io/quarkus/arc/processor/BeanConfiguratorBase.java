@@ -57,6 +57,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     // this is for CDI `@Eager`, while `startupPriority` is for ArC `@Startup`
     // they are intentionally disconnected, because expressing one in terms of the other would be needlessly complex
     protected Boolean eager;
+    protected Boolean autoClose;
     protected Consumer<CreateGeneration> creatorConsumer;
     protected Consumer<DestroyGeneration> destroyerConsumer;
     protected boolean removable;
@@ -115,6 +116,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         injectionPoints.addAll(base.injectionPoints);
         startupPriority = base.startupPriority;
         eager = base.eager;
+        autoClose = base.autoClose;
         interceptionProxy = base.interceptionProxy;
         checkActiveConsumer = base.checkActiveConsumer;
         return self();
@@ -402,6 +404,17 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     public THIS eager(boolean eager) {
         this.eager = eager;
         return eager ? unremovable() : self();
+    }
+
+    /**
+     * Mark the bean as auto-closeable.
+     *
+     * @param autoClose whether this bean should be auto-closeable
+     * @return self
+     */
+    public THIS autoClose(boolean autoClose) {
+        this.autoClose = autoClose;
+        return self();
     }
 
     /**

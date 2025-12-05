@@ -1139,7 +1139,7 @@ Start by adding the following dependencies to your test project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
+    <artifactId>quarkus-junit</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>

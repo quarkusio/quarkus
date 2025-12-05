@@ -668,7 +668,7 @@ As a reference, these are the full contents of the `pom.xml`:
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
+      <artifactId>quarkus-junit</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * This annotation is supported:
  * <ul>
  * <li>for fields and method parameters in a {@code io.quarkus.test.component.QuarkusComponentTest},</li>
- * <li>for fields in a {@code io.quarkus.test.QuarkusTest} if {@code quarkus-junit5-mockito} is present.</li>
+ * <li>for fields in a {@code io.quarkus.test.QuarkusTest} if {@code quarkus-junit-mockito} is present.</li>
  * </ul>
  * The lifecycle and configuration API of the injected mock depends on the type of test being used.
  * <p>

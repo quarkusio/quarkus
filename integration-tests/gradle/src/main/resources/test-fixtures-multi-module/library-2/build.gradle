@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     testFixturesImplementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    testFixturesImplementation 'io.quarkus:quarkus-junit5'
+    testFixturesImplementation 'io.quarkus:quarkus-junit'
 
     // Library-1 has to be dependency as implementation and test fixture
     testFixturesImplementation(project(':library-1'))

@@ -203,7 +203,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

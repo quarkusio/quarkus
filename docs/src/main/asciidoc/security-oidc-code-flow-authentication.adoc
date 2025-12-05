@@ -2028,7 +2028,7 @@ Start by adding the following dependencies to your test project:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
+    <artifactId>quarkus-junit</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -2037,7 +2037,7 @@ Start by adding the following dependencies to your test project:
 .build.gradle
 ----
 testImplementation("org.htmlunit:htmlunit")
-testImplementation("io.quarkus:quarkus-junit5")
+testImplementation("io.quarkus:quarkus-junit")
 ----
 
 [[code-flow-integration-testing-keycloak-devservices]]

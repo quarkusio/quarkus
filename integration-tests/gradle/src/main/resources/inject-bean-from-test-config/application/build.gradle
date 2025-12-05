@@ -19,7 +19,7 @@ dependencies {
 
     implementation project(':library')
 
-    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit'
     testImplementation 'io.rest-assured:rest-assured'
     testImplementation project(path: ':library', configuration: 'tests')
 }

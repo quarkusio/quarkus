@@ -22,6 +22,13 @@
         <module>quarkus-webjars-locator-deployment</module>
         <module>quarkus-vertx-http-dev-ui-spi</module>
         <module>quarkus-vertx-http-dev-ui-tests</module>
+        <module>quarkus-junit5</module>
+        <module>quarkus-junit5-component</module>
+        <module>quarkus-junit5-config</module>
+        <module>quarkus-junit5-internal</module>
+        <module>quarkus-junit5-mockito</module>
+        <module>quarkus-junit5-mockito-config</module>
+        <module>junit5-virtual-threads</module>
     </modules>
 
 </project>

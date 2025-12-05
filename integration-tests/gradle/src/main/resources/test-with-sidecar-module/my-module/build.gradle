@@ -19,5 +19,5 @@ dependencies {
     implementation "io.quarkus:quarkus-arc"
 
     testImplementation project(":test-support")
-    testImplementation "io.quarkus:quarkus-junit5"
+    testImplementation "io.quarkus:quarkus-junit"
 }

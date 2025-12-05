@@ -57,7 +57,7 @@ In your build file you should see 2 test dependencies:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
+    <artifactId>quarkus-junit</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -73,18 +73,18 @@ In your build file you should see 2 test dependencies:
 [source,groovy,subs=attributes+]
 ----
 dependencies {
-    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.quarkus:quarkus-junit")
     testImplementation("io.rest-assured:rest-assured")
 }
 ----
 ****
 
-`quarkus-junit5` is required for testing, as it provides the `@QuarkusTest` annotation that controls the testing framework.
+`quarkus-junit` is required for testing, as it provides the `@QuarkusTest` annotation that controls the testing framework.
 `rest-assured` is not required but is a convenient way to test HTTP endpoints, we also provide integration that automatically
 sets the correct URL so no configuration is required.
 
-Because we are using JUnit 5, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin]
-must be set, as the default version does not support Junit 5:
+Because we are using JUnit, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin]
+must be set, as the default version does not support JUnit:
 
 [source,xml,subs=attributes+]
 ----
@@ -470,11 +470,11 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 
 To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
-link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
+link:https://docs.junit.org/current/user-guide/#writing-tests-test-execution-order-classes[JUnit User Guide].
 The behavior of this `ClassOrderer` is configurable via `application.properties` using the property
 `quarkus.test.class-orderer`. The property accepts the FQCN of the `ClassOrderer` to use. If the class cannot be found,
 it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at all. It can also be disabled entirely by
-setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one.
+setting another `ClassOrderer` that is provided by JUnit or even your own custom one.
 
 === Writing a Profile
 
@@ -704,7 +704,7 @@ matches the value of `quarkus.test.profile.tags`.
 
 == Nested Tests
 
-JUnit 5 https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested[@Nested tests] are useful for structuring more complex test scenarios.
+JUnit https://docs.junit.org/current/user-guide/#writing-tests-nested[@Nested tests] are useful for structuring more complex test scenarios.
 However, note that it is not possible to assign different test profiles or resources to nested tests within the same parent class.
 
 == Mock Support
@@ -836,12 +836,12 @@ Building on the features provided by `QuarkusMock`, Quarkus also allows users to
 
 [IMPORTANT]
 ====
-This functionality is available with the `@io.quarkus.test.InjectMock` annotation **only if** the `quarkus-junit5-mockito` dependency is present:
+This functionality is available with the `@io.quarkus.test.InjectMock` annotation **only if** the `quarkus-junit-mockito` dependency is present:
 [source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5-mockito</artifactId>
+    <artifactId>quarkus-junit-mockito</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -958,7 +958,7 @@ This is considered an advanced option and should only be performed if you fully 
 ==== Using Spies instead of Mocks with `@InjectSpy`
 
 Building on the features provided by `InjectMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for spying on the beans supported by `QuarkusMock`.
-This functionality is available via the `@io.quarkus.test.junit.mockito.InjectSpy` annotation which is available in the `quarkus-junit5-mockito` dependency.
+This functionality is available via the `@io.quarkus.test.junit.mockito.InjectSpy` annotation which is available in the `quarkus-junit-mockito` dependency.
 
 Sometimes when testing you only need to verify that a certain logical path was taken, or you only need to stub out a single method's response while still executing the rest of the methods on the Spied clone. Please see link:https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#13[Mockito documentation - Spying on real objects] for more details on Spy partial mocks.
 In either of those situations a Spy of the object is preferable.
@@ -1484,7 +1484,7 @@ while the latter three can coexist.
 The reason of this restriction is that `@QuarkusTest` starts a Quarkus server for the whole lifetime of the tests execution run,
 thus preventing the other tests to start their own Quarkus server.
 
-To alleviate this restriction, the `@QuarkusTest` annotation defines a JUnit 5 `@Tag`: `io.quarkus.test.junit.QuarkusTest`.
+To alleviate this restriction, the `@QuarkusTest` annotation defines a JUnit `@Tag`: `io.quarkus.test.junit.QuarkusTest`.
 You can use this tag to isolate the `@QuarkusTest` test in a specific execution run, for example with the Maven Surefire Plugin:
 
 [source,xml]
@@ -1699,7 +1699,7 @@ public @interface QuarkusSecurityTest {   <1>
 == Testing Components
 
 Quarkus provides the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies.
-This JUnit extension is available in the `quarkus-junit5-component` dependency.
+This JUnit extension is available in the `quarkus-junit-component` dependency.
 
 Let's have a component `Foo` - a CDI bean with two injection points.
 

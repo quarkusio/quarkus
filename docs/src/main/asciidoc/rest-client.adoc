@@ -1977,7 +1977,7 @@ First, add the following dependency to your application:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5-mockito</artifactId>
+    <artifactId>quarkus-junit-mockito</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -1985,7 +1985,7 @@ First, add the following dependency to your application:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-junit5-mockito")
+testImplementation("io.quarkus:quarkus-junit-mockito")
 ----
 
 Then, in your test you can simply use `@InjectMock` to create and inject a mock:

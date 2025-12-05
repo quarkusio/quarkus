@@ -206,7 +206,7 @@
                         <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                         <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
-                        <parentFirstArtifact>io.quarkus:quarkus-junit5-mockito-config</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-junit-mockito-config</parentFirstArtifact>
 
                         <!-- Load the junit engine parent first, so it is shared between the outer dev mode
                         process and the test application-->

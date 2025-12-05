@@ -92,7 +92,7 @@
         <proto-google-common-protos.version>2.63.1</proto-google-common-protos.version>
         <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 
-        <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
+        <!-- Used in the build parent and test BOM (for the JUnit plugin) and in the BOM (for the API) -->
         <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
@@ -113,7 +113,7 @@
         <module>independent-projects/vertx-utils</module>
         <module>independent-projects/resteasy-reactive</module>
         <module>independent-projects/extension-maven-plugin</module>
-        <module>independent-projects/junit5-virtual-threads</module>
+        <module>independent-projects/junit-virtual-threads</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>

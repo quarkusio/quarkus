@@ -19,7 +19,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-rest'
     implementation ('org.acme.extensions:example-extension')
 
-    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit'
     testImplementation 'io.rest-assured:rest-assured'
 }
 

@@ -31,10 +31,15 @@ public class generaterelocations implements Runnable {
     private static final Map<String, Function<String, Relocation>> RELOCATIONS = new TreeMap<>();
 
     static {
-        Function<String, Relocation>  webjarsLocatorRelocation = a -> Relocation.ofArtifactId(a, a.replace("webjars-locator", "web-dependency-locator"),
-                "3.11");
-        RELOCATIONS.put("quarkus-webjars-locator", webjarsLocatorRelocation);
-        RELOCATIONS.put("quarkus-webjars-locator-deployment", webjarsLocatorRelocation);
+        Function<String, Relocation>  junitJupiterRelocation = a -> Relocation.ofArtifactId(a, a.replace("junit5", "junit"),
+                "3.31");
+        RELOCATIONS.put("quarkus-junit5", junitJupiterRelocation);
+        RELOCATIONS.put("quarkus-junit5-component", junitJupiterRelocation);
+        RELOCATIONS.put("quarkus-junit5-config", junitJupiterRelocation);
+        RELOCATIONS.put("quarkus-junit5-internal", junitJupiterRelocation);
+        RELOCATIONS.put("quarkus-junit5-mockito", junitJupiterRelocation);
+        RELOCATIONS.put("quarkus-junit5-mockito-config", junitJupiterRelocation);
+        RELOCATIONS.put("quarkus-junit5-component", junitJupiterRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

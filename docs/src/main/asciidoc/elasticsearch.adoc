@@ -640,6 +640,16 @@ public class FruitService {
 ----
 <1> We specify the name of the client through the `@Identifier` when injecting a `ElasticsearchClient` within the service.
 
+[NOTE]
+====
+While Quarkus will attempt to find all the named clients at the build time and prepare the required resources for them,
+in some cases, e.g. when the client is only accessed programmatically, it might not be possible to discover all of them.
+To ensure that all clients are correctly processed, you can use the `quarkus.elasticsearch.[client name].force-discovery`
+configuration property for each required client name.
+
+Those clients defined at the build time that won't be necessary at runtime can be <<client-active,deactivated>>.
+====
+
 == Hibernate Search Elasticsearch
 
 Quarkus supports Hibernate Search with Elasticsearch via the `quarkus-hibernate-search-orm-elasticsearch`

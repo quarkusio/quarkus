@@ -392,6 +392,9 @@ public class ExtensionsEntryPoint {
             if (syntheticBean.isEager) {
                 bean.eager(true);
             }
+            if (syntheticBean.isAutoClose) {
+                bean.autoClose(true);
+            }
             configureParams(bean, syntheticBean.params);
             for (TypeAndQualifiers injectionPoint : syntheticBean.injectionPoints) {
                 bean.addInjectionPoint(injectionPoint.type(), injectionPoint.qualifiers());

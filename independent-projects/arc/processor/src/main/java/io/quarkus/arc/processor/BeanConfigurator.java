@@ -85,6 +85,11 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 eager = Beans.initStereotypeEager(stereotypes, beanDeployment);
             }
 
+            Boolean autoClose = this.autoClose;
+            if (autoClose == null) {
+                autoClose = Beans.initStereotypeAutoClose(stereotypes, beanDeployment);
+            }
+
             InterceptionProxyInfo interceptionProxy = this.interceptionProxy;
             if (interceptionProxy != null) {
                 Type providerType = this.providerType;
@@ -129,6 +134,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .stereotypes(stereotypes)
                     .name(name)
                     .eager(eager)
+                    .autoClose(autoClose)
                     .creator(creatorConsumer)
                     .destroyer(destroyerConsumer)
                     .params(params)

@@ -96,6 +96,7 @@ public final class Beans {
         Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
         boolean isEager = false;
+        boolean isAutoClose = false;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerMethod)) {
             DotName annotationName = annotation.name();
@@ -149,6 +150,10 @@ public final class Beans {
                 isEager = true;
                 continue;
             }
+            if (DotNames.AUTO_CLOSE.equals(annotationName)) {
+                isAutoClose = true;
+                continue;
+            }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotationName);
             if (scopeAnnotation != null) {
                 scopes.add(scopeAnnotation);
@@ -188,6 +193,9 @@ public final class Beans {
         }
         if (!isEager) {
             isEager = initStereotypeEager(stereotypes, beanDeployment);
+        }
+        if (!isAutoClose) {
+            isAutoClose = initStereotypeAutoClose(stereotypes, beanDeployment);
         }
 
         if (isAlternative && isReserve) {
@@ -269,7 +277,7 @@ public final class Beans {
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer,
                 Injection.BeanType.PRODUCER_METHOD);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, typeClosure.types(), qualifiers, injections,
-                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, isEager, null, priority,
+                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, isEager, isAutoClose, null, priority,
                 typeClosure.unrestrictedTypes(), interceptionProxy);
         for (Injection injection : injections) {
             injection.init(bean);
@@ -289,6 +297,7 @@ public final class Beans {
         Set<ScopeInfo> beanDefiningAnnotationScopes = new HashSet<>();
         String name = null;
         boolean isEager = false;
+        boolean isAutoClose = false;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerField)) {
             DotName annotationName = annotation.name();
@@ -347,6 +356,10 @@ public final class Beans {
                 isEager = true;
                 continue;
             }
+            if (DotNames.AUTO_CLOSE.equals(annotationName)) {
+                isAutoClose = true;
+                continue;
+            }
         }
 
         if (scopes.size() > 1) {
@@ -375,6 +388,9 @@ public final class Beans {
         }
         if (!isEager) {
             isEager = initStereotypeEager(stereotypes, beanDeployment);
+        }
+        if (!isAutoClose) {
+            isAutoClose = initStereotypeAutoClose(stereotypes, beanDeployment);
         }
 
         if (isAlternative && isReserve) {
@@ -430,7 +446,7 @@ public final class Beans {
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, typeClosure.types(), qualifiers,
                 Collections.emptyList(),
-                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, isEager, null, priority,
+                declaringBean, disposer, isAlternative, stereotypes, name, isReserve, isEager, isAutoClose, null, priority,
                 typeClosure.unrestrictedTypes(), null);
         return bean;
     }
@@ -554,6 +570,20 @@ public final class Beans {
 
         for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
             if (stereotype.isEager()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static boolean initStereotypeAutoClose(List<StereotypeInfo> stereotypes, BeanDeployment beanDeployment) {
+        if (stereotypes.isEmpty()) {
+            return false;
+        }
+
+        for (StereotypeInfo stereotype : stereotypesWithTransitive(stereotypes, beanDeployment.getStereotypesMap())) {
+            if (stereotype.isAutoClose()) {
                 return true;
             }
         }
@@ -1402,6 +1432,7 @@ public final class Beans {
         private boolean isAlternative;
         private boolean isReserve;
         private boolean isEager;
+        private boolean isAutoClose;
 
         ClassBeanFactory(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
             this.beanClass = beanClass;
@@ -1412,6 +1443,7 @@ public final class Beans {
             this.isReserve = false;
             this.name = null;
             this.isEager = false;
+            this.isAutoClose = false;
         }
 
         void processInheritedAnnotation(
@@ -1487,6 +1519,10 @@ public final class Beans {
                 isEager = true;
                 return;
             }
+            if (DotNames.AUTO_CLOSE.equals(annotationName)) {
+                isAutoClose = true;
+                return;
+            }
             StereotypeInfo stereotype = beanDeployment.getStereotype(annotationName);
             if (stereotype != null) {
                 stereotypes.add(stereotype);
@@ -1552,6 +1588,9 @@ public final class Beans {
             if (!isEager) {
                 isEager = initStereotypeEager(stereotypes, beanDeployment);
             }
+            if (!isAutoClose) {
+                isAutoClose = initStereotypeAutoClose(stereotypes, beanDeployment);
+            }
 
             if (isAlternative && isReserve) {
                 throw new DefinitionException("Bean " + beanClass + " is both @Alternative and @Reserve");
@@ -1587,7 +1626,7 @@ public final class Beans {
             List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer,
                     Injection.BeanType.MANAGED_BEAN);
             BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, typeClosure.types(), qualifiers,
-                    injections, null, null, isAlternative, stereotypes, name, isReserve, isEager, null, priority,
+                    injections, null, null, isAlternative, stereotypes, name, isReserve, isEager, isAutoClose, null, priority,
                     typeClosure.unrestrictedTypes(), null);
             for (Injection injection : injections) {
                 injection.init(bean);

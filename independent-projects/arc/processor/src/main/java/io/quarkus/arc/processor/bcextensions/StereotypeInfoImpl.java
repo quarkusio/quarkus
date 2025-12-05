@@ -52,6 +52,11 @@ class StereotypeInfoImpl implements StereotypeInfo {
     }
 
     @Override
+    public boolean isAutoClose() {
+        return arcStereotype.isAutoClose();
+    }
+
+    @Override
     public boolean isNamed() {
         return arcStereotype.isNamed();
     }

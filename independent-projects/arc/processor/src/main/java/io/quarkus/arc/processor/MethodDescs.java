@@ -58,6 +58,8 @@ final class MethodDescs {
     static final ConstructorDesc MAP_VALUE_SUPPLIER_CONSTRUCTOR = ConstructorDesc.of(MapValueSupplier.class,
             Map.class, String.class);
 
+    static final MethodDesc AUTO_CLOSEABLE_CLOSE = MethodDesc.of(AutoCloseable.class, "close", void.class);
+
     static final MethodDesc SUPPLIER_GET = MethodDesc.of(Supplier.class, "get", Object.class);
 
     static final MethodDesc CONSUMER_ACCEPT = MethodDesc.of(Consumer.class, "accept", void.class, Object.class);

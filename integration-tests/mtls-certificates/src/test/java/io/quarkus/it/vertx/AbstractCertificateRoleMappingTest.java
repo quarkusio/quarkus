@@ -16,7 +16,7 @@ import io.restassured.specification.RequestSpecification;
 
 public abstract class AbstractCertificateRoleMappingTest {
 
-    @TestHTTPResource(ssl = true)
+    @TestHTTPResource(tls = true)
     URL url;
 
     @Test

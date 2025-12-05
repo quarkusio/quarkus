@@ -36,7 +36,7 @@ public class RandomTestPortTestCase {
     @ConfigProperty(name = "quarkus.http.test-ssl-port")
     int httpsTestPort;
 
-    @TestHTTPResource(value = "/some-path", ssl = true)
+    @TestHTTPResource(value = "/some-path", tls = true)
     URL httpsTestUrl;
 
     @Test

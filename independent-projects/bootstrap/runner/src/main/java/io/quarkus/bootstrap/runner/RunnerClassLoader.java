@@ -46,6 +46,11 @@ public final class RunnerClassLoader extends ClassLoader {
     private final List<String> fullyIndexedDirectories;
     private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
 
+    private final ClassLoadingResource generatedBytecodeClassLoadingResource;
+    private final Set<String> generatedBytecode;
+    private final ClassLoadingResource transformedBytecodeClassLoadingResource;
+    private final Set<String> transformedBytecode;
+
     //Mutations protected by synchronization on the field value itself:
     private final ClassLoadingResource[] currentlyBufferedResources = new ClassLoadingResource[4];//Experimentally found to be a reasonable number
     //Protected by synchronization on the above field, as they are related.
@@ -55,13 +60,19 @@ public final class RunnerClassLoader extends ClassLoader {
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
-            List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
+            List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap,
+            ClassLoadingResource generatedBytecodeClassLoadingResource, Set<String> generatedBytecode,
+            ClassLoadingResource transformedBytecodeClassLoadingResource, Set<String> transformedBytecode) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
         this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
+        this.generatedBytecodeClassLoadingResource = generatedBytecodeClassLoadingResource;
+        this.generatedBytecode = generatedBytecode;
+        this.transformedBytecodeClassLoadingResource = transformedBytecodeClassLoadingResource;
+        this.transformedBytecode = transformedBytecode;
 
         resource = new CracResource();
         org.crac.Core.getGlobalContext().register(resource);
@@ -102,6 +113,13 @@ public final class RunnerClassLoader extends ClassLoader {
         if (resources != null) {
             String classResource = fromClassNameToResourceName(name);
             for (ClassLoadingResource resource : resources) {
+                if (resource == generatedBytecodeClassLoadingResource && !generatedBytecode.contains(classResource)) {
+                    continue;
+                }
+                if (resource == transformedBytecodeClassLoadingResource && !transformedBytecode.contains(classResource)) {
+                    continue;
+                }
+
                 accessingResource(resource);
                 byte[] data = resource.getResourceData(classResource);
                 if (data == null) {

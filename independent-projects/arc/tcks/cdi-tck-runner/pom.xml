@@ -36,8 +36,8 @@
             <artifactId>arc-cdi-tck-porting-pkg</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>cdi-tck-core-impl</artifactId>
+            <groupId>jakarta.cdi</groupId>
+            <artifactId>jakarta.cdi-tck-core-impl</artifactId>
             <version>${version.cdi-tck}</version>
         </dependency>
     </dependencies>
@@ -68,7 +68,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <dependenciesToScan>
-                        <dependency>jakarta.enterprise:cdi-tck-core-impl</dependency>
+                        <dependency>jakarta.cdi:jakarta.cdi-tck-core-impl</dependency>
                     </dependenciesToScan>
                     <suiteXmlFiles>
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>

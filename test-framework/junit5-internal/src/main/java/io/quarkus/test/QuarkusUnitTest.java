@@ -4,11 +4,15 @@ import static io.quarkus.test.ExportUtil.APPLICATION_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -919,6 +923,32 @@ public class QuarkusUnitTest
             customApplicationProperties = new Properties();
         }
         customApplicationProperties.put(propertyKey, propertyValue);
+        return this;
+    }
+
+    /**
+     * Overriden configuration properties take precedence over an {@code application.properties} asset added in the test
+     * {@link JavaArchive}.
+     *
+     * @param configResource the path to the config source
+     * @return the test configuration
+     */
+
+    public QuarkusUnitTest overrideConfigFromConfigSource(String configResource) {
+        if (customApplicationProperties == null) {
+            customApplicationProperties = new Properties();
+        }
+        try {
+            URL systemResource = ClassLoader.getSystemResource(configResource);
+            if (systemResource == null) {
+                throw new FileNotFoundException("Resource '" + configResource + "' not found");
+            }
+            try (InputStream in = systemResource.openStream()) {
+                customApplicationProperties.load(in);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load config source", e);
+        }
         return this;
     }
 

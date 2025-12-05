@@ -15,7 +15,7 @@ dependencies {
     "implementation"(enforcedPlatform("$quarkusPlatformGroupId:$quarkusPlatformArtifactId:$quarkusPlatformVersion"))
 
     implementation("io.quarkus:quarkus-rest")
-    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.quarkus:quarkus-junit-jupiter")
     testImplementation("io.rest-assured:rest-assured")
     implementation(project(":lib-mod"))
 }

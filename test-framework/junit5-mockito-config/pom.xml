@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-junit5-mockito-config</artifactId>
-    <name>Quarkus - Test framework - JUnit 5 - Mockito Config</name>
+    <artifactId>quarkus-junit-jupiter-mockito-config</artifactId>
+    <name>Quarkus - Test framework - JUnit Jupiter - Mockito Config</name>
     <description>
         Contains a MockitoConfiguration that has to be loaded parent-first to work in continuous testing.
         It is separated from junit5-mockito to minimize the blast radius.

@@ -14,7 +14,7 @@
     <groupId>io.quarkus.junit5</groupId>
     <artifactId>junit5-virtual-threads</artifactId>
 
-    <name>Quarkus - JUnit 5 Extension - Virtual Threads</name>
+    <name>Quarkus - JUnit Jupiter Extension - Virtual Threads</name>
     <description>Module that allows detecting virtual threads pinning</description>
     <url>https://github.com/quarkusio/quarkus</url>
 
@@ -58,7 +58,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- JUnit 5 dependencies, imported as a BOM -->
+            <!-- JUnit Jupiter dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>

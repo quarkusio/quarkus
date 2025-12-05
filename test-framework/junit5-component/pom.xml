@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-junit5-component</artifactId>
-    <name>Quarkus - Test Framework - JUnit 5 Component Test Framework</name>
+    <artifactId>quarkus-junit-jupiter-component</artifactId>
+    <name>Quarkus - Test Framework - JUnit Jupiter Component Test Framework</name>
     <description>Makes it easy to test Quarkus components and mock their dependencies.</description>
 
     <dependencies>
@@ -56,7 +56,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-config</artifactId>
+            <artifactId>quarkus-junit-jupiter-config</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
@@ -70,7 +70,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
+            <artifactId>quarkus-junit-jupiter-mockito</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

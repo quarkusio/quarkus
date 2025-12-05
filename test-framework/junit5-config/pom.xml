@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-junit5-config</artifactId>
-    <name>Quarkus - Test Framework - JUnit 5 Config</name>
+    <artifactId>quarkus-junit-jupiter-config</artifactId>
+    <name>Quarkus - Test Framework - JUnit Jupiter Config</name>
 
     <dependencies>
         <dependency>

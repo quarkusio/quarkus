@@ -94,7 +94,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     // Ideally these would be final, but we initialise them in a try-catch block and sometimes they will be caught
 
-    // JUnit extensions can be registered by a service loader - see https://junit.org/junit5/docs/current/user-guide/#extensions-registration
+    // JUnit extensions can be registered by a service loader - see https://docs.junit.org/current/user-guide/#extensions-registration
     private boolean isServiceLoaderMechanism;
     private Method osIsCurrent;
 

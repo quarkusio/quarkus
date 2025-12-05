@@ -10,14 +10,14 @@ import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 
 /**
  * This callback verifies that {@code @io.quarkus.test.InjectMock} is not declared on a field of a {@code @QuarkusTest}
- * unless the {@code quarkus-junit5-mockito} is present.
+ * unless the {@code quarkus-junit-jupiter-mockito} is present.
  */
 public class VerifyMockitoMocksCallback implements QuarkusTestAfterConstructCallback {
 
     @Override
     public void afterConstruct(Object testInstance) {
         Class<? extends Annotation> mockitoConfig = loadMockitoConfig();
-        if (mockitoConfig == null) { // this means that the quarkus-junit5-mockito dependency was not added
+        if (mockitoConfig == null) { // this means that the quarkus-junit-jupiter-mockito dependency was not added
             List<Field> injectMockFields = new ArrayList<>();
             Class<?> current = testInstance.getClass();
             while (current != null) {
@@ -30,7 +30,7 @@ public class VerifyMockitoMocksCallback implements QuarkusTestAfterConstructCall
             }
             if (!injectMockFields.isEmpty()) {
                 throw new IllegalStateException(
-                        "@io.quarkus.test.InjectMock declared on one or more fields of a @QuarkusTest but the quarkus-junit5-mockito dependency is not present: "
+                        "@io.quarkus.test.InjectMock declared on one or more fields of a @QuarkusTest but the quarkus-junit-jupiter-mockito dependency is not present: "
                                 + injectMockFields.stream().map(f -> "/n/t- " + f.toString()));
             }
         }

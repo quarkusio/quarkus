@@ -26,6 +26,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Feature;
@@ -49,6 +50,7 @@ import io.quarkus.security.jpa.common.deployment.JpaSecurityDefinitionBuildItem;
 import io.quarkus.security.jpa.common.deployment.PanacheEntityPredicateBuildItem;
 import io.quarkus.security.jpa.reactive.runtime.JpaReactiveIdentityProvider;
 import io.quarkus.security.jpa.reactive.runtime.JpaReactiveTrustedIdentityProvider;
+import io.quarkus.security.jpa.reactive.runtime.SecurityJpaReactiveImpl;
 import io.smallrye.mutiny.Uni;
 
 class QuarkusSecurityJpaReactiveProcessor {
@@ -80,6 +82,11 @@ class QuarkusSecurityJpaReactiveProcessor {
     @BuildStep
     PanacheEntityPredicateBuildItem panacheEntityPredicate(List<PanacheEntityClassesBuildItem> panacheEntityClasses) {
         return new PanacheEntityPredicateBuildItem(collectPanacheEntities(panacheEntityClasses));
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerSecurityJpaReactiveImplCdiBean() {
+        return AdditionalBeanBuildItem.unremovableOf(SecurityJpaReactiveImpl.class);
     }
 
     private static Set<String> collectPanacheEntities(List<PanacheEntityClassesBuildItem> panacheEntityClassesBuildItems) {

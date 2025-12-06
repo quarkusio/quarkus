@@ -236,10 +236,10 @@ public class JsonReader {
     }
 
     private char readUnicode() {
-        final char digit1 = Character.forDigit(nextChar(), 16);
-        final char digit2 = Character.forDigit(nextChar(), 16);
-        final char digit3 = Character.forDigit(nextChar(), 16);
-        final char digit4 = Character.forDigit(nextChar(), 16);
+        final int digit1 = Character.digit(nextChar(), 16);
+        final int digit2 = Character.digit(nextChar(), 16);
+        final int digit3 = Character.digit(nextChar(), 16);
+        final int digit4 = Character.digit(nextChar(), 16);
         return (char) (digit1 << 12 | digit2 << 8 | digit3 << 4 | digit4);
     }
 

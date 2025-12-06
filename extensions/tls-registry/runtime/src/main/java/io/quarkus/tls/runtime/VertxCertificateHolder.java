@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
@@ -14,6 +15,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
@@ -114,6 +117,8 @@ public class VertxCertificateHolder implements TlsConfiguration {
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());
 
+        warnIfNotTls13(options.getEnabledSecureTransportProtocols(), name);
+
         for (Buffer buffer : crls) {
             options.addCrlValue(buffer);
         }
@@ -123,6 +128,14 @@ public class VertxCertificateHolder implements TlsConfiguration {
         }
 
         return options;
+    }
+
+    private void warnIfNotTls13(Set<String> protocols, String name) {
+        if (!protocols.stream().map(String::toLowerCase).toList().contains("TLSv1.3".toLowerCase())) {
+            Logger.getLogger(VertxCertificateHolder.class.getName())
+                    .warn("TLSv1.3 protocol is not enabled in TLS bucket '" + name +
+                            "'. It is *strongly* recommended to enable TLSv1.3.");
+        }
     }
 
     @Override

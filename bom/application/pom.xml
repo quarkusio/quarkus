@@ -171,10 +171,11 @@
         <javaparser.version>3.27.1</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.1</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.21.0</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
+        <quarkus-spring-api.version>6.2.SP2-SNAPSHOT</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.5</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.4</quarkus-spring-boot-api.version>
+        <quarkus-spring-test-api.version>3.5.Alpha1-SNAPSHOT</quarkus-spring-test-api.version>
         <mockito.version>5.20.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.2.1</quarkus-security.version>
@@ -3570,6 +3571,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-spring</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-test-vertx</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -6163,6 +6169,16 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-boot-properties-api</artifactId>
                 <version>${quarkus-spring-boot-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-test-core-api</artifactId>
+                <version>${quarkus-spring-test-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-boot-test-api</artifactId>
+                <version>${quarkus-spring-test-api.version}</version>
             </dependency>
 
             <dependency>

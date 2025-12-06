@@ -1939,6 +1939,30 @@ When setting up the client programmatically using the `QuarkusRestClientBuilder`
 For declarative clients using `@RegisterRestClient`, simply providing a CDI bean that implements `ClientLogger` is enough for that logger to be used by said clients.
 ====
 
+== Metrics
+
+All declarative REST Client instances produce metrics using the `http.clients` prefix. Furthermore, the metrics contain a tag named `clientName` which corresponds to the config key of the client (as specified by the `configKey` property of the `@RegisterRestClient` annotation).
+
+To enable metrics for programmatically created REST Clients, the following snippet can be used:
+
+[source,java]
+----
+var builder = QuarkusRestClientBuilder.newBuilder();
+
+// use the builder to configure the client
+
+// now configure a customizer that sets the metrics name
+builder.httpClientOptionsCustomizer(new Consumer<>() {
+    @Override
+    public void accept(HttpClientOptions httpClientOptions) {
+        String metricsName = httpClientOptions.getMetricsName();
+        if (metricsName == null || metricsName.isEmpty()) {
+            httpClientOptions.setMetricsName("rest-client|" + "someName"); // the 'rest-client|' prefix is absolutely necessary here
+        }
+    }
+});
+----
+
 == Mocking the client for tests
 If you use a client injected with the `@RestClient` annotation, you can easily mock it for tests.
 You can do it with Mockito's `@InjectMock` or with `QuarkusMock`.

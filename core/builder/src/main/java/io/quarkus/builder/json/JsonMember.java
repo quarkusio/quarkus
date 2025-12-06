@@ -1,5 +1,9 @@
 package io.quarkus.builder.json;
 
+/**
+ * @deprecated since 3.31.0 in favor of {@link io.quarkus.bootstrap.json.JsonMember}
+ */
+@Deprecated(forRemoval = true)
 public final class JsonMember implements JsonValue {
     private final JsonString attribute;
     private final JsonValue value;

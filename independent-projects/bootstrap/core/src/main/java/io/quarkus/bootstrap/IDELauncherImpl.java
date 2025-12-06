@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.bootstrap.app.AdditionalDependency;
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
@@ -47,7 +47,8 @@ public class IDELauncherImpl implements Closeable {
                     .setTargetDirectory(classesDir.getParent());
             if (BuildToolHelper.isGradleProject(classesDir)) {
                 final ApplicationModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(classesDir);
-                context.put(BootstrapConstants.SERIALIZED_APP_MODEL, BootstrapUtils.serializeAppModel(quarkusModel, false));
+                context.put(BootstrapConstants.SERIALIZED_APP_MODEL,
+                        ApplicationModelSerializer.serializeGradleModel(quarkusModel, false));
 
                 ArtifactSources mainSources = quarkusModel.getApplicationModule().getMainSources();
 

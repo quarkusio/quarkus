@@ -102,8 +102,13 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
 
     @Override
     public void walk(PathVisitor visitor) {
-        PathTreeVisit.walk(getRootPath(), getRootPath(), getRootPath(), pathFilter, getMultiReleaseMapping(),
+        final Path rootPath = getRootPath();
+        if (!Files.exists(rootPath)) {
+            return;
+        }
+        PathTreeVisit.walk(rootPath, rootPath, rootPath, pathFilter, getMultiReleaseMapping(),
                 visitor);
+
     }
 
     @Override

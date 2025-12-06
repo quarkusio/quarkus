@@ -4,12 +4,16 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.Mappable;
+import io.quarkus.bootstrap.model.MappableCollectionFactory;
 import io.quarkus.util.GlobUtil;
 
-public class PathFilter implements Serializable {
+public class PathFilter implements Mappable, Serializable {
 
     private static final long serialVersionUID = -5712472676677054175L;
 
@@ -31,12 +35,24 @@ public class PathFilter implements Serializable {
         return new PathFilter(null, excludes);
     }
 
+    public static PathFilter fromMap(Map<String, Object> map) {
+        return new PathFilter(
+                compileRegex((Collection<String>) map.get(BootstrapConstants.MAPPABLE_INCLUDES)),
+                compileRegex((Collection<String>) map.get(BootstrapConstants.MAPPABLE_EXCLUDES)));
+
+    }
+
     private List<Pattern> includes;
     private List<Pattern> excludes;
 
     public PathFilter(Collection<String> includes, Collection<String> excludes) {
-        this.includes = compile(includes);
-        this.excludes = compile(excludes);
+        this.includes = compileGlob(includes);
+        this.excludes = compileGlob(excludes);
+    }
+
+    private PathFilter(List<Pattern> includes, List<Pattern> excludes) {
+        this.includes = includes;
+        this.excludes = excludes;
     }
 
     public boolean isVisible(String pathStr) {
@@ -61,6 +77,27 @@ public class PathFilter implements Serializable {
             return true;
         }
         return true;
+    }
+
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> result;
+        if (includes != null && !includes.isEmpty()) {
+            if (excludes != null && !excludes.isEmpty()) {
+                result = factory.newMap(2);
+                result.put(BootstrapConstants.MAPPABLE_INCLUDES, Mappable.toStringCollection(includes, factory));
+                result.put(BootstrapConstants.MAPPABLE_EXCLUDES, Mappable.toStringCollection(excludes, factory));
+            } else {
+                result = factory.newMap(1);
+                result.put(BootstrapConstants.MAPPABLE_INCLUDES, Mappable.toStringCollection(includes, factory));
+            }
+        } else if (excludes != null && !excludes.isEmpty()) {
+            result = factory.newMap(1);
+            result.put(BootstrapConstants.MAPPABLE_EXCLUDES, Mappable.toStringCollection(excludes, factory));
+        } else {
+            result = factory.newMap(0);
+        }
+        return result;
     }
 
     @Override
@@ -101,13 +138,24 @@ public class PathFilter implements Serializable {
         return s.toString();
     }
 
-    private static List<Pattern> compile(Collection<String> expressions) {
+    private static List<Pattern> compileGlob(Collection<String> expressions) {
         if (expressions == null) {
             return null;
         }
         final List<Pattern> compiled = new ArrayList<>(expressions.size());
         for (String expr : expressions) {
             compiled.add(Pattern.compile(GlobUtil.toRegexPattern(expr)));
+        }
+        return compiled;
+    }
+
+    private static List<Pattern> compileRegex(Collection<String> regexList) {
+        if (regexList == null) {
+            return null;
+        }
+        final List<Pattern> compiled = new ArrayList<>(regexList.size());
+        for (String regex : regexList) {
+            compiled.add(Pattern.compile(regex));
         }
         return compiled;
     }

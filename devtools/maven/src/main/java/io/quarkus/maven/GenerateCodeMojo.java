@@ -14,6 +14,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -111,8 +112,9 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                     final int workspaceId = getWorkspaceId();
                     if (workspaceId != 0) {
                         try {
-                            BootstrapUtils.writeAppModelWithWorkspaceId(appModel, workspaceId, BootstrapUtils
-                                    .getSerializedTestAppModelPath(Path.of(mavenProject().getBuild().getDirectory())));
+                            Path serializedTestAppModelPath = BootstrapUtils
+                                    .getSerializedTestAppModelPath(Path.of(mavenProject().getBuild().getDirectory()));
+                            ApplicationModelSerializer.serialize(appModel, serializedTestAppModelPath);
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }

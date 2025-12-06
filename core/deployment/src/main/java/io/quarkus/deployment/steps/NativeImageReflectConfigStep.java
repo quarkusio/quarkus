@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.builder.Json;
-import io.quarkus.builder.Json.JsonArrayBuilder;
-import io.quarkus.builder.Json.JsonObjectBuilder;
+import io.quarkus.bootstrap.json.Json;
+import io.quarkus.bootstrap.json.Json.JsonArrayBuilder;
+import io.quarkus.bootstrap.json.Json.JsonObjectBuilder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;

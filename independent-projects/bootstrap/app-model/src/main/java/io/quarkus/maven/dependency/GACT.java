@@ -82,46 +82,43 @@ public class GACT implements ArtifactKey, Serializable {
         parts[3] = str.substring(i + 1, fromIndex);
         fromIndex = i;
         i = str.lastIndexOf(':', fromIndex - 1);
-        if (i < 0) {
-            parts[0] = str.substring(0, fromIndex);
-            if ((parts[1] = parts[3]).isEmpty()) {
-                throw new IllegalArgumentException("ArtifactId is empty in `" + str + "`");
+        if (i > 0) {
+            if (i == fromIndex - 1) {
+                parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
+            } else {
+                parts[2] = str.substring(i + 1, fromIndex);
             }
-            parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
-            parts[3] = null;
+
+            fromIndex = i;
+            i = str.lastIndexOf(':', fromIndex - 1);
+            if (i < 0) {
+                parts[0] = str.substring(0, fromIndex);
+                if ((parts[1] = parts[2]).isEmpty()) {
+                    throw new IllegalArgumentException("ArtifactId is empty in `" + str + "`");
+                }
+                parts[2] = parts[3];
+                parts[3] = null;
+                return parts;
+            }
+            if (i == fromIndex - 1) {
+                throw new IllegalArgumentException(
+                        "One of groupId or artifactId is missing from '" + str.substring(0, fromIndex) + "'");
+            }
+
+            parts[0] = str.substring(0, i);
+            parts[1] = str.substring(i + 1, fromIndex);
+            if (parts[3].isEmpty()) {
+                parts[3] = null;
+            }
             return parts;
         }
-        if (i == 0) {
-            throw new IllegalArgumentException(
-                    "One of groupId or artifactId is missing from '" + str.substring(0, fromIndex) + "'");
-        }
-        if (i == fromIndex - 1) {
-            parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
-        } else {
-            parts[2] = str.substring(i + 1, fromIndex);
-        }
 
-        fromIndex = i;
-        i = str.lastIndexOf(':', fromIndex - 1);
-        if (i < 0) {
-            parts[0] = str.substring(0, fromIndex);
-            if ((parts[1] = parts[2]).isEmpty()) {
-                throw new IllegalArgumentException("ArtifactId is empty in `" + str + "`");
-            }
-            parts[2] = parts[3];
-            parts[3] = null;
-            return parts;
+        parts[0] = str.substring(0, fromIndex);
+        if ((parts[1] = parts[3]).isEmpty()) {
+            throw new IllegalArgumentException("ArtifactId is empty in `" + str + "`");
         }
-        if (i == 0 || i == fromIndex - 1) {
-            throw new IllegalArgumentException(
-                    "One of groupId or artifactId is missing from '" + str.substring(0, fromIndex) + "'");
-        }
-
-        parts[0] = str.substring(0, i);
-        parts[1] = str.substring(i + 1, fromIndex);
-        if (parts[3].isEmpty()) {
-            parts[3] = null;
-        }
+        parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
+        parts[3] = null;
         return parts;
     }
 

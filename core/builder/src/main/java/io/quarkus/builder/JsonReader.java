@@ -15,9 +15,12 @@ import io.quarkus.builder.json.JsonString;
 import io.quarkus.builder.json.JsonValue;
 
 /**
- * A json format reader.
- * It follows the <a href="https://www.json.org/json-en.html">ECMA-404 The JSON Data Interchange Standard.</a>.
+ * @deprecated since 3.31.0 in favor of io.quarkus.bootstrap.json.JsonReader
+ *
+ *             A json format reader.
+ *             It follows the <a href="https://www.json.org/json-en.html">ECMA-404 The JSON Data Interchange Standard.</a>.
  */
+@Deprecated(forRemoval = true)
 public class JsonReader {
 
     private final String text;

@@ -2,16 +2,40 @@ package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 
 /**
  * Platform release info that is encoded into a property in a platform properties artifact
  * following the format {@code platform.release-info@<platform-key>$<stream>#<version>=<bom-coords>(,<bom-coords>)}
  */
-public class PlatformReleaseInfo implements Serializable {
+public class PlatformReleaseInfo implements Serializable, Mappable {
+
+    static PlatformReleaseInfo fromMap(Map<String, Object> map) {
+        final Collection<String> bomsStr = (Collection<String>) map.get(BootstrapConstants.MAPPABLE_BOMS);
+        final List<ArtifactCoords> boms = new ArrayList<>(bomsStr.size());
+        for (String bomStr : bomsStr) {
+            boms.add(ArtifactCoords.fromString(bomStr));
+        }
+        return new PlatformReleaseInfo(
+                (String) map.get(BootstrapConstants.MAPPABLE_PLATFORM_KEY),
+                (String) map.get(BootstrapConstants.MAPPABLE_STREAM),
+                (String) map.get(BootstrapConstants.MAPPABLE_VERSION),
+                boms);
+    }
+
+    private static List<ArtifactCoords> parseArtifactCoords(String boms) {
+        final String[] bomCoords = boms.split(",");
+        final List<ArtifactCoords> result = new ArrayList<>(bomCoords.length);
+        for (String s : bomCoords) {
+            result.add(ArtifactCoords.fromString(s));
+        }
+        return result;
+    }
 
     private static final long serialVersionUID = 7751600738849301644L;
     private final String platformKey;
@@ -20,14 +44,14 @@ public class PlatformReleaseInfo implements Serializable {
     private final List<ArtifactCoords> boms;
 
     public PlatformReleaseInfo(String platformKey, String stream, String version, String boms) {
+        this(platformKey, stream, version, parseArtifactCoords(boms));
+    }
+
+    public PlatformReleaseInfo(String platformKey, String stream, String version, List<ArtifactCoords> boms) {
         this.platformKey = platformKey;
         this.stream = stream;
         this.version = version;
-        final String[] bomCoords = boms.split(",");
-        this.boms = new ArrayList<>(bomCoords.length);
-        for (String s : bomCoords) {
-            this.boms.add(GACTV.fromString(s));
-        }
+        this.boms = boms;
     }
 
     /**
@@ -87,6 +111,26 @@ public class PlatformReleaseInfo implements Serializable {
         return buf.toString();
     }
 
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap(4);
+        if (platformKey != null) {
+            map.put(BootstrapConstants.MAPPABLE_PLATFORM_KEY, platformKey);
+        }
+        if (stream != null) {
+            map.put(BootstrapConstants.MAPPABLE_STREAM, stream);
+        }
+        if (version != null) {
+            map.put(BootstrapConstants.MAPPABLE_VERSION, version);
+        }
+        if (!boms.isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_BOMS,
+                    Mappable.toStringCollection(boms, ArtifactCoords::toGACTVString, factory));
+        }
+        return map;
+    }
+
+    @Override
     public String toString() {
         return getPropertyName() + '=' + getPropertyValue();
     }

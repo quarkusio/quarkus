@@ -5,6 +5,10 @@ import java.util.stream.Stream;
 
 import io.quarkus.builder.JsonTransform;
 
+/**
+ * @deprecated since 3.31.0 in favor of {@link io.quarkus.bootstrap.json.JsonArray}
+ */
+@Deprecated(forRemoval = true)
 public final class JsonArray implements JsonMultiValue {
     private final List<JsonValue> value;
 

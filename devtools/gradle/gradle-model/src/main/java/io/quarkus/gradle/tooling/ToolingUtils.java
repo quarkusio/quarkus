@@ -2,9 +2,6 @@ package io.quarkus.gradle.tooling;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,6 +18,7 @@ import org.gradle.composite.internal.DefaultIncludedBuild;
 import org.gradle.internal.composite.IncludedBuildInternal;
 import org.gradle.internal.composite.IncludedRootBuild;
 
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
@@ -158,24 +156,16 @@ public class ToolingUtils {
     public static Path serializeAppModel(ApplicationModel appModel, Task context, boolean test) throws IOException {
         final Path serializedModel = context.getTemporaryDir().toPath()
                 .resolve("quarkus-app" + (test ? "-test" : "") + "-model.dat");
-        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
-            out.writeObject(appModel);
-        }
+        ApplicationModelSerializer.serialize(appModel, serializedModel);
         return serializedModel;
     }
 
     public static ApplicationModel deserializeAppModel(Path path) throws IOException {
-        try (ObjectInputStream out = new ObjectInputStream(Files.newInputStream(path))) {
-            return (ApplicationModel) out.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        return ApplicationModelSerializer.deserialize(path);
     }
 
     public static Path serializeAppModel(ApplicationModel appModel, Path serializedModelPath) throws IOException {
-        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModelPath))) {
-            out.writeObject(appModel);
-        }
+        ApplicationModelSerializer.serialize(appModel, serializedModelPath);
         return serializedModelPath;
     }
 

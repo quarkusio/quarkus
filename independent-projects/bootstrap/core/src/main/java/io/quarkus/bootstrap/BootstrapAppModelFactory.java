@@ -1,11 +1,6 @@
 package io.quarkus.bootstrap;
 
-import static io.quarkus.bootstrap.util.BootstrapUtils.readAppModelWithWorkspaceId;
-import static io.quarkus.bootstrap.util.BootstrapUtils.writeAppModelWithWorkspaceId;
-
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,6 +13,7 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.CurationResult;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
@@ -252,10 +248,7 @@ public class BootstrapAppModelFactory {
                 if (Files.exists(cachedCpPath)
                         && workspace.getLastModified() < Files.getLastModifiedTime(cachedCpPath).toMillis()) {
                     try {
-                        final ApplicationModel appModel = readAppModelWithWorkspaceId(cachedCpPath, workspace.getId());
-                        if (appModel != null) {
-                            return new CurationResult(appModel);
-                        }
+                        return new CurationResult(ApplicationModelSerializer.deserialize(cachedCpPath));
                     } catch (IOException e) {
                         log.warn("Failed to read deployment classpath cache from " + cachedCpPath + " for "
                                 + appArtifact, e);
@@ -267,7 +260,7 @@ public class BootstrapAppModelFactory {
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
                 try {
-                    writeAppModelWithWorkspaceId(curationResult.getApplicationModel(), workspace.getId(), cachedCpPath);
+                    ApplicationModelSerializer.serialize(curationResult.getApplicationModel(), cachedCpPath);
                 } catch (IOException e) {
                     log.warn("Failed to write classpath cache", e);
                 }
@@ -296,9 +289,9 @@ public class BootstrapAppModelFactory {
         if (serializedModel != null) {
             final Path p = Paths.get(serializedModel);
             if (Files.exists(p)) {
-                try (InputStream existing = Files.newInputStream(p)) {
-                    return new CurationResult((ApplicationModel) new ObjectInputStream(existing).readObject());
-                } catch (IOException | ClassNotFoundException e) {
+                try {
+                    return new CurationResult(ApplicationModelSerializer.deserialize(p));
+                } catch (IOException e) {
                     log.error("Failed to load serialized app mode", e);
                 }
                 IoUtils.recursiveDelete(p);

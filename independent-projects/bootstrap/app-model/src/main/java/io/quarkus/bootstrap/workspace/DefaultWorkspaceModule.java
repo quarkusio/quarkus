@@ -10,7 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 
@@ -25,6 +27,64 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
     public class Builder implements WorkspaceModule.Mutable, Serializable {
 
         private Builder() {
+        }
+
+        @Override
+        public Builder fromMap(Map<String, Object> map) {
+            setModuleId(WorkspaceModuleId.fromString((String) map.get(BootstrapConstants.MAPPABLE_MODULE_ID)));
+            setModuleDir(Path.of((String) map.get(BootstrapConstants.MAPPABLE_MODULE_DIR)));
+            setBuildDir(Path.of((String) map.get(BootstrapConstants.MAPPABLE_BUILD_DIR)));
+
+            Collection<String> buildFilesStr = (Collection<String>) map.get(BootstrapConstants.MAPPABLE_BUILD_FILES);
+            final Path[] buildFiles = new Path[buildFilesStr.size()];
+            int i = 0;
+            for (String buildFileStr : buildFilesStr) {
+                buildFiles[i++] = Path.of(buildFileStr);
+            }
+            setBuildFiles(PathList.of(buildFiles));
+
+            Collection<Map<String, Object>> sourcesMap = (Collection<Map<String, Object>>) map
+                    .get(BootstrapConstants.MAPPABLE_ARTIFACT_SOURCES);
+            if (sourcesMap != null) {
+                for (Map<String, Object> sourceMap : sourcesMap) {
+                    addArtifactSources(DefaultArtifactSources.fromMap(sourceMap));
+                }
+            }
+
+            final Collection<String> testCpExclusions = (Collection<String>) map
+                    .get(BootstrapConstants.MAPPABLE_TEST_CP_DEPENDENCY_EXCLUSIONS);
+            if (testCpExclusions != null) {
+                setTestClasspathDependencyExclusions(testCpExclusions);
+            }
+
+            final Collection<String> testAdditionalCpElements = (Collection<String>) map
+                    .get(BootstrapConstants.MAPPABLE_TEST_ADDITIONAL_CP_ELEMENTS);
+            if (testAdditionalCpElements != null) {
+                setAdditionalTestClasspathElements(testAdditionalCpElements);
+            }
+
+            final Collection<Map<String, Object>> depConstraintsMap = (Collection<Map<String, Object>>) map
+                    .get(BootstrapConstants.MAPPABLE_DIRECT_DEP_CONSTRAINTS);
+            if (depConstraintsMap != null) {
+                final List<Dependency> depConstraints = new ArrayList<>(depConstraintsMap.size());
+                for (var depConstraintMap : depConstraintsMap) {
+                    depConstraints.add(DependencyBuilder.newInstance().fromMap(depConstraintMap).build());
+                }
+                setDependencyConstraints(depConstraints);
+            }
+
+            final Collection<Map<String, Object>> depsMap = (Collection<Map<String, Object>>) map
+                    .get(BootstrapConstants.MAPPABLE_DIRECT_DEPS);
+            if (depsMap != null) {
+                final List<Dependency> deps = new ArrayList<>(depsMap.size());
+                for (var depMap : depsMap) {
+                    deps.add(DependencyBuilder.newInstance().fromMap(depMap).build());
+                }
+                setDependencies(deps);
+            }
+
+            // TODO parent module
+            return this;
         }
 
         @Override

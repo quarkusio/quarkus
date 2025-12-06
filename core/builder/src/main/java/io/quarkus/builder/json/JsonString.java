@@ -2,6 +2,10 @@ package io.quarkus.builder.json;
 
 import java.util.Objects;
 
+/**
+ * @deprecated since 3.31.0 in favor of {@link io.quarkus.bootstrap.json.JsonString}
+ */
+@Deprecated(forRemoval = true)
 public final class JsonString implements JsonValue {
     private final String value;
 

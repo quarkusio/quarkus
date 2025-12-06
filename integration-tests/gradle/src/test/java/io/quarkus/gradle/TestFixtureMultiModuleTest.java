@@ -1,6 +1,5 @@
 package io.quarkus.gradle;
 
-import static io.quarkus.gradle.util.AppModelDeserializer.deserializeAppModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -10,6 +9,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -25,7 +25,7 @@ public class TestFixtureMultiModuleTest extends QuarkusGradleWrapperTestBase {
         final Path testModelDat = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus")
                 .resolve("application-model").resolve("quarkus-app-test-model.dat");
         assertThat(testModelDat).exists();
-        final ApplicationModel model = deserializeAppModel(testModelDat);
+        final ApplicationModel model = ApplicationModelSerializer.deserialize(testModelDat);
         final Map<ArtifactKey, String> actualDepFlags = new HashMap<>();
         for (var dep : model.getDependencies()) {
             if (dep.getGroupId().equals("my-groupId")) {

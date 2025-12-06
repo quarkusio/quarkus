@@ -45,11 +45,21 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
 
     private final Map<ArtifactCoords, PlatformImport> platformImports = new HashMap<>();
 
-    final Map<String, String> collectedProps = new HashMap<String, String>();
-    private final Collection<ArtifactCoords> platformBoms = new ArrayList<>();
-    private final Collection<PlatformReleaseInfo> platformReleaseInfo = new ArrayList<>();
+    private final Map<String, String> collectedProps;
+    private final Collection<ArtifactCoords> platformBoms;
+    private final Collection<PlatformReleaseInfo> platformReleaseInfo;
 
     public PlatformImportsImpl() {
+        collectedProps = new HashMap<>();
+        platformBoms = new ArrayList<>();
+        platformReleaseInfo = new ArrayList<>();
+    }
+
+    PlatformImportsImpl(Map<String, String> platformProps, Collection<ArtifactCoords> importedBoms,
+            Collection<PlatformReleaseInfo> platformReleaseInfo) {
+        this.collectedProps = platformProps;
+        this.platformBoms = importedBoms;
+        this.platformReleaseInfo = platformReleaseInfo;
     }
 
     public Collection<PlatformReleaseInfo> getPlatformReleaseInfo() {

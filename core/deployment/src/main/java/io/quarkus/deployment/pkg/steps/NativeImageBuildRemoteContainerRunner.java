@@ -9,11 +9,11 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.builder.JsonReader;
-import io.quarkus.builder.json.JsonArray;
-import io.quarkus.builder.json.JsonObject;
-import io.quarkus.builder.json.JsonString;
-import io.quarkus.builder.json.JsonValue;
+import io.quarkus.bootstrap.json.JsonArray;
+import io.quarkus.bootstrap.json.JsonObject;
+import io.quarkus.bootstrap.json.JsonReader;
+import io.quarkus.bootstrap.json.JsonString;
+import io.quarkus.bootstrap.json.JsonValue;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.smallrye.common.process.ProcessBuilder;
 

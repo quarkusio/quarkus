@@ -7,7 +7,7 @@ import java.util.Properties;
 /**
  * JVM option
  */
-public interface JvmOption {
+public interface JvmOption extends Mappable {
 
     /**
      * Simple option name without dashes

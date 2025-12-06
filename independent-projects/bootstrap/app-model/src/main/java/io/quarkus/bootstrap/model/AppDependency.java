@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.model;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -137,5 +138,10 @@ public class AppDependency implements ResolvedDependency, Serializable {
     @Override
     public Collection<ArtifactCoords> getDependencies() {
         return List.of();
+    }
+
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        throw new UnsupportedOperationException();
     }
 }

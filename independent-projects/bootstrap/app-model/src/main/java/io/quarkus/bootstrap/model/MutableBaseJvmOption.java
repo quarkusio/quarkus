@@ -3,8 +3,11 @@ package io.quarkus.bootstrap.model;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import io.quarkus.bootstrap.BootstrapConstants;
 
 public abstract class MutableBaseJvmOption<T extends MutableBaseJvmOption<T>> implements JvmOption, Serializable {
 
@@ -44,6 +47,8 @@ public abstract class MutableBaseJvmOption<T extends MutableBaseJvmOption<T>> im
         return (T) this;
     }
 
+    protected abstract String getPropertyGroupPrefix();
+
     protected abstract String getQuarkusExtensionPropertyPrefix();
 
     @Override
@@ -65,6 +70,15 @@ public abstract class MutableBaseJvmOption<T extends MutableBaseJvmOption<T>> im
             sb.append(PROPERTY_VALUE_SEPARATOR).append(i.next());
         }
         return sb.toString();
+    }
+
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        var map = factory.newMap(3);
+        map.put(BootstrapConstants.MAPPABLE_NAME, getName());
+        map.put(BootstrapConstants.MAPPABLE_JVM_OPTION_GROUP_PREFIX, getPropertyGroupPrefix());
+        map.put(BootstrapConstants.MAPPABLE_VALUES, getValues());
+        return map;
     }
 
     public String toString() {

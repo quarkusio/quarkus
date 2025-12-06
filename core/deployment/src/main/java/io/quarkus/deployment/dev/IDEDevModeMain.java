@@ -13,11 +13,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapGradleException;
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
@@ -48,8 +47,8 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             if (BuildToolHelper.isMavenProject(appClasses)) {
                 appModel = curatedApplication.getApplicationModel();
             } else {
-                appModel = BootstrapUtils
-                        .deserializeQuarkusModel((Path) stringObjectMap.get(BootstrapConstants.SERIALIZED_APP_MODEL));
+                appModel = ApplicationModelSerializer
+                        .deserialize((Path) stringObjectMap.get(BootstrapConstants.SERIALIZED_APP_MODEL));
             }
 
             if (appModel != null) {
@@ -64,7 +63,7 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                     }
                 }
             }
-        } catch (AppModelResolverException e) {
+        } catch (Exception e) {
             log.error("Failed to load workspace, hot reload will not be available", e);
         }
 

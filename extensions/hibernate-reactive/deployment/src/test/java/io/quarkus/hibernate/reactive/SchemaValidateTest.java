@@ -1,10 +1,16 @@
 package io.quarkus.hibernate.reactive;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import jakarta.inject.Inject;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.junit.jupiter.api.Assertions;
@@ -32,13 +38,15 @@ public class SchemaValidateTest {
     }
 
     private static void isSchemaValidationException(Throwable t) {
-        Throwable cause = t;
-        while (cause != null && !cause.getClass().getName().equals(SchemaManagementException.class.getName())) {
-            cause = cause.getCause();
-        }
-        String causeName = cause != null ? cause.getClass().getName() : null;
-        Assertions.assertEquals(SchemaManagementException.class.getName(), causeName);
-        Assertions.assertTrue(cause.getMessage().contains("Schema-validation: missing table [" + Hero.TABLE + "]"));
+        assertThat(t)
+                .extracting(SchemaValidateTest::getSelfAndCauses, InstanceOfAssertFactories.stream(Throwable.class))
+                .anySatisfy(e -> assertThat(e)
+                        .hasMessageContaining("Schema validation: missing table [" + Hero.TABLE + "]")
+                        .extracting(e2 -> e2.getClass().getName()).isEqualTo(SchemaManagementException.class.getName()));
+    }
+
+    private static Stream<Throwable> getSelfAndCauses(Throwable e) {
+        return Stream.iterate(e, Objects::nonNull, Throwable::getCause);
     }
 
     @Entity(name = "Hero")

@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.runtime.service;
 
-import static org.hibernate.internal.CoreLogging.messageLogger;
-
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -10,9 +8,10 @@ import org.hibernate.HibernateException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectLogging;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfoSource;
-import org.hibernate.internal.CoreMessageLogger;
+import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -26,7 +25,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  * @see QuarkusStaticInitDialectFactory
  */
 public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
-    private static final CoreMessageLogger LOG = messageLogger(QuarkusRuntimeInitDialectFactory.class);
+    private static final Logger LOG = DialectLogging.DIALECT_LOGGER;
     private final String persistenceUnitName;
     private final boolean isFromPersistenceXml;
     private final Dialect dialect;

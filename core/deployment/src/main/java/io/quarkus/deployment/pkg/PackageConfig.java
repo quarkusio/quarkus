@@ -161,6 +161,23 @@ public interface PackageConfig {
         boolean addRunnerSuffix();
 
         /**
+         * Indicates a list of dependency for which the jar will use artifactId.type filename scheme
+         * Each dependency needs to be expressed in the following format:
+         * <p>
+         * {@code groupId:artifactId[:[classifier][:[type]]]}
+         * <p>
+         * With the classifier and type being optional (note that the brackets ({@code []}) denote optionality and are
+         * not a part of the syntax specification).
+         * The group ID and artifact ID must be present and non-empty.
+         * <p>
+         * If the type is missing, the artifact is assumed to be of type {@code jar}.
+         * <p>
+         * This parameter is optional; if absent, jar names will use groupId.artifactId[-version][-classifier].type scheme
+         */
+        @WithDefault("com.sap.conn.jco:sapjco3::jar,com.sap.conn.idoc:sapidoc3::jar")
+        Optional<Set<GACT>> forceUseArtifactIdOnlyAsName();
+
+        /**
          * AppCDS archive sub-configuration.
          * This configuration only applies to certain JAR types.
          */

@@ -236,7 +236,7 @@
                         <runnerParentFirstArtifact>org.graalvm.sdk:jniutils</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:word</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:collections</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>org.graalvm.sdk:native-bridge</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:nativebridge</runnerParentFirstArtifact>
                         <!-- /support for GraalVM js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-classloader-commons</runnerParentFirstArtifact>

@@ -29,7 +29,7 @@ public class RunOnVirtualThreadTest {
             .withApplicationRoot(root -> {
                 root.addClasses(Endpoint.class, WSClient.class, RequestScopedBean.class)
                         .addAsResource(new StringAsset(
-                                "quarkus.virtual-threads.name-prefix=wsnext-virtual-thread-"),
+                                "quarkus.virtual-threads.name-prefix=wsnext-virtual-thread"),
                                 "application.properties");
             });
 
@@ -82,7 +82,7 @@ public class RunOnVirtualThreadTest {
         @OnTextMessage
         String text(String ignored) {
             VirtualThreadsAssertions.assertEverything();
-            return Thread.currentThread().getName();
+            return Thread.currentThread().getName() + '-' + Thread.currentThread().getId();
         }
 
         @OnError
@@ -102,13 +102,13 @@ public class RunOnVirtualThreadTest {
         @OnOpen
         String open() {
             VirtualThreadsAssertions.assertEverything();
-            return Thread.currentThread().getName();
+            return Thread.currentThread().getName() + '-' + Thread.currentThread().getId();
         }
 
         @OnTextMessage
         String text(String ignored) {
             VirtualThreadsAssertions.assertEverything();
-            return Thread.currentThread().getName();
+            return Thread.currentThread().getName() + '-' + Thread.currentThread().getId();
         }
     }
 

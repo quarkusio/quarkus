@@ -16,6 +16,11 @@ Quarkus Security provides a CSRF prevention feature which implements https://che
 `Double Submit Cookie` technique requires that the CSRF token sent as `HTTPOnly`, optionally signed, cookie to the client, and
 directly embedded in a hidden form input of server-side rendered HTML forms, or submitted as a request header value.
 
+[NOTE]
+====
+If you are looking for stateless CSRF prevention that does not involve the server creating a cookie, have a look at the xref:security-cors.adoc#cors-filter[CORS filter]. Despite its name it also offers CSRF prevention by checking whether a request's `Origin` either matches the target `Host` or is in a list of allowed origins server-side.
+====
+
 The extension consists of a xref:rest.adoc[Quarkus REST (formerly RESTEasy Reactive)] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
 The CSRF prevention filter applies to requests using HTTP `POST`, `PUT`, `PATCH`, `DELETE` and other methods that can change the REST application state.

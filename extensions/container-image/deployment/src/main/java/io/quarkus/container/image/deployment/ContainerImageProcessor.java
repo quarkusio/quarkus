@@ -105,7 +105,7 @@ public class ContainerImageProcessor {
                     + group + "' and name '" + effectiveName + "' is invalid");
         }
 
-        String effectiveTag = containerImageConfig.tag();
+        String effectiveTag = containerImageConfig.tag().orElse(app.getVersion());
         if (effectiveTag.equals(UNSET_VALUE)) {
             effectiveTag = DEFAULT_TAG;
         }

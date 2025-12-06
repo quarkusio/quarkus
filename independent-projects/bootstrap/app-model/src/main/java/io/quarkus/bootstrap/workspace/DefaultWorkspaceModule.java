@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -187,6 +189,11 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         @Override
         public WorkspaceModule getParent() {
             return parent;
+        }
+
+        @JsonUnwrapped
+        private WorkspaceModule getSerializationDelegate() {
+            return DefaultWorkspaceModule.this;
         }
     }
 

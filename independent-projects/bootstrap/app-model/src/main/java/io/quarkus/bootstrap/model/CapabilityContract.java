@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class CapabilityContract implements ExtensionCapabilities, Serializable {
 
     private static final long serialVersionUID = -2817736967526011849L;
@@ -65,6 +67,7 @@ public class CapabilityContract implements ExtensionCapabilities, Serializable {
         this(extension, providesCapabilities, List.of());
     }
 
+    @JsonCreator
     public CapabilityContract(String extension, Collection<String> providesCapabilities,
             Collection<String> requiresCapabilities) {
         this.extension = Objects.requireNonNull(extension, "extension can't be null");

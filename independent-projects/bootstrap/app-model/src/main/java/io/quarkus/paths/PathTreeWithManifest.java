@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public abstract class PathTreeWithManifest implements PathTree {
 
     private static final String META_INF = "META-INF/";
@@ -38,6 +40,7 @@ public abstract class PathTreeWithManifest implements PathTree {
     }
 
     protected boolean manifestEnabled;
+    @JsonIgnore
     private final ReentrantReadWriteLock manifestInfoLock = new ReentrantReadWriteLock();
     private transient ManifestAttributes manifestAttributes;
     protected transient boolean manifestInitialized;

@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathTree;
 
@@ -28,6 +30,7 @@ public class DefaultSourceDir implements SourceDir, Serializable {
                 data);
     }
 
+    @JsonCreator
     public DefaultSourceDir(PathTree srcTree, PathTree outputTree, PathTree generatedSourcesTree, Map<Object, Object> data) {
         this.srcTree = srcTree;
         this.outputTree = outputTree;

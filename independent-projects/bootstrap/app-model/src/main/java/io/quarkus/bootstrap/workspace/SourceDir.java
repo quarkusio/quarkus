@@ -3,8 +3,16 @@ package io.quarkus.bootstrap.workspace;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import io.quarkus.paths.PathTree;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type", defaultImpl = Void.class)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = DefaultSourceDir.class, name = "default"),
+        @JsonSubTypes.Type(value = LazySourceDir.class, name = "lazy"),
+})
 public interface SourceDir {
 
     static SourceDir of(Path src, Path dest) {

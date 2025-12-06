@@ -4,9 +4,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 /**
  * JVM option
  */
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type", defaultImpl = Void.class)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = MutableStandardJvmOption.class, name = "standard"),
+        @JsonSubTypes.Type(value = MutableXxJvmOption.class, name = "xx"),
+})
 public interface JvmOption {
 
     /**

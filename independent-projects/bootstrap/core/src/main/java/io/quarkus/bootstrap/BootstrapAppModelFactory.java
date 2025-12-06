@@ -4,8 +4,6 @@ import static io.quarkus.bootstrap.util.BootstrapUtils.readAppModelWithWorkspace
 import static io.quarkus.bootstrap.util.BootstrapUtils.writeAppModelWithWorkspaceId;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -296,9 +294,9 @@ public class BootstrapAppModelFactory {
         if (serializedModel != null) {
             final Path p = Paths.get(serializedModel);
             if (Files.exists(p)) {
-                try (InputStream existing = Files.newInputStream(p)) {
-                    return new CurationResult((ApplicationModel) new ObjectInputStream(existing).readObject());
-                } catch (IOException | ClassNotFoundException e) {
+                try {
+                    return new CurationResult(BootstrapUtils.deserializeQuarkusModel(p));
+                } catch (AppModelResolverException e) {
                     log.error("Failed to load serialized app mode", e);
                 }
                 IoUtils.recursiveDelete(p);

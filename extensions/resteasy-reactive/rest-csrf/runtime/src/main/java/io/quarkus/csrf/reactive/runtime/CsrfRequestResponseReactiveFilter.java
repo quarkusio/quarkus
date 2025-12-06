@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.server.WithFormRead;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
+import io.quarkus.runtime.LaunchMode;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
@@ -71,8 +72,14 @@ public class CsrfRequestResponseReactiveFilter {
                 // HMAC SHA256 output is 32 bytes long
                 int expectedCookieTokenSize = config.tokenSignatureKey().isPresent() ? 32 : config.tokenSize();
                 if (cookieTokenSize != expectedCookieTokenSize) {
-                    LOG.debugf("Invalid CSRF token cookie size: expected %d, got %d", expectedCookieTokenSize,
-                            cookieTokenSize);
+                    if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                        LOG.infof(
+                                "Invalid CSRF token cookie size: expected %d, got %d. Make sure the browser cache is cleared.",
+                                expectedCookieTokenSize, cookieTokenSize);
+                    } else {
+                        LOG.debugf("Invalid CSRF token cookie size: expected %d, got %d", expectedCookieTokenSize,
+                                cookieTokenSize);
+                    }
                     requestContext.abortWith(badClientRequest());
                     return;
                 }

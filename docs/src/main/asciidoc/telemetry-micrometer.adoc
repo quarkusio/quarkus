@@ -867,56 +867,6 @@ Tag values should not use end-user data, since those could be high-cardinality.
 
 Many methods, like REST endpoint methods or Vert.x Routes, are counted and timed by the micrometer extension out of the box.
 
-== Support for the MicroProfile Metrics API
-
-If you use the MicroProfile Metrics API in your application,
-the Micrometer extension will create an adaptive layer to map those metrics into the Micrometer registry.
-Note that naming conventions between the two systems is different, so the metrics that are emitted when using MP Metrics with Micrometer will change.
-
-Use a `MeterFilter` to remap names or tags according to your conventions.
-
-[source,java]
-----
-@Produces
-@Singleton
-public MeterFilter renameApplicationMeters() {
-    final String targetMetric = MPResourceClass.class.getName() + ".mpAnnotatedMethodName";
-
-    return MeterFilter() {
-        @Override
-        public Meter.Id map(Meter.Id id) {
-            if (id.getName().equals(targetMetric)) {
-                // Drop the scope tag (MP Registry type: application, vendor, base)
-                List<Tag> tags = id.getTags().stream().filter(x -> !"scope".equals(x.getKey()))
-                        .collect(Collectors.toList());
-                // rename the metric
-                return id.withName("my.metric.name").replaceTags(tags);
-            }
-            return id;
-        }
-    };
-}
-----
-
-Ensure the following dependency is present if you require the MicroProfile Metrics API:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>org.eclipse.microprofile.metrics</groupId>
-    <artifactId>microprofile-metrics-api</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("org.eclipse.microprofile.metrics:microprofile-metrics-api")
-----
-
-NOTE: The MP Metrics API compatibility layer may be moved to a different extension in the future.
-
 [[management-interface]]
 == Management interface
 

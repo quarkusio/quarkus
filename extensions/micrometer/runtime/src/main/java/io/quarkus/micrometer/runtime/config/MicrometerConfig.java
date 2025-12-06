@@ -179,8 +179,6 @@ public interface MicrometerConfig {
 
         ReactiveMessagingConfigGroup messaging();
 
-        MPMetricsConfigGroup mpMetrics();
-
         VirtualThreadsConfigGroup virtualThreads();
 
         /**

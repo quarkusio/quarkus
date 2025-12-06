@@ -262,8 +262,6 @@ public class MongoClientProcessor {
         if (buildTimeConfig.metricsEnabled() && metricsCapability.isPresent()) {
             if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
                 return new MongoConnectionPoolListenerBuildItem(recorder.createMicrometerConnectionPoolListener());
-            } else {
-                return new MongoConnectionPoolListenerBuildItem(recorder.createMPMetricsConnectionPoolListener());
             }
         }
         return null;

@@ -29,6 +29,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
@@ -39,6 +40,8 @@ import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.boot.internal.MetadataImpl;
+import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -187,6 +190,9 @@ public class FastBootMetadataBuilder {
                 metamodelBuilder.getBootstrapContext());
 
         applyMetadataBuilderContributor();
+
+        applyTypeContributors();
+        applyFunctionContributors();
 
         // Unable to automatically handle:
         // AvailableSettings.ENHANCER_ENABLE_DIRTY_TRACKING,
@@ -661,6 +667,16 @@ public class FastBootMetadataBuilder {
         if (metadataBuilderContributor != null) {
             metadataBuilderContributor.contribute(metamodelBuilder);
         }
+    }
+
+    private void applyTypeContributors() {
+        PersistenceUnitUtil.extensionInstancesForPersistenceUnit(TypeContributor.class, persistenceUnit.getName())
+                .stream().forEach(metamodelBuilder::applyTypes);
+    }
+
+    private void applyFunctionContributors() {
+        PersistenceUnitUtil.extensionInstancesForPersistenceUnit(FunctionContributor.class, persistenceUnit.getName())
+                .stream().forEach(metamodelBuilder::applyFunctions);
     }
 
     @SuppressWarnings("unchecked")

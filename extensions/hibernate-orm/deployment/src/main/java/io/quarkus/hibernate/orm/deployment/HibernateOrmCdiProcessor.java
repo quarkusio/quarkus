@@ -92,7 +92,8 @@ public class HibernateOrmCdiProcessor {
             ClassNames.TENANT_CONNECTION_RESOLVER,
             ClassNames.INTERCEPTOR,
             ClassNames.STATEMENT_INSPECTOR,
-            ClassNames.FORMAT_MAPPER);
+            ClassNames.FORMAT_MAPPER,
+            ClassNames.FUNCTION_CONTRIBUTOR);
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(

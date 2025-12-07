@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FunctionContributorTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
+            .withApplicationRoot(jar -> jar
                     .addClass(MyEntity.class)
                     .addClass(CustomFunctionContributor.class));
 

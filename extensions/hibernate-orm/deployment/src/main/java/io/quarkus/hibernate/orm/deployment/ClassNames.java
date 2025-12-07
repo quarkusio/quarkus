@@ -72,7 +72,7 @@ public final class ClassNames {
     public static final DotName JSON_FORMAT = createConstant("io.quarkus.hibernate.orm.JsonFormat");
     public static final DotName XML_FORMAT = createConstant("io.quarkus.hibernate.orm.XmlFormat");
     public static final DotName FUNCTION_CONTRIBUTOR = createConstant("org.hibernate.boot.model.FunctionContributor");
-    public static final DotName
+    public static final DotName TYPE_CONTRIBUTOR = createConstant("org.hibernate.boot.model.TypeContributor");
 
     public static final List<DotName> GENERATORS = List.of(
             createConstant("org.hibernate.generator.Assigned"),

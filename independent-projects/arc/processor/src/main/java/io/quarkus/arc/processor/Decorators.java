@@ -14,6 +14,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -117,19 +118,36 @@ final class Decorators {
         }
 
         if (Modifier.isAbstract(decoratorClass.flags())) {
-            // TODO this check is not precise: we check that decorators do not declare _any_ abstract methods,
-            //  but the spec says that decorators may not declare abstract methods that do not belong
-            //  to a decorated type
-            //  also, we only check methods declared on the decorator class itself, not inherited methods
-            List<MethodInfo> abstractMethods = new ArrayList<>();
-            for (MethodInfo method : decoratorClass.methods()) {
-                if (Modifier.isAbstract(method.flags())) {
-                    abstractMethods.add(method);
+            // Check all abstract methods in the hierarchy; reject those not belonging to a decorated type
+            List<MethodInfo> invalidAbstractMethods = new ArrayList<>();
+            ClassInfo currentClass = decoratorClass;
+            IndexView index = beanDeployment.getBeanArchiveIndex();
+            Set<DotName> visitedClasses = new HashSet<>();
+            while (currentClass != null && !visitedClasses.contains(currentClass.name())) {
+                visitedClasses.add(currentClass.name());
+                for (MethodInfo method : currentClass.methods()) {
+                    if (Modifier.isAbstract(method.flags())) {
+                        boolean belongs = false;
+                        Set<DotName> visitedTypes = new HashSet<>();
+                        for (Type decoratedType : decoratedTypes) {
+                            if (methodExistsInHierarchy(method, decoratedType, index, visitedTypes)) {
+                                belongs = true;
+                                break;
+                            }
+                        }
+                        if (!belongs) {
+                            invalidAbstractMethods.add(method);
+                        }
+                    }
                 }
+                DotName superClass = currentClass.superName();
+                currentClass = superClass != null && !superClass.equals(DotNames.OBJECT)
+                        ? getClassByName(index, superClass)
+                        : null;
             }
-            if (!abstractMethods.isEmpty()) {
+            if (!invalidAbstractMethods.isEmpty()) {
                 throw new DefinitionException("An abstract decorator " + decoratorClass
-                        + " declares abstract methods: " + abstractMethods);
+                        + " declares abstract methods that do not belong to a decorated type: " + invalidAbstractMethods);
             }
         }
 
@@ -139,9 +157,51 @@ final class Decorators {
                 decoratedTypes, injections, priority);
     }
 
+    private static boolean methodExistsInHierarchy(MethodInfo method, Type type, IndexView index, Set<DotName> visited) {
+        DotName typeName = type.name();
+        if (visited.contains(typeName)) {
+            return false;
+        }
+        visited.add(typeName);
+
+        ClassInfo typeClass = index.getClassByName(typeName);
+        if (typeClass == null) {
+            return false;
+        }
+
+        // Check direct methods
+        for (MethodInfo typeMethod : typeClass.methods()) {
+            if (method.name().equals(typeMethod.name())
+                    && method.parametersCount() == typeMethod.parametersCount()
+                    && allParamsMatch(method, typeMethod)) {
+                return true;
+            }
+        }
+
+        // Recurse on superinterfaces
+        for (Type superInterface : typeClass.interfaceTypes()) {
+            if (methodExistsInHierarchy(method, superInterface, index, visited)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean allParamsMatch(MethodInfo m1, MethodInfo m2) {
+        for (int cont = 0; cont < m1.parametersCount(); cont++) {
+            if (!m1.parameterType(cont).name().equals(m2.parameterType(cont).name())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static void checkDecoratorFieldsAndMethods(ClassInfo decoratorClass, BeanDeployment beanDeployment) {
         ClassInfo aClass = decoratorClass;
-        while (aClass != null) {
+        Set<DotName> visited = new HashSet<>();
+        while (aClass != null && !visited.contains(aClass.name())) {
+            visited.add(aClass.name());
             for (MethodInfo method : aClass.methods()) {
                 if (beanDeployment.hasAnnotation(method, DotNames.PRODUCES)) {
                     throw new DefinitionException("Decorator declares a producer method: " + decoratorClass);

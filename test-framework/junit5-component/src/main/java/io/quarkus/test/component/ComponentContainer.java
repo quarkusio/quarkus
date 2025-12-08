@@ -59,6 +59,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
@@ -355,6 +356,19 @@ class ComponentContainer {
                         }
                         unsatisfiedInjectionPoints
                                 .add(new TypeAndQualifiers(Types.jandexType(param.getParameterizedType()), requiredQualifiers));
+                    }
+
+                    // We need to remove duplicate unsatisfied injection points
+                    // More specifically, injection points with the the same required type
+                    // and the same qualifiers (with non-binding members ignored)
+                    if (!unsatisfiedInjectionPoints.isEmpty()) {
+                        Map<DotName, Set<String>> qualifierToNonbindingMembers = findQualifierToNonbindingMembers(
+                                beanDeployment);
+                        if (!qualifierToNonbindingMembers.isEmpty()) {
+                            findDuplicateInjectionPoints(beanDeployment, unsatisfiedInjectionPoints,
+                                    qualifierToNonbindingMembers)
+                                    .forEach(unsatisfiedInjectionPoints::remove);
+                        }
                     }
 
                     for (TypeAndQualifiers unsatisfied : unsatisfiedInjectionPoints) {
@@ -880,6 +894,94 @@ class ComponentContainer {
     private static Set<Annotation> findBindings(Method method, Set<String> bindings) {
         return Arrays.stream(method.getAnnotations()).filter(a -> bindings.contains(a.annotationType().getName()))
                 .collect(Collectors.toSet());
+    }
+
+    private static Map<DotName, Set<String>> findQualifierToNonbindingMembers(BeanDeployment beanDeployment) {
+        Map<DotName, Set<String>> ret = new HashMap<>();
+        for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
+            Set<String> nonbinding = new HashSet<>();
+            for (MethodInfo m : qualifier.methods()) {
+                if (m.hasAnnotation(DotNames.NONBINDING)) {
+                    nonbinding.add(m.name());
+                }
+            }
+            nonbinding.addAll(beanDeployment.getQualifierNonbindingMembers(qualifier.name()));
+            if (!nonbinding.isEmpty()) {
+                ret.put(qualifier.name(), nonbinding);
+            }
+        }
+        return ret;
+    }
+
+    private static List<TypeAndQualifiers> findDuplicateInjectionPoints(BeanDeployment beanDeployment,
+            Set<TypeAndQualifiers> unsatisfiedInjectionPoints, Map<DotName, Set<String>> qualifierToNonbindingMembers) {
+        List<TypeAndQualifiers> ret = new ArrayList<>();
+
+        for (List<TypeAndQualifiers> groupByType : unsatisfiedInjectionPoints.stream()
+                .collect(Collectors.groupingBy(ip -> ip.type)).values()) {
+
+            if (groupByType.size() > 1) {
+                for (List<TypeAndQualifiers> groupByNumberOfQualifiers : groupByType.stream()
+                        .collect(Collectors.groupingBy(tq -> tq.qualifiers.size())).values()) {
+
+                    if (groupByNumberOfQualifiers.size() > 1) {
+                        for (Entry<Set<DotName>, List<TypeAndQualifiers>> e : groupByNumberOfQualifiers.stream()
+                                .collect(Collectors.groupingBy(tq -> {
+                                    return tq.qualifiers.stream().map(AnnotationInstance::name).collect(Collectors.toSet());
+                                })).entrySet()) {
+
+                            List<TypeAndQualifiers> byQualiferNames = e.getValue();
+                            if (byQualiferNames.size() > 1) {
+                                Set<DotName> qualifiers = e.getKey();
+                                boolean nonbinding = false;
+                                for (DotName q : qualifiers) {
+                                    if (qualifierToNonbindingMembers.containsKey(q)) {
+                                        nonbinding = true;
+                                        break;
+                                    }
+                                }
+                                if (nonbinding) {
+                                    // At least two unsatisfied injection points with
+                                    // - the same required type
+                                    // - the same qualifier annotations
+                                    // - where at least one qualifier has a @Nonbinding member
+                                    for (List<TypeAndQualifiers> maybeDuplicit : byQualiferNames.stream()
+                                            .collect(Collectors.groupingBy(
+                                                    tq -> new MatchingQualifiers(tq, qualifierToNonbindingMembers)))
+                                            .values()) {
+                                        if (maybeDuplicit.size() > 1) {
+                                            maybeDuplicit.subList(1, maybeDuplicit.size()).forEach(ret::add);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+
+    record MatchingQualifier(DotName name, Set<AnnotationValue> values) {
+
+        public MatchingQualifier(AnnotationInstance annotation, Map<DotName, Set<String>> qualifierToNonbindingMembers) {
+            this(annotation.name(),
+                    annotation.values().stream()
+                            .filter(v -> !qualifierToNonbindingMembers.get(annotation.name()).contains(v.name()))
+                            .collect(Collectors.toSet()));
+        }
+
+    }
+
+    record MatchingQualifiers(Set<MatchingQualifier> qualifiers) {
+
+        public MatchingQualifiers(TypeAndQualifiers typeAndQualifiers, Map<DotName, Set<String>> qualifierToNonbindingMembers) {
+            this(typeAndQualifiers.qualifiers.stream()
+                    .map(q -> new MatchingQualifier(q, qualifierToNonbindingMembers))
+                    .collect(Collectors.toSet()));
+        }
+
     }
 
     @SuppressWarnings("unchecked")

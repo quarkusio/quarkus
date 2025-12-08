@@ -1136,7 +1136,7 @@ public interface LogConfiguration {
          * Enable logging to a file.
          */
         @WithDefault("true")
-        boolean enable();
+        boolean enabled();
 
         /**
          * The log format.
@@ -1172,12 +1172,12 @@ public class LoggingProcessor {
 ----
 
 A configuration property name can be split into segments. For example, a property name like
-`quarkus.log.file.enable` can be split into the following segments:
+`quarkus.log.file.enabled` can be split into the following segments:
 
 * `quarkus` - a namespace claimed by Quarkus which is a prefix for `@ConfigMapping` interfaces,
 * `log` - a name segment which corresponds to the prefix set in the interface annotated with `@ConfigMapping`,
 * `file` - a name segment which corresponds to the `file` field in this class,
-* `enable` - a name segment which corresponds to `enable` field in `FileConfig`.
+* `enabled` - a name segment which corresponds to `enabled` field in `FileConfig`.
 
 <1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
 corresponds to a `quarkus.log` segment.
@@ -1189,7 +1189,7 @@ A corresponding `application.properties` for the above example could be:
 
 [source%nowrap,properties]
 ----
-quarkus.log.file.enable=true
+quarkus.log.file.enabled=true
 quarkus.log.file.level=DEBUG
 quarkus.log.file.path=/tmp/debug.log
 ----

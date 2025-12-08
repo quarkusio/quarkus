@@ -44,47 +44,42 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
     private final String secret;
     private final String field;
     private final EnvType type;
-    private final boolean oldStyle;
     private final String prefix;
 
-    public static KubernetesEnvBuildItem createFromField(String name, String targetField, String target,
-            boolean... oldStyle) {
-        return create(name, null, null, null, targetField, target, null, isOldStyle(oldStyle));
+    public static KubernetesEnvBuildItem createFromField(String name, String targetField, String target) {
+        return create(name, null, null, null, targetField, target, null);
     }
 
-    public static KubernetesEnvBuildItem createFromConfigMap(String configMapName, String target, String prefix,
-            boolean... oldStyle) {
-        return create(configMapName, null, null, configMapName, null, target, prefix, isOldStyle(oldStyle));
+    public static KubernetesEnvBuildItem createFromConfigMap(String configMapName, String target, String prefix) {
+        return create(configMapName, null, null, configMapName, null, target, prefix);
     }
 
-    public static KubernetesEnvBuildItem createFromSecret(String secretName, String target, String prefix,
-            boolean... oldStyle) {
-        return create(secretName, null, secretName, null, null, target, prefix, isOldStyle(oldStyle));
+    public static KubernetesEnvBuildItem createFromSecret(String secretName, String target, String prefix) {
+        return create(secretName, null, secretName, null, null, target, prefix);
     }
 
-    public static KubernetesEnvBuildItem createSimpleVar(String name, String value, String target,
-            boolean... oldStyle) {
-        return create(name, value, null, null, null, target, null, isOldStyle(oldStyle));
+    public static KubernetesEnvBuildItem createSimpleVar(String name, String value, String target) {
+        return create(name, value, null, null, null, target, null);
     }
 
     public static KubernetesEnvBuildItem createFromConfigMapKey(String varName, String key, String configmap, String target,
-            String prefix, boolean... oldStyle) {
-        return create(varName, key, null, configmap, null, target, prefix, isOldStyle(oldStyle));
+            String prefix) {
+        return create(varName, key, null, configmap, null, target, prefix);
     }
 
     @SuppressWarnings("unused")
     public static KubernetesEnvBuildItem createFromSecretKey(String varName, String key, String secret, String target,
-            String prefix, boolean... oldStyle) {
-        return create(varName, key, secret, null, null, target, prefix, isOldStyle(oldStyle));
+            String prefix) {
+        return create(varName, key, secret, null, null, target, prefix);
     }
 
     public static KubernetesEnvBuildItem createFromResourceKey(String varName, String key, String secret,
-            String configmap, String target, boolean... oldStyle) {
-        return create(varName, key, secret, configmap, null, target, null, isOldStyle(oldStyle));
+            String configmap, String target) {
+        return create(varName, key, secret, configmap, null, target, null);
     }
 
     public static KubernetesEnvBuildItem create(String name, String value, String secret, String configmap, String field,
-            String target, String prefix, boolean... oldStyle) throws IllegalArgumentException {
+            String target, String prefix) throws IllegalArgumentException {
         final boolean secretPresent = secret != null;
         final boolean configmapPresent = configmap != null;
         final boolean valuePresent = value != null;
@@ -129,15 +124,11 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         } else {
             type = EnvType.var;
         }
-        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix, isOldStyle(oldStyle));
-    }
-
-    private static boolean isOldStyle(boolean[] oldStyle) {
-        return oldStyle.length >= 1 && oldStyle[0];
+        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix);
     }
 
     KubernetesEnvBuildItem(String name, String value, String configmap, String secret, String field, EnvType type,
-            String target, String prefix, boolean oldStyle) {
+            String target, String prefix) {
         super(target);
         this.name = name;
         this.value = value;
@@ -146,7 +137,6 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         this.field = field;
         this.type = type;
         this.prefix = prefix;
-        this.oldStyle = oldStyle;
     }
 
     public String getConfigMap() {
@@ -159,10 +149,6 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
 
     public String getField() {
         return field;
-    }
-
-    public boolean isOldStyle() {
-        return oldStyle;
     }
 
     public String getName() {
@@ -184,7 +170,7 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
     @SuppressWarnings("unused")
     public KubernetesEnvBuildItem newWithTarget(String newTarget) {
         return new KubernetesEnvBuildItem(this.name, this.value, this.configmap, this.secret, this.field, this.type, newTarget,
-                this.prefix, this.oldStyle);
+                this.prefix);
     }
 
     public String toString() {

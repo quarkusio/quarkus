@@ -6,7 +6,6 @@ import static io.quarkus.kubernetes.deployment.EnvConverter.extractSecretPrefix;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
@@ -20,12 +19,6 @@ public interface EnvVarHolder {
     EnvVarsConfig env();
 
     /**
-     * @deprecated use {@link #env()} instead
-     */
-    @Deprecated
-    Map<String, EnvConfig> envVars();
-
-    /**
      * Specifies which the name of the platform this EnvVarHolder targets. This name, when needed, is used by dekorate
      * to generate the descriptor associated with the targeted deployment platform.
      *
@@ -36,22 +29,15 @@ public interface EnvVarHolder {
     }
 
     /**
-     * Converts the environment variable configuration held by this EnvVarHolder (as returned by {@link #env()} and
-     * {@link #envVars()}) into a collection of associated {@link KubernetesEnvBuildItem}.
+     * Converts the environment variable configuration held by this EnvVarHolder (as returned by {@link #env()}) into a
+     * collection of associated {@link KubernetesEnvBuildItem}.
      *
      * @return a collection of {@link KubernetesEnvBuildItem} corresponding to the environment variable configurations
      */
     default Collection<KubernetesEnvBuildItem> convertToBuildItems() {
         EnvVarValidator validator = new EnvVarValidator();
 
-        // first process old-style configuration, this relies on each configuration having a name
-        String target = targetPlatformName();
-        envVars().forEach((key, envConfig) -> {
-            validator.process(key, envConfig.value(), envConfig.secret(), envConfig.configmap(), envConfig.field(), target,
-                    Optional.empty(), true);
-        });
-
-        // override old-style with newer versions if present
+        final String target = targetPlatformName();
         final EnvVarsConfig c = env();
         Map<String, EnvVarPrefixConfig> prefixMap = collectPrefixes(c);
 

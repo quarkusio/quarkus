@@ -7,15 +7,17 @@ public class FormParamExtractor implements ParameterExtractor {
     private final String name;
     private final boolean single;
     private final boolean encoded;
+    private final boolean allowEmpty;
 
-    public FormParamExtractor(String name, boolean single, boolean encoded) {
+    public FormParamExtractor(String name, boolean single, boolean encoded, boolean allowEmpty) {
         this.name = name;
         this.single = single;
         this.encoded = encoded;
+        this.allowEmpty = allowEmpty;
     }
 
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        return context.getFormParameter(name, single, encoded);
+        return context.getFormParameter(name, single, encoded, allowEmpty);
     }
 }

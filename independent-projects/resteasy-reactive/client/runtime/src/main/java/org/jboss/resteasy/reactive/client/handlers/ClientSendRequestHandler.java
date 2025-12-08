@@ -65,6 +65,7 @@ import io.vertx.core.http.HttpClosedException;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
+import io.vertx.core.http.impl.HttpClientRequestInternal;
 import io.vertx.core.streams.Pipe;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
@@ -104,6 +105,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 if (requestContext.isUserCanceled()) {
                     // in this case the user aborted before the request was even created
                     return;
+                }
+
+                Object metric = ((HttpClientRequestInternal) httpClientRequest).metric();
+                if (metric != null) {
+                    // TODO we need to introduce a handler here as we don't know the type at this point
                 }
 
                 requestContext.setHttpClientRequest(httpClientRequest);

@@ -119,17 +119,19 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             }
 
             @Override
-            public RequestTracker requestBegin(String uri, HttpRequest request) {
-                RequestTracker handler = new RequestTracker(tags, remote, request);
-                String path = handler.getNormalizedUriPath(
-                        config.getServerMatchPatterns(),
-                        config.getServerIgnorePatterns());
-                if (path != null) {
-                    pending.increment();
-                    handler.timer = new EventTiming(null);
-                    return handler;
-                }
-                return null;
+            public RequestTracker init() {
+                return new RequestTracker();
+            }
+
+            @Override
+            public void requestBegin(RequestTracker requestMetric, String uri, HttpRequest request) {
+                // TODO determine if we should continue based on the metadata
+                requestMetric.tags = tags.and(
+                        Tag.of("address", remote),
+                        HttpCommonTags.method(request.method().name()),
+                        HttpCommonTags.uri(request.uri(), null, -1, false));
+
+                requestMetric.request = request;
             }
 
             @Override
@@ -164,6 +166,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                 if (tracker == null) {
                     return;
                 }
+                // TODO determine if we should continue based on the metadata
                 if (tracker.responseEnded()) {
                     pending.decrement();
                 }
@@ -219,13 +222,17 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     }
 
     public static class RequestTracker extends RequestMetricInfo {
-        private final Tags tags;
-        private final HttpRequest request;
+        Tags tags;
+        HttpRequest request;
         private EventTiming timer;
         HttpResponse response;
         private boolean responseEnded;
         private boolean requestEnded;
         private boolean reset;
+        Map<String, Object> metadata = new ConcurrentHashMap<>();
+
+        public RequestTracker() {
+        }
 
         RequestTracker(Tags origin, String address, HttpRequest request) {
             this.request = request;

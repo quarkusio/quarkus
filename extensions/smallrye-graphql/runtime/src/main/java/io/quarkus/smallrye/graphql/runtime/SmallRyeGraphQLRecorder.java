@@ -70,9 +70,11 @@ public class SmallRyeGraphQLRecorder {
         }
     }
 
-    public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet,
-            boolean allowPostWithQueryParameters, boolean runBlocking, boolean allowCompression) {
+    public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean runBlocking,
+            boolean allowCompression) {
         if (initialized.getValue()) {
+            boolean allowGet = runtimeConfig.getValue().httpGetEnabled();
+            boolean allowPostWithQueryParameters = runtimeConfig.getValue().httpPostQueryParametersEnabled();
             Handler<RoutingContext> handler = new SmallRyeGraphQLExecutionHandler(allowGet,
                     allowPostWithQueryParameters, runBlocking,
                     getCurrentIdentityAssociation(),

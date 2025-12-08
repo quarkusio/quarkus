@@ -5,9 +5,9 @@ import java.nio.file.Path;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Build item that allows us to supply a custom output dir instead of defaulting to {project.target.dir}/kubernetes
- * It's different from the {@link KubernetesOutputDirBuildItem} as it's used to communicate the intention to override the dir
- * while {@link KubernetesOutputDirBuildItem} is used to communicate the effective output dir.
+ * Build item that allows us to supply a custom output dir instead of defaulting to {@code {project.target.dir}/kubernetes}. It
+ * differs from {@link KubernetesOutputDirectoryBuildItem} in that it communicates intent to override the output directory while
+ * {@link KubernetesOutputDirectoryBuildItem} communicates the effective output directory.
  */
 public final class CustomKubernetesOutputDirBuildItem extends SimpleBuildItem {
 

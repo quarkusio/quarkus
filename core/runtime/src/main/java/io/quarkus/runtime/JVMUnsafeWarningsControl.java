@@ -3,10 +3,7 @@ package io.quarkus.runtime;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import io.quarkus.runtime.annotations.Recorder;
-
-@Recorder
-public class JVMChecksRecorder {
+public final class JVMUnsafeWarningsControl {
 
     /**
      * This is a horrible hack to disable the Unsafe-related warnings that are printed on startup:
@@ -14,7 +11,9 @@ public class JVMChecksRecorder {
      * users with it.
      */
     public static void disableUnsafeRelatedWarnings() {
-        if (Runtime.version().feature() < 24) {
+        //No need for this in native image
+        //No need for this in JVMs earlier than 24
+        if (ImageMode.current().isNativeImage() || Runtime.version().feature() < 24) {
             return;
         }
         try {

@@ -57,6 +57,7 @@ import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.ErrorPageAction;
+import io.quarkus.runtime.JVMChecksRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.QuarkusBindException;
@@ -130,6 +131,14 @@ import io.vertx.ext.web.handler.CorsHandler;
 
 @Recorder
 public class VertxHttpRecorder {
+
+    //Unfortunately this needs to be triggered in a static block on the very top of this class,
+    //as several static class initializers triggered by this class might cause the warning to be logged
+    //as a side-effect of initializing Netty classes; even a simple AsciiString constant initialization
+    //triggers it.
+    static {
+        JVMChecksRecorder.disableUnsafeRelatedWarnings();
+    }
 
     /**
      * The key that the request start time is stored under

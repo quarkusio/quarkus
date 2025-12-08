@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -131,5 +132,10 @@ public class AppArtifact extends AppArtifactCoords implements ResolvedDependency
     @Override
     public Collection<ArtifactCoords> getDependencies() {
         return List.of();
+    }
+
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        throw new UnsupportedOperationException();
     }
 }

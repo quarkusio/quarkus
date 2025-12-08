@@ -8,6 +8,14 @@ public interface WorkspaceModuleId {
         return new GAV(groupId, artifactId, version);
     }
 
+    static WorkspaceModuleId fromString(String str) {
+        final String[] arr = str.split(":");
+        if (arr.length != 3) {
+            throw new IllegalArgumentException("Invalid workspace module ID string: " + str);
+        }
+        return of(arr[0], arr[1], arr[2]);
+    }
+
     String getGroupId();
 
     String getArtifactId();

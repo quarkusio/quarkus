@@ -3,7 +3,12 @@ package io.quarkus.maven.dependency;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.Mappable;
+import io.quarkus.bootstrap.model.MappableCollectionFactory;
 
 public class ArtifactDependency extends GACTV implements Dependency, Serializable {
 
@@ -12,6 +17,15 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
     @Deprecated(forRemoval = true)
     public static Dependency of(String groupId, String artifactId, String version) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, version);
+    }
+
+    static void putInMap(Dependency dependency, Map<String, Object> map, MappableCollectionFactory factory) {
+        map.put(BootstrapConstants.MAPPABLE_MAVEN_ARTIFACT, dependency.toGACTVString());
+        map.put(BootstrapConstants.MAPPABLE_SCOPE, dependency.getScope());
+        map.put(BootstrapConstants.MAPPABLE_FLAGS, dependency.getFlags());
+        if (!dependency.getExclusions().isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_EXCLUSIONS, Mappable.toStringCollection(dependency.getExclusions(), factory));
+        }
     }
 
     private final String scope;
@@ -76,6 +90,13 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
     @Override
     public Collection<ArtifactKey> getExclusions() {
         return exclusions;
+    }
+
+    @Override
+    public Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap(4);
+        putInMap(this, map, factory);
+        return map;
     }
 
     @Override

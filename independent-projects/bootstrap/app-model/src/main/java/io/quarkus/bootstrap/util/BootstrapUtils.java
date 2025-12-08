@@ -49,18 +49,30 @@ public class BootstrapUtils {
         return keys;
     }
 
+    /**
+     * @deprecated for removal since 3.31.0 in favor of ApplicationModelSerializer methods
+     */
+    @Deprecated(forRemoval = true)
     public static void exportModel(ApplicationModel model, boolean test) throws AppModelResolverException, IOException {
         Path serializedModel = serializeAppModel(model, test);
         System.setProperty(test ? BootstrapConstants.SERIALIZED_TEST_APP_MODEL : BootstrapConstants.SERIALIZED_APP_MODEL,
                 serializedModel.toString());
     }
 
+    /**
+     * @deprecated for removal since 3.31.0 in favor of ApplicationModelSerializer methods
+     */
+    @Deprecated(forRemoval = true)
     public static Path serializeAppModel(ApplicationModel model, boolean test) throws AppModelResolverException, IOException {
         final Path serializedModel = File.createTempFile("quarkus-" + (test ? "test-" : "") + "app-model", ".dat").toPath();
         serializeAppModel(model, serializedModel);
         return serializedModel;
     }
 
+    /**
+     * @deprecated for removal since 3.31.0 in favor of ApplicationModelSerializer methods
+     */
+    @Deprecated(forRemoval = true)
     public static void serializeAppModel(ApplicationModel model, final Path serializedModel)
             throws IOException {
         Files.createDirectories(serializedModel.getParent());
@@ -69,12 +81,20 @@ public class BootstrapUtils {
         }
     }
 
+    /**
+     * @deprecated for removal since 3.31.0 in favor of ApplicationModelSerializer methods
+     */
+    @Deprecated(forRemoval = true)
     public static Path serializeQuarkusModel(ApplicationModel model) throws IOException {
         final Path serializedModel = File.createTempFile("quarkus-model", ".dat").toPath();
         serializeAppModel(model, serializedModel);
         return serializedModel;
     }
 
+    /**
+     * @deprecated for removal since 3.31.0 in favor of ApplicationModelSerializer methods
+     */
+    @Deprecated(forRemoval = true)
     public static ApplicationModel deserializeQuarkusModel(Path modelPath) throws AppModelResolverException {
         if (Files.exists(modelPath)) {
             try (InputStream existing = Files.newInputStream(modelPath);
@@ -114,15 +134,18 @@ public class BootstrapUtils {
     }
 
     /**
-     * Serializes an {@link ApplicationModel} along with the workspace ID for which it was resolved.
-     * The serialization format will be different from the one used by {@link #resolveSerializedAppModelPath(Path)}
-     * and {@link #getSerializedTestAppModelPath(Path)}.
+     * @deprecated since 3.31.0 in favor of ApplicationModelSerializer methods
+     *             <p>
+     *             Serializes an {@link ApplicationModel} along with the workspace ID for which it was resolved.
+     *             The serialization format will be different from the one used by {@link #resolveSerializedAppModelPath(Path)}
+     *             and {@link #getSerializedTestAppModelPath(Path)}.
      *
      * @param appModel application model to serialize
      * @param workspaceId workspace ID
      * @param file target file
      * @throws IOException in case of an IO failure
      */
+    @Deprecated(forRemoval = true)
     public static void writeAppModelWithWorkspaceId(ApplicationModel appModel, int workspaceId, Path file) throws IOException {
         Files.createDirectories(file.getParent());
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(file))) {
@@ -134,16 +157,18 @@ public class BootstrapUtils {
     }
 
     /**
-     * Deserializes an {@link ApplicationModel} from a file.
-     * <p>
-     * The implementation will check whether the serialization format of the file matches the expected one.
-     * If it does not, the method will return null even if the file exists.
-     * <p>
-     * The implementation will compare the deserialized workspace ID to the argument {@code workspaceId}
-     * and if they don't match the method will return null.
-     * <p>
-     * Once the {@link ApplicationModel} was deserialized, the dependency paths will be checked for existence.
-     * If a dependency path does not exist, the method will throw an exception.
+     * @deprecated since 3.31.0 in favor of ApplicationModelSerializer methods
+     *             <p>
+     *             Deserializes an {@link ApplicationModel} from a file.
+     *             <p>
+     *             The implementation will check whether the serialization format of the file matches the expected one.
+     *             If it does not, the method will return null even if the file exists.
+     *             <p>
+     *             The implementation will compare the deserialized workspace ID to the argument {@code workspaceId}
+     *             and if they don't match the method will return null.
+     *             <p>
+     *             Once the {@link ApplicationModel} was deserialized, the dependency paths will be checked for existence.
+     *             If a dependency path does not exist, the method will throw an exception.
      *
      * @param file serialized application model file
      * @param workspaceId expected workspace ID
@@ -151,6 +176,7 @@ public class BootstrapUtils {
      * @throws ClassNotFoundException in case a required class could not be loaded
      * @throws IOException in case of an IO failure
      */
+    @Deprecated(forRemoval = true)
     public static ApplicationModel readAppModelWithWorkspaceId(Path file, int workspaceId)
             throws ClassNotFoundException, IOException {
         try (ObjectInputStream reader = new ObjectInputStream(Files.newInputStream(file))) {

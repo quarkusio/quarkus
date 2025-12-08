@@ -56,6 +56,27 @@ public class JvmOptionsBuilder {
         return this;
     }
 
+    JvmOptionsBuilder addAllToGroup(String optionGroupPrefix, String optionName, Collection<String> values) {
+        if (options.isEmpty()) {
+            options = new HashMap<>();
+        }
+        var option = options.computeIfAbsent(optionName, n -> {
+            switch (optionGroupPrefix) {
+                case MutableStandardJvmOption.PROPERTY_GROUP_PREFIX:
+                    return MutableStandardJvmOption.newInstance(optionName);
+                case MutableXxJvmOption.PROPERTY_GROUP_PREFIX:
+                    return MutableXxJvmOption.newInstance(optionName);
+            }
+            throw new IllegalArgumentException("Unrecognized JVM option group prefix " + optionGroupPrefix);
+        });
+        for (String value : values) {
+            if (!value.isBlank()) {
+                option.addValue(value);
+            }
+        }
+        return this;
+    }
+
     /**
      * Adds a standard option without a value.
      *

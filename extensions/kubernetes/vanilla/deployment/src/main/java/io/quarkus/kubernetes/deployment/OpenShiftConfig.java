@@ -63,14 +63,6 @@ public interface OpenShiftConfig extends PlatformConfiguration {
     OptionalInt nodePort();
 
     /**
-     * Sidecar containers
-     *
-     * @deprecated Use the {@code sidecars} property instead
-     */
-    @Deprecated
-    Map<String, ContainerConfig> containers();
-
-    /**
      * OpenShift route configuration
      */
     RouteConfig route();
@@ -146,18 +138,5 @@ public interface OpenShiftConfig extends PlatformConfiguration {
             return DeploymentResourceKind.Job;
         }
         return (flavor() == OpenshiftFlavor.v3) ? DeploymentResourceKind.DeploymentConfig : DeploymentResourceKind.Deployment;
-    }
-
-    @Deprecated
-    default Map<String, ContainerConfig> getSidecars() {
-        if (!containerName().isEmpty() && !sidecars().isEmpty()) {
-            // done in order to make migration to the new property straight-forward
-            throw new IllegalStateException(
-                    "'quarkus.openshift.sidecars' and 'quarkus.openshift.containers' cannot be used together. Please use the former as the latter has been deprecated");
-        }
-        if (!containers().isEmpty()) {
-            return containers();
-        }
-        return sidecars();
     }
 }

@@ -247,9 +247,4 @@ public interface PlatformConfiguration extends EnvVarHolder {
      * VCS URI annotation configuration.
      */
     VCSUriConfig vcsUri();
-
-    @Deprecated
-    default Map<String, ContainerConfig> getSidecars() {
-        return sidecars();
-    }
 }

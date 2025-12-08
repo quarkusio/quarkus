@@ -18,7 +18,6 @@ import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -473,13 +472,11 @@ public class SmallRyeGraphQLProcessor {
         });
 
         // Queries and Mutations
-        boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
-        boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
         boolean allowCompression = httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes()
                 .map(mediaTypes -> mediaTypes.contains(GRAPHQL_MEDIA_TYPE))
                 .orElse(false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
-                allowGet, allowQueryParametersOnPost, runBlocking, allowCompression);
+                runBlocking, allowCompression);
 
         HttpRootPathBuildItem.Builder requestBuilder = httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath(), recorder.routeFunction(bodyHandlerBuildItem.getHandler()))
@@ -523,10 +520,6 @@ public class SmallRyeGraphQLProcessor {
             return !graphQLConfig.nonBlockingEnabled().get();
         }
         return false;
-    }
-
-    private boolean getBooleanConfigValue(String smallryeKey, boolean defaultValue) {
-        return ConfigProvider.getConfig().getOptionalValue(smallryeKey, boolean.class).orElse(defaultValue);
     }
 
     private String[] getSchemaJavaClasses(Schema schema) {

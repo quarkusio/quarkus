@@ -83,13 +83,15 @@ public interface SmallRyeGraphQLRuntimeConfig {
      * Enable GET Requests. Allow queries via HTTP GET.
      */
     @WithName("http.get.enabled")
-    Optional<Boolean> httpGetEnabled();
+    @WithDefault("false")
+    boolean httpGetEnabled();
 
     /**
      * Enable Query parameter on POST Requests. Allow POST request to override or supply values in a query parameter.
      */
     @WithName("http.post.queryparameters.enabled")
-    Optional<Boolean> httpPostQueryParametersEnabled();
+    @WithDefault("false")
+    boolean httpPostQueryParametersEnabled();
 
     /**
      * Include the Scalar definitions in the schema.

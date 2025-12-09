@@ -1,3 +1,4 @@
+
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,6 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.fabric8.kubernetes.api.model.EnvFromSource;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -57,6 +59,24 @@ public class MinikubeWithApplicationPropertiesTest {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
+                                assertThat(container.getEnv())
+                                        .filteredOn(env -> "FROMFIELD".equals(env.getName()))
+                                        .singleElement().satisfies(
+                                                env -> assertThat(env.getValueFrom().getFieldRef().getFieldPath())
+                                                        .isEqualTo("metadata.name"));
+                                assertThat(container.getEnv())
+                                        .filteredOn(env -> "ENVVAR".equals(env.getName()))
+                                        .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("value"));
+                                final List<EnvFromSource> envFrom = container.getEnvFrom();
+                                assertThat(envFrom).hasSize(2);
+                                assertThat(envFrom)
+                                        .filteredOn(e -> e.getSecretRef() != null)
+                                        .singleElement().satisfies(
+                                                e -> assertThat(e.getSecretRef().getName()).isEqualTo("secretName"));
+                                assertThat(envFrom)
+                                        .filteredOn(e -> e.getConfigMapRef() != null)
+                                        .singleElement().satisfies(
+                                                e -> assertThat(e.getConfigMapRef().getName()).isEqualTo("configName"));
                             });
                         });
                     });

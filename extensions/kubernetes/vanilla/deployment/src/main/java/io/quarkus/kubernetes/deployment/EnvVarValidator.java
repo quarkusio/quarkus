@@ -17,17 +17,6 @@ public class EnvVarValidator {
     private final Map<String, Set<KubernetesEnvBuildItem>> conflicting = new HashMap<>();
     private final Set<String> errors = new HashSet<>();
 
-    void process(String name, Optional<String> value, Optional<String> secret, Optional<String> configmap,
-            Optional<String> field, String target, Optional<String> prefix, boolean... oldStyle) {
-        try {
-            final KubernetesEnvBuildItem kebi = KubernetesEnvBuildItem.create(name, value.orElse(null),
-                    secret.orElse(null), configmap.orElse(null), field.orElse(null), target, prefix.orElse(null), oldStyle);
-            process(kebi);
-        } catch (IllegalArgumentException e) {
-            errors.add(e.getMessage());
-        }
-    }
-
     /**
      * Processes the specified {@link KubernetesEnvBuildItem} to check whether it's valid with respect to the set of already
      * known configuration, accumulating errors or outputting warnings if needed.
@@ -43,39 +32,27 @@ public class EnvVarValidator {
             // as the item might not get added, reset the wrapper's state
             wrapper.setShouldAdd(false);
             // then go through already added items to check if the item needs to be added, warning logged or error added
-            items.values().stream().filter(kebi -> name.equals(kebi.getName())).forEach(existing -> {
-                final KubernetesEnvBuildItem.EnvType existingType = existing.getType();
-                // if the type doesn't allow multiple definitions, we need to check if we're adding a "compatible" env var
-                if (!existingType.allowMultipleDefinitions) {
-                    // check if we have a conflict and thus an error
-                    if (existingType.mightConflictWith(type)) {
-                        // but we first need to check if we're not simply replacing an old style definition by a new one
-                        final boolean currentIsNew = existing.isOldStyle() && !item.isOldStyle();
-                        final boolean existingIsNew = item.isOldStyle() && !existing.isOldStyle();
-                        if ((currentIsNew || existingIsNew) && existingType.equals(type)) {
-                            // only keep definition using new style and output warning
-                            log.warn("Duplicate definition of '" + name
-                                    + "' environment variable. ONLY the quarkus.kubernetes.env prefixed version will be kept: "
-                                    + (currentIsNew ? item : existing));
-                            if (currentIsNew) {
-                                // replace existing, old-style value by current, new-style one
+            items.values().stream()
+                    .filter(kebi -> name.equals(kebi.getName()))
+                    .forEach(existing -> {
+                        final KubernetesEnvBuildItem.EnvType existingType = existing.getType();
+                        // if the type doesn't allow multiple definitions, we need to check if we're adding a "compatible" env var
+                        if (!existingType.allowMultipleDefinitions) {
+                            // check if we have a conflict and thus an error
+                            if (existingType.mightConflictWith(type)) {
+                                addError(item, existing);
+                            } else {
+                                // we're not dealing with a potentially conflicting var so add the new item
                                 wrapper.setShouldAdd(true);
                             }
                         } else {
-                            addError(item, existing);
-                        }
-                    } else {
-                        // we're not dealing with a potentially conflicting var so add the new item
-                        wrapper.setShouldAdd(true);
-                    }
-                } else {
-                    if (existingType.mightConflictWith(type)) {
-                        log.warn("Ignoring duplicate definition of " + item);
-                    }
-                    wrapper.setShouldAdd(true);
+                            if (existingType.mightConflictWith(type)) {
+                                log.warn("Ignoring duplicate definition of " + item);
+                            }
+                            wrapper.setShouldAdd(true);
 
-                }
-            });
+                        }
+                    });
         }
         if (wrapper.shouldAdd()) {
             items.put(ItemKey.keyFor(item), item);

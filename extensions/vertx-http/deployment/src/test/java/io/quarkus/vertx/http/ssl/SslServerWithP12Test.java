@@ -24,7 +24,7 @@ import io.vertx.ext.web.Router;
         Format.JKS, Format.PKCS12, Format.PEM }))
 public class SslServerWithP12Test {
 
-    @TestHTTPResource(value = "/ssl", ssl = true)
+    @TestHTTPResource(value = "/ssl", tls = true)
     URL url;
 
     @RegisterExtension

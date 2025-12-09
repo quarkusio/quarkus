@@ -47,7 +47,7 @@ import io.vertx.ext.web.Router;
 @DisabledOnOs(OS.WINDOWS)
 public class MainHttpServerTlsPKCS12CertificateReloadWithTlsRegistryAndUpdateEventTest {
 
-    @TestHTTPResource(value = "/hello", ssl = true)
+    @TestHTTPResource(value = "/hello", tls = true)
     URL url;
 
     public static final File temp = new File("target/test-certificates-" + UUID.randomUUID());

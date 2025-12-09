@@ -22,7 +22,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @TestProfile(ServerWithTLS13Only.class)
 public class TlsProtocolVersionSelectionTestCase {
 
-    @TestHTTPResource(value = "/hello", ssl = true)
+    @TestHTTPResource(value = "/hello", tls = true)
     String url;
 
     @Inject

@@ -24,10 +24,10 @@ import io.restassured.RestAssured;
 
 public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
 
-    @TestHTTPResource(value = "/mtls", ssl = true)
+    @TestHTTPResource(value = "/mtls", tls = true)
     URL mtlsUrl;
 
-    @TestHTTPResource(value = "/basic", ssl = true)
+    @TestHTTPResource(value = "/basic", tls = true)
     URL basicUrl;
 
     @RegisterExtension

@@ -36,6 +36,7 @@ import io.quarkus.agroal.runtime.JdbcDriver;
 import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
+import io.quarkus.agroal.spi.JdbcPropertyBuildItem;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
@@ -256,7 +257,8 @@ class AgroalProcessor {
             Capabilities capabilities,
             Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            BuildProducer<JdbcDataSourceBuildItem> jdbcDataSource) {
+            BuildProducer<JdbcDataSourceBuildItem> jdbcDataSource,
+            List<JdbcPropertyBuildItem> jdbcPropertyBuildItems) {
         if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
             // No datasource has been configured so bail out
             return;
@@ -265,6 +267,11 @@ class AgroalProcessor {
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
 
             String dataSourceName = aggregatedBuildTimeConfigBuildItem.getName();
+
+            // Filter the JDBC properties for the current datasource
+            Map<String, String> jdbcProperties = jdbcPropertyBuildItems.stream()
+                    .filter(p -> dataSourceName.equals(p.dataSourceName()))
+                    .collect(Collectors.toMap(JdbcPropertyBuildItem::propertyName, JdbcPropertyBuildItem::propertyValue));
 
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(AgroalDataSource.class)
@@ -277,7 +284,8 @@ class AgroalProcessor {
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
                     .startup()
                     .checkActive(recorder.agroalDataSourceCheckActiveSupplier(dataSourceName))
-                    .createWith(recorder.agroalDataSourceSupplier(dataSourceName, isOtelSdkEnabled(openTelemetrySdkBuildItem)))
+                    .createWith(recorder.agroalDataSourceSupplier(dataSourceName, isOtelSdkEnabled(openTelemetrySdkBuildItem),
+                            jdbcProperties))
                     .destroyer(BeanDestroyer.AutoCloseableDestroyer.class);
 
             if (!DataSourceUtil.isDefault(dataSourceName)) {

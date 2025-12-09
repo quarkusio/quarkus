@@ -39,8 +39,7 @@ public class PersistenceUnitUtil {
     public static <T> InjectableInstance<T> singleExtensionInstanceForPersistenceUnit(
             Class<T> beanType,
             String persistenceUnitName,
-            Annotation... additionalQualifiers
-    ) {
+            Annotation... additionalQualifiers) {
         InjectableInstance<T> instance = extensionInstancesForPersistenceUnit(beanType, persistenceUnitName,
                 additionalQualifiers);
         if (instance.isAmbiguous()) {
@@ -57,8 +56,7 @@ public class PersistenceUnitUtil {
     public static <T> InjectableInstance<T> extensionInstancesForPersistenceUnit(
             Class<T> beanType,
             String persistenceUnitName,
-            Annotation... additionalQualifiers
-    ) {
+            Annotation... additionalQualifiers) {
         if (additionalQualifiers.length == 0) {
             return Arc.container().select(beanType, new PersistenceUnitExtension.Literal(persistenceUnitName));
         } else {

@@ -1,5 +1,7 @@
 package io.quarkus.agroal.deployment;
 
+import java.util.Map;
+
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -17,15 +19,19 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     private final String resolvedDriverClass;
 
+    private final Map<String, String> jdbcDriverProperties;
+
     AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceJdbcBuildTimeConfig jdbcConfig,
             String dbKind,
-            String resolvedDriverClass) {
+            String resolvedDriverClass,
+            Map<String, String> jdbcDriverProperties) {
         this.name = name;
         this.dataSourceConfig = dataSourceConfig;
         this.jdbcConfig = jdbcConfig;
         this.dbKind = dbKind;
         this.resolvedDriverClass = resolvedDriverClass;
+        this.jdbcDriverProperties = jdbcDriverProperties;
     }
 
     public String getName() {
@@ -50,5 +56,9 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     public String getResolvedDriverClass() {
         return resolvedDriverClass;
+    }
+
+    public Map<String, String> getJdbcDriverProperties() {
+        return jdbcDriverProperties;
     }
 }

@@ -1,5 +1,8 @@
 package io.quarkus.agroal.spi;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -18,16 +21,23 @@ public final class JdbcDriverBuildItem extends MultiBuildItem {
 
     private final Optional<String> xaDriverClass;
 
+    private final Map<String, String> properties = new HashMap<>();
+
+    public JdbcDriverBuildItem(String dbKind, String driverClass) {
+        this(dbKind, driverClass, null, Collections.emptyMap());
+    }
+
     public JdbcDriverBuildItem(String dbKind, String driverClass, String xaDriverClass) {
+        this(dbKind, driverClass, xaDriverClass, Collections.emptyMap());
+    }
+
+    public JdbcDriverBuildItem(String dbKind, String driverClass, String xaDriverClass, Map<String, String> properties) {
         this.dbKind = dbKind;
         this.driverClass = driverClass;
         this.xaDriverClass = Optional.ofNullable(xaDriverClass);
-    }
-
-    public JdbcDriverBuildItem(String dbKind, String driverClass) {
-        this.dbKind = dbKind;
-        this.driverClass = driverClass;
-        this.xaDriverClass = Optional.empty();
+        if (properties != null) {
+            this.properties.putAll(properties);
+        }
     }
 
     public String getDbKind() {
@@ -40,5 +50,9 @@ public final class JdbcDriverBuildItem extends MultiBuildItem {
 
     public Optional<String> getDriverXAClass() {
         return xaDriverClass;
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
     }
 }

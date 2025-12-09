@@ -192,7 +192,7 @@ public class DataSources {
         applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
                 driver, jdbcUrl,
                 dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
-                mpMetricsPresent);
+                mpMetricsPresent, matchingSupportEntry.jdbcDriverProperties);
 
         if (agroalDataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration,
@@ -243,7 +243,7 @@ public class DataSources {
             AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, TransactionManagerConfiguration transactionRuntimeConfig,
-            boolean mpMetricsPresent) {
+            boolean mpMetricsPresent, Map<String, String> additionalProperties) {
         connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks());
@@ -302,6 +302,11 @@ public class DataSources {
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
             connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
+        }
+
+        // Driver-specific properties
+        for (Map.Entry<String, String> entry : additionalProperties.entrySet()) {
+            connectionFactoryConfiguration.jdbcProperty(entry.getKey(), entry.getValue());
         }
 
         // Extra JDBC properties

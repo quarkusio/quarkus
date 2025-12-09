@@ -203,7 +203,8 @@ class AgroalProcessor {
                     new AgroalDataSourceSupport.Entry(dataSourceName, aggregatedDataSourceBuildTimeConfig.getDbKind(),
                             aggregatedDataSourceBuildTimeConfig.getDataSourceConfig().dbVersion(),
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass(),
-                            aggregatedDataSourceBuildTimeConfig.isDefault()));
+                            aggregatedDataSourceBuildTimeConfig.isDefault(),
+                            aggregatedDataSourceBuildTimeConfig.getJdbcDriverProperties()));
         }
 
         return new AgroalDataSourceSupport(sslNativeConfig.isExplicitlyDisabled(),
@@ -324,14 +325,40 @@ class AgroalProcessor {
                 continue;
             }
 
-            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
-                    entry.getValue(),
+            var aggregatedConfigBuildItem = createAggregatedConfigBuildItem(entry.getKey(), entry.getValue(),
                     jdbcBuildTimeConfig,
                     effectiveDbKind.get(),
-                    resolveDriver(entry.getKey(), effectiveDbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
+                    jdbcDriverBuildItems);
+            dataSources.add(aggregatedConfigBuildItem);
         }
 
         return dataSources;
+    }
+
+    private AggregatedDataSourceBuildTimeConfigBuildItem createAggregatedConfigBuildItem(
+            String dataSourceName,
+            DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig,
+            String dbKind,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+        String resolvedDriverClass = resolveDriver(dataSourceName, dbKind, dataSourceJdbcBuildTimeConfig,
+                jdbcDriverBuildItems);
+
+        // Retrieve any driver properties from the matching JdbcDriverBuildItem
+        Map<String, String> jdbcDriverProperties = new HashMap<>();
+        Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
+                .filter(i -> dbKind.equals(i.getDbKind()))
+                .findFirst();
+        if (matchingJdbcDriver.isPresent()) {
+            jdbcDriverProperties.putAll(matchingJdbcDriver.get().getProperties());
+        }
+
+        return new AggregatedDataSourceBuildTimeConfigBuildItem(dataSourceName,
+                dataSourceBuildTimeConfig,
+                dataSourceJdbcBuildTimeConfig,
+                dbKind,
+                resolvedDriverClass,
+                jdbcDriverProperties);
     }
 
     private String resolveDriver(String dataSourceName, String dbKind,

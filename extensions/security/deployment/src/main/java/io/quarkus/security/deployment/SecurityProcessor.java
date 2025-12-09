@@ -144,6 +144,7 @@ import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
+import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformer.AuthorizationType;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
@@ -169,6 +170,7 @@ public class SecurityProcessor {
 
     @BuildStep
     SecurityTransformerBuildItem createSecurityTransformerBuildItem(
+            List<SecuredInterfaceAnnotationBuildItem> securedInterfacePredicates,
             List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationBuildItems) {
         // collect security annotations
         Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations = new EnumMap<>(AuthorizationType.class);
@@ -176,7 +178,16 @@ public class SecurityProcessor {
         additionalSecurityAnnotationBuildItems.forEach(i -> authorizationTypeToSecurityAnnotations
                 .computeIfAbsent(i.getAuthorizationType(), k -> new HashSet<>()).add(i.getSecurityAnnotationName()));
 
-        return new SecurityTransformerBuildItem(authorizationTypeToSecurityAnnotations);
+        Predicate<ClassInfo> isInterfaceWithTransformations = securedInterfacePredicates.stream()
+                .map(SecuredInterfaceAnnotationBuildItem::getIsInterfaceWithTransformations)
+                .reduce(Predicate::or)
+                .orElse(null);
+        Set<DotName> securedAnnotations = securedInterfacePredicates.stream()
+                .map(SecuredInterfaceAnnotationBuildItem::getAnnotationName)
+                .collect(Collectors.toSet());
+
+        return new SecurityTransformerBuildItem(authorizationTypeToSecurityAnnotations, isInterfaceWithTransformations,
+                securedAnnotations);
     }
 
     @BuildStep
@@ -186,6 +197,19 @@ public class SecurityProcessor {
         // (we do not hardcode here knowledge which annotation is repeatable and which one isn't, so we check all)
         return List
                 .of(new AdditionalIndexedClassesBuildItem(securityTransformerBuildItem.getAllSecurityAnnotationNames()));
+    }
+
+    @BuildStep
+    void secureInterfaceImplementations(SecurityTransformerBuildItem securityTransformerBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerProducer) {
+        SecurityTransformer securityTransformer = createSecurityTransformer(
+                combinedIndexBuildItem.getIndex(), securityTransformerBuildItem);
+        var annotationTransformations = securityTransformer.getInterfaceTransformations();
+        if (annotationTransformations != null) {
+            annotationTransformations
+                    .forEach(i -> annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(i)));
+        }
     }
 
     /**

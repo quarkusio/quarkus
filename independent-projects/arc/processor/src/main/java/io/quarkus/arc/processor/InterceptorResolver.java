@@ -10,7 +10,6 @@ import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
 
 public final class InterceptorResolver {
 
@@ -67,16 +66,13 @@ public final class InterceptorResolver {
     }
 
     private boolean isInterceptorBinding(AnnotationInstance interceptorBinding, AnnotationInstance candidate) {
-        ClassInfo interceptorBindingClass = beanDeployment.getInterceptorBinding(interceptorBinding.name());
         if (candidate.name().equals(interceptorBinding.name())) {
-            // Must have the same annotation member value for each member which is not annotated @Nonbinding
-            Set<String> nonBindingFields = beanDeployment.getInterceptorNonbindingMembers(interceptorBinding.name());
+            // Must have the same annotation member value for each member which is not annotated `@Nonbinding`
+            Set<String> nonbindingMembers = beanDeployment.getInterceptorNonbindingMembers(interceptorBinding.name());
             for (AnnotationValue value : candidate.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
-                String annotationField = value.name();
-                if (!interceptorBindingClass.method(annotationField).hasAnnotation(DotNames.NONBINDING)
-                        && !nonBindingFields.contains(annotationField)
-                        && !value.equals(
-                                interceptorBinding.valueWithDefault(beanDeployment.getBeanArchiveIndex(), annotationField))) {
+                String annotationMember = value.name();
+                if (!nonbindingMembers.contains(annotationMember) && !value.equals(interceptorBinding.valueWithDefault(
+                        beanDeployment.getBeanArchiveIndex(), annotationMember))) {
                     return false;
                 }
             }

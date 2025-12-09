@@ -72,7 +72,6 @@ class AgroalProcessor {
 
     private static final Logger log = Logger.getLogger(AgroalProcessor.class);
 
-    private static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
     private static final DotName DATA_SOURCE = DotName.createSimple(javax.sql.DataSource.class.getName());
     private static final DotName AGROAL_DATA_SOURCE = DotName.createSimple(AgroalDataSource.class.getName());
 

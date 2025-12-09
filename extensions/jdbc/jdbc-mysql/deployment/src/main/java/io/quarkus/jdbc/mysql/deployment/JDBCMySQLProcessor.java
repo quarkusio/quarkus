@@ -9,6 +9,8 @@ import java.util.List;
 
 import com.mysql.cj.MysqlConnection;
 import com.mysql.cj.WarningListener;
+import com.mysql.cj.conf.PropertyDefinitions;
+import com.mysql.cj.conf.PropertyKey;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.jdbc.JdbcConnection;
 import com.mysql.cj.jdbc.JdbcPreparedStatement;
@@ -19,7 +21,9 @@ import com.mysql.cj.jdbc.ha.ReplicationConnection;
 import com.mysql.cj.jdbc.result.ResultSetInternalMethods;
 import com.mysql.cj.protocol.Resultset;
 
+import io.quarkus.agroal.deployment.AggregatedDataSourceBuildTimeConfigBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
+import io.quarkus.agroal.spi.JdbcPropertyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -128,5 +132,29 @@ public class JDBCMySQLProcessor {
                             MySQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MYSQL));
+    }
+
+    /**
+     * Disable built-in OpenTelemetry support for MySQL JDBC driver when both
+     * OpenTelemetry Tracer and Agroal capabilities are present.
+     */
+    @BuildStep
+    void disableBuiltInOpenTelemetry(BuildProducer<JdbcPropertyBuildItem> properties,
+            List<AggregatedDataSourceBuildTimeConfigBuildItem> datasources,
+            Capabilities capabilities) {
+        // If OpenTelemetry Tracer or Agroal capabilities are missing, skip this step
+        if (capabilities.isMissing(Capability.OPENTELEMETRY_TRACER) ||
+                capabilities.isMissing(Capability.AGROAL)) {
+            return;
+        }
+        for (AggregatedDataSourceBuildTimeConfigBuildItem ds : datasources) {
+            if (ds.getDbKind().equals(DatabaseKind.MYSQL)) {
+                // NOTE: Checking if the "quarkus.datasource.jdbc.telemetry=true" property is set doesn't work because
+                // the driver checks for the OpenTelemetry classes in the classpath
+                properties.produce(new JdbcPropertyBuildItem(ds.getName(),
+                        PropertyKey.openTelemetry.getKeyName(),
+                        PropertyDefinitions.OpenTelemetry.DISABLED.name()));
+            }
+        }
     }
 }

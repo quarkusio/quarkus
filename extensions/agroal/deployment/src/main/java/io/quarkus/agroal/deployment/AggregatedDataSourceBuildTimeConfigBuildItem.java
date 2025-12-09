@@ -5,7 +5,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 
-final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
+/**
+ * An aggregated build item holding the build time configuration for a given datasource,
+ * including both the build and the runtime datasource config.
+ */
+public final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
 
     private final String name;
 

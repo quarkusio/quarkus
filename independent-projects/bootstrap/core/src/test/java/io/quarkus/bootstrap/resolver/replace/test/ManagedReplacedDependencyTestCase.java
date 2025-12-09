@@ -45,7 +45,7 @@ public class ManagedReplacedDependencyTestCase extends CollectDependenciesBase {
         install(ext301, false);
 
         // add a dependency on ext3 (no version)
-        root.addDependency(TsArtifact.jar(ext300.getRuntime().getArtifactId(), null));
+        root.addDependency(TsArtifact.jar("ext3", null));
 
         // the dependency management
         addManagedDep(ext103);

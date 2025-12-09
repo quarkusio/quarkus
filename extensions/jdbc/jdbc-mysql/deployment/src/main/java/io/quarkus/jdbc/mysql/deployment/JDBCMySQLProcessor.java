@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.mysql.cj.MysqlConnection;
 import com.mysql.cj.WarningListener;
@@ -53,7 +54,8 @@ public class JDBCMySQLProcessor {
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.MYSQL, "com.mysql.cj.jdbc.Driver",
-                "com.mysql.cj.jdbc.MysqlXADataSource"));
+                "com.mysql.cj.jdbc.MysqlXADataSource",
+                Map.of("openTelemetry", "DISABLED")));
     }
 
     @BuildStep

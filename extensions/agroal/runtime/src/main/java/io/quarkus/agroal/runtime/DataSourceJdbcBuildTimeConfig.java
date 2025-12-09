@@ -33,6 +33,8 @@ public interface DataSourceJdbcBuildTimeConfig {
 
     /**
      * Enable OpenTelemetry JDBC instrumentation.
+     *
+     * Setting it to true will enable the Quarkus telemetry but also disable the built-in one, if any.
      */
     @WithDefault("false")
     boolean telemetry();

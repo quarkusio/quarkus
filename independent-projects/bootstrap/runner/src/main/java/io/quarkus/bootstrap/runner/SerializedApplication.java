@@ -112,9 +112,12 @@ public class SerializedApplication {
             }
             String mainClass = in.readUTF();
             ResourceDirectoryTracker resourceDirectoryTracker = new ResourceDirectoryTracker();
-            Set<String> parentFirstPackages = new HashSet<>();
             int numPaths = in.readUnsignedShort();
             ClassLoadingResource[] allClassLoadingResources = new ClassLoadingResource[numPaths];
+            ClassLoadingResource generatedBytecodeClassLoadingResource = null;
+            Set<String> generatedBytecode = Set.of();
+            ClassLoadingResource transformedBytecodeClassLoadingResource = null;
+            Set<String> transformedBytecode = Set.of();
             for (int pathCount = 0; pathCount < numPaths; pathCount++) {
                 String path = in.readUTF();
                 boolean hasManifest = in.readBoolean();
@@ -124,6 +127,13 @@ public class SerializedApplication {
                             readNullableString(in), readNullableString(in), readNullableString(in));
                 }
                 JarResource resource = new JarResource(info, appRoot.resolve(path));
+                boolean generatedBytecodeJar = in.readBoolean();
+                boolean transformedBytecodeJar = in.readBoolean();
+                if (generatedBytecodeJar) {
+                    generatedBytecodeClassLoadingResource = resource;
+                } else if (transformedBytecodeJar) {
+                    transformedBytecodeClassLoadingResource = resource;
+                }
                 allClassLoadingResources[pathCount] = resource;
                 int numDirs = in.readUnsignedShort();
                 for (int i = 0; i < numDirs; ++i) {
@@ -135,20 +145,35 @@ public class SerializedApplication {
                     }
                     resourceDirectoryTracker.addResourceDir(dir, resource);
                 }
+                if (generatedBytecodeJar || transformedBytecodeJar) {
+                    int numEntries = in.readInt();
+                    // let's make the Set as compact as we can
+                    Set<String> entries = new HashSet<>((int) Math.ceil(numEntries / 0.75f));
+                    for (int i = 0; i < numEntries; ++i) {
+                        entries.add(in.readUTF());
+                    }
+                    if (generatedBytecodeJar) {
+                        generatedBytecode = entries;
+                    } else if (transformedBytecodeJar) {
+                        transformedBytecode = entries;
+                    }
+                }
             }
             int packages = in.readUnsignedShort();
+            Set<String> parentFirstPackages = new HashSet<>((int) Math.ceil(packages / 0.75f));
             for (int i = 0; i < packages; ++i) {
                 parentFirstPackages.add(in.readUTF());
             }
-            Set<String> nonExistentResources = new HashSet<>();
             int nonExistentResourcesSize = in.readUnsignedShort();
+            Set<String> nonExistentResources = new HashSet<>((int) Math.ceil(nonExistentResourcesSize / 0.75f));
             for (int i = 0; i < nonExistentResourcesSize; i++) {
                 nonExistentResources.add(in.readUTF());
             }
             // this map is populated correctly because the JarResource entries are added to allClassLoadingResources
             // in the same order as the classpath was written during the writing of the index
-            Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap = new HashMap<>();
             int directlyIndexedSize = in.readUnsignedShort();
+            Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap = new HashMap<>(
+                    (int) Math.ceil(directlyIndexedSize / 0.75f));
             for (int i = 0; i < directlyIndexedSize; i++) {
                 String resource = in.readUTF();
                 int indexesSize = in.readUnsignedShort();
@@ -160,7 +185,9 @@ public class SerializedApplication {
             }
             RunnerClassLoader runnerClassLoader = new RunnerClassLoader(ClassLoader.getSystemClassLoader(),
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
-                    nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap);
+                    nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap,
+                    generatedBytecodeClassLoadingResource, generatedBytecode,
+                    transformedBytecodeClassLoadingResource, transformedBytecode);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
                 classLoadingResource.init();
             }
@@ -200,8 +227,23 @@ public class SerializedApplication {
                 }
             }
 
+            boolean writeAllEntries = false;
+            if (jar.endsWith("generated-bytecode.jar")) {
+                out.writeBoolean(true);
+                writeAllEntries = true;
+            } else {
+                out.writeBoolean(false);
+            }
+            if (jar.endsWith("transformed-bytecode.jar")) {
+                out.writeBoolean(true);
+                writeAllEntries = true;
+            } else {
+                out.writeBoolean(false);
+            }
+
             Set<String> dirs = new LinkedHashSet<>();
             Map<String, List<String>> fullyIndexedPaths = new LinkedHashMap<>();
+            Set<String> allEntries = new LinkedHashSet<>();
             Enumeration<? extends ZipEntry> entries = zip.entries();
             boolean hasDefaultPackage = false;
             while (entries.hasMoreElements()) {
@@ -243,6 +285,10 @@ public class SerializedApplication {
                                     .add(entry.getName());
                         }
                     }
+
+                    if (writeAllEntries) {
+                        allEntries.add(entry.getName());
+                    }
                 }
             }
             if (hasDefaultPackage) {
@@ -251,6 +297,12 @@ public class SerializedApplication {
             out.writeShort(dirs.size());
             for (String i : dirs) {
                 out.writeUTF(i);
+            }
+            if (writeAllEntries) {
+                out.writeInt(allEntries.size());
+                for (String entry : allEntries) {
+                    out.writeUTF(entry);
+                }
             }
             List<String> result = new ArrayList<>();
             for (List<String> values : fullyIndexedPaths.values()) {

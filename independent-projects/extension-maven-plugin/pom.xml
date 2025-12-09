@@ -40,7 +40,7 @@
         <jackson-bom.version>2.20.1</jackson-bom.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <junit5.version>5.13.4</junit5.version>
-        <mockito.version>5.20.0</mockito.version>
+        <mockito.version>5.21.0</mockito.version>
     </properties>
     <build>
         <testResources>

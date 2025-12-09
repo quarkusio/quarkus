@@ -275,7 +275,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                     Expr thisAnnType = Const.of(classDescOf(literal.annotationClass));
                     Expr thatAnnType = bc.invokeInterface(MethodDesc.of(Annotation.class, "annotationType", Class.class),
                             other);
-                    bc.return_(bc.objEquals(thisAnnType, thatAnnType));
+                    bc.return_(bc.exprEquals(thisAnnType, thatAnnType));
                     return;
                 }
 
@@ -341,7 +341,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                         // annotation members are never `null`
                         memberValueHash = bc.withObject(value).hashCode_();
                     } else {
-                        memberValueHash = bc.objHashCode(value);
+                        memberValueHash = bc.exprHashCode(value);
                     }
 
                     Expr xor = bc.xor(memberNameHash, memberValueHash);

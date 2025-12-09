@@ -191,18 +191,17 @@ public class BeanDeployment {
         findScopeAnnotations(DotNames.NORMAL_SCOPE, beanDefiningAnnotations);
 
         qualifierNonbindingMembers = new HashMap<>();
-        qualifiers = findQualifiers();
+        qualifiers = findQualifiers(qualifierNonbindingMembers);
         for (QualifierRegistrar registrar : builder.qualifierRegistrars) {
             for (Entry<DotName, Set<String>> entry : registrar.getAdditionalQualifiers().entrySet()) {
                 DotName dotName = entry.getKey();
                 ClassInfo classInfo = getClassByName(getBeanArchiveIndex(), dotName);
                 if (classInfo != null) {
                     Set<String> nonbindingMembers = entry.getValue();
-                    if (nonbindingMembers == null) {
-                        nonbindingMembers = Collections.emptySet();
+                    validateQualifier(classInfo, nonbindingMembers != null ? nonbindingMembers : Set.of());
+                    if (nonbindingMembers != null && !nonbindingMembers.isEmpty()) {
+                        qualifierNonbindingMembers.put(dotName, nonbindingMembers);
                     }
-                    validateQualifier(classInfo, nonbindingMembers);
-                    qualifierNonbindingMembers.put(dotName, nonbindingMembers);
                     qualifiers.put(dotName, classInfo);
                 }
             }
@@ -211,7 +210,7 @@ public class BeanDeployment {
         buildContext.putInternal(Key.QUALIFIERS, Collections.unmodifiableMap(qualifiers));
 
         interceptorNonbindingMembers = new HashMap<>();
-        interceptorBindings = findInterceptorBindings();
+        interceptorBindings = findInterceptorBindings(interceptorNonbindingMembers);
         for (InterceptorBindingRegistrar registrar : builder.interceptorBindingRegistrars) {
             for (InterceptorBindingRegistrar.InterceptorBinding binding : registrar.getAdditionalBindings()) {
                 DotName dotName = binding.getName();
@@ -223,7 +222,9 @@ public class BeanDeployment {
                             nonbinding.add(method.name());
                         }
                     }
-                    interceptorNonbindingMembers.put(dotName, nonbinding);
+                    if (!nonbinding.isEmpty()) {
+                        interceptorNonbindingMembers.put(dotName, nonbinding);
+                    }
                 }
                 interceptorBindings.put(dotName, annotationClass);
             }
@@ -608,6 +609,10 @@ public class BeanDeployment {
         return Collections.unmodifiableCollection(interceptorBindings.values());
     }
 
+    Map<DotName, Set<String>> getInterceptorNonbindingMembers() {
+        return interceptorNonbindingMembers;
+    }
+
     public Collection<InjectionPointInfo> getInjectionPoints() {
         return Collections.unmodifiableList(injectionPoints);
     }
@@ -876,7 +881,7 @@ public class BeanDeployment {
         }
     }
 
-    private Map<DotName, ClassInfo> findQualifiers() {
+    private Map<DotName, ClassInfo> findQualifiers(Map<DotName, Set<String>> qualifierNonbindingMembers) {
         Map<DotName, ClassInfo> qualifiers = new HashMap<>();
         for (AnnotationInstance qualifier : beanArchiveImmutableIndex.getAnnotations(DotNames.QUALIFIER)) {
             ClassInfo qualifierClass = qualifier.target().asClass();
@@ -886,25 +891,34 @@ public class BeanDeployment {
             if (isExcluded(qualifierClass)) {
                 continue;
             }
-            // check that all array typed methods are @Nonbinding
-            validateQualifier(qualifierClass, null);
+            Set<String> nonbindingMembers = new HashSet<>();
+            for (MethodInfo member : qualifierClass.methods()) {
+                if (member.hasAnnotation(DotNames.NONBINDING)) {
+                    nonbindingMembers.add(member.name());
+                }
+            }
+            // check that all array-typed and annotation-typed members are `@Nonbinding`
+            validateQualifier(qualifierClass, nonbindingMembers);
+
             qualifiers.put(qualifierClass.name(), qualifierClass);
+            if (!nonbindingMembers.isEmpty()) {
+                qualifierNonbindingMembers.put(qualifierClass.name(), Set.copyOf(nonbindingMembers));
+            }
         }
         return qualifiers;
     }
 
     /**
-     * Validates the qualifier for binding members which are either array or annotation-valued and throws an exception
-     * if any is found.
+     * Validates the qualifier. Throws an exception if any array-valued or annotation-valued binding member exists.
+     * A "binding" member is any member that is <em>not</em> annotated {@code @Nonbinding}.
      *
      * @param qualifierClass class info of the qualifier
-     * @param nonbindingMembers collection of members we consider {@code @Nonbinding} for synthetic qualifier, null otherwise
+     * @param nonbindingMembers non-{@code null} set of members we consider {@code @Nonbinding}
      */
     private void validateQualifier(ClassInfo qualifierClass, Set<String> nonbindingMembers) {
         for (MethodInfo mi : qualifierClass.methods()) {
-            Type returnType = mi.returnType();
-            if ((nonbindingMembers != null && !nonbindingMembers.contains(mi.name()))
-                    || (nonbindingMembers == null && mi.annotation(DotNames.NONBINDING) == null)) {
+            if (!nonbindingMembers.contains(mi.name())) {
+                Type returnType = mi.returnType();
                 String problem = null;
                 if (returnType.kind().equals(Type.Kind.ARRAY)) {
                     problem = "array";
@@ -916,8 +930,7 @@ public class BeanDeployment {
                 }
                 if (problem != null) {
                     throw new DefinitionException("Qualifier annotation '" + qualifierClass + "' contains a member '"
-                            + mi.name()
-                            + "' with " + problem
+                            + mi.name() + "' with " + problem
                             + "-valued return type. All such members have to be annotated with @jakarta.enterprise.util.Nonbinding");
                 }
             }
@@ -937,7 +950,7 @@ public class BeanDeployment {
         return containerAnnotations;
     }
 
-    private Map<DotName, ClassInfo> findInterceptorBindings() {
+    private Map<DotName, ClassInfo> findInterceptorBindings(Map<DotName, Set<String>> interceptorNonbindingMembers) {
         Map<DotName, ClassInfo> bindings = new HashMap<>();
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : beanArchiveImmutableIndex.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
@@ -948,7 +961,17 @@ public class BeanDeployment {
             if (isExcluded(bindingClass)) {
                 continue;
             }
+            Set<String> nonbindingMembers = new HashSet<>();
+            for (MethodInfo member : bindingClass.methods()) {
+                if (member.hasAnnotation(DotNames.NONBINDING)) {
+                    nonbindingMembers.add(member.name());
+                }
+            }
+
             bindings.put(bindingClass.name(), bindingClass);
+            if (!nonbindingMembers.isEmpty()) {
+                interceptorNonbindingMembers.put(bindingClass.name(), Set.copyOf(nonbindingMembers));
+            }
         }
         return bindings;
     }
@@ -2018,36 +2041,23 @@ public class BeanDeployment {
 
     /**
      * Returns the set of names of non-binding annotation members of given interceptor
-     * binding annotation that was registered through {@code InterceptorBindingRegistrar}.
-     * <p>
-     * Does <em>not</em> return non-binding members of interceptor bindings that were
-     * discovered based on the {@code @InterceptorBinding} annotation; in such case,
-     * one has to manually check presence of the {@code @NonBinding} annotation on
-     * the annotation member declaration.
+     * binding annotation.
      *
-     * @param name name of the interceptor binding annotation that was registered through
-     *        {@code InterceptorBindingRegistrar}
-     * @return set of non-binding annotation members of the interceptor binding annotation
+     * @param name name of the interceptor binding annotation
+     * @return set of non-binding annotation members of the interceptor binding annotation, never {@code null}
      */
     public Set<String> getInterceptorNonbindingMembers(DotName name) {
-        return interceptorNonbindingMembers.getOrDefault(name, Collections.emptySet());
+        return interceptorNonbindingMembers.getOrDefault(name, Set.of());
     }
 
     /**
-     * Returns the set of names of non-binding annotation members of given qualifier
-     * annotation that was registered through {@code QualifierRegistrar}.
-     * <p>
-     * Does <em>not</em> return non-binding members of interceptor bindings that were
-     * discovered based on the {@code @Qualifier} annotation; in such case, one has to
-     * manually check presence of the {@code @NonBinding} annotation on the annotation member
-     * declaration.
+     * Returns the set of names of non-binding annotation members of given qualifier annotation.
      *
-     * @param name name of the qualifier annotation that was registered through
-     *        {@code QualifierRegistrar}
-     * @return set of non-binding annotation members of the qualifier annotation
+     * @param name name of the qualifier annotation
+     * @return set of non-binding annotation members of the qualifier annotation, never {@code null}
      */
     public Set<String> getQualifierNonbindingMembers(DotName name) {
-        return qualifierNonbindingMembers.getOrDefault(name, Collections.emptySet());
+        return qualifierNonbindingMembers.getOrDefault(name, Set.of());
     }
 
     /**

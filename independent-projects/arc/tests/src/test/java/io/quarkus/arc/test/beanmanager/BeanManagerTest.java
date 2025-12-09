@@ -72,9 +72,9 @@ public class BeanManagerTest {
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer.Builder()
             .beanClasses(Legacy.class, AlternativeLegacy.class, Fool.class, LowFool.class, DummyInterceptor.class,
-                    DummyBinding.class, UselessBinding.class, CustomBinding.class,
-                    LowPriorityInterceptor.class, WithInjectionPointMetadata.class, High.class, Low.class, Observers.class,
-                    BeanWithCustomQualifier.class,
+                    DummyBinding.class, UselessBinding.class, ArrayValuedBinding.class, CustomBinding.class,
+                    LowPriorityInterceptor.class, ArrayValuedInterceptor.class, WithInjectionPointMetadata.class,
+                    High.class, Low.class, Observers.class, BeanWithCustomQualifier.class,
                     ToUpperCaseConverter.class, TrimConverterDecorator.class, RepeatDecorator.class)
             .qualifierRegistrars(new QualifierRegistrar() {
                 @Override
@@ -203,6 +203,19 @@ public class BeanManagerTest {
         assertEquals(2, interceptors.size());
         assertEquals(LowPriorityInterceptor.class, interceptors.get(0).getBeanClass());
         assertEquals(DummyInterceptor.class, interceptors.get(1).getBeanClass());
+
+        interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE,
+                new ArrayValuedBinding.Literal(new int[] { 1, 2 }));
+        assertEquals(1, interceptors.size());
+        assertEquals(ArrayValuedInterceptor.class, interceptors.get(0).getBeanClass());
+
+        interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE,
+                new ArrayValuedBinding.Literal(new int[] { 2, 3 }));
+        assertTrue(interceptors.isEmpty());
+
+        interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE,
+                new ArrayValuedBinding.Literal(new int[] { 2, 1 })); // different order is enough!
+        assertTrue(interceptors.isEmpty());
 
         assertThrows(IllegalArgumentException.class, () -> {
             // not an interceptor binding
@@ -406,6 +419,27 @@ public class BeanManagerTest {
     @Target({ TYPE, METHOD })
     @Retention(RUNTIME)
     @Documented
+    @InterceptorBinding
+    public @interface ArrayValuedBinding {
+        int[] value();
+
+        class Literal extends AnnotationLiteral<ArrayValuedBinding> implements ArrayValuedBinding {
+            private final int[] value;
+
+            public Literal(int[] value) {
+                this.value = value;
+            }
+
+            @Override
+            public int[] value() {
+                return value;
+            }
+        }
+    }
+
+    @Target({ TYPE, METHOD })
+    @Retention(RUNTIME)
+    @Documented
     public @interface CustomBinding {
     }
 
@@ -425,6 +459,16 @@ public class BeanManagerTest {
     @Interceptor
     static class LowPriorityInterceptor {
 
+        @AroundInvoke
+        Object intercept(InvocationContext ctx) throws Exception {
+            return ctx.proceed();
+        }
+    }
+
+    @Interceptor
+    @Priority(1)
+    @ArrayValuedBinding({ 1, 2 })
+    static class ArrayValuedInterceptor {
         @AroundInvoke
         Object intercept(InvocationContext ctx) throws Exception {
             return ctx.proceed();

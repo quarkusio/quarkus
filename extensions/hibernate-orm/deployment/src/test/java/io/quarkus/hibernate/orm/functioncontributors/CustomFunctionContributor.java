@@ -1,7 +1,11 @@
 package io.quarkus.hibernate.orm.functioncontributors;
 
-import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import static org.hibernate.query.sqm.produce.function.FunctionParameterType.STRING;
+
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
+
 import org.hibernate.boot.model.FunctionContributions;
 import org.hibernate.boot.model.FunctionContributor;
 import org.hibernate.metamodel.model.domain.ReturnableType;
@@ -16,9 +20,7 @@ import org.hibernate.sql.ast.tree.SqlAstNode;
 import org.hibernate.type.StandardBasicTypes;
 import org.hibernate.type.spi.TypeConfiguration;
 
-import java.util.List;
-
-import static org.hibernate.query.sqm.produce.function.FunctionParameterType.STRING;
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 
 @ApplicationScoped
 @PersistenceUnitExtension
@@ -28,9 +30,7 @@ public class CustomFunctionContributor implements FunctionContributor {
         functionContributions.getFunctionRegistry().register(
                 "addHardcodedSuffix",
                 new HardcodedSuffixFunction(
-                        functionContributions.getTypeConfiguration(), "_some_suffix"
-                )
-        );
+                        functionContributions.getTypeConfiguration(), "_some_suffix"));
     }
 
     private static final class HardcodedSuffixFunction extends AbstractSqmSelfRenderingFunctionDescriptor {
@@ -40,10 +40,8 @@ public class CustomFunctionContributor implements FunctionContributor {
             super("addHardcodedSuffix",
                     StandardArgumentsValidators.exactly(1),
                     StandardFunctionReturnTypeResolvers.invariant(
-                            typeConfiguration.getBasicTypeRegistry().resolve(StandardBasicTypes.STRING)
-                    ),
-                    StandardFunctionArgumentTypeResolvers.impliedOrInvariant(typeConfiguration, STRING)
-            );
+                            typeConfiguration.getBasicTypeRegistry().resolve(StandardBasicTypes.STRING)),
+                    StandardFunctionArgumentTypeResolvers.impliedOrInvariant(typeConfiguration, STRING));
 
             this.suffix = suffix;
         }
@@ -53,8 +51,7 @@ public class CustomFunctionContributor implements FunctionContributor {
                 SqlAppender sqlAppender,
                 List<? extends SqlAstNode> sqlAstArguments,
                 ReturnableType<?> returnType,
-                SqlAstTranslator<?> walker
-        ) {
+                SqlAstTranslator<?> walker) {
             sqlAppender.appendSql('(');
             walker.render(sqlAstArguments.get(0), SqlAstNodeRenderingMode.DEFAULT);
             sqlAppender.appendSql(" || '" + suffix + "')");

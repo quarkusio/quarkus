@@ -10,7 +10,8 @@ public class MyEntity {
 
     private String name;
 
-    public MyEntity() {}
+    public MyEntity() {
+    }
 
     public long getId() {
         return id;

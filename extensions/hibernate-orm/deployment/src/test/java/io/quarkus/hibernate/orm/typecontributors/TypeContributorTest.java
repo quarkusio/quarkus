@@ -1,13 +1,15 @@
 package io.quarkus.hibernate.orm.typecontributors;
 
-import io.quarkus.test.QuarkusUnitTest;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class TypeContributorTest {
     @RegisterExtension

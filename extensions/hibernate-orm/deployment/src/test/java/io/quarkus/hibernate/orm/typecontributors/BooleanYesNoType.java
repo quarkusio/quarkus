@@ -1,12 +1,12 @@
 package io.quarkus.hibernate.orm.typecontributors;
 
-import org.hibernate.type.SqlTypes;
-import org.hibernate.type.descriptor.WrapperOptions;
-import org.hibernate.usertype.UserType;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.WrapperOptions;
+import org.hibernate.usertype.UserType;
 
 final class BooleanYesNoType implements UserType<Boolean> {
 
@@ -41,7 +41,12 @@ final class BooleanYesNoType implements UserType<Boolean> {
     }
 
     @Override
-    public Boolean deepCopy(Boolean value) { return value; }
+    public Boolean deepCopy(Boolean value) {
+        return value;
+    }
+
     @Override
-    public boolean isMutable() { return false; }
+    public boolean isMutable() {
+        return false;
+    }
 }

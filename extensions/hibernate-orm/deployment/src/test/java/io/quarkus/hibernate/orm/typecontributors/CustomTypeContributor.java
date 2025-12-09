@@ -1,10 +1,12 @@
 package io.quarkus.hibernate.orm.typecontributors;
 
-import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import jakarta.enterprise.context.ApplicationScoped;
+
 import org.hibernate.boot.model.TypeContributions;
 import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.service.ServiceRegistry;
+
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 
 @ApplicationScoped
 @PersistenceUnitExtension

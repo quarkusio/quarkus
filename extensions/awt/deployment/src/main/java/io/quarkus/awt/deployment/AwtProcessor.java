@@ -354,7 +354,7 @@ class AwtProcessor {
      * A better detection and DarwinAwtFeature handling might be in order.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitializedPackages) {
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitilizedPackages) {
         /*
          * Note that this initialization is not enough if user wants to deserialize actual images
          * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
@@ -370,7 +370,7 @@ class AwtProcessor {
                 "sun.font",
                 "sun.java2d")
                 .map(RuntimeInitializedPackageBuildItem::new)
-                .forEach(runtimeInitializedPackages::produce);
+                .forEach(runtimeInitilizedPackages::produce);
         //@formatter:on
     }
 }

@@ -1,5 +1,6 @@
 package io.quarkus.agroal.runtime;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -55,14 +56,15 @@ public class AgroalRecorder {
 
     public Function<SyntheticCreationalContext<AgroalDataSource>, AgroalDataSource> agroalDataSourceSupplier(
             String dataSourceName,
-            Optional<RuntimeValue<Boolean>> otelEnabled) {
+            Optional<RuntimeValue<Boolean>> otelEnabled,
+            Map<String, String> jdbcProperties) {
         return new Function<>() {
             @SuppressWarnings("deprecation")
             @Override
             public AgroalDataSource apply(SyntheticCreationalContext<AgroalDataSource> context) {
                 DataSources dataSources = context.getInjectedReference(DataSources.class);
                 return dataSources.createDataSource(dataSourceName,
-                        otelEnabled.isPresent() ? otelEnabled.get().getValue() : false);
+                        otelEnabled.isPresent() ? otelEnabled.get().getValue() : false, jdbcProperties);
             }
         };
     }

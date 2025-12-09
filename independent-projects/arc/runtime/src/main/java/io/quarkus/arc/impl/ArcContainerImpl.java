@@ -123,9 +123,10 @@ public class ArcContainerImpl implements ArcContainer {
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
         List<InjectableObserverMethod<?>> observers = new ArrayList<>();
         Set<String> interceptorBindings = new HashSet<>();
+        Map<String, Set<String>> interceptorBindingNonbindingMembers = new HashMap<>();
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
-        Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Set<String> qualifiers = new HashSet<>();
+        Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Supplier<ContextInstances> applicationContextInstances = null;
         Supplier<ContextInstances> requestContextInstances = null;
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
@@ -152,9 +153,10 @@ public class ArcContainerImpl implements ArcContainer {
             removedBeans.add(c.getRemovedBeans());
             observers.addAll(c.getObservers());
             interceptorBindings.addAll(c.getInterceptorBindings());
+            interceptorBindingNonbindingMembers.putAll(c.getInterceptorBindingNonbindingMembers());
             transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
-            qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             qualifiers.addAll(c.getQualifiers());
+            qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             if (applicationContextInstances == null) {
                 applicationContextInstances = c.getContextInstances().get(ApplicationScoped.class);
             }
@@ -200,7 +202,8 @@ public class ArcContainerImpl implements ArcContainer {
             }
         });
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
-        this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings, transitiveInterceptorBindings);
+        this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings,
+                interceptorBindingNonbindingMembers, transitiveInterceptorBindings);
 
         ApplicationContext applicationContext = applicationContextInstances != null
                 ? new ApplicationContext(applicationContextInstances.get())
@@ -938,14 +941,8 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Iterable<Annotation> bindings) {
-        // The method or constructor has all the interceptor bindings of the interceptor
-        for (Annotation binding : interceptor.getInterceptorBindings()) {
-            // The resolution rules are the same for qualifiers
-            if (!registeredQualifiers.hasQualifier(bindings, binding)) {
-                return false;
-            }
-        }
-        return true;
+        return Annotations.areAllPresent(interceptor.getInterceptorBindings(), bindings,
+                registeredInterceptorBindings.interceptorBindingNonbindingMembers);
     }
 
     /**

@@ -791,9 +791,7 @@ public class DevMojo extends AbstractMojo {
             var colon = goal.lastIndexOf(':');
             if (colon >= 0) {
                 var plugin = pluginPrefixes.get(goal.substring(0, colon));
-                if (plugin == null) {
-                    getLog().warn("Failed to locate plugin for " + goal);
-                } else {
+                if (plugin != null) {
                     executedPluginGoals.computeIfAbsent(plugin.getId(), k -> new ArrayList<>()).add(goal.substring(colon + 1));
                 }
             }

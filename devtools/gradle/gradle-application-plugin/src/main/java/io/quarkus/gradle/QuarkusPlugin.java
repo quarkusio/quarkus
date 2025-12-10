@@ -1,5 +1,6 @@
 package io.quarkus.gradle;
 
+import static io.quarkus.gradle.GradleUtils.composeDevFiles;
 import static io.quarkus.gradle.extension.QuarkusPluginExtension.combinedOutputSourceDirs;
 import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
 
@@ -449,6 +450,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.setSystemProperties(extractQuarkusTestSystemProperties(project));
 
                         t.getInputs().files(quarkusGenerateTestAppModelTask);
+                        // Register matching compose files from project root as inputs
+                        t.getInputs().files(composeDevFiles(project));
                         // Quarkus test configuration action which should be executed before any Quarkus test
                         t.doFirst(new BeforeTestAction(
                                 project.getProjectDir(),

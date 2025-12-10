@@ -1341,7 +1341,9 @@ public class TestClientRequestFilter implements ResteasyReactiveClientRequestFil
 }
 ----
 
-== Customizing the ObjectMapper in REST Client Jackson
+== Jackson-specific features
+
+=== Customizing the ObjectMapper in REST Client Jackson
 
 The REST Client supports adding a custom ObjectMapper to be used only the Client using the annotation `@ClientObjectMapper`.
 
@@ -1368,6 +1370,60 @@ public interface ExtensionsService {
 <1> The method must be annotated with `@ClientObjectMapper`.
 <2> It's must be a static method. Also, the parameter `defaultObjectMapper` will be resolved via CDI. If not found, it will throw an exception at runtime.
 <3> In this example, we're creating a copy of the default object mapper. You should *NEVER* modify the default object mapper, but create a copy instead.
+
+=== @JsonView support
+
+Jakarta REST methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]
+in order to customize the serialization of the returned POJO, on a per method-basis. This is best explained with an example.
+
+A typical use of `@JsonView` is to hide certain fields on certain methods. In that vein, let's define two views:
+
+[source,java]
+----
+public class Views {
+
+    public static class Public {
+    }
+
+    public static class Private extends Public {
+    }
+}
+----
+
+Let's assume we have the `User` POJO on which we want to hide some field during serialization. A simple example of this is:
+
+[source,java]
+----
+public class User {
+
+    @JsonView(Views.Private.class)
+    public int id;
+
+    @JsonView(Views.Public.class)
+    public String name;
+}
+----
+
+The REST Client supports `@JsonView` both for sending content to the REST API and for retrieving data from it:
+
+[source,java]
+----
+    @Path("/users")
+    @RegisterRestClient
+    public interface UserClient {
+        @GET
+        @Path("/{id}")
+        @Produces(MediaType.APPLICATION_JSON)
+        @JsonView(Views.Public.class)
+        User get(@RestPath String id);
+
+        @POST
+        @Consumes(MediaType.APPLICATION_JSON)
+        Response create(@JsonView(Views.Public.class) User user);
+    }
+----
+
+In the preceding code, the `get` method would return a `User` whose `id` is always `null` while the `create` method would never include `id` in the JSON it sends to the REST API.
 
 == Exception handling
 

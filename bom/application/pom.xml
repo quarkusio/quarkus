@@ -109,7 +109,7 @@
         <slf4j-jboss-logmanager.version>2.0.2.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.7.0.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.7.1.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.3.Final</jboss-marshalling.version>
         <jboss-threads.version>3.9.1</jboss-threads.version>
         <vertx.version>4.5.22</vertx.version>
@@ -117,7 +117,7 @@
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
         <cronutils.version>9.2.1</cronutils.version>
-        <quartz.version>2.5.0</quartz.version>
+        <quartz.version>2.5.2</quartz.version>
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.8</postgresql-jdbc.version>
@@ -139,7 +139,7 @@
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <mutiny.version>3.0.3</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
-        <kafka3.version>4.0.1</kafka3.version>
+        <kafka.version>4.1.1</kafka.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.8</snappy.version>
         <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
@@ -4561,7 +4561,7 @@
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
-                <version>${kafka3.version}</version>
+                <version>${kafka.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.lz4</groupId>
@@ -4586,17 +4586,17 @@
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-streams</artifactId>
-                <version>${kafka3.version}</version>
+                <version>${kafka.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-streams-test-utils</artifactId>
-                <version>${kafka3.version}</version>
+                <version>${kafka.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka_2.13</artifactId>
-                <version>${kafka3.version}</version>
+                <version>${kafka.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.google.code.findbugs</groupId>

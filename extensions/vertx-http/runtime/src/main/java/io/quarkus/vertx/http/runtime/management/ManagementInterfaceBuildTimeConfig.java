@@ -18,7 +18,7 @@ public interface ManagementInterfaceBuildTimeConfig {
     /**
      * Enables / Disables the usage of a separate interface/port to expose the management endpoints.
      * If sets to {@code true}, the management endpoints will be exposed to a different HTTP server.
-     * This avoids exposing the management endpoints on a y available server(.
+     * This avoids exposing the management endpoints on a publicly available server.
      */
     @WithDefault("false")
     boolean enabled();

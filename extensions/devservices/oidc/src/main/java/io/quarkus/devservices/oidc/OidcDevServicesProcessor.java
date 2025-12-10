@@ -11,7 +11,6 @@ import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +71,8 @@ public class OidcDevServicesProcessor {
     private static volatile String applicationType;
     private static volatile Map<String, String> configProperties;
     private static volatile Map<String, List<String>> userToDefaultRoles;
+    private static volatile Long accessTokenExpiresIn;
+    private static volatile Long idTokenExpiresIn;
     private static volatile Runnable closeDevServiceTask;
 
     @BuildStep
@@ -84,6 +85,8 @@ public class OidcDevServicesProcessor {
         }
 
         userToDefaultRoles = devServicesConfig.roles();
+        accessTokenExpiresIn = devServicesConfig.accessTokenExpiresIn().toSeconds();
+        idTokenExpiresIn = devServicesConfig.idTokenExpiresIn().toSeconds();
         if (closeDevServiceTask == null) {
             LOG.info("Starting Dev Services for OIDC");
             Vertx vertx = Vertx.vertx();
@@ -571,10 +574,10 @@ public class OidcDevServicesProcessor {
                 {
                   "access_token":"%s",
                   "token_type":"Bearer",
-                  "expires_in":3600,
+                  "expires_in":%d,
                   "refresh_token":"%s"
                 }
-                """.formatted(accessToken, refreshToken);
+                """.formatted(accessToken, accessTokenExpiresIn, refreshToken);
         rc.response()
                 .putHeader("Content-Type", "application/json")
                 .putHeader("Cache-Control", "no-store")
@@ -592,9 +595,9 @@ public class OidcDevServicesProcessor {
                 {
                       "access_token": "%s",
                       "token_type": "Bearer",
-                      "expires_in": 3600
+                      "expires_in": %d
                 }
-                """.formatted(accessToken);
+                """.formatted(accessToken, accessTokenExpiresIn);
         rc.response()
                 .putHeader("Content-Type", "application/json")
                 .putHeader("Cache-Control", "no-store")
@@ -669,9 +672,9 @@ public class OidcDevServicesProcessor {
                    "access_token": "%s",
                    "token_type": "Bearer",
                    "refresh_token": "%s",
-                   "expires_in": 3600
+                   "expires_in": %d
                 }
-                """.formatted(accessToken, refreshToken);
+                """.formatted(accessToken, refreshToken, accessTokenExpiresIn);
         rc.response()
                 .putHeader("Content-Type", "application/json")
                 .putHeader("Cache-Control", "no-store")
@@ -689,8 +692,8 @@ public class OidcDevServicesProcessor {
      * {
      * "token_type":"Bearer",
      * "scope":"openid email profile",
-     * "expires_in":3600,
-     * "ext_expires_in":3600,
+     * "expires_in":EXPIRES_IN,
+     * "ext_expires_in":EXPIRES_IN,
      * "access_token":TOKEN,
      * "id_token":JWT
      * }
@@ -734,13 +737,14 @@ public class OidcDevServicesProcessor {
                 {
                  "token_type":"Bearer",
                  "scope":"openid email profile",
-                 "expires_in":3600,
-                 "ext_expires_in":3600,
+                 "expires_in":%d,
+                 "ext_expires_in":%d,
                  "access_token":"%s",
                  "id_token":"%s",
                  "refresh_token": "%s"
                  }
-                """.formatted(accessToken, idToken, userAndRoles.encode());
+                """.formatted(accessTokenExpiresIn, accessTokenExpiresIn, accessToken, idToken,
+                userAndRoles.encode());
         rc.response()
                 .putHeader("Content-Type", "application/json")
                 .putHeader("Cache-Control", "no-store")
@@ -761,7 +765,7 @@ public class OidcDevServicesProcessor {
 
     private static String createIdToken(String user, Set<String> roles, String clientId) {
         return Jwt.claims()
-                .expiresIn(Duration.ofDays(1))
+                .expiresIn(idTokenExpiresIn)
                 .issuedAt(Instant.now())
                 .issuer(baseURI)
                 .audience(clientId)
@@ -778,7 +782,7 @@ public class OidcDevServicesProcessor {
 
     private static String createAccessToken(String user, Set<String> roles, Set<String> scope) {
         return Jwt.claims()
-                .expiresIn(Duration.ofDays(1))
+                .expiresIn(accessTokenExpiresIn)
                 .issuedAt(Instant.now())
                 .issuer(baseURI)
                 .subject(user)

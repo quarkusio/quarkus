@@ -57,7 +57,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.smallrye.common.process.ProcessUtil;
@@ -642,7 +642,7 @@ public class QuarkusProdModeTest
 
         }
         if (clearRestAssuredURL) {
-            RestAssuredURLManager.clearURL();
+            RestAssuredStateManager.clearState();
             clearRestAssuredURL = false;
         }
     }
@@ -653,12 +653,12 @@ public class QuarkusProdModeTest
                 .orElse(DEFAULT_HTTP_PORT_INT);
 
         // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port` property
-        // which is done in `RestAssuredURLManager.setURL`.
+        // which is done in `RestAssuredStateManager.setURL`.
         if (httpPort == 0) {
             httpPort = null;
         }
 
-        RestAssuredURLManager.setURL(false, httpPort);
+        RestAssuredStateManager.setURL(false, httpPort);
     }
 
     private void ensureApplicationStartupOrFailure() throws IOException {

@@ -1,7 +1,7 @@
 package io.quarkus.bootstrap.util;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,34 +34,51 @@ public class DependencyUtils {
                 artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
     }
 
-    public static List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive,
-            Map<ArtifactKey, String> managedVersions, Set<String> excludedScopes) {
-        final int initialCapacity = dominant.size() + recessive.size();
-        if (initialCapacity == 0) {
+    public static Map<ArtifactKey, Dependency> toMap(List<Dependency> deps) {
+        final Map<ArtifactKey, Dependency> map = new HashMap<>(deps.size());
+        for (int i = 0; i < deps.size(); i++) {
+            final Dependency dep = deps.get(i);
+            map.put(getKey(dep.getArtifact()), dep);
+        }
+        return map;
+    }
+
+    public static void putAll(Map<ArtifactKey, Dependency> map, List<Dependency> deps) {
+        for (int i = 0; i < deps.size(); i++) {
+            final Dependency dep = deps.get(i);
+            map.putIfAbsent(getKey(dep.getArtifact()), dep);
+        }
+    }
+
+    public static List<Dependency> mergeDependencies(List<Dependency> dominant, List<Dependency> recessive,
+            Map<ArtifactKey, Dependency> managedVersions, Set<String> excludedScopes) {
+        if (dominant.isEmpty() && recessive.isEmpty()) {
             return List.of();
         }
-        final List<Dependency> result = new ArrayList<>(initialCapacity);
-        final Set<ArtifactKey> ids = new HashSet<>(initialCapacity, 1.0f);
-        for (Dependency dependency : dominant) {
-            if (excludedScopes.contains(dependency.getScope())) {
-                continue;
+        final List<Dependency> result = new ArrayList<>(dominant.size() + recessive.size());
+        final Map<ArtifactKey, Dependency> dominantMap = new HashMap<>(dominant.size());
+        for (Dependency dep : dominant) {
+            if (!excludedScopes.contains(dep.getScope())) {
+                result.add(dep);
+                final ArtifactKey key = getKey(dep.getArtifact());
+                if (!managedVersions.containsKey(key)) {
+                    dominantMap.put(key, dep);
+                }
             }
-            ids.add(getKey(dependency.getArtifact()));
-            result.add(dependency);
         }
-        for (Dependency dependency : recessive) {
-            if (excludedScopes.contains(dependency.getScope())) {
-                continue;
+        for (Dependency dep : recessive) {
+            if (!excludedScopes.contains(dep.getScope())) {
+                final ArtifactKey key = getKey(dep.getArtifact());
+                if (!dominantMap.containsKey(key)) {
+                    if (dep.getArtifact().getVersion() == null) {
+                        final Dependency managed = managedVersions.get(key);
+                        if (managed != null) {
+                            dep = dep.setArtifact(dep.getArtifact().setVersion(managed.getArtifact().getVersion()));
+                        }
+                    }
+                    result.add(dep);
+                }
             }
-            final ArtifactKey id = getKey(dependency.getArtifact());
-            if (ids.contains(id)) {
-                continue;
-            }
-            final String managedVersion = managedVersions.get(id);
-            if (managedVersion != null) {
-                dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
-            }
-            result.add(dependency);
         }
         return result;
     }

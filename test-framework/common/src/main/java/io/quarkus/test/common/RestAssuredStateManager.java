@@ -8,7 +8,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
-import io.restassured.internal.path.json.ConfigurableJsonSlurper;
 import io.restassured.path.json.JsonPath;
 import io.restassured.specification.RequestSpecification;
 
@@ -145,17 +144,6 @@ public class RestAssuredStateManager {
         clearURL();
 
         JsonPath.config = null;
-        // Reset the numberReturnType ThreadLocal in ConfigurableJsonSlurper as it is causing class loader leaks
-        try {
-            java.lang.reflect.Field numberReturnTypeField = ConfigurableJsonSlurper.class.getDeclaredField("numberReturnType");
-            numberReturnTypeField.setAccessible(true);
-            ThreadLocal<?> threadLocal = (ThreadLocal<?>) numberReturnTypeField.get(null);
-            if (threadLocal != null) {
-                threadLocal.remove();
-            }
-        } catch (Exception e) {
-            // Ignore if the field doesn't exist or can't be accessed
-        }
     }
 
     /**

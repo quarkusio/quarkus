@@ -17,6 +17,13 @@ public interface RegistryPlatformsConfig extends RegistryArtifactConfig {
      */
     Boolean getExtensionCatalogsIncluded();
 
+    /**
+     * Allows configuring a Maven repository to resolve platform extension catalogs from.
+     *
+     * @return Maven repository configuration or null
+     */
+    RegistryMavenConfig getMaven();
+
     default Mutable mutable() {
         return new RegistryPlatformsConfigImpl.Builder(this);
     }
@@ -30,6 +37,8 @@ public interface RegistryPlatformsConfig extends RegistryArtifactConfig {
         RegistryPlatformsConfig.Mutable setDisabled(boolean disabled);
 
         RegistryPlatformsConfig.Mutable setExtensionCatalogsIncluded(Boolean extensionCatalogsIncluded);
+
+        RegistryPlatformsConfig.Mutable setMaven(RegistryMavenConfig mavenConfig);
 
         /** @return an immutable copy of this config */
         @Override

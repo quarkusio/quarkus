@@ -141,7 +141,8 @@ public class DataSources {
     }
 
     @SuppressWarnings("resource")
-    public AgroalDataSource createDataSource(String dataSourceName, boolean otelEnabled) {
+    public AgroalDataSource createDataSource(String dataSourceName, boolean otelEnabled,
+            Map<String, String> buildTimeJdbcProperties) {
         if (!agroalDataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
@@ -192,7 +193,7 @@ public class DataSources {
         applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
                 driver, jdbcUrl,
                 dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
-                mpMetricsPresent);
+                mpMetricsPresent, buildTimeJdbcProperties);
 
         if (agroalDataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration,
@@ -243,7 +244,7 @@ public class DataSources {
             AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, TransactionManagerConfiguration transactionRuntimeConfig,
-            boolean mpMetricsPresent) {
+            boolean mpMetricsPresent, Map<String, String> buildTimeJdbcProperties) {
         connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks());
@@ -302,6 +303,11 @@ public class DataSources {
             String name = dataSourceRuntimeConfig.credentialsProvider().get();
             connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
+        }
+
+        // Additional JDBC properties from build time config
+        for (Map.Entry<String, String> entry : buildTimeJdbcProperties.entrySet()) {
+            connectionFactoryConfiguration.jdbcProperty(entry.getKey(), entry.getValue());
         }
 
         // Extra JDBC properties

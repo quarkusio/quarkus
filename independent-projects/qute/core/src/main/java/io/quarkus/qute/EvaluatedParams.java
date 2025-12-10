@@ -73,6 +73,8 @@ public final class EvaluatedParams {
         List<Expression> params = context.getParams();
         if (params.size() < 2) {
             return EMPTY;
+        } else if (params.size() == 2) {
+            return new EvaluatedParams(context.evaluate(params.get(1)));
         }
         Supplier<?>[] allResults = new Supplier[params.size()];
         List<CompletableFuture<?>> asyncResults = null;

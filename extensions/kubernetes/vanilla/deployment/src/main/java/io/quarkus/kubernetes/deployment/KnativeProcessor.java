@@ -50,6 +50,7 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.project.Project;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -79,71 +80,79 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public class KnativeProcessor {
-
-    private static final int KNATIVE_PRIORITY = DEFAULT_PRIORITY;
-
+public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> {
     private static final String LATEST_REVISION = "latest";
     private static final String KNATIVE_CONFIG_AUTOSCALER = "config-autoscaler";
     private static final String KNATIVE_CONFIG_DEFAULTS = "config-defaults";
     private static final String KNATIVE_SERVING = "knative-serving";
     private static final String KNATIVE_DEV_VISIBILITY = "networking.knative.dev/visibility";
 
+    @Override
+    protected int priority() {
+        return DEFAULT_PRIORITY;
+    }
+
+    @Override
+    protected String deploymentTarget() {
+        return KNATIVE;
+    }
+
+    @Override
+    protected boolean enabled() {
+        final var targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
+        return targets.contains(KNATIVE);
+    }
+
+    @Override
+    protected DeploymentResourceKind deploymentResourceKind(PlatformConfiguration config, Capabilities capabilities) {
+        return DeploymentResourceKind.KnativeService;
+    }
+
     @BuildStep
-    public void checkKnative(ApplicationInfoBuildItem applicationInfo, KnativeConfig config,
+    public void checkKnative(ApplicationInfoBuildItem applicationInfo,
+            Capabilities capabilities,
+            KnativeConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        List<String> targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
-        boolean knativeEnabled = targets.contains(KNATIVE);
-        deploymentTargets.produce(
-                new KubernetesDeploymentTargetBuildItem(KNATIVE, KNATIVE_SERVICE, KNATIVE_SERVICE_GROUP,
-                        KNATIVE_SERVICE_VERSION, KNATIVE_PRIORITY, knativeEnabled, config.deployStrategy()));
-        if (knativeEnabled) {
-            String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KNATIVE, KNATIVE_SERVICE_GROUP,
-                    KNATIVE_SERVICE_VERSION, KNATIVE_SERVICE, name));
-        }
+        super.produceDeploymentBuildItem(applicationInfo, capabilities, config, deploymentTargets, resourceMeta);
     }
 
     @BuildStep
     public void createAnnotations(KnativeConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KNATIVE)));
+        super.createAnnotations(config, annotations);
     }
 
     @BuildStep
     public void createLabels(KnativeConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config.labels().forEach((k, v) -> {
-            labels.produce(new KubernetesLabelBuildItem(k, v, KNATIVE));
-            imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
-        });
+        super.createLabels(config, labels, imageLabels);
     }
 
     @BuildStep
     public void createNamespace(KnativeConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
-        config.namespace().ifPresent(n -> namespace.produce(new KubernetesNamespaceBuildItem(KNATIVE, n)));
+        super.createNamespace(config, namespace);
+    }
+
+    @Override
+    protected AddPortToKnativeConfig portConfigurator(Port port) {
+        return new AddPortToKnativeConfig(port);
     }
 
     @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KnativeConfig config, List<KubernetesPortBuildItem> ports) {
-        List<ConfiguratorBuildItem> result = new ArrayList<>();
-        KubernetesCommonHelper.combinePorts(ports, config).values()
-                .stream()
+        return asStream(ports, config)
                 // At the moment, Knative only supports single port binding: https://github.com/knative/serving/issues/8471
                 .filter(p -> p.getName().equals("http"))
                 .findFirst()
-                .ifPresent(value -> result.add(new ConfiguratorBuildItem(new AddPortToKnativeConfig(value))));
-        return result;
+                .map(value -> List.of(new ConfiguratorBuildItem(portConfigurator(value))))
+                .orElse(List.of());
     }
 
     @BuildStep
     public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KNATIVE,
-                config, serviceAccountsFromExtensions,
-                decorators);
+        return super.computeEffectiveServiceAccounts(applicationInfo, config, serviceAccountsFromExtensions, decorators);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

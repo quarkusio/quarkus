@@ -72,29 +72,41 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public class OpenshiftProcessor {
-
-    private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY;
+public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConfig> {
     private static final String DOCKERIO_REGISTRY = "docker.io";
     private static final String OPENSHIFT_V3_APP = "app";
+
+    @Override
+    protected int priority() {
+        return DEFAULT_PRIORITY;
+    }
+
+    @Override
+    protected String deploymentTarget() {
+        return OPENSHIFT;
+    }
+
+    @Override
+    protected String clusterType() {
+        return OPENSHIFT;
+    }
+
+    @Override
+    protected boolean enabled() {
+        List<String> targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
+        return targets.contains(deploymentTarget());
+    }
+
+    @Override
+    protected DeploymentResourceKind deploymentResourceKind(PlatformConfiguration config, Capabilities capabilities) {
+        return config.getDeploymentResourceKind(capabilities);
+    }
 
     @BuildStep
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenShiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        List<String> targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
-        boolean openshiftEnabled = targets.contains(OPENSHIFT);
-
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
-        deploymentTargets.produce(
-                new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.getKind(),
-                        deploymentResourceKind.getGroup(),
-                        deploymentResourceKind.getVersion(), OPENSHIFT_PRIORITY, openshiftEnabled, config.deployStrategy()));
-        if (openshiftEnabled) {
-            String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.getGroup(),
-                    deploymentResourceKind.getVersion(), deploymentResourceKind.getKind(), name));
-        }
+        super.produceDeploymentBuildItem(applicationInfo, capabilities, config, deploymentTargets, resourceMeta);
     }
 
     @BuildStep
@@ -119,23 +131,24 @@ public class OpenshiftProcessor {
 
     @BuildStep
     public void createAnnotations(OpenShiftConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, OPENSHIFT)));
+        super.createAnnotations(config, annotations);
     }
 
     @BuildStep
     public void createLabels(
             OpenShiftConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config.labels().forEach((k, v) -> {
-            labels.produce(new KubernetesLabelBuildItem(k, v, OPENSHIFT));
-            imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
-        });
-        labels.produce(new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", OPENSHIFT));
+        super.createLabels(config, labels, imageLabels);
     }
 
     @BuildStep
     public void createNamespace(OpenShiftConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
-        config.namespace().ifPresent(n -> namespace.produce(new KubernetesNamespaceBuildItem(OPENSHIFT, n)));
+        super.createNamespace(config, namespace);
+    }
+
+    @Override
+    protected AddPortToOpenshiftConfig portConfigurator(Port port) {
+        return new AddPortToOpenshiftConfig(port);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -143,11 +156,7 @@ public class OpenshiftProcessor {
     public List<ConfiguratorBuildItem> createConfigurators(
             OpenShiftConfig config, Capabilities capabilities, Optional<ContainerImageInfoBuildItem> image,
             List<KubernetesPortBuildItem> ports) {
-
-        List<ConfiguratorBuildItem> result = new ArrayList<>();
-
-        KubernetesCommonHelper.combinePorts(ports, config).values()
-                .forEach(value -> result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value))));
+        List<ConfiguratorBuildItem> result = super.createConfigurators(ports, config);
 
         result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route())));
 
@@ -174,10 +183,7 @@ public class OpenshiftProcessor {
     public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, OPENSHIFT,
-                config, serviceAccountsFromExtensions,
-                decorators);
+        return super.computeEffectiveServiceAccounts(applicationInfo, config, serviceAccountsFromExtensions, decorators);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -425,10 +431,7 @@ public class OpenshiftProcessor {
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
             BuildProducer<DecoratorBuildItem> decorators) {
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        if (config.externalizeInit()) {
-            InitTaskProcessor.process(OPENSHIFT, name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
-                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
-        }
+        super.externalizeInitTasks(applicationInfo, config, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+                serviceAccount, decorators);
     }
 }

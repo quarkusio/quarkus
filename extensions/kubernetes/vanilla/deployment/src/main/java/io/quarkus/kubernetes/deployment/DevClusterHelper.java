@@ -34,7 +34,9 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.project.Project;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -58,15 +60,19 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public class DevClusterHelper {
+public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubernetesConfig> {
+    private static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
-    public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
+    @Override
+    protected AddPortToKubernetesConfig portConfigurator(Port port) {
+        return new AddPortToKubernetesConfig(port);
+    }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public static List<DecoratorBuildItem> createDecorators(String clusterKind,
-            String deploymentTarget,
+    public List<DecoratorBuildItem> createDecorators(
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             KubernetesConfig config,
@@ -94,8 +100,9 @@ public class DevClusterHelper {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
+        final var clusterKind = deploymentTarget();
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, deploymentTarget, true)
+        final var namespace = Targetable.filteredByTarget(namespaces, clusterType(), true)
                 .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
@@ -112,7 +119,7 @@ public class DevClusterHelper {
         image.ifPresent(
                 i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
 
-        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES));
+        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterType()));
         if (config.idempotent()) {
             stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
         }
@@ -212,5 +219,21 @@ public class DevClusterHelper {
         } catch (Exception e) {
             throw new RuntimeException("Unable to generate stable port number from input string: '" + input + "'", e);
         }
+    }
+
+    public void externalizeInitTasks(
+            ApplicationInfoBuildItem applicationInfo,
+            KubernetesConfig config,
+            ContainerImageInfoBuildItem image,
+            List<InitTaskBuildItem> initTasks,
+            BuildProducer<KubernetesJobBuildItem> jobs,
+            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env,
+            BuildProducer<KubernetesRoleBuildItem> roles,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
+            BuildProducer<DecoratorBuildItem> decorators) {
+        super.externalizeInitTasks(applicationInfo, config, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+                serviceAccount, decorators);
     }
 }

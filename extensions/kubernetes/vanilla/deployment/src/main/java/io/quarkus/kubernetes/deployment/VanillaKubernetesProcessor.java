@@ -71,59 +71,63 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public class VanillaKubernetesProcessor {
+public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKubernetesConfig> {
+
+    @Override
+    protected int priority() {
+        return VANILLA_KUBERNETES_PRIORITY;
+    }
+
+    @Override
+    protected String deploymentTarget() {
+        return KUBERNETES;
+    }
+
+    @Override
+    protected DeploymentResourceKind deploymentResourceKind(PlatformConfiguration config, Capabilities capabilities) {
+        return config.getDeploymentResourceKind(capabilities);
+    }
+
+    @Override
+    protected boolean enabled() {
+        // when nothing was selected by the user, we enable vanilla Kubernetes by default
+        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
+        final var deploymentTarget = deploymentTarget();
+        return userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(deploymentTarget);
+    }
 
     @BuildStep
     public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities,
             KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
-
-        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
-        if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
-            // when nothing was selected by the user, we enable vanilla Kubernetes by default
-            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES,
-                    deploymentResourceKind.getKind(), deploymentResourceKind.getGroup(), deploymentResourceKind.getVersion(),
-                    VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy()));
-
-            String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, deploymentResourceKind.getGroup(),
-                    deploymentResourceKind.getVersion(), deploymentResourceKind.getKind(), name));
-
-        } else {
-            deploymentTargets
-                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, deploymentResourceKind.getKind(),
-                            deploymentResourceKind.getGroup(),
-                            deploymentResourceKind.getVersion(), VANILLA_KUBERNETES_PRIORITY, false, config.deployStrategy()));
-        }
+        super.produceDeploymentBuildItem(applicationInfo, capabilities, config, deploymentTargets, resourceMeta);
     }
 
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KUBERNETES)));
+        super.createAnnotations(config, annotations);
     }
 
     @BuildStep
     public void createLabels(KubernetesConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config.labels().forEach((k, v) -> {
-            labels.produce(new KubernetesLabelBuildItem(k, v, KUBERNETES));
-            imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
-        });
-        labels.produce(new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", KUBERNETES));
+        super.createLabels(config, labels, imageLabels);
     }
 
     @BuildStep
     public void createNamespace(KubernetesConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
-        config.namespace().ifPresent(n -> namespace.produce(new KubernetesNamespaceBuildItem(KUBERNETES, n)));
+        super.createNamespace(config, namespace);
+    }
+
+    @Override
+    protected AddPortToKubernetesConfig portConfigurator(Port port) {
+        return new AddPortToKubernetesConfig(port);
     }
 
     @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config, List<KubernetesPortBuildItem> ports) {
-        List<ConfiguratorBuildItem> result = new ArrayList<>();
-        KubernetesCommonHelper.combinePorts(ports, config).values()
-                .forEach(value -> result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value))));
+        final var result = super.createConfigurators(ports, config);
         if (config.ingress() != null) {
             result.add(new ConfiguratorBuildItem(new ApplyKubernetesIngressConfigurator((config.ingress()))));
         }
@@ -140,10 +144,7 @@ public class VanillaKubernetesProcessor {
     public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KUBERNETES,
-                config, serviceAccountsFromExtensions,
-                decorators);
+        return super.computeEffectiveServiceAccounts(applicationInfo, config, serviceAccountsFromExtensions, decorators);
     }
 
     @BuildStep
@@ -172,17 +173,18 @@ public class VanillaKubernetesProcessor {
 
         final List<DecoratorBuildItem> result = new ArrayList<>();
         if (targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
-                .noneMatch(t -> KUBERNETES.equals(t.getName()))) {
+                .noneMatch(t -> deploymentTarget().equals(t.getName()))) {
             return result;
         }
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, KUBERNETES, true)
+        final var namespace = Targetable.filteredByTarget(namespaces, deploymentTarget(), true)
                 .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, namespace, config,
+
+        result.addAll(KubernetesCommonHelper.createDecorators(project, deploymentTarget(), name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations, labels, image, command, port,
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
@@ -338,10 +340,7 @@ public class VanillaKubernetesProcessor {
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
 
             BuildProducer<DecoratorBuildItem> decorators) {
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        if (config.externalizeInit()) {
-            InitTaskProcessor.process(KUBERNETES, name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
-                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
-        }
+        super.externalizeInitTasks(applicationInfo, config, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+                serviceAccount, decorators);
     }
 }

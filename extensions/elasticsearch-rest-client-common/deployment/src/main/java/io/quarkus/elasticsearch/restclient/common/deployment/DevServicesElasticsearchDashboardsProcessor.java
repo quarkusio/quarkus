@@ -47,7 +47,7 @@ import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommon
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
- * Starts an Elasticsearch server as dev service if needed.
+ * Starts an Elasticsearch Kibana/OpenSearch Dashboards as dev service if needed.
  */
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesElasticsearchDashboardsProcessor {

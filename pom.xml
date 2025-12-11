@@ -71,12 +71,12 @@
         <jacoco.version>0.8.14</jacoco.version>
         <kubernetes-client.version>7.4.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.6</rest-assured.version>
-        <hibernate-orm.version>7.2.0.CR3</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>7.2.0.CR4</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.17.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-models.version>1.0.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>3.2.0.CR1</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>3.2.0.CR2</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
         <hibernate-search.version>8.2.0.CR1</hibernate-search.version>
         <hibernate-tools.version>7.2.0.CR2</hibernate-tools.version>

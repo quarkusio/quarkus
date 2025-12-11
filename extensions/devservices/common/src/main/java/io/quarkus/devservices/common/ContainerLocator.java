@@ -74,7 +74,7 @@ public class ContainerLocator {
     }
 
     public Optional<ContainerAddress> locateContainer(String serviceName, boolean shared, LaunchMode launchMode) {
-        if (shared && launchMode == LaunchMode.DEVELOPMENT) {
+        if (shared && launchMode.isDevServicesSupported()) {
             return lookup(serviceName)
                     .flatMap(container -> getMappedPort(container, port).stream()
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())

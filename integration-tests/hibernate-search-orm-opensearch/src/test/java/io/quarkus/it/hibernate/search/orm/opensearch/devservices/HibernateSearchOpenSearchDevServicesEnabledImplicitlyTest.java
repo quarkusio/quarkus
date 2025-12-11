@@ -3,6 +3,9 @@ package io.quarkus.it.hibernate.search.orm.opensearch.devservices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -25,6 +28,14 @@ public class HibernateSearchOpenSearchDevServicesEnabledImplicitlyTest {
             // that way, we can control whether quarkus.hibernate-search-orm.elasticsearch.hosts is set or not.
             // In this test, we do NOT set quarkus.hibernate-search-orm.elasticsearch.hosts.
             return "someotherprofile";
+        }
+
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            Map<String, String> config = new HashMap<>();
+            // Use a different service name so that we won't try to "discover" the default dev service started already somewhere
+            config.put("quarkus.elasticsearch.devservices.service-name", "opensearch-devservices-3");
+            return config;
         }
     }
 

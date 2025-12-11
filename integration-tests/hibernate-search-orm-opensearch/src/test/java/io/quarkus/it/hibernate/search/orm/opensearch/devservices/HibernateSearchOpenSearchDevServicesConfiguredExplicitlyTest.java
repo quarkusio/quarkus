@@ -24,6 +24,8 @@ public class HibernateSearchOpenSearchDevServicesConfiguredExplicitlyTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "quarkus.elasticsearch.devservices.enabled", "true",
+                    // Use a different service name so that we won't try to start this test with the "default" service version != 2.12
+                    "quarkus.elasticsearch.devservices.service-name", "opensearch-devservices",
                     // This needs to be different from the default image, or the test makes no sense.
                     "quarkus.elasticsearch.devservices.image-name", "docker.io/opensearchproject/opensearch:2.12.0",
                     // This needs to match the version used just above,

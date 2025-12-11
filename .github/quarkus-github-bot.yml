@@ -237,7 +237,7 @@ triage:
     - id: bearer-token
       labels: [area/security, area/oidc]
       title: "bearer"
-      notify: [sberyozkin, pedroigor]
+      notify: [sberyozkin]
     - id: metrics
       labels: [area/metrics, area/smallrye]
       title: "metrics"
@@ -604,7 +604,7 @@ triage:
     - id: oidc
       labels: [area/oidc]
       title: "oidc"
-      notify: [sberyozkin, pedroigor]
+      notify: [sberyozkin]
       directories:
         - extensions/oidc
         - integration-tests/oidc/
@@ -612,7 +612,7 @@ triage:
     - id: keycloak
       labels: [area/keycloak]
       title: "keycloak"
-      notify: [sberyozkin, pedroigor]
+      notify: [sberyozkin]
       directories:
         - extensions/keycloak
         - integration-tests/keycloak

@@ -19,7 +19,6 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.runtime.ResettableSystemProperties;
 
 public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
     private static final Logger LOGGER = Logger.getLogger(IsContainerRuntimeWorking.class);
@@ -64,12 +63,7 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
             // this runs in threads that start with 'ducttape'
             StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
                     (s) -> s.getName().startsWith("ducttape"));
-
-            String dockerApiVersion = System.getProperty("api.version");
-
-            try (ResettableSystemProperties ignored = dockerApiVersion == null
-                    ? ResettableSystemProperties.of("api.version", "1.44")
-                    : ResettableSystemProperties.empty()) {
+            try {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");
                 Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);

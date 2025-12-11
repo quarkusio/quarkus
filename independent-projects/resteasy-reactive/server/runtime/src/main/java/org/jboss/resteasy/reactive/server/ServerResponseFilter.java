@@ -64,6 +64,8 @@ public @interface ServerResponseFilter {
 
     /**
      * The priority with which this response filter will be executed
+     * <p>
+     * Higher priorities are executed first, lower later. Ranges from 0 to n TODO:: someone add this exact info
      */
     int priority() default Priorities.USER;
 }

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.config.RegistryConfig;
 import io.quarkus.registry.config.RegistryDescriptorConfig;
+import io.quarkus.registry.config.RegistryMavenConfig;
+import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
 import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
 
@@ -50,6 +52,225 @@ public class MavenRegistryClientCompleteConfigTest {
         assertThat(completePlatforms.getArtifact())
                 .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"));
         assertThat(completePlatforms.getExtensionCatalogsIncluded()).isTrue();
+    }
+
+    @Test
+    public void testPlatformExtensionsMavenConfigProvidedByRegistry() {
+
+        final RegistryDescriptorConfig descriptorConfig = RegistryDescriptorConfig.builder()
+                .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"))
+                .build();
+
+        final RegistryConfig.Mutable localClientConfig = RegistryConfig.builder();
+        localClientConfig.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .build());
+
+        final RegistryConfig.Mutable registryDescriptor = RegistryConfig.builder();
+        registryDescriptor.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder()
+                                .setRepository(RegistryMavenRepoConfig.builder()
+                                        .setId("repo-id")
+                                        .setUrl("repo-url")
+                                        .build())
+                                .build())
+                        .build());
+
+        final RegistryConfig.Mutable completeConfig = MavenRegistryClientFactory.completeRegistryConfig(localClientConfig,
+                registryDescriptor);
+        assertThat(completeConfig.getId()).isEqualTo("acme-registry");
+        assertThat(completeConfig.getDescriptor().getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"));
+        final RegistryPlatformsConfig completePlatforms = completeConfig.getPlatforms();
+        assertThat(completePlatforms).isNotNull();
+        assertThat(completePlatforms.getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"));
+        assertThat(completePlatforms.getExtensionCatalogsIncluded()).isNull();
+        assertThat(completePlatforms.getMaven()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository().getId()).isEqualTo("repo-id");
+        assertThat(completePlatforms.getMaven().getRepository().getUrl()).isEqualTo("repo-url");
+    }
+
+    @Test
+    public void testClientOverridingPlatformExtensionsMavenConfigProvidedByRegistry() {
+
+        final RegistryDescriptorConfig descriptorConfig = RegistryDescriptorConfig.builder()
+                .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"))
+                .build();
+
+        final RegistryConfig.Mutable localClientConfig = RegistryConfig.builder();
+        localClientConfig.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder()
+                                .setRepository(RegistryMavenRepoConfig.builder()
+                                        .setId("client-repo-id")
+                                        .build())
+                                .build())
+                        .build());
+
+        final RegistryConfig.Mutable registryDescriptor = RegistryConfig.builder();
+        registryDescriptor.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder()
+                                .setRepository(RegistryMavenRepoConfig.builder()
+                                        .setId("repo-id")
+                                        .setUrl("repo-url")
+                                        .build())
+                                .build())
+                        .build());
+
+        final RegistryConfig.Mutable completeConfig = MavenRegistryClientFactory.completeRegistryConfig(localClientConfig,
+                registryDescriptor);
+        assertThat(completeConfig.getId()).isEqualTo("acme-registry");
+        assertThat(completeConfig.getDescriptor().getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"));
+        final RegistryPlatformsConfig completePlatforms = completeConfig.getPlatforms();
+        assertThat(completePlatforms).isNotNull();
+        assertThat(completePlatforms.getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"));
+        assertThat(completePlatforms.getExtensionCatalogsIncluded()).isNull();
+        assertThat(completePlatforms.getMaven()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository().getId()).isEqualTo("client-repo-id");
+        assertThat(completePlatforms.getMaven().getRepository().getUrl()).isEqualTo("repo-url");
+    }
+
+    @Test
+    public void testPlatformExtensionsMavenConfigProvidedByClient() {
+
+        final RegistryDescriptorConfig descriptorConfig = RegistryDescriptorConfig.builder()
+                .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"))
+                .build();
+
+        final RegistryConfig.Mutable localClientConfig = RegistryConfig.builder();
+        localClientConfig.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder()
+                                .setRepository(RegistryMavenRepoConfig.builder()
+                                        .setId("repo-id")
+                                        .setUrl("repo-url")
+                                        .build())
+                                .build())
+                        .build());
+
+        final RegistryConfig.Mutable registryDescriptor = RegistryConfig.builder();
+        registryDescriptor.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .build());
+
+        final RegistryConfig.Mutable completeConfig = MavenRegistryClientFactory.completeRegistryConfig(localClientConfig,
+                registryDescriptor);
+        assertThat(completeConfig.getId()).isEqualTo("acme-registry");
+        assertThat(completeConfig.getDescriptor().getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"));
+        final RegistryPlatformsConfig completePlatforms = completeConfig.getPlatforms();
+        assertThat(completePlatforms).isNotNull();
+        assertThat(completePlatforms.getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"));
+        assertThat(completePlatforms.getExtensionCatalogsIncluded()).isNull();
+        assertThat(completePlatforms.getMaven()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository().getId()).isEqualTo("repo-id");
+        assertThat(completePlatforms.getMaven().getRepository().getUrl()).isEqualTo("repo-url");
+    }
+
+    @Test
+    public void testPlatformExtensionsMavenConfigProvidedByClientOverridesRegistryIncludedCatalogs() {
+
+        final RegistryDescriptorConfig descriptorConfig = RegistryDescriptorConfig.builder()
+                .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"))
+                .build();
+
+        final RegistryConfig.Mutable localClientConfig = RegistryConfig.builder();
+        localClientConfig.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder()
+                                .setRepository(RegistryMavenRepoConfig.builder()
+                                        .setId("repo-id")
+                                        .setUrl("repo-url")
+                                        .build())
+                                .build())
+                        .build());
+
+        final RegistryConfig.Mutable registryDescriptor = RegistryConfig.builder();
+        registryDescriptor.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setExtensionCatalogsIncluded(true)
+                        .build());
+
+        final RegistryConfig.Mutable completeConfig = MavenRegistryClientFactory.completeRegistryConfig(localClientConfig,
+                registryDescriptor);
+        assertThat(completeConfig.getId()).isEqualTo("acme-registry");
+        assertThat(completeConfig.getDescriptor().getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"));
+        final RegistryPlatformsConfig completePlatforms = completeConfig.getPlatforms();
+        assertThat(completePlatforms).isNotNull();
+        assertThat(completePlatforms.getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"));
+        assertThat(completePlatforms.getExtensionCatalogsIncluded()).isNull();
+        assertThat(completePlatforms.getMaven()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository()).isNotNull();
+        assertThat(completePlatforms.getMaven().getRepository().getId()).isEqualTo("repo-id");
+        assertThat(completePlatforms.getMaven().getRepository().getUrl()).isEqualTo("repo-url");
+    }
+
+    @Test
+    public void testClientPlatformExtensionIncludedCatalogsOverridesRegistryMavenConfig() {
+
+        final RegistryDescriptorConfig descriptorConfig = RegistryDescriptorConfig.builder()
+                .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"))
+                .build();
+
+        final RegistryConfig.Mutable localClientConfig = RegistryConfig.builder();
+        localClientConfig.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setExtensionCatalogsIncluded(true)
+                        .build());
+
+        final RegistryConfig.Mutable registryDescriptor = RegistryConfig.builder();
+        registryDescriptor.setId("acme-registry")
+                .setDescriptor(descriptorConfig)
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder()
+                                .setRepository(RegistryMavenRepoConfig.builder()
+                                        .setId("repo-id")
+                                        .setUrl("repo-url")
+                                        .build())
+                                .build())
+                        .build());
+
+        final RegistryConfig.Mutable completeConfig = MavenRegistryClientFactory.completeRegistryConfig(localClientConfig,
+                registryDescriptor);
+        assertThat(completeConfig.getId()).isEqualTo("acme-registry");
+        assertThat(completeConfig.getDescriptor().getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-registry-descriptor::json:1.0-SNAPSHOT"));
+        final RegistryPlatformsConfig completePlatforms = completeConfig.getPlatforms();
+        assertThat(completePlatforms).isNotNull();
+        assertThat(completePlatforms.getArtifact())
+                .isEqualTo(ArtifactCoords.fromString("org.acme.registry:acme-platforms::json:1.0-SNAPSHOT"));
+        assertThat(completePlatforms.getExtensionCatalogsIncluded()).isTrue();
+        assertThat(completePlatforms.getMaven()).isNull();
     }
 
     @Test

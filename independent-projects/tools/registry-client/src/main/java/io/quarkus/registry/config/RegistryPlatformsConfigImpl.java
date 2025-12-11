@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
@@ -21,15 +22,22 @@ import io.quarkus.registry.json.JsonBuilder;
 public class RegistryPlatformsConfigImpl extends RegistryArtifactConfigImpl implements RegistryPlatformsConfig {
 
     protected final Boolean extensionCatalogsIncluded;
+    protected final RegistryMavenConfig mavenConfig;
 
     private RegistryPlatformsConfigImpl(Builder builder) {
         super(builder.disabled, builder.artifact);
         this.extensionCatalogsIncluded = builder.extensionCatalogsIncluded;
+        this.mavenConfig = builder.mavenConfig;
     }
 
     @Override
     public Boolean getExtensionCatalogsIncluded() {
         return extensionCatalogsIncluded;
+    }
+
+    @Override
+    public RegistryMavenConfig getMaven() {
+        return mavenConfig;
     }
 
     @Override
@@ -67,6 +75,7 @@ public class RegistryPlatformsConfigImpl extends RegistryArtifactConfigImpl impl
      */
     public static class Builder extends RegistryArtifactConfigImpl.Builder implements RegistryPlatformsConfig.Mutable {
         protected Boolean extensionCatalogsIncluded;
+        protected RegistryMavenConfig mavenConfig;
 
         public Builder() {
         }
@@ -97,6 +106,18 @@ public class RegistryPlatformsConfigImpl extends RegistryArtifactConfigImpl impl
         @Override
         public RegistryPlatformsConfig.Mutable setExtensionCatalogsIncluded(Boolean extensionCatalogsIncluded) {
             this.extensionCatalogsIncluded = extensionCatalogsIncluded;
+            return this;
+        }
+
+        @Override
+        @JsonDeserialize(as = RegistryMavenConfigImpl.Builder.class)
+        public RegistryMavenConfig getMaven() {
+            return mavenConfig;
+        }
+
+        @Override
+        public RegistryPlatformsConfig.Mutable setMaven(RegistryMavenConfig mavenConfig) {
+            this.mavenConfig = mavenConfig;
             return this;
         }
 

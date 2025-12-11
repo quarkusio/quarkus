@@ -56,10 +56,7 @@ public class RegistryMavenRepoConfigImpl implements RegistryMavenRepoConfig {
 
     @Override
     public String toString() {
-        return "BaseRegistryMavenRepoConfig{" +
-                "id='" + id + '\'' +
-                ", url='" + url + '\'' +
-                '}';
+        return "Maven repo " + id + " " + " " + url;
     }
 
     /**

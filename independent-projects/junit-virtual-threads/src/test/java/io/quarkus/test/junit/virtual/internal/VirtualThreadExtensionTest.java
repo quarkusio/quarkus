@@ -1,6 +1,6 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
-import static io.quarkus.test.junit5.virtual.internal.VirtualThreadExtension._COLLECTOR_KEY;
+import static io.quarkus.test.junit.virtual.internal.VirtualThreadExtension._COLLECTOR_KEY;
 import static org.assertj.core.api.Assertions.*;
 
 import java.lang.reflect.AnnotatedElement;
@@ -25,8 +25,8 @@ import org.junit.jupiter.api.extension.TestInstances;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import io.quarkus.test.junit5.virtual.ShouldNotPin;
-import io.quarkus.test.junit5.virtual.ShouldPin;
+import io.quarkus.test.junit.virtual.ShouldNotPin;
+import io.quarkus.test.junit.virtual.ShouldPin;
 import jdk.jfr.consumer.RecordedEvent;
 
 class VirtualThreadExtensionTest {

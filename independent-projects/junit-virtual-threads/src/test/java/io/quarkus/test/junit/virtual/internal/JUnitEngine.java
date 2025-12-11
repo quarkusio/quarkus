@@ -1,4 +1,4 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 import static org.junit.platform.testkit.engine.EventConditions.*;

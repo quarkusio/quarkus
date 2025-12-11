@@ -1,12 +1,12 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
-import io.quarkus.test.junit5.virtual.ShouldNotPin;
-import io.quarkus.test.junit5.virtual.ShouldPin;
-import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
+import io.quarkus.test.junit.virtual.ShouldNotPin;
+import io.quarkus.test.junit.virtual.ShouldPin;
+import io.quarkus.test.junit.virtual.VirtualThreadUnit;
 
 @VirtualThreadUnit
 public class LoomUnitExampleTest {

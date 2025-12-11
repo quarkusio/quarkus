@@ -1,4 +1,4 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
 import jdk.jfr.Category;
 import jdk.jfr.Event;
@@ -11,11 +11,11 @@ import jdk.jfr.StackTrace;
  */
 public interface InternalEvents {
 
-    String INITIALIZATION_EVENT_NAME = "io.quarkus.test.junit5.virtual.internal.InternalEvents.InitializationEvent";
-    String SHUTDOWN_EVENT_NAME = "io.quarkus.test.junit5.virtual.internal.InternalEvents.ShutdownEvent";
+    String INITIALIZATION_EVENT_NAME = "internal.io.quarkus.test.junit.virtual.InternalEvents.InitializationEvent";
+    String SHUTDOWN_EVENT_NAME = "internal.io.quarkus.test.junit.virtual.InternalEvents.ShutdownEvent";
 
-    String CAPTURING_STARTED_EVENT_NAME = "io.quarkus.test.junit5.virtual.internal.InternalEvents.CapturingStartedEvent";
-    String CAPTURING_STOPPED_EVENT_NAME = "io.quarkus.test.junit5.virtual.internal.InternalEvents.CapturingStoppedEvent";
+    String CAPTURING_STARTED_EVENT_NAME = "internal.io.quarkus.test.junit.virtual.InternalEvents.CapturingStartedEvent";
+    String CAPTURING_STOPPED_EVENT_NAME = "internal.io.quarkus.test.junit.virtual.InternalEvents.CapturingStoppedEvent";
 
     @Name(INITIALIZATION_EVENT_NAME)
     @Category("virtual-thread-unit")

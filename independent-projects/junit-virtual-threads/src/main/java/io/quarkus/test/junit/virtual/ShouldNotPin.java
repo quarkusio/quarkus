@@ -1,4 +1,4 @@
-package io.quarkus.test.junit5.virtual;
+package io.quarkus.test.junit.virtual;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;

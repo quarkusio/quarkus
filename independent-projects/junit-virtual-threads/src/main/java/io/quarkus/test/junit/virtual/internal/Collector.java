@@ -1,4 +1,4 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
 import java.util.List;
 import java.util.function.Consumer;

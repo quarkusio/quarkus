@@ -10,10 +10,13 @@ import java.lang.annotation.Target;
  * Marker indicating that the test method or class should not pin the carrier thread.
  * If, during the execution of the test, a virtual thread pins the carrier thread, the test fails.
  * However, occasional pin can still be allowed by setting {@code atMost} value
+ *
+ * @deprecated use {@link io.quarkus.test.junit.virtual.ShouldNotPin} instead
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
 @Inherited
+@Deprecated(since = "3.31", forRemoval = true)
 public @interface ShouldNotPin {
 
     /**

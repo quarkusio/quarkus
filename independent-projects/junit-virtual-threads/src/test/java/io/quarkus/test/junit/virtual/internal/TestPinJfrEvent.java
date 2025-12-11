@@ -1,6 +1,6 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
-import static io.quarkus.test.junit5.virtual.internal.Collector.CARRIER_PINNED_EVENT_NAME;
+import static io.quarkus.test.junit.virtual.internal.Collector.CARRIER_PINNED_EVENT_NAME;
 
 import jdk.jfr.*;
 

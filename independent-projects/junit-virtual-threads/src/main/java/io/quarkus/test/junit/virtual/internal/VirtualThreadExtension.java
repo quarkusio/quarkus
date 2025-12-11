@@ -1,6 +1,6 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
-import static io.quarkus.test.junit5.virtual.internal.Collector.CARRIER_PINNED_EVENT_NAME;
+import static io.quarkus.test.junit.virtual.internal.Collector.CARRIER_PINNED_EVENT_NAME;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -18,9 +18,9 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-import io.quarkus.test.junit5.virtual.ShouldNotPin;
-import io.quarkus.test.junit5.virtual.ShouldPin;
-import io.quarkus.test.junit5.virtual.ThreadPinnedEvents;
+import io.quarkus.test.junit.virtual.ShouldNotPin;
+import io.quarkus.test.junit.virtual.ShouldPin;
+import io.quarkus.test.junit.virtual.ThreadPinnedEvents;
 import io.smallrye.common.annotation.SuppressForbidden;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedFrame;
@@ -67,41 +67,60 @@ public class VirtualThreadExtension
 
     private boolean requiresRecording(Class<?> clazz, Method method) {
         if (clazz.isAnnotationPresent(ShouldNotPin.class) || clazz.isAnnotationPresent(ShouldPin.class)
-                || method.isAnnotationPresent(ShouldNotPin.class) || method.isAnnotationPresent(ShouldPin.class)) {
+                || method.isAnnotationPresent(ShouldNotPin.class) || method.isAnnotationPresent(ShouldPin.class)
+                || clazz.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldNotPin.class)
+                || clazz.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldPin.class)
+                || method.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldNotPin.class)
+                || method.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldPin.class)) {
             return true;
         }
-        return Arrays.asList(method.getParameterTypes()).contains(ThreadPinnedEvents.class);
+        return Arrays.asList(method.getParameterTypes()).contains(ThreadPinnedEvents.class)
+                || Arrays.asList(method.getParameterTypes()).contains(io.quarkus.test.junit5.virtual.ThreadPinnedEvents.class);
     }
 
-    private ShouldPin getShouldPin(Class<?> clazz, Method method) {
+    private ShouldPinRecord getShouldPin(Class<?> clazz, Method method) {
         if (method.isAnnotationPresent(ShouldPin.class)) {
-            return method.getAnnotation(ShouldPin.class);
+            return ShouldPinRecord.of(method.getAnnotation(ShouldPin.class));
+        }
+        if (method.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldPin.class)) {
+            return ShouldPinRecord.of(method.getAnnotation(io.quarkus.test.junit5.virtual.ShouldPin.class));
         }
 
-        if (method.isAnnotationPresent(ShouldNotPin.class)) {
+        if (method.isAnnotationPresent(ShouldNotPin.class) ||
+                method.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldNotPin.class)) {
             // If the method overrides the class annotation.
             return null;
         }
 
         if (clazz.isAnnotationPresent(ShouldPin.class)) {
-            return clazz.getAnnotation(ShouldPin.class);
+            return ShouldPinRecord.of(clazz.getAnnotation(ShouldPin.class));
+        }
+        if (clazz.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldPin.class)) {
+            return ShouldPinRecord.of(clazz.getAnnotation(io.quarkus.test.junit5.virtual.ShouldPin.class));
         }
 
         return null;
     }
 
-    private ShouldNotPin getShouldNotPin(Class<?> clazz, Method method) {
+    private ShouldNotPinRecord getShouldNotPin(Class<?> clazz, Method method) {
         if (method.isAnnotationPresent(ShouldNotPin.class)) {
-            return method.getAnnotation(ShouldNotPin.class);
+            return ShouldNotPinRecord.of(method.getAnnotation(ShouldNotPin.class));
+        }
+        if (method.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldNotPin.class)) {
+            return ShouldNotPinRecord.of(method.getAnnotation(io.quarkus.test.junit5.virtual.ShouldNotPin.class));
         }
 
-        if (method.isAnnotationPresent(ShouldPin.class)) {
+        if (method.isAnnotationPresent(ShouldPin.class) ||
+                method.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldPin.class)) {
             // If the method overrides the class annotation.
             return null;
         }
 
         if (clazz.isAnnotationPresent(ShouldNotPin.class)) {
-            return clazz.getAnnotation(ShouldNotPin.class);
+            return ShouldNotPinRecord.of(clazz.getAnnotation(ShouldNotPin.class));
+        }
+        if (clazz.isAnnotationPresent(io.quarkus.test.junit5.virtual.ShouldNotPin.class)) {
+            return ShouldNotPinRecord.of(clazz.getAnnotation(io.quarkus.test.junit5.virtual.ShouldNotPin.class));
         }
 
         return null;
@@ -128,8 +147,8 @@ public class VirtualThreadExtension
         List<RecordedEvent> pinEvents = captured.stream()
                 .filter(re -> re.getEventType().getName().equals(CARRIER_PINNED_EVENT_NAME)).collect(Collectors.toList());
 
-        ShouldPin pin = getShouldPin(clazz, method);
-        ShouldNotPin notpin = getShouldNotPin(clazz, method);
+        ShouldPinRecord pin = getShouldPin(clazz, method);
+        ShouldNotPinRecord notpin = getShouldNotPin(clazz, method);
 
         if (pin != null) {
             if (pinEvents.isEmpty()) {
@@ -172,7 +191,8 @@ public class VirtualThreadExtension
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return parameterContext.getParameter().getType().equals(ThreadPinnedEvents.class);
+        return parameterContext.getParameter().getType().equals(ThreadPinnedEvents.class) ||
+                parameterContext.getParameter().getType().equals(io.quarkus.test.junit5.virtual.ThreadPinnedEvents.class);
     }
 
     @Override
@@ -184,4 +204,33 @@ public class VirtualThreadExtension
         };
     }
 
+    /**
+     * @deprecated Remove as soon as we remove the junit5 package as we won't need this abstration anymore
+     */
+    @Deprecated(since = "3.31", forRemoval = true)
+    private record ShouldPinRecord(int atMost) {
+
+        static ShouldPinRecord of(ShouldPin pin) {
+            return new ShouldPinRecord(pin.atMost());
+        }
+
+        static ShouldPinRecord of(io.quarkus.test.junit5.virtual.ShouldPin pin) {
+            return new ShouldPinRecord(pin.atMost());
+        }
+    }
+
+    /**
+     * @deprecated Remove as soon as we remove the junit5 package as we won't need this abstration anymore
+     */
+    @Deprecated(since = "3.31", forRemoval = true)
+    private record ShouldNotPinRecord(int atMost) {
+
+        static ShouldNotPinRecord of(ShouldNotPin pin) {
+            return new ShouldNotPinRecord(pin.atMost());
+        }
+
+        static ShouldNotPinRecord of(io.quarkus.test.junit5.virtual.ShouldNotPin pin) {
+            return new ShouldNotPinRecord(pin.atMost());
+        }
+    }
 }

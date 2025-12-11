@@ -162,7 +162,7 @@
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                         <excludes>
-                            <exclude>io.quarkus.test.junit5.virtual.internal.ignore.**Test.java</exclude>
+                            <exclude>io.quarkus.test.junit.virtual.internal.ignore.**Test.java</exclude>
                         </excludes>
                     </configuration>
                 </plugin>

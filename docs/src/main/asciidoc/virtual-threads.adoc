@@ -505,7 +505,7 @@ To enable this detection:
 </dependency>
 ----
 
-* 2) In your test case, add the `io.quarkus.test.junit5.virtual.VirtualThreadUnit`  and `io.quarkus.test.junit.virtual.ShouldNotPin` annotations:
+* 2) In your test case, add the `io.quarkus.test.junit.virtual.VirtualThreadUnit`  and `io.quarkus.test.junit.virtual.ShouldNotPin` annotations:
 [source, java]
 ----
 @QuarkusTest

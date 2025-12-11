@@ -1,6 +1,6 @@
-package io.quarkus.test.junit5.virtual.internal;
+package io.quarkus.test.junit.virtual.internal;
 
-import static io.quarkus.test.junit5.virtual.internal.JUnitEngine.runTestAndAssertFailure;
+import static io.quarkus.test.junit.virtual.internal.JUnitEngine.runTestAndAssertFailure;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.util.stream.Stream;
@@ -12,10 +12,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleOnMethodTest;
-import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleShouldNotPinOnClassTest;
-import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleShouldNotPinOnSuperClassTest;
-import io.quarkus.test.junit5.virtual.internal.ignore.LoomUnitExampleShouldPinOnSuperClassTest;
+import io.quarkus.test.junit.virtual.internal.ignore.LoomUnitExampleOnMethodTest;
+import io.quarkus.test.junit.virtual.internal.ignore.LoomUnitExampleShouldNotPinOnClassTest;
+import io.quarkus.test.junit.virtual.internal.ignore.LoomUnitExampleShouldNotPinOnSuperClassTest;
+import io.quarkus.test.junit.virtual.internal.ignore.LoomUnitExampleShouldPinOnSuperClassTest;
 
 @DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*", disabledReason = "Semeru doesn't support JFR yet")
 public class ShouldPinTest {

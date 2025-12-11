@@ -1,4 +1,4 @@
-package io.quarkus.test.junit5.virtual;
+package io.quarkus.test.junit.virtual;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import jdk.jfr.consumer.RecordedEvent;
  * <p>
  * The returned list is a copy of the list of captured events.
  */
-public interface ThreadPinnedEvents {
+public interface ThreadPinnedEvents extends io.quarkus.test.junit5.virtual.ThreadPinnedEvents {
 
     List<RecordedEvent> getEvents();
 

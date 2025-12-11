@@ -1,9 +1,9 @@
-package io.quarkus.test.junit5.virtual.internal.ignore;
+package io.quarkus.test.junit.virtual.internal.ignore;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit5.virtual.ShouldPin;
-import io.quarkus.test.junit5.virtual.internal.TestPinJfrEvent;
+import io.quarkus.test.junit.virtual.ShouldPin;
+import io.quarkus.test.junit.virtual.internal.TestPinJfrEvent;
 
 public class LoomUnitExampleShouldNotPinOnSuperClassTest extends LoomUnitExampleShouldNotPinOnSuperClass {
 

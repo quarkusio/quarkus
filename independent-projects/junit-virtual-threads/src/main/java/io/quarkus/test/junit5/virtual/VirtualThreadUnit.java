@@ -26,9 +26,12 @@ import io.quarkus.test.junit.virtual.internal.VirtualThreadExtension;
  * additional work is mandatory to avoid missing event.
  * <br/>
  * This behaviour is not part of API and may change in future version.
+ *
+ * @deprecated use {@link io.quarkus.test.junit.virtual.VirtualThreadUnit} instead
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ExtendWith(VirtualThreadExtension.class)
+@Deprecated(since = "3.31", forRemoval = true)
 public @interface VirtualThreadUnit {
 }

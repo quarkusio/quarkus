@@ -1,4 +1,4 @@
-package io.quarkus.test.junit5.virtual;
+package io.quarkus.test.junit.virtual;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.quarkus.test.junit5.virtual.internal.VirtualThreadExtension;
+import io.quarkus.test.junit.virtual.internal.VirtualThreadExtension;
 
 /**
  * Extends the test case to detect pinned carrier thread.

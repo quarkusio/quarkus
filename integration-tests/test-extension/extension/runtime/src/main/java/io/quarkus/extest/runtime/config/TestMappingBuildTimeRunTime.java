@@ -30,6 +30,11 @@ public interface TestMappingBuildTimeRunTime {
      */
     Optional<String> optional();
 
+    /**
+     * Unlisted
+     */
+    Optional<String> unlisted();
+
     interface Group {
         /**
          * A Group value.

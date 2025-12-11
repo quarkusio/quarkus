@@ -63,10 +63,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit4-mock</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>artemis-amqp-protocol</artifactId>
             <scope>test</scope>

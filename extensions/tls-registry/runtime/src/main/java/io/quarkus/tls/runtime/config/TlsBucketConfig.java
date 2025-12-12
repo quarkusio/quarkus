@@ -13,6 +13,8 @@ import io.smallrye.config.WithDefault;
 @ConfigGroup
 public interface TlsBucketConfig {
 
+    public static final String DEFAULT_TLS_PROTOCOLS = "TLSv1.3";
+
     /**
      * The key store configuration.
      * Key stores are used to store private keys and their associated X.509 certificate chains.
@@ -48,7 +50,7 @@ public interface TlsBucketConfig {
      * You must at least have one protocol.
      * <p>
      */
-    @WithDefault("TLSv1.3")
+    @WithDefault(DEFAULT_TLS_PROTOCOLS)
     Set<String> protocols();
 
     /**

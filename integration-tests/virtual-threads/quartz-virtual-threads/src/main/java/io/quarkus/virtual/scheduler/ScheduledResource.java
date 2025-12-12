@@ -24,8 +24,8 @@ public class ScheduledResource {
                 .setInterval("1s")
                 .setTask(ex -> {
                     VirtualThreadsAssertions.assertEverything();
-                    // Quarkus specific - each VT has a unique name
-                    programmaticExecutions.add(Thread.currentThread().getName());
+                    // Quarkus specific - all VTs shares the same prefix
+                    programmaticExecutions.add(Thread.currentThread().getName() + '-' + Thread.currentThread().getId());
                 }, true)
                 .schedule();
     }
@@ -34,8 +34,8 @@ public class ScheduledResource {
     @RunOnVirtualThread
     void run() {
         VirtualThreadsAssertions.assertEverything();
-        // Quarkus specific - each VT has a unique name
-        executions.add(Thread.currentThread().getName());
+        // Quarkus specific - all VTs shares the same prefix
+        executions.add(Thread.currentThread().getName() + '-' + Thread.currentThread().getId());
     }
 
     @GET

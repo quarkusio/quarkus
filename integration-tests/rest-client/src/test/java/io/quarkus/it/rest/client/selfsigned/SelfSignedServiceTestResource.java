@@ -26,7 +26,7 @@ public class SelfSignedServiceTestResource implements QuarkusTestResourceLifecyc
         File file = new File("target/certs");
         file.mkdirs();
         // Generate self-signed certificate
-        // We do not use the junit 5 plugin to avoid having to annotate all the tests to make sure the certs are
+        // We do not use the JUnit plugin to avoid having to annotate all the tests to make sure the certs are
         // generated before the tests are run
         CertificateGenerator generator = new CertificateGenerator(file.toPath(), false);
         try {

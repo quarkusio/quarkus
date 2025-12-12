@@ -781,7 +781,7 @@ public class JunitTestRunner {
             // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
             // In that case, fallback to loading classes as we normally would, using a TCCL
             log.debug(
-                    "Could not load class for FacadeClassLoader. This might be because quarkus-junit5 is not on the project classpath: "
+                    "Could not load class for FacadeClassLoader. This might be because quarkus-junit is not on the project classpath: "
                             + e);
             log.debug(e);
             classLoaderForLoadingTests = Thread.currentThread()

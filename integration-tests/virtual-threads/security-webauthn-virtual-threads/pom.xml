@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <!--We use it in compile scope -->
@@ -38,8 +38,8 @@
             <artifactId>quarkus-test-security-webauthn</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.junit5</groupId>
-            <artifactId>junit5-virtual-threads</artifactId>
+            <groupId>io.quarkus.junit</groupId>
+            <artifactId>junit-virtual-threads</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

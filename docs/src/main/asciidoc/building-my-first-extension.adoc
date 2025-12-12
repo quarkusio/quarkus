@@ -263,7 +263,7 @@ Let's have a look at the deployment's `./greeting-extension/deployment/pom.xml`.
         </dependency>
         <dependency>
           <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-junit5-internal</artifactId>
+          <artifactId>quarkus-junit-internal</artifactId>
           <scope>test</scope>
         </dependency>
     </dependencies>
@@ -460,7 +460,7 @@ dependencies {
 
     implementation platform("io.quarkus:quarkus-bom:${quarkus.version}")
 
-    testImplementation 'io.quarkus:quarkus-junit5-internal'
+    testImplementation 'io.quarkus:quarkus-junit-internal'
 }
 ----
 
@@ -666,7 +666,7 @@ Now, Quarkus will process this new task which will result in the bytecode genera
 When developing a Quarkus extension, you mainly want to test your feature is properly deployed in an application and works as expected.
 That's why the tests will be hosted in the `deployment` module.
 
-Quarkus proposes facilities to test extensions via the `quarkus-junit5-internal` artifact (which should already be in the deployment pom.xml), in particular the `io.quarkus.test.QuarkusUnitTest` runner which starts an application with your extension.
+Quarkus proposes facilities to test extensions via the `quarkus-junit-internal` artifact (which should already be in the deployment pom.xml), in particular the `io.quarkus.test.QuarkusUnitTest` runner which starts an application with your extension.
 
 We will use https://rest-assured.io[RestAssured] (massively used in Quarkus) to test our HTTP endpoint.
 Let's add the `rest-assured` dependency into the  `./greeting-extension/deployment/pom.xml`.

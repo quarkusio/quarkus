@@ -76,9 +76,9 @@ public class QuarkusTestNestedITCase {
         @Order(1)
         void testOne() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(7, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
-            assertEquals(2, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(5, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(3, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(1, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
+            assertEquals(1, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 
@@ -86,9 +86,9 @@ public class QuarkusTestNestedITCase {
         @Order(2)
         void testTwo() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(9, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
-            assertEquals(3, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(7, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(5, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(2, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
+            assertEquals(3, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 
@@ -170,9 +170,9 @@ public class QuarkusTestNestedITCase {
         @Test
         void testOne() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(3, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
-            assertEquals(1, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(1, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(21, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(3, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
+            assertEquals(19, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 

@@ -1118,7 +1118,7 @@ what mock object to pass.
 
 === Using the repository pattern
 
-If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
+If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit-mockito` module,
 which makes mocking beans much easier:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -1126,7 +1126,7 @@ which makes mocking beans much easier:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5-mockito</artifactId>
+    <artifactId>quarkus-junit-mockito</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -1134,7 +1134,7 @@ which makes mocking beans much easier:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-junit5-mockito")
+testImplementation("io.quarkus:quarkus-junit-mockito")
 ----
 
 Given this simple entity:

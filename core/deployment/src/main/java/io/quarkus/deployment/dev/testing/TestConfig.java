@@ -46,7 +46,7 @@ public interface TestConfig {
      * The FQCN of the JUnit <code>ClassOrderer</code> to use. If the class cannot be found, it fallbacks to JUnit
      * default behaviour which does not set a <code>ClassOrderer</code> at all.
      *
-     * @see <a href=https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes>JUnit Class
+     * @see <a href=https://docs.junit.org/current/user-guide/#writing-tests-test-execution-order-classes>JUnit Class
      *      Order<a/>
      */
     @WithDefault("io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer")
@@ -55,7 +55,7 @@ public interface TestConfig {
     /**
      * Tags that should be included for continuous testing. This supports JUnit Tag Expressions.
      *
-     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
+     * @see <a href="https://docs.junit.org/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
      */
     Optional<List<String>> includeTags();
 
@@ -68,7 +68,7 @@ public interface TestConfig {
      * <p>
      * This supports JUnit Tag Expressions.
      *
-     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
+     * @see <a href="https://docs.junit.org/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
      */
     @WithDefault("slow")
     Optional<List<String>> excludeTags();

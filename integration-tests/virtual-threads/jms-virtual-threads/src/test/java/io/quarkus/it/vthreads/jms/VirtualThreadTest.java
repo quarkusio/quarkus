@@ -14,8 +14,8 @@ import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit5.virtual.ShouldNotPin;
-import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
+import io.quarkus.test.junit.virtual.ShouldNotPin;
+import io.quarkus.test.junit.virtual.VirtualThreadUnit;
 
 @QuarkusTest
 @QuarkusTestResource(WireMockExtension.class)

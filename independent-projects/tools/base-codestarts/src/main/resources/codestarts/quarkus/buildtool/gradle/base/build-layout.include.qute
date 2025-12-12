@@ -32,7 +32,7 @@ dependencies {
 {#for dep in dependencies}
     implementation '{dep}'
 {/for}
-    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit'
 {#for dep in test-dependencies}
     testImplementation '{dep}'
 {/for}

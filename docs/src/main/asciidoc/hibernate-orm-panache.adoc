@@ -1327,14 +1327,14 @@ public class PanacheMockingTest {
 
 === Using the repository pattern
 
-If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
+If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit-mockito` module,
 which makes mocking beans much easier:
 
 [source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5-mockito</artifactId>
+    <artifactId>quarkus-junit-mockito</artifactId>
     <scope>test</scope>
 </dependency>
 ----

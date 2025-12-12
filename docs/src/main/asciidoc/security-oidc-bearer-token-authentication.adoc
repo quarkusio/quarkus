@@ -586,7 +586,7 @@ You can begin testing by adding the following dependencies to your test project:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
+    <artifactId>quarkus-junit</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -595,7 +595,7 @@ You can begin testing by adding the following dependencies to your test project:
 .build.gradle
 ----
 testImplementation("io.rest-assured:rest-assured")
-testImplementation("io.quarkus:quarkus-junit5")
+testImplementation("io.quarkus:quarkus-junit")
 ----
 
 [[bearer-token-integration-testing-keycloak-devservices]]

@@ -376,6 +376,12 @@ public class HttpSecurityRecorder {
             }
 
             if (proactiveAuthentication) {
+                final Context context;
+                if (VertxContext.isOnDuplicatedContext()) {
+                    context = Vertx.currentContext();
+                } else {
+                    context = null;
+                }
                 authenticator
                         .attemptAuthentication(event)
                         .onItem().ifNull().switchTo(new Supplier<Uni<? extends SecurityIdentity>>() {
@@ -398,7 +404,11 @@ public class HttpSecurityRecorder {
                                         if (event.response().ended()) {
                                             return;
                                         }
-                                        event.next();
+                                        if (context != null) {
+                                            context.runOnContext(unused -> event.next());
+                                        } else {
+                                            event.next();
+                                        }
                                     }
                                 },
                                 new Consumer<Throwable>() {

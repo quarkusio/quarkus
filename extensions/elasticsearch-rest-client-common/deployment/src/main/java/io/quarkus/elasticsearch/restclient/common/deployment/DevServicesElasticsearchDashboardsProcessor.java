@@ -72,16 +72,14 @@ public class DevServicesElasticsearchDashboardsProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             List<DevservicesElasticsearchConnectionBuildItem> elasticsearchConnectionBuildItems,
-            DevServicesConfig devServicesConfig,
-            List<DevservicesElasticsearchBuildItem> devservicesElasticsearchBuildItems) throws BuildException {
+            DevServicesConfig devServicesConfig) throws BuildException {
 
-        if (devservicesElasticsearchBuildItems.isEmpty()) {
+        if (elasticsearchConnectionBuildItems.isEmpty()) {
             // safety belt in case a module depends on this one without producing the build item
             return null;
         }
 
-        DevservicesElasticsearchBuildItemsConfiguration buildItemsConfig = new DevservicesElasticsearchBuildItemsConfiguration(
-                devservicesElasticsearchBuildItems);
+        // TODO: group the `elasticsearchConnectionBuildItems` so that we know what distributions to start and what hosts to pass to each.
 
         if (devDashboardService != null) {
             boolean shouldShutdownTheServer = !configuration.equals(cfg);

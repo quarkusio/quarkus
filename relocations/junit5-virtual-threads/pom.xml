@@ -14,8 +14,8 @@
 
     <distributionManagement>
         <relocation>
-            <groupId>io.quarkus.junit</groupId>
-            <artifactId>junit-virtual-threads</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit-virtual-threads</artifactId>
             <version>${project.version}</version>
             <message>Update the artifactId in your project build file. Refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.31 for more information.</message>
         </relocation>

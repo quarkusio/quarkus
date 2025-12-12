@@ -38,8 +38,8 @@
             <artifactId>quarkus-test-security-webauthn</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.junit</groupId>
-            <artifactId>junit-virtual-threads</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit-virtual-threads</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

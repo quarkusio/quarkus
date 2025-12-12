@@ -1,9 +1,6 @@
 package io.quarkus.deployment.recording;
 
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -14,11 +11,9 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.util.AnnotationLiteral;
 
@@ -30,11 +25,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.deployment.util.IoUtil;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.ParamVar;
@@ -141,52 +131,6 @@ public class AnnotationProxyProvider {
                 defaultValues.put(name, value);
             }
             return this;
-        }
-
-        public A build(ClassOutput classOutput) {
-
-            // Generate literal class if needed
-            generatedLiterals.computeIfAbsent(annotationLiteral, generatedName -> {
-
-                String name = annotationInstance.name().toString();
-
-                // Ljakarta/enterprise/util/AnnotationLiteral<Lcom/foo/MyAnnotation;>;Lcom/foo/MyAnnotation;
-                String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
-                        AnnotationLiteral.class.getName().replace('.', '/'),
-                        name.replace('.', '/'));
-
-                ClassCreator literal = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                        .superClass(AnnotationLiteral.class)
-                        .interfaces(name).signature(signature).build();
-
-                List<MethodInfo> constructorParams = annotationClass.methods().stream()
-                        .filter(m -> !m.name().equals("<clinit>") && !m.name().equals("<init>"))
-                        .collect(Collectors.toList());
-
-                MethodCreator constructor = literal.getMethodCreator("<init>", "V",
-                        constructorParams.stream().map(m -> m.returnType().name().toString()).toArray());
-                constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class), constructor.getThis());
-
-                for (ListIterator<MethodInfo> iterator = constructorParams.listIterator(); iterator.hasNext();) {
-                    MethodInfo param = iterator.next();
-                    String returnType = param.returnType().name().toString();
-                    // field
-                    literal.getFieldCreator(param.name(), returnType).setModifiers(ACC_PRIVATE | ACC_FINAL);
-                    // constructor param
-                    constructor.writeInstanceField(FieldDescriptor.of(literal.getClassName(), param.name(), returnType),
-                            constructor.getThis(),
-                            constructor.getMethodParam(iterator.previousIndex()));
-                    // value method
-                    MethodCreator value = literal.getMethodCreator(param.name(), returnType).setModifiers(ACC_PUBLIC);
-                    value.returnValue(value.readInstanceField(
-                            FieldDescriptor.of(literal.getClassName(), param.name(), returnType), value.getThis()));
-                }
-                constructor.returnValue(null);
-                literal.close();
-                return Boolean.TRUE;
-            });
-
-            return proxy();
         }
 
         @SuppressWarnings("unchecked")

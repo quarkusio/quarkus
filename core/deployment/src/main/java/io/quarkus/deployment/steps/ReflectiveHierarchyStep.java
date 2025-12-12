@@ -43,6 +43,7 @@ import io.quarkus.deployment.util.JandexUtil;
 public class ReflectiveHierarchyStep {
 
     private static final Logger log = Logger.getLogger(ReflectiveHierarchyStep.class);
+    private static final Set<String> DISALLOWED_IFACE_PACKAGES = Set.of("javax.naming", "javax.sql");
 
     @FunctionalInterface
     private interface ReflectiveHierarchyVisitor {
@@ -238,6 +239,11 @@ public class ReflectiveHierarchyStep {
                 processedReflectiveHierarchies,
                 unindexedClasses, reflectiveClass, visits));
         for (Type interfaceType : info.interfaceTypes()) {
+            String interfacePackage = interfaceType.name().packagePrefix();
+            if (DISALLOWED_IFACE_PACKAGES.contains(interfacePackage)) {
+                // skip hierarchy for specific interface types. In particular, javax.naming.*
+                continue;
+            }
             visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
                     reflectiveHierarchyBuildItem,
                     source, interfaceType, processedReflectiveHierarchies, unindexedClasses,

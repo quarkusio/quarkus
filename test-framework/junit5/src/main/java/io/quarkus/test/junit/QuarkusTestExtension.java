@@ -198,6 +198,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             CuratedApplication curatedApplication = startupAction.getClassLoader()
                     .getCuratedApplication();
+
+            startupAction.applyModuleConfigurationToClassloader(curatedApplication.getAugmentClassLoader());
+            startupAction.applyModuleConfigurationToClassloader(curatedApplication.getBaseRuntimeClassLoader());
+
             Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
 
             // Do we need the augmentation classloader as the TCCL?

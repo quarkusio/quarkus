@@ -3664,6 +3664,11 @@
                 <artifactId>byte-buddy</artifactId>
                 <version>${bytebuddy.version}</version>
             </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
 
             <!-- GRPC dependencies -->
             <dependency>

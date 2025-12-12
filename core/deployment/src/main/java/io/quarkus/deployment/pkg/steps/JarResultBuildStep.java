@@ -29,6 +29,7 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -92,6 +93,7 @@ public class JarResultBuildStep {
     @SuppressWarnings("deprecation") // JarType#LEGACY_JAR
     @BuildStep
     public JarBuildItem buildRunnerJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            ResolvedJVMRequirements jvmRequirements,
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -128,7 +130,8 @@ public class JarResultBuildStep {
                     generatedResources,
                     removedArtifactKeys,
                     uberJarMergedResourceBuildItems,
-                    uberJarIgnoredResourceBuildItems).build();
+                    uberJarIgnoredResourceBuildItems,
+                    jvmRequirements).build();
             case LEGACY_JAR -> new LegacyThinJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -139,7 +142,8 @@ public class JarResultBuildStep {
                     generatedClasses,
                     generatedResources,
                     removedArtifactKeys,
-                    buildExecutor).build();
+                    buildExecutor,
+                    jvmRequirements).build();
             case FAST_JAR, MUTABLE_JAR -> new FastJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
                     applicationInfo,
@@ -152,7 +156,8 @@ public class JarResultBuildStep {
                     generatedResources,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
-                    buildExecutor).build();
+                    buildExecutor,
+                    jvmRequirements).build();
         };
     }
 
@@ -171,7 +176,8 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
-            ExecutorService buildExecutor) throws Exception {
+            ExecutorService buildExecutor,
+            ResolvedJVMRequirements jvmRequirements) throws Exception {
 
         return new NativeImageSourceJarBuilder(curateOutcomeBuildItem,
                 outputTargetBuildItem,
@@ -184,7 +190,8 @@ public class JarResultBuildStep {
                 generatedResources,
                 nativeImageResources,
                 getRemovedArtifactKeys(classLoadingConfig),
-                buildExecutor).build();
+                buildExecutor,
+                jvmRequirements).build();
     }
 
     // the idea here is to just dump the class names of the generated and transformed classes into a file

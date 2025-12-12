@@ -46,6 +46,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
@@ -65,7 +66,7 @@ public class AugmentActionImpl implements AugmentAction {
     private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
             GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class,
             MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
-            TransformedClassesBuildItem.class };
+            TransformedClassesBuildItem.class, ResolvedJVMRequirements.class };
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;

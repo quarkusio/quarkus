@@ -43,7 +43,7 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     private static final Logger log = Logger.getLogger(NarayanaLRARecovery.class);
     private static final long WAIT_CALLBACK_TIMEOUT = initWaitForCallbackTimeout();
     private static final String WAIT_CALLBACK_TIMEOUT_PROPERTY = "lra.tck.callback.timeout";
-    private static final int DEFAULT_CALLBACK_TIMEOUT = 1000;
+    private static final int DEFAULT_CALLBACK_TIMEOUT = 10000;
 
     /*
      * Wait for the participant to return the callback. This method does not

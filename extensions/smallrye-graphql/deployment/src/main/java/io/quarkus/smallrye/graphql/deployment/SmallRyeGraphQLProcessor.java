@@ -667,10 +667,6 @@ public class SmallRyeGraphQLProcessor {
                     serviceProvider.produce(new ServiceProviderBuildItem("io.smallrye.graphql.spi.MetricsService",
                             "io.smallrye.graphql.cdi.metrics.MicrometerMetricsService"));
                 }
-                if (capability.metricsSupported(MetricsFactory.MP_METRICS)) {
-                    serviceProvider.produce(new ServiceProviderBuildItem("io.smallrye.graphql.spi.MetricsService",
-                            "io.smallrye.graphql.cdi.metrics.MPMetricsService"));
-                }
             }, () -> LOG
                     .warn("GraphQL metrics are enabled but no supported metrics implementation is available on the classpath"));
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, TRUE));

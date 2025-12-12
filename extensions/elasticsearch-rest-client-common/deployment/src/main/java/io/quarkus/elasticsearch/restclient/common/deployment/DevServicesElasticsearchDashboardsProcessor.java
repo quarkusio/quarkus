@@ -55,8 +55,8 @@ public class DevServicesElasticsearchDashboardsProcessor {
     static final int DASHBOARD_PORT = 5601;
     private static final String DEV_SERVICE_KIBANA = "elasticsearch-kibana";
     private static final String DEV_SERVICE_DASHBOARDS = "opensearch-dashboards";
-    private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT,
-            DEV_SERVICE_LABEL, NEW_DEV_SERVICE_LABEL);
+    private static final String DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch.dashboards";
+    private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT, DEV_SERVICE_LABEL);
     private static final int LOCATE_BACKEND_MAX_RETRIES = 5;
     private static final int LOCATE_BACKEND_INITIAL_WAIT_MILLIS = 5000;
     static volatile RunningDevService devDashboardService;

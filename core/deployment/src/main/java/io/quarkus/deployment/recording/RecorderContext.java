@@ -37,7 +37,12 @@ public interface RecorderContext {
      * Register an object loader.
      *
      * @param loader the object loader (must not be {@code null})
+     *
+     * @deprecated This method is only used internally and is tightly bound to Gizmo 1, which is being replaced
+     *             by Gizmo 2. To control serialization, use {@link #registerSubstitution(Class, Class, Class)}
+     *             instead.
      */
+    @Deprecated(forRemoval = true)
     void registerObjectLoader(ObjectLoader loader);
 
     /**

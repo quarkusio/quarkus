@@ -57,8 +57,6 @@ public class DevServicesElasticsearchDashboardsProcessor {
     private static final String DEV_SERVICE_DASHBOARDS = "opensearch-dashboards";
     private static final String DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch.dashboards";
     private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT, DEV_SERVICE_LABEL);
-    private static final int LOCATE_BACKEND_MAX_RETRIES = 5;
-    private static final int LOCATE_BACKEND_INITIAL_WAIT_MILLIS = 5000;
     static volatile RunningDevService devDashboardService;
     static volatile ElasticsearchCommonBuildTimeConfig cfg;
     static volatile boolean first = true;

@@ -224,9 +224,9 @@ public interface NativeConfig {
         default String getEffectiveImage() {
             final String builderImageName = this.image().toUpperCase();
             if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-                return ContainerImages.UBI9_GRAALVM_BUILDER;
+                return ContainerImages.UBI10_GRAALVM_BUILDER;
             } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-                return ContainerImages.UBI9_MANDREL_BUILDER;
+                return ContainerImages.UBI10_MANDREL_BUILDER;
             } else {
                 return this.image();
             }

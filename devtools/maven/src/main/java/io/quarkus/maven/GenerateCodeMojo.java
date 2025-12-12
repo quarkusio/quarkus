@@ -1,11 +1,13 @@
 package io.quarkus.maven;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -14,6 +16,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -115,6 +118,17 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                             Path serializedTestAppModelPath = BootstrapUtils
                                     .getSerializedTestAppModelPath(Path.of(mavenProject().getBuild().getDirectory()));
                             ApplicationModelSerializer.serialize(appModel, serializedTestAppModelPath);
+
+                            Properties properties = mavenProject().getProperties();
+                            String argLine = properties.getProperty("argLine", "");
+                            properties.setProperty("argLine", argLine +
+                                    " -D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestAppModelPath);
+
+                            String deployClasspath = appModel.getDependencies().stream()
+                                    .flatMap(dep -> dep.getResolvedPaths().stream())
+                                    .map(Path::toString)
+                                    .collect(Collectors.joining(File.pathSeparator));
+                            properties.setProperty("quarkus.test.deploy.classpath", deployClasspath);
                         } catch (IOException e) {
                             getLog().warn("Failed to serialize application model", e);
                         }

@@ -115,9 +115,13 @@ public class GrpcClientProcessor {
     }
 
     @BuildStep
+    FeatureBuildItem grpcClientFeature() {
+        return new FeatureBuildItem(GRPC_CLIENT);
+    }
+
+    @BuildStep
     void discoverInjectedClients(BeanDiscoveryFinishedBuildItem beanDiscovery,
             BuildProducer<GrpcClientBuildItem> clients,
-            BuildProducer<FeatureBuildItem> features,
             CombinedIndexBuildItem index) {
 
         Map<String, GrpcClientBuildItem> items = new HashMap<>();
@@ -217,7 +221,7 @@ public class GrpcClientProcessor {
                 clients.produce(item);
                 LOGGER.debugf("Detected client associated with the '%s' configuration prefix", item.getClientName());
             }
-            features.produce(new FeatureBuildItem(GRPC_CLIENT));
+
         }
     }
 

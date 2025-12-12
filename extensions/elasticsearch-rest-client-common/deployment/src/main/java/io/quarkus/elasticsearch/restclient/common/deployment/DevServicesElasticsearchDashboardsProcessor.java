@@ -2,14 +2,11 @@ package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.DEV_SERVICE_LABEL;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.ELASTICSEARCH_PORT;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.NEW_DEV_SERVICE_LABEL;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.buildPropertiesMap;
-import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.getElasticsearchHosts;
 import static io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchProcessorUtils.resolveDistribution;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -56,7 +53,8 @@ public class DevServicesElasticsearchDashboardsProcessor {
     private static final String DEV_SERVICE_KIBANA = "elasticsearch-kibana";
     private static final String DEV_SERVICE_DASHBOARDS = "opensearch-dashboards";
     private static final String DEV_SERVICE_LABEL = "io.quarkus.devservice.elasticsearch.dashboards";
-    private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT, DEV_SERVICE_LABEL);
+    private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT,
+            DEV_SERVICE_LABEL);
     static volatile RunningDevService devDashboardService;
     static volatile ElasticsearchCommonBuildTimeConfig cfg;
     static volatile boolean first = true;
@@ -72,13 +70,16 @@ public class DevServicesElasticsearchDashboardsProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             List<DevservicesElasticsearchConnectionBuildItem> elasticsearchConnectionBuildItems,
+            List<DevservicesElasticsearchBuildItem> devservicesElasticsearchBuildItems,
             DevServicesConfig devServicesConfig) throws BuildException {
 
-        if (elasticsearchConnectionBuildItems.isEmpty()) {
+        if (devservicesElasticsearchBuildItems.isEmpty() && elasticsearchConnectionBuildItems.isEmpty()) {
+            log.info("Skip starting dashboards since no Elasticsearch hosts have been configured");
             // safety belt in case a module depends on this one without producing the build item
             return null;
         }
-
+        DevservicesElasticsearchBuildItemsConfiguration buildItemsConfig = new DevservicesElasticsearchBuildItemsConfiguration(
+                devservicesElasticsearchBuildItems);
         // TODO: group the `elasticsearchConnectionBuildItems` so that we know what distributions to start and what hosts to pass to each.
 
         if (devDashboardService != null) {
@@ -133,7 +134,7 @@ public class DevServicesElasticsearchDashboardsProcessor {
         if (devDashboardService.isOwner()) {
             log.infof(
                     "Dev Services for Elasticsearch Dashboards started. You can open th ui in your Browser at %s",
-                    getElasticsearchHosts(buildItemsConfig, devDashboardService));
+                    new DashboardDevServicesConfiguration(devDashboardService.getConfig()).hostName);
         }
         return devDashboardService.toBuildItem();
     }
@@ -173,9 +174,8 @@ public class DevServicesElasticsearchDashboardsProcessor {
                     .map(host -> "http://" + host.replace("localhost", "host.docker.internal"))
                     .collect(Collectors.toSet());
         } else {
-            Optional<ContainerAddress> maybeContainerAddressSearchBackend = Optional.empty();
             log.info(
-                    "no elasticsearch hosts config property found, using the host of theelasticsearch dev services container to connect");
+                    "no elasticsearch hosts config property found, using the host of the elasticsearch dev services container to connect");
 
             opensearchHosts = elasticsearchConnectionBuildItems.stream()
                     .map(connection -> ("http://" + connection.getHost() + ":" + connection.getPort())
@@ -219,7 +219,7 @@ public class DevServicesElasticsearchDashboardsProcessor {
             return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     new ContainerShutdownCloseable(container, "Kibana"),
-                    buildPropertiesMap(buildItemConfig, httpHost));
+                    DashboardDevServicesConfiguration.buildPropertiesMap(resolvedDistribution, httpHost));
         };
 
         return maybeContainerAddress
@@ -227,7 +227,7 @@ public class DevServicesElasticsearchDashboardsProcessor {
                         Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                         containerAddress.getId(),
                         null,
-                        buildPropertiesMap(buildItemConfig, containerAddress.getUrl())))
+                        DashboardDevServicesConfiguration.buildPropertiesMap(resolvedDistribution, containerAddress.getUrl())))
                 .orElseGet(defaultDashboardsSupplier);
     }
 
@@ -291,6 +291,31 @@ public class DevServicesElasticsearchDashboardsProcessor {
             } finally {
                 devDashboardService = null;
             }
+        }
+    }
+
+    private static class DashboardDevServicesConfiguration {
+        private final Distribution distribution;
+        private final String hostName;
+        private final static String DISTRIBUTION_PROPERTY = "quarkus.elasticsearch.devservices.dashboard.distribution";
+        private final static String HOST_NAME_PROPERTY = "quarkus.elasticsearch.devservices.dashboard.hostName";
+
+        private DashboardDevServicesConfiguration(Distribution distribution, String hostName) {
+            this.distribution = distribution;
+            this.hostName = hostName;
+        }
+
+        private DashboardDevServicesConfiguration(Map<String, String> properties) {
+            this.distribution = Distribution.valueOf(properties.get(DISTRIBUTION_PROPERTY));
+            this.hostName = properties.get(HOST_NAME_PROPERTY);
+        }
+
+        private Map<String, String> toProperties() {
+            return Map.of(DISTRIBUTION_PROPERTY, distribution.name(), HOST_NAME_PROPERTY, hostName);
+        }
+
+        private static Map<String, String> buildPropertiesMap(Distribution distribution, String hostName) {
+            return Map.of(DISTRIBUTION_PROPERTY, distribution.name(), HOST_NAME_PROPERTY, hostName);
         }
     }
 

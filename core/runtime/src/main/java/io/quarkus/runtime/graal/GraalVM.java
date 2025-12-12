@@ -88,7 +88,6 @@ public final class GraalVM {
 
     public static class Version implements Comparable<Version> {
 
-        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
         public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
@@ -117,7 +116,7 @@ public final class GraalVM {
          * The minimum version of GraalVM supported by Quarkus.
          * Versions prior to this are expected to cause major issues.
          */
-        public static final Version MINIMUM = VERSION_23_0_0;
+        public static final Version MINIMUM = VERSION_23_1_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.

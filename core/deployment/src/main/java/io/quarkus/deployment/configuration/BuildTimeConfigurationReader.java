@@ -239,15 +239,10 @@ public final class BuildTimeConfigurationReader {
                         }
                     });
 
-            // Set all defaults from build time runtime mappings as recorded build time runtime values
+            // Records all build time runtime fixed values from the recording config, which includes defaults
             for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
                 for (Entry<String, String> entry : buildTimeRunTimeMapping.getProperties().entrySet()) {
-                    buildTimeRunTimeValues.put(entry.getKey(),
-                            ConfigValue.builder()
-                                    .withName(entry.getKey())
-                                    .withValue(entry.getValue())
-                                    .withConfigSourceOrdinal(-Integer.MAX_VALUE)
-                                    .build());
+                    buildTimeRunTimeValues.put(entry.getKey(), runtimeConfig.getConfigValue(entry.getKey()));
                 }
             }
 

@@ -490,22 +490,22 @@ public class MyApplication {
 == Testing virtual thread applications
 
 As mentioned above, virtual threads have a few limitations that can drastically affect your application performance and memory usage.
-The _junit5-virtual-threads_ extension provides a way to detect pinned carrier threads while running your tests.
+The _junit-virtual-threads_ extension provides a way to detect pinned carrier threads while running your tests.
 Thus, you can eliminate one of the most prominent limitations or be aware of the problem.
 
 To enable this detection:
 
-* 1) Add the `junit5-virtual-threads` dependency to your project:
+* 1) Add the `junit-virtual-threads` dependency to your project:
 [source, xml]
 ----
 <dependency>
-    <groupId>io.quarkus.junit5</groupId>
-    <artifactId>junit5-virtual-threads</artifactId>
+    <groupId>io.quarkus.junit</groupId>
+    <artifactId>junit-virtual-threads</artifactId>
     <scope>test</scope>
 </dependency>
 ----
 
-* 2) In your test case, add the `io.quarkus.test.junit5.virtual.VirtualThreadUnit`  and `io.quarkus.test.junit.virtual.ShouldNotPin` annotations:
+* 2) In your test case, add the `io.quarkus.test.junit.virtual.VirtualThreadUnit`  and `io.quarkus.test.junit.virtual.ShouldNotPin` annotations:
 [source, java]
 ----
 @QuarkusTest
@@ -522,7 +522,7 @@ When it happens, the test fails.
 
 The `@ShouldNotPin` can also be used on methods directly.
 
-The _junit5-virtual-threads_ also provides a `@ShouldPin` annotation for cases where pinning is unavoidable.
+The _junit-virtual-threads_ also provides a `@ShouldPin` annotation for cases where pinning is unavoidable.
 The following snippet demonstrates the `@ShouldPin` annotation usage.
 
 // This is not possible because of a classloading issue - See https://github.com/quarkusio/quarkus/issues/36569 :

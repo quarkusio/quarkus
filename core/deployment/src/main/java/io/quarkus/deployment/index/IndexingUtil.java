@@ -42,20 +42,10 @@ public class IndexingUtil {
 
     private static final String META_INF_VERSIONS = "META-INF/versions/";
 
-    private static final int JAVA_VERSION;
+    private static final int JAVA_VERSION = Runtime.version().feature();
 
     // At least Jandex 3.0 is needed
     private static final int REQUIRED_INDEX_VERSION = 11;
-
-    static {
-        int version = 8;
-        try {
-            version = Runtime.version().version().get(0);
-        } catch (Exception e) {
-            //version 8
-        }
-        JAVA_VERSION = version;
-    }
 
     public static Index indexJar(Path path) throws IOException {
         return indexJar(path.toFile(), Collections.emptySet());

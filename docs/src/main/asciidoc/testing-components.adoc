@@ -18,7 +18,7 @@ Therefore, Quarkus provides `QuarkusComponentTestExtension` - a JUnit extension 
 Unlike `@QuarkusTest` this extension does not start a full Quarkus application but merely the CDI container and the configuration service.
 You can find more details in the <<lifecycle>> section.
 
-TIP: This JUnit extension is available in the `quarkus-junit5-component` dependency.
+TIP: This JUnit extension is available in the `quarkus-junit-component` dependency.
 
 == Basic example
 
@@ -234,7 +234,7 @@ You can use the mock configurator API via the `QuarkusComponentTestExtensionBuil
 
 == Nested Tests
 
-JUnit 5 https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested[@Nested tests] may help to structure more complex test scenarios.
+JUnit https://docs.junit.org/current/user-guide/#writing-tests-nested[@Nested tests] may help to structure more complex test scenarios.
 However, only basic use cases are tested with `@QuarkusComponentTest`.
 
 .Nested test

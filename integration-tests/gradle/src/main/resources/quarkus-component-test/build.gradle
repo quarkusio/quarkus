@@ -17,7 +17,7 @@ dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-arc'
 
-    testImplementation 'io.quarkus:quarkus-junit5-component'
+    testImplementation 'io.quarkus:quarkus-junit-component'
 }
 
 group = 'org.acme'

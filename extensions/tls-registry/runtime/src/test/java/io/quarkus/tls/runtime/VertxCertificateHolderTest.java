@@ -78,6 +78,12 @@ class VertxCertificateHolderTest {
     }
 
     @Test
+    void testDefault() {
+        assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS), "test"));
+        assertFalse(holder.warnIfOldProtocols(Set.of(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS.toLowerCase()), "test"));
+    }
+
+    @Test
     void testWarnIfOldProtocols_withSSL() {
         assertTrue(holder.warnIfOldProtocols(Set.of("SSLv3"), "test"));
         assertTrue(holder.warnIfOldProtocols(Set.of("SSLv2", "TLSv1.3"), "test"));

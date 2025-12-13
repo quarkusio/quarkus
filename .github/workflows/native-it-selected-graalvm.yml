@@ -90,7 +90,7 @@ jobs:
           echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           # This will always fail but we will default to the best matching restore keys
@@ -233,7 +233,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -338,7 +338,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -362,7 +362,7 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
           key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}

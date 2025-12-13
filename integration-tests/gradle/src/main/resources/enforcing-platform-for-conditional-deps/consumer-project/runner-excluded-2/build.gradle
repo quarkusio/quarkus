@@ -20,6 +20,6 @@ dependencies {
     implementation enforcedPlatform("org.enforcing.deps:test-bom-with-exclusion:1.0.0")
     implementation 'io.quarkus:quarkus-rest'
     implementation 'org.enforcing.deps:ext-a:1.0-SNAPSHOT'
-    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit'
     testImplementation 'io.rest-assured:rest-assured'
 }

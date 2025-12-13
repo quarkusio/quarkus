@@ -299,7 +299,7 @@ public class InfoProcessor {
 
         unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(InfoContributor.class));
 
-        RuntimeValue<Map<String, Object>> finalBuildInfo = recorder.getFinalBuildInfo(buildTimeInfo, infoContributors);
+        RuntimeValue<Map<String, Object>> finalBuildInfo = recorder.getFinalInfo(buildTimeInfo, infoContributors);
 
         buildTimeActionProducer.produce(new BuildTimeActionBuildItem().actionBuilder()
                 .methodName("getApplicationAndEnvironmentInfo")

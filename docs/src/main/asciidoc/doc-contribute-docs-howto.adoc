@@ -269,7 +269,7 @@ Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in 
 
 This approach requires a working container runtime (Docker or xref:podman.adoc[Podman]).
 
-The `docs` module has a JUnit 5 test that will run the Vale linter in a container (using https://www.testcontainers.org/[Testcontainers]).
+The `docs` module has a JUnit test that will run the Vale linter in a container (using https://www.testcontainers.org/[Testcontainers]).
 It verifies both Quarkus document metadata and Vale style rules.
 
 Run the test in one of the following ways:

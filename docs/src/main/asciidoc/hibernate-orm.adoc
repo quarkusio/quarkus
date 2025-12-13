@@ -1949,6 +1949,96 @@ Please refer to the corresponding https://hibernate.org/repositories/[Hibernate 
 and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
 guides to learn what else they have to offer.
 
+==== Secure Jakarta Data repositories
+
+Quarkus Security provides an initial support for securing Jakarta Data Repositories with security annotations.
+
+.Example Jakarta Data repository with method-level security annotation
+[source,java]
+----
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> {
+
+    @RolesAllowed("admin")
+    @Delete
+    void delete(String name);
+
+}
+----
+
+.Example Jakarta Data repository with class-level security annotation
+[source,java]
+----
+@Authenticated
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> {
+
+    @Delete
+    void delete(String name);
+
+}
+----
+
+[WARNING]
+====
+In the example above, only methods directly declared on the `MyRepository` interface are secured.
+Methods inherited from `CrudRepository`, such as `insert`, are not secured because type-level annotations only affect the type they annotate.
+====
+
+[IMPORTANT]
+====
+Currently, generic interface methods using type variables or wildcards cannot be secured reliably with standard security annotations.
+Therefore, you must not attempt to secure such methods and instead use two alternatives described below.
+
+.Example repository with a generic method using a type variable
+[source,java]
+----
+public interface MyParentRepository<T extends MyEntity> {
+
+    @Find
+    Stream<T> findAll(Order<T> order);
+
+}
+
+@Repository
+public interface MyRepository extends MyParentRepository<MyEntity> {
+}
+----
+
+Alternative 1: Apply a security annotation to the calling method in your REST layer:
+
+[source,java]
+----
+@Path("my-entity")
+public class MyEntityResource {
+
+    @Inject
+    MyRepository myRepository;
+
+    @PermissionsAllowed("find-all")
+    @GET
+    public List<MyEntity> findAll() {
+        return myRepository.findAll(Order.by(Sort.asc(MyEntity_.NAME))).toList();
+    }
+
+}
+----
+
+Alternative 2: Replace the type variable `T` with a concrete type in the repository interface:
+
+[source,java]
+----
+@Repository
+public interface MyRepository {
+
+    @PermissionsAllowed("find-all")
+    @Find
+    Stream<MyEntity> findAll(Order<MyEntity> order);
+
+}
+----
+====
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate ORM
 

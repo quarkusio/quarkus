@@ -31,7 +31,7 @@ include::{includes}/prerequisites.adoc[]
 == Architecture
 
 The application built in this guide is just a Jakarta REST endpoint (hello world) that relies on dependency injection to use a service.
-The service will be tested with JUnit 5 and the endpoint will be annotated via a `@QuarkusTest` annotation.
+The service will be tested with JUnit and the endpoint will be annotated via a `@QuarkusTest` annotation.
 
 == Solution
 

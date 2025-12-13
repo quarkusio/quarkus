@@ -19,7 +19,7 @@ dependencies {
 
     // Library-2 has to be dependency as implementation and test fixture
     implementation(project(':library-2'))
-    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit'
     testImplementation 'io.rest-assured:rest-assured'
     testImplementation(testFixtures(project(':library-2')))
 }

@@ -15,7 +15,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.common.constraint.Assert;
 
 /**
- * Tests JUnit 5 extension when test lifecycle is PER_CLASS. This means extension events get fired in slightly different
+ * Tests JUnit extension when test lifecycle is PER_CLASS. This means extension events get fired in slightly different
  * order and Quarkus/Arc bootstrap and instance injection have to account for that.
  *
  * Test verifies that bootstrap works and that you can use injection even in before/after methods.

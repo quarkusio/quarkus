@@ -134,6 +134,12 @@ public class VertxCertificateHolder implements TlsConfiguration {
 
     boolean warnIfOldProtocols(Set<String> protocols, String name) {
         var list = protocols.stream().map(String::toLowerCase).map(String::trim).toList();
+
+        // Quick check to skip the warning if only the default protocol is used.
+        if (list.size() == 1 && list.get(0).equalsIgnoreCase(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS)) {
+            return false;
+        }
+
         boolean warned = false;
 
         // Check for SSL protocols
@@ -153,7 +159,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Check if TLSv1.3 or higher is enabled.
         boolean isUsingModernTlsVersion = false;
         for (String p : list) {
-            if (IsRecentOrFutureTLSVersion(p)) {
+            if (isRecentOrFutureTLSVersion(p)) {
                 isUsingModernTlsVersion = true;
                 break;
             }
@@ -174,7 +180,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
      * @param protocol the protocol string (already lowercased and trimmed)
      * @return true if the protocol is TLSv1.3 or higher
      */
-    private boolean IsRecentOrFutureTLSVersion(String protocol) {
+    private boolean isRecentOrFutureTLSVersion(String protocol) {
         if (!protocol.startsWith("tlsv")) {
             return false;
         }

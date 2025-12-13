@@ -19,6 +19,7 @@ import io.quarkus.info.OsInfo;
 import io.quarkus.info.runtime.spi.InfoContributor;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
@@ -31,7 +32,8 @@ public class InfoRecorder {
 
     private static final Logger log = Logger.getLogger(InfoRecorder.class);
 
-    public RuntimeValue<Map<String, Object>> getFinalBuildInfo(Map<String, Object> buildTimeInfo,
+    @RuntimeInit
+    public RuntimeValue<Map<String, Object>> getFinalInfo(Map<String, Object> buildTimeInfo,
             List<InfoContributor> knownContributors) {
         Map<String, Object> finalBuildInfo = new HashMap<>(buildTimeInfo);
         for (InfoContributor contributor : knownContributors) {
@@ -56,10 +58,12 @@ public class InfoRecorder {
         return new RuntimeValue(finalBuildInfo);
     }
 
+    @RuntimeInit
     public Handler<RoutingContext> handler(RuntimeValue<Map<String, Object>> finalBuildInfo) {
         return new InfoHandler(finalBuildInfo.getValue());
     }
 
+    @RuntimeInit
     public Supplier<GitInfo> gitInfoSupplier(String branch, String latestCommitId, String latestCommitTime) {
         return new Supplier<GitInfo>() {
             @Override
@@ -84,6 +88,7 @@ public class InfoRecorder {
         };
     }
 
+    @RuntimeInit
     public Supplier<BuildInfo> buildInfoSupplier(String group, String artifact, String version, String time,
             String quarkusVersion) {
         return new Supplier<BuildInfo>() {
@@ -119,10 +124,12 @@ public class InfoRecorder {
         };
     }
 
+    @RuntimeInit
     public OsInfoContributor osInfoContributor() {
         return new OsInfoContributor();
     }
 
+    @RuntimeInit
     public Supplier<OsInfo> osInfoSupplier() {
         return new Supplier<OsInfo>() {
             @Override
@@ -151,6 +158,7 @@ public class InfoRecorder {
         return new JavaInfoContributor();
     }
 
+    @RuntimeInit
     public Supplier<JavaInfo> javaInfoSupplier() {
         return new Supplier<JavaInfo>() {
             @Override

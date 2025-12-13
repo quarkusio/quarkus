@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit5.virtual.ShouldNotPin;
-import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
+import io.quarkus.test.junit.virtual.ShouldNotPin;
+import io.quarkus.test.junit.virtual.VirtualThreadUnit;
 import io.restassured.RestAssured;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;

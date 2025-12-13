@@ -48,6 +48,7 @@ import io.quarkus.qute.debug.DebuggerListener;
 import io.quarkus.qute.debug.StoppedEvent;
 import io.quarkus.qute.debug.ThreadEvent;
 import io.quarkus.qute.debug.agent.DebuggeeAgent;
+import io.quarkus.qute.debug.client.JavaSourceResolver;
 
 /**
  * Debug Adapter Protocol (DAP) server implementation for Qute debugging.
@@ -130,6 +131,9 @@ public class DebugServerAdapter implements IDebugProtocolServer {
     public void connect(IDebugProtocolClient client) {
         this.client = client;
         this.agent.setEnabled(true);
+        if (client instanceof JavaSourceResolver javaFileInfoProvider) {
+            ((DebuggeeAgent) agent).setJavaSourceResolver(javaFileInfoProvider);
+        }
     }
 
     /**

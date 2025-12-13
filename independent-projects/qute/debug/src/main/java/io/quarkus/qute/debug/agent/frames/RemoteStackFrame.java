@@ -87,11 +87,11 @@ public class RemoteStackFrame extends StackFrame {
         int line = event.getTemplateNode().getOrigin().getLine();
         super.setId(id);
         super.setName(event.getTemplateNode().toString());
-        super.setLine(line);
 
         this.templateId = event.getTemplateNode().getOrigin().getTemplateId();
         super.setSource(
                 sourceTemplateRegistry.getSource(templateId, previousFrame != null ? previousFrame.getSource() : null));
+        super.setLine(line + (getSource() != null ? getSource().getStartLine() : 0));
     }
 
     /** @return the template ID associated with this frame */

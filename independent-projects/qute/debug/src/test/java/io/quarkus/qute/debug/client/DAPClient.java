@@ -39,7 +39,6 @@ import org.eclipse.lsp4j.debug.Thread;
 import org.eclipse.lsp4j.debug.Variable;
 import org.eclipse.lsp4j.debug.VariablesArguments;
 import org.eclipse.lsp4j.debug.launch.DSPLauncher;
-import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
@@ -50,7 +49,7 @@ import io.quarkus.qute.debug.DebuggerListener;
 import io.quarkus.qute.debug.DebuggerState;
 import io.quarkus.qute.debug.client.TransportStreams.SocketTransportStreams;
 
-public class DAPClient implements IDebugProtocolClient, Debugger {
+public class DAPClient implements QuteDebugProtocolClient, Debugger {
 
     private IDebugProtocolServer debugProtocolServer;
     private Future<Void> debugProtocolFuture;
@@ -58,6 +57,7 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
     private final CompletableFuture<Capabilities> capabilitiesFuture = new CompletableFuture<>();
     private final CompletableFuture<Void> initialized = new CompletableFuture<>();
     private boolean enabled;
+    private JavaSourceResolver javaFileInfoProvider;
 
     public CompletableFuture<Void> connectToServer(int port) {
         ServerTrace serverTrace = ServerTrace.getDefaultValue();
@@ -363,4 +363,15 @@ public class DAPClient implements IDebugProtocolClient, Debugger {
         }
     }
 
+    public void setJavaFileInfoProvider(JavaSourceResolver javaFileInfoProvider) {
+        this.javaFileInfoProvider = javaFileInfoProvider;
+    }
+
+    @Override
+    public CompletableFuture<JavaSourceLocationResponse> resolveJavaSource(JavaSourceLocationArguments params) {
+        if (javaFileInfoProvider != null) {
+            return javaFileInfoProvider.resolveJavaSource(params);
+        }
+        return CompletableFuture.completedFuture(null);
+    }
 }

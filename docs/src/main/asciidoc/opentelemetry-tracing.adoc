@@ -592,6 +592,45 @@ quarkus.otel.security-events.enabled=true <1>
 ----
 <1> Export Quarkus Security events as OpenTelemetry Span events.
 
+=== Manual instrumentation
+
+In cases were utilities or automatic instrumentation is not available manual instrumentation can be used.
+
+==== Manual Span
+
+[source,java]
+----
+@ApplicationScoped
+public static class HelloBean {
+    private final Tracer tracer;
+
+    // Instead of using @Inject on the tracer attribute
+    public HelloBean(Tracer tracer) {
+        this.tracer = tracer;
+    }
+
+    public String helloManualSpan() {
+        // Create a new span
+        Span span = tracer.spanBuilder("HelloBean.helloManualSpan").startSpan();
+        // Make sure span scope is closed
+        try (Scope scope = span.makeCurrent()) { <1>
+            // Add an attribute
+            span.setAttribute("myAttributeName", "myValue");
+            // Execute logic here...
+            return "Hello from Quarkus REST";
+        } catch (Exception ignored) {
+            // Store potential exceptions.
+            span.recordException(ignored);
+        } finally {
+            // Whatever happens above, the span will be closed.
+            span.end();
+        }
+        return "failover message";
+    }
+}
+----
+<1> It is essential that all the logic the span is measuring be well-delimited by a scope.
+
 == Exporters
 
 See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] section.

@@ -27,7 +27,8 @@ public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitT
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
             ))
-            .withConfigurationResource("application-unittest-both-named.properties")
+            .overrideConfigKey("quarkus.datasource.\"named-datasource\".jdbc.url", "${postgres.blocking.url}")
+            .overrideConfigKey("quarkus.datasource.\"named-datasource\".reactive.url", "${postgres.reactive.url}")
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".datasource", "named-datasource")
             .overrideConfigKey("quarkus.hibernate-orm.\"named-pu\".packages", "io.quarkus.hibernate.reactive.entities")

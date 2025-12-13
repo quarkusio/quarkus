@@ -6,10 +6,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.shutdown.ShutdownListener;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 
 public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpServerRequest> {
 
@@ -40,15 +41,49 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
 
     @Override
     public void handle(HttpServerRequest event) {
-        if (!running) {
-            event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code())
-                    .putHeader(HttpHeaderNames.CONNECTION, "close").end();
-            return;
-        }
         currentRequestCount.incrementAndGet();
         //todo: some way to do this without a wrapper solution
         ((QuarkusRequestWrapper) event).addRequestDoneHandler(requestDoneHandler);
+
+        if (event.version() == HttpVersion.HTTP_1_1) {
+            // For HTTP/1.1, add the header as otherwise the client will consider the connection to be keep-alive.
+            // "Connection-specific header fields such as Connection and Keep-Alive are prohibited in HTTP/2 and HTTP/3"
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Connection
+            // Therefore only add it for HTTP/1.1
+            if (!running) {
+                event.response().headers().add(HttpHeaderNames.CONNECTION, "close");
+                ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> event.connection().close());
+            }
+        } else if (event.version() == HttpVersion.HTTP_2) {
+            if (!running) {
+                // If shutdown is in progress, send the go away as early as possible
+                sendGoAwayForHttp2(event.connection());
+            } else {
+                ((QuarkusRequestWrapper) event).addRequestDoneHandler(unused -> {
+                    // Check again at the end of the request if we should send a shutdown
+                    if (!running) {
+                        sendGoAwayForHttp2(event.connection());
+                    }
+                });
+            }
+        }
+
         next.handle(event);
+    }
+
+    private static void sendGoAwayForHttp2(HttpConnection connection) {
+        // GO_AWAY + 0 (NO_ERROR) = graceful shutdown; client will stop creating new streams on this connection
+        connection.goAway(0);
+        connection.shutdownHandler(v -> {
+            // All streams are closed, close the connection
+            connection.close();
+        });
+    }
+
+    @Override
+    public void preShutdown(ShutdownNotification notification) {
+        running = false;
+        notification.done();
     }
 
     @Override

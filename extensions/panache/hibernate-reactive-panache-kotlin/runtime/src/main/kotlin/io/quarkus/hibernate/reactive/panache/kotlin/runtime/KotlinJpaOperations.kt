@@ -1,10 +1,10 @@
 package io.quarkus.hibernate.reactive.panache.kotlin.runtime
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
+import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractManagedJpaOperations
 import io.smallrye.mutiny.Uni
 import org.hibernate.reactive.mutiny.Mutiny
 
-class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
+class KotlinJpaOperations : AbstractManagedJpaOperations<PanacheQueryImpl<*>>() {
     override fun createPanacheQuery(
         session: Uni<Mutiny.Session>,
         query: String,

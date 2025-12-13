@@ -36,4 +36,9 @@ public @interface WithSession {
     @Nonbinding
     String value() default DEFAULT_PERSISTENCE_UNIT_NAME;
 
+    /**
+     * Requests a stateless session, as opposed to a managed session.
+     */
+    @Nonbinding
+    boolean stateless() default false;
 }

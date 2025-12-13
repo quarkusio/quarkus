@@ -8,16 +8,14 @@ import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassOperationGenerationVisitor;
 
 public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
-    private final TypeBundle typeBundle;
 
     public PanacheMongoRepositoryEnhancer(IndexView index, TypeBundle typeBundle) {
-        super(index);
-        this.typeBundle = typeBundle;
+        super(index, typeBundle);
     }
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor, indexView, typeBundle);
+        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor, indexView, bundle);
     }
 
 }

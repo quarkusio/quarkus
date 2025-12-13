@@ -36,7 +36,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.deployment.TypeBundle;
@@ -206,7 +206,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                             // call JpaOperations.delete
                             deleteCount = methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "delete", long.class,
+                                    MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "delete", long.class,
                                             Class.class, String.class, Parameters.class),
                                     methodCreator.readStaticField(operationsField),
                                     methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
@@ -216,7 +216,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                             // call JpaOperations.delete
                             deleteCount = methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "delete", long.class,
+                                    MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "delete", long.class,
                                             Class.class, String.class, Object[].class),
                                     methodCreator.readStaticField(operationsField),
                                     methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
@@ -247,7 +247,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                             // call JpaOperations.executeUpdate
                             updateCount = methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate", int.class,
+                                    MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "executeUpdate", int.class,
                                             String.class, Map.class),
                                     methodCreator.readStaticField(operationsField),
                                     methodCreator.load(queryString),
@@ -257,7 +257,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                             // call JpaOperations.executeUpdate
                             updateCount = methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(AbstractJpaOperations.class, "executeUpdate",
+                                    MethodDescriptor.ofMethod(AbstractManagedJpaOperations.class, "executeUpdate",
                                             int.class, String.class, Object[].class),
                                     methodCreator.readStaticField(operationsField),
                                     methodCreator.load(queryString),
@@ -334,7 +334,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         // call JpaOperations.find()
                         panacheQuery = methodCreator.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find",
-                                        PanacheQuery.class, AbstractJpaOperations.class, Class.class, String.class,
+                                        PanacheQuery.class, AbstractManagedJpaOperations.class, Class.class, String.class,
                                         String.class, io.quarkus.panache.common.Sort.class, Parameters.class),
                                 methodCreator.readStaticField(operationsField),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
@@ -347,7 +347,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         // call JpaOperations.find()
                         panacheQuery = methodCreator.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find",
-                                        PanacheQuery.class, AbstractJpaOperations.class, Class.class, String.class,
+                                        PanacheQuery.class, AbstractManagedJpaOperations.class, Class.class, String.class,
                                         String.class, io.quarkus.panache.common.Sort.class, Object[].class),
                                 methodCreator.readStaticField(operationsField),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),

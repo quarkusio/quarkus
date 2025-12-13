@@ -129,8 +129,8 @@ public class DevServicesApicurioRegistryProcessor {
 
     private Map<String, String> getRegistryUrlConfigs(String baseUrl) {
         return Map.of(
-                APICURIO_REGISTRY_URL_CONFIG, baseUrl + "/apis/registry/v2",
-                CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG, baseUrl + "/apis/ccompat/v6");
+                APICURIO_REGISTRY_URL_CONFIG, baseUrl + "/apis/registry/v3",
+                CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG, baseUrl + "/apis/ccompat/v7");
     }
 
     private void shutdownApicurioRegistry() {
@@ -187,7 +187,7 @@ public class DevServicesApicurioRegistryProcessor {
                         getRegistryUrlConfigs("http://" + address.getUrl())))
                 .orElseGet(() -> {
                     ApicurioRegistryContainer container = new ApicurioRegistryContainer(
-                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("apicurio/apicurio-registry-mem"),
+                            DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("apicurio/apicurio-registry"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             composeProjectBuildItem.getDefaultNetworkId(),
@@ -282,8 +282,8 @@ public class DevServicesApicurioRegistryProcessor {
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             withEnv("QUARKUS_PROFILE", "prod");
-            if (!dockerImageName.getRepository().endsWith("apicurio/apicurio-registry-mem")) {
-                throw new IllegalArgumentException("Only apicurio/apicurio-registry-mem images are supported");
+            if (!dockerImageName.getRepository().contains("apicurio/apicurio-registry")) {
+                throw new IllegalArgumentException("Only apicurio/apicurio-registry images are supported");
             }
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "apicurio-registry");
         }

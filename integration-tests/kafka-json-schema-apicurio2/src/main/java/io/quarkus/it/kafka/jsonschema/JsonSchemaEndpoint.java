@@ -41,14 +41,18 @@ public class JsonSchemaEndpoint {
     @GET
     @Path("/apicurio")
     public JsonObject getApicurio() {
-        return get(creator.createApicurioConsumer("test-json-schema-apicurio-consumer", "test-json-schema-apicurio-consumer"));
+        try (KafkaConsumer<Integer, Pet> consumer = creator.createApicurioConsumer("test-json-schema-apicurio-consumer",
+                "test-json-schema-apicurio-consumer")) {
+            return get(consumer);
+        }
     }
 
     @POST
     @Path("/apicurio")
     public void sendApicurio(Pet pet) {
-        KafkaProducer<Integer, Pet> p = creator.createApicurioProducer("test-json-schema-apicurio");
-        send(p, pet, "test-json-schema-apicurio-producer");
+        try (KafkaProducer<Integer, Pet> p = creator.createApicurioProducer("test-json-schema-apicurio")) {
+            send(p, pet, "test-json-schema-apicurio-producer");
+        }
     }
 
     private JsonObject get(KafkaConsumer<Integer, Pet> consumer) {

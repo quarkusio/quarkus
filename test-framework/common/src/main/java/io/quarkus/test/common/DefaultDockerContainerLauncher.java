@@ -1,7 +1,6 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
-import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
@@ -31,7 +30,6 @@ import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
-import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
@@ -52,7 +50,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private Map<String, String> volumeMounts;
     private Map<String, String> labels;
     private final Map<String, String> systemProps = new HashMap<>();
-    private boolean isSsl;
     private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
     private String containerRuntimeBinaryName;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -95,8 +92,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                     throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
                 }
             }
-
-            System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
             final List<String> args = new ArrayList<>();
             args.add(containerRuntimeBinaryName);
@@ -143,9 +138,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             if (DefaultJarLauncher.HTTP_PRESENT) {
                 args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
                 args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
-                // This won't be correct when using the random port, but it's really only used by us for the rest client tests
-                // in the main module, since those tests hit the application itself
-                args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
+                args.addAll(toEnvVar("test.url", LauncherUtil.generateTestUrl()));
             }
             if (testProfile != null) {
                 args.addAll(toEnvVar("quarkus.profile", testProfile));
@@ -188,7 +181,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     }
 
     @Override
-    public void start() throws IOException {
+    public Optional<ListeningAddress> start() throws IOException {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
 
@@ -207,8 +200,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                 throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
             }
         }
-
-        System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         if (httpPort == 0) {
             httpPort = getRandomPort();
@@ -258,7 +249,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
             // This won't be correct when using the random port, but it's really only used by us for the rest client tests
             // in the main module, since those tests hit the application itself
-            args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
+            args.addAll(toEnvVar("test.url", LauncherUtil.generateTestUrl()));
         }
         if (testProfile != null) {
             args.addAll(toEnvVar("quarkus.profile", testProfile));
@@ -301,15 +292,13 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                 .start();
 
         if (startedFunction != null) {
-            final IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, containerProcess,
-                    waitTimeSeconds, logPath);
-            isSsl = result.isSsl();
+            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
+            return Optional.empty();
         } else {
             log.info("Wait for server to start by capturing listening data...");
-            final ListeningAddress result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
+            ListeningAddress result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
             log.infof("Server started on port %s", result.getPort());
-            updateConfigForPort(result.getPort());
-            isSsl = result.isSsl();
+            return Optional.of(result);
         }
     }
 
@@ -317,10 +306,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         }
-    }
-
-    public boolean listensOnSsl() {
-        return isSsl;
     }
 
     public void includeAsSysProps(Map<String, String> systemProps) {

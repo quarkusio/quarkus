@@ -180,7 +180,7 @@ public final class DefaultUniAsserter implements UnwrappableUniAsserter {
         return assertFailedWith(uni, t -> {
             if (!c.isInstance(t)) {
                 Assertions.fail(String.format("Uni failure type '%s' was not of the expected type '%s'.",
-                        t.getClass().getName(), c.getName()));
+                        t.getClass().getName(), c.getName()), t);
             }
         });
     }

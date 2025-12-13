@@ -86,7 +86,7 @@ public @interface ServerRequestFilter {
     /**
      * The priority with which this request filter will be executed.
      * <p>
-     * Higher priorities are executed first, lower later. Ranges from 0 to n TODO::  someone add this exact info
+     * Common values set from static members of {@link jakarta.ws.rs.Priorities}.
      */
     int priority() default Priorities.USER;
 

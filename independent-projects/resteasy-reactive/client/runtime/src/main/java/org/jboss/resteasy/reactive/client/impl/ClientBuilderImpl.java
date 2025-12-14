@@ -10,12 +10,14 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
@@ -87,6 +89,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private Boolean enableCompression;
     private Integer http2UpgradeMaxContentLength;
+    private List<Consumer<HttpClientOptions>> clientOptionsCustomizers = new ArrayList<>();
 
     public ClientBuilderImpl() {
         configuration = new ConfigurationImpl(RuntimeType.CLIENT);
@@ -221,6 +224,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder clientOptionsCustomizer(Consumer<HttpClientOptions> clientOptionsCustomizer) {
+        this.clientOptionsCustomizers.add(clientOptionsCustomizer);
+        return this;
+    }
+
     public TlsConfig getTlsConfig() {
         return tlsConfig;
     }
@@ -308,6 +316,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         clientLogger.setBodySize(loggingBodySize);
 
         options.setMaxChunkSize(maxChunkSize);
+
+        for (Consumer<HttpClientOptions> clientOptionsCustomizer : clientOptionsCustomizers) {
+            clientOptionsCustomizer.accept(options);
+        }
+
         return new ClientImpl(options,
                 new ConfigurationImpl(configuration),
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),

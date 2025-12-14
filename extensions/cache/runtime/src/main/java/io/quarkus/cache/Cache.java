@@ -3,6 +3,7 @@ package io.quarkus.cache;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -40,6 +41,7 @@ public interface Cache {
      * @throws NullPointerException if the key is {@code null}
      * @throws CacheException if an exception is thrown during a cache value computation
      */
+    @CheckReturnValue
     <K, V> Uni<V> get(K key, Function<K, V> valueLoader);
 
     /**
@@ -53,6 +55,7 @@ public interface Cache {
      * @return a lazy asynchronous action that will emit a cache value
      * @throws NullPointerException if the key is {@code null}
      */
+    @CheckReturnValue
     <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader);
 
     /**
@@ -62,11 +65,13 @@ public interface Cache {
      * @param key cache key
      * @throws NullPointerException if the key is {@code null}
      */
+    @CheckReturnValue
     Uni<Void> invalidate(Object key);
 
     /**
      * Removes all entries from the cache.
      */
+    @CheckReturnValue
     Uni<Void> invalidateAll();
 
     /**
@@ -74,6 +79,7 @@ public interface Cache {
      *
      * @param predicate
      */
+    @CheckReturnValue
     Uni<Void> invalidateIf(Predicate<Object> predicate);
 
     /**

@@ -4,6 +4,7 @@
     <groupId>org.test</groupId>
     <artifactId>test-codestart</artifactId>
     <version>1.0.0-codestart</version>
+    <packaging>quarkus</packaging>
 
     <properties>
         <compiler-plugin.version>3.8.1-MOCK</compiler-plugin.version>

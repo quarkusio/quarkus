@@ -53,7 +53,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: maven-repo
           path: .
@@ -113,7 +113,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: maven-repo
           path: .

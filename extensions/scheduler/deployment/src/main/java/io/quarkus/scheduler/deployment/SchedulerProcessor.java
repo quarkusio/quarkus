@@ -2,7 +2,6 @@ package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
-import static org.jboss.jandex.AnnotationValue.createArrayValue;
 import static org.jboss.jandex.AnnotationValue.createBooleanValue;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
@@ -431,13 +430,10 @@ public class SchedulerProcessor {
 
         if (config.metricsEnabled() && metricsCapability.isPresent()) {
             DotName micrometerTimed = DotName.createSimple("io.micrometer.core.annotation.Timed");
-            DotName mpTimed = DotName.createSimple("org.eclipse.microprofile.metrics.annotation.Timed");
 
             annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer.builder()
                     .appliesTo(METHOD)
                     .whenContainsAny(List.of(SchedulerDotNames.SCHEDULED_NAME, SchedulerDotNames.SCHEDULES_NAME))
-                    .whenContainsNone(List.of(micrometerTimed,
-                            mpTimed, DotName.createSimple("org.eclipse.microprofile.metrics.annotation.SimplyTimed")))
                     .transform(context -> {
                         // Transform a @Scheduled method that has no metrics timed annotation
                         MethodInfo scheduledMethod = context.getTarget().asMethod();
@@ -449,16 +445,6 @@ public class SchedulerProcessor {
                                             createBooleanValue("longTask", true))
                                     .done();
                             LOGGER.debugf("Added Micrometer @Timed to a @Scheduled method %s#%s()",
-                                    scheduledMethod.declaringClass().name(),
-                                    scheduledMethod.name());
-                        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-                            // MP metrics
-                            context.transform()
-                                    .add(mpTimed,
-                                            createArrayValue("tags",
-                                                    new AnnotationValue[] { createStringValue("scheduled", "scheduled=true") }))
-                                    .done();
-                            LOGGER.debugf("Added MP Metrics @Timed to a @Scheduled method %s#%s()",
                                     scheduledMethod.declaringClass().name(),
                                     scheduledMethod.name());
                         }

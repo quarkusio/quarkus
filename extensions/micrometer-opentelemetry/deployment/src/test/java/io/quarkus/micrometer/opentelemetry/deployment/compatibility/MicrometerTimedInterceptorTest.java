@@ -35,7 +35,6 @@ public class MicrometerTimedInterceptorTest {
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "in-memory")
             .overrideConfigKey("quarkus.otel.metric.export.interval", "100ms")
-            .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .withApplicationRoot((jar) -> jar

@@ -630,8 +630,9 @@ quarkus.datasource."datasource-name".health-exclude=true
 
 === Datasource metrics
 
-If you are using the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] or xref:smallrye-metrics.adoc[`quarkus-smallrye-metrics`] extension, `quarkus-agroal` can contribute some datasource-related metrics to the metric registry.
-This can be activated by setting the `quarkus.datasource.metrics.enabled` property to `true`.
+If you are using the xref:telemetry-micrometer.adoc[`quarkus-micrometer`], `quarkus-agroal` can contribute some
+datasource-related metrics to the metric registry. This can be activated by setting the
+`quarkus.datasource.metrics.enabled` property to `true`.
 
 For the exposed metrics to contain any actual values, a metric collection must be enabled internally by the Agroal mechanisms.
 By default, this metric collection mechanism is enabled for all datasources when a metrics extension is present, and metrics for the Agroal extension are enabled.

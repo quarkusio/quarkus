@@ -238,13 +238,6 @@ triage:
       labels: [area/security, area/oidc]
       title: "bearer"
       notify: [sberyozkin]
-    - id: metrics
-      labels: [area/metrics, area/smallrye]
-      title: "metrics"
-      notify: [jmartisk, ebullient]
-      notifyInPullRequest: true
-      directories:
-        - extensions/smallrye-metrics
     - id: micrometer
       labels: [area/metrics]
       title: "micrometer"

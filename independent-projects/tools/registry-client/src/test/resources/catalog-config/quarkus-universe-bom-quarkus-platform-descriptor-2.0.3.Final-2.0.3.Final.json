@@ -2499,23 +2499,6 @@
     "artifact" : "io.quarkus:quarkus-smallrye-jwt::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
-    "name" : "SmallRye Metrics",
-    "description" : "Expose metrics for your services",
-    "metadata" : {
-      "short-name" : "metrics",
-      "keywords" : [ "smallrye-metrics", "metrics", "metric", "prometheus", "monitoring" ],
-      "guide" : "https://quarkus.io/guides/microprofile-metrics",
-      "categories" : [ "observability" ],
-      "status" : "stable",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.metrics" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
-    },
-    "artifact" : "io.quarkus:quarkus-smallrye-metrics::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
     "name" : "SmallRye OpenAPI",
     "description" : "Document your REST APIs with OpenAPI - comes with Swagger UI",
     "metadata" : {
@@ -5301,18 +5284,6 @@
       "extension-dependencies" : [ "org.apache.camel.quarkus:camel-quarkus-core::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-arc::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar", "io.quarkus:quarkus-smallrye-health::jar", "io.quarkus:quarkus-vertx-http::jar", "io.quarkus:quarkus-mutiny::jar", "io.quarkus:quarkus-smallrye-context-propagation::jar", "io.quarkus:quarkus-vertx-core::jar", "io.quarkus:quarkus-netty::jar", "io.quarkus:quarkus-jsonp::jar" ]
     },
     "artifact" : "org.apache.camel.quarkus:camel-quarkus-microprofile-health::jar:2.0.0",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
-    "name" : "Camel MicroProfile Metrics",
-    "description" : "Expose metrics from Camel routes",
-    "metadata" : {
-      "guide" : "https://camel.apache.org/camel-quarkus/latest/reference/extensions/microprofile-metrics.html",
-      "categories" : [ "integration" ],
-      "status" : [ "stable" ],
-      "built-with-quarkus-core" : "2.0.0.Final",
-      "extension-dependencies" : [ "org.apache.camel.quarkus:camel-quarkus-core::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-arc::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar", "io.quarkus:quarkus-smallrye-metrics::jar", "io.quarkus:quarkus-vertx-http::jar", "io.quarkus:quarkus-mutiny::jar", "io.quarkus:quarkus-smallrye-context-propagation::jar", "io.quarkus:quarkus-vertx-core::jar", "io.quarkus:quarkus-netty::jar", "io.quarkus:quarkus-jsonp::jar" ]
-    },
-    "artifact" : "org.apache.camel.quarkus:camel-quarkus-microprofile-metrics::jar:2.0.0",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "Camel OPC UA Client",

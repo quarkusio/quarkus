@@ -167,13 +167,14 @@ public final class ExtensionLoader {
         Map<Class<?>, Object> proxies = new HashMap<>();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
-                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, bsf));
+                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, proxies, bsf));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
         }
 
         // this has to be an identity hash map else the recorder will get angry
+        // TODO: this looks fishy as rootFields is never updated
         Map<Object, FieldDescriptor> rootFields = new IdentityHashMap<>();
         Map<Object, ConfigClass> mappingClasses = new IdentityHashMap<>();
         for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
@@ -265,14 +266,13 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class.
      *
      * @param clazz the class to load from (must not be {@code null})
-     * @param readResult the build time configuration read result (must not be {@code null})
      * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
      * @return a consumer which adds the steps to the given chain builder
      */
     @SuppressWarnings("unchecked")
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
-                                                                  BuildTimeConfigurationReader.ReadResult readResult,
-                                                                  Map<Class<?>, Object> runTimeProxies, BooleanSupplierFactoryBuildItem supplierFactory) {
+            Map<Class<?>, Object> runTimeProxies,
+            BooleanSupplierFactoryBuildItem supplierFactory) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -452,15 +452,12 @@ public final class ExtensionLoader {
                 : buildSteps.onlyIfNot();
 
         // now iterate the methods
-        final List<Method> methods = getMethods(clazz);
-        final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(m -> m.getName()));
+        final List<Method> methods = nonAbstractBuildStepMethods(clazz);
+        final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(Method::getName));
 
         MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         for (Method method : methods) {
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
-            if (buildStep == null) {
-                continue;
-            }
             if (Modifier.isStatic(method.getModifiers())) {
                 throw new RuntimeException("A build step must be a non-static method: " + method);
             }
@@ -472,7 +469,7 @@ public final class ExtensionLoader {
             final Parameter[] methodParameters = method.getParameters();
             final Record recordAnnotation = method.getAnnotation(Record.class);
             final boolean isRecorder = recordAnnotation != null;
-            final boolean identityComparison = isRecorder ? recordAnnotation.useIdentityComparisonForParameters() : true;
+            final boolean identityComparison = !isRecorder || recordAnnotation.useIdentityComparisonForParameters();
             if (isRecorder) {
                 boolean recorderFound = false;
                 for (Class<?> p : method.getParameterTypes()) {
@@ -495,7 +492,6 @@ public final class ExtensionLoader {
             final BooleanSupplier finalAddStep = addStep;
 
             if (isRecorder) {
-                assert recordAnnotation != null;
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
                 methodStepConfig = methodStepConfig.andThen(bsb -> {
@@ -914,11 +910,15 @@ public final class ExtensionLoader {
                 + " Inject the BuildProducer/Consumer through arguments of relevant @BuildStep methods instead.");
     }
 
-    protected static List<Method> getMethods(Class<?> clazz) {
+    private static List<Method> nonAbstractBuildStepMethods(Class<?> clazz) {
         List<Method> declaredMethods = new ArrayList<>();
         if (!clazz.getName().equals(Object.class.getName())) {
-            declaredMethods.addAll(getMethods(clazz.getSuperclass()));
-            declaredMethods.addAll(asList(clazz.getDeclaredMethods()));
+            declaredMethods.addAll(nonAbstractBuildStepMethods(clazz.getSuperclass()));
+            declaredMethods.addAll(Arrays.stream(clazz.getDeclaredMethods())
+                    // only keep non-abstract, BuildStep-annotated methods
+                    .filter(method -> !Modifier.isAbstract(method.getModifiers())
+                            && method.isAnnotationPresent(BuildStep.class))
+                    .toList());
         }
 
         declaredMethods.sort(MethodComparator.INSTANCE);

@@ -23,15 +23,19 @@
 package io.quarkus.tck.lra;
 
 import static io.narayana.lra.LRAConstants.RECOVERY_COORDINATOR_PATH_NAME;
+import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
+import java.time.Duration;
 
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService;
@@ -45,6 +49,8 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     private static final String WAIT_CALLBACK_TIMEOUT_PROPERTY = "lra.tck.callback.timeout";
     private static final int DEFAULT_CALLBACK_TIMEOUT = 10000;
 
+    private Client client = ClientBuilder.newClient();
+
     /*
      * Wait for the participant to return the callback. This method does not
      * guarantee callbacks to finish. The Participant status is not immediately
@@ -56,9 +62,18 @@ public class NarayanaLRARecovery implements LRARecoveryService {
     public void waitForCallbacks(URI lraId) {
         log.trace("waitForCallbacks for: " + lraId.toASCIIString());
         try {
-            Thread.sleep(WAIT_CALLBACK_TIMEOUT);
-        } catch (InterruptedException e) {
-            log.error("waitForCallbacks interrupted by " + e.getMessage());
+            await().atMost(Duration.ofMillis(WAIT_CALLBACK_TIMEOUT)).catchUncaughtExceptions()
+                    .until(() -> {
+                        try {
+                            client.target(lraId).request().get();
+                        } catch (NotFoundException notFoundException) {
+                            // LRA not found means it has been finished
+                            return true;
+                        }
+                        return false;
+                    });
+        } catch (ConditionTimeoutException e) {
+            log.warn("waitForCallbacks timeout: " + e.getMessage());
         }
     }
 

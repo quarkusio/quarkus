@@ -51,6 +51,11 @@ public class CacheInterceptionContextTest {
                 public Class<? extends CacheKeyGenerator> keyGenerator() {
                     return UndefinedCacheKeyGenerator.class;
                 }
+
+                @Override
+                public boolean skipGet() {
+                    return false;
+                }
             });
         });
         assertThrows(UnsupportedOperationException.class, () -> {

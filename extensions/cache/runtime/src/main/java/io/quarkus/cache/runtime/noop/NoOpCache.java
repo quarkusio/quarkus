@@ -50,4 +50,9 @@ public class NoOpCache extends AbstractCache {
         return Uni.createFrom().voidItem();
     }
 
+    @Override
+    public <K, V> Uni<Void> put(final K key, final V value) {
+        return Uni.createFrom().voidItem();
+    }
+
 }

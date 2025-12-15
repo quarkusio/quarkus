@@ -489,7 +489,7 @@ public interface ExtensionsService {
 ----
 # Your configuration properties
 quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
-quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
+quarkus.rest-client.extensions-api.scope=jakarta.enterprise.context.ApplicationScoped
 ----
 
 [IMPORTANT]

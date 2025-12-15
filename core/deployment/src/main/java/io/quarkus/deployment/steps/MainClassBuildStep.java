@@ -535,8 +535,7 @@ public class MainClassBuildStep {
 
         if ((recorder != null) && !recorder.isEmpty()) {
             for (ObjectSubstitutionBuildItem sub : substitutions) {
-                ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
-                recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+                sub.holder.registerTo(recorder);
             }
             for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                 recorder.registerObjectLoader(item.getObjectLoader());

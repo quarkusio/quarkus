@@ -120,6 +120,7 @@ public class CachedResultsProcessor {
                     if (config.exclude() != null) {
                         ac.add("exclude", config.exclude());
                     }
+                    ac.add("skipGet", config.skipGet());
                 });
                 // Add @CachedResultsDiff
                 // The diff may be an empty string if no additional qualifiers are used
@@ -188,7 +189,7 @@ public class CachedResultsProcessor {
                                     ac.add("lockTimeout", config.lockTimeout());
                                 if (config.keyGenerator() != null)
                                     ac.add("keyGenerator", classDescOf(config.keyGenerator()));
-
+                                ac.add("skipGet", config.skipGet());
                             });
                         }
 
@@ -319,6 +320,7 @@ public class CachedResultsProcessor {
         Long lockTimeout = null;
         Type type;
         String exclude = null;
+        boolean skipGet = false;
 
         AnnotationValue cacheNameValue = annotation.value("cacheName");
         if (cacheNameValue != null)
@@ -335,6 +337,10 @@ public class CachedResultsProcessor {
         AnnotationValue excludeValue = annotation.value("exclude");
         if (excludeValue != null)
             exclude = excludeValue.asString();
+
+        AnnotationValue skipGetValue = annotation.value("skipGet");
+        if (skipGetValue != null)
+            skipGet = skipGetValue.asBoolean();
 
         if (annotation.target().kind() == Kind.FIELD) {
             type = annotation.target().asField().type();
@@ -362,11 +368,11 @@ public class CachedResultsProcessor {
                         a -> !a.name().equals(CACHED_RESULTS)
                                 && !a.name().equals(INJECT))
                         .toList(),
-                exclude);
+                exclude, skipGet);
     }
 
     record CachedResultsInjectConfig(String cacheName, Long lockTimeout, DotName keyGenerator, ClassInfo injectedClazz,
-            Collection<AnnotationInstance> annotations, String exclude) {
+            Collection<AnnotationInstance> annotations, String exclude, boolean skipGet) {
 
     }
 

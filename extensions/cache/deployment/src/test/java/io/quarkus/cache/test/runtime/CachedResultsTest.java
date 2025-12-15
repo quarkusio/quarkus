@@ -72,6 +72,10 @@ public class CachedResultsTest {
     @CachedResults
     EmbeddingModel model7;
 
+    @Inject
+    @CachedResults(cacheName = "model8", skipGet = true)
+    EmbeddingModel model8;
+
     @CachedResults
     AnotherModel anotherModel1;
 
@@ -133,6 +137,9 @@ public class CachedResultsTest {
         // test additional qualifiers
         assertEquals(model7.ping(), model7.ping());
         assertEquals(model7.pong(), model7.pong());
+
+        // test skipGet: "baz" method return random value, so with skipGet=true, returned values must be different.
+        assertNotEquals(model8.baz("hello"), model8.baz("hello"));
 
         // injected class has a no-args constructor
         assertEquals(anotherModel1.foo(111), anotherModel1.foo(111));

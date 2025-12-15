@@ -281,6 +281,18 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     @Override
+    public <K, V> Uni<Void> put(final K key, final V value) {
+
+        return Uni.createFrom().item(new Supplier<>() {
+            @Override
+            public Void get() {
+                cache.synchronous().put(key, value);
+                return null;
+            }
+        });
+    }
+
+    @Override
     public Set<Object> keySet() {
         return Set.copyOf(cache.asMap().keySet());
     }

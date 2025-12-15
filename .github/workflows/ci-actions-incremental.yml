@@ -501,7 +501,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -646,7 +646,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -753,7 +753,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -862,7 +862,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -975,7 +975,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -1063,7 +1063,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -1161,7 +1161,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -1254,7 +1254,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -1342,7 +1342,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -1460,7 +1460,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-content
           path: .
@@ -1542,7 +1542,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: runs-on/action@v2
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           pattern: build-stats-*
           path: .
@@ -1601,7 +1601,7 @@ jobs:
     if: always()
     steps:
       - uses: runs-on/action@v2
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           path: build-reports-artifacts
       - name: Set up JDK 21

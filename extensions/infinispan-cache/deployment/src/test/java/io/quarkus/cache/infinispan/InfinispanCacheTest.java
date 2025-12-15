@@ -351,6 +351,17 @@ public class InfinispanCacheTest {
         return new InfinispanCacheImpl(info, remoteCache);
     }
 
+    @Test
+    public void testPut() {
+        Cache cache = getCache();
+        String id = generateId();
+        awaitUni(cache.put(id, "value"));
+        assertThat(remoteCache.size()).isOne();
+        assertThat(remoteCache.get(id)).isEqualTo("value");
+        awaitUni(cache.invalidate(id));
+        assertThat(remoteCache.size()).isZero();
+    }
+
     private static <T> T awaitUni(Uni<T> uni) {
         return uni.await().atMost(Duration.ofSeconds(10));
     }

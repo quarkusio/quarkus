@@ -73,7 +73,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
         EntityDataCachingConfig entityConfig = findConfig(config.getEntityCaching(), rootEntityRole);
         AccessType accessType = entityConfig.getAccessType();
 
-        Comparator<Object> comparator =
+        Comparator<?> comparator =
                 entityConfig.isVersioned() ? entityConfig.getVersionComparatorAccess().get() : null;
         InternalDataAccess internal = createInternalDataAccess(accessType, comparator);
 
@@ -91,7 +91,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
     }
 
     private synchronized InternalDataAccess createInternalDataAccess(
-            AccessType accessType, Comparator<Object> comparator) {
+            AccessType accessType, Comparator<?> comparator) {
         if (accessType == AccessType.NONSTRICT_READ_WRITE) {
             prepareForVersionedEntries();
             return new NonStrictDataAccess(cache, internalRegion, comparator, regionFactory);

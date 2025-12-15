@@ -99,7 +99,7 @@ final class VersionedEntry {
                     return entry.value instanceof CacheEntry ? entry.value : entry;
                 }
             } else {
-                Comparator<Object> versionComparator = null;
+                Comparator<?> versionComparator = null;
                 String subclass = findSubclass(entry.value);
                 if (subclass != null) {
                     versionComparator = region.getComparator(subclass);
@@ -111,7 +111,7 @@ final class VersionedEntry {
                     entry.lifespan = TOMBSTONE_LIFESPAN;
                     return new VersionedEntry(null, null, entry.timestamp);
                 } else {
-                    int compareResult = versionComparator.compare(entry.version, oldVersion);
+                    int compareResult = ((Comparator)versionComparator).compare(entry.version, oldVersion);
                     if (trace) {
                         log.tracef("Comparing %s and %s -> %d (using %s)", entry.version, oldVersion, compareResult, versionComparator);
                     }

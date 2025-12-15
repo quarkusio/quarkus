@@ -16,8 +16,8 @@ interface InternalRegion {
 
     void clear();
 
-    Comparator<Object> getComparator(String subclass);
+    Comparator<?> getComparator(String subclass);
 
-    void addComparator(String name, Comparator<Object> comparator);
+    void addComparator(String name, Comparator<?> comparator);
 
 }

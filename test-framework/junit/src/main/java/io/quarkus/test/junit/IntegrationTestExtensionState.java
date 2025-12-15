@@ -3,9 +3,11 @@ package io.quarkus.test.junit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.TestResourceManager;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -13,9 +15,9 @@ public class IntegrationTestExtensionState extends QuarkusTestExtensionState {
 
     private final Map<String, String> sysPropRestore;
 
-    public IntegrationTestExtensionState(TestResourceManager testResourceManager, Closeable resource,
-            Runnable clearCallbacks, Map<String, String> sysPropRestore) {
-        super(testResourceManager, resource, clearCallbacks);
+    public IntegrationTestExtensionState(TestResourceManager testResourceManager, Closeable resource, Runnable clearCallbacks,
+            Optional<ListeningAddress> listeningAddress, Map<String, String> sysPropRestore) {
+        super(testResourceManager, resource, clearCallbacks, listeningAddress);
         this.sysPropRestore = sysPropRestore;
     }
 

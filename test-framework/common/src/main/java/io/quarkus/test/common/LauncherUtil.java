@@ -20,14 +20,39 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.quarkus.test.common.http.TestHTTPResourceManager;
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.smallrye.common.os.OS;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
 
     public static final int LOG_CHECK_INTERVAL = 50;
 
     private LauncherUtil() {
+    }
+
+    /**
+     * Generates the value of <code>test.url</code> to pass as an argument to integration tests launchers.
+     * <p>
+     * Ideally, we shouldn't be using the configuration system to discover the url. We are keeping this for
+     * compatibility reasons, and it should be reworked with
+     * <a href="https://github.com/quarkusio/quarkus/discussions/46915">#45915</a>.
+     *
+     * @return a String with the <code>test.url</code> value to be evaluated by the running Quarkus Config instance.
+     */
+    static String generateTestUrl() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        String rootPath = "";
+        // These are build time properties so it is fine to evaluate them here as they will not change
+        ConfigValue rootPathValue = config.getConfigValue("${quarkus.http.root-path:${quarkus.servlet.context-path:}}");
+        // Remove the ending "/", not relevant for invoking but causes issues with OpenTelemetry
+        if (rootPathValue.getValue() != null && rootPathValue.getValue().endsWith("/")) {
+            rootPath = rootPathValue.getValue().substring(0, rootPathValue.getValue().length() - 1);
+        }
+        // We want to keep `quarkus.http.test-port` as an expression so it is evaluated correctly if is random
+        return "http://localhost:${quarkus.http.test-port:8081}" + rootPath;
     }
 
     /**
@@ -198,19 +223,6 @@ public final class LauncherUtil {
             throw new RuntimeException("Unable to start target quarkus application " + waitTimeSeconds + "s");
         }
         return result;
-    }
-
-    /**
-     * Updates the configuration necessary to make all test systems knowledgeable about the port on which the launched
-     * process is listening
-     */
-    static void updateConfigForPort(Integer effectivePort) {
-        if (effectivePort != null) {
-            System.setProperty("quarkus.http.port", effectivePort.toString()); //set the port as a system property in order to have it applied to Config
-            System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
-            System.clearProperty("test.url"); // make sure the old value does not interfere with setting the new one
-            System.setProperty("test.url", TestHTTPResourceManager.getUri());
-        }
     }
 
     static void toStdOut(Path log) {

@@ -1,6 +1,7 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
+import static io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer.QUARKUS_PROFILE;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
@@ -22,6 +23,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Alternative;
@@ -30,6 +32,7 @@ import jakarta.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -51,6 +54,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -120,8 +124,7 @@ public final class IntegrationTestUtil {
         return sysPropRestore;
     }
 
-    static TestProfileAndProperties determineTestProfileAndProperties(Class<? extends QuarkusTestProfile> profile,
-            Map<String, String> sysPropRestore)
+    static TestProfileAndProperties determineTestProfileAndProperties(Class<? extends QuarkusTestProfile> profile)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         final Map<String, String> properties = new HashMap<>();
         QuarkusTestProfile testProfile = null;
@@ -144,23 +147,17 @@ public final class IntegrationTestUtil {
                 properties.put(LaunchMode.NORMAL.getProfileKey(), configProfile);
             }
             properties.put("quarkus.config.build-time-mismatch-at-runtime", "fail");
-            for (Map.Entry<String, String> i : properties.entrySet()) {
-                sysPropRestore.put(i.getKey(), System.getProperty(i.getKey()));
-            }
-            for (Map.Entry<String, String> i : properties.entrySet()) {
-                System.setProperty(i.getKey(), i.getValue());
-            }
         }
         // recalculate the property names that may have changed
         ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
         return new TestProfileAndProperties(testProfile, properties);
     }
 
-    static void startLauncher(ArtifactLauncher launcher, Map<String, String> additionalProperties, Runnable sslSetter)
+    static Optional<ListeningAddress> startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
             throws IOException {
-        launcher.includeAsSysProps(additionalProperties);
         try {
-            launcher.start();
+            launcher.includeAsSysProps(additionalProperties);
+            return launcher.start();
         } catch (IOException e) {
             try {
                 launcher.close();
@@ -168,15 +165,12 @@ public final class IntegrationTestUtil {
             }
             throw e;
         }
-        if (launcher.listensOnSsl()) {
-            if (sslSetter != null) {
-                sslSetter.run();
-            }
-        }
     }
 
-    static ArtifactLauncher.InitContext.DevServicesLaunchResult handleDevServices(ExtensionContext context,
-            boolean isDockerAppLaunch) throws Exception {
+    static ArtifactLauncher.InitContext.DevServicesLaunchResult handleDevServices(
+            ExtensionContext context,
+            boolean isDockerAppLaunch,
+            TestProfileAndProperties testProfileAndProperties) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation);
@@ -245,8 +239,20 @@ public final class IntegrationTestUtil {
         }
         runnerBuilder.setApplicationRoot(rootBuilder.build());
 
+        // Set the config profile and properties overrides from the @TestProfile also for DevServices augmentation
+        Properties properties = new Properties();
+        // Ensure that these properties cannot be overridden
+        properties.put(ConfigSource.CONFIG_ORDINAL, Integer.MAX_VALUE);
+        testProfileAndProperties.configProfile().ifPresent(new Consumer<String>() {
+            @Override
+            public void accept(String configProfile) {
+                properties.put(QUARKUS_PROFILE, configProfile);
+            }
+        });
+        properties.putAll(testProfileAndProperties.properties());
         CuratedApplication curatedApplication = runnerBuilder
                 .setTest(true)
+                .setBuildSystemProperties(properties)
                 .build()
                 .bootstrap();
 

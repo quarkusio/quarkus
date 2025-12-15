@@ -103,7 +103,11 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
+            {#if quarkus.platform.version.compareVersionTo("3.30.999") > 0}
             <artifactId>quarkus-junit</artifactId>
+            {#else}
+            <artifactId>quarkus-junit5</artifactId>
+            {/if}
             <scope>test</scope>
         </dependency>
         {#each test-dependencies}

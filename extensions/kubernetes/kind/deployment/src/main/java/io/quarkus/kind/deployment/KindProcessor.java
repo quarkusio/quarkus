@@ -49,6 +49,12 @@ import io.smallrye.common.process.AbnormalExitException;
 import io.smallrye.common.process.ProcessBuilder;
 
 public class KindProcessor extends DevClusterHelper {
+    private KubernetesConfig config;
+
+    @Override
+    protected KubernetesConfig config() {
+        return config;
+    }
 
     @Override
     protected int priority() {
@@ -62,41 +68,38 @@ public class KindProcessor extends DevClusterHelper {
 
     @BuildStep
     public void checkKind(ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config,
             Capabilities capabilities,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        super.produceDeploymentBuildItem(applicationInfo, capabilities, config, deploymentTargets, resourceMeta);
+        super.produceDeploymentBuildItem(applicationInfo, capabilities, deploymentTargets, resourceMeta);
     }
 
     @BuildStep
-    public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        super.createAnnotations(config, annotations);
+    public void createAnnotations(BuildProducer<KubernetesAnnotationBuildItem> annotations) {
+        super.createAnnotations(annotations);
     }
 
     @BuildStep
-    public void createLabels(KubernetesConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
+    public void createLabels(BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        super.createLabels(config, labels, imageLabels);
+        super.createLabels(labels, imageLabels);
     }
 
     @BuildStep
-    public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config,
-            List<KubernetesPortBuildItem> ports) {
-        return super.createConfigurators(ports, config);
+    public List<ConfiguratorBuildItem> createConfigurators(List<KubernetesPortBuildItem> ports) {
+        return super.createConfigurators(ports);
     }
 
     @BuildStep
     public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+            List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
-        return super.computeEffectiveServiceAccounts(applicationInfo, config, serviceAccountsFromExtensions, decorators);
+        return super.computeEffectiveServiceAccounts(applicationInfo, serviceAccountsFromExtensions, decorators);
     }
 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            KubernetesConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -121,7 +124,7 @@ public class KindProcessor extends DevClusterHelper {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
-        return super.createDecorators(applicationInfo, outputTarget, config,
+        return super.createDecorators(applicationInfo, outputTarget,
                 packageConfig,
                 metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels,
                 envs,
@@ -133,7 +136,6 @@ public class KindProcessor extends DevClusterHelper {
     @BuildStep
     public void externalizeInitTasks(
             ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config,
             ContainerImageInfoBuildItem image,
             List<InitTaskBuildItem> initTasks,
             BuildProducer<KubernetesJobBuildItem> jobs,
@@ -143,7 +145,7 @@ public class KindProcessor extends DevClusterHelper {
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
             BuildProducer<DecoratorBuildItem> decorators) {
-        super.externalizeInitTasks(applicationInfo, config, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+        super.externalizeInitTasks(applicationInfo, image, initTasks, jobs, initContainers, env, roles, roleBindings,
                 serviceAccount, decorators);
     }
 

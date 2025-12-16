@@ -1,4 +1,3 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
@@ -71,7 +70,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKubernetesConfig> {
+public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
+    private KubernetesConfig config;
 
     @Override
     protected int priority() {
@@ -84,7 +84,12 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
     }
 
     @Override
-    protected DeploymentResourceKind deploymentResourceKind(PlatformConfiguration config, Capabilities capabilities) {
+    protected KubernetesConfig config() {
+        return config;
+    }
+
+    @Override
+    protected DeploymentResourceKind deploymentResourceKind(Capabilities capabilities) {
         return config.getDeploymentResourceKind(capabilities);
     }
 
@@ -98,26 +103,25 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
 
     @BuildStep
     public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities,
-            KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        super.produceDeploymentBuildItem(applicationInfo, capabilities, config, deploymentTargets, resourceMeta);
+        super.produceDeploymentBuildItem(applicationInfo, capabilities, deploymentTargets, resourceMeta);
     }
 
     @BuildStep
-    public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        super.createAnnotations(config, annotations);
+    public void createAnnotations(BuildProducer<KubernetesAnnotationBuildItem> annotations) {
+        super.createAnnotations(annotations);
     }
 
     @BuildStep
-    public void createLabels(KubernetesConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
+    public void createLabels(BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        super.createLabels(config, labels, imageLabels);
+        super.createLabels(labels, imageLabels);
     }
 
     @BuildStep
-    public void createNamespace(KubernetesConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
-        super.createNamespace(config, namespace);
+    public void createNamespace(BuildProducer<KubernetesNamespaceBuildItem> namespace) {
+        super.createNamespace(namespace);
     }
 
     @Override
@@ -126,8 +130,8 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
     }
 
     @BuildStep
-    public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config, List<KubernetesPortBuildItem> ports) {
-        final var result = super.createConfigurators(ports, config);
+    public List<ConfiguratorBuildItem> createConfigurators(List<KubernetesPortBuildItem> ports) {
+        final var result = super.createConfigurators(ports);
         if (config.ingress() != null) {
             result.add(new ConfiguratorBuildItem(new ApplyKubernetesIngressConfigurator((config.ingress()))));
         }
@@ -142,14 +146,14 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
 
     @BuildStep
     public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+            List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
-        return super.computeEffectiveServiceAccounts(applicationInfo, config, serviceAccountsFromExtensions, decorators);
+        return super.computeEffectiveServiceAccounts(applicationInfo, serviceAccountsFromExtensions, decorators);
     }
 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config,
+            OutputTargetBuildItem outputTarget, Capabilities capabilities,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -170,35 +174,36 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-
+        final var clusterKind = deploymentTarget();
+        final var config = config();
         final List<DecoratorBuildItem> result = new ArrayList<>();
         if (targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
-                .noneMatch(t -> deploymentTarget().equals(t.getName()))) {
+                .noneMatch(t -> clusterKind.equals(t.getName()))) {
             return result;
         }
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, deploymentTarget(), true)
+        final var namespace = Targetable.filteredByTarget(namespaces, clusterKind, true)
                 .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
 
-        result.addAll(KubernetesCommonHelper.createDecorators(project, deploymentTarget(), name, namespace, config,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations, labels, image, command, port,
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
 
         DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != DeploymentResourceKind.Deployment) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDeploymentResourceDecorator(name)));
+            result.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentResourceDecorator(name)));
         }
         if (deploymentKind == DeploymentResourceKind.StatefulSet) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new AddStatefulSetResourceDecorator(name, config)));
+            result.add(new DecoratorBuildItem(clusterKind, new AddStatefulSetResourceDecorator(name, config)));
         } else if (deploymentKind == DeploymentResourceKind.Job) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new AddJobResourceDecorator(name, config.job())));
+            result.add(new DecoratorBuildItem(clusterKind, new AddJobResourceDecorator(name, config.job())));
         } else if (deploymentKind == DeploymentResourceKind.CronJob) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new AddCronJobResourceDecorator(name, config.cronJob())));
+            result.add(new DecoratorBuildItem(clusterKind, new AddCronJobResourceDecorator(name, config.cronJob())));
         }
 
         if (config.ingress() != null) {
@@ -208,7 +213,7 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
                         String[] tlsHosts = tlsConfigEntry.getValue().hosts()
                                 .map(l -> l.toArray(new String[0]))
                                 .orElse(null);
-                        result.add(new DecoratorBuildItem(KUBERNETES,
+                        result.add(new DecoratorBuildItem(clusterKind,
                                 new AddIngressTlsDecorator(name, new IngressBuilder()
                                         .withTlsSecretName(tlsConfigEntry.getKey())
                                         .withTlsHosts(tlsHosts)
@@ -218,12 +223,12 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
 
             }
             for (Map.Entry<String, String> annotation : config.ingress().annotations().entrySet()) {
-                result.add(new DecoratorBuildItem(KUBERNETES,
+                result.add(new DecoratorBuildItem(clusterKind,
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
             }
 
             for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
-                result.add(new DecoratorBuildItem(KUBERNETES, new AddIngressRuleDecorator(name, port,
+                result.add(new DecoratorBuildItem(clusterKind, new AddIngressRuleDecorator(name, port,
                         new IngressRuleBuilder()
                                 .withHost(rule.host())
                                 .withPath(rule.path())
@@ -237,22 +242,22 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
 
         if (config.replicas() != 1) {
             // This only affects Deployment
-            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToDeploymentDecorator(name, config.replicas())));
+            result.add(new DecoratorBuildItem(clusterKind, new ApplyReplicasToDeploymentDecorator(name, config.replicas())));
             // This only affects StatefulSet
-            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToStatefulSetDecorator(name, config.replicas())));
+            result.add(new DecoratorBuildItem(clusterKind, new ApplyReplicasToStatefulSetDecorator(name, config.replicas())));
         }
 
         image.ifPresent(
-                i -> result.add(new DecoratorBuildItem(KUBERNETES, new ApplyContainerImageDecorator(name, i.getImage()))));
+                i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
 
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
-        result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
+        result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
+        result.add(new DecoratorBuildItem(clusterKind, new AddSelectorToDeploymentDecorator(name)));
 
-        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES));
+        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterKind));
         if (config.idempotent()) {
             stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
         }
-        stream.forEach(e -> result.add(new DecoratorBuildItem(KUBERNETES,
+        stream.forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
                         new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
                                 .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
@@ -260,76 +265,75 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
                                 .build()))));
 
         config.containerName().ifPresent(containerName -> result
-                .add(new DecoratorBuildItem(KUBERNETES, new ChangeContainerNameDecorator(containerName))));
+                .add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameDecorator(containerName))));
 
         // Service handling
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
+        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
         if ((config.serviceType() == ServiceType.NodePort)) {
             List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
                     .filter(e -> e.getValue().nodePort().isPresent())
                     .toList();
             if (!nodeConfigPorts.isEmpty()) {
                 for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                    result.add(new DecoratorBuildItem(KUBERNETES,
+                    result.add(new DecoratorBuildItem(clusterKind,
                             new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey())));
                 }
             } else if (config.nodePort().isPresent()) {
-                result.add(new DecoratorBuildItem(KUBERNETES,
+                result.add(new DecoratorBuildItem(clusterKind,
                         new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort())));
             }
         }
 
         // Probe port handling
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, LIVENESS_PROBE, config.livenessProbe(),
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE, config.livenessProbe(),
                         portName,
                         ports,
                         config.ports()));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, READINESS_PROBE, config.readinessProbe(),
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE, config.readinessProbe(),
                         portName,
                         ports,
                         config.ports()));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, STARTUP_PROBE, config.startupProbe(),
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE, config.startupProbe(),
                         portName,
                         ports,
                         config.ports()));
 
         // Handle remote debug configuration
         if (config.remoteDebug().enabled()) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+            result.add(new DecoratorBuildItem(clusterKind, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
                     config.remoteDebug().buildJavaToolOptionsEnv())));
         }
 
         // Handle init Containers and Jobs
-        result.addAll(KubernetesCommonHelper.createInitContainerDecorators(KUBERNETES, name, initContainers, result));
-        result.addAll(KubernetesCommonHelper.createInitJobDecorators(KUBERNETES, name, jobs, result));
+        result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));
+        result.addAll(KubernetesCommonHelper.createInitJobDecorators(clusterKind, name, jobs, result));
 
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
         if (managementPortIsEnabled()
                 && (config.ingress() == null
                         || !config.ingress().expose()
                         || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+            result.add(new DecoratorBuildItem(clusterKind, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
         }
 
         // Handle deployment strategy
         if (config.strategy() != DeploymentStrategy.None) {
-            result.add(new DecoratorBuildItem(KUBERNETES,
+            result.add(new DecoratorBuildItem(clusterKind,
                     new ApplyDeploymentStrategyDecorator(name, config.strategy(), new RollingUpdateBuilder()
                             .withMaxSurge(config.rollingUpdate().maxSurge())
                             .withMaxUnavailable(config.rollingUpdate().maxUnavailable())
                             .build())));
         }
-        printMessageAboutPortsThatCantChange(KUBERNETES, ports, config);
+        printMessageAboutPortsThatCantChange(clusterKind, ports, config);
         return result;
     }
 
     @BuildStep
-    void externalizeInitTasks(
+    protected void externalizeInitTasks(
             ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config,
             ContainerImageInfoBuildItem image,
             List<InitTaskBuildItem> initTasks,
             BuildProducer<KubernetesJobBuildItem> jobs,
@@ -340,7 +344,7 @@ public class VanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKuber
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
 
             BuildProducer<DecoratorBuildItem> decorators) {
-        super.externalizeInitTasks(applicationInfo, config, image, initTasks, jobs, initContainers, env, roles, roleBindings,
+        super.externalizeInitTasks(applicationInfo, image, initTasks, jobs, initContainers, env, roles, roleBindings,
                 serviceAccount, decorators);
     }
 }

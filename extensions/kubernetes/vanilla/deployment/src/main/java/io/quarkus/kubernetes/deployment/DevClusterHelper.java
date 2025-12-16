@@ -34,9 +34,7 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.project.Project;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
-import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -60,10 +58,9 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubernetesConfig> {
+public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
     private static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     @Override
@@ -75,7 +72,6 @@ public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubern
     public List<DecoratorBuildItem> createDecorators(
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            KubernetesConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -99,8 +95,8 @@ public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubern
             List<KubernetesRoleBindingBuildItem> roleBindings,
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
-
         final var clusterKind = deploymentTarget();
+        final var config = config();
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         final var namespace = Targetable.filteredByTarget(namespaces, clusterType(), true)
                 .findFirst();
@@ -219,21 +215,5 @@ public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubern
         } catch (Exception e) {
             throw new RuntimeException("Unable to generate stable port number from input string: '" + input + "'", e);
         }
-    }
-
-    public void externalizeInitTasks(
-            ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config,
-            ContainerImageInfoBuildItem image,
-            List<InitTaskBuildItem> initTasks,
-            BuildProducer<KubernetesJobBuildItem> jobs,
-            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
-            BuildProducer<KubernetesEnvBuildItem> env,
-            BuildProducer<KubernetesRoleBuildItem> roles,
-            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
-            BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
-            BuildProducer<DecoratorBuildItem> decorators) {
-        super.externalizeInitTasks(applicationInfo, config, image, initTasks, jobs, initContainers, env, roles, roleBindings,
-                serviceAccount, decorators);
     }
 }

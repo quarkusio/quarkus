@@ -80,12 +80,13 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.Targetable;
 
-public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> {
+public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, KnativeConfig> {
     private static final String LATEST_REVISION = "latest";
     private static final String KNATIVE_CONFIG_AUTOSCALER = "config-autoscaler";
     private static final String KNATIVE_CONFIG_DEFAULTS = "config-defaults";
     private static final String KNATIVE_SERVING = "knative-serving";
     private static final String KNATIVE_DEV_VISIBILITY = "networking.knative.dev/visibility";
+    private KnativeConfig config;
 
     @Override
     protected int priority() {
@@ -98,39 +99,43 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
     }
 
     @Override
-    protected boolean enabled() {
-        final var targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
-        return targets.contains(KNATIVE);
+    protected KnativeConfig config() {
+        return config;
     }
 
     @Override
-    protected DeploymentResourceKind deploymentResourceKind(PlatformConfiguration config, Capabilities capabilities) {
+    protected boolean enabled() {
+        final var targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
+        return targets.contains(deploymentTarget());
+    }
+
+    @Override
+    protected DeploymentResourceKind deploymentResourceKind(Capabilities capabilities) {
         return DeploymentResourceKind.KnativeService;
     }
 
     @BuildStep
     public void checkKnative(ApplicationInfoBuildItem applicationInfo,
             Capabilities capabilities,
-            KnativeConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        super.produceDeploymentBuildItem(applicationInfo, capabilities, config, deploymentTargets, resourceMeta);
+        super.produceDeploymentBuildItem(applicationInfo, capabilities, deploymentTargets, resourceMeta);
     }
 
     @BuildStep
-    public void createAnnotations(KnativeConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        super.createAnnotations(config, annotations);
+    public void createAnnotations(BuildProducer<KubernetesAnnotationBuildItem> annotations) {
+        super.createAnnotations(annotations);
     }
 
     @BuildStep
-    public void createLabels(KnativeConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
+    public void createLabels(BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        super.createLabels(config, labels, imageLabels);
+        super.createLabels(labels, imageLabels);
     }
 
     @BuildStep
-    public void createNamespace(KnativeConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
-        super.createNamespace(config, namespace);
+    public void createNamespace(BuildProducer<KubernetesNamespaceBuildItem> namespace) {
+        super.createNamespace(namespace);
     }
 
     @Override
@@ -139,8 +144,8 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
     }
 
     @BuildStep
-    public List<ConfiguratorBuildItem> createConfigurators(KnativeConfig config, List<KubernetesPortBuildItem> ports) {
-        return asStream(ports, config)
+    public List<ConfiguratorBuildItem> createConfigurators(List<KubernetesPortBuildItem> ports) {
+        return asStream(ports)
                 // At the moment, Knative only supports single port binding: https://github.com/knative/serving/issues/8471
                 .filter(p -> p.getName().equals("http"))
                 .findFirst()
@@ -150,16 +155,15 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
 
     @BuildStep
     public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+            List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
-        return super.computeEffectiveServiceAccounts(applicationInfo, config, serviceAccountsFromExtensions, decorators);
+        return super.computeEffectiveServiceAccounts(applicationInfo, serviceAccountsFromExtensions, decorators);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            KnativeConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -180,34 +184,36 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-
+        final var clusterKind = deploymentTarget();
+        final var config = config();
         List<DecoratorBuildItem> result = new ArrayList<>();
         if (targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
-                .noneMatch(t -> KNATIVE.equals(t.getName()))) {
+                .noneMatch(t -> clusterKind.equals(t.getName()))) {
             return result;
         }
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, KNATIVE, true)
+        final var namespace = Targetable.filteredByTarget(namespaces, clusterKind, true)
                 .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, "http");
 
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, namespace, config,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations,
                 labels, image, command, port, livenessPath, readinessPath, startupProbePath,
                 roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
 
-        image.ifPresent(i -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage()))));
-        result.add(new DecoratorBuildItem(KNATIVE, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
+        image.ifPresent(
+                i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
+        result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
 
         config.containerName().ifPresent(containerName -> result
-                .add(new DecoratorBuildItem(KNATIVE, new ChangeContainerNameDecorator(containerName))));
+                .add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameDecorator(containerName))));
 
-        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KNATIVE))
-                .forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterKind))
+                .forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                         new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
                                 .withName(EnvConverter.convertName(e.getName()))
                                 .withValue(e.getValue())
@@ -217,72 +223,77 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
                                 .build()))));
 
         if (config.clusterLocal()) {
-            if (labels.stream().filter(l -> KNATIVE.equals(l.getTarget()))
+            if (labels.stream().filter(l -> clusterKind.equals(l.getTarget()))
                     .noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {
-                result.add(new DecoratorBuildItem(KNATIVE,
+                result.add(new DecoratorBuildItem(clusterKind,
                         new AddLabelDecorator(name, KNATIVE_DEV_VISIBILITY, "cluster-local")));
             }
         }
 
-        config.minScale().ifPresent(min -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyMinScaleDecorator(name, min))));
-        config.maxScale().ifPresent(max -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyMaxScaleDecorator(name, max))));
+        config.minScale()
+                .ifPresent(min -> result.add(new DecoratorBuildItem(clusterKind, new ApplyMinScaleDecorator(name, min))));
+        config.maxScale()
+                .ifPresent(max -> result.add(new DecoratorBuildItem(clusterKind, new ApplyMaxScaleDecorator(name, max))));
         config.revisionAutoScaling().autoScalerClass().map(AutoScalerClassConverter::convert)
-                .ifPresent(a -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalAutoscalingClassDecorator(name, a))));
+                .ifPresent(
+                        a -> result.add(new DecoratorBuildItem(clusterKind, new ApplyLocalAutoscalingClassDecorator(name, a))));
         config.revisionAutoScaling().metric().map(AutoScalingMetricConverter::convert)
-                .ifPresent(m -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalAutoscalingMetricDecorator(name, m))));
+                .ifPresent(m -> result
+                        .add(new DecoratorBuildItem(clusterKind, new ApplyLocalAutoscalingMetricDecorator(name, m))));
         config.revisionAutoScaling().containerConcurrency().ifPresent(
-                c -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalContainerConcurrencyDecorator(name, c))));
+                c -> result.add(new DecoratorBuildItem(clusterKind, new ApplyLocalContainerConcurrencyDecorator(name, c))));
         config.revisionAutoScaling().targetUtilizationPercentage().ifPresent(t -> result
-                .add(new DecoratorBuildItem(KNATIVE, new ApplyLocalTargetUtilizationPercentageDecorator(name, t))));
+                .add(new DecoratorBuildItem(clusterKind, new ApplyLocalTargetUtilizationPercentageDecorator(name, t))));
         config.revisionAutoScaling().target()
-                .ifPresent(t -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyLocalAutoscalingTargetDecorator(name, t))));
+                .ifPresent(t -> result
+                        .add(new DecoratorBuildItem(clusterKind, new ApplyLocalAutoscalingTargetDecorator(name, t))));
         config.globalAutoScaling().autoScalerClass()
                 .map(AutoScalerClassConverter::convert)
                 .ifPresent(a -> {
                     result.add(
-                            new DecoratorBuildItem(KNATIVE,
+                            new DecoratorBuildItem(clusterKind,
                                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-                    result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalAutoscalingClassDecorator(a)));
+                    result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalAutoscalingClassDecorator(a)));
                 });
         config.globalAutoScaling().containerConcurrency().ifPresent(c -> {
-            result.add(new DecoratorBuildItem(KNATIVE,
+            result.add(new DecoratorBuildItem(clusterKind,
                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING)));
-            result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalContainerConcurrencyDecorator(c)));
+            result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalContainerConcurrencyDecorator(c)));
         });
 
         config.globalAutoScaling().requestsPerSecond()
                 .ifPresent(r -> {
                     result.add(
-                            new DecoratorBuildItem(KNATIVE,
+                            new DecoratorBuildItem(clusterKind,
                                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-                    result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalRequestsPerSecondTargetDecorator(r)));
+                    result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalRequestsPerSecondTargetDecorator(r)));
                 });
 
         config.globalAutoScaling().targetUtilizationPercentage()
                 .ifPresent(t -> {
                     result.add(
-                            new DecoratorBuildItem(KNATIVE,
+                            new DecoratorBuildItem(clusterKind,
                                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-                    result.add(new DecoratorBuildItem(KNATIVE, new ApplyGlobalTargetUtilizationDecorator(t)));
+                    result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalTargetUtilizationDecorator(t)));
                 });
 
         if (!config.scaleToZeroEnabled()) {
-            result.add(new DecoratorBuildItem(KNATIVE,
+            result.add(new DecoratorBuildItem(clusterKind,
                     new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
             result.add(
-                    new DecoratorBuildItem(KNATIVE,
+                    new DecoratorBuildItem(clusterKind,
                             new AddConfigMapDataDecorator(KNATIVE_CONFIG_AUTOSCALER, "enable-scale-to-zero",
                                     String.valueOf(config.scaleToZeroEnabled()))));
         }
 
-        result.add(new DecoratorBuildItem(KNATIVE, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
+        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
 
         //In Knative its expected that all http ports in probe are omitted (so we set them to null).
-        result.add(new DecoratorBuildItem(KNATIVE, new ApplyHttpGetActionPortDecorator(name, null)));
+        result.add(new DecoratorBuildItem(clusterKind, new ApplyHttpGetActionPortDecorator(name, null)));
 
         //Traffic Splitting
         config.revisionName()
-                .ifPresent(r -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyRevisionNameDecorator(name, r))));
+                .ifPresent(r -> result.add(new DecoratorBuildItem(clusterKind, new ApplyRevisionNameDecorator(name, r))));
 
         config.traffic().forEach((k, traffic) -> {
             //Revision name is K unless we have the edge name of a revision named 'latest' which is not really the latest (in which case use null).
@@ -290,19 +301,20 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
             String revisionName = !latestRevision && LATEST_REVISION.equals(k) ? null : k;
             String tag = traffic.tag().orElse(null);
             long percent = traffic.percent().orElse(100L);
-            result.add(new DecoratorBuildItem(KNATIVE,
+            result.add(new DecoratorBuildItem(clusterKind,
                     new ApplyTrafficDecorator(name, revisionName, latestRevision, percent, tag)));
         });
 
         //Add revision decorators
-        result.addAll(createVolumeDecorators(config));
-        result.addAll(createAppConfigVolumeAndEnvDecorators(name, config));
-        config.hostAliases().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        result.addAll(createVolumeDecorators());
+        result.addAll(createAppConfigVolumeAndEnvDecorators(name));
+        config.hostAliases().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e)))));
-        config.nodeSelector().ifPresent(n -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.nodeSelector().ifPresent(n -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddNodeSelectorDecorator(name, n.key(), n.value()))));
         config.sidecars().entrySet().forEach(e -> result
-                .add(new DecoratorBuildItem(KNATIVE, new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e)))));
+                .add(new DecoratorBuildItem(clusterKind,
+                        new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e)))));
 
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNameToRevisionSpecDecorator()));
@@ -311,56 +323,55 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
         //Handle Image Pull Secrets
         config.imagePullSecrets().ifPresent(imagePullSecrets -> {
             String serviceAccountName = config.serviceAccount().orElse(name);
-            result.add(new DecoratorBuildItem(KNATIVE, new AddServiceAccountResourceDecorator(name)));
+            result.add(new DecoratorBuildItem(clusterKind, new AddServiceAccountResourceDecorator(name)));
             result.add(
-                    new DecoratorBuildItem(KNATIVE, new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
-            result.add(new DecoratorBuildItem(KNATIVE,
+                    new DecoratorBuildItem(clusterKind,
+                            new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
+            result.add(new DecoratorBuildItem(clusterKind,
                     new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets)));
         });
 
         return result;
     }
 
-    private static List<DecoratorBuildItem> createVolumeDecorators(PlatformConfiguration config) {
+    private List<DecoratorBuildItem> createVolumeDecorators() {
         List<DecoratorBuildItem> result = new ArrayList<>();
-
+        final var clusterKind = deploymentTarget();
         config.secretVolumes().entrySet().forEach(e -> result.add(
-                new DecoratorBuildItem(KNATIVE, new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e)))));
+                new DecoratorBuildItem(clusterKind, new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e)))));
 
-        config.configMapVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.configMapVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e)))));
 
         config.emptyDirVolumes().ifPresent(volumes -> volumes.forEach(e -> result.add(
-                new DecoratorBuildItem(KNATIVE,
+                new DecoratorBuildItem(clusterKind,
                         new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e))))));
 
         config.pvcVolumes().entrySet().forEach(e -> result
-                .add(new DecoratorBuildItem(KNATIVE, new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e)))));
+                .add(new DecoratorBuildItem(clusterKind, new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e)))));
 
-        config.awsElasticBlockStoreVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.awsElasticBlockStoreVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddAwsElasticBlockStoreVolumeToRevisionDecorator(AwsElasticBlockStoreVolumeConverter.convert(e)))));
 
-        config.azureFileVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.azureFileVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddAzureFileVolumeToRevisionDecorator(AzureFileVolumeConverter.convert(e)))));
 
-        config.azureDiskVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
+        config.azureDiskVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
                 new AddAzureDiskVolumeToRevisionDecorator(AzureDiskVolumeConverter.convert(e)))));
         return result;
     }
 
-    private static List<DecoratorBuildItem> createAppConfigVolumeAndEnvDecorators(
-            String name,
-            PlatformConfiguration config) {
+    private List<DecoratorBuildItem> createAppConfigVolumeAndEnvDecorators(String name) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
         Set<String> paths = new HashSet<>();
-
+        final var clusterKind = deploymentTarget();
         config.appSecret().ifPresent(s -> {
-            result.add(new DecoratorBuildItem(KNATIVE, new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
+            result.add(new DecoratorBuildItem(clusterKind, new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
                     .withSecretName(s)
                     .withVolumeName("app-secret")
                     .build())));
-            result.add(new DecoratorBuildItem(KNATIVE, new AddMountDecorator(new MountBuilder()
+            result.add(new DecoratorBuildItem(clusterKind, new AddMountDecorator(new MountBuilder()
                     .withName("app-secret")
                     .withPath("/mnt/app-secret")
                     .build())));
@@ -368,11 +379,12 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
         });
 
         config.appConfigMap().ifPresent(s -> {
-            result.add(new DecoratorBuildItem(KNATIVE, new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
-                    .withConfigMapName(s)
-                    .withVolumeName("app-config-map")
-                    .build())));
-            result.add(new DecoratorBuildItem(KNATIVE, new AddMountDecorator(new MountBuilder()
+            result.add(new DecoratorBuildItem(clusterKind,
+                    new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
+                            .withConfigMapName(s)
+                            .withVolumeName("app-config-map")
+                            .build())));
+            result.add(new DecoratorBuildItem(clusterKind, new AddMountDecorator(new MountBuilder()
                     .withName("app-config-map")
                     .withPath("/mnt/app-config-map")
                     .build())));
@@ -380,7 +392,7 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig> 
         });
 
         if (!paths.isEmpty()) {
-            result.add(new DecoratorBuildItem(KNATIVE,
+            result.add(new DecoratorBuildItem(clusterKind,
                     new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
                             .withName("SMALLRYE_CONFIG_LOCATIONS")
                             .withValue(String.join(",", paths))

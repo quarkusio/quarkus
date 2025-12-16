@@ -1,7 +1,6 @@
 package io.quarkus.paths;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -61,8 +60,8 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
         try {
             lastOpen = this.lastOpen = new SharedOpenArchivePathTree(openFs());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read " + archive, e);
         }
         return new CallerOpenPathTree(lastOpen);
     }

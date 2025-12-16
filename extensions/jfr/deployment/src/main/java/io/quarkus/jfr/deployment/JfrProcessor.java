@@ -15,18 +15,19 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jfr.runtime.JfrRecorder;
-import io.quarkus.jfr.runtime.OTelIdProducer;
-import io.quarkus.jfr.runtime.QuarkusIdProducer;
-import io.quarkus.jfr.runtime.http.rest.classic.ClassicServerFilter;
-import io.quarkus.jfr.runtime.http.rest.classic.ClassicServerRecorderProducer;
-import io.quarkus.jfr.runtime.http.rest.reactive.ReactiveServerFilters;
-import io.quarkus.jfr.runtime.http.rest.reactive.ReactiveServerRecorderProducer;
-import io.quarkus.jfr.runtime.http.rest.reactive.ServerStartRecordingHandler;
-import io.quarkus.jfr.runtime.runtime.JfrRuntimeBean;
-import io.quarkus.jfr.runtime.runtime.QuarkusRuntimeInfo;
+import io.quarkus.jfr.runtime.internal.JfrRecorder;
+import io.quarkus.jfr.runtime.internal.OTelIdProducer;
+import io.quarkus.jfr.runtime.internal.QuarkusIdProducer;
+import io.quarkus.jfr.runtime.internal.http.rest.classic.ClassicServerEventRecorderProducer;
+import io.quarkus.jfr.runtime.internal.http.rest.classic.ClassicServerFilter;
+import io.quarkus.jfr.runtime.internal.http.rest.reactive.ReactiveServerEventRecorderProducer;
+import io.quarkus.jfr.runtime.internal.http.rest.reactive.ReactiveServerFilters;
+import io.quarkus.jfr.runtime.internal.http.rest.reactive.ServerStartRecordingHandler;
+import io.quarkus.jfr.runtime.internal.runtime.JfrRuntimeBean;
+import io.quarkus.jfr.runtime.internal.runtime.QuarkusRuntimeInfo;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.GlobalHandlerCustomizerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
@@ -37,6 +38,11 @@ public class JfrProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.JFR);
+    }
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.JFR);
     }
 
     @BuildStep
@@ -88,7 +94,7 @@ public class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(ReactiveServerRecorderProducer.class)
+                    .addBeanClasses(ReactiveServerEventRecorderProducer.class)
                     .build());
 
             filterBeans
@@ -106,7 +112,7 @@ public class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(ClassicServerRecorderProducer.class)
+                    .addBeanClasses(ClassicServerEventRecorderProducer.class)
                     .build());
 
             resteasyJaxrsProviderBuildItemBuildProducer

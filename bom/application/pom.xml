@@ -6502,7 +6502,17 @@
             <!-- JDK Flight Recorder -->
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jfr-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jfr</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jfr-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

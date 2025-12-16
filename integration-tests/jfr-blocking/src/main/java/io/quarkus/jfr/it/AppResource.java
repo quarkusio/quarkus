@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import io.quarkus.jfr.runtime.IdProducer;
+import io.quarkus.jfr.api.IdProducer;
 
 @Path("/app")
 @ApplicationScoped

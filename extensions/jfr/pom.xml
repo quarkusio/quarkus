@@ -13,7 +13,9 @@
     <packaging>pom</packaging>
     <name>Quarkus - JFR</name>
     <modules>
+        <module>deployment-spi</module>
         <module>deployment</module>
+        <module>runtime-api</module>
         <module>runtime</module>
     </modules>
     <dependencyManagement>

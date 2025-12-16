@@ -41,6 +41,7 @@ public interface Capability {
 
     String JAXB = QUARKUS_PREFIX + ".jaxb";
     String JAXP = QUARKUS_PREFIX + ".jaxp";
+    String JFR = QUARKUS_PREFIX + ".jfr";
 
     String KOTLIN = QUARKUS_PREFIX + ".kotlin";
 

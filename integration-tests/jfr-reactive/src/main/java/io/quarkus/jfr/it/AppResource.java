@@ -8,7 +8,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 
-import io.quarkus.jfr.runtime.IdProducer;
+import io.quarkus.jfr.api.IdProducer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 

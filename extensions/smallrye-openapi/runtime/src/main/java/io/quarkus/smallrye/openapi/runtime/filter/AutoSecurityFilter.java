@@ -10,14 +10,11 @@ import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
-import org.jboss.logging.Logger;
 
 /**
  * Auto add security
  */
 public abstract class AutoSecurityFilter implements OASFilter {
-    private static final Logger log = Logger.getLogger(AutoSecurityFilter.class);
-
     private String securitySchemeName;
     private String securitySchemeDescription;
     private Map<String, String> securitySchemeExtensions;

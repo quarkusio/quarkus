@@ -19,8 +19,10 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private volatile OpenApiDocumentService openApiDocumentService;
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
     private static final String QUERY_PARAM_FORMAT = "format";
+    private final String documentName;
 
-    public OpenApiHandler() {
+    public OpenApiHandler(String documentName) {
+        this.documentName = documentName;
     }
 
     @Override
@@ -57,7 +59,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
             }
 
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
-            byte[] schemaDocument = getOpenApiDocumentService().getDocument(format);
+            byte[] schemaDocument = getOpenApiDocumentService().getDocument(documentName, format);
             resp.end(Buffer.buffer(schemaDocument));
         }
     }

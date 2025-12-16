@@ -2,7 +2,6 @@ package io.quarkus.arc;
 
 import java.lang.StackWalker.StackFrame;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -15,7 +14,7 @@ import io.quarkus.arc.impl.ArcContainerImpl;
  */
 public final class Arc {
 
-    private static final AtomicReference<ArcContainerImpl> INSTANCE = new AtomicReference<>();
+    private static volatile ArcContainerImpl INSTANCE;
 
     /**
      * If this system property is set then log a warning with diagnostic information when {@link Arc#container()} returns
@@ -44,15 +43,15 @@ public final class Arc {
      * @see #initialize()
      */
     public static ArcContainer initialize(ArcInitConfig config) {
-        ArcContainerImpl container = INSTANCE.get();
+        ArcContainerImpl container = INSTANCE;
         if (container == null) {
-            synchronized (INSTANCE) {
-                container = INSTANCE.get();
+            synchronized (Arc.class) {
+                container = INSTANCE;
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
                     container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility(),
                             config.isTestMode());
-                    INSTANCE.set(container);
+                    INSTANCE = container;
                     container.init();
                 }
             }
@@ -61,7 +60,7 @@ public final class Arc {
     }
 
     public static void setExecutor(ExecutorService executor) {
-        ArcContainerImpl container = INSTANCE.get();
+        ArcContainerImpl container = INSTANCE;
         if (container == null) {
             throw containerNotInitialized();
         }
@@ -73,7 +72,7 @@ public final class Arc {
      * @return the container instance or {@code null} if the container is not initialized
      */
     public static ArcContainer container() {
-        ArcContainer container = INSTANCE.get();
+        ArcContainer container = INSTANCE;
         if (container == null && System.getProperty(LOG_NO_CONTAINER) != null) {
             LOG.warn(gatherDiagnosticInfo());
         }
@@ -85,7 +84,7 @@ public final class Arc {
      * @throws IllegalStateException if the container is not initialized
      */
     public static ArcContainer requireContainer() {
-        ArcContainer container = INSTANCE.get();
+        ArcContainer container = INSTANCE;
         if (container == null) {
             throw containerNotInitialized();
         }
@@ -93,13 +92,13 @@ public final class Arc {
     }
 
     public static void shutdown() {
-        ArcContainerImpl container = INSTANCE.get();
+        ArcContainerImpl container = INSTANCE;
         if (container != null) {
-            synchronized (INSTANCE) {
-                container = INSTANCE.get();
+            synchronized (Arc.class) {
+                container = INSTANCE;
                 if (container != null) {
                     container.shutdown();
-                    INSTANCE.set(null);
+                    INSTANCE = null;
                 }
             }
         }
@@ -117,17 +116,20 @@ public final class Arc {
     private static String gatherDiagnosticInfo() {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         ClassLoader cl = Arc.class.getClassLoader();
-        String msg = "\n"
-                + "==============================\n"
-                + "ArC: container not initialized\n"
-                + "------------------------------\n"
-                + "The container is not started, already shut down, or a wrong class loader was used to load the io.quarkus.arc.Arc class.\n"
-                + "\n"
-                + "CL:   %1$s\n"
-                + "TCCL: %2$s\n"
-                + "Stack:\n\t%3$s"
-                + "\n"
-                + "===================================\n";
+        String msg = """
+
+                ==============================
+                ArC: container not initialized
+                ------------------------------
+                The container is not started, already shut down, or a wrong class loader was used to load the io.quarkus.arc.Arc class.
+
+                CL:   %1$s
+                TCCL: %2$s
+                Stack:
+                \t%3$s\
+
+                ===================================
+                """;
         StackWalker walker = StackWalker.getInstance();
         return msg.formatted(cl, tccl, walker.walk(Arc::collectStack));
     }

@@ -6,7 +6,7 @@ import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFA
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.container.spi.BaseImageInfoBuildItem;
+import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
@@ -66,6 +66,15 @@ public class KindProcessor extends DevClusterHelper {
         return KIND;
     }
 
+    @Override
+    protected boolean isDeploymentTargetDisabled(List<KubernetesDeploymentTargetBuildItem> targets) {
+        return false;
+    }
+
+    protected ImagePullPolicy pullPolicy() {
+        return ImagePullPolicy.IfNotPresent;
+    }
+
     @BuildStep
     public void checkKind(ApplicationInfoBuildItem applicationInfo,
             Capabilities capabilities,
@@ -109,7 +118,6 @@ public class KindProcessor extends DevClusterHelper {
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
-            Optional<BaseImageInfoBuildItem> baseImage,
             Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports,
@@ -122,15 +130,16 @@ public class KindProcessor extends DevClusterHelper {
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
-            Optional<CustomProjectRootBuildItem> customProjectRoot) {
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesDeploymentTargetBuildItem> targets) {
 
         return super.createDecorators(applicationInfo, outputTarget,
                 packageConfig,
                 metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels,
                 envs,
-                baseImage, image, command, ports, portName,
+                image, command, ports, portName,
                 livenessPath, readinessPath, startupPath,
-                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings, customProjectRoot);
+                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings, customProjectRoot, targets);
     }
 
     @BuildStep

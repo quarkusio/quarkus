@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import io.dekorate.knative.decorator.AddAwsElasticBlockStoreVolumeToRevisionDecorator;
 import io.dekorate.knative.decorator.AddAzureDiskVolumeToRevisionDecorator;
@@ -46,8 +45,6 @@ import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
-import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
-import io.dekorate.project.Project;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -78,7 +75,6 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
-import io.quarkus.kubernetes.spi.Targetable;
 
 public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, KnativeConfig> {
     private static final String LATEST_REVISION = "latest";
@@ -95,6 +91,11 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
 
     @Override
     protected String deploymentTarget() {
+        return KNATIVE;
+    }
+
+    @Override
+    protected String clusterType() {
         return KNATIVE;
     }
 
@@ -143,6 +144,11 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
         return new AddPortToKnativeConfig(port);
     }
 
+    @Override
+    protected Optional<Port> optionalPort(List<KubernetesPortBuildItem> ports) {
+        return KubernetesCommonHelper.getPort(ports, config, "http");
+    }
+
     @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(List<KubernetesPortBuildItem> ports) {
         return asStream(ports)
@@ -176,7 +182,7 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
             List<KubernetesPortBuildItem> ports,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
-            Optional<KubernetesHealthStartupPathBuildItem> startupProbePath,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
@@ -184,44 +190,21 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var clusterKind = deploymentTarget();
-        final var config = config();
-        List<DecoratorBuildItem> result = new ArrayList<>();
-        if (targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
-                .noneMatch(t -> clusterKind.equals(t.getName()))) {
-            return result;
+        if (isDeploymentTargetDisabled(targets)) {
+            return new ArrayList<>();
         }
 
-        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, clusterKind, true)
-                .findFirst();
+        final var config = config();
+        final var clusterKind = deploymentTarget();
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
-        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
-                packageConfig);
-        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, "http");
-
-        result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
-                metricsConfiguration, kubernetesClientConfiguration, annotations,
-                labels, image, command, port, livenessPath, readinessPath, startupProbePath,
-                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
-
-        image.ifPresent(
-                i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
+        final var result = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+                kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
+                ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                clusterRoleBindings, customProjectRoot);
 
         config.containerName().ifPresent(containerName -> result
                 .add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameDecorator(containerName))));
-
-        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterKind))
-                .forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                                .withName(EnvConverter.convertName(e.getName()))
-                                .withValue(e.getValue())
-                                .withSecret(e.getSecret())
-                                .withConfigmap(e.getConfigMap())
-                                .withField(e.getField())
-                                .build()))));
-
         if (config.clusterLocal()) {
             if (labels.stream().filter(l -> clusterKind.equals(l.getTarget()))
                     .noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {

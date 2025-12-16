@@ -20,5 +20,4 @@
             <artifactId>jboss-logging</artifactId>
         </dependency>
     </dependencies>
-
 </project>

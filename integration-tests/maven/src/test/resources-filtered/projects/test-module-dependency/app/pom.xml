@@ -40,13 +40,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

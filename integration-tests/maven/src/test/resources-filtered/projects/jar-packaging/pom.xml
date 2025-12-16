@@ -14,9 +14,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
     <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
-
-    <!-- do not update this dependency, it needs to be stable for testing -->
-    <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
   </properties>
   <dependencyManagement>
     <dependencies>

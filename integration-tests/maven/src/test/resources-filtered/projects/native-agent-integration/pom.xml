@@ -108,16 +108,6 @@
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus-plugin.version}</version>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
-              <goal>native-image-agent</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

@@ -72,9 +72,12 @@
         <extensions>true</extensions>
         <executions>
           <execution>
-            <goals>
-              <goal>build</goal>
-            </goals>
+            <id>default-generate-code</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-generate-code-tests</id>
+            <phase>none</phase>
           </execution>
         </executions>
       </plugin>

@@ -6,7 +6,7 @@
     <groupId>com.example</groupId>
     <artifactId>model</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>quarkus</packaging>
+    <!-- let's keep the default jar packaging here as it's not actually a Quarkus app -->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

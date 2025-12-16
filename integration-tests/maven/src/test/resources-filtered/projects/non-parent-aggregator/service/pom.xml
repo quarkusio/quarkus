@@ -54,13 +54,6 @@
                         <maven.top-level-basedir>\${session.topLevelProject.basedir.absolutePath}</maven.top-level-basedir>
                     </systemProperties>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

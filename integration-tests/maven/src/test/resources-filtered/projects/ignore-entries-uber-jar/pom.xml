@@ -60,13 +60,6 @@
             <ignoredEntry>META-INF/swagger-ui-files/swagger-ui-standalone-preset.js.map</ignoredEntry>
           </ignoredEntries>
         </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

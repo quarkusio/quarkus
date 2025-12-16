@@ -30,6 +30,22 @@
         <extensions>true</extensions>
         <executions>
           <execution>
+            <id>default-generate-code</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-generate-code-tests</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-build</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-native-image-agent</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <id>foo-1</id>
             <goals>
               <goal>build</goal>

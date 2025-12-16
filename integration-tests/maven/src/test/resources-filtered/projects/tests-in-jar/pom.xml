@@ -74,13 +74,6 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
                 <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <!-- Tell maven to run the tests in the jar -->
             <plugin>

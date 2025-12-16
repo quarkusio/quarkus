@@ -63,34 +63,9 @@ Under the `dependencies` section of your `pom.xml` file, make sure you have the 
 implementation("io.quarkus:quarkus-rest")
 ----
 
-If you are using Maven, make sure you have the `generate-code` goal of `quarkus-maven-plugin` enabled in your `pom.xml`.
-If you wish to generate code from different `proto` files for tests, also add the `generate-code-tests` goal.
-Please note that no additional task/goal is required for the Gradle plugin.
+Whether you use Maven or Gradle, the code generation goals/tasks are automatically executed when using the default lifecycle of the plugins.
 
-[source,xml]
-----
-<build>
-    <plugins>
-        <plugin>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus-plugin.version}</version>
-            <extensions>true</extensions>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>build</goal>
-                        <goal>generate-code</goal>
-                        <goal>generate-code-tests</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-----
-
-With this configuration, you can put your service and message definitions in the `src/main/proto` directory.
+You can put your service and message definitions in the `src/main/proto` directory.
 `quarkus-maven-plugin` will generate Java files from your `proto` files.
 
 `quarkus-maven-plugin` retrieves a version of `protoc` (the protobuf compiler) from Maven repositories. The retrieved version matches your operating system and CPU architecture.

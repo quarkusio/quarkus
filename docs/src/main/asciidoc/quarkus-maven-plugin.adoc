@@ -12,6 +12,48 @@ include::_attributes.adoc[]
 The Quarkus Maven Plugin builds the Quarkus applications, and provides helpers to launch dev mode or build native executables.
 For more information about how to use the Quarkus Maven Plugin, please refer to the xref:maven-tooling.adoc[Maven Tooling guide].
 
+== Lifecycle
+
+The Quarkus Maven Plugin provides a specific `quarkus` packaging that is used by default in the generated projects.
+This packaging should be used only for the Quarkus application itself, not for the library modules that should keep the default `jar` packaging.
+
+This `quarkus` packaging defines a specific default lifecycle:
+
+[source, properties]
+----
+generate-sources=${project.groupId}:${project.artifactId}:${project.version}:generate-code
+process-resources=org.apache.maven.plugins:maven-resources-plugin:${version.resources.plugin}:resources
+compile=org.apache.maven.plugins:maven-compiler-plugin:${version.compiler.plugin}:compile
+generate-test-sources=${project.groupId}:${project.artifactId}:${project.version}:generate-code-tests
+process-test-resources=org.apache.maven.plugins:maven-resources-plugin:${version.resources.plugin}:testResources
+test-compile=org.apache.maven.plugins:maven-compiler-plugin:${version.compiler.plugin}:testCompile
+test=org.apache.maven.plugins:maven-surefire-plugin:${version.surefire.plugin}:test
+package=${project.groupId}:${project.artifactId}:${project.version}:build
+post-integration-test=${project.groupId}:${project.artifactId}:${project.version}:native-image-agent
+----
+
+You can tweak the lifecycle either by not using the `quarkus` packaging or by configuring the default execution.
+
+For instance, if you want to disable the `quarkus:build` goal for a specific module:
+
+[source,xml]
+----
+    <!-- ... -->
+    <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
+        <executions>
+            <execution>
+                <id>default-build</id>
+                <phase>none</phase>
+            </execution>
+        </executions>
+    <plugin>
+    <!-- ... -->
+----
+
 == Discover Maven goals
 
 Like most Maven plugins, the Quarkus Maven Plugin has a `help` goal that prints the description of the plugin, listing all available goals as well as their description.

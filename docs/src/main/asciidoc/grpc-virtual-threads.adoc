@@ -76,15 +76,6 @@ or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugi
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-maven-plugin</artifactId>
     <version>${quarkus.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>build</goal>
-                <goal>generate-code</goal>
-                <goal>generate-code-tests</goal>
-            </goals>
-        </execution>
-    </executions>
     <configuration>
       <source>21</source>
       <target>21</target>

@@ -18,6 +18,10 @@
         parent first dependencies.
     </description>
 
+    <properties>
+        <automatic-module>io.quarkus.bootstrap.runner</automatic-module>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -102,5 +106,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
 </project>

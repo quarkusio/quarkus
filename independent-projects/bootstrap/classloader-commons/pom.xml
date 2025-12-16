@@ -13,6 +13,10 @@
     <artifactId>quarkus-classloader-commons</artifactId>
     <name>Quarkus - Bootstrap - Classloader common utilities</name>
 
+    <properties>
+        <automatic-module>io.quarkus.commons.classloading</automatic-module>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -39,5 +43,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>

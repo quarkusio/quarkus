@@ -14,11 +14,14 @@
     <name>Quarkus - Development mode - SPI</name>
     <description>SPI classes for Quarkus Development mode.</description>
 
+    <properties>
+        <automatic-module>io.quarkus.dev.spi</automatic-module>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
         </dependency>
     </dependencies>
-
 </project>

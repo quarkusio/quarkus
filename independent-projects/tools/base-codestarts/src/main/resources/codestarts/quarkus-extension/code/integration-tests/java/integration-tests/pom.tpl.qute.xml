@@ -38,7 +38,7 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            {#if quarkus.bom.version == null || quarkus.bom.version.compareVersionTo("3.30.999") > 0}
+            {#if quarkus.version == null || quarkus.version.compareVersionTo("3.30.999") > 0}
             <artifactId>quarkus-junit</artifactId>
             {#else}
             <artifactId>quarkus-junit5</artifactId>

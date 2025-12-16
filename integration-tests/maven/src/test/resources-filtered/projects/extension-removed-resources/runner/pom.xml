@@ -8,6 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>acme-app</artifactId>
+  <packaging>quarkus</packaging>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>

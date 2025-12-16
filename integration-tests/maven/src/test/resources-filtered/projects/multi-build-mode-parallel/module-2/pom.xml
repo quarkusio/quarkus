@@ -8,6 +8,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>module-2</artifactId>
+  <packaging>quarkus</packaging>
   <properties>
     <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

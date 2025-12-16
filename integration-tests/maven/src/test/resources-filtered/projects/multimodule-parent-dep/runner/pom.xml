@@ -7,6 +7,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-quickstart-multimodule-runner</artifactId>
+    <packaging>quarkus</packaging>
 
     <dependencies>
         <dependency>
@@ -30,6 +31,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>

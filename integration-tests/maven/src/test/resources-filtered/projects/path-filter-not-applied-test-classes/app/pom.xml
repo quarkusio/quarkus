@@ -8,6 +8,7 @@
     </parent>
     <artifactId>acme-app</artifactId>
     <name>Acme - Acme App</name>
+    <packaging>quarkus</packaging>
 
     <dependencies>
         <dependency>

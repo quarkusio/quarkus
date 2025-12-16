@@ -7,7 +7,7 @@
         <version>\${revision}</version>
     </parent>
     <artifactId>quarkus-quickstart-multimodule-main</artifactId>
-
+    <packaging>quarkus</packaging>
 
     <dependencies>
         <dependency>
@@ -50,6 +50,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>

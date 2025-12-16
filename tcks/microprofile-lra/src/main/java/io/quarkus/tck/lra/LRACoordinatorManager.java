@@ -36,7 +36,6 @@ public class LRACoordinatorManager {
             coordinatorContainer.start();
             coordinatorContainer.followOutput(logConsumer);
             System.setProperty("lra.coordinator.url", String.format("http://localhost:%d/lra-coordinator", coordinatorPort));
-            // Can we reuse Dev Services for LRA coordinator here?
         }
 
         // Always disable Quarkus LRA Dev Services (even if ran without a separate coordinator)

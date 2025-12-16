@@ -77,11 +77,10 @@ public class QuarkusBootstrapProvider implements Closeable {
         return ArtifactKey.ga(project.getGroupId(), project.getArtifactId());
     }
 
-    static void setProjectModels(QuarkusBootstrapMojo mojo, BootstrapMavenContextConfig<?> config) {
-        final List<MavenProject> allProjects = mojo.mavenSession().getAllProjects();
+    static void setProjectModels(BootstrapMavenContextConfig<?> config, List<MavenProject> allProjects, Set<File> reloadPoms) {
         if (allProjects != null) {
             for (MavenProject mp : allProjects) {
-                if (mojo.reloadPoms.contains(mp.getFile())) {
+                if (reloadPoms.contains(mp.getFile())) {
                     continue;
                 }
                 final Model model = getRawModel(mp);
@@ -235,7 +234,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                             .setRemoteRepositories(mojo.remoteRepositories())
                             .setEffectiveModelBuilder(BootstrapMavenContextConfig
                                     .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties()));
-                    setProjectModels(mojo, config);
+                    setProjectModels(config, mojo.mavenSession().getAllProjects(), mojo.reloadPoms);
                     var resolver = workspaceProvider.createArtifactResolver(config);
                     final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
                     if (currentProject != null && workspaceId == 0) {

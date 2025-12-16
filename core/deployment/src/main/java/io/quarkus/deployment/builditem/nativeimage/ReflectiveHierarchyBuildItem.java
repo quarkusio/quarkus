@@ -360,7 +360,8 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
                 "org.reactivestreams.", "org.slf4j.", "jakarta.", "jakarta.json.",
                 "javax.net.ssl.", "javax.xml.", "javax.management.", "reactor.core.",
-                "com.fasterxml.jackson.databind.", "io.vertx.core.json.", "kotlin.");
+                "com.fasterxml.jackson.databind.", "io.vertx.core.json.", "kotlin.",
+                "javax.sql.", "javax.naming.");
         // if this gets more complicated we will need to move to some tree like structure
         static final Set<String> ALLOWED_FROM_IGNORED_PACKAGES = new HashSet<>(
                 Arrays.asList("java.math.BigDecimal", "java.math.BigInteger"));

@@ -1,0 +1,47 @@
+<component-set>
+    <components>
+        <!-- quarkus packaging -->
+        <component>
+            <role>org.apache.maven.artifact.handler.ArtifactHandler</role>
+            <role-hint>quarkus</role-hint>
+            <implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler</implementation>
+            <configuration>
+                <type>jar</type>
+                <extension>jar</extension>
+                <packaging>quarkus</packaging>
+                <language>java</language>
+                <addedToClasspath>true</addedToClasspath>
+            </configuration>
+        </component>
+        <component>
+            <role>org.apache.maven.lifecycle.mapping.LifecycleMapping</role>
+            <role-hint>quarkus</role-hint>
+            <implementation>org.apache.maven.lifecycle.mapping.DefaultLifecycleMapping</implementation>
+            <configuration>
+                <lifecycles>
+                    <lifecycle>
+                        <id>default</id>
+                        <phases>
+                            <process-resources>
+                                org.apache.maven.plugins:maven-resources-plugin:${version.resources.plugin}:resources
+                            </process-resources>
+                            <compile>
+                                org.apache.maven.plugins:maven-compiler-plugin:${version.compiler.plugin}:compile
+                            </compile>
+                            <process-test-resources>
+                                org.apache.maven.plugins:maven-resources-plugin:${version.resources.plugin}:testResources
+                            </process-test-resources>
+                            <test-compile>
+                                org.apache.maven.plugins:maven-compiler-plugin:${version.compiler.plugin}:testCompile
+                            </test-compile>
+                            <test>
+                                org.apache.maven.plugins:maven-surefire-plugin:${version.surefire.plugin}:test
+                            </test>
+                            <!-- compared to the jar packaging, we don't run anything for package, install and deploy by default -->
+                        </phases>
+                    </lifecycle>
+                </lifecycles>
+            </configuration>
+        </component>
+    </components>
+</component-set>

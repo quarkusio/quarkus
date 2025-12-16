@@ -333,7 +333,9 @@ public class LocalProject {
     }
 
     public ResolvedDependency getAppArtifact() {
-        return getAppArtifact(getPackaging());
+        // if the packaging is `quarkus`, we also use `jar` as the extension
+        String extension = ArtifactCoords.TYPE_POM.equals(getPackaging()) ? ArtifactCoords.TYPE_POM : ArtifactCoords.TYPE_JAR;
+        return getAppArtifact(extension);
     }
 
     public ResolvedDependency getAppArtifact(String extension) {

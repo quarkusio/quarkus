@@ -30,10 +30,12 @@ class NativeImageFutureDefaultTest {
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
     }
 
-    @Test
-    void runtimeInitFileSystemProviders() {
+    @ParameterizedTest
+    @ValueSource(strings = { "run-time-initialize-file-system-providers", "run-time-initialize-file-system-providers,other",
+            "other,run-time-initialize-file-system-providers" })
+    void runtimeInitFileSystemProviders(String param) {
         TestNativeConfig testNativeConfig = new TestNativeConfig(
-                List.of("--future-defaults=run-time-initialize-file-system-providers"), null);
+                List.of("--future-defaults=" + param), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
     }
@@ -44,5 +46,20 @@ class NativeImageFutureDefaultTest {
                 List.of("--future-defaults=run-time-initialize-security-providers"), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "complete-reflection-types", "none", "arbitrary-text" })
+    void runtimeInitOfFSandSecurityProvidersWithOtherFutureDefaults(String param) {
+        List<String> futureDefaultsValue = List.of("--future-defaults=" + param);
+        TestNativeConfig testNativeConfig = new TestNativeConfig(futureDefaultsValue, null);
+        assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        testNativeConfig = new TestNativeConfig(null, futureDefaultsValue);
+        assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        testNativeConfig = new TestNativeConfig(futureDefaultsValue, futureDefaultsValue);
+        assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
+        assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
     }
 }

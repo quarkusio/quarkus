@@ -3,6 +3,7 @@ package io.quarkus.smallrye.openapi.runtime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.microprofile.openapi.OASConfig;
 
@@ -18,10 +19,12 @@ import io.smallrye.openapi.api.SmallRyeOASConfig;
  */
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final long serialVersionUID = 1L;
-    private static final Map<String, String> RELOCATIONS = relocations();
 
-    public OpenApiConfigMapping() {
-        super(RELOCATIONS);
+    public OpenApiConfigMapping(String documentName) {
+        super(new Relocator());
+
+        Map<String, String> relocations = relocations(documentName);
+        ((Relocator) getMapping()).setRelocations(relocations);
     }
 
     @Override
@@ -40,40 +43,49 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
         return configValue;
     }
 
-    private static String convertOperationIdStrategy(String value) {
+    private String convertOperationIdStrategy(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+
         final String trimmedValue = value.trim();
 
         if (trimmedValue.isEmpty()) {
             return null;
         }
 
-        switch (StringUtil.skewer(trimmedValue)) {
-            case "method":
-                return OpenApiConfig.OperationIdStrategy.METHOD;
-            case "class-method":
-                return OpenApiConfig.OperationIdStrategy.CLASS_METHOD;
-            case "package-class-method":
-                return OpenApiConfig.OperationIdStrategy.PACKAGE_CLASS_METHOD;
-            default:
-                return trimmedValue;
-        }
+        return switch (StringUtil.skewer(trimmedValue)) {
+            case "method" -> OpenApiConfig.OperationIdStrategy.METHOD;
+            case "class-method" -> OpenApiConfig.OperationIdStrategy.CLASS_METHOD;
+            case "package-class-method" -> OpenApiConfig.OperationIdStrategy.PACKAGE_CLASS_METHOD;
+            default -> trimmedValue;
+        };
     }
 
-    private static Map<String, String> relocations() {
+    private Map<String, String> relocations(String documentName) {
         Map<String, String> relocations = new HashMap<>();
-        mapKey(relocations, SmallRyeOASConfig.VERSION, QUARKUS_OPEN_API_VERSION);
-        mapKey(relocations, OASConfig.SERVERS, QUARKUS_SERVERS);
-        mapKey(relocations, SmallRyeOASConfig.INFO_TITLE, QUARKUS_INFO_TITLE);
-        mapKey(relocations, SmallRyeOASConfig.INFO_VERSION, QUARKUS_INFO_VERSION);
-        mapKey(relocations, SmallRyeOASConfig.INFO_DESCRIPTION, QUARKUS_INFO_DESCRIPTION);
-        mapKey(relocations, SmallRyeOASConfig.INFO_TERMS, QUARKUS_INFO_TERMS);
-        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_EMAIL, QUARKUS_INFO_CONTACT_EMAIL);
-        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_NAME, QUARKUS_INFO_CONTACT_NAME);
-        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_URL, QUARKUS_INFO_CONTACT_URL);
-        mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_NAME, QUARKUS_INFO_LICENSE_NAME);
-        mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_URL, QUARKUS_INFO_LICENSE_URL);
-        mapKey(relocations, SmallRyeOASConfig.OPERATION_ID_STRAGEGY, QUARKUS_OPERATION_ID_STRATEGY);
-        mapKey(relocations, SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES, QUARKUS_MERGE_SCHEMA_EXAMPLES);
+        mapKey(relocations, SmallRyeOASConfig.VERSION, propertyName(documentName, QUARKUS_OPEN_API_VERSION_SUFFIX));
+        mapKey(relocations, OASConfig.SERVERS, propertyName(documentName, QUARKUS_SERVERS_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_TITLE, propertyName(documentName, QUARKUS_INFO_TITLE_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_VERSION, propertyName(documentName, QUARKUS_INFO_VERSION_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_DESCRIPTION, propertyName(documentName, QUARKUS_INFO_DESCRIPTION_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_TERMS, propertyName(documentName, QUARKUS_INFO_TERMS_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_EMAIL,
+                propertyName(documentName, QUARKUS_INFO_CONTACT_EMAIL_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_NAME, propertyName(documentName, QUARKUS_INFO_CONTACT_NAME_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_URL, propertyName(documentName, QUARKUS_INFO_CONTACT_URL_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_NAME, propertyName(documentName, QUARKUS_INFO_LICENSE_NAME_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_URL, propertyName(documentName, QUARKUS_INFO_LICENSE_URL_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.OPERATION_ID_STRAGEGY,
+                propertyName(documentName, QUARKUS_OPERATION_ID_STRATEGY_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES,
+                propertyName(documentName, QUARKUS_MERGE_SCHEMA_EXAMPLES_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.SCAN_PROFILES,
+                propertyName(documentName, QUARKUS_SCAN_PROFILES_SUFFIX));
+        mapKey(relocations, SmallRyeOASConfig.SCAN_EXCLUDE_PROFILES,
+                propertyName(documentName, QUARKUS_SCAN_EXCLUDE_PROFILES_SUFFIX));
+        mapKey(relocations, propertyName(OpenApiConstants.DEFAULT_DOCUMENT_NAME, QUARKUS_ALWAYS_RUN_FILTER_SUFFIX),
+                propertyName(documentName, QUARKUS_ALWAYS_RUN_FILTER_SUFFIX));
         return Collections.unmodifiableMap(relocations);
     }
 
@@ -82,18 +94,43 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
         map.put(otherKey, quarkusKey);
     }
 
-    private static final String QUARKUS_OPEN_API_VERSION = "quarkus.smallrye-openapi.open-api-version";
-    private static final String QUARKUS_SERVERS = "quarkus.smallrye-openapi.servers";
-    private static final String QUARKUS_INFO_TITLE = "quarkus.smallrye-openapi.info-title";
-    private static final String QUARKUS_INFO_VERSION = "quarkus.smallrye-openapi.info-version";
-    private static final String QUARKUS_INFO_DESCRIPTION = "quarkus.smallrye-openapi.info-description";
-    private static final String QUARKUS_INFO_TERMS = "quarkus.smallrye-openapi.info-terms-of-service";
-    private static final String QUARKUS_INFO_CONTACT_EMAIL = "quarkus.smallrye-openapi.info-contact-email";
-    private static final String QUARKUS_INFO_CONTACT_NAME = "quarkus.smallrye-openapi.info-contact-name";
-    private static final String QUARKUS_INFO_CONTACT_URL = "quarkus.smallrye-openapi.info-contact-url";
-    private static final String QUARKUS_INFO_LICENSE_NAME = "quarkus.smallrye-openapi.info-license-name";
-    private static final String QUARKUS_INFO_LICENSE_URL = "quarkus.smallrye-openapi.info-license-url";
-    private static final String QUARKUS_OPERATION_ID_STRATEGY = "quarkus.smallrye-openapi.operation-id-strategy";
-    private static final String QUARKUS_MERGE_SCHEMA_EXAMPLES = "quarkus.smallrye-openapi.merge-schema-examples";
+    private static final String QUARKUS_OPEN_API_VERSION_SUFFIX = "open-api-version";
+    private static final String QUARKUS_SERVERS_SUFFIX = "servers";
+    private static final String QUARKUS_INFO_TITLE_SUFFIX = "info-title";
+    private static final String QUARKUS_INFO_VERSION_SUFFIX = "info-version";
+    private static final String QUARKUS_INFO_DESCRIPTION_SUFFIX = "info-description";
+    private static final String QUARKUS_INFO_TERMS_SUFFIX = "info-terms-of-service";
+    private static final String QUARKUS_INFO_CONTACT_EMAIL_SUFFIX = "info-contact-email";
+    private static final String QUARKUS_INFO_CONTACT_NAME_SUFFIX = "info-contact-name";
+    private static final String QUARKUS_INFO_CONTACT_URL_SUFFIX = "info-contact-url";
+    private static final String QUARKUS_INFO_LICENSE_NAME_SUFFIX = "info-license-name";
+    private static final String QUARKUS_INFO_LICENSE_URL_SUFFIX = "info-license-url";
+    private static final String QUARKUS_OPERATION_ID_STRATEGY_SUFFIX = "operation-id-strategy";
+    private static final String QUARKUS_MERGE_SCHEMA_EXAMPLES_SUFFIX = "merge-schema-examples";
+    private static final String QUARKUS_SCAN_PROFILES_SUFFIX = "scan-profiles";
+    private static final String QUARKUS_SCAN_EXCLUDE_PROFILES_SUFFIX = "scan-exclude-profiles";
+    private static final String QUARKUS_ALWAYS_RUN_FILTER_SUFFIX = "always-run-filter";
 
+    private String propertyName(String documentName, String suffix) {
+        String quarkusPrefix = "quarkus.smallrye-openapi";
+
+        if (OpenApiConstants.DEFAULT_DOCUMENT_NAME.equals(documentName)) {
+            return quarkusPrefix + "." + suffix;
+        }
+
+        return quarkusPrefix + "." + documentName + "." + suffix;
+    }
+
+    private static class Relocator implements UnaryOperator<String> {
+        private Map<String, String> relocations;
+
+        public void setRelocations(Map<String, String> relocations) {
+            this.relocations = relocations;
+        }
+
+        @Override
+        public String apply(String name) {
+            return relocations.getOrDefault(name, name);
+        }
+    }
 }

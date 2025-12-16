@@ -7,12 +7,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.smallrye.openapi.common.deployment.OpenApiDocumentConfig;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 
 class SecurityConfigFilterTest {
@@ -22,7 +24,8 @@ class SecurityConfigFilterTest {
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey, null, null);
         assertThrows(ConfigurationException.class,
-                () -> new SecurityConfigFilter(config).configureApiKeySecurityScheme(securityScheme));
+                () -> new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                        .configureApiKeySecurityScheme(securityScheme));
     }
 
     @Test
@@ -31,7 +34,8 @@ class SecurityConfigFilterTest {
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey,
                 "KeyParamName", null);
         assertThrows(ConfigurationException.class,
-                () -> new SecurityConfigFilter(config).configureApiKeySecurityScheme(securityScheme));
+                () -> new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                        .configureApiKeySecurityScheme(securityScheme));
     }
 
     @Test
@@ -40,7 +44,8 @@ class SecurityConfigFilterTest {
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey,
                 "KeyParamName", "path");
         assertThrows(ConfigurationException.class,
-                () -> new SecurityConfigFilter(config).configureApiKeySecurityScheme(securityScheme));
+                () -> new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                        .configureApiKeySecurityScheme(securityScheme));
     }
 
     @Test
@@ -48,19 +53,42 @@ class SecurityConfigFilterTest {
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey,
                 "KeyParamName", "header");
-        new SecurityConfigFilter(config).configureApiKeySecurityScheme(securityScheme);
+        new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                .configureApiKeySecurityScheme(securityScheme);
         assertEquals("KeyParamName", securityScheme.getName());
         assertEquals(SecurityScheme.In.HEADER, securityScheme.getIn());
     }
 
     private class DummySmallRyeOpenApiConfig implements SmallRyeOpenApiConfig {
 
-        private SecurityScheme securityScheme;
-        private String apiKeyParameterName;
-        private String apiKeyParameterIn;
+        private final DummySmallRyeOpenApiConfigConfig dummySmallRyeOpenApiConfigConfig;
 
         DummySmallRyeOpenApiConfig(SecurityScheme securityScheme,
                 String apiKeyParameterName,
+                String apiKeyParameterIn) {
+            this.dummySmallRyeOpenApiConfigConfig = new DummySmallRyeOpenApiConfigConfig(securityScheme,
+                    apiKeyParameterName,
+                    apiKeyParameterIn);
+        }
+
+        @Override
+        public boolean managementEnabled() {
+            return false;
+        }
+
+        @Override
+        public Map<String, OpenApiDocumentConfig> documents() {
+            return Map.of(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME, dummySmallRyeOpenApiConfigConfig);
+        }
+    }
+
+    private static class DummySmallRyeOpenApiConfigConfig implements OpenApiDocumentConfig {
+
+        private final SmallRyeOpenApiConfig.SecurityScheme securityScheme;
+        private final String apiKeyParameterName;
+        private final String apiKeyParameterIn;
+
+        public DummySmallRyeOpenApiConfigConfig(SmallRyeOpenApiConfig.SecurityScheme securityScheme, String apiKeyParameterName,
                 String apiKeyParameterIn) {
             this.securityScheme = securityScheme;
             this.apiKeyParameterName = apiKeyParameterName;
@@ -93,17 +121,12 @@ class SecurityConfigFilterTest {
         }
 
         @Override
-        public boolean managementEnabled() {
-            return false;
-        }
-
-        @Override
         public Optional<List<Path>> additionalDocsDirectory() {
             return Optional.empty();
         }
 
         @Override
-        public Optional<SecurityScheme> securityScheme() {
+        public Optional<SmallRyeOpenApiConfig.SecurityScheme> securityScheme() {
             return Optional.ofNullable(securityScheme);
         }
 
@@ -270,6 +293,16 @@ class SecurityConfigFilterTest {
         @Override
         public boolean mergeSchemaExamples() {
             return true;
+        }
+
+        @Override
+        public Optional<Set<String>> scanProfiles() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Set<String>> scanExcludeProfiles() {
+            return Optional.empty();
         }
     }
 }

@@ -25,42 +25,60 @@ public class OpenApiDevUIProcessor {
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openApiConfig) {
 
-        String devUIContextRoot = "";
+        String devUIContextRoot;
         if (devContextBuildItem.isPresent()) {
             devUIContextRoot = devContextBuildItem.get().getDevUIContextRoot();
+        } else {
+            devUIContextRoot = "";
         }
         String uiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
-        String schemaPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
-                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
-
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
-
-        cardPageBuildItem.addLibraryVersion("io.smallrye", "smallrye-open-api-jaxrs", "SmallRye OpenAPI",
-                "https://github.com/smallrye/smallrye-open-api");
-        cardPageBuildItem.addLibraryVersion("org.eclipse.microprofile.openapi", "microprofile-openapi-api",
-                "MicroProfile OpenAPI", "https://github.com/microprofile/microprofile-open-api");
-        cardPageBuildItem.setLogo("openapi_logo.png", "openapi_logo.png");
-
         cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
                 .url(uiPath + "/index.html?embed=true", uiPath)
                 .isHtmlContent()
                 .icon("font-awesome-solid:signs-post"));
 
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
-                .url(schemaPath, schemaPath)
-                .isYamlContent()
-                .icon("font-awesome-solid:file-lines"));
+        cardPageBuildItem.addLibraryVersion("io.smallrye", "smallrye-open-api-jaxrs", "SmallRye OpenAPI",
+                "https://github.com/smallrye/smallrye-open-api");
 
-        String jsonSchema = schemaPath + "?format=json";
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json")
-                .url(jsonSchema, jsonSchema)
-                .isJsonContent()
-                .icon("font-awesome-solid:file-code"));
+        cardPageBuildItem.addLibraryVersion("org.eclipse.microprofile.openapi", "microprofile-openapi-api",
+                "MicroProfile OpenAPI", "https://github.com/microprofile/microprofile-open-api");
+        cardPageBuildItem.setLogo("openapi_logo.png", "openapi_logo.png");
+
+        openApiConfig.documents().forEach((documentName, documentConfig) -> {
+
+            String schemaPath = devUIContextRoot
+                    + nonApplicationRootPathBuildItem.resolveManagementPath(documentConfig.path(),
+                            managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
+
+            String jsonSchema = schemaPath + "?format=json";
+            if (SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME.equals(documentName)) {
+                cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
+                        .url(schemaPath, schemaPath)
+                        .isYamlContent()
+                        .icon("font-awesome-solid:file-lines"));
+
+                cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json")
+                        .url(jsonSchema, jsonSchema)
+                        .isJsonContent()
+                        .icon("font-awesome-solid:file-code"));
+            } else {
+                cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml " + documentName)
+                        .url(schemaPath, schemaPath)
+                        .isYamlContent()
+                        .icon("font-awesome-solid:file-lines"));
+
+                cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json " + documentName)
+                        .url(jsonSchema, jsonSchema)
+                        .isJsonContent()
+                        .icon("font-awesome-solid:file-code"));
+            }
+        });
 
         cardPageBuildItem.addPage(Page.assistantPageBuilder()
-                .title("Generate clients")
+                .title("Generate clients for default OpenAPI document")
                 .componentLink("qwc-openapi-generate-client.js"));
 
         return cardPageBuildItem;

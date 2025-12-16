@@ -451,7 +451,7 @@ will be used. You can also define the version in SmallRye using the following co
 
 [source, properties]
 ----
-mp.openapi.extensions.smallrye.openapi=3.0.4
+quarkus.smallrye-openapi.open-api-version=3.0.4
 ----
 
 This might be useful if your API goes through a Gateway that needs a certain version.
@@ -470,7 +470,7 @@ The Operation Id is typically used for the method name in the client stub. In Sm
 
 [source, properties]
 ----
-mp.openapi.extensions.smallrye.operationIdStrategy=METHOD
+quarkus.smallrye-openapi.operation-id-strategy=METHOD
 ----
 
 Now you do not need to use the `@Operation` annotation. While generating the document, the method name will be used for the Operation Id.
@@ -488,6 +488,153 @@ Now you do not need to use the `@Operation` annotation. While generating the doc
 |`PACKAGE_CLASS_METHOD`
 |Use the class name plus the method name.
 |===
+
+== Generating multiple OpenAPI documents
+
+Multiple OpenAPI documents can be generated. Each document has its own distinct configuration, and can be configured to use a different set of REST resources.
+
+For example, suppose you have resource methods to retrieve users and orders in the application.
+
+[source,java,opts=novalidate]
+----
+@Path("/api")
+public class MyResource {
+    @Path("/users")
+    @GET
+    public List<UserDTO> listUsers() {
+        // ...
+    }
+
+    @Path("/orders")
+    @GET
+    public List<OrderDTO> listOrders() {
+        // ...
+    }
+}
+----
+
+Normally these two resource methods would end up being documented alongside each other in the same OpenAPI document.
+These can be visually separated in the same OpenAPI document using tags. For larger deployments with multiple resources, however, this will still lead to:
+
+* A possibly unusable OpenAPI document, as the documentation grows in size with each added resource method
+* Potentially increased size or complexity for automatically generated API clients
+
+Therefore, resource methods can be separated into distinct OpenAPI documents. Only a few annotations and a bit of configuration are needed.
+
+The general idea is to group the resource methods into distinct profiles. This is achieved using an `@Extension(name = "x-smallrye-profile-<profile-name>", value = "")` annotation.
+The `x-smallrye-profile-` part is a prefix, and `<profile-name>` is a name for the profile which is freely definable.
+
+The resource with added extensions now looks like this:
+
+[source,java,opts=novalidate]
+----
+import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
+
+@Path("/api")
+public class MyResource {
+    @Path("/users")
+    @GET
+    @Extension(name = "x-smallrye-profile-user", value = "")
+    public List<UserDTO> listUsers() {
+        // ...
+    }
+
+    @Path("/orders")
+    @GET
+    @Extension(name = "x-smallrye-profile-order", value = "")
+    public List<OrderDTO> listOrders() {
+        // ...
+    }
+}
+----
+
+In the application.properties file, add the following build time configuration.
+
+[source,properties]
+----
+quarkus.smallrye-openapi.info-title=Combined documentation
+quarkus.smallrye-openapi.user.scan-profiles=user <1>
+quarkus.smallrye-openapi.order.scan-profiles=order
+----
+<1> Note that in this example, both the profile name and the document name match. They are, however, both freely definable.
+
+This will trigger Quarkus to create 3 OpenAPI documents.
+
+* One where all operations are present. By default, served under `/q/openapi`
+* One where only the user operations are present. By default, served under `/q/openapi-user`
+* One where only the order operations are present. By default, served under `/q/openapi-order`
+
+Exclusions are also possible using `quarkus.smallrye-openapi.<document-name>.scan-exclude-profiles`.
+
+Multiple profiles can be specified for the `scan-profiles` and `scan-exclude-profiles` configuration properties.
+Multiple profiles can be specified on a resource method by using multiple `@Extension` annotations.
+The `x-smallrye-profile` extensions are *not* included in the final OpenAPI documents.
+
+=== Filtering of operations
+
+As shown in the previous section, a profile for an operation can be defined using an `@Extension`.
+Operations are filtered into documents based on their profiles:
+
+* Operations without any profile are always *included*.
+* If `scan-exclude-profiles` is configured: operations are *excluded* if any of their profiles match.
+* If `scan-profiles` is configured and `scan-exclude-profiles` is *not* configured: operations are *included* only if at least one profile matches the `scan-profiles`.
+* If both `scan-exclude-profiles` and `scan-profiles` are configured, *only* `scan-exclude-profiles` is checked.
+* If neither is configured: all operations are *included*.
+
+
+=== Cleanup
+
+The generated OpenAPI documents by default include every schema, even those referenced by operations which are excluded.
+The following configuration removes any unused schema.
+
+[source,properties]
+----
+mp.openapi.extensions.smallrye.remove-unused-schemas.enable=true
+----
+
+
+=== Configuration applicability
+
+The default document and all of the named documents support the same configuration.
+There is a minor pitfall with the MicroProfile OpenAPI configuration though - MicroProfile-specific configuration properties apply to all documents; see the following examples.
+
+[source, properties]
+----
+quarkus.smallrye-openapi.servers=https://api.example.com
+----
+
+Config properties which are set for the default document are applied only for the default document, i.e. the OpenAPI document served at `/q/openapi`.
+
+[source, properties]
+----
+quarkus.smallrye-openapi.<document-name>.servers=https://api.example.com
+----
+
+Config properties which are set for a specific document are applied only for this specific document, i.e. the OpenAPI document served at `/q/openapi-<document-name>`.
+
+[source, properties]
+----
+mp.openapi.servers=https://api.example.com
+----
+
+MicroProfile OpenAPI config properties are applied to *ALL* OpenAPI documents.
+
+=== Filters
+
+By default, OpenAPI filters apply to all documents.
+This can be changed by configuring `@OpenApiFilter#documentNames`.
+
+[source, java,opts=novalidate]
+----
+import io.quarkus.smallrye.openapi.OpenApiFilter;
+import org.eclipse.microprofile.openapi.OASFilter;
+
+@OpenApiFilter(documentNames = {OpenApiFilter.DEFAULT_DOCUMENT_NAME, "user"}) <1>
+public class MyFilter implements OASFilter {
+    // ...
+}
+----
+<1> This filter applies only to the default OpenAPI document, and to the document named `user`.
 
 [[dev-mode]]
 == Use Swagger UI for development
@@ -577,6 +724,24 @@ For more information on styling, read this blog entry: https://quarkus.io/blog/s
 === Cross Origin Resource Sharing
 
 If you plan to consume this application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more details.
+
+=== Multiple OpenAPI Documents
+
+Multiple OpenAPI documents will automatically show when they are generated by Quarkus as described in <<generating-multiple-openapi-documents>>.
+By default, Swagger UI renders a dropdown with entries named after their document name. Assuming a default document, an "order" document, and a "user" document are defined, the following entries will be shown:
+
+* \<default>
+* order
+* user
+
+You may want to change this to more user-friendly names, based on your requirements. For example, changing the options in the dropdown to "Intro", "Order Service", "User Service" would look like this:
+
+[source,properties]
+----
+quarkus.swagger-ui.urls."Combined"=/q/openapi
+quarkus.swagger-ui.urls."Order Service"=/q/openapi-order
+quarkus.swagger-ui.urls."User Service"=/q/openapi-user
+----
 
 == Configuration Reference
 

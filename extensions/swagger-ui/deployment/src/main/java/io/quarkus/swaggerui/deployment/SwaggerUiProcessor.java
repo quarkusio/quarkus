@@ -102,27 +102,35 @@ public class SwaggerUiProcessor {
                         Set.of("quarkus.swagger-ui.path"));
             }
 
-            if (openapi.path().equalsIgnoreCase(swaggerUiConfig.path())) {
-                throw new ConfigurationException(
-                        "quarkus.smallrye-openapi.path and quarkus.swagger-ui.path was set to the same value, this is not allowed as the paths needs to be unique ["
-                                + openapi.path() + "].",
-                        Set.of("quarkus.smallrye-openapi.path", "quarkus.swagger-ui.path"));
-
-            }
-
-            String devUIContextRoot = "";
+            String devUIContextRoot;
             if (devContextBuildItem.isPresent()) {
                 devUIContextRoot = devContextBuildItem.get().getDevUIContextRoot();
+            } else {
+                devUIContextRoot = "";
             }
 
-            String openApiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+            Map<String, String> urls = new HashMap<>();
+            openapi.documents().forEach((documentName, documentConfig) -> {
+                String documentPath = documentConfig.path();
+
+                if (documentPath.equalsIgnoreCase(swaggerUiConfig.path())) {
+                    throw new ConfigurationException(
+                            "quarkus.smallrye-openapi.path and quarkus.swagger-ui.path was set to the same value, this is not allowed as the paths needs to be unique ["
+                                    + documentPath + "].",
+                            Set.of(documentPath, "quarkus.swagger-ui.path"));
+                }
+
+                String openApiPath = devUIContextRoot
+                        + nonApplicationRootPathBuildItem.resolvePath(documentPath);
+                urls.put(documentName, openApiPath);
+            });
 
             String swaggerUiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
 
             NonApplicationRootPathBuildItem indexRootPathBuildItem = null;
 
-            byte[] indexHtmlContent = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig,
+            byte[] indexHtmlContent = generateIndexHtml(urls, swaggerUiPath, swaggerUiConfig,
                     indexRootPathBuildItem,
                     launchMode,
                     devServicesLauncherConfig.orElse(null),
@@ -185,7 +193,7 @@ public class SwaggerUiProcessor {
         }
     }
 
-    private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
+    private byte[] generateIndexHtml(Map<String, String> urls, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath, LaunchModeBuildItem launchMode,
             DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem,
             List<SwaggerUiUrlBuildItem> swaggerUiUrls)
@@ -208,9 +216,13 @@ public class SwaggerUiProcessor {
             urlsMap.putIfAbsent(urlBuildItem.getName(), urlBuildItem.getUrl());
         }
 
-        // Only add the url if the user or other extensions did not specify urls
+        // Only add urls for our own generated OpenAPI documentations if the user or other extensions did not specify urls
         if (urlsMap.isEmpty()) {
-            options.put(Option.url, openApiPath);
+            if (urls.size() > 1) {
+                urlsMap = urls;
+            } else {
+                options.put(Option.url, urls.values().iterator().next());
+            }
         }
 
         if (swaggerUiConfig.title().isPresent()) {

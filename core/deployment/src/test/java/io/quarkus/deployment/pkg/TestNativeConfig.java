@@ -26,6 +26,11 @@ public class TestNativeConfig implements NativeConfig {
         return true;
     }
 
+    @Override
+    public Bundle bundle() {
+        return null;
+    }
+
     public boolean sourcesOnly() {
         return true;
     }

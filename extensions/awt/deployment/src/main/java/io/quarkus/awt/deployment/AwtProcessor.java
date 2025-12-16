@@ -116,7 +116,7 @@ class AwtProcessor {
             BuildProducer<JniRuntimeAccessMethodBuildItem> jm,
             BuildProducer<JniRuntimeAccessFieldBuildItem> jf,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.getBuildRunner().isContainer();
+        final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
@@ -187,7 +187,7 @@ class AwtProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     JniRuntimeAccessBuildItem setupJava2DClasses(NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.getBuildRunner().isContainer();
+        final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
         final List<String> classes = new ArrayList<>();
         if (isWindowsTarget) {
             classes.add("java.awt.AWTEvent");

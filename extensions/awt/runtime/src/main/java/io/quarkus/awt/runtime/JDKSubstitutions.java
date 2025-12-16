@@ -17,7 +17,9 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
+import io.quarkus.runtime.util.IsLinux;
 import io.quarkus.runtime.util.IsWindows;
+import io.quarkus.runtime.util.JavaVersionLessThan25;
 
 /**
  * Getting .pfb/.pfa files to work would require additional runtime re-init adjustments.
@@ -47,8 +49,8 @@ final class Target_sun_font_Type1Font {
  * We create a dummy "java.home" in "java.io.tmpdir" and we set it at a reasonable place via
  * substitution.
  */
-@TargetClass(className = "sun.awt.FontConfiguration")
-final class Target_sun_awt_FontConfiguration {
+@TargetClass(className = "sun.awt.FontConfiguration", onlyWith = IsLinux.class)
+final class Target_sun_awt_FontConfiguration_Linux {
     @Alias
     protected static String osVersion;
     @Alias
@@ -62,6 +64,7 @@ final class Target_sun_awt_FontConfiguration {
             osName = System.getProperty("os.name", "unknown");
             osVersion = System.getProperty("os.version");
             Files.createDirectories(javaHome.resolve("lib"));
+            Files.createDirectories(javaHome.resolve("conf").resolve("fonts"));
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to set tmp java.home for FontConfig Quarkus AWT usage in " + javaHome, e);
         }
@@ -69,52 +72,32 @@ final class Target_sun_awt_FontConfiguration {
 }
 
 /**
- * Cut the dependency on Swing and Printing - we support server side, headless mode.
- * TODO: If an extension in Quarkiverse complains, we revisit it here.
+ * See Target_sun_awt_FontConfiguration_Linux, for context.
+ *
+ * Windows doesn't have fontconfig package and its config file installed like Linux has.
+ * Java runtime looks for the config file inside our fake JAVA_HOME.
+ * We provide a skeleton, i18n ignorant version to satisfy the basic headless fonts processing.
  */
-@TargetClass(className = "sun.awt.windows.WToolkit", onlyWith = IsWindows.class)
-final class Target_sun_awt_windows_WToolkit {
+@TargetClass(className = "sun.awt.FontConfiguration", onlyWith = IsWindows.class)
+final class Target_sun_awt_FontConfiguration_Windows {
+    @Alias
+    protected static String osVersion;
+    @Alias
+    protected static String osName;
 
     @Substitute
-    public PrintJob getPrintJob(Frame frame, String jobtitle, Properties props) {
-        throw new java.awt.HeadlessException("Printing is not supported with Quarkus AWT extension.");
-    }
-
-    @Substitute
-    public PrintJob getPrintJob(Frame frame, String jobtitle, JobAttributes jobAttributes, PageAttributes pageAttributes) {
-        throw new java.awt.HeadlessException("Printing is not supported with Quarkus AWT extension.");
-    }
-}
-
-/**
- * Cut ties to windowing, desktop
- * TODO: If an extension in Quarkiverse complains, we revisit it here.
- */
-@TargetClass(className = "sun.awt.windows.WObjectPeer", onlyWith = IsWindows.class)
-final class Target_sun_awt_windows_WObjectPeer {
-    @Substitute
-    private static void initIDs() {
-        // no-op, no pData, destroyed, target
-    }
-}
-
-/**
- * Cut ties to D3D, accelerated desktop, etc.
- * Forces software rendering.
- * TODO: If an extension in Quarkiverse complains, we revisit it here.
- */
-@TargetClass(className = "sun.java2d.windows.WindowsFlags", onlyWith = IsWindows.class)
-final class Target_sun_java2d_windows_WindowsFlags {
-    @Substitute
-    private static boolean initNativeFlags() {
-        /**
-         * Windows doesn't have fontconfig package and its config file installed like Linux has.
-         * Java runtime looks for the config file inside our fake JAVA_HOME.
-         * We provide a skeleton, i18n ignorant version to satisfy the basic headless fonts processing.
-         */
-        // sun.awt.FontConfiguration#setOsNameAndVersion is already done at this point.
-        final Path configFile = Path.of(System.getProperty("java.io.tmpdir"), "quarkus-awt-tmp-fonts", "lib",
-                "fontconfig.properties");
+    protected void setOsNameAndVersion() {
+        final Path javaHome = Path.of(System.getProperty("java.io.tmpdir"), "quarkus-awt-tmp-fonts");
+        try {
+            System.setProperty("java.home", javaHome.toString());
+            osName = System.getProperty("os.name", "unknown");
+            osVersion = System.getProperty("os.version");
+            Files.createDirectories(javaHome.resolve("lib"));
+            Files.createDirectories(javaHome.resolve("conf").resolve("fonts"));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to set tmp java.home for FontConfig Quarkus AWT usage in " + javaHome, e);
+        }
+        final Path configFile = javaHome.resolve("lib").resolve("fontconfig.properties");
         try {
             if (!Files.exists(configFile)) {
                 // JAVA_HOME/lib/fontconfig.properties.src
@@ -162,6 +145,48 @@ final class Target_sun_java2d_windows_WindowsFlags {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write Windows " + configFile.toAbsolutePath(), e);
         }
+    }
+}
+
+/**
+ * Cut the dependency on Swing and Printing - we support server side, headless mode.
+ * TODO: If an extension in Quarkiverse complains, we revisit it here.
+ */
+@TargetClass(className = "sun.awt.windows.WToolkit", onlyWith = IsWindows.class)
+final class Target_sun_awt_windows_WToolkit {
+
+    @Substitute
+    public PrintJob getPrintJob(Frame frame, String jobtitle, Properties props) {
+        throw new UnsupportedOperationException("Printing is not supported with Quarkus AWT extension.");
+    }
+
+    @Substitute
+    public PrintJob getPrintJob(Frame frame, String jobtitle, JobAttributes jobAttributes, PageAttributes pageAttributes) {
+        throw new UnsupportedOperationException("Printing is not supported with Quarkus AWT extension.");
+    }
+}
+
+/**
+ * Cut ties to windowing, desktop
+ * TODO: If an extension in Quarkiverse complains, we revisit it here.
+ */
+@TargetClass(className = "sun.awt.windows.WObjectPeer", onlyWith = IsWindows.class)
+final class Target_sun_awt_windows_WObjectPeer {
+    @Substitute
+    private static void initIDs() {
+        // no-op, no pData, destroyed, target
+    }
+}
+
+/**
+ * Cut ties to D3D, accelerated desktop, etc.
+ * Forces software rendering.
+ * TODO: If an extension in Quarkiverse complains, we revisit it here.
+ */
+@TargetClass(className = "sun.java2d.windows.WindowsFlags", onlyWith = IsWindows.class)
+final class Target_sun_java2d_windows_WindowsFlags {
+    @Substitute
+    private static boolean initNativeFlags() {
         return false;
     }
 }
@@ -170,10 +195,10 @@ final class Target_sun_java2d_windows_WindowsFlags {
  * This is needed for JDK 21, it's not necessary for JDK 25.
  * We don't need to go down the Swing route initialization of popup menus
  * for server-side headless mode.
+ * TODO: If an extension in Quarkiverse complains, we revisit it here.
  */
-@TargetClass(className = "sun.awt.im.ExecutableInputMethodManager", onlyWith = IsWindows.class)
+@TargetClass(className = "sun.awt.im.ExecutableInputMethodManager", onlyWith = { IsWindows.class, JavaVersionLessThan25.class })
 final class Target_sun_awt_im_ExecutableInputMethodManager {
-
     @Substitute
     private void run() {
         // No-op
@@ -184,10 +209,10 @@ final class Target_sun_awt_im_ExecutableInputMethodManager {
  * This is needed for JDK 21, it's not necessary for JDK 25.
  * We don't need to go down the Swing route initialization of the composition area
  * for server-side headless mode.
+ * TODO: If an extension in Quarkiverse complains, we revisit it here.
  */
-@TargetClass(className = "sun.awt.im.CompositionAreaHandler", onlyWith = IsWindows.class)
+@TargetClass(className = "sun.awt.im.CompositionAreaHandler", onlyWith = { IsWindows.class, JavaVersionLessThan25.class })
 final class Target_sun_awt_im_CompositionAreaHandler {
-
     @Substitute
     private void createCompositionArea() {
         // No-op

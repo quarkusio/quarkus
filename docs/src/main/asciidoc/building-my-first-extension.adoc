@@ -561,8 +561,7 @@ Thanks to basic concepts, you will describe the items to produce/consume and the
 
 The `io.quarkus.builder.item.BuildItem` concept represents object instances you will produce or consume (and at some point convert into bytecode) thanks to methods annotated with `@io.quarkus.deployment.annotations.BuildStep` which describe your extension's deployment tasks.
 
-NOTE:: See xref:all-builditems.adoc[the complete list of BuildItem implementations in core] for more information
-
+NOTE: See xref:all-builditems.adoc[the complete list of BuildItem implementations in core] for more information.
 
 Go back to the generated `org.acme.greeting.extension.deployment.GreetingExtensionProcessor` class.
 

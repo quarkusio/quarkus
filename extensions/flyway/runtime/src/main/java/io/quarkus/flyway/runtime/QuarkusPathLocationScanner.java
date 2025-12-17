@@ -6,9 +6,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.flywaydb.core.api.CoreLocationPrefix;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.locations.LocationParser;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.api.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
@@ -44,12 +46,13 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
                 LOGGER.debugf("Loading %s", migrationFile);
 
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
-            } else if (migrationFile.startsWith(Location.FILESYSTEM_PREFIX)) {
+            } else if (migrationFile.startsWith(CoreLocationPrefix.FILESYSTEM_PREFIX)) {
                 if (fileSystemScanner == null) {
-                    fileSystemScanner = new FileSystemScanner(false, configuration);
+                    fileSystemScanner = new FileSystemScanner(configuration);
                 }
                 LOGGER.debugf("Checking %s for migration files", migrationFile);
-                Collection<LoadableResource> resources = fileSystemScanner.scanForResources(new Location(migrationFile));
+                Collection<LoadableResource> resources = fileSystemScanner
+                        .scanForResources(LocationParser.parseLocation(migrationFile));
                 LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
                 scannedResources.addAll(resources);
             }

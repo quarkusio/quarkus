@@ -485,6 +485,21 @@ public final class ClassNames {
             createConstant("java.util.UUID"),
             createConstant("java.lang.Void"));
 
+    public static final List<DotName> GEOLATTE_WKB_ENCODERS = List.of(
+            createConstant("org.geolatte.geom.codec.Sfa110WkbEncoder"),
+            createConstant("org.geolatte.geom.codec.Sfa121WkbEncoder"),
+            createConstant("org.geolatte.geom.codec.PostgisWkbEncoder"),
+            createConstant("org.geolatte.geom.codec.PostgisWkbV2Encoder"),
+            createConstant("org.geolatte.geom.codec.MySqlWkbEncoder"),
+            createConstant("org.geolatte.geom.codec.HANAWkbEncoder"));
+
+    public static final List<DotName> GEOLATTE_WKB_DECODERS = List.of(
+            createConstant("org.geolatte.geom.codec.Sfa110WkbDecoder"),
+            createConstant("org.geolatte.geom.codec.Sfa121WkbDecoder"),
+            createConstant("org.geolatte.geom.codec.PostgisWkbDecoder"),
+            createConstant("org.geolatte.geom.codec.MySqlWkbDecoder"),
+            createConstant("org.geolatte.geom.codec.HANAWkbDecoder"));
+
     public static final DotName HIBERNATE_ORM_PROCESSOR = createConstant(
             "io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor");
 

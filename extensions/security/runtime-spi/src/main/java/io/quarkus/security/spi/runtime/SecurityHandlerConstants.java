@@ -1,5 +1,8 @@
 package io.quarkus.security.spi.runtime;
 
+import jakarta.annotation.Priority;
+import jakarta.interceptor.Interceptor;
+
 public class SecurityHandlerConstants {
 
     /**
@@ -12,4 +15,14 @@ public class SecurityHandlerConstants {
      * `executed` means the check has already been done.
      */
     public static final String EXECUTED = "executed";
+
+    /**
+     * Interceptor priority for standard security interceptors.
+     */
+    public static final int SECURITY_INTERCEPTOR_PRIORITY = Interceptor.Priority.PLATFORM_BEFORE + 150;
+
+    /**
+     * Priority for interceptors propagating information indicating that a security check has been performed.
+     */
+    public static final int PREVENT_REPEATED_CHECKS_INTERCEPTOR_PRIORITY = SECURITY_INTERCEPTOR_PRIORITY - 10;
 }

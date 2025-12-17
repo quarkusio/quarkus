@@ -386,6 +386,10 @@ public class ServerEndpointIndexer
         // records do not have field injection, we use their constructor, so field rules do not apply
         boolean applyFieldRules = !currentClassInfo.isRecord();
         for (FieldInfo field : currentClassInfo.fields()) {
+            // We don't do any injection in static fields
+            if (Modifier.isStatic(field.flags())) {
+                continue;
+            }
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
             for (AnnotationInstance i : field.annotations()) {
                 annotations.put(i.name(), i);

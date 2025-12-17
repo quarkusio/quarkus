@@ -61,6 +61,8 @@ public class BeanParamRecordTest {
             OtherBeanParam obp,
             // record contains record (implicit @BeanParam)
             OtherBeanParamRecord obpr) {
+        private static String X = null;
+        public final static String Y = null;
     }
 
     public static class OtherBeanParam {

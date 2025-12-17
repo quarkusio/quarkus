@@ -69,9 +69,9 @@ public class DevservicesElasticsearchProcessorStrategy {
 
     private static final ContainerLocator dashboardContainerLocator = locateContainerWithLabels(DASHBOARD_PORT,
             DEV_SERVICE_LABEL);
-    static volatile RunningDevService devDashboardService;
-    static volatile ElasticsearchCommonBuildTimeConfig cfg;
-    static volatile boolean first = true;
+    volatile RunningDevService devDashboardService;
+    volatile ElasticsearchCommonBuildTimeConfig cfg;
+    volatile boolean first = true;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final DistributionStrategy strategy;
 
@@ -263,7 +263,7 @@ public class DevservicesElasticsearchProcessorStrategy {
             List<DevservicesElasticsearchConnectionBuildItem> elasticsearchConnectionBuildItems) {
         Set<String> hosts;
         if (hostsConfigAvailable(buildItemConfig)) {
-            log.info("elasticsearch hosts config property found, using it");
+            log.info("Elasticsearch hosts config property found, using it");
             hosts = buildItemConfig.hostsConfigProperties.stream().filter(ConfigUtils::isPropertyNonEmpty)
                     .flatMap(property -> ConfigProvider.getConfig().getValues(property, String.class).stream())
                     // We could pass quarkus.elasticsearch.protocol via DevservicesElasticsearchBuildItem if it is not http.
@@ -271,7 +271,7 @@ public class DevservicesElasticsearchProcessorStrategy {
                     .collect(Collectors.toSet());
         } else {
             log.info(
-                    "no elasticsearch hosts config property found, using the host of the elasticsearch dev services container to connect");
+                    "no Elasticsearch hosts config property found, using the host of the elasticsearch dev services container to connect");
             hosts = elasticsearchConnectionBuildItems.stream()
                     .filter(connection -> strategy.supportedDistribution().equals(connection.getDistribution()))
                     // We could pass quarkus.elasticsearch.protocol via DevservicesElasticsearchBuildItem if it is not http.

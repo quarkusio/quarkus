@@ -144,7 +144,6 @@ public class YamlMetadataGenerator {
 
         Options options = Options.builder()
                 .docType("book")
-                .sourceDir(srcDir.toFile())
                 .baseDir(srcDir.toFile())
                 .safe(SafeMode.UNSAFE)
                 .build();

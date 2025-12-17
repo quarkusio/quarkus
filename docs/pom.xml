@@ -23,8 +23,8 @@
         <mandrel.image-tag-for-documentation>jdk-21</mandrel.image-tag-for-documentation>
 
         <assembly-maven-plugin.version>3.8.0</assembly-maven-plugin.version>
-        <asciidoctor-maven-plugin.version>2.2.5</asciidoctor-maven-plugin.version>
-        <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
+        <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
+        <asciidoctorj-pdf.version>2.3.23</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
         <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
         <maven-model-helper.version>37</maven-model-helper.version>

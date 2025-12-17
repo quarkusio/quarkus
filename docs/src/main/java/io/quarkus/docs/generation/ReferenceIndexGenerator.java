@@ -17,11 +17,9 @@ import java.util.stream.Stream;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Options;
 import org.asciidoctor.SafeMode;
-import org.asciidoctor.ast.Block;
 import org.asciidoctor.ast.Cell;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.Row;
-import org.asciidoctor.ast.Section;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.Table;
 
@@ -115,7 +113,6 @@ public class ReferenceIndexGenerator {
 
         Options options = Options.builder()
                 .docType("book")
-                .sourceDir(srcDir.toFile())
                 .baseDir(srcDir.toFile())
                 .safe(SafeMode.UNSAFE)
                 .build();
@@ -156,31 +153,29 @@ public class ReferenceIndexGenerator {
 
     private void addBlocks(Index index, String fileName, List<StructuralNode> blocks) {
         for (StructuralNode block : blocks) {
-            if (block instanceof Section || block instanceof Table || block instanceof Block) {
-                if (block.getId() != null) {
-                    // unfortunately, AsciiDoc already formats the title in the AST
-                    // and I couldn't find a way to get the original one
-                    IndexReference reference = new IndexReference(fileName, block.getId(),
-                            block.getTitle() != null ? block.getTitle().replace("<code>", "`")
-                                    .replace("</code>", "`")
-                                    .replace('\n', ' ')
-                                    .replace("&#8217;", "'")
-                                    .replace("&amp;", "&")
-                                    .replace("&#8230;&#8203;", "...")
-                                    .replace("<em>", "_")
-                                    .replace("</em>", "_")
-                                    .replace("<b>", "*")
-                                    .replace("</b>", "*")
-                                    .replace("<strong>", "*")
-                                    .replace("</strong>", "*")
-                                    .replaceAll("<a.*</a> ", "") : "~~ unknown title ~~");
+            if (block.getId() != null) {
+                // unfortunately, AsciiDoc already formats the title in the AST
+                // and I couldn't find a way to get the original one
+                IndexReference reference = new IndexReference(fileName, block.getId(),
+                        block.getTitle() != null ? block.getTitle().replace("<code>", "`")
+                                .replace("</code>", "`")
+                                .replace('\n', ' ')
+                                .replace("&#8217;", "'")
+                                .replace("&amp;", "&")
+                                .replace("&#8230;&#8203;", "...")
+                                .replace("<em>", "_")
+                                .replace("</em>", "_")
+                                .replace("<b>", "*")
+                                .replace("</b>", "*")
+                                .replace("<strong>", "*")
+                                .replace("</strong>", "*")
+                                .replaceAll("<a.*</a> ", "") : "~~ unknown title ~~");
 
-                    index.add(reference);
-                }
+                index.add(reference);
             }
             // we go into the content of the tables to add references for the configuration properties
-            if (block instanceof Table) {
-                for (Row row : ((Table) block).getBody()) {
+            if (block instanceof Table table) {
+                for (Row row : table.getBody()) {
                     for (Cell cell : row.getCells()) {
                         String cellContent = ICON_PATTERN.matcher(cell.getSource()).replaceAll("").trim();
 
@@ -201,7 +196,7 @@ public class ReferenceIndexGenerator {
 
     private Map<String, List<String>> transformFiles(Index index) throws IOException {
         final Map<String, String> titlesByReference = index.getReferences().stream()
-                .collect(Collectors.toMap(s -> s.getReference(), s -> s.getTitle()));
+                .collect(Collectors.toMap(IndexReference::getReference, IndexReference::getTitle));
         final Map<String, List<String>> errors = new LinkedHashMap<>();
 
         try (Stream<Path> pathStream = Files.list(srcDir)) {

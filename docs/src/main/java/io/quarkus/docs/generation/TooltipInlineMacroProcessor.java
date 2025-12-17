@@ -1,9 +1,9 @@
 package io.quarkus.docs.generation;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import org.asciidoctor.ast.ContentNode;
+import org.asciidoctor.ast.PhraseNode;
+import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.extension.InlineMacroProcessor;
 import org.asciidoctor.extension.Name;
 
@@ -16,9 +16,7 @@ import org.asciidoctor.extension.Name;
 public class TooltipInlineMacroProcessor extends InlineMacroProcessor {
 
     @Override
-    public Object process(ContentNode contentNode, String target, Map<String, Object> map) {
-        var attributes = new HashMap<String, Object>();
-        attributes.put("subs", ":normal");
-        return createPhraseNode(contentNode, "quoted", String.format("`%s`", target), attributes);
+    public PhraseNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
+        return createPhraseNode(parent, "quoted", String.format("`%s`", target), Map.of("subs", ":normal"));
     }
 }

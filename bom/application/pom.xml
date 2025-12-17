@@ -79,7 +79,7 @@
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.4</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.6</jaxb-runtime.version>
-        <asm.version>9.9</asm.version>
+        <asm.version>9.9.1</asm.version>
         <commons-io.version>2.21.0</commons-io.version>
         <jboss-metadata-web.version>16.1.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>

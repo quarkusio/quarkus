@@ -17,14 +17,9 @@ import java.util.stream.Stream;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Options;
 import org.asciidoctor.SafeMode;
-import org.asciidoctor.ast.Block;
 import org.asciidoctor.ast.Cell;
-import org.asciidoctor.ast.DescriptionList;
-import org.asciidoctor.ast.DescriptionListEntry;
 import org.asciidoctor.ast.Document;
-import org.asciidoctor.ast.ListItem;
 import org.asciidoctor.ast.Row;
-import org.asciidoctor.ast.Section;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.Table;
 
@@ -158,29 +153,25 @@ public class ReferenceIndexGenerator {
 
     private void addBlocks(Index index, String fileName, List<StructuralNode> blocks) {
         for (StructuralNode block : blocks) {
-            if (block instanceof Section || block instanceof Table || block instanceof Block
-                    || block instanceof org.asciidoctor.ast.List || block instanceof ListItem
-                    || block instanceof DescriptionList || block instanceof DescriptionListEntry) {
-                if (block.getId() != null) {
-                    // unfortunately, AsciiDoc already formats the title in the AST
-                    // and I couldn't find a way to get the original one
-                    IndexReference reference = new IndexReference(fileName, block.getId(),
-                            block.getTitle() != null ? block.getTitle().replace("<code>", "`")
-                                    .replace("</code>", "`")
-                                    .replace('\n', ' ')
-                                    .replace("&#8217;", "'")
-                                    .replace("&amp;", "&")
-                                    .replace("&#8230;&#8203;", "...")
-                                    .replace("<em>", "_")
-                                    .replace("</em>", "_")
-                                    .replace("<b>", "*")
-                                    .replace("</b>", "*")
-                                    .replace("<strong>", "*")
-                                    .replace("</strong>", "*")
-                                    .replaceAll("<a.*</a> ", "") : "~~ unknown title ~~");
+            if (block.getId() != null) {
+                // unfortunately, AsciiDoc already formats the title in the AST
+                // and I couldn't find a way to get the original one
+                IndexReference reference = new IndexReference(fileName, block.getId(),
+                        block.getTitle() != null ? block.getTitle().replace("<code>", "`")
+                                .replace("</code>", "`")
+                                .replace('\n', ' ')
+                                .replace("&#8217;", "'")
+                                .replace("&amp;", "&")
+                                .replace("&#8230;&#8203;", "...")
+                                .replace("<em>", "_")
+                                .replace("</em>", "_")
+                                .replace("<b>", "*")
+                                .replace("</b>", "*")
+                                .replace("<strong>", "*")
+                                .replace("</strong>", "*")
+                                .replaceAll("<a.*</a> ", "") : "~~ unknown title ~~");
 
-                    index.add(reference);
-                }
+                index.add(reference);
             }
             // we go into the content of the tables to add references for the configuration properties
             if (block instanceof Table table) {

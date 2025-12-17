@@ -41,6 +41,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.test.common.FacadeClassLoaderProvider;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -263,6 +264,15 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         ServiceLoader<FacadeClassLoaderProvider> loader = ServiceLoader.load(FacadeClassLoaderProvider.class,
                 FacadeClassLoader.class.getClassLoader());
         loader.forEach(facadeClassLoaderProviders::add);
+        runtimeInitializeForTests();
+    }
+
+    /**
+     * This is not strictly related to tests, but we have some tuning to do on the JVM
+     * which should really happen before any further Quarkus classes are loaded.
+     */
+    private void runtimeInitializeForTests() {
+        JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
     }
 
     @Override

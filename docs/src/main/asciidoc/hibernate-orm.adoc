@@ -559,6 +559,10 @@ See <<json_xml_serialization_deserialization>>.
 See <<multitenancy>>.
 `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver`::
 See <<programmatically-resolving-tenants-connections>>.
+`org.hibernate.boot.model.FunctionContributor`::
+See <<custom-functions-and-types>>.
+`org.hibernate.boot.model.TypeContributor`::
+See <<custom-functions-and-types>>.
 
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
@@ -1569,6 +1573,149 @@ public class ExampleTenantConnectionResolver implements TenantConnectionResolver
         } catch (SQLException ex) {
             throw new IllegalStateException(
                     "Failed to create a new data source based on the existing datasource configuration", ex);
+        }
+    }
+}
+----
+
+[[custom-functions-and-types]]
+=== Custom functions, types and mappings
+
+To register custom SQL functions or types, in Hibernate ORM, you can implement the standard Hibernate interfaces:
+
+* `org.hibernate.boot.model.FunctionContributor`
+* `org.hibernate.boot.model.TypeContributor`
+
+Creating an application-scoped bean that implements one of these interfaces and annotating it with `@PersistenceUnitExtension`
+(or `@PersistenceUnitExtension("nameOfYourPU")` for a <<multiple-persistence-units,named persistence unit>>)
+will automatically register it with the corresponding persistence unit.
+
+Here is an example of a custom function contributor:
+
+[source,java]
+----
+import java.util.List;
+import org.hibernate.boot.model.FunctionContributions;
+import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.query.sqm.function.AbstractSqmSelfRenderingFunctionDescriptor;
+import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
+import org.hibernate.query.sqm.produce.function.StandardFunctionArgumentTypeResolvers;
+import org.hibernate.query.sqm.produce.function.StandardFunctionReturnTypeResolvers;
+import org.hibernate.sql.ast.SqlAstTranslator;
+import org.hibernate.sql.ast.spi.SqlAppender;
+import org.hibernate.sql.ast.tree.SqlAstNode;
+import org.hibernate.sql.ast.tree.expression.ReturnableType;
+import org.hibernate.sql.ast.tree.expression.SqlAstNodeRenderingMode;
+import org.hibernate.type.StandardBasicTypes;
+import org.hibernate.type.spi.TypeConfiguration;
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@PersistenceUnitExtension
+public class CustomFunctionContributor implements FunctionContributor {
+
+    @Override
+    public void contributeFunctions(FunctionContributions functionContributions) {
+        functionContributions.getFunctionRegistry().register(
+                "addHardcodedSuffix",
+                new HardcodedSuffixFunction(
+                        functionContributions.getTypeConfiguration(), "_some_suffix"));
+    }
+
+    private static final class HardcodedSuffixFunction extends AbstractSqmSelfRenderingFunctionDescriptor {
+        private final String suffix;
+
+        private HardcodedSuffixFunction(TypeConfiguration typeConfiguration, String suffix) {
+            super("addHardcodedSuffix",
+                    StandardArgumentsValidators.exactly(1),
+                    StandardFunctionReturnTypeResolvers.invariant(
+                            typeConfiguration.getBasicTypeRegistry().resolve(StandardBasicTypes.STRING)),
+                    StandardFunctionArgumentTypeResolvers.impliedOrInvariant(typeConfiguration, StandardBasicTypes.STRING)
+            );
+            this.suffix = suffix;
+        }
+
+        @Override
+        public void render(SqlAppender sqlAppender, List<? extends SqlAstNode> sqlAstArguments, ReturnableType<?> returnType,
+                           SqlAstTranslator<?> walker) {
+            sqlAppender.appendSql('(');
+            walker.render(sqlAstArguments.get(0), SqlAstNodeRenderingMode.DEFAULT);
+            sqlAppender.appendSql(" || '" + suffix + "')");
+        }
+    }
+}
+
+----
+
+And here is an example of a custom type contributor that registers a custom `UserType` (e.g. mapping a Boolean to "Y"/"N"):
+
+[source,java]
+----
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import org.hibernate.boot.model.TypeContributions;
+import org.hibernate.boot.model.TypeContributor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.WrapperOptions;
+import org.hibernate.usertype.UserType;
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@PersistenceUnitExtension
+public class CustomTypeContributor implements TypeContributor {
+
+    @Override
+    public void contribute(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
+        // Registers the custom type so it can be used via @Type(value = BooleanYesNoType.class) on your entity property
+        typeContributions.getTypeConfiguration()
+                .getBasicTypeRegistry()
+                .register(new BooleanYesNoType(), "boolean_yes_no");
+    }
+
+    public static final class BooleanYesNoType implements UserType<Boolean> {
+        @Override
+        public int getSqlType() {
+            return SqlTypes.VARCHAR;
+        }
+
+        @Override
+        public Class<Boolean> returnedClass() {
+            return Boolean.class;
+        }
+
+        @Override
+        public Boolean nullSafeGet(ResultSet rs, int position, WrapperOptions options) throws SQLException {
+            String value = rs.getString(position);
+
+            if (value == null) {
+                return null;
+            }
+
+            return "Y".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value);
+        }
+
+        @Override
+        public void nullSafeSet(PreparedStatement st, Boolean value, int position, WrapperOptions options) throws SQLException {
+            if (value == null) {
+                st.setNull(position, SqlTypes.VARCHAR);
+            } else {
+                st.setString(position, value ? "Y" : "N");
+            }
+        }
+
+        @Override
+        public Boolean deepCopy(Boolean value) {
+            return value;
+        }
+
+        @Override
+        public boolean isMutable() {
+            return false;
         }
     }
 }

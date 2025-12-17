@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
 
+import org.geolatte.geom.codec.WkbEncoder;
 import org.hibernate.Hibernate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -48,11 +49,13 @@ public class ClassNamesTest {
 
     private static Index jpaIndex;
     private static Index hibernateIndex;
+    private static Index geolatteGeomIndex;
 
     @BeforeAll
     public static void index() throws IOException {
         jpaIndex = IndexingUtil.indexJar(determineJpaJarLocation());
         hibernateIndex = IndexingUtil.indexJar(determineHibernateJarLocation());
+        geolatteGeomIndex = IndexingUtil.indexJar(determineGeolatteGeomLocation());
     }
 
     @ParameterizedTest
@@ -81,6 +84,24 @@ public class ClassNamesTest {
 
         assertThat(ClassNames.OPTIMIZERS)
                 .containsExactlyInAnyOrderElementsOf(generatorImplementors);
+    }
+
+    @Test
+    public void testNoMissingGeolatteWkbEncoderClass() {
+        Set<DotName> wkbEncoderImplementors = findConcreteNamedImplementors(geolatteGeomIndex,
+                "org.geolatte.geom.codec.WkbEncoder");
+
+        assertThat(ClassNames.GEOLATTE_WKB_ENCODERS)
+                .containsExactlyInAnyOrderElementsOf(wkbEncoderImplementors);
+    }
+
+    @Test
+    public void testNoMissingGeolatteWkbDecoderClass() {
+        Set<DotName> wkbDecoderImplementors = findConcreteNamedImplementors(geolatteGeomIndex,
+                "org.geolatte.geom.codec.WkbDecoder");
+
+        assertThat(ClassNames.GEOLATTE_WKB_DECODERS)
+                .containsExactlyInAnyOrderElementsOf(wkbDecoderImplementors);
     }
 
     @Test
@@ -233,6 +254,14 @@ public class ClassNamesTest {
         URL url = Hibernate.class.getProtectionDomain().getCodeSource().getLocation();
         if (!url.getProtocol().equals("file")) {
             throw new IllegalStateException("Hibernate JAR is not a local file? " + url);
+        }
+        return new File(url.getPath());
+    }
+
+    private static File determineGeolatteGeomLocation() {
+        URL url = WkbEncoder.class.getProtectionDomain().getCodeSource().getLocation();
+        if (!url.getProtocol().equals("file")) {
+            throw new IllegalStateException("Geolatte Geom is not a local file? " + url);
         }
         return new File(url.getPath());
     }

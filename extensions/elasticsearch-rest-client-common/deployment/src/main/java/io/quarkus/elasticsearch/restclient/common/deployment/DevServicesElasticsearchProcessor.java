@@ -219,7 +219,7 @@ public class DevServicesElasticsearchProcessor {
             var httpHost = createdContainer.hostName + ":"
                     + (useSharedNetwork ? ELASTICSEARCH_PORT : container.getMappedPort(ELASTICSEARCH_PORT));
             connectionBuildItemProducer.produce(new DevservicesElasticsearchConnectionBuildItem(createdContainer.hostName,
-                    container.getMappedPort(ELASTICSEARCH_PORT)));
+                    container.getMappedPort(ELASTICSEARCH_PORT), resolvedDistribution));
             return new RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     new ContainerShutdownCloseable(container, "Elasticsearch"),

@@ -17,13 +17,10 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 
-/**
- * Starts an Elasticsearch Kibana/OpenSearch Dashboards as dev service if needed.
- */
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
-public class DevServicesElasticsearchDashboardsProcessor {
+public class DevServicesElasticsearchKibanaProcessor {
 
-    static volatile DevservicesElasticsearchProcessorStrategy strategy = DevservicesElasticsearchProcessorStrategy.dashboards();
+    static volatile DevservicesElasticsearchProcessorStrategy strategy = DevservicesElasticsearchProcessorStrategy.kibana();
 
     @BuildStep
     public DevServicesResultBuildItem startElasticsearchDevService(
@@ -43,5 +40,4 @@ public class DevServicesElasticsearchDashboardsProcessor {
                 devServicesSharedNetworkBuildItem, consoleInstalledBuildItem, closeBuildItem, loggingSetupBuildItem,
                 elasticsearchConnectionBuildItems, devservicesElasticsearchBuildItems, devServicesConfig);
     }
-
 }

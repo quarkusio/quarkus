@@ -65,7 +65,14 @@ public class NarayanaLRARecovery implements LRARecoveryService {
             await().atMost(Duration.ofMillis(WAIT_CALLBACK_TIMEOUT)).catchUncaughtExceptions()
                     .until(() -> {
                         try {
-                            client.target(lraId).request().get();
+                            WebTarget target;
+                            try {
+                                target = client.target(lraId);
+                            } catch (Exception | Error e) {
+                                // Some TCK tests don't start Quarkus application, so we can't create REST request
+                                return false;
+                            }
+                            target.request().get();
                         } catch (NotFoundException notFoundException) {
                             // LRA not found means it has been finished
                             return true;
@@ -73,7 +80,7 @@ public class NarayanaLRARecovery implements LRARecoveryService {
                         return false;
                     });
         } catch (ConditionTimeoutException e) {
-            log.warn("waitForCallbacks timeout: " + e.getMessage());
+            log.warn("waitForCallbacks timeout (OK, optimization): " + e.getMessage());
         }
     }
 

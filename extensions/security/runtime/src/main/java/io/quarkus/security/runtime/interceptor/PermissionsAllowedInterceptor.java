@@ -1,5 +1,7 @@
 package io.quarkus.security.runtime.interceptor;
 
+import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.SECURITY_INTERCEPTOR_PRIORITY;
+
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
@@ -11,7 +13,7 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 
 @Interceptor
 @PermissionsAllowed("")
-@Priority(Interceptor.Priority.LIBRARY_BEFORE)
+@Priority(SECURITY_INTERCEPTOR_PRIORITY)
 public class PermissionsAllowedInterceptor {
 
     @Inject

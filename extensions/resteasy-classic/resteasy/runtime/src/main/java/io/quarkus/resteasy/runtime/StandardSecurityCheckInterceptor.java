@@ -2,6 +2,7 @@ package io.quarkus.resteasy.runtime;
 
 import static io.quarkus.resteasy.runtime.EagerSecurityFilter.SKIP_DEFAULT_CHECK;
 import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.EXECUTED;
+import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.PREVENT_REPEATED_CHECKS_INTERCEPTOR_PRIORITY;
 import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.SECURITY_HANDLER;
 
 import java.lang.reflect.Method;
@@ -58,7 +59,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @RolesAllowed("")
-    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
+    @Priority(PREVENT_REPEATED_CHECKS_INTERCEPTOR_PRIORITY)
     public static final class RolesAllowedInterceptor extends StandardSecurityCheckInterceptor {
 
     }
@@ -68,7 +69,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @PermissionsAllowed("")
-    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
+    @Priority(PREVENT_REPEATED_CHECKS_INTERCEPTOR_PRIORITY)
     public static final class PermissionsAllowedInterceptor extends StandardSecurityCheckInterceptor {
 
     }
@@ -78,7 +79,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @PermitAll
-    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
+    @Priority(PREVENT_REPEATED_CHECKS_INTERCEPTOR_PRIORITY)
     public static final class PermitAllInterceptor extends StandardSecurityCheckInterceptor {
 
     }
@@ -88,7 +89,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @Authenticated
-    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
+    @Priority(PREVENT_REPEATED_CHECKS_INTERCEPTOR_PRIORITY)
     public static final class AuthenticatedInterceptor extends StandardSecurityCheckInterceptor {
 
     }

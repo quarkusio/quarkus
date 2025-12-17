@@ -41,7 +41,7 @@ public class OperationFilter implements OASFilter {
     public static final String EXT_METHOD_REF = "x-quarkus-openapi-method-ref";
 
     private final Map<String, ClassAndMethod> classNameMap;
-    private final Map<String, List<String>> rolesAllowedMethodReferences;
+    private final Map<String, List<String>> authorizedMethodReferences;
     private final List<String> authenticatedMethodReferences;
     private final String defaultSecuritySchemeName;
     private final boolean doAutoTag;
@@ -50,13 +50,13 @@ public class OperationFilter implements OASFilter {
     private final boolean alwaysIncludeScopesValidForScheme;
 
     public OperationFilter(Map<String, ClassAndMethod> classNameMap,
-            Map<String, List<String>> rolesAllowedMethodReferences,
+            Map<String, List<String>> authorizedMethodReferences,
             List<String> authenticatedMethodReferences,
             String defaultSecuritySchemeName,
             boolean doAutoTag, boolean doAutoOperation, boolean doAutoBadRequest, boolean alwaysIncludeScopesValidForScheme) {
 
         this.classNameMap = Objects.requireNonNull(classNameMap);
-        this.rolesAllowedMethodReferences = Objects.requireNonNull(rolesAllowedMethodReferences);
+        this.authorizedMethodReferences = Objects.requireNonNull(authorizedMethodReferences);
         this.authenticatedMethodReferences = Objects.requireNonNull(authenticatedMethodReferences);
         this.defaultSecuritySchemeName = Objects.requireNonNull(defaultSecuritySchemeName);
         this.doAutoTag = doAutoTag;
@@ -263,8 +263,8 @@ public class OperationFilter implements OASFilter {
 
     private void maybeAddSecurityRequirement(Operation operation, String methodRef, String schemeName, boolean allowScopes,
             Map<String, APIResponse> defaultSecurityErrors) {
-        if (rolesAllowedMethodReferences.containsKey(methodRef)) {
-            List<String> scopes = rolesAllowedMethodReferences.get(methodRef);
+        if (authorizedMethodReferences.containsKey(methodRef)) {
+            List<String> scopes = authorizedMethodReferences.get(methodRef);
             addSecurityRequirement(operation, schemeName, allowScopes ? scopes : Collections.emptyList());
             addDefaultSecurityResponses(operation, defaultSecurityErrors);
         } else if (authenticatedMethodReferences.contains(methodRef)) {

@@ -71,4 +71,4 @@ jobs:
           runs-on: false
       - name: Populate the cache
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Dgo-offline -DexcludeReactor=true

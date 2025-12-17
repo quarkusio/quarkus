@@ -17,6 +17,8 @@ public enum BuiltinFormatMapperBehaviour {
     /**
      * The Quarkus preconfigured mappers are ignored and if there is no user provided one,
      * Hibernate ORM will create a mapper according to its own rules.
+     *
+     * @asciidoclet
      */
     IGNORE {
         @Override
@@ -26,6 +28,8 @@ public enum BuiltinFormatMapperBehaviour {
     /**
      * Uses a Quarkus preconfigured format mappers. If a format mapper operation is invoked a
      * warning is logged.
+     *
+     * @asciidoclet
      */
     WARN {
         @Override
@@ -35,6 +39,8 @@ public enum BuiltinFormatMapperBehaviour {
     },
     /**
      * Currently the default one. If there is no user provided format mapper, a Quarkus preconfigured one will fail at runtime.
+     *
+     * @asciidoclet
      */
     FAIL {
         @Override

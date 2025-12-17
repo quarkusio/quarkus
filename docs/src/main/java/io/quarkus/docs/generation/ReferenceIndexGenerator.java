@@ -19,7 +19,10 @@ import org.asciidoctor.Options;
 import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Block;
 import org.asciidoctor.ast.Cell;
+import org.asciidoctor.ast.DescriptionList;
+import org.asciidoctor.ast.DescriptionListEntry;
 import org.asciidoctor.ast.Document;
+import org.asciidoctor.ast.ListItem;
 import org.asciidoctor.ast.Row;
 import org.asciidoctor.ast.Section;
 import org.asciidoctor.ast.StructuralNode;
@@ -115,7 +118,6 @@ public class ReferenceIndexGenerator {
 
         Options options = Options.builder()
                 .docType("book")
-                .sourceDir(srcDir.toFile())
                 .baseDir(srcDir.toFile())
                 .safe(SafeMode.UNSAFE)
                 .build();
@@ -156,7 +158,9 @@ public class ReferenceIndexGenerator {
 
     private void addBlocks(Index index, String fileName, List<StructuralNode> blocks) {
         for (StructuralNode block : blocks) {
-            if (block instanceof Section || block instanceof Table || block instanceof Block) {
+            if (block instanceof Section || block instanceof Table || block instanceof Block
+                    || block instanceof org.asciidoctor.ast.List || block instanceof ListItem
+                    || block instanceof DescriptionList || block instanceof DescriptionListEntry) {
                 if (block.getId() != null) {
                     // unfortunately, AsciiDoc already formats the title in the AST
                     // and I couldn't find a way to get the original one
@@ -179,8 +183,8 @@ public class ReferenceIndexGenerator {
                 }
             }
             // we go into the content of the tables to add references for the configuration properties
-            if (block instanceof Table) {
-                for (Row row : ((Table) block).getBody()) {
+            if (block instanceof Table table) {
+                for (Row row : table.getBody()) {
                     for (Cell cell : row.getCells()) {
                         String cellContent = ICON_PATTERN.matcher(cell.getSource()).replaceAll("").trim();
 
@@ -201,7 +205,7 @@ public class ReferenceIndexGenerator {
 
     private Map<String, List<String>> transformFiles(Index index) throws IOException {
         final Map<String, String> titlesByReference = index.getReferences().stream()
-                .collect(Collectors.toMap(s -> s.getReference(), s -> s.getTitle()));
+                .collect(Collectors.toMap(IndexReference::getReference, IndexReference::getTitle));
         final Map<String, List<String>> errors = new LinkedHashMap<>();
 
         try (Stream<Path> pathStream = Files.list(srcDir)) {

@@ -3,9 +3,8 @@ package io.quarkus.annotation.processor.documentation.config.formatter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.util.Collections;
-
 import org.asciidoctor.Asciidoctor.Factory;
+import org.asciidoctor.Options;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -309,7 +308,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
-        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
         final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
                 + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
         assertEquals(expected, actual);
@@ -323,7 +322,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format(), true);
-        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
 
         if (ch.equals("]")) {
             ch = "&#93;";
@@ -340,7 +339,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
-        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
         assertEquals(expected, actual);
     }
 
@@ -354,7 +353,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
-        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
         assertEquals(expected, actual);
     }
 

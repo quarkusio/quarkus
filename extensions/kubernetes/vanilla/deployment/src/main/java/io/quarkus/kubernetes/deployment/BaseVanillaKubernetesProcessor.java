@@ -11,7 +11,6 @@ import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPo
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,7 +27,6 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
-import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
@@ -62,7 +60,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public List<DecoratorBuildItem> createDecorators(
+    protected DecoratorsContext decorators(
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig,
@@ -88,53 +86,48 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        if (isDeploymentTargetDisabled(targets)) {
-            return new ArrayList<>();
+        final var context = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+                kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
+                ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                clusterRoleBindings, customProjectRoot, targets);
+        if (context.done()) {
+            return context;
         }
 
         final var config = config();
-        final var clusterKind = deploymentTarget();
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-
-        final var result = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
-                kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
-                ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
-                clusterRoleBindings, customProjectRoot);
-
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
         if (managementPortIsEnabled()
                 && (config.ingress() == null
                         || !config.ingress().expose()
                         || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            addDecorator(result, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME));
+            context.add(new RemovePortFromServiceDecorator(context.name(), MANAGEMENT_PORT_NAME));
         }
 
         // Probe port handling
-        probes(ports, portName, result, name);
+        probes(context, ports, portName);
 
         // Handle init Containers
-        initTasks(initContainers, jobs, result, name);
+        initTasks(context, initContainers, jobs);
 
         // Service handling
-        service(result, clusterKind, name, config);
+        service(context, config);
 
-        ingress(ports, config, result, clusterKind, name);
+        ingress(context, ports, config);
 
-        return result;
+        return context;
     }
 
-    protected void ingress(List<KubernetesPortBuildItem> ports, KubernetesConfig config, List<DecoratorBuildItem> result,
-            String clusterKind, String name) {
+    protected void ingress(DecoratorsContext context, List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
         if (config.ingress() == null) {
             return;
         }
 
         for (Map.Entry<String, String> annotation : config.ingress().annotations().entrySet()) {
-            addDecorator(result, new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS));
+            context.add(new AddAnnotationDecorator(context.name(), annotation.getKey(), annotation.getValue(), INGRESS));
         }
 
         for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
-            addDecorator(result, new AddIngressRuleDecorator(name, optionalPort(ports),
+            context.add(new AddIngressRuleDecorator(context.name(), optionalPort(ports),
                     new IngressRuleBuilder()
                             .withHost(rule.host())
                             .withPath(rule.path())
@@ -146,19 +139,19 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         }
     }
 
-    protected void service(List<DecoratorBuildItem> result, String clusterKind, String name, KubernetesConfig config) {
-        addDecorator(result, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name()));
+    protected void service(DecoratorsContext context, KubernetesConfig config) {
+        context.add(new ApplyServiceTypeDecorator(context.name(), ServiceType.NodePort.name()));
         List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
                 .filter(e -> e.getValue().nodePort().isPresent())
                 .toList();
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                addDecorator(result, new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey()));
+                context.add(new AddNodePortDecorator(context.name(), entry.getValue().nodePort().getAsInt(), entry.getKey()));
             }
         } else {
-            addDecorator(result, new AddNodePortDecorator(name,
+            context.add(new AddNodePortDecorator(context.name(),
                     config.nodePort().orElseGet(
-                            () -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
+                            () -> getStablePortNumberInRange(context.name(), MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
                     config.ingress().targetPort()));
         }
     }

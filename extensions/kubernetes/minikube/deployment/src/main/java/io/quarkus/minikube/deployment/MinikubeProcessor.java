@@ -128,12 +128,13 @@ public class MinikubeProcessor extends BaseVanillaKubernetesProcessor {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        return super.createDecorators(applicationInfo, outputTarget, packageConfig,
+        return super.decorators(applicationInfo, outputTarget, packageConfig,
                 metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels,
                 envs,
                 image, command, ports, portName,
                 livenessPath, readinessPath, startupPath,
-                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings, customProjectRoot, targets);
+                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings, customProjectRoot, targets)
+                .decorators();
     }
 
     @BuildStep

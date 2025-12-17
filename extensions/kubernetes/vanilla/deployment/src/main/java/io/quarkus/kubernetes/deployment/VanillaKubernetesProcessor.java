@@ -158,70 +158,68 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var clusterKind = deploymentTarget();
-        final var config = config();
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-
-        final var result = super.createDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+        final var context = super.decorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
                 kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels, envs, image, command,
                 ports, portName, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot, targets);
+        if (context.done()) {
+            return context.decorators();
+        }
+        final var config = config();
+        final var name = context.name();
 
-        deploymentKindDecorators(capabilities, name, result);
+        deploymentKindDecorators(context, capabilities);
 
         if (config.replicas() != 1) {
             // This only affects Deployment
-            addDecorator(result, new ApplyReplicasToDeploymentDecorator(name, config.replicas()));
+            context.add(new ApplyReplicasToDeploymentDecorator(name, config.replicas()));
             // This only affects StatefulSet
-            addDecorator(result, new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
+            context.add(new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
         }
 
-        addDecorator(result, new AddSelectorToDeploymentDecorator(name));
+        context.add(new AddSelectorToDeploymentDecorator(name));
 
-        config.containerName()
-                .ifPresent(containerName -> addDecorator(result, new ChangeContainerNameDecorator(containerName)));
+        config.containerName().ifPresent(containerName -> context.add(new ChangeContainerNameDecorator(containerName)));
 
         // Handle remote debug configuration
         if (config.remoteDebug().enabled()) {
-            addDecorator(result, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+            context.add(new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
                     config.remoteDebug().buildJavaToolOptionsEnv()));
         }
 
         // Handle deployment strategy
         if (config.strategy() != DeploymentStrategy.None) {
-            addDecorator(result, new ApplyDeploymentStrategyDecorator(name, config.strategy(),
+            context.add(new ApplyDeploymentStrategyDecorator(name, config.strategy(),
                     new RollingUpdateBuilder()
                             .withMaxSurge(config.rollingUpdate().maxSurge())
                             .withMaxUnavailable(config.rollingUpdate().maxUnavailable())
                             .build()));
         }
-        printMessageAboutPortsThatCantChange(clusterKind, ports, config);
-        return result;
+        printMessageAboutPortsThatCantChange(context.target(), ports, config);
+        return context.decorators();
     }
 
     @Override
-    protected void service(List<DecoratorBuildItem> result, String clusterKind, String name, KubernetesConfig config) {
-        addDecorator(result, new ApplyServiceTypeDecorator(name, config.serviceType().name()));
+    protected void service(DecoratorsContext context, KubernetesConfig config) {
+        final var name = context.name();
+        context.add(new ApplyServiceTypeDecorator(name, config.serviceType().name()));
         if ((config.serviceType() == ServiceType.NodePort)) {
             List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
                     .filter(e -> e.getValue().nodePort().isPresent())
                     .toList();
             if (!nodeConfigPorts.isEmpty()) {
                 for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                    addDecorator(result,
-                            new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey()));
+                    context.add(new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey()));
                 }
             } else if (config.nodePort().isPresent()) {
-                addDecorator(result,
-                        new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort()));
+                context.add(new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort()));
             }
         }
     }
 
     @Override
-    protected void ingress(List<KubernetesPortBuildItem> ports, KubernetesConfig config, List<DecoratorBuildItem> result,
-            String clusterKind, String name) {
-        super.ingress(ports, config, result, clusterKind, name);
+    protected void ingress(DecoratorsContext context, List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
+        super.ingress(context, ports, config);
 
         if (config.ingress() != null && config.ingress().tls() != null) {
             for (Map.Entry<String, IngressConfig.IngressTlsConfig> tlsConfigEntry : config.ingress().tls().entrySet()) {
@@ -229,7 +227,7 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
                     String[] tlsHosts = tlsConfigEntry.getValue().hosts()
                             .map(l -> l.toArray(new String[0]))
                             .orElse(null);
-                    addDecorator(result, new AddIngressTlsDecorator(name, new IngressBuilder()
+                    context.add(new AddIngressTlsDecorator(context.name(), new IngressBuilder()
                             .withTlsSecretName(tlsConfigEntry.getKey())
                             .withTlsHosts(tlsHosts)
                             .build()));
@@ -238,17 +236,18 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         }
     }
 
-    private void deploymentKindDecorators(Capabilities capabilities, String name, List<DecoratorBuildItem> decorators) {
+    private void deploymentKindDecorators(DecoratorsContext context, Capabilities capabilities) {
         final var deploymentKind = deploymentResourceKind(capabilities);
+        final var name = context.name();
         if (deploymentKind != DeploymentResourceKind.Deployment) {
-            addDecorator(decorators, new RemoveDeploymentResourceDecorator(name));
+            context.add(new RemoveDeploymentResourceDecorator(name));
         }
         if (deploymentKind == DeploymentResourceKind.StatefulSet) {
-            addDecorator(decorators, new AddStatefulSetResourceDecorator(name, config));
+            context.add(new AddStatefulSetResourceDecorator(name, config));
         } else if (deploymentKind == DeploymentResourceKind.Job) {
-            addDecorator(decorators, new AddJobResourceDecorator(name, config.job()));
+            context.add(new AddJobResourceDecorator(name, config.job()));
         } else if (deploymentKind == DeploymentResourceKind.CronJob) {
-            addDecorator(decorators, new AddCronJobResourceDecorator(name, config.cronJob()));
+            context.add(new AddCronJobResourceDecorator(name, config.cronJob()));
         }
     }
 

@@ -7,7 +7,6 @@ import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPo
 import static io.quarkus.kubernetes.deployment.OpenShiftConfig.OpenshiftFlavor.v3;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -222,18 +221,17 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        if (isDeploymentTargetDisabled(targets)) {
-            return new ArrayList<>();
+        final var context = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
+                kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
+                ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                clusterRoleBindings, customProjectRoot, targets);
+        if (context.done()) {
+            return context.decorators();
         }
 
         final var config = config();
         final var clusterKind = deploymentTarget();
-        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-
-        final var result = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
-                kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
-                ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
-                clusterRoleBindings, customProjectRoot);
+        final var name = context.name();
 
         // additional image configuration
         image.ifPresent(i -> {
@@ -250,13 +248,13 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             String imageStreamWithTag = name + ":" + i.getTag();
             if (deploymentResourceKind(capabilities) == DeploymentResourceKind.DeploymentConfig
                     && !OpenShiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                addDecorator(result, new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry));
+                context.add(new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry));
             }
 
             // remove the default trigger which has a wrong version
-            addDecorator(result, new RemoveDeploymentTriggerDecorator(name));
+            context.add(new RemoveDeploymentTriggerDecorator(name));
             // re-add the trigger with the correct version
-            addDecorator(result, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag));
+            context.add(new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag));
         });
 
         if (config.flavor() == v3) {
@@ -264,83 +262,82 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             //The decorator will be applied even on non-openshift resources is it may affect for example: knative
             if (labels.stream().filter(l -> clusterKind.equals(l.getTarget()))
                     .noneMatch(l -> l.getKey().equals(OPENSHIFT_V3_APP))) {
-                result.add(new DecoratorBuildItem(new AddLabelDecorator(name, OPENSHIFT_V3_APP, name)));
+                context.addToAnyTarget(new AddLabelDecorator(name, OPENSHIFT_V3_APP, name));
             }
 
             // The presence of optional is causing issues in OCP 3.11, so we better remove them.
             // The following 4 decorator will set the optional property to null, so that it won't make it into the file.
             //The decorators will be applied even on non-openshift resources is they may affect for example: knative
-            result.add(new DecoratorBuildItem(new RemoveOptionalFromSecretEnvSourceDecorator()));
-            result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapEnvSourceDecorator()));
-            result.add(new DecoratorBuildItem(new RemoveOptionalFromSecretKeySelectorDecorator()));
-            result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
+            context.addToAnyTarget(new RemoveOptionalFromSecretEnvSourceDecorator());
+            context.addToAnyTarget(new RemoveOptionalFromConfigMapEnvSourceDecorator());
+            context.addToAnyTarget(new RemoveOptionalFromSecretKeySelectorDecorator());
+            context.addToAnyTarget(new RemoveOptionalFromConfigMapKeySelectorDecorator());
         }
 
-        result.add(new DecoratorBuildItem(new ApplyResolveNamesImagePolicyDecorator()));
+        context.addToAnyTarget(new ApplyResolveNamesImagePolicyDecorator());
 
         DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         switch (deploymentKind) {
             case Deployment:
-                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
-                addDecorator(result, new AddDeploymentResourceDecorator(name, config));
+                context.add(new RemoveDeploymentConfigResourceDecorator(name));
+                context.add(new AddDeploymentResourceDecorator(name, config));
                 break;
             case StatefulSet:
-                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
-                addDecorator(result, new AddStatefulSetResourceDecorator(name, config));
+                context.add(new RemoveDeploymentConfigResourceDecorator(name));
+                context.add(new AddStatefulSetResourceDecorator(name, config));
                 break;
             case Job:
-                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
-                addDecorator(result, new AddJobResourceDecorator(name, config.job()));
+                context.add(new RemoveDeploymentConfigResourceDecorator(name));
+                context.add(new AddJobResourceDecorator(name, config.job()));
                 break;
             case CronJob:
-                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
-                addDecorator(result, new AddCronJobResourceDecorator(name, config.cronJob()));
+                context.add(new RemoveDeploymentConfigResourceDecorator(name));
+                context.add(new AddCronJobResourceDecorator(name, config.cronJob()));
                 break;
         }
 
         if (config.route() != null) {
             for (Map.Entry<String, String> annotation : config.route().annotations().entrySet()) {
-                addDecorator(result, new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE));
+                context.add(new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE));
             }
 
             for (Map.Entry<String, String> label : config.route().labels().entrySet()) {
-                addDecorator(result, new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE));
+                context.add(new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE));
             }
         }
 
         if (config.replicas() != 1) {
             // This only affects DeploymentConfig
-            addDecorator(result, new ApplyReplicasToDeploymentConfigDecorator(name, config.replicas()));
+            context.add(new ApplyReplicasToDeploymentConfigDecorator(name, config.replicas()));
             // This only affects Deployment
-            addDecorator(result,
-                    new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.replicas()));
+            context.add(new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.replicas()));
             // This only affects StatefulSet
-            addDecorator(result, new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
+            context.add(new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
         }
 
         config.containerName().ifPresent(containerName -> {
-            addDecorator(result, new ChangeContainerNameDecorator(containerName));
-            addDecorator(result, new ChangeContainerNameInDeploymentTriggerDecorator(containerName));
+            context.add(new ChangeContainerNameDecorator(containerName));
+            context.add(new ChangeContainerNameInDeploymentTriggerDecorator(containerName));
         });
 
         if (labels.stream().filter(l -> clusterKind.equals(l.getTarget()))
                 .noneMatch(l -> l.getKey().equals(OPENSHIFT_APP_RUNTIME))) {
-            addDecorator(result, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS));
+            context.add(new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS));
         }
 
         // Enalbe local lookup policy for all image streams
-        addDecorator(result, new EnableImageStreamLocalLookupPolicyDecorator());
+        context.add(new EnableImageStreamLocalLookupPolicyDecorator());
 
         // Handle custom s2i builder images
         baseImage.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {
             String builderImageName = ImageUtil.getName(builderImage);
             if (!DEFAULT_S2I_IMAGE_NAME.equals(builderImageName)) {
-                addDecorator(result, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME));
+                context.add(new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME));
             }
 
             if (containerImageConfig.builder().isEmpty()
                     || OpenShiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                addDecorator(result, new ApplyBuilderImageDecorator(name, builderImage));
+                context.add(new ApplyBuilderImageDecorator(name, builderImage));
                 ImageReference imageRef = ImageReference.parse(builderImage);
                 boolean usesInternalRegistry = imageRef.getRegistry()
                         .filter(registry -> registry.contains(OPENSHIFT_INTERNAL_REGISTRY_PROJECT))
@@ -351,29 +348,29 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
                     // In this case we need to remove the ImageStream (created by dekorate).
                     String repository = imageRef.getRepository();
                     String imageStreamName = repository.substring(repository.lastIndexOf("/"));
-                    addDecorator(result, new RemoveBuilderImageResourceDecorator(imageStreamName));
+                    context.add(new RemoveBuilderImageResourceDecorator(imageStreamName));
                 } else {
                     S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
-                    addDecorator(result, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
+                    context.add(new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
                 }
             }
         });
 
         // Service handling
-        addDecorator(result, new ApplyServiceTypeDecorator(name, config.serviceType().name()));
+        context.add(new ApplyServiceTypeDecorator(name, config.serviceType().name()));
         if ((config.serviceType() == ServiceType.NodePort) && config.nodePort().isPresent()) {
-            addDecorator(result, new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.route().targetPort()));
+            context.add(new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.route().targetPort()));
         }
 
         // Probe port handling
-        probes(ports, portName, result, name);
+        probes(context, ports, portName);
 
         // Handle init Containers and Jobs
-        initTasks(initContainers, jobs, result, name);
+        initTasks(context, initContainers, jobs);
 
         // Handle remote debug configuration
         if (config.remoteDebug().enabled()) {
-            addDecorator(result, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+            context.add(new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
                     config.remoteDebug().buildJavaToolOptionsEnv()));
         }
 
@@ -382,11 +379,11 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
                 && (config.route() == null
                         || !config.route().expose()
                         || !config.route().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            addDecorator(result, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME));
+            context.add(new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME));
         }
 
         printMessageAboutPortsThatCantChange(clusterKind, ports, config);
-        return result;
+        return context.decorators();
     }
 
     @BuildStep

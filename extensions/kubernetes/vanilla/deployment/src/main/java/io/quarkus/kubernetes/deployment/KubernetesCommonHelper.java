@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
@@ -60,7 +59,6 @@ import io.dekorate.kubernetes.decorator.ApplyLimitsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsCpuDecorator;
 import io.dekorate.kubernetes.decorator.ApplyRequestsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
-import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
@@ -73,9 +71,6 @@ import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Git;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
-import io.fabric8.kubernetes.api.model.ContainerBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.quarkus.builder.Version;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -95,12 +90,9 @@ import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
@@ -117,8 +109,6 @@ public class KubernetesCommonHelper {
     private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
             "Deployment", "DeploymentConfig" };
     private static final String DEFAULT_ROLE_NAME_VIEW = "view";
-    private static final String SCHEME_HTTP = "HTTP";
-    private static final String SCHEME_HTTPS = "HTTPS";
 
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,
             Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
@@ -617,206 +607,6 @@ public class KubernetesCommonHelper {
         return result;
     }
 
-    public static List<DecoratorBuildItem> createInitContainerDecorators(String target, String applicationName,
-            List<KubernetesInitContainerBuildItem> items, List<DecoratorBuildItem> decorators) {
-        List<DecoratorBuildItem> result = new ArrayList<>();
-
-        List<AddEnvVarDecorator> envVarDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .map(d -> d.getDecorator(AddEnvVarDecorator.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        List<AddMountDecorator> mountDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .map(d -> d.getDecorator(AddMountDecorator.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
-            io.dekorate.kubernetes.config.ContainerBuilder containerBuilder = new io.dekorate.kubernetes.config.ContainerBuilder()
-                    .withName(item.getName())
-                    .withImage(item.getImage())
-                    .withImagePullPolicy(ImagePullPolicy.valueOf(item.getImagePullPolicy()))
-                    .withCommand(item.getCommand().toArray(new String[0]))
-                    .withArguments(item.getArguments().toArray(new String[0]));
-
-            if (item.isSharedEnvironment()) {
-                for (final AddEnvVarDecorator delegate : envVarDecorators) {
-                    result.add(new DecoratorBuildItem(target,
-                            new ApplicationContainerDecorator<ContainerBuilder>(applicationName, item.getName()) {
-                                @Override
-                                public void andThenVisit(ContainerBuilder builder) {
-                                    delegate.andThenVisit(builder);
-                                    // Currently, we have no way to filter out provided env vars.
-                                    // So, we apply them on top of every change.
-                                    // This needs to be addressed in dekorate to make things more efficient
-                                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                                        builder.addNewEnv()
-                                                .withName(e.getKey())
-                                                .withValue(e.getValue())
-                                                .endEnv();
-
-                                    }
-                                }
-                            }));
-                }
-            }
-
-            if (item.isSharedFilesystem()) {
-                for (final AddMountDecorator delegate : mountDecorators) {
-                    result.add(new DecoratorBuildItem(target,
-                            new ApplicationContainerDecorator<ContainerBuilder>(target, item.getName()) {
-                                @Override
-                                public void andThenVisit(ContainerBuilder builder) {
-                                    delegate.andThenVisit(builder);
-                                }
-                            }));
-                }
-            }
-
-            result.add(new DecoratorBuildItem(target,
-                    new AddInitContainerDecorator(applicationName, containerBuilder
-                            .addAllToEnvVars(item.getEnvVars().entrySet().stream().map(e -> new EnvBuilder()
-                                    .withName(e.getKey())
-                                    .withValue(e.getValue())
-                                    .build()).collect(Collectors.toList()))
-                            .build())));
-        });
-        return result;
-    }
-
-    public static List<DecoratorBuildItem> createInitJobDecorators(String target,
-            String applicationName, List<KubernetesJobBuildItem> items, List<DecoratorBuildItem> decorators) {
-        List<DecoratorBuildItem> result = new ArrayList<>();
-
-        List<AddEnvVarDecorator> envVarDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .map(d -> d.getDecorator(AddEnvVarDecorator.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        List<NamedResourceDecorator<?>> volumeDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .filter(d -> d.getDecorator() instanceof AddEmptyDirVolumeDecorator
-                        || d.getDecorator() instanceof AddSecretVolumeDecorator
-                        || d.getDecorator() instanceof AddAzureDiskVolumeDecorator
-                        || d.getDecorator() instanceof AddAzureFileVolumeDecorator
-                        || d.getDecorator() instanceof AddAwsElasticBlockStoreVolumeDecorator)
-                .map(d -> (NamedResourceDecorator<?>) d.getDecorator())
-                .collect(Collectors.toList());
-
-        List<AddMountDecorator> mountDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .map(d -> d.getDecorator(AddMountDecorator.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        List<AddImagePullSecretDecorator> imagePullSecretDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .map(d -> d.getDecorator(AddImagePullSecretDecorator.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        List<ApplyServiceAccountNameDecorator> serviceAccountDecorators = decorators.stream()
-                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
-                .map(d -> d.getDecorator(ApplyServiceAccountNameDecorator.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
-
-            for (final AddImagePullSecretDecorator delegate : imagePullSecretDecorators) {
-                result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
-                    @Override
-                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
-                        delegate.andThenVisit(builder, meta);
-                    }
-                }));
-            }
-
-            for (final ApplyServiceAccountNameDecorator delegate : serviceAccountDecorators) {
-                result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
-                    @Override
-                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
-                        delegate.andThenVisit(builder, meta);
-                    }
-                }));
-            }
-
-            result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
-                @Override
-                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
-                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                        builder.addNewEnv()
-                                .withName(e.getKey())
-                                .withValue(e.getValue())
-                                .endEnv();
-                    }
-                }
-            }));
-
-            if (item.isSharedEnvironment()) {
-                for (final AddEnvVarDecorator delegate : envVarDecorators) {
-                    result.add(
-                            new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
-                                @Override
-                                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
-                                    delegate.andThenVisit(builder);
-                                    // Currently, we have no way to filter out provided env vars.
-                                    // So, we apply them on top of every change.
-                                    // This needs to be addressed in dekorate to make things more efficient
-                                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                                        builder.addNewEnv()
-                                                .withName(e.getKey())
-                                                .withValue(e.getValue())
-                                                .endEnv();
-
-                                    }
-                                }
-                            }));
-                }
-            }
-
-            if (item.isSharedFilesystem()) {
-                for (final NamedResourceDecorator<?> delegate : volumeDecorators) {
-                    result.add(
-                            new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
-                                @Override
-                                public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
-                                    delegate.visit(builder);
-                                }
-                            }));
-                }
-
-                for (final AddMountDecorator delegate : mountDecorators) {
-                    result.add(
-                            new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
-                                @Override
-                                public void andThenVisit(ContainerBuilder builder, ObjectMeta meta) {
-                                    delegate.andThenVisit(builder);
-                                }
-                            }));
-                }
-
-            }
-
-            result.add(new DecoratorBuildItem(target,
-                    new CreateJobResourceFromImageDecorator(item.getName(), item.getImage(), item.getCommand(),
-                            item.getArguments())));
-        });
-        return result;
-    }
-
     /**
      * Creates container decorator build items.
      *
@@ -1036,68 +826,6 @@ public class KubernetesCommonHelper {
 
         //Add metrics annotations
         return result;
-    }
-
-    /**
-     * Create a decorator that sets the port to the http probe.
-     * The rules for setting the probe are the following:
-     * 1. if 'http-action-port' is set, use that.
-     * 2. if 'http-action-port-name' is set, use that to lookup the port value.
-     * 3. if a `KubernetesPorbePortBuild` is set, then use that to lookup the port.
-     * 4. if we still haven't found a port fallback to 8080.
-     *
-     * @param name The name of the deployment / container.
-     * @param target The deployment target
-     * @param probeKind The probe kind (e.g. readinessProbe, livenessProbe etc)
-     * @param portName the probe port name build item
-     * @param ports a list of kubernetes port build items
-     * @return a decorator for configures the port of the http action of the probe.
-     */
-    public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, String probeKind,
-            ProbeConfig probeConfig,
-            Optional<KubernetesProbePortNameBuildItem> portName,
-            List<KubernetesPortBuildItem> ports,
-            Map<String, PortConfig> portsFromConfig) {
-
-        //1. check if `httpActionPort` is defined
-        //2. lookup port by `httpPortName`
-        //3. fallback to DEFAULT_HTTP_PORT
-        String httpPortName = probeConfig.httpActionPortName()
-                .or(() -> portName.map(KubernetesProbePortNameBuildItem::getName))
-                .orElse(HTTP_PORT);
-
-        int port;
-        PortConfig portFromConfig = portsFromConfig.get(httpPortName);
-        if (probeConfig.httpActionPort().isPresent()) {
-            port = probeConfig.httpActionPort().get();
-        } else if (portFromConfig != null && portFromConfig.containerPort().isPresent()) {
-            port = portFromConfig.containerPort().getAsInt();
-        } else {
-            port = ports.stream().filter(p -> httpPortName.equals(p.getName()))
-                    .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT);
-        }
-
-        // Resolve scheme property from:
-        String scheme;
-        if (probeConfig.httpActionScheme().isPresent()) {
-            // 1. User in Probe config
-            scheme = probeConfig.httpActionScheme().get();
-        } else if (portFromConfig != null && portFromConfig.tls()) {
-            // 2. User in Ports config
-            scheme = SCHEME_HTTPS;
-        } else if (portName.isPresent()
-                && portName.get().getScheme() != null
-                && httpPortName.equals(portName.get().getName())) {
-            // 3. Extensions
-            scheme = portName.get().getScheme();
-        } else {
-            // 4. Using the port number.
-            scheme = port == 443 || port == 8443 ? SCHEME_HTTPS : SCHEME_HTTP;
-        }
-
-        // Applying to all deployments to mimic the same logic as the rest of probes in the method createProbeDecorators.
-        return new DecoratorBuildItem(target,
-                new ApplyHttpGetActionPortDecorator(ANY, name, httpPortName, port, probeKind, scheme));
     }
 
     /**

@@ -76,6 +76,8 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.impl.EventBean;
 import io.quarkus.arc.impl.InstanceImpl;
 import io.quarkus.arc.impl.Mockable;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTestCallbacks.AfterStartContext;
 import io.quarkus.test.component.QuarkusComponentTestCallbacks.AfterStopContext;
@@ -513,7 +515,11 @@ public class QuarkusComponentTestExtension
 
         // TCCL is now the QuarkusComponentTestClassLoader set during initialization
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
+        LaunchMode.set(LaunchMode.TEST);
+        SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder()
+                .forClassLoader(tccl)
+                // Make sure the correct config profile is used
+                .withCustomizers(new QuarkusConfigBuilderCustomizer())
                 .addDefaultInterceptors()
                 .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
                 // We intentionally skip system properties and ENV variables by default

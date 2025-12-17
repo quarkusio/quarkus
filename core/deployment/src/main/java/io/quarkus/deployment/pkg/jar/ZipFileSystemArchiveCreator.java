@@ -22,7 +22,6 @@ import io.quarkus.fs.util.ZipUtils;
 
 class ZipFileSystemArchiveCreator implements ArchiveCreator {
 
-    private static final Path MANIFEST = Path.of("META-INF", "MANIFEST.MF");
     // we probably don't need the Windows entry but let's be safe
     private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
 
@@ -124,16 +123,12 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
         addFile(joinWithNewlines(bytes), target, source);
     }
 
-    /**
-     * Note: this method may only be used for Uberjars, for which we might need to amend the manifest at the end of the build.
-     */
+    @Override
     public boolean isMultiVersion() {
         return Files.isDirectory(zipFileSystem.getPath("META-INF", "versions"));
     }
 
-    /**
-     * Note: this method may only be used for Uberjars, for which we might need to amend the manifest at the end of the build.
-     */
+    @Override
     public void makeMultiVersion() throws IOException {
         final Path manifestPath = zipFileSystem.getPath("META-INF", "MANIFEST.MF");
         final Manifest manifest = new Manifest();

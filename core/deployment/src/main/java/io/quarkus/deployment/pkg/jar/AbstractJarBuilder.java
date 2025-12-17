@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -52,6 +53,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
     protected final List<GeneratedClassBuildItem> generatedClasses;
     protected final List<GeneratedResourceBuildItem> generatedResources;
     protected final Set<ArtifactKey> removedArtifactKeys;
+    protected final ExecutorService executorService;
     protected final ResolvedJVMRequirements jvmRequirements;
 
     public AbstractJarBuilder(CurateOutcomeBuildItem curateOutcome,
@@ -64,6 +66,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             Set<ArtifactKey> removedArtifactKeys,
+            ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
         this.curateOutcome = curateOutcome;
         this.outputTarget = outputTarget;
@@ -75,7 +78,9 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
         this.removedArtifactKeys = removedArtifactKeys;
+        this.executorService = executorService;
         this.jvmRequirements = jvmRequirements;
+
         checkConsistency(generatedClasses);
     }
 

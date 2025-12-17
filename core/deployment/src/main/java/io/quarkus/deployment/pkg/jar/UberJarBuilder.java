@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -75,9 +76,10 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Set<ArtifactKey> removedArtifactKeys,
             List<UberJarMergedResourceBuildItem> mergedResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
+            ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, jvmRequirements);
+                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
 
         this.mergedResources = mergedResources;
         this.ignoredResources = ignoredResources;
@@ -143,8 +145,11 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     }
 
     private void buildUberJar0(Path runnerJar) throws IOException {
-        try (ZipFileSystemArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null))) {
+        List<FileSystem> dependencyFileSystems = new ArrayList<>();
+
+        try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
+                executorService)) {
             LOG.info("Building uber jar: " + runnerJar);
 
             final Map<String, String> seen = new HashMap<>();
@@ -194,12 +199,12 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                             .forEach(existingEntries::add);
 
                     if (!Files.isDirectory(resolvedDep)) {
-                        try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
-                            for (final Path root : artifactFs.getRootDirectories()) {
-                                walkFileDependencyForDependency(root, archiveCreator, duplicateCatcher,
-                                        concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
-                                        mergeResourcePaths);
-                            }
+                        FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep);
+                        dependencyFileSystems.add(artifactFs);
+                        for (final Path root : artifactFs.getRootDirectories()) {
+                            walkFileDependencyForDependency(root, archiveCreator, duplicateCatcher,
+                                    concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
+                                    mergeResourcePaths);
                         }
                     } else {
                         walkFileDependencyForDependency(resolvedDep, archiveCreator, duplicateCatcher,
@@ -225,6 +230,10 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             if (archiveCreator.isMultiVersion()) {
                 LOG.debug("uber jar will be marked as multi-release jar");
                 archiveCreator.makeMultiVersion();
+            }
+        } finally {
+            for (FileSystem dependencyFileSystem : dependencyFileSystems) {
+                dependencyFileSystem.close();
             }
         }
 

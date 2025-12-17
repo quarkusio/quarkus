@@ -96,7 +96,7 @@ public class ApplicationDependencyResolver {
     private Collection<ConditionalDependency> conditionalDepsToProcess = new ConcurrentLinkedDeque<>();
 
     private MavenArtifactResolver resolver;
-    private List<Dependency> managedDeps;
+    private Map<ArtifactKey, Dependency> managedDeps;
     private ApplicationModelBuilder appBuilder;
     private boolean collectReloadableModules;
     private DependencyLoggingConfig depLogging;
@@ -183,16 +183,24 @@ public class ApplicationDependencyResolver {
     }
 
     /**
+     * Managed dependency version constraints.
+     *
+     * @param managedDeps managed dependency version constraints
+     * @return self
+     */
+    public ApplicationDependencyResolver setManagedDependencies(Map<ArtifactKey, Dependency> managedDeps) {
+        this.managedDeps = managedDeps;
+        return this;
+    }
+
+    /**
      * Resolves application dependencies and adds the to the application model builder.
      *
      * @param collectRtDepsRequest request to collect runtime dependencies
      * @throws AppModelResolverException in case of a failure
      */
     public void resolve(CollectRequest collectRtDepsRequest) throws AppModelResolverException {
-        this.managedDeps = collectRtDepsRequest.getManagedDependencies();
-        // managed dependencies will be a bit augmented with every added extension, so let's load the properties early
         collectPlatformProperties();
-        this.managedDeps = managedDeps.isEmpty() ? new ArrayList<>() : managedDeps;
 
         DependencyNode root = resolveRuntimeDeps(collectRtDepsRequest);
         processRuntimeDeps(root);
@@ -325,7 +333,7 @@ public class ApplicationDependencyResolver {
         var children = root.getChildren();
         while (children != null) {
             for (DependencyNode node : children) {
-                managedDeps.add(node.getDependency());
+                managedDeps.putIfAbsent(DependencyUtils.getKey(node.getArtifact()), node.getDependency());
                 if (!node.getChildren().isEmpty()) {
                     depStack.add(node.getChildren());
                 }
@@ -334,7 +342,7 @@ public class ApplicationDependencyResolver {
         }
         final CollectRequest request = new CollectRequest()
                 .setDependencies(collectCompileOnly)
-                .setManagedDependencies(managedDeps)
+                .setManagedDependencies(new ArrayList<>(managedDeps.values()))
                 .setRepositories(collectRtDepsRequest.getRepositories());
         if (collectRtDepsRequest.getRoot() != null) {
             request.setRoot(collectRtDepsRequest.getRoot());
@@ -386,7 +394,7 @@ public class ApplicationDependencyResolver {
      */
     private void collectPlatformProperties() throws AppModelResolverException {
         final PlatformImportsImpl platformReleases = new PlatformImportsImpl();
-        for (Dependency d : managedDeps) {
+        for (Dependency d : managedDeps.values()) {
             final Artifact artifact = d.getArtifact();
             final String extension = artifact.getExtension();
             if ("json".equals(extension)
@@ -631,7 +639,10 @@ public class ApplicationDependencyResolver {
             if (existingDep == null) {
                 appBuilder.addDependency(resolvedDep);
                 if (ext != null) {
-                    managedDeps.add(new Dependency(ext.info.deploymentArtifact, JavaScopes.COMPILE));
+                    final ArtifactKey deploymentKey = getKey(ext.info.deploymentArtifact);
+                    if (!managedDeps.containsKey(deploymentKey)) {
+                        managedDeps.put(deploymentKey, new Dependency(ext.info.deploymentArtifact, JavaScopes.COMPILE));
+                    }
                 }
             } else if (existingDep != resolvedDep) {
                 throw new IllegalStateException(node.getArtifact() + " is already present in the application model");
@@ -845,12 +856,16 @@ public class ApplicationDependencyResolver {
         } catch (BootstrapMavenException e) {
             throw new DeploymentInjectionException("Failed to resolve descriptor for " + artifact, e);
         }
-        final List<Dependency> allConstraints = new ArrayList<>(
-                managedDeps.size() + descr.getManagedDependencies().size());
-        allConstraints.addAll(managedDeps);
-        allConstraints.addAll(descr.getManagedDependencies());
+        final List<Dependency> effectiveConstraints;
+        if (descr.getManagedDependencies().isEmpty()) {
+            effectiveConstraints = new ArrayList<>(managedDeps.values());
+        } else {
+            final Map<ArtifactKey, Dependency> effecctiveMap = new HashMap<>(managedDeps);
+            DependencyUtils.putAll(effecctiveMap, descr.getManagedDependencies());
+            effectiveConstraints = new ArrayList<>(effecctiveMap.values());
+        }
         return new CollectRequest()
-                .setManagedDependencies(allConstraints)
+                .setManagedDependencies(effectiveConstraints)
                 .setRepositories(repos)
                 .setRootArtifact(artifact)
                 .setDependencies(List.of(new Dependency(artifact, JavaScopes.COMPILE, false, exclusions)));

@@ -15,7 +15,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.launcher.QuarkusLauncher;
-import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
@@ -67,7 +66,6 @@ public class Quarkus {
     public static void run(Class<? extends QuarkusApplication> quarkusApplication, BiConsumer<Integer, Throwable> exitHandler,
             String... args) {
         try {
-            JBossVersion.disableVersionLogging();
             System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
             System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
                     "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");

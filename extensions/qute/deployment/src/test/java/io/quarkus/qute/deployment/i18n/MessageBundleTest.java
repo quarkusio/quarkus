@@ -31,7 +31,7 @@ public class MessageBundleTest {
                             "hello=Hallo Welt!\nhello_name=Hallo {name}!"),
                             "messages/msg_de.properties")
                     .addAsResource(new StringAsset(
-                            "{msg:message('hello')} {msg:message(key,'Malachi',surname)}"),
+                            "{msg:message('hello')} {msg:message('hello_name','there')} {msg:message(key,'Malachi',surname)}"),
                             "templates/dynamic.html"));
 
     @Inject
@@ -86,7 +86,7 @@ public class MessageBundleTest {
         assertEquals("Hallo Welt! Hallo Jachym! Hallo you guys! Hello alpha! Hello! Hello foo from alpha!",
                 foo.instance().setLocale(Locale.GERMAN).render());
         assertEquals("Dot test!", engine.parse("{msg:['dot.test']}").render());
-        assertEquals("Hello world! Hello Malachi Constant!",
+        assertEquals("Hello world! Hello there! Hello Malachi Constant!",
                 engine.getTemplate("dynamic").data("key", "hello_fullname").data("surname", "Constant").render());
 
         assertEquals("There are no files on C.",

@@ -172,6 +172,9 @@ final class StaticTenantResolver {
 
                 if (tenantContext.getOidcMetadata() == null) {
                     if (tenantContext.ready()) {
+                        if (isTenantWithIssuer(tenantContext)) {
+                            return getTenantId(tenantContext, context, index);
+                        }
                         return resolveTenant(context, index + 1);
                     }
 
@@ -187,7 +190,7 @@ final class StaticTenantResolver {
                                     if (throwable != null) {
                                         return resolveTenant(context, index + 1);
                                     }
-                                    if (newContext.ready() && !isTenantWithoutIssuer(newContext)) {
+                                    if (newContext.ready() && isTenantWithIssuer(newContext)) {
                                         return getTenantId(newContext, context, index);
                                     }
                                     return resolveTenant(context, index + 1);
@@ -227,7 +230,7 @@ final class StaticTenantResolver {
                 if (tokenJson != null) {
 
                     final String iss = tokenJson.getString(Claims.iss.name());
-                    if (tenantContext.getOidcMetadata().getIssuer().equals(iss)) {
+                    if (iss != null && iss.equals(getIssuer(tenantContext))) {
 
                         final String tenantId = tenantContext.oidcConfig().tenantId().get();
 
@@ -289,8 +292,11 @@ final class StaticTenantResolver {
         }
 
         private static boolean isTenantWithoutIssuer(TenantConfigContext tenantContext) {
-            return tenantContext.getOidcMetadata().getIssuer() == null
-                    || ANY_ISSUER.equals(tenantContext.getOidcMetadata().getIssuer());
+            return getIssuer(tenantContext) == null;
+        }
+
+        private static boolean isTenantWithIssuer(TenantConfigContext tenantContext) {
+            return getIssuer(tenantContext) != null;
         }
 
         private static IssuerBasedTenantResolver of(Map<String, TenantConfigContext> tenantConfigContexts) {
@@ -304,8 +310,7 @@ final class StaticTenantResolver {
                         detectedTenantWithoutMetadata = true;
                         contextsWithIssuer.add(context);
                         tenantToRetry.put(context.oidcConfig().tenantId().get(), new AtomicBoolean(true));
-                    } else if (context.getOidcMetadata().getIssuer() != null
-                            && !ANY_ISSUER.equals(context.getOidcMetadata().getIssuer())) {
+                    } else if (isTenantWithIssuer(context)) {
                         contextsWithIssuer.add(context);
                     }
                 }
@@ -333,6 +338,23 @@ final class StaticTenantResolver {
                         + "'hybrid' application type");
                 return null;
             }
+        }
+
+        private static String getIssuer(TenantConfigContext tenantContext) {
+            if (tenantContext.getOidcMetadata() != null) {
+                String issuer = tenantContext.getOidcMetadata().getIssuer();
+                if (issuer != null && isNotAnyIssuer(issuer)) {
+                    return issuer;
+                }
+            } else if (tenantContext.oidcConfig() != null && tenantContext.oidcConfig().token().issuer()
+                    .filter(IssuerBasedTenantResolver::isNotAnyIssuer).isPresent()) {
+                return tenantContext.oidcConfig().token().issuer().get();
+            }
+            return null;
+        }
+
+        private static boolean isNotAnyIssuer(String issuer) {
+            return !ANY_ISSUER.equals(issuer);
         }
     }
 

@@ -5,6 +5,7 @@ public enum LgtmComponent {
     LOKI,
     PROMETHEUS,
     TEMPO,
+    PYROSCOPE,
     OTELCOL,
     ALL
 }

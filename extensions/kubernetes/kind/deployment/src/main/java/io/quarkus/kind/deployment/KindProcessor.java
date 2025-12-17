@@ -20,7 +20,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
-import io.quarkus.kubernetes.deployment.DevClusterHelper;
+import io.quarkus.kubernetes.deployment.BaseVanillaKubernetesProcessor;
 import io.quarkus.kubernetes.deployment.KubernetesConfig;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
@@ -48,7 +48,7 @@ import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.smallrye.common.process.AbnormalExitException;
 import io.smallrye.common.process.ProcessBuilder;
 
-public class KindProcessor extends DevClusterHelper {
+public class KindProcessor extends BaseVanillaKubernetesProcessor {
     private KubernetesConfig config;
 
     @Override

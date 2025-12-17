@@ -54,7 +54,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
-public class VanillaKubernetesProcessor extends DevClusterHelper {
+public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
     private KubernetesConfig config;
 
     @Override

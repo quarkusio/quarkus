@@ -48,7 +48,7 @@ import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
-public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
+public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
     private static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     @Override

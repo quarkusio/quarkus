@@ -78,11 +78,6 @@ public class VanillaKubernetesProcessor extends DevClusterHelper {
     }
 
     @Override
-    protected AddPortToKubernetesConfig portConfigurator(Port port) {
-        return new AddPortToKubernetesConfig(port);
-    }
-
-    @Override
     protected Optional<Port> optionalPort(List<KubernetesPortBuildItem> ports) {
         return KubernetesCommonHelper.getPort(ports, config());
     }
@@ -176,29 +171,29 @@ public class VanillaKubernetesProcessor extends DevClusterHelper {
 
         if (config.replicas() != 1) {
             // This only affects Deployment
-            result.add(new DecoratorBuildItem(clusterKind, new ApplyReplicasToDeploymentDecorator(name, config.replicas())));
+            addDecorator(result, new ApplyReplicasToDeploymentDecorator(name, config.replicas()));
             // This only affects StatefulSet
-            result.add(new DecoratorBuildItem(clusterKind, new ApplyReplicasToStatefulSetDecorator(name, config.replicas())));
+            addDecorator(result, new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
         }
 
-        result.add(new DecoratorBuildItem(clusterKind, new AddSelectorToDeploymentDecorator(name)));
+        addDecorator(result, new AddSelectorToDeploymentDecorator(name));
 
-        config.containerName().ifPresent(containerName -> result
-                .add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameDecorator(containerName))));
+        config.containerName()
+                .ifPresent(containerName -> addDecorator(result, new ChangeContainerNameDecorator(containerName)));
 
         // Handle remote debug configuration
         if (config.remoteDebug().enabled()) {
-            result.add(new DecoratorBuildItem(clusterKind, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
-                    config.remoteDebug().buildJavaToolOptionsEnv())));
+            addDecorator(result, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                    config.remoteDebug().buildJavaToolOptionsEnv()));
         }
 
         // Handle deployment strategy
         if (config.strategy() != DeploymentStrategy.None) {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new ApplyDeploymentStrategyDecorator(name, config.strategy(), new RollingUpdateBuilder()
+            addDecorator(result, new ApplyDeploymentStrategyDecorator(name, config.strategy(),
+                    new RollingUpdateBuilder()
                             .withMaxSurge(config.rollingUpdate().maxSurge())
                             .withMaxUnavailable(config.rollingUpdate().maxUnavailable())
-                            .build())));
+                            .build()));
         }
         printMessageAboutPortsThatCantChange(clusterKind, ports, config);
         return result;
@@ -206,19 +201,19 @@ public class VanillaKubernetesProcessor extends DevClusterHelper {
 
     @Override
     protected void service(List<DecoratorBuildItem> result, String clusterKind, String name, KubernetesConfig config) {
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
+        addDecorator(result, new ApplyServiceTypeDecorator(name, config.serviceType().name()));
         if ((config.serviceType() == ServiceType.NodePort)) {
             List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
                     .filter(e -> e.getValue().nodePort().isPresent())
                     .toList();
             if (!nodeConfigPorts.isEmpty()) {
                 for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                    result.add(new DecoratorBuildItem(clusterKind,
-                            new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey())));
+                    addDecorator(result,
+                            new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey()));
                 }
             } else if (config.nodePort().isPresent()) {
-                result.add(new DecoratorBuildItem(clusterKind,
-                        new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort())));
+                addDecorator(result,
+                        new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort()));
             }
         }
     }
@@ -234,29 +229,26 @@ public class VanillaKubernetesProcessor extends DevClusterHelper {
                     String[] tlsHosts = tlsConfigEntry.getValue().hosts()
                             .map(l -> l.toArray(new String[0]))
                             .orElse(null);
-                    result.add(new DecoratorBuildItem(clusterKind,
-                            new AddIngressTlsDecorator(name, new IngressBuilder()
-                                    .withTlsSecretName(tlsConfigEntry.getKey())
-                                    .withTlsHosts(tlsHosts)
-                                    .build())));
+                    addDecorator(result, new AddIngressTlsDecorator(name, new IngressBuilder()
+                            .withTlsSecretName(tlsConfigEntry.getKey())
+                            .withTlsHosts(tlsHosts)
+                            .build()));
                 }
             }
-
         }
     }
 
     private void deploymentKindDecorators(Capabilities capabilities, String name, List<DecoratorBuildItem> decorators) {
         final var deploymentKind = deploymentResourceKind(capabilities);
-        final var clusterKind = deploymentTarget();
         if (deploymentKind != DeploymentResourceKind.Deployment) {
-            decorators.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentResourceDecorator(name)));
+            addDecorator(decorators, new RemoveDeploymentResourceDecorator(name));
         }
         if (deploymentKind == DeploymentResourceKind.StatefulSet) {
-            decorators.add(new DecoratorBuildItem(clusterKind, new AddStatefulSetResourceDecorator(name, config)));
+            addDecorator(decorators, new AddStatefulSetResourceDecorator(name, config));
         } else if (deploymentKind == DeploymentResourceKind.Job) {
-            decorators.add(new DecoratorBuildItem(clusterKind, new AddJobResourceDecorator(name, config.job())));
+            addDecorator(decorators, new AddJobResourceDecorator(name, config.job()));
         } else if (deploymentKind == DeploymentResourceKind.CronJob) {
-            decorators.add(new DecoratorBuildItem(clusterKind, new AddCronJobResourceDecorator(name, config.cronJob())));
+            addDecorator(decorators, new AddCronJobResourceDecorator(name, config.cronJob()));
         }
     }
 

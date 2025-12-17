@@ -195,7 +195,6 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
         }
 
         final var config = config();
-        final var clusterKind = deploymentTarget();
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
         final var result = commonDecorators(applicationInfo, outputTarget, packageConfig, metricsConfiguration,
@@ -203,80 +202,67 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
                 ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot);
 
-        config.containerName().ifPresent(containerName -> result
-                .add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameDecorator(containerName))));
+        config.containerName()
+                .ifPresent(containerName -> addDecorator(result, new ChangeContainerNameDecorator(containerName)));
         if (config.clusterLocal()) {
-            if (labels.stream().filter(l -> clusterKind.equals(l.getTarget()))
+            if (labels.stream().filter(l -> deploymentTarget().equals(l.getTarget()))
                     .noneMatch(l -> l.getKey().equals(KNATIVE_DEV_VISIBILITY))) {
-                result.add(new DecoratorBuildItem(clusterKind,
-                        new AddLabelDecorator(name, KNATIVE_DEV_VISIBILITY, "cluster-local")));
+                addDecorator(result, new AddLabelDecorator(name, KNATIVE_DEV_VISIBILITY, "cluster-local"));
             }
         }
 
-        config.minScale()
-                .ifPresent(min -> result.add(new DecoratorBuildItem(clusterKind, new ApplyMinScaleDecorator(name, min))));
-        config.maxScale()
-                .ifPresent(max -> result.add(new DecoratorBuildItem(clusterKind, new ApplyMaxScaleDecorator(name, max))));
-        config.revisionAutoScaling().autoScalerClass().map(AutoScalerClassConverter::convert)
-                .ifPresent(
-                        a -> result.add(new DecoratorBuildItem(clusterKind, new ApplyLocalAutoscalingClassDecorator(name, a))));
+        config.minScale().ifPresent(min -> addDecorator(result, new ApplyMinScaleDecorator(name, min)));
+        config.maxScale().ifPresent(max -> addDecorator(result, new ApplyMaxScaleDecorator(name, max)));
+        config.revisionAutoScaling().autoScalerClass()
+                .map(AutoScalerClassConverter::convert)
+                .ifPresent(a -> addDecorator(result, new ApplyLocalAutoscalingClassDecorator(name, a)));
         config.revisionAutoScaling().metric().map(AutoScalingMetricConverter::convert)
-                .ifPresent(m -> result
-                        .add(new DecoratorBuildItem(clusterKind, new ApplyLocalAutoscalingMetricDecorator(name, m))));
+                .ifPresent(m -> addDecorator(result, new ApplyLocalAutoscalingMetricDecorator(name, m)));
         config.revisionAutoScaling().containerConcurrency().ifPresent(
-                c -> result.add(new DecoratorBuildItem(clusterKind, new ApplyLocalContainerConcurrencyDecorator(name, c))));
-        config.revisionAutoScaling().targetUtilizationPercentage().ifPresent(t -> result
-                .add(new DecoratorBuildItem(clusterKind, new ApplyLocalTargetUtilizationPercentageDecorator(name, t))));
+                c -> addDecorator(result, new ApplyLocalContainerConcurrencyDecorator(name, c)));
+        config.revisionAutoScaling().targetUtilizationPercentage()
+                .ifPresent(t -> addDecorator(result, new ApplyLocalTargetUtilizationPercentageDecorator(name, t)));
         config.revisionAutoScaling().target()
-                .ifPresent(t -> result
-                        .add(new DecoratorBuildItem(clusterKind, new ApplyLocalAutoscalingTargetDecorator(name, t))));
+                .ifPresent(t -> addDecorator(result, new ApplyLocalAutoscalingTargetDecorator(name, t)));
         config.globalAutoScaling().autoScalerClass()
                 .map(AutoScalerClassConverter::convert)
                 .ifPresent(a -> {
-                    result.add(
-                            new DecoratorBuildItem(clusterKind,
-                                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-                    result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalAutoscalingClassDecorator(a)));
+                    addDecorator(result,
+                            new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
+                    addDecorator(result, new ApplyGlobalAutoscalingClassDecorator(a));
                 });
         config.globalAutoScaling().containerConcurrency().ifPresent(c -> {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING)));
-            result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalContainerConcurrencyDecorator(c)));
+            addDecorator(result, new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_DEFAULTS, KNATIVE_SERVING));
+            addDecorator(result, new ApplyGlobalContainerConcurrencyDecorator(c));
         });
 
         config.globalAutoScaling().requestsPerSecond()
                 .ifPresent(r -> {
-                    result.add(
-                            new DecoratorBuildItem(clusterKind,
-                                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-                    result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalRequestsPerSecondTargetDecorator(r)));
+                    addDecorator(result,
+                            new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
+                    addDecorator(result, new ApplyGlobalRequestsPerSecondTargetDecorator(r));
                 });
 
         config.globalAutoScaling().targetUtilizationPercentage()
                 .ifPresent(t -> {
-                    result.add(
-                            new DecoratorBuildItem(clusterKind,
-                                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-                    result.add(new DecoratorBuildItem(clusterKind, new ApplyGlobalTargetUtilizationDecorator(t)));
+                    addDecorator(result,
+                            new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
+                    addDecorator(result, new ApplyGlobalTargetUtilizationDecorator(t));
                 });
 
         if (!config.scaleToZeroEnabled()) {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING)));
-            result.add(
-                    new DecoratorBuildItem(clusterKind,
-                            new AddConfigMapDataDecorator(KNATIVE_CONFIG_AUTOSCALER, "enable-scale-to-zero",
-                                    String.valueOf(config.scaleToZeroEnabled()))));
+            addDecorator(result, new AddConfigMapResourceProvidingDecorator(KNATIVE_CONFIG_AUTOSCALER, KNATIVE_SERVING));
+            addDecorator(result, new AddConfigMapDataDecorator(KNATIVE_CONFIG_AUTOSCALER, "enable-scale-to-zero",
+                    String.valueOf(config.scaleToZeroEnabled())));
         }
 
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
+        addDecorator(result, new ApplyServiceTypeDecorator(name, config.serviceType().name()));
 
         //In Knative its expected that all http ports in probe are omitted (so we set them to null).
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyHttpGetActionPortDecorator(name, null)));
+        addDecorator(result, new ApplyHttpGetActionPortDecorator(name, null));
 
         //Traffic Splitting
-        config.revisionName()
-                .ifPresent(r -> result.add(new DecoratorBuildItem(clusterKind, new ApplyRevisionNameDecorator(name, r))));
+        config.revisionName().ifPresent(r -> addDecorator(result, new ApplyRevisionNameDecorator(name, r)));
 
         config.traffic().forEach((k, traffic) -> {
             //Revision name is K unless we have the edge name of a revision named 'latest' which is not really the latest (in which case use null).
@@ -284,34 +270,29 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
             String revisionName = !latestRevision && LATEST_REVISION.equals(k) ? null : k;
             String tag = traffic.tag().orElse(null);
             long percent = traffic.percent().orElse(100L);
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new ApplyTrafficDecorator(name, revisionName, latestRevision, percent, tag)));
+            addDecorator(result, new ApplyTrafficDecorator(name, revisionName, latestRevision, percent, tag));
         });
 
         //Add revision decorators
         result.addAll(createVolumeDecorators());
         result.addAll(createAppConfigVolumeAndEnvDecorators(name));
-        config.hostAliases().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e)))));
-        config.nodeSelector().ifPresent(n -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddNodeSelectorDecorator(name, n.key(), n.value()))));
-        config.sidecars().entrySet().forEach(e -> result
-                .add(new DecoratorBuildItem(clusterKind,
-                        new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e)))));
+        config.hostAliases().entrySet()
+                .forEach(e -> addDecorator(result, new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e))));
+        config.nodeSelector().ifPresent(n -> addDecorator(result, new AddNodeSelectorDecorator(name, n.key(), n.value())));
+        config.sidecars().entrySet()
+                .forEach(e -> addDecorator(result, new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e))));
 
         if (!roleBindings.isEmpty()) {
+            // no group on purpose?
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNameToRevisionSpecDecorator()));
         }
 
         //Handle Image Pull Secrets
         config.imagePullSecrets().ifPresent(imagePullSecrets -> {
             String serviceAccountName = config.serviceAccount().orElse(name);
-            result.add(new DecoratorBuildItem(clusterKind, new AddServiceAccountResourceDecorator(name)));
-            result.add(
-                    new DecoratorBuildItem(clusterKind,
-                            new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets)));
+            addDecorator(result, new AddServiceAccountResourceDecorator(name));
+            addDecorator(result, new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName));
+            addDecorator(result, new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets));
         });
 
         return result;
@@ -319,67 +300,59 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
 
     private List<DecoratorBuildItem> createVolumeDecorators() {
         List<DecoratorBuildItem> result = new ArrayList<>();
-        final var clusterKind = deploymentTarget();
-        config.secretVolumes().entrySet().forEach(e -> result.add(
-                new DecoratorBuildItem(clusterKind, new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e)))));
+        config.secretVolumes().entrySet()
+                .forEach(e -> addDecorator(result, new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e))));
 
-        config.configMapVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e)))));
+        config.configMapVolumes().entrySet().forEach(e -> addDecorator(result,
+                new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e))));
 
-        config.emptyDirVolumes().ifPresent(volumes -> volumes.forEach(e -> result.add(
-                new DecoratorBuildItem(clusterKind,
-                        new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e))))));
+        config.emptyDirVolumes().ifPresent(volumes -> volumes.forEach(
+                e -> addDecorator(result, new AddEmptyDirVolumeToRevisionDecorator(EmptyDirVolumeConverter.convert(e)))));
 
-        config.pvcVolumes().entrySet().forEach(e -> result
-                .add(new DecoratorBuildItem(clusterKind, new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e)))));
+        config.pvcVolumes().entrySet()
+                .forEach(e -> addDecorator(result, new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e))));
 
-        config.awsElasticBlockStoreVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddAwsElasticBlockStoreVolumeToRevisionDecorator(AwsElasticBlockStoreVolumeConverter.convert(e)))));
+        config.awsElasticBlockStoreVolumes().entrySet().forEach(e -> addDecorator(result,
+                new AddAwsElasticBlockStoreVolumeToRevisionDecorator(AwsElasticBlockStoreVolumeConverter.convert(e))));
 
-        config.azureFileVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddAzureFileVolumeToRevisionDecorator(AzureFileVolumeConverter.convert(e)))));
+        config.azureFileVolumes().entrySet().forEach(e -> addDecorator(result,
+                new AddAzureFileVolumeToRevisionDecorator(AzureFileVolumeConverter.convert(e))));
 
-        config.azureDiskVolumes().entrySet().forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddAzureDiskVolumeToRevisionDecorator(AzureDiskVolumeConverter.convert(e)))));
+        config.azureDiskVolumes().entrySet().forEach(
+                e -> addDecorator(result, new AddAzureDiskVolumeToRevisionDecorator(AzureDiskVolumeConverter.convert(e))));
         return result;
     }
 
     private List<DecoratorBuildItem> createAppConfigVolumeAndEnvDecorators(String name) {
-
         List<DecoratorBuildItem> result = new ArrayList<>();
         Set<String> paths = new HashSet<>();
-        final var clusterKind = deploymentTarget();
         config.appSecret().ifPresent(s -> {
-            result.add(new DecoratorBuildItem(clusterKind, new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
+            addDecorator(result, new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
                     .withSecretName(s)
                     .withVolumeName("app-secret")
-                    .build())));
-            result.add(new DecoratorBuildItem(clusterKind, new AddMountDecorator(new MountBuilder()
+                    .build()));
+            addDecorator(result, new AddMountDecorator(new MountBuilder()
                     .withName("app-secret")
                     .withPath("/mnt/app-secret")
-                    .build())));
+                    .build()));
             paths.add("/mnt/app-secret");
         });
 
         config.appConfigMap().ifPresent(s -> {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
-                            .withConfigMapName(s)
-                            .withVolumeName("app-config-map")
-                            .build())));
-            result.add(new DecoratorBuildItem(clusterKind, new AddMountDecorator(new MountBuilder()
-                    .withName("app-config-map")
-                    .withPath("/mnt/app-config-map")
-                    .build())));
+            addDecorator(result, new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
+                    .withConfigMapName(s)
+                    .withVolumeName("app-config-map")
+                    .build()));
+            addDecorator(result, new AddMountDecorator(
+                    new MountBuilder().withName("app-config-map").withPath("/mnt/app-config-map").build()));
             paths.add("/mnt/app-config-map");
         });
 
         if (!paths.isEmpty()) {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                            .withName("SMALLRYE_CONFIG_LOCATIONS")
-                            .withValue(String.join(",", paths))
-                            .build())));
+            addDecorator(result, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                    .withName("SMALLRYE_CONFIG_LOCATIONS")
+                    .withValue(String.join(",", paths))
+                    .build()));
         }
         return result;
     }

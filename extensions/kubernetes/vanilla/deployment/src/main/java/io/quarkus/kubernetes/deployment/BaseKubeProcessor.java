@@ -15,6 +15,7 @@ import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
+import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.project.Project;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
@@ -199,25 +200,28 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                         port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                         clusterRoleBindings));
 
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, pullPolicy())));
-        image.ifPresent(
-                i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
+        addDecorator(result, new ApplyImagePullPolicyDecorator(name, pullPolicy()));
+        image.ifPresent(i -> addDecorator(result, new ApplyContainerImageDecorator(name, i.getImage())));
 
         var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterType()));
         if (config.idempotent()) {
             stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
         }
-        stream.forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                        .withName(EnvConverter.convertName(e.getName()))
-                        .withValue(e.getValue())
-                        .withSecret(e.getSecret())
-                        .withConfigmap(e.getConfigMap())
-                        .withField(e.getField())
-                        .withPrefix(e.getPrefix())
-                        .build()))));
+        stream.map(e -> new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                .withName(EnvConverter.convertName(e.getName()))
+                .withValue(e.getValue())
+                .withSecret(e.getSecret())
+                .withConfigmap(e.getConfigMap())
+                .withField(e.getField())
+                .withPrefix(e.getPrefix())
+                .build()))
+                .forEach(decorator -> addDecorator(result, decorator));
 
         return result;
+    }
+
+    protected void addDecorator(List<DecoratorBuildItem> decorators, Decorator<?> decorator) {
+        decorators.add(new DecoratorBuildItem(deploymentTarget(), decorator));
     }
 
     protected void initTasks(List<KubernetesInitContainerBuildItem> initContainers, List<KubernetesJobBuildItem> jobs,

@@ -250,14 +250,13 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             String imageStreamWithTag = name + ":" + i.getTag();
             if (deploymentResourceKind(capabilities) == DeploymentResourceKind.DeploymentConfig
                     && !OpenShiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                result.add(new DecoratorBuildItem(clusterKind,
-                        new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry)));
+                addDecorator(result, new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry));
             }
 
             // remove the default trigger which has a wrong version
-            result.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentTriggerDecorator(name)));
+            addDecorator(result, new RemoveDeploymentTriggerDecorator(name));
             // re-add the trigger with the correct version
-            result.add(new DecoratorBuildItem(clusterKind, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag)));
+            addDecorator(result, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag));
         });
 
         if (config.flavor() == v3) {
@@ -282,92 +281,88 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
         DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         switch (deploymentKind) {
             case Deployment:
-                result.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentConfigResourceDecorator(name)));
-                result.add(new DecoratorBuildItem(clusterKind, new AddDeploymentResourceDecorator(name, config)));
+                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
+                addDecorator(result, new AddDeploymentResourceDecorator(name, config));
                 break;
             case StatefulSet:
-                result.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentConfigResourceDecorator(name)));
-                result.add(new DecoratorBuildItem(clusterKind, new AddStatefulSetResourceDecorator(name, config)));
+                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
+                addDecorator(result, new AddStatefulSetResourceDecorator(name, config));
                 break;
             case Job:
-                result.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentConfigResourceDecorator(name)));
-                result.add(new DecoratorBuildItem(clusterKind, new AddJobResourceDecorator(name, config.job())));
+                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
+                addDecorator(result, new AddJobResourceDecorator(name, config.job()));
                 break;
             case CronJob:
-                result.add(new DecoratorBuildItem(clusterKind, new RemoveDeploymentConfigResourceDecorator(name)));
-                result.add(new DecoratorBuildItem(clusterKind, new AddCronJobResourceDecorator(name, config.cronJob())));
+                addDecorator(result, new RemoveDeploymentConfigResourceDecorator(name));
+                addDecorator(result, new AddCronJobResourceDecorator(name, config.cronJob()));
                 break;
         }
 
         if (config.route() != null) {
             for (Map.Entry<String, String> annotation : config.route().annotations().entrySet()) {
-                result.add(new DecoratorBuildItem(clusterKind,
-                        new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE)));
+                addDecorator(result, new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE));
             }
 
             for (Map.Entry<String, String> label : config.route().labels().entrySet()) {
-                result.add(new DecoratorBuildItem(clusterKind,
-                        new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE)));
+                addDecorator(result, new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE));
             }
         }
 
         if (config.replicas() != 1) {
             // This only affects DeploymentConfig
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new ApplyReplicasToDeploymentConfigDecorator(name, config.replicas())));
+            addDecorator(result, new ApplyReplicasToDeploymentConfigDecorator(name, config.replicas()));
             // This only affects Deployment
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.replicas())));
+            addDecorator(result,
+                    new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.replicas()));
             // This only affects StatefulSet
-            result.add(new DecoratorBuildItem(clusterKind, new ApplyReplicasToStatefulSetDecorator(name, config.replicas())));
+            addDecorator(result, new ApplyReplicasToStatefulSetDecorator(name, config.replicas()));
         }
 
         config.containerName().ifPresent(containerName -> {
-            result.add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameDecorator(containerName)));
-            result.add(new DecoratorBuildItem(clusterKind, new ChangeContainerNameInDeploymentTriggerDecorator(containerName)));
+            addDecorator(result, new ChangeContainerNameDecorator(containerName));
+            addDecorator(result, new ChangeContainerNameInDeploymentTriggerDecorator(containerName));
         });
 
         if (labels.stream().filter(l -> clusterKind.equals(l.getTarget()))
                 .noneMatch(l -> l.getKey().equals(OPENSHIFT_APP_RUNTIME))) {
-            result.add(new DecoratorBuildItem(clusterKind, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
+            addDecorator(result, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS));
         }
 
         // Enalbe local lookup policy for all image streams
-        result.add(new DecoratorBuildItem(clusterKind, new EnableImageStreamLocalLookupPolicyDecorator()));
+        addDecorator(result, new EnableImageStreamLocalLookupPolicyDecorator());
 
         // Handle custom s2i builder images
         baseImage.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {
             String builderImageName = ImageUtil.getName(builderImage);
             if (!DEFAULT_S2I_IMAGE_NAME.equals(builderImageName)) {
-                result.add(
-                        new DecoratorBuildItem(clusterKind, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME)));
+                addDecorator(result, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME));
             }
 
             if (containerImageConfig.builder().isEmpty()
                     || OpenShiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                result.add(new DecoratorBuildItem(clusterKind, new ApplyBuilderImageDecorator(name, builderImage)));
+                addDecorator(result, new ApplyBuilderImageDecorator(name, builderImage));
                 ImageReference imageRef = ImageReference.parse(builderImage);
                 boolean usesInternalRegistry = imageRef.getRegistry()
-                        .filter(registry -> registry.contains(OPENSHIFT_INTERNAL_REGISTRY_PROJECT)).isPresent();
+                        .filter(registry -> registry.contains(OPENSHIFT_INTERNAL_REGISTRY_PROJECT))
+                        .isPresent();
                 if (usesInternalRegistry) {
                     // When the internal registry is specified for the image, we assume the stream already exists
                     // It's better if we refer to it directly as (as an ImageStreamTag).
                     // In this case we need to remove the ImageStream (created by dekorate).
                     String repository = imageRef.getRepository();
                     String imageStreamName = repository.substring(repository.lastIndexOf("/"));
-                    result.add(new DecoratorBuildItem(clusterKind, new RemoveBuilderImageResourceDecorator(imageStreamName)));
+                    addDecorator(result, new RemoveBuilderImageResourceDecorator(imageStreamName));
                 } else {
                     S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
-                    result.add(new DecoratorBuildItem(clusterKind, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig)));
+                    addDecorator(result, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
                 }
             }
         });
 
         // Service handling
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
+        addDecorator(result, new ApplyServiceTypeDecorator(name, config.serviceType().name()));
         if ((config.serviceType() == ServiceType.NodePort) && config.nodePort().isPresent()) {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.route().targetPort())));
+            addDecorator(result, new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.route().targetPort()));
         }
 
         // Probe port handling
@@ -378,8 +373,8 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
 
         // Handle remote debug configuration
         if (config.remoteDebug().enabled()) {
-            result.add(new DecoratorBuildItem(clusterKind, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
-                    config.remoteDebug().buildJavaToolOptionsEnv())));
+            addDecorator(result, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                    config.remoteDebug().buildJavaToolOptionsEnv()));
         }
 
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
@@ -387,7 +382,7 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
                 && (config.route() == null
                         || !config.route().expose()
                         || !config.route().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            result.add(new DecoratorBuildItem(clusterKind, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+            addDecorator(result, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME));
         }
 
         printMessageAboutPortsThatCantChange(clusterKind, ports, config);

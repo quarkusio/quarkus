@@ -106,7 +106,7 @@ public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubern
                 && (config.ingress() == null
                         || !config.ingress().expose()
                         || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            result.add(new DecoratorBuildItem(clusterKind, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+            addDecorator(result, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME));
         }
 
         // Probe port handling
@@ -130,12 +130,11 @@ public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubern
         }
 
         for (Map.Entry<String, String> annotation : config.ingress().annotations().entrySet()) {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
+            addDecorator(result, new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS));
         }
 
         for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
-            result.add(new DecoratorBuildItem(clusterKind, new AddIngressRuleDecorator(name, optionalPort(ports),
+            addDecorator(result, new AddIngressRuleDecorator(name, optionalPort(ports),
                     new IngressRuleBuilder()
                             .withHost(rule.host())
                             .withPath(rule.path())
@@ -143,26 +142,24 @@ public abstract class DevClusterHelper extends BaseKubeProcessor<AddPortToKubern
                             .withServiceName(rule.serviceName().orElse(null))
                             .withServicePortName(rule.servicePortName().orElse(null))
                             .withServicePortNumber(rule.servicePortNumber().orElse(-1))
-                            .build())));
+                            .build()));
         }
     }
 
     protected void service(List<DecoratorBuildItem> result, String clusterKind, String name, KubernetesConfig config) {
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name())));
+        addDecorator(result, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name()));
         List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
                 .filter(e -> e.getValue().nodePort().isPresent())
                 .toList();
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                result.add(new DecoratorBuildItem(clusterKind,
-                        new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey())));
+                addDecorator(result, new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey()));
             }
         } else {
-            result.add(new DecoratorBuildItem(clusterKind,
-                    new AddNodePortDecorator(name,
-                            config.nodePort().orElseGet(
-                                    () -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
-                            config.ingress().targetPort())));
+            addDecorator(result, new AddNodePortDecorator(name,
+                    config.nodePort().orElseGet(
+                            () -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
+                    config.ingress().targetPort()));
         }
     }
 

@@ -32,9 +32,7 @@ public enum NativeImageFutureDefault {
                             }
                             break;
                         default:
-                            final NativeImageFutureDefault futureDefaultArg = NativeImageFutureDefault
-                                    .valueOf(futureDefaultString.toUpperCase(Locale.ROOT).replace('-', '_'));
-                            if (futureDefaultArg == this) {
+                            if (futureDefaultString.toUpperCase(Locale.ROOT).replace('-', '_').equals(this.toString())) {
                                 return true;
                             }
                     }

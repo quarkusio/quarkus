@@ -31,7 +31,7 @@ quarkus.management.enabled=true
 By default, management endpoints will be exposed on: `http://0.0.0.0:9000/q`.
 For example, if you have `smallrye-health` installed, the readiness probe will be exposed at `http://0.0.0.0:9000/q/health/ready`.
 
-SmallRye Health Checks, SmallRye Metrics, Micrometer and Info endpoints will be declared as management endpoints when the management interface is enabled.
+SmallRye Health Checks, Micrometer and Info endpoints will be declared as management endpoints when the management interface is enabled.
 
 NOTE: The management interface is disabled when no extensions relying on it (such as the SmallRye Health or SmallRye OpenAPI extensions) are installed.
 
@@ -122,7 +122,7 @@ In addition, the `quarkus.http.non-application-root-path` property is not used f
 
 NOTE: To expose an endpoint on the management interface from the code of an application, refer to xref:#management-endpoint-application[the application section].
 
-SmallRye Health Checks, SmallRye Metrics, and Micrometer endpoints will be declared as management endpoints when the management interface is enabled.
+SmallRye Health Checks, and Micrometer endpoints will be declared as management endpoints when the management interface is enabled.
 
 NOTE: if you do not enable the management interface, these endpoints will be served using the main HTTP server (under `/q` by default).
 

@@ -303,21 +303,29 @@ public class HttpSecurityProcessor {
     @BuildStep
     void prepareCsrfConfigBuilder(Capabilities capabilities, Optional<CsrfBuilderClassBuildItem> csrfBuilderClassBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer) {
-        if (capabilities.isPresent(Capability.SECURITY) && csrfBuilderClassBuildItem.isPresent()) {
+        if (csrfBuilderClassBuildItem.isPresent()) {
             final Class<? extends CSRF.Builder> csrfBuilderClass = csrfBuilderClassBuildItem.get().csrfBuilderClass;
-            // static Builder builder() {
-            //     return new io.quarkus.something.CsfrBuilder();
-            // }
-            bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(CSRF.class.getName(), (cls, classVisitor) -> {
-                var classTransformer = new ClassTransformer(cls);
-                classTransformer.removeMethod("builder", CSRF.Builder.class);
-                try (var mc = classTransformer.addMethod("builder", CSRF.Builder.class)) {
-                    mc.setModifiers(ACC_PUBLIC | ACC_STATIC);
-                    var builderInstance = mc.newInstance(MethodDescriptor.ofConstructor(csrfBuilderClass));
-                    mc.returnValue(mc.checkCast(builderInstance, CSRF.Builder.class));
-                }
-                return classTransformer.applyTo(classVisitor);
-            }));
+            bytecodeTransformerProducer
+                    .produce(new BytecodeTransformerBuildItem(CSRF.class.getName(), (cls, classVisitor) -> {
+                        var classTransformer = new ClassTransformer(cls);
+                        classTransformer.removeMethod("builder", CSRF.Builder.class);
+                        try (var mc = classTransformer.addMethod("builder", CSRF.Builder.class)) {
+                            mc.setModifiers(ACC_PUBLIC | ACC_STATIC);
+                            if (capabilities.isPresent(Capability.SECURITY)) {
+                                // static Builder builder() {
+                                //     return new io.quarkus.something.CsfrBuilder();
+                                // }
+                                var builderInstance = mc.newInstance(MethodDescriptor.ofConstructor(csrfBuilderClass));
+                                mc.returnValue(mc.checkCast(builderInstance, CSRF.Builder.class));
+                            } else {
+                                // static Builder builder() {
+                                //     throw new IllegalStateException("Please add the `quarkus-security` extension");
+                                // }
+                                mc.throwException(IllegalStateException.class, "Please add the `quarkus-security` extension");
+                            }
+                        }
+                        return classTransformer.applyTo(classVisitor);
+                    }));
         }
     }
 

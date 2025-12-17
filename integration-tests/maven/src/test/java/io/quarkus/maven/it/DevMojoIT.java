@@ -525,7 +525,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         shutdownTheApp();
 
         runAndCheck("-f", alternatePomName);
-        devModeClient.getHttpResponse("/q/openapi").contains("hello");
+        assertThat(devModeClient.getHttpResponse("/q/openapi")).contains("hello");
     }
 
     @Test

@@ -1,10 +1,17 @@
 package io.quarkus.security.spi;
 
+import static io.quarkus.deployment.index.IndexingUtil.OBJECT;
 import static java.util.stream.Collectors.toSet;
+import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
+import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +19,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationOverlay;
@@ -22,6 +32,7 @@ import org.jboss.jandex.Declaration;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.security.spi.SecurityTransformer.AuthorizationType;
@@ -37,11 +48,16 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
     private final Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations;
     private final Set<DotName> allSecurityAnnotations;
     private final Map<IndexView, SecurityTransformerCache> securityTransformerCache;
+    private final Predicate<ClassInfo> isInterfaceWithTransformations;
+    private final Set<DotName> securedAnnotations;
 
-    public SecurityTransformerBuildItem(Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations) {
+    public SecurityTransformerBuildItem(Map<AuthorizationType, Set<DotName>> authorizationTypeToSecurityAnnotations,
+            Predicate<ClassInfo> isInterfaceWithTransformations, Set<DotName> securedAnnotations) {
         this.authorizationTypeToSecurityAnnotations = Collections.unmodifiableMap(authorizationTypeToSecurityAnnotations);
         this.allSecurityAnnotations = getAllSecurityAnnotations(authorizationTypeToSecurityAnnotations);
         this.securityTransformerCache = new ConcurrentHashMap<>();
+        this.isInterfaceWithTransformations = isInterfaceWithTransformations;
+        this.securedAnnotations = Collections.unmodifiableSet(securedAnnotations);
     }
 
     public static SecurityTransformer createSecurityTransformer(IndexView indexView,
@@ -61,12 +77,182 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
     private SecurityTransformer getOrCreateTransformer(IndexView indexView) {
         // this is cached because the annotation overlay has some cache which we can leverage
         return securityTransformerCache.computeIfAbsent(indexView, index -> {
-            // create transformer
-            var transformer = new SecurityTransformerImpl(
-                    AnnotationOverlay.builder(index, null).build(),
-                    null, List.of());
-            return new SecurityTransformerCache(index, transformer);
+            // create helper
+            var interfaceTransformations = createInterfaceTransformations(index);
+            var helper = new SecurityTransformerImpl(
+                    AnnotationOverlay.builder(index, interfaceTransformations.transformations).build(),
+                    interfaceTransformations.transformations, interfaceTransformations.possiblySecuredParentInterfaces);
+            return new SecurityTransformerCache(index, helper);
         }).transformer;
+    }
+
+    private record InterfaceTransformationResult(Collection<AnnotationTransformation> transformations,
+            Collection<DotName> possiblySecuredParentInterfaces) {
+    }
+
+    private SecurityTransformerBuildItem.InterfaceTransformationResult createInterfaceTransformations(IndexView index) {
+        if (isInterfaceWithTransformations != null) {
+            // e.g. interface with Jakarta Data @Repository, it may or may not have security annotations
+            var possiblySecuredInterfaces = securedAnnotations.stream()
+                    .map(index::getAnnotations)
+                    .flatMap(Collection::stream)
+                    .map(AnnotationInstance::target)
+                    .filter(Objects::nonNull)
+                    .filter(t -> t.kind() == CLASS || t.kind() == METHOD)
+                    .map(t -> {
+                        if (t.kind() == CLASS) {
+                            return t.asClass();
+                        } else {
+                            return t.asMethod().declaringClass();
+                        }
+                    })
+                    .filter(ClassInfo::isInterface)
+                    .collect(Collectors.toCollection(HashSet::new));
+            // now we need to add secured parent interfaces
+            // e.g. @Repository interface MyRepo extends MyParentRepo -> consider MyParentRepo
+            Collection<ClassInfo> possiblySecuredParentInterfaces = collectParentInterfaces(possiblySecuredInterfaces,
+                    securedAnnotations, index);
+            possiblySecuredInterfaces.addAll(possiblySecuredParentInterfaces);
+
+            if (!possiblySecuredInterfaces.isEmpty()) {
+                Predicate<Declaration> hasSecurityAnnotationDetectedByIndex = d -> hasSecurityAnnotationDetectedByIndex(d,
+                        index);
+                var interfaceNameToSecuredMethods = new HashMap<DotName, Set<MethodInfo>>();
+                // collect secured methods
+                possiblySecuredInterfaces.stream()
+                        .map(ClassInfo::methods)
+                        .flatMap(Collection::stream)
+                        .filter(hasSecurityAnnotationDetectedByIndex)
+                        .forEach(mi -> interfaceNameToSecuredMethods
+                                .computeIfAbsent(mi.declaringClass().name(), k -> new HashSet<>()).add(mi));
+                // collect secured methods based on class-level security annotation
+                possiblySecuredInterfaces.stream()
+                        .filter(hasSecurityAnnotationDetectedByIndex)
+                        .forEach(ci -> {
+                            var methodsSecuredByClassLevelAnnotation = ci.methods().stream()
+                                    // prefer method-level security annotation
+                                    .filter(Predicate.not(hasSecurityAnnotationDetectedByIndex))
+                                    .filter(mi -> !Modifier.isPrivate(mi.flags()))
+                                    .collect(toSet());
+                            if (!methodsSecuredByClassLevelAnnotation.isEmpty()) {
+                                interfaceNameToSecuredMethods.computeIfAbsent(ci.name(), k -> new HashSet<>())
+                                        .addAll(methodsSecuredByClassLevelAnnotation);
+                            }
+                        });
+                if (!interfaceNameToSecuredMethods.isEmpty()) {
+                    var interfaceNameToUnsecuredImplMethods = interfaceNameToSecuredMethods.keySet().stream()
+                            .map(interfaceName -> Map.entry(interfaceName, index
+                                    .getAllKnownImplementations(interfaceName)
+                                    .stream()
+                                    .map(ClassInfo::methods)
+                                    .flatMap(Collection::stream)
+                                    .filter(mi -> !Modifier.isPrivate(mi.flags()))
+                                    .filter(Predicate.not(hasSecurityAnnotationDetectedByIndex))
+                                    .collect(toSet())))
+                            .filter(e -> !e.getValue().isEmpty())
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    if (!interfaceNameToUnsecuredImplMethods.isEmpty()) {
+                        // match unsecured implementation's methods with secured interface methods
+                        // and add to the matched unsecured methods security annotations
+                        var unsecuredMethodToFutureSecurityAnnotations = new HashMap<MethodInfo, Collection<AnnotationInstance>>();
+                        interfaceNameToSecuredMethods.forEach((interfaceName, interfaceSecuredMethods) -> {
+                            var unsecuredImplMethods = interfaceNameToUnsecuredImplMethods.get(interfaceName);
+                            for (MethodInfo securedMethod : interfaceSecuredMethods) {
+                                for (MethodInfo unsecuredMethod : unsecuredImplMethods) {
+                                    if (isImplementingSecuredMethod(securedMethod, unsecuredMethod)) {
+                                        var securityAnnotations = getSecurityAnnotations(securedMethod, index);
+                                        unsecuredMethodToFutureSecurityAnnotations.put(unsecuredMethod, securityAnnotations);
+                                    }
+                                }
+                            }
+                        });
+                        if (!unsecuredMethodToFutureSecurityAnnotations.isEmpty()) {
+                            var transformations = unsecuredMethodToFutureSecurityAnnotations.entrySet().stream()
+                                    .map(entry -> {
+                                        var methodInfo = entry.getKey();
+                                        var securityAnnotations = entry.getValue();
+                                        return AnnotationTransformation.forMethods()
+                                                // WHEN class name and method name match
+                                                .whenMethod(methodInfo.declaringClass().name(), methodInfo.name())
+                                                // AND parameter types match as well
+                                                .whenMethod(mi -> isImplementingSecuredMethod(methodInfo, mi))
+                                                // add security annotations from the interface
+                                                .transform(tc -> tc.addAll(securityAnnotations));
+                                    })
+                                    .toList();
+                            return new InterfaceTransformationResult(transformations,
+                                    possiblySecuredParentInterfaces.stream().map(ClassInfo::name).collect(toSet()));
+                        }
+                    }
+                }
+            }
+        }
+        return new InterfaceTransformationResult(null, List.of());
+    }
+
+    private static boolean isImplementingSecuredMethod(MethodInfo securedMethod, MethodInfo unsecuredMethod) {
+        if (securedMethod.name().equals(unsecuredMethod.name())
+                && securedMethod.parametersCount() == unsecuredMethod.parametersCount()) {
+            if (securedMethod.parametersCount() == 0) {
+                return true;
+            }
+            var securedMethodParams = securedMethod.parameterTypes();
+            if (hasNoTypeVariable(securedMethodParams)) {
+                // no type variables
+                return securedMethodParams.equals(unsecuredMethod.parameterTypes());
+            } else {
+                // methods with type variables are currently not supported
+                throw newUnableToDetermineIfSecuredException(securedMethod, unsecuredMethod);
+            }
+        }
+        return false;
+    }
+
+    private static RuntimeException newUnableToDetermineIfSecuredException(MethodInfo securedMethod,
+            MethodInfo unsecuredMethod) {
+        throw new RuntimeException(
+                "Unable to determine if the '%s' method should inherit security annotation of the '%s' method (generics not supported yet)"
+                        .formatted(toString(unsecuredMethod), toString(securedMethod)));
+    }
+
+    private static boolean hasNoTypeVariable(List<Type> method) {
+        return method.stream().noneMatch(t -> {
+            if (t.kind() == TYPE_VARIABLE || t.kind() == Type.Kind.TYPE_VARIABLE_REFERENCE
+                    || t.kind() == Type.Kind.UNRESOLVED_TYPE_VARIABLE || t.kind() == Type.Kind.WILDCARD_TYPE) {
+                return true;
+            }
+            return t.kind() == PARAMETERIZED_TYPE && !hasNoTypeVariable(t.asParameterizedType().arguments());
+        });
+    }
+
+    private static Collection<ClassInfo> collectParentInterfaces(HashSet<ClassInfo> possiblySecuredInterfaces,
+            Set<DotName> securedInterfaceAnnotations, IndexView index) {
+        // this should avoid something like jakarta.data.repository.DataRepository
+        // because we only need inspect classes added by user for security annotations
+        Set<String> ignoredPackages = securedInterfaceAnnotations.stream().map(DotName::packagePrefix).collect(toSet());
+        return possiblySecuredInterfaces.stream()
+                .map(ci -> getParentInterfaces(index, ci, ignoredPackages))
+                .flatMap(Collection::stream)
+                .collect(toSet());
+    }
+
+    private static List<ClassInfo> getParentInterfaces(IndexView index, ClassInfo possiblySecuredInterface,
+            Set<String> ignoredPackages) {
+        return Stream.of(possiblySecuredInterface)
+                .map(ClassInfo::interfaceNames)
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .filter(n -> !OBJECT.equals(n))
+                .filter(n -> !ignoredPackages.contains(n.packagePrefix()))
+                .map(index::getClassByName)
+                .filter(Objects::nonNull)
+                .filter(ClassInfo::isInterface)
+                .<List<ClassInfo>> mapMulti((ci, consumer) -> {
+                    consumer.accept(List.of(ci));
+                    consumer.accept(getParentInterfaces(index, ci, ignoredPackages));
+                })
+                .flatMap(Collection::stream)
+                .toList();
     }
 
     private Set<DotName> getSecurityAnnotations(AuthorizationType[] authorizationTypes) {
@@ -240,7 +426,9 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
         }
 
         private boolean shouldCheckForSecurityAnnotations(ClassInfo ci, HashSet<String> checkedInterfaces) {
-            return possiblySecuredParentInterfaces.contains(ci.name()) && checkedInterfaces.add(ci.name().toString());
+            return isInterfaceWithTransformations != null
+                    && (isInterfaceWithTransformations.test(ci) || possiblySecuredParentInterfaces.contains(ci.name()))
+                    && checkedInterfaces.add(ci.name().toString());
         }
 
         private Collection<AnnotationInstance> getImplementorsSecurityAnnotations(DotName securityAnnotationName,
@@ -312,9 +500,9 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
             var result = new HashSet<>(indexedAnnotationInstances);
             for (var annotationInstance : indexedAnnotationInstances) {
                 final ClassInfo declaringClass;
-                if (annotationInstance.target().kind() == AnnotationTarget.Kind.METHOD) {
+                if (annotationInstance.target().kind() == METHOD) {
                     declaringClass = annotationInstance.target().asMethod().declaringClass();
-                } else if (annotationInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
+                } else if (annotationInstance.target().kind() == CLASS) {
                     declaringClass = annotationInstance.target().asClass();
                 } else {
                     // illegal state - this shouldn't happen
@@ -345,4 +533,7 @@ public final class SecurityTransformerBuildItem extends SimpleBuildItem {
         }
     }
 
+    private static String toString(MethodInfo method) {
+        return method.declaringClass().name() + "#" + method.name();
+    }
 }

@@ -630,8 +630,9 @@ quarkus.datasource."datasource-name".health-exclude=true
 
 === Datasource metrics
 
-If you are using the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] or xref:smallrye-metrics.adoc[`quarkus-smallrye-metrics`] extension, `quarkus-agroal` can contribute some datasource-related metrics to the metric registry.
-This can be activated by setting the `quarkus.datasource.metrics.enabled` property to `true`.
+If you are using the xref:telemetry-micrometer.adoc[`quarkus-micrometer`], `quarkus-agroal` can contribute some
+datasource-related metrics to the metric registry. This can be activated by setting the
+`quarkus.datasource.metrics.enabled` property to `true`.
 
 For the exposed metrics to contain any actual values, a metric collection must be enabled internally by the Agroal mechanisms.
 By default, this metric collection mechanism is enabled for all datasources when a metrics extension is present, and metrics for the Agroal extension are enabled.
@@ -815,6 +816,7 @@ When compiling a Quarkus application to a native image, the MySQL support for JM
 
 * The lack of JMX support is a natural consequence of running in native mode and is unlikely to be resolved.
 * The integration with OCI is not supported.
+* The OpenTelemetry integration included in the MySQL Connector/J driver is disabled in favor of the one provided by Agroal. If you really need to use the OpenTelemetry integration provided by the MySQL Connector/J driver, enable it explicitly by setting `quarkus.datasource.jdbc.additional-jdbc-properties.openTelemetry=PREFERRED` (https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-debugging-profiling.html#cj-conn-prop_openTelemetry[documentation]). Be aware that by enabling it, if your application is using the `quarkus-opentelemetry` extension, the application will likely fail to start with an `java.lang.IllegalStateException: GlobalOpenTelemetry.set has already been called.` error.
 
 ==== Oracle
 

@@ -30,6 +30,8 @@ public interface CORSConfig {
      * A comma-separated list of valid HTTP methods, such as `GET,PUT,POST`.
      * If not set, the filter allows any HTTP method by default.
      * <p>
+     * This property is not used to control same-origin HTTP request methods.
+     * <p>
      * Default: Any HTTP request method is allowed.
      */
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> methods();

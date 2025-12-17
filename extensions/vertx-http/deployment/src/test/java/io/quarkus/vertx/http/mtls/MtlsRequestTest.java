@@ -35,7 +35,7 @@ public class MtlsRequestTest {
             quarkus.http.auth.permission.all.policy=authenticated
             """;
 
-    @TestHTTPResource(value = "/mtls", ssl = true)
+    @TestHTTPResource(value = "/mtls", tls = true)
     URL url;
 
     @RegisterExtension

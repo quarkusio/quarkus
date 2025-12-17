@@ -35,7 +35,7 @@ subprojects {
   dependencies {
     "implementation"(enforcedPlatform("$quarkusPlatformGroupId:$quarkusPlatformArtifactId:$quarkusPlatformVersion"))
 
-    "testImplementation"("io.quarkus:quarkus-junit5")
+    "testImplementation"("io.quarkus:quarkus-junit")
     "testImplementation"("io.rest-assured:rest-assured")
   }
 

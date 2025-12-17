@@ -90,7 +90,7 @@ jobs:
           echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           # This will always fail but we will default to the best matching restore keys
@@ -103,7 +103,7 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v1.4
+        uses: gradle/develocity-actions/setup-maven@v2.1
         with:
           capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
@@ -161,7 +161,7 @@ jobs:
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -176,7 +176,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
@@ -233,7 +233,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v6
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -241,7 +241,7 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-io-quarkus
           path: .
@@ -266,7 +266,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v1.4
+        uses: gradle/develocity-actions/setup-maven@v2.1
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -289,7 +289,7 @@ jobs:
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -338,7 +338,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -346,14 +346,14 @@ jobs:
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v1.4
+        uses: gradle/develocity-actions/setup-maven@v2.1
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
@@ -362,7 +362,7 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
           key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}
@@ -377,7 +377,7 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
@@ -393,7 +393,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
@@ -407,7 +407,7 @@ jobs:
     needs: [build-jdk17,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17

@@ -91,6 +91,7 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.fusesource.jansi.internal.Kernel32;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.ConfiguredClassLoading;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
@@ -579,7 +580,7 @@ public class DevMojo extends AbstractMojo {
                         final DevModeRunner newRunner;
                         try {
                             bootstrapId = handleAutoCompile(changedPoms);
-                            newRunner = new DevModeRunner(runner.commandLine.getDebugPort(), bootstrapId);
+                            newRunner = new DevModeRunner(runner.commandLine.getDebugPort(), bootstrapId, pomFiles.keySet());
                         } catch (Exception e) {
                             getLog().info("Could not load changedPoms pom.xml file, changes not applied", e);
                             continue;
@@ -790,9 +791,7 @@ public class DevMojo extends AbstractMojo {
             var colon = goal.lastIndexOf(':');
             if (colon >= 0) {
                 var plugin = pluginPrefixes.get(goal.substring(0, colon));
-                if (plugin == null) {
-                    getLog().warn("Failed to locate plugin for " + goal);
-                } else {
+                if (plugin != null) {
                     executedPluginGoals.computeIfAbsent(plugin.getId(), k -> new ArrayList<>()).add(goal.substring(colon + 1));
                 }
             }
@@ -1336,11 +1335,11 @@ public class DevMojo extends AbstractMojo {
         private Process process;
 
         private DevModeRunner(String bootstrapId) throws Exception {
-            commandLine = newLauncher(null, bootstrapId);
+            commandLine = newLauncher(null, bootstrapId, Set.of());
         }
 
-        private DevModeRunner(String actualDebugPort, String bootstrapId) throws Exception {
-            commandLine = newLauncher(actualDebugPort, bootstrapId);
+        private DevModeRunner(String actualDebugPort, String bootstrapId, Set<Path> reloadPoms) throws Exception {
+            commandLine = newLauncher(actualDebugPort, bootstrapId, reloadPoms);
         }
 
         Collection<Path> pomFiles() {
@@ -1392,7 +1391,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private DevModeCommandLine newLauncher(String actualDebugPort, String bootstrapId) throws Exception {
+    private DevModeCommandLine newLauncher(String actualDebugPort, String bootstrapId, Set<Path> reloadPoms) throws Exception {
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
@@ -1533,11 +1532,11 @@ public class DevMojo extends AbstractMojo {
                     .setRemoteRepositories(repos)
                     .setWorkspaceDiscovery(true)
                     .setPreferPomsFromWorkspace(true)
-                    // it's important to set the base directory instead of the POM
-                    // which maybe manipulated by a plugin and stored outside the base directory
-                    .setCurrentProject(project.getBasedir().toString())
+                    .setCurrentProject(project.getFile().toString())
                     .setEffectiveModelBuilder(BootstrapMavenContextConfig.getEffectiveModelBuilderProperty(projectProperties))
                     .setRootProjectDir(rootProjectDir);
+            // to support Maven plugins and extensions manipulating POM files
+            QuarkusBootstrapProvider.setProjectModels(mvnConfig, session.getAllProjects(), toFiles(reloadPoms));
 
             // There are a couple of reasons we don't want to use the original Maven session:
             // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync anymore with the effective POM;
@@ -1556,7 +1555,7 @@ public class DevMojo extends AbstractMojo {
                 .extensionDevModeJvmOptionFilter(extensionJvmOptions);
 
         // serialize the app model to avoid re-resolving it in the dev process
-        BootstrapUtils.serializeAppModel(appModel, appModelLocation);
+        ApplicationModelSerializer.serialize(appModel, appModelLocation);
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + appModelLocation);
 
         if (noDeps) {
@@ -1885,5 +1884,19 @@ public class DevMojo extends AbstractMojo {
         String getExecutionId() {
             return execution == null ? null : execution.getId();
         }
+    }
+
+    private static Set<File> toFiles(Set<Path> paths) {
+        if (paths == null) {
+            return null;
+        }
+        if (paths.isEmpty()) {
+            return Set.of();
+        }
+        Set<File> files = new HashSet<>(paths.size());
+        for (Path path : paths) {
+            files.add(path.toFile());
+        }
+        return files;
     }
 }

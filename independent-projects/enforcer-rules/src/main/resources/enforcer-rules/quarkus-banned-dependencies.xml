@@ -112,6 +112,8 @@
                 <exclude>org.graalvm.nativeimage:svm</exclude>
                 <!-- moved to com.mysql:mysql-connector-j -->
                 <exclude>mysql:mysql-connector-java</exclude>
+                <!-- Use the SmallRye classfile API instead -->
+                <exclude>io.github.dmlloyd:jdk-classfile-backport</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

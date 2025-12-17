@@ -23,13 +23,6 @@ public @interface TestHTTPResource {
     String value() default "";
 
     /**
-     * @return If the URL should use the HTTPS protocol and SSL port
-     * @deprecated use #tls instead
-     */
-    @Deprecated(since = "3.10", forRemoval = true)
-    boolean ssl() default false;
-
-    /**
      * @return if the url should use the management interface
      */
     boolean management() default false;

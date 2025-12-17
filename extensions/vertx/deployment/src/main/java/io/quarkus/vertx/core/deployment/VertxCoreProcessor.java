@@ -52,6 +52,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
@@ -234,7 +235,11 @@ class VertxCoreProcessor {
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
-            ExecutorBuildItem executorBuildItem) {
+            ExecutorBuildItem executorBuildItem,
+            MutinyRuntimeInitBuildItem mutinyRuntimeInitBuildItem) {
+
+        // Override the Mutiny infrastructure ScheduledExecutorService to dispatch scheduled operations to a Vert.x timer
+        recorder.wrapMainExecutorForMutiny(executorBuildItem.getExecutorProxy());
 
         Collections.sort(vertxOptionsConsumers);
         List<Consumer<VertxOptions>> consumers = new ArrayList<>(vertxOptionsConsumers.size());

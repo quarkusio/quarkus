@@ -28,7 +28,7 @@ import io.vertx.core.http.HttpVersion;
 
 public class Http2ServerPushTestCase {
 
-    @TestHTTPResource(value = "/push", ssl = true)
+    @TestHTTPResource(value = "/push", tls = true)
     URL sslUrl;
 
     @RegisterExtension

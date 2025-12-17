@@ -9,9 +9,7 @@ import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 public class DarwinAwtFeature implements Feature {
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        if (Runtime.version().major() >= 17) {
-            // Quarkus run time init for AWT in Darwin
-            RuntimeClassInitialization.initializeAtRunTime("sun.lwawt.macosx");
-        }
+        // Quarkus run time init for AWT in Darwin
+        RuntimeClassInitialization.initializeAtRunTime("sun.lwawt.macosx");
     }
 }

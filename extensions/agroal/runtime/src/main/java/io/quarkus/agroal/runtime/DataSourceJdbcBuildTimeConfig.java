@@ -32,6 +32,15 @@ public interface DataSourceJdbcBuildTimeConfig {
     TransactionIntegration transactions();
 
     /**
+     * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if
+     * a metrics extension is active.
+     * <p>
+     * Please use quarkus-micrometer and the quarkus.datasource.metrics.enabled property
+     */
+    @Deprecated(forRemoval = true)
+    Optional<Boolean> enableMetrics();
+
+    /**
      * Enable OpenTelemetry JDBC instrumentation.
      */
     @WithDefault("false")

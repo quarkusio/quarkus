@@ -4,7 +4,7 @@ plugin-publish = "2.0.0"
 kotlin = "2.2.21"
 smallrye-config = "3.14.1"
 
-junit5 = "5.13.4"
+junit = "6.0.1"
 assertj = "3.27.6"
 
 [plugins]
@@ -24,6 +24,6 @@ smallrye-config-yaml = { module = "io.smallrye.config:smallrye-config-source-yam
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 
-junit-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

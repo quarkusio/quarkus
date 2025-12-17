@@ -1,6 +1,5 @@
 package io.quarkus.gradle;
 
-import static io.quarkus.gradle.util.AppModelDeserializer.deserializeAppModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -11,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.DependencyFlags;
 
@@ -28,7 +28,7 @@ public class TestCompositeBuildWithExtensionsTest extends QuarkusGradleWrapperTe
                 .resolve("application-model").resolve("quarkus-app-test-model.dat");
         assertThat(testAppModelDat).exists();
 
-        final ApplicationModel testModel = deserializeAppModel(testAppModelDat);
+        final ApplicationModel testModel = ApplicationModelSerializer.deserialize(testAppModelDat);
         for (var d : testModel.getDependencies(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT)) {
             assertFlagSet(d.getFlags(), DependencyFlags.RUNTIME_CP);
             assertFlagSet(d.getFlags(), DependencyFlags.DEPLOYMENT_CP);

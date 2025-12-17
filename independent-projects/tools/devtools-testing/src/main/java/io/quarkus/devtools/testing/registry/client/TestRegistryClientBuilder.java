@@ -825,7 +825,7 @@ public class TestRegistryClientBuilder {
 
             Dependency dep = new Dependency();
             dep.setGroupId("io.quarkus");
-            dep.setArtifactId("quarkus-junit5");
+            dep.setArtifactId("quarkus-junit");
             dep.setVersion(quarkusVersion);
             pom.getDependencyManagement().addDependency(dep);
 

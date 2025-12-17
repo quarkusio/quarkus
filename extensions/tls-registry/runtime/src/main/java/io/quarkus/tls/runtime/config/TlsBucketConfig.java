@@ -13,6 +13,8 @@ import io.smallrye.config.WithDefault;
 @ConfigGroup
 public interface TlsBucketConfig {
 
+    public static final String DEFAULT_TLS_PROTOCOLS = "TLSv1.3";
+
     /**
      * The key store configuration.
      * Key stores are used to store private keys and their associated X.509 certificate chains.
@@ -40,16 +42,15 @@ public interface TlsBucketConfig {
     /**
      * Sets the ordered list of enabled TLS protocols.
      * <p>
-     * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}.
+     * If not set, it defaults to {@code "TLSv1.3"}.
      * The following list of protocols are supported: {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}.
-     * To only enable {@code TLSv1.3}, set the value to {@code to "TLSv1.3"}.
+     * To enable {@code TLSv1.3} and {@code TLSv1.2}, set the value to {@code to "TLSv1.3, TLSv1.2"}.
      * <p>
      * Note that setting an empty list, and enabling TLS is invalid.
      * You must at least have one protocol.
      * <p>
-     * Also, setting this replaces the default list of protocols.
      */
-    @WithDefault("TLSv1.3,TLSv1.2")
+    @WithDefault(DEFAULT_TLS_PROTOCOLS)
     Set<String> protocols();
 
     /**

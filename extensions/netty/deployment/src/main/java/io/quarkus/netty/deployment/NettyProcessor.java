@@ -302,15 +302,6 @@ class NettyProcessor {
                 .build();
     }
 
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void eagerlyInitClass(NettyRecorder recorder) {
-        //see https://github.com/quarkusio/quarkus/issues/3663
-        //this class is slow to initialize, we make sure that we do it eagerly
-        //before it blocks the IO thread and causes a warning
-        recorder.eagerlyInitChannelId();
-    }
-
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)

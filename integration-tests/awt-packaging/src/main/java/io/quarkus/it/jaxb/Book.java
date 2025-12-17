@@ -4,16 +4,15 @@ import java.awt.Image;
 
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-@XmlRootElement
 public class Book {
 
     private String title;
-    private Image cover;
+    private String cover;
 
     public Book() {
     }
 
-    public Book(String title, Image cover) {
+    public Book(String title, String cover) {
         this.title = title;
         this.cover = cover;
     }
@@ -26,11 +25,31 @@ public class Book {
         this.title = title;
     }
 
-    public Image getCover() {
+    public String getCover() {
         return cover;
     }
 
-    public void setCover(Image cover) {
+    public void setCover(String cover) {
         this.cover = cover;
+    }
+
+    @XmlRootElement
+    public static class Cover {
+        private Image image;
+
+        public Cover() {
+        }
+
+        public Cover(Image image) {
+            this.image = image;
+        }
+
+        public Image getImage() {
+            return image;
+        }
+
+        public void setImage(Image image) {
+            this.image = image;
+        }
     }
 }

@@ -161,13 +161,14 @@ class KubernetesProcessor {
 
                 //We need to verify to filter out anything that doesn't extend the Configurator class.
                 //The ConfiguratorBuildItem is a wrapper to Object.
+                final var configurationRegistry = session.getConfigurationRegistry();
                 for (ConfiguratorBuildItem configuratorBuildItem : allConfigurators) {
-                    session.getConfigurationRegistry().add((Configurator) configuratorBuildItem.getConfigurator());
+                    configurationRegistry.add((Configurator) configuratorBuildItem.getConfigurator());
                 }
                 //We need to verify to filter out anything that doesn't extend the ConfigurationSupplier class.
                 //The ConfigurationSupplierBuildItem is a wrapper to Object.
                 for (ConfigurationSupplierBuildItem configurationSupplierBuildItem : allConfigurationSuppliers) {
-                    session.getConfigurationRegistry()
+                    configurationRegistry
                             .add((ConfigurationSupplier) configurationSupplierBuildItem.getConfigurationSupplier());
                 }
 
@@ -186,7 +187,7 @@ class KubernetesProcessor {
                 //The targetDirectory should be the custom if provided, oterwise the 'default' output directory.
                 //I this case 'default' means that one that we used until now (up until we introduced the ability to override).
                 Path targetDirectory = customOutputDir
-                        .map(c -> c.getOutputDir())
+                        .map(CustomKubernetesOutputDirBuildItem::getOutputDir)
                         .map(d -> d.isAbsolute() ? d : project.getRoot().resolve(d))
                         .orElseGet(() -> getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
                                 outputTarget.getOutputDirectory()));
@@ -205,10 +206,10 @@ class KubernetesProcessor {
                     }
                     String fileName = path.toFile().getName();
                     Path targetPath = targetDirectory.resolve(fileName);
-                    String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
-                    generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,
-                            resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
+                    final var generatedBytes = resourceEntry.getValue().getBytes(StandardCharsets.UTF_8);
+                    generatedKubernetesResourceProducer
+                            .produce(new GeneratedKubernetesResourceBuildItem(fileName, generatedBytes));
 
                     if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
                         String target = fileName.substring(0, fileName.lastIndexOf("."));
@@ -218,12 +219,13 @@ class KubernetesProcessor {
                     }
 
                     generatedFileNames.add(fileName);
+                    String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
                     generatedFiles.add(relativePath);
                     generatedResourceProducer.produce(
                             new GeneratedFileSystemResourceBuildItem(
                                     // we need to make sure we are only passing the relative path to the build item
                                     relativePath,
-                                    resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
+                                    generatedBytes));
                 }
 
                 dekorateSessionProducer.produce(new DekorateOutputBuildItem(project, session, generatedFiles));
@@ -243,7 +245,7 @@ class KubernetesProcessor {
 
             });
 
-            if (!optionalProject.isPresent()) {
+            if (optionalProject.isEmpty()) {
                 log.warn("No project was detected, skipping generation of kubernetes manifests!");
             }
         } catch (Exception e) {
@@ -294,7 +296,6 @@ class KubernetesProcessor {
      * @return the effective output directory.
      */
     private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation, Path projectOutputDirectory) {
-        return config.outputDirectory().map(d -> projectLocation.resolve(d))
-                .orElse(projectOutputDirectory.resolve(KUBERNETES));
+        return config.outputDirectory().map(projectLocation::resolve).orElse(projectOutputDirectory.resolve(KUBERNETES));
     }
 }

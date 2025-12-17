@@ -62,6 +62,7 @@ public class ComposeDevServicesProcessor {
     private static final Logger log = Logger.getLogger(ComposeDevServicesProcessor.class);
 
     static final String PROJECT_PREFIX = "quarkus-devservices";
+    // If you change this, please adapt similar field in io.quarkus.gradle.GradleUtils
     static final Pattern COMPOSE_FILE = Pattern.compile("(^docker-compose|^compose)(-dev(-)?service).*.(yml|yaml)");
 
     static volatile ComposeRunningService runningCompose;

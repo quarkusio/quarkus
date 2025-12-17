@@ -3,7 +3,9 @@ package io.quarkus.maven.dependency;
 import java.util.Collection;
 import java.util.List;
 
-public interface Dependency extends ArtifactCoords {
+import io.quarkus.bootstrap.model.Mappable;
+
+public interface Dependency extends ArtifactCoords, Mappable {
 
     String SCOPE_COMPILE = "compile";
     String SCOPE_IMPORT = "import";

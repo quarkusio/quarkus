@@ -71,15 +71,15 @@
         <jacoco.version>0.8.14</jacoco.version>
         <kubernetes-client.version>7.4.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.6</rest-assured.version>
-        <hibernate-orm.version>7.1.10.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>7.1.12.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.17.6</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-models.version>1.0.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>3.1.9.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>3.1.11.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
         <hibernate-search.version>8.1.2.Final</hibernate-search.version>
-        <hibernate-tools.version>7.1.10.Final</hibernate-tools.version>
+        <hibernate-tools.version>7.1.12.Final</hibernate-tools.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.77.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
@@ -92,7 +92,7 @@
         <proto-google-common-protos.version>2.63.1</proto-google-common-protos.version>
         <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 
-        <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
+        <!-- Used in the build parent and test BOM (for the JUnit plugin) and in the BOM (for the API) -->
         <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
@@ -113,7 +113,7 @@
         <module>independent-projects/vertx-utils</module>
         <module>independent-projects/resteasy-reactive</module>
         <module>independent-projects/extension-maven-plugin</module>
-        <module>independent-projects/junit5-virtual-threads</module>
+        <module>independent-projects/junit-virtual-threads</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>

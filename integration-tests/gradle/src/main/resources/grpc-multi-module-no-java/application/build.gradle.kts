@@ -13,6 +13,6 @@ dependencies {
     implementation("io.quarkus:quarkus-grpc")
     compileOnly("com.google.protobuf:protobuf-kotlin")
 
-    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.quarkus:quarkus-junit")
     testImplementation("io.rest-assured:rest-assured")
 }

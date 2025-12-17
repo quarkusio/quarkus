@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-config</artifactId>
+            <artifactId>quarkus-junit-config</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>

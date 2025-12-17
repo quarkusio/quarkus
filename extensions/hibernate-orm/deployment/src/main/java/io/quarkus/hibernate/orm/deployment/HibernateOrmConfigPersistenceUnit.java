@@ -135,9 +135,11 @@ public interface HibernateOrmConfigPersistenceUnit {
      *
      * This setting is exposed mainly to allow registration of types, converters and SQL functions.
      * ====
+     * * @deprecated Use TypeContributor, FunctionContributor or AdditionalMappingContributor instead.
      *
      * @asciidoclet
      */
+    @Deprecated
     Optional<@WithConverter(TrimmedStringConverter.class) String> metadataBuilderContributor();
 
     /**

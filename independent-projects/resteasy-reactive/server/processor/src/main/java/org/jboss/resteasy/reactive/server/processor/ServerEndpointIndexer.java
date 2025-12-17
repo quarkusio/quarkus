@@ -395,6 +395,10 @@ public class ServerEndpointIndexer
                     annotations, field.type(), "%s", new Object[] { field }, applyFieldRules, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
                     Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
+            if (currentClassInfo.isRecord() && result.getType() == ParameterType.BODY) {
+                throw new DeploymentException(
+                        "Body parameters (or non-annotated fields) are not allowed for records. Make sure to annotate your record components with @Rest* or @*Param or that they can be injected as context objects.");
+            }
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);

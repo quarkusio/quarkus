@@ -20,7 +20,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @QuarkusTest
 public class TlsProtocolVersionDefaultTestCase {
 
-    @TestHTTPResource(value = "/hello", ssl = true)
+    @TestHTTPResource(value = "/hello", tls = true)
     String url;
 
     @Inject
@@ -55,7 +55,7 @@ public class TlsProtocolVersionDefaultTestCase {
 
     @Test
     void testWithWebClientRequestingTls12() {
-        // The Web client is requesting TLS 1.2, the server is exposing 1.2 and 1.3 - all good
+        // The Web client is requesting TLS 1.2, the server is exposing 1.3 - KO
         WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
                 .setEnabledSecureTransportProtocols(Set.of("TLSv1.2"))
                 .setKeyStoreOptions(
@@ -63,8 +63,8 @@ public class TlsProtocolVersionDefaultTestCase {
                 .setTrustStoreOptions(
                         new JksOptions().setPath("src/test/resources/client-truststore.jks").setPassword("password"))
                 .setVerifyHost(false));
-        var resp = client.getAbs(url).sendAndAwait();
-        Assertions.assertEquals(200, resp.statusCode());
+        Throwable exception = Assertions.assertThrows(CompletionException.class, () -> client.getAbs(url).sendAndAwait());
+        Assertions.assertTrue(exception.getCause() instanceof SSLHandshakeException);
     }
 
     @Test

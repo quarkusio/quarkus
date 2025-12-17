@@ -44,7 +44,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
@@ -97,12 +96,6 @@ public class SpringDataJPAProcessor {
         return new IgnorableNonIndexedClasses(ignorable);
     }
 
-    @BuildStep(onlyIf = NativeImageFutureDefault.CompleteReflectionTypes.class)
-    void registerReflectionForCompleteReflectionTypes(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(
-                "org.springframework.data.util.Streamable").methods().build());
-    }
-
     @BuildStep
     void registerReflection(BuildProducer<ReflectiveClassBuildItem> producer) {
         producer.produce(ReflectiveClassBuildItem.builder(
@@ -114,7 +107,8 @@ public class SpringDataJPAProcessor {
                 "org.springframework.data.domain.Sort",
                 "org.springframework.data.domain.Chunk",
                 "org.springframework.data.domain.PageRequest",
-                "org.springframework.data.domain.AbstractPageRequest").methods().build());
+                "org.springframework.data.domain.AbstractPageRequest",
+                "org.springframework.data.util.Streamable").methods().build());
     }
 
     @BuildStep

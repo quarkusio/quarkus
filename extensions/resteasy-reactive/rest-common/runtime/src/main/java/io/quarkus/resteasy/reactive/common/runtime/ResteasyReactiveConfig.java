@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
+import java.util.List;
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
@@ -10,6 +13,11 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "quarkus.rest")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface ResteasyReactiveConfig {
+
+    /**
+     * Exception mapping configuration.
+     */
+    ExceptionMappingConfig exceptionMapping();
 
     /**
      * The amount of memory that can be used to buffer input before switching to
@@ -81,4 +89,15 @@ public interface ResteasyReactiveConfig {
      */
     @WithDefault("true")
     boolean removesTrailingSlash();
+
+    /**
+     * Configuration for exception mapping.
+     */
+    interface ExceptionMappingConfig {
+        /**
+         * A list of exception mapper classes that should be disabled.
+         * This allows users to override the default built-in exception mappers provided by Quarkus extensions.
+         */
+        Optional<List<String>> disableMapperFor();
+    }
 }

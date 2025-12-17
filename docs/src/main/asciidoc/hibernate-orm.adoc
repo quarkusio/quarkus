@@ -559,6 +559,10 @@ See <<json_xml_serialization_deserialization>>.
 See <<multitenancy>>.
 `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver`::
 See <<programmatically-resolving-tenants-connections>>.
+`org.hibernate.boot.model.FunctionContributor`::
+See <<custom-functions-and-types>>.
+`org.hibernate.boot.model.TypeContributor`::
+See <<custom-functions-and-types>>.
 
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
@@ -1113,10 +1117,10 @@ For more information about Hibernate Envers, see link:https://hibernate.org/orm/
 
 [[metrics]]
 == Metrics
-Either xref:telemetry-micrometer.adoc[Micrometer] or xref:smallrye-metrics.adoc[SmallRye Metrics] are
+xref:telemetry-micrometer.adoc[Micrometer] is
 capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
-on the `/q/metrics` endpoint, make sure your project depends on a metrics extension and set the configuration property `quarkus.hibernate-orm.metrics.enabled` to `true`.
-When using xref:smallrye-metrics.adoc[SmallRye Metrics], metrics will be available under the `vendor` scope.
+on the `/q/metrics` endpoint, make sure your project depends on a metrics extension and set the configuration
+property `quarkus.hibernate-orm.metrics.enabled` to `true`.
 
 == Limitations and other things you should know
 
@@ -1574,6 +1578,149 @@ public class ExampleTenantConnectionResolver implements TenantConnectionResolver
 }
 ----
 
+[[custom-functions-and-types]]
+=== Custom functions, types and mappings
+
+To register custom SQL functions or types, in Hibernate ORM, you can implement the standard Hibernate interfaces:
+
+* `org.hibernate.boot.model.FunctionContributor`
+* `org.hibernate.boot.model.TypeContributor`
+
+Creating an application-scoped bean that implements one of these interfaces and annotating it with `@PersistenceUnitExtension`
+(or `@PersistenceUnitExtension("nameOfYourPU")` for a <<multiple-persistence-units,named persistence unit>>)
+will automatically register it with the corresponding persistence unit.
+
+Here is an example of a custom function contributor:
+
+[source,java]
+----
+import java.util.List;
+import org.hibernate.boot.model.FunctionContributions;
+import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.query.sqm.function.AbstractSqmSelfRenderingFunctionDescriptor;
+import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
+import org.hibernate.query.sqm.produce.function.StandardFunctionArgumentTypeResolvers;
+import org.hibernate.query.sqm.produce.function.StandardFunctionReturnTypeResolvers;
+import org.hibernate.sql.ast.SqlAstTranslator;
+import org.hibernate.sql.ast.spi.SqlAppender;
+import org.hibernate.sql.ast.tree.SqlAstNode;
+import org.hibernate.sql.ast.tree.expression.ReturnableType;
+import org.hibernate.sql.ast.tree.expression.SqlAstNodeRenderingMode;
+import org.hibernate.type.StandardBasicTypes;
+import org.hibernate.type.spi.TypeConfiguration;
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@PersistenceUnitExtension
+public class CustomFunctionContributor implements FunctionContributor {
+
+    @Override
+    public void contributeFunctions(FunctionContributions functionContributions) {
+        functionContributions.getFunctionRegistry().register(
+                "addHardcodedSuffix",
+                new HardcodedSuffixFunction(
+                        functionContributions.getTypeConfiguration(), "_some_suffix"));
+    }
+
+    private static final class HardcodedSuffixFunction extends AbstractSqmSelfRenderingFunctionDescriptor {
+        private final String suffix;
+
+        private HardcodedSuffixFunction(TypeConfiguration typeConfiguration, String suffix) {
+            super("addHardcodedSuffix",
+                    StandardArgumentsValidators.exactly(1),
+                    StandardFunctionReturnTypeResolvers.invariant(
+                            typeConfiguration.getBasicTypeRegistry().resolve(StandardBasicTypes.STRING)),
+                    StandardFunctionArgumentTypeResolvers.impliedOrInvariant(typeConfiguration, StandardBasicTypes.STRING)
+            );
+            this.suffix = suffix;
+        }
+
+        @Override
+        public void render(SqlAppender sqlAppender, List<? extends SqlAstNode> sqlAstArguments, ReturnableType<?> returnType,
+                           SqlAstTranslator<?> walker) {
+            sqlAppender.appendSql('(');
+            walker.render(sqlAstArguments.get(0), SqlAstNodeRenderingMode.DEFAULT);
+            sqlAppender.appendSql(" || '" + suffix + "')");
+        }
+    }
+}
+
+----
+
+And here is an example of a custom type contributor that registers a custom `UserType` (e.g. mapping a Boolean to "Y"/"N"):
+
+[source,java]
+----
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import org.hibernate.boot.model.TypeContributions;
+import org.hibernate.boot.model.TypeContributor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.WrapperOptions;
+import org.hibernate.usertype.UserType;
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@PersistenceUnitExtension
+public class CustomTypeContributor implements TypeContributor {
+
+    @Override
+    public void contribute(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
+        // Registers the custom type so it can be used via @Type(value = BooleanYesNoType.class) on your entity property
+        typeContributions.getTypeConfiguration()
+                .getBasicTypeRegistry()
+                .register(new BooleanYesNoType(), "boolean_yes_no");
+    }
+
+    public static final class BooleanYesNoType implements UserType<Boolean> {
+        @Override
+        public int getSqlType() {
+            return SqlTypes.VARCHAR;
+        }
+
+        @Override
+        public Class<Boolean> returnedClass() {
+            return Boolean.class;
+        }
+
+        @Override
+        public Boolean nullSafeGet(ResultSet rs, int position, WrapperOptions options) throws SQLException {
+            String value = rs.getString(position);
+
+            if (value == null) {
+                return null;
+            }
+
+            return "Y".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value);
+        }
+
+        @Override
+        public void nullSafeSet(PreparedStatement st, Boolean value, int position, WrapperOptions options) throws SQLException {
+            if (value == null) {
+                st.setNull(position, SqlTypes.VARCHAR);
+            } else {
+                st.setString(position, value ? "Y" : "N");
+            }
+        }
+
+        @Override
+        public Boolean deepCopy(Boolean value) {
+            return value;
+        }
+
+        @Override
+        public boolean isMutable() {
+            return false;
+        }
+    }
+}
+----
+
 [[interceptors]]
 == Interceptors
 
@@ -1948,6 +2095,96 @@ to learn more about the `dataStore` attribute.
 Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
 and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
 guides to learn what else they have to offer.
+
+==== Secure Jakarta Data repositories
+
+Quarkus Security provides an initial support for securing Jakarta Data Repositories with security annotations.
+
+.Example Jakarta Data repository with method-level security annotation
+[source,java]
+----
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> {
+
+    @RolesAllowed("admin")
+    @Delete
+    void delete(String name);
+
+}
+----
+
+.Example Jakarta Data repository with class-level security annotation
+[source,java]
+----
+@Authenticated
+@Repository
+public interface MyRepository extends CrudRepository<MyEntity, Integer> {
+
+    @Delete
+    void delete(String name);
+
+}
+----
+
+[WARNING]
+====
+In the example above, only methods directly declared on the `MyRepository` interface are secured.
+Methods inherited from `CrudRepository`, such as `insert`, are not secured because type-level annotations only affect the type they annotate.
+====
+
+[IMPORTANT]
+====
+Currently, generic interface methods using type variables or wildcards cannot be secured reliably with standard security annotations.
+Therefore, you must not attempt to secure such methods and instead use two alternatives described below.
+
+.Example repository with a generic method using a type variable
+[source,java]
+----
+public interface MyParentRepository<T extends MyEntity> {
+
+    @Find
+    Stream<T> findAll(Order<T> order);
+
+}
+
+@Repository
+public interface MyRepository extends MyParentRepository<MyEntity> {
+}
+----
+
+Alternative 1: Apply a security annotation to the calling method in your REST layer:
+
+[source,java]
+----
+@Path("my-entity")
+public class MyEntityResource {
+
+    @Inject
+    MyRepository myRepository;
+
+    @PermissionsAllowed("find-all")
+    @GET
+    public List<MyEntity> findAll() {
+        return myRepository.findAll(Order.by(Sort.asc(MyEntity_.NAME))).toList();
+    }
+
+}
+----
+
+Alternative 2: Replace the type variable `T` with a concrete type in the repository interface:
+
+[source,java]
+----
+@Repository
+public interface MyRepository {
+
+    @PermissionsAllowed("find-all")
+    @Find
+    Stream<MyEntity> findAll(Order<MyEntity> order);
+
+}
+----
+====
 
 [[configuration-reference]]
 == Configuration Reference for Hibernate ORM

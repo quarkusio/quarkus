@@ -1452,7 +1452,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
-        public Duration sessionAgeExtension() {
+        public Optional<Duration> sessionAgeExtension() {
             return sessionAgeExtension;
         }
 
@@ -1747,7 +1747,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          * the session has expired.
          * This property is ignored if the `token.refresh-expired` property has not been enabled.
          */
-        public Duration sessionAgeExtension = Duration.ofMinutes(5);
+        public Optional<Duration> sessionAgeExtension = Optional.empty();
 
         /**
          * State cookie age in minutes.
@@ -1959,12 +1959,12 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.verifyAccessToken = verifyAccessToken;
         }
 
-        public Duration getSessionAgeExtension() {
+        public Optional<Duration> getSessionAgeExtension() {
             return sessionAgeExtension;
         }
 
         public void setSessionAgeExtension(Duration sessionAgeExtension) {
-            this.sessionAgeExtension = sessionAgeExtension;
+            this.sessionAgeExtension = Optional.of(sessionAgeExtension);
         }
 
         public Optional<String> getCookiePathHeader() {

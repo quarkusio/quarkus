@@ -926,10 +926,11 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * the user is redirected to the OIDC provider to re-authenticate once the session has expired.
          * If this property is set to a nonzero value, then the expired ID token can be refreshed before
          * the session has expired.
-         * This property is ignored if the `token.refresh-expired` property has not been enabled.
+         * This property is effective only if the `token.refresh-expired` property is enabled and a refresh token is available.
+         * It is set to 5 minutes by default.
          */
-        @WithDefault("5M")
-        Duration sessionAgeExtension();
+        @ConfigDocDefault("5M")
+        Optional<Duration> sessionAgeExtension();
 
         /**
          * State cookie age in minutes.

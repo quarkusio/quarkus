@@ -23,18 +23,42 @@
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-messaging-kafka-test-companion</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>toxiproxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>eu.rekawek.toxiproxy</groupId>
+                    <artifactId>toxiproxy-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>strimzi-test-container</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>toxiproxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>eu.rekawek.toxiproxy</groupId>
+                    <artifactId>toxiproxy-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-toxiproxy</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>

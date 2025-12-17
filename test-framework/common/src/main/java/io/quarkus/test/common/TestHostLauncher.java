@@ -2,6 +2,7 @@ package io.quarkus.test.common;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * A launcher that simply sets the {@code quarkus.http.host} property based on the value {@code quarkus.http.test-host}
@@ -10,13 +11,13 @@ import java.util.Map;
  */
 @SuppressWarnings("rawtypes")
 public class TestHostLauncher implements ArtifactLauncher {
-
     private String previousHost;
 
     @Override
-    public void start() throws IOException {
+    public Optional<ListeningAddress> start() throws IOException {
         // set 'quarkus.http.host' to ensure that RestAssured targets the proper host
         previousHost = System.setProperty("quarkus.http.host", System.getProperty("quarkus.http.test-host"));
+        return Optional.empty();
     }
 
     @Override
@@ -24,11 +25,6 @@ public class TestHostLauncher implements ArtifactLauncher {
         if (previousHost != null) {
             System.setProperty("quarkus.http.host", previousHost);
         }
-    }
-
-    @Override
-    public boolean listensOnSsl() {
-        return Boolean.parseBoolean(System.getProperty("quarkus.http.test-ssl-enabled", "false"));
     }
 
     @Override

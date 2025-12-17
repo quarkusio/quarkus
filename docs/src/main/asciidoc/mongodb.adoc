@@ -682,12 +682,12 @@ This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` pr
 
 == Metrics
 
-If you are using the `quarkus-micrometer` or `quarkus-smallrye-metrics` extension, `quarkus-mongodb-client` can provide metrics about the connection pools.
-This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your `application.properties`.
+If you are using the `quarkus-micrometer`, `quarkus-mongodb-client` can provide metrics about the connection pools.
+This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your
+`application.properties`.
 
-So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool status.
-When using xref:smallrye-metrics.adoc[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
-
+So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool
+status.
 
 == Tracing
 

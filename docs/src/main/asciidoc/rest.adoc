@@ -1465,14 +1465,14 @@ There are situations where various Jackson related exceptions need to handled in
 This becomes a problem when taking JAX-RS / Jakarta REST rules into account, because the exception mapper `ExceptionMapper` for `MismatchedInputException` would be used instead of the user provide
 `ExceptionMapper` for `JsonMappingException` (as `MismatchedInputException` is a subtype of `JsonMappingException`).
 
-One solution for this case is to configure the following:
+To handle this, you can disable the built-in exception mapper:
 
 [source,properties]
 ----
-quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/BuiltinMismatchedInputExceptionMapper.class
+quarkus.rest.exception-mapping.disable-mapper-for=io.quarkus.resteasy.reactive.jackson.runtime.mappers.BuiltinMismatchedInputExceptionMapper
 ----
 
-which essentially makes Quarkus ignore the `ExceptionMapper` for `MismatchedInputException` completely.
+This allows your custom `ExceptionMapper` for `JsonMappingException` to handle all its subclasses, including `MismatchedInputException`.
 ====
 
 [[secure-serialization]]

@@ -8,7 +8,6 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.deployment.pkg.NativeConfig;
 
 public enum NativeImageFutureDefault {
-    COMPLETE_REFLECTION_TYPES,
     RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS,
     RUN_TIME_INITIALIZE_SECURITY_PROVIDERS;
 
@@ -85,17 +84,6 @@ public enum NativeImageFutureDefault {
         @Override
         public boolean getAsBoolean() {
             return isFutureDefault(NativeImageFutureDefault.RUN_TIME_INITIALIZE_SECURITY_PROVIDERS, nativeConfig);
-        }
-    }
-
-    public static final class CompleteReflectionTypes extends AbstractNativeImageFutureDefaultBooleanSupplier {
-        public CompleteReflectionTypes(NativeConfig nativeConfig) {
-            super(nativeConfig);
-        }
-
-        @Override
-        public boolean getAsBoolean() {
-            return isFutureDefault(NativeImageFutureDefault.COMPLETE_REFLECTION_TYPES, nativeConfig);
         }
     }
 }

@@ -11,7 +11,7 @@ import org.apache.maven.project.MavenProject;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
-import io.quarkus.bootstrap.workspace.DefaultSourceDir;
+import io.quarkus.bootstrap.workspace.LazySourceDir;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
@@ -34,10 +34,10 @@ class QuarkusMavenWorkspaceBuilder {
         final Path generatedSourcesDir = Path.of(build.getDirectory(), "generated-sources/annotations");
         final List<SourceDir> sources = new ArrayList<>(project.getCompileSourceRoots().size());
         project.getCompileSourceRoots()
-                .forEach(s -> sources.add(new DefaultSourceDir(Path.of(s), classesDir, generatedSourcesDir)));
+                .forEach(s -> sources.add(new LazySourceDir(Path.of(s), classesDir, generatedSourcesDir)));
         final List<SourceDir> resources = new ArrayList<>(build.getResources().size());
         for (Resource r : build.getResources()) {
-            resources.add(new DefaultSourceDir(Path.of(r.getDirectory()),
+            resources.add(new LazySourceDir(Path.of(r.getDirectory()),
                     r.getTargetPath() == null ? classesDir : Path.of(r.getTargetPath()),
                     // FIXME: generated sources?
                     null));
@@ -46,12 +46,12 @@ class QuarkusMavenWorkspaceBuilder {
 
         final Path testClassesDir = Path.of(build.getTestOutputDirectory());
         final List<SourceDir> testSources = new ArrayList<>(project.getCompileSourceRoots().size());
-        project.getTestCompileSourceRoots().forEach(s -> testSources.add(new DefaultSourceDir(Path.of(s), testClassesDir,
+        project.getTestCompileSourceRoots().forEach(s -> testSources.add(new LazySourceDir(Path.of(s), testClassesDir,
                 // FIXME: do tests have generated sources?
                 null)));
         final List<SourceDir> testResources = new ArrayList<>(build.getTestResources().size());
         for (Resource r : build.getTestResources()) {
-            testResources.add(new DefaultSourceDir(Path.of(r.getDirectory()),
+            testResources.add(new LazySourceDir(Path.of(r.getDirectory()),
                     r.getTargetPath() == null ? testClassesDir : Path.of(r.getTargetPath()),
                     // FIXME: do tests have generated sources?
                     null));

@@ -50,6 +50,7 @@ import io.dekorate.kubernetes.decorator.AddPvcVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddSelectorToDeploymentSpecDecorator;
+import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.AddStartupProbeDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
@@ -217,7 +218,7 @@ public class KubernetesCommonHelper {
             if (enabled) {
                 String name = "quarkus." + target + ".ports." + port.getName() + ".container-port";
                 Optional<Integer> value = Optional.ofNullable(configuration.ports().get(port.getName()))
-                        .map(p -> p.containerPort())
+                        .map(PortConfig::containerPort)
                         .filter(OptionalInt::isPresent)
                         .map(OptionalInt::getAsInt);
                 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -579,14 +580,14 @@ public class KubernetesCommonHelper {
     private static List<DecoratorBuildItem> createCommandDecorator(String target, String name,
             PlatformConfiguration config, Optional<KubernetesCommandBuildItem> command) {
         List<DecoratorBuildItem> result = new ArrayList<>();
+        // If not, we use the command that has been provided in other extensions (if any).
         if (config.command().isPresent()) {
             // If command has been set in configuration, we use it
             result.add(new DecoratorBuildItem(target,
                     new ApplyCommandDecorator(name, config.command().get().toArray(new String[0]))));
-        } else if (command.isPresent()) {
-            // If not, we use the command that has been provided in other extensions (if any).
-            result.add(new DecoratorBuildItem(target,
-                    new ApplyCommandDecorator(name, command.get().getCommand().toArray(new String[0]))));
+        } else {
+            command.ifPresent(kubeCmdBI -> result.add(new DecoratorBuildItem(target,
+                    new ApplyCommandDecorator(name, kubeCmdBI.getCommand().toArray(new String[0])))));
         }
 
         return result;
@@ -862,7 +863,7 @@ public class KubernetesCommonHelper {
         config.initContainers().entrySet().forEach(e -> result
                 .add(new DecoratorBuildItem(target, new AddInitContainerDecorator(name, ContainerConverter.convert(e)))));
 
-        config.getSidecars().entrySet().forEach(
+        config.sidecars().entrySet().forEach(
                 e -> result.add(new DecoratorBuildItem(target, new AddSidecarDecorator(name, ContainerConverter.convert(e)))));
 
         config.resources().limits().cpu()
@@ -1065,7 +1066,7 @@ public class KubernetesCommonHelper {
                 .or(() -> portName.map(KubernetesProbePortNameBuildItem::getName))
                 .orElse(HTTP_PORT);
 
-        Integer port;
+        int port;
         PortConfig portFromConfig = portsFromConfig.get(httpPortName);
         if (probeConfig.httpActionPort().isPresent()) {
             port = probeConfig.httpActionPort().get();
@@ -1086,12 +1087,12 @@ public class KubernetesCommonHelper {
             scheme = SCHEME_HTTPS;
         } else if (portName.isPresent()
                 && portName.get().getScheme() != null
-                && portName.get().getName().equals(httpPortName)) {
+                && httpPortName.equals(portName.get().getName())) {
             // 3. Extensions
             scheme = portName.get().getScheme();
         } else {
             // 4. Using the port number.
-            scheme = port != null && (port == 443 || port == 8443) ? SCHEME_HTTPS : SCHEME_HTTP;
+            scheme = port == 443 || port == 8443 ? SCHEME_HTTPS : SCHEME_HTTP;
         }
 
         // Applying to all deployments to mimic the same logic as the rest of probes in the method createProbeDecorators.

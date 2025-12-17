@@ -350,6 +350,35 @@ public class DevToolsConfigSerializationTest {
     }
 
     @Test
+    void testRegistryClientMavenPlatformExtensionJsonConfig() throws IOException {
+        String configName = "registry-client-platform-extension-maven-config.json";
+        Path expectedFile = baseDir.resolve(configName);
+        Path actualFile = writeDir.resolve(configName);
+
+        RegistryConfig expected = RegistryConfig.builder()
+                .setId("registry.acme.org")
+                .setDescriptor(RegistryDescriptorConfig.builder()
+                        .setArtifact(
+                                ArtifactCoords
+                                        .fromString("registry.quarkus.test:quarkus-registry-descriptor::json:1.0-SNAPSHOT")))
+                .setPlatforms(RegistryPlatformsConfig.builder()
+                        .setArtifact(ArtifactCoords.fromString("registry.quarkus.test:quarkus-platforms::json:1.0-SNAPSHOT"))
+                        .setMaven(RegistryMavenConfig.builder().setRepository(
+                                RegistryMavenRepoConfig.builder().setId("repo-id").setUrl("repo-url"))))
+                .setNonPlatformExtensions(RegistryNonPlatformExtensionsConfig.builder()
+                        .setDisabled(true)
+                        .setArtifact(ArtifactCoords
+                                .fromString("registry.quarkus.test:quarkus-non-platform-extensions::json:1.0-SNAPSHOT")));
+
+        expected.persist(actualFile);
+
+        String expectedContents = Files.readString(expectedFile);
+        String actualContents = Files.readString(actualFile);
+
+        assertThat(actualContents).isEqualTo(expectedContents);
+    }
+
+    @Test
     void testReadJsonRegistryDescriptor() throws IOException {
         String configName = "registry-descriptor-1.0-SNAPSHOT.json";
         Path expectedFile = baseDir.resolve(configName);

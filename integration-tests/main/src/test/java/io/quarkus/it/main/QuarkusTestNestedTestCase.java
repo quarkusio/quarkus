@@ -78,9 +78,9 @@ public class QuarkusTestNestedTestCase {
         @Order(1)
         void testOne() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(7, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
-            assertEquals(2, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(5, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(3, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(1, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
+            assertEquals(1, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 
@@ -88,9 +88,9 @@ public class QuarkusTestNestedTestCase {
         @Order(2)
         void testTwo() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(9, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
-            assertEquals(3, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(7, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(5, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(2, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
+            assertEquals(3, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 
@@ -162,7 +162,7 @@ public class QuarkusTestNestedTestCase {
             @Test
             @Order(5)
             void testOuterInstancesInAfterAll() {
-                assertEquals(1, TestContextCheckerAfterAllCallback.OUTER_INSTANCES.size());
+                assertEquals(0, TestContextCheckerAfterAllCallback.OUTER_INSTANCES.size());
             }
         }
     }
@@ -178,9 +178,9 @@ public class QuarkusTestNestedTestCase {
         @Test
         void testOne() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(3, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
-            assertEquals(1, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(1, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(23, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(3, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
+            assertEquals(21, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 

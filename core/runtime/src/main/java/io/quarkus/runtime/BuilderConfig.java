@@ -5,6 +5,7 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Builder.
@@ -26,4 +27,26 @@ public interface BuilderConfig {
      * Whether to log the cause of a conflict.
      */
     Optional<Boolean> logConflictCause();
+
+    /**
+     * Build metrics configuration.
+     */
+    Metrics Metrics();
+
+    interface Metrics {
+
+        /**
+         * If set to true then dump the build metrics to a JSON file in the build directory.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * If set to true then the collection of metrics is enhanced but the size of the generated JSON file may grow
+         * significantly.
+         */
+        @WithDefault("false")
+        boolean extendedCapture();
+
+    }
 }

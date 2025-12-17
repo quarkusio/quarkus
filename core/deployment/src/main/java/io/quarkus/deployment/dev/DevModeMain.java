@@ -27,7 +27,7 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.JVMChecksRecorder;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.smallrye.common.os.OS;
 
 /**
@@ -116,7 +116,7 @@ public class DevModeMain implements Closeable {
 
     private void prepareJVMSettings() {
         //Disable the sun.misc.Unsafe warnings in dev-mode:
-        JVMChecksRecorder.disableUnsafeRelatedWarnings();
+        JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
     }
 
     private PathList getApplicationBuildDirs() {

@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -317,25 +316,17 @@ public class MavenArtifactResolver {
         List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
         final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
         final List<Dependency> mergedManagedDeps;
-        Map<ArtifactKey, String> managedVersions = Map.of();
+        Map<ArtifactKey, Dependency> managedMap;
         if (!managedDeps.isEmpty()) {
-            mergedManagedDeps = new ArrayList<Dependency>(managedDeps.size() + descr.getManagedDependencies().size());
-            managedVersions = new HashMap<>(managedDeps.size());
-            for (Dependency dep : managedDeps) {
-                managedVersions.put(getKey(dep.getArtifact()), dep.getArtifact().getVersion());
-                mergedManagedDeps.add(dep);
-            }
-            for (Dependency dep : descr.getManagedDependencies()) {
-                final ArtifactKey key = getKey(dep.getArtifact());
-                if (!managedVersions.containsKey(key)) {
-                    mergedManagedDeps.add(dep);
-                }
-            }
+            managedMap = DependencyUtils.toMap(managedDeps);
+            DependencyUtils.putAll(managedMap, descr.getManagedDependencies());
+            mergedManagedDeps = new ArrayList<>(managedMap.values());
         } else {
             mergedManagedDeps = descr.getManagedDependencies();
+            managedMap = DependencyUtils.toMap(mergedManagedDeps);
         }
 
-        directDeps = DependencyUtils.mergeDeps(directDeps, descr.getDependencies(), managedVersions, excludedScopes);
+        directDeps = DependencyUtils.mergeDependencies(directDeps, descr.getDependencies(), managedMap, excludedScopes);
         aggregatedRepos = aggregateRepositories(aggregatedRepos, newResolutionRepositories(descr.getRepositories()));
         return newCollectRequest(artifact, directDeps, mergedManagedDeps, exclusions, aggregatedRepos);
     }

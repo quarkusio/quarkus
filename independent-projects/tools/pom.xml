@@ -53,13 +53,13 @@
         <assertj.version>3.27.6</assertj.version>
         <jackson-bom.version>2.20.1</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <junit5.version>5.13.4</junit5.version>
+        <junit.version>6.0.1</junit.version>
         <commons-compress.version>1.28.0</commons-compress.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <mockito.version>5.20.0</mockito.version>
+        <mockito.version>5.21.0</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.5.2</jandex.version>
+        <jandex.version>3.5.3</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>
@@ -102,11 +102,11 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- JUnit 5 dependencies, imported as a BOM -->
+            <!-- JUnit dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
-                <version>${junit5.version}</version>
+                <version>${junit.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

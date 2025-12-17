@@ -3,6 +3,9 @@ package io.quarkus.maven.dependency;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+
+import io.quarkus.bootstrap.BootstrapConstants;
 
 abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, T>, T> {
 
@@ -14,6 +17,23 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
     String scope = Dependency.SCOPE_COMPILE;
     int flags;
     Collection<ArtifactKey> exclusions = List.of();
+
+    @SuppressWarnings("unchecked")
+    public B fromMap(Map<String, Object> map) {
+        setCoords(ArtifactCoords.fromString(map.get(BootstrapConstants.MAPPABLE_MAVEN_ARTIFACT).toString()));
+        Object scope = map.get(BootstrapConstants.MAPPABLE_SCOPE);
+        if (scope != null) {
+            setScope(scope.toString());
+        }
+        setFlags(Integer.parseInt(map.get(BootstrapConstants.MAPPABLE_FLAGS).toString()));
+        var exclusions = map.get(BootstrapConstants.MAPPABLE_EXCLUSIONS);
+        if (exclusions != null) {
+            for (String key : (Collection<String>) exclusions) {
+                addExclusion(ArtifactKey.fromString(key));
+            }
+        }
+        return (B) this;
+    }
 
     @SuppressWarnings("unchecked")
     public B setCoords(ArtifactCoords coords) {

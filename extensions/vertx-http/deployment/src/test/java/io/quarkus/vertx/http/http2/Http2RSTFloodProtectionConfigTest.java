@@ -47,7 +47,7 @@ public class Http2RSTFloodProtectionConfigTest {
             quarkus.http.limits.rst-flood-window-duration=10s
             """;
 
-    @TestHTTPResource(value = "/ping", ssl = true)
+    @TestHTTPResource(value = "/ping", tls = true)
     URL sslUrl;
 
     @TestHTTPResource(value = "/ping")

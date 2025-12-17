@@ -43,7 +43,7 @@ jobs:
             github.event_name == 'workflow_dispatch'
             && format( '{{ "include": [{{ "version": "{0}", "dist": "{1}" }}] }}',
                 github.event.inputs.jdkVersion, github.event.inputs.jdkDistribution )
-            || '{ "include": [{ "version": 20, "dist": "jdk.java.net" }, { "version": 21, "dist": "jdk.java.net" }] }'
+            || '{ "include": [{ "version": 26, "dist": "jdk.java.net" }] }'
           )
         }}
     if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
@@ -88,7 +88,7 @@ jobs:
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
@@ -121,7 +121,7 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: test-reports-linux-jvm${{ matrix.version }}

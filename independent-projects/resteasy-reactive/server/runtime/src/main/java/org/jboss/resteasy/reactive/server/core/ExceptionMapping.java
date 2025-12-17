@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.server.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -30,6 +32,11 @@ public class ExceptionMapping {
     final Map<String, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
     // this is going to be used when there are mappers that are removable at runtime
     final Map<String, List<ResourceExceptionMapper<? extends Throwable>>> runtimeCheckMappers = new HashMap<>();
+
+    /**
+     * Exception mapper class names that should be disabled.
+     */
+    final Set<String> disabledMappers = new HashSet<>();
 
     /**
      * Exceptions that indicate an blocking operation was performed on an IO thread.
@@ -126,9 +133,17 @@ public class ExceptionMapping {
         return runtimeCheckMappers;
     }
 
+    public Set<String> getDisabledMappers() {
+        return disabledMappers;
+    }
+
+    public void addDisabledMapper(String mapperClassName) {
+        disabledMappers.add(mapperClassName);
+    }
+
     public Map<String, ResourceExceptionMapper<? extends Throwable>> effectiveMappers() {
         if (runtimeCheckMappers.isEmpty()) {
-            return mappers;
+            return filterDisabledMappers(mappers);
         }
         Map<String, ResourceExceptionMapper<? extends Throwable>> result = new HashMap<>();
         for (var entry : runtimeCheckMappers.entrySet()) {
@@ -147,6 +162,20 @@ public class ExceptionMapping {
             }
         }
         result.putAll(mappers);
+        return filterDisabledMappers(result);
+    }
+
+    private Map<String, ResourceExceptionMapper<? extends Throwable>> filterDisabledMappers(
+            Map<String, ResourceExceptionMapper<? extends Throwable>> mappers) {
+        if (disabledMappers.isEmpty()) {
+            return mappers;
+        }
+        Map<String, ResourceExceptionMapper<? extends Throwable>> result = new HashMap<>();
+        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> entry : mappers.entrySet()) {
+            if (!disabledMappers.contains(entry.getValue().getClassName())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
         return result;
     }
 

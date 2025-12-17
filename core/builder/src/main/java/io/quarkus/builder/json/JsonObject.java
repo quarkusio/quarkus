@@ -6,6 +6,10 @@ import java.util.stream.Collectors;
 
 import io.quarkus.builder.JsonTransform;
 
+/**
+ * @deprecated since 3.31.0 in favor of {@link io.quarkus.bootstrap.json.JsonObject}
+ */
+@Deprecated(forRemoval = true)
 public final class JsonObject implements JsonMultiValue {
     private final Map<JsonString, JsonValue> value;
 

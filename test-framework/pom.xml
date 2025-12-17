@@ -19,15 +19,14 @@
         <module>h2</module>
         <module>grpc</module>
         <module>kubernetes-client</module>
-        <module>junit5-config</module>
-        <module>junit5-internal</module>
-        <module>junit5</module>
-        <module>junit5-component</module>
-        <module>junit5-mockito</module>
-        <module>junit5-mockito-config</module>
+        <module>junit-config</module>
+        <module>junit-internal</module>
+        <module>junit</module>
+        <module>junit-component</module>
+        <module>junit-mockito</module>
+        <module>junit-mockito-config</module>
         <module>vertx</module>
         <module>hibernate-reactive-panache</module>
-        <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>
         <module>maven</module>

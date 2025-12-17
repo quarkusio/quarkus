@@ -1,7 +1,8 @@
 package io.quarkus.test.common;
 
 /**
- * This internal SPI is used by {@code io.quarkus.test.junit.classloading.FacadeClassLoader} from quarkus-junit5 to extend its
+ * This internal SPI is used by {@code io.quarkus.test.junit.classloading.FacadeClassLoader} from quarkus-junit to
+ * extend its
  * functionality.
  */
 public interface FacadeClassLoaderProvider {

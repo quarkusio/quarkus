@@ -39,16 +39,16 @@ public interface LogRuntimeConfig {
      * <p>
      * JBoss Logging supports Apache-style log levels:
      * <p>
-     * * {@link org.jboss.logmanager.Level#FATAL}
-     * * {@link org.jboss.logmanager.Level#ERROR}
-     * * {@link org.jboss.logmanager.Level#WARN}
-     * * {@link org.jboss.logmanager.Level#INFO}
-     * * {@link org.jboss.logmanager.Level#DEBUG}
-     * * {@link org.jboss.logmanager.Level#TRACE}
+     * <ul>
+     * <li>{@link org.jboss.logmanager.Level#FATAL}</li>
+     * <li>{@link org.jboss.logmanager.Level#ERROR}</li>
+     * <li>{@link org.jboss.logmanager.Level#WARN}</li>
+     * <li>{@link org.jboss.logmanager.Level#INFO}</li>
+     * <li>{@link org.jboss.logmanager.Level#DEBUG}</li>
+     * <li>{@link org.jboss.logmanager.Level#TRACE}</li>
+     * </ul>
      *
      * In addition, it also supports the standard JDK log levels.
-     *
-     * @asciidoclet
      */
     @WithDefault("INFO")
     @WithConverter(LevelConverter.class)

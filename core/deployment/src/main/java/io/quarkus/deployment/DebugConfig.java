@@ -21,6 +21,8 @@ public interface DebugConfig {
 
     /**
      * If set to true, writes a list of all reflective classes to META-INF
+     * <p>
+     * For fast-jar the META-INF is inside of quarkus-app/quarkus/generated-bytecode.jar
      */
     @WithDefault("false")
     boolean reflection();
@@ -44,7 +46,10 @@ public interface DebugConfig {
 
     /**
      * If set to true then dump the build metrics to a JSON file in the build directory.
+     *
+     * @deprecated Use {@link io.quarkus.runtime.BuilderConfig#Metrics()} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.31")
     @WithDefault("false")
     boolean dumpBuildMetrics();
 }

@@ -1,7 +1,7 @@
 package io.quarkus.devservices.mssql.deployment;
 
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_STRONG_PASSWORD;
-import static org.testcontainers.containers.MSSQLServerContainer.MS_SQL_SERVER_PORT;
+import static org.testcontainers.mssqlserver.MSSQLServerContainer.MS_SQL_SERVER_PORT;
 
 import java.time.Duration;
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;

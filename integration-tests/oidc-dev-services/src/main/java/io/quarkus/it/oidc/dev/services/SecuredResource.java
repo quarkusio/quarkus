@@ -23,6 +23,9 @@ public class SecuredResource {
     JsonWebToken idToken;
 
     @Inject
+    JsonWebToken accessToken;
+
+    @Inject
     UserInfo userInfo;
 
     @Inject
@@ -45,6 +48,13 @@ public class SecuredResource {
     @Path("user-only")
     public String getUserOnly() {
         return userInfo.getPreferredUserName() + " " + securityIdentity.getRoles() + " " + userInfo.getName();
+    }
+
+    @RolesAllowed("user")
+    @GET
+    @Path("expires-in")
+    public String getExpiresIn() {
+        return String.valueOf(accessToken.getExpirationTime() - accessToken.getIssuedAtTime());
     }
 
     @GET

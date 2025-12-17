@@ -24,17 +24,17 @@
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.1.0</dokka.version>
         <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.9.7</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.9.8</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.5.2</jandex.version>
+        <jandex.version>3.5.3</jandex.version>
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.19.0</htmlunit.version>
+        <htmlunit.version>4.20.0</htmlunit.version>
         <javaparser-core.version>3.27.1</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
@@ -42,7 +42,7 @@
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
         <commonmark.version>0.27.0</commonmark.version>
-        <jgit.version>7.4.0.202509020913-r</jgit.version>
+        <jgit.version>7.5.0.202512021534-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -82,7 +82,7 @@
         <opensearch-server.version>3.1.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
-        <junit-pioneer.version>2.2.0</junit-pioneer.version>
+        <junit-pioneer.version>2.3.0</junit-pioneer.version>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/library/postgres:17</postgres.image>
@@ -97,10 +97,10 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.4.5</keycloak.server.version>
+        <keycloak.server.version>26.4.7</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
-        <unboundid-ldap.version>7.0.3</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
 
         <assertj.version>3.27.6</assertj.version>
 
@@ -458,7 +458,8 @@
                              the propertiesCache in com.sun.naming.internal.ResourceManager -->
                         <!-- the add-opens java.base/java.lang=ALL-UNNAMED is here for
                              org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals() -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                        <!-- set -XX:+HeapDumpOnOutOfMemoryError to provide some useful debugging info, should this happen -->
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:+HeapDumpOnOutOfMemoryError -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>

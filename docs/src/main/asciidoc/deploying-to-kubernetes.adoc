@@ -575,29 +575,6 @@ A conflict between two definitions, e.g. mistakenly assigning both a value and s
 
 Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
 
-[[env-vars-backwards]]
-===== Backwards compatibility
-
-Previous versions of the Kubernetes extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
-
-.Old vs. new syntax
-|====
-|                               |Old                                                    | New                                                 |
-| Plain variable                |`quarkus.kubernetes.env-vars.my-env-var.value=foobar`  | `quarkus.kubernetes.env.vars.my-env-var=foobar`     |
-| From field                    |`quarkus.kubernetes.env-vars.my-env-var.field=foobar`  | `quarkus.kubernetes.env.fields.my-env-var=foobar`   |
-| All from `ConfigMap`          |`quarkus.kubernetes.env-vars.xxx.configmap=foobar`     | `quarkus.kubernetes.env.configmaps=foobar`          |
-| All from `Secret`             |`quarkus.kubernetes.env-vars.xxx.secret=foobar`        | `quarkus.kubernetes.env.secrets=foobar`             |
-| From one `Secret` field       |`quarkus.kubernetes.env-vars.foo.secret=foobar`        | `quarkus.kubernetes.env.mapping.foo.from-secret=foobar` |
-|                               |`quarkus.kubernetes.env-vars.foo.value=field`          | `quarkus.kubernetes.env.mapping.foo.with-key=field` |
-| From one `ConfigMap` field    |`quarkus.kubernetes.env-vars.foo.configmap=foobar`     | `quarkus.kubernetes.env.mapping.foo.from-configmap=foobar` |
-|                               |`quarkus.kubernetes.env-vars.foo.value=field`          | `quarkus.kubernetes.env.mapping.foo.with-key=field` |
-|====
-
-NOTE: If you redefine the same variable using the new syntax while keeping the old syntax, **ONLY** the new version will be kept
-and a warning will be issued to alert you of the problem.For example, if you define both
-`quarkus.kubernetes.env-vars.my-env-var.value=foobar` and `quarkus.kubernetes.env.vars.my-env-var=newValue`, the extension will
-only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
-
 === Mounting volumes
 
 The Kubernetes extension allows the user to configure both volumes and mounts for the application.
@@ -1363,7 +1340,7 @@ The properties for configuring `docker` and `s2i` are also deprecated in favor o
 
 ==== Config group arrays
 
-Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, `kubernetes.env-vars[0]` etc) have been converted to Maps to align with the rest of the Quarkus ecosystem.
+Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, etc.) have been converted to Maps to align with the rest of the Quarkus ecosystem.
 
 The code below demonstrates the change in `labels` config:
 
@@ -1376,23 +1353,6 @@ kubernetes.labels[0].value=bar
 # New labels
 quarkus.kubernetes.labels.foo=bar
 ----
-
-The code below demonstrates the change in `env-vars` config:
-
-[source,properties]
-----
-# Old env-vars config:
-kubernetes.env-vars[0].name=foo
-kubernetes.env-vars[0].configmap=my-configmap
-
-# New env-vars
-quarkus.kubernetes.env-vars.foo.configmap=myconfigmap
-----
-
-==== `env-vars` properties
-
-`quarkus.kubernetes.env-vars` are deprecated (though still currently supported as of this writing) and the new declaration style should be used instead.
-See <<#env-vars>> and more specifically <<env-vars-backwards>> for more details.
 
 [[deployment]]
 == Deployment

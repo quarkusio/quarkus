@@ -615,7 +615,7 @@ Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin
 
 Metrics are automatically discovered and integrated.
 If your application uses the Quarkus extension for Micrometer, SmallRye Fault Tolerance will emit metrics to Micrometer.
-Otherwise, SmallRye Fault Tolerance will emit metrics to MicroProfile Metrics, OpenTelemetry Metrics, or both, depending on which Quarkus extensions are present.
+Otherwise, SmallRye Fault Tolerance will emit metrics to OpenTelemetry Metrics if OpenTelemetry Metrics is available.
 If no Quarkus metrics extension is present, SmallRye Fault Tolerance metrics will be disabled.
 
 [[configuration-reference]]

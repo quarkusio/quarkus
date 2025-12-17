@@ -17,7 +17,7 @@ import io.restassured.specification.RequestSpecification;
 @QuarkusTest
 public class VertxProducerResourceTest {
 
-    @TestHTTPResource(ssl = true)
+    @TestHTTPResource(tls = true)
     URL url;
 
     @Test

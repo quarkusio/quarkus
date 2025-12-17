@@ -38,7 +38,7 @@ public class SslServerWithPemTest {
             quarkus.http.insecure-requests=disabled
             """;
 
-    @TestHTTPResource(value = "/ssl", ssl = true)
+    @TestHTTPResource(value = "/ssl", tls = true)
     URL url;
 
     @RegisterExtension

@@ -108,7 +108,7 @@ public class ApplicationDependencyTreeResolver {
     private final Map<ArtifactCoords, Set<ArtifactKey>> artifactDeps = new HashMap<>();
 
     private MavenArtifactResolver resolver;
-    private List<Dependency> managedDeps;
+    private Map<ArtifactKey, Dependency> managedDeps;
     private ApplicationModelBuilder appBuilder;
     private boolean collectReloadableModules;
     private Consumer<String> buildTreeConsumer;
@@ -170,9 +170,19 @@ public class ApplicationDependencyTreeResolver {
         return this;
     }
 
+    /**
+     * Managed dependency version constraints.
+     *
+     * @param managedDeps managed dependency version constraints
+     * @return self
+     */
+    public ApplicationDependencyTreeResolver setManagedDependencies(Map<ArtifactKey, Dependency> managedDeps) {
+        this.managedDeps = managedDeps;
+        return this;
+    }
+
     public void resolve(CollectRequest collectRtDepsRequest) throws AppModelResolverException {
 
-        this.managedDeps = collectRtDepsRequest.getManagedDependencies();
         DependencyNode root = resolveRuntimeDeps(collectRtDepsRequest);
 
         if (collectReloadableModules) {
@@ -197,8 +207,6 @@ public class ApplicationDependencyTreeResolver {
             throw new BootstrapDependencyProcessingException("Failed to initialize deployment dependencies resolver",
                     e);
         }
-
-        this.managedDeps = managedDeps.isEmpty() ? new ArrayList<>() : managedDeps;
 
         visitRuntimeDependencies(root.getChildren());
         enableConditionalDeps();
@@ -278,7 +286,7 @@ public class ApplicationDependencyTreeResolver {
         var children = root.getChildren();
         while (children != null) {
             for (DependencyNode node : children) {
-                managedDeps.add(node.getDependency());
+                managedDeps.putIfAbsent(DependencyUtils.getKey(node.getArtifact()), node.getDependency());
                 if (!node.getChildren().isEmpty()) {
                     depStack.add(node.getChildren());
                 }
@@ -287,7 +295,7 @@ public class ApplicationDependencyTreeResolver {
         }
         final CollectRequest request = new CollectRequest()
                 .setDependencies(collectCompileOnly)
-                .setManagedDependencies(managedDeps)
+                .setManagedDependencies(new ArrayList<>(managedDeps.values()))
                 .setRepositories(collectRtDepsRequest.getRepositories());
         if (collectRtDepsRequest.getRoot() != null) {
             request.setRoot(collectRtDepsRequest.getRoot());
@@ -330,7 +338,7 @@ public class ApplicationDependencyTreeResolver {
 
     private void collectPlatformProperties() throws AppModelResolverException {
         final PlatformImportsImpl platformReleases = new PlatformImportsImpl();
-        for (Dependency d : managedDeps) {
+        for (Dependency d : managedDeps.values()) {
             final Artifact artifact = d.getArtifact();
             final String extension = artifact.getExtension();
             final String artifactId = artifact.getArtifactId();
@@ -473,7 +481,10 @@ public class ApplicationDependencyTreeResolver {
                     if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
                         dep.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     }
-                    managedDeps.add(new Dependency(extDep.info.deploymentArtifact, JavaScopes.COMPILE));
+                    final ArtifactKey deploymentKey = DependencyUtils.getKey(extDep.info.deploymentArtifact);
+                    if (!managedDeps.containsKey(deploymentKey)) {
+                        managedDeps.put(deploymentKey, new Dependency(extDep.info.deploymentArtifact, JavaScopes.COMPILE));
+                    }
                     collectConditionalDependencies(extDep);
                 }
                 if (isWalkingFlagOn(COLLECT_RELOADABLE_MODULES)) {
@@ -662,26 +673,23 @@ public class ApplicationDependencyTreeResolver {
             } catch (BootstrapMavenException e) {
                 throw new DeploymentInjectionException("Failed to resolve descriptor for " + artifact, e);
             }
-            final List<Dependency> mergedManagedDeps = new ArrayList<>(
-                    managedDeps.size() + descr.getManagedDependencies().size());
-            final Map<ArtifactKey, String> managedVersions = new HashMap<>(managedDeps.size());
-            for (Dependency dep : managedDeps) {
-                managedVersions.put(DependencyUtils.getKey(dep.getArtifact()), dep.getArtifact().getVersion());
-                mergedManagedDeps.add(dep);
-            }
-            for (Dependency dep : descr.getManagedDependencies()) {
-                final ArtifactKey key = DependencyUtils.getKey(dep.getArtifact());
-                if (!managedVersions.containsKey(key)) {
-                    mergedManagedDeps.add(dep);
-                }
+            final Map<ArtifactKey, Dependency> effectiveManagedMap;
+            final List<Dependency> effectiveManagedDeps;
+            if (descr.getManagedDependencies().isEmpty()) {
+                effectiveManagedMap = managedDeps;
+                effectiveManagedDeps = new ArrayList<>(managedDeps.values());
+            } else {
+                effectiveManagedMap = new HashMap<>(managedDeps);
+                DependencyUtils.putAll(effectiveManagedMap, descr.getManagedDependencies());
+                effectiveManagedDeps = new ArrayList<>(effectiveManagedMap.values());
             }
 
-            var directDeps = DependencyUtils.mergeDeps(List.of(), descr.getDependencies(), managedVersions,
+            var directDeps = DependencyUtils.mergeDependencies(List.of(), descr.getDependencies(), effectiveManagedMap,
                     Set.of(JavaScopes.PROVIDED, JavaScopes.TEST));
 
             request = new CollectRequest()
                     .setDependencies(directDeps)
-                    .setManagedDependencies(mergedManagedDeps)
+                    .setManagedDependencies(effectiveManagedDeps)
                     .setRepositories(repos);
             if (exclusions.isEmpty()) {
                 request.setRootArtifact(artifact);

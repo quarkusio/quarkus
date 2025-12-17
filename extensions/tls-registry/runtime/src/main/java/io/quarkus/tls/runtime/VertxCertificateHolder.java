@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
@@ -14,6 +15,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
@@ -25,6 +28,8 @@ import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 public class VertxCertificateHolder implements TlsConfiguration {
+
+    private static final Logger LOGGER = Logger.getLogger(VertxCertificateHolder.class.getName());
 
     private final TlsBucketConfig config;
     private final List<Buffer> crls;
@@ -114,6 +119,8 @@ public class VertxCertificateHolder implements TlsConfiguration {
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());
 
+        warnIfOldProtocols(options.getEnabledSecureTransportProtocols(), name);
+
         for (Buffer buffer : crls) {
             options.addCrlValue(buffer);
         }
@@ -123,6 +130,86 @@ public class VertxCertificateHolder implements TlsConfiguration {
         }
 
         return options;
+    }
+
+    boolean warnIfOldProtocols(Set<String> protocols, String name) {
+        var list = protocols.stream().map(String::toLowerCase).map(String::trim).toList();
+
+        // Quick check to skip the warning if only the default protocol is used.
+        if (list.size() == 1 && list.get(0).equalsIgnoreCase(TlsBucketConfig.DEFAULT_TLS_PROTOCOLS)) {
+            return false;
+        }
+
+        boolean warned = false;
+
+        // Check for SSL protocols
+        if (list.stream().anyMatch(p -> p.startsWith("ssl"))) {
+            LOGGER.warnf("Insecure SSL protocol is enabled in TLS bucket '%s'." +
+                    " It is strongly recommended to disable SSL protocols (SSLv2, SSLv3), and use at least TLSv1.3.", name);
+            warned = true;
+        }
+
+        // Check for old TLS protocols (TLSv1.0, TLSv1.1)
+        if (list.contains("tlsv1") || list.contains("tlsv1.1")) {
+            LOGGER.warnf("Insecure TLS protocol TLSv1.0 or TLSv1.1 is enabled in TLS bucket '%s'." +
+                    " It is strongly recommended to disable TLSv1.0 and TLSv1.1, and use at least TLSv1.3.", name);
+            warned = true;
+        }
+
+        // Check if TLSv1.3 or higher is enabled.
+        boolean isUsingModernTlsVersion = false;
+        for (String p : list) {
+            if (isRecentOrFutureTLSVersion(p)) {
+                isUsingModernTlsVersion = true;
+                break;
+            }
+        }
+
+        if (!isUsingModernTlsVersion) {
+            LOGGER.warnf("TLSv1.3 or higher protocol is not enabled in TLS bucket '%s'." +
+                    " It is *strongly* recommended to enable TLSv1.3 or higher.", name);
+            warned = true;
+        }
+
+        return warned;
+    }
+
+    /**
+     * Checks if a protocol string represents TLS 1.3 or higher.
+     *
+     * @param protocol the protocol string (already lowercased and trimmed)
+     * @return true if the protocol is TLSv1.3 or higher
+     */
+    private boolean isRecentOrFutureTLSVersion(String protocol) {
+        if (!protocol.startsWith("tlsv")) {
+            return false;
+        }
+
+        String afterTlsv = protocol.substring(4); // Skip "tlsv"
+        if (afterTlsv.isEmpty()) {
+            return false;
+        }
+
+        char majorChar = afterTlsv.charAt(0);
+
+        // Check for TLSv1.x
+        if (afterTlsv.startsWith("1.")) {
+            String minorVersion = afterTlsv.substring(2); // Everything after "1."
+            if (minorVersion.isEmpty()) {
+                return false;
+            }
+
+            // Single digit 3-9
+            if (minorVersion.length() == 1) {
+                char minorChar = minorVersion.charAt(0);
+                return minorChar >= '3' && minorChar <= '9'; // TLSv1.3 to TLSv1.9
+            } else {
+                return true; // Multi-digit (TLSv1.10, TLSv1.11, etc.)
+            }
+        }
+
+        // TLSv2.x, TLSv3.x, etc.
+        return majorChar >= '2' && majorChar <= '9'; // Future-proof for TLSv2, TLSv3, etc, if they ever come.
     }
 
     @Override

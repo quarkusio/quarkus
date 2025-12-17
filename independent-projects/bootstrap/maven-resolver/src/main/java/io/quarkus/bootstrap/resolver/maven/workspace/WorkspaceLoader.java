@@ -80,7 +80,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     // Map key is the normalized absolute Path to the module directory
     private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
     private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
-    private final Consumer<WorkspaceModulePom> modelProcessor;
+    private final Consumer<WorkspaceModulePom> loadedModelProcessor;
 
     private final LocalWorkspace workspace = new LocalWorkspace();
     private final Path currentProjectPom;
@@ -95,7 +95,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         } catch (IOException e) {
             throw new IllegalArgumentException(currentProjectPom + " does not exist", e);
         }
-        boolean queueCurrentPom = this.currentProjectPom != null;
+        boolean queueCurrentPom = true;
         if (providedModules != null) {
             // queue all the provided POMs
             for (var e : providedModules) {
@@ -110,7 +110,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             moduleQueue.push(new WorkspaceModulePom(this.currentProjectPom));
         }
 
-        modelProcessor = getModelProcessor(ctx);
+        loadedModelProcessor = getLoadedModelProcessor(ctx);
         workspace.setBootstrapMavenContext(ctx);
     }
 
@@ -136,24 +136,23 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 taskRunner.waitForCompletion();
             }
             for (var newModule : newModules) {
-                newModule.process(modelProcessor);
+                newModule.process(loadedModelProcessor);
             }
         }
 
         if (currentProject == null) {
-            throw new BootstrapMavenException("Failed to load project " + currentProjectPom);
+            log.errorf("Failed to locate %s among the following loaded modules:", currentProjectPom);
+            for (Path moduleDir : loadedPoms.keySet()) {
+                log.error("- " + moduleDir);
+            }
+            throw new BootstrapMavenException("Failed to locate " + currentProjectPom + " in the workspace");
         }
         return currentProject;
     }
 
-    private Consumer<WorkspaceModulePom> getModelProcessor(BootstrapMavenContext ctx) throws BootstrapMavenException {
+    private Consumer<WorkspaceModulePom> getLoadedModelProcessor(BootstrapMavenContext ctx) throws BootstrapMavenException {
         if (ctx == null || !ctx.isEffectiveModelBuilder()) {
-            return rawModule -> {
-                var project = new LocalProject(rawModule.getModel(), rawModule.effectiveModel, workspace);
-                if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
-                    currentProject = project;
-                }
-            };
+            return this::processLoadedRawModel;
         }
 
         final ModelBuilder modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
@@ -191,6 +190,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 }
                 throw new RuntimeException("Failed to resolve the effective model for " + rawModule.getModel().getPomFile(), e);
             }
+            log.debugf("Loaded effective model from %s", project.getDir());
             if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
                 currentProject = project;
             }
@@ -203,6 +203,14 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 }
             }
         };
+    }
+
+    private void processLoadedRawModel(WorkspaceModulePom rawModule) {
+        var project = new LocalProject(rawModule.getModel(), rawModule.effectiveModel, workspace);
+        log.debugf("Loaded raw model from %s", project.getDir());
+        if (currentProject == null && project.getDir().equals(currentProjectPom.getParent())) {
+            currentProject = project;
+        }
     }
 
     private void loadModule(WorkspaceModulePom rawModule, Collection<WorkspaceModulePom> newModules) {

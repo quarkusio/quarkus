@@ -190,5 +190,12 @@
             <artifactId>qui-dot</artifactId>
             <scope>runtime</scope>
         </dependency>
+        
+        <!-- To zoom the viz diagram -->
+        <dependency>
+            <groupId>org.mvnpm.at.panzoom</groupId>
+            <artifactId>panzoom</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 </project>

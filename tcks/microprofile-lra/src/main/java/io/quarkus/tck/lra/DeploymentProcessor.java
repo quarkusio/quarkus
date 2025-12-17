@@ -21,7 +21,7 @@ public class DeploymentProcessor implements ApplicationArchiveProcessor {
             war.addPackages(false,
                     "org.eclipse.microprofile.lra");
             war.addClasses(TckTestBase.class, NarayanaLRARecovery.class, NonParticipatingTckResource.class,
-                    ResourceParent.class);
+                    ResourceParent.class, BaseURLProvider.class);
         }
 
     }

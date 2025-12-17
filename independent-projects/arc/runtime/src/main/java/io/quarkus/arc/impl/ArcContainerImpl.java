@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -26,7 +27,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -86,6 +86,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final AtomicBoolean running;
 
     private final List<InjectableBean<?>> beans;
+    private final Map<String, InjectableBean<?>> beansById;
     private final Map<String, List<InjectableBean<?>>> beansByRawType;
     private final LazyValue<List<RemovedBean>> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
@@ -93,7 +94,6 @@ public class ArcContainerImpl implements ArcContainer {
     private final List<InjectableObserverMethod<?>> observers;
     private final Contexts contexts;
     private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
-    private final ComputingCache<String, InjectableBean<?>> beansById;
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
     private final ArrayList<ResourceReferenceProvider> resourceProviders;
@@ -116,7 +116,8 @@ public class ArcContainerImpl implements ArcContainer {
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
         List<InjectableBean<?>> beans = new ArrayList<>();
-        Map<String, List<InjectableBean<?>>> beansByRawType = new HashMap<>();
+        Map<String, InjectableBean<?>> beansById = new HashMap<>();
+        Map<String, Set<InjectableBean<?>>> beansByRawType = new HashMap<>();
         List<Supplier<Collection<RemovedBean>>> removedBeans = new ArrayList<>();
         List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
@@ -146,6 +147,7 @@ public class ArcContainerImpl implements ArcContainer {
                     beans.add(bean);
                     precomputeBeanRawTypes(beansByRawType, bean);
                 }
+                beansById.put(bean.getIdentifier(), bean);
             }
             removedBeans.add(c.getRemovedBeans());
             observers.addAll(c.getObservers());
@@ -168,7 +170,6 @@ public class ArcContainerImpl implements ArcContainer {
         decorators.sort(Comparator.comparingInt(InjectableDecorator::getPriority));
 
         resolved = new ComputingCache<>(this::resolve);
-        beansById = new ComputingCache<>(this::findById);
         beansByName = new ComputingCache<>(this::resolve);
         resourceProviders = new ArrayList<>();
         for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
@@ -179,16 +180,9 @@ public class ArcContainerImpl implements ArcContainer {
         instance = InstanceImpl.forGlobalEntrypoint(Object.class, Collections.emptySet());
 
         this.beans = List.copyOf(beans);
-        this.beansByRawType = Map.copyOf(beansByRawType);
-        // Trim the size of the non-singleton lists
-        this.beansByRawType.forEach(new BiConsumer<String, List<InjectableBean<?>>>() {
-            @Override
-            public void accept(String key, List<InjectableBean<?>> val) {
-                if (val.size() > 1) {
-                    ((ArrayList<InjectableBean<?>>) val).trimToSize();
-                }
-            }
-        });
+        this.beansById = Map.copyOf(beansById);
+        this.beansByRawType = beansByRawType.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Entry::getKey, e -> List.copyOf(e.getValue())));
 
         this.interceptors = List.copyOf(interceptors);
         this.decorators = List.copyOf(decorators);
@@ -245,7 +239,7 @@ public class ArcContainerImpl implements ArcContainer {
         this.contexts = contextsBuilder.build();
     }
 
-    static void precomputeBeanRawTypes(Map<String, List<InjectableBean<?>>> map, InjectableBean<?> bean) {
+    static void precomputeBeanRawTypes(Map<String, Set<InjectableBean<?>>> map, InjectableBean<?> bean) {
         for (Type type : bean.getTypes()) {
             if (Object.class.equals(type)) {
                 continue;
@@ -256,18 +250,19 @@ public class ArcContainerImpl implements ArcContainer {
             }
             rawType = Types.boxedClass(rawType);
             String key = rawType.getName();
-            List<InjectableBean<?>> match = map.get(key);
+            Set<InjectableBean<?>> match = map.get(key);
             if (match == null) {
                 // very often a singleton list will be used
-                map.put(key, List.of(bean));
+                map.put(key, Set.of(bean));
             } else {
-                // we don't expect large lists so this should be fine performance wise
                 if (match.contains(bean)) {
                     continue;
                 }
                 if (match.size() == 1) {
-                    List<InjectableBean<?>> newMatch = new ArrayList<>();
-                    newMatch.add(match.get(0));
+                    // a set of 2 elements is also a relatively common case
+                    map.put(key, Set.of(match.iterator().next(), bean));
+                } else if (match.size() == 2) {
+                    Set<InjectableBean<?>> newMatch = new HashSet<>(match);
                     newMatch.add(bean);
                     map.put(key, newMatch);
                 } else {
@@ -387,7 +382,7 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public <T> InjectableBean<T> bean(String beanIdentifier) {
         Objects.requireNonNull(beanIdentifier);
-        return (InjectableBean<T>) beansById.getValue(beanIdentifier);
+        return (InjectableBean<T>) beansById.get(beanIdentifier);
     }
 
     @Override
@@ -536,7 +531,7 @@ public class ArcContainerImpl implements ArcContainer {
         return notifier.isEmpty() ? null : notifier;
     }
 
-    private static void addBuiltInBeans(List<InjectableBean<?>> beans, Map<String, List<InjectableBean<?>>> beansByRawType) {
+    private static void addBuiltInBeans(List<InjectableBean<?>> beans, Map<String, Set<InjectableBean<?>>> beansByRawType) {
         // BeanManager, Event<?>, Instance<?>, InjectionPoint
         BeanManagerBean beanManagerBean = new BeanManagerBean();
         beans.add(beanManagerBean);
@@ -653,25 +648,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     private Set<InjectableBean<?>> resolve(String name) {
         return resolve(getMatchingBeans(name));
-    }
-
-    private InjectableBean<?> findById(String identifier) {
-        for (InjectableBean<?> bean : beans) {
-            if (bean.getIdentifier().equals(identifier)) {
-                return bean;
-            }
-        }
-        for (InjectableInterceptor<?> interceptorBean : interceptors) {
-            if (interceptorBean.getIdentifier().equals(identifier)) {
-                return interceptorBean;
-            }
-        }
-        for (InjectableDecorator<?> decoratorBean : decorators) {
-            if (decoratorBean.getIdentifier().equals(identifier)) {
-                return decoratorBean;
-            }
-        }
-        return null;
     }
 
     @SuppressWarnings("unchecked")

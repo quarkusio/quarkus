@@ -69,7 +69,7 @@ jobs:
           echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
           echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.m2/repository
           key: ${{ steps.cache-key.outputs.m2-cache-key }}
@@ -96,7 +96,7 @@ jobs:
         run: echo ${{ github.event.number }} > pr-id.txt
 
       - name: Persist documentation
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: documentation
           path: |
@@ -113,7 +113,7 @@ jobs:
               'target/build-report.json' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Documentation Build"

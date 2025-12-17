@@ -39,6 +39,8 @@ import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.boot.internal.MetadataImpl;
+import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -68,6 +70,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
@@ -187,6 +190,9 @@ public class FastBootMetadataBuilder {
                 metamodelBuilder.getBootstrapContext());
 
         applyMetadataBuilderContributor();
+
+        applyTypeContributors();
+        applyFunctionContributors();
 
         // Unable to automatically handle:
         // AvailableSettings.ENHANCER_ENABLE_DIRTY_TRACKING,
@@ -661,6 +667,16 @@ public class FastBootMetadataBuilder {
         if (metadataBuilderContributor != null) {
             metadataBuilderContributor.contribute(metamodelBuilder);
         }
+    }
+
+    private void applyTypeContributors() {
+        PersistenceUnitUtil.extensionInstancesForPersistenceUnit(TypeContributor.class, persistenceUnit.getName())
+                .stream().forEach(metamodelBuilder::applyTypes);
+    }
+
+    private void applyFunctionContributors() {
+        PersistenceUnitUtil.extensionInstancesForPersistenceUnit(FunctionContributor.class, persistenceUnit.getName())
+                .stream().forEach(metamodelBuilder::applyFunctions);
     }
 
     @SuppressWarnings("unchecked")

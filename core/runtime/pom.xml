@@ -144,9 +144,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
-                    <lesserPriorityArtifacts>
-                        <artifact>io.quarkus:quarkus-junit4-mock</artifact>
-                    </lesserPriorityArtifacts>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-classloader-commons</parentFirstArtifact>
@@ -206,7 +203,7 @@
                         <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                         <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
-                        <parentFirstArtifact>io.quarkus:quarkus-junit5-mockito-config</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-junit-mockito-config</parentFirstArtifact>
 
                         <!-- Load the junit engine parent first, so it is shared between the outer dev mode
                         process and the test application-->
@@ -236,7 +233,7 @@
                         <runnerParentFirstArtifact>org.graalvm.sdk:jniutils</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:word</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:collections</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>org.graalvm.sdk:native-bridge</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:nativebridge</runnerParentFirstArtifact>
                         <!-- /support for GraalVM js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-classloader-commons</runnerParentFirstArtifact>

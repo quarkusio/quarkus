@@ -2,6 +2,7 @@ package io.quarkus.micrometer.opentelemetry.deployment.common;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collection;
 import java.util.List;
@@ -227,16 +228,16 @@ public class MetricDataFilter {
      * @param <T>
      * @return
      */
-    public <T extends PointData> T lastReadingDataPoint(Class<T> pointDataClass) {
+    public <T extends PointData> T lastReadingDataPoint(@SuppressWarnings("unused") Class<T> pointDataClass) {
         List<T> list = lastReading().getData().getPoints().stream()
                 .map(pointData -> (T) pointData)
                 .toList();
 
         if (list.size() == 0) {
-            throw new IllegalArgumentException("Stream has no elements");
+            fail("Expected metrics data to contain a single point, none found");
         }
         if (list.size() > 1) {
-            throw new IllegalArgumentException("Stream has more than one element");
+            fail("Expected metrics data to contain a single point, %d found".formatted(list.size()));
         }
         return list.get(0);
     }

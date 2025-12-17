@@ -11,7 +11,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-core-deployment'
     implementation 'io.quarkus:quarkus-undertow-deployment'
 
-    testImplementation 'io.quarkus:quarkus-junit5-internal'
+    testImplementation 'io.quarkus:quarkus-junit-internal'
     testImplementation 'io.rest-assured:rest-assured'
 }
 

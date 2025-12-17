@@ -313,7 +313,7 @@ In the generated build file, you can see 2 test dependencies:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
+    <artifactId>quarkus-junit</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -326,13 +326,13 @@ In the generated build file, you can see 2 test dependencies:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-junit5")
+testImplementation("io.quarkus:quarkus-junit")
 testImplementation("io.rest-assured:rest-assured")
 ----
 
-Quarkus supports https://junit.org/junit5/[JUnit 5] tests.
+Quarkus supports https://docs.junit.org/current/user-guide/[JUnit] tests.
 
-Because of this, in the case of Maven, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support JUnit 5:
+Because of this, in the case of Maven, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support JUnit:
 
 [source,xml,subs=attributes+]
 ----

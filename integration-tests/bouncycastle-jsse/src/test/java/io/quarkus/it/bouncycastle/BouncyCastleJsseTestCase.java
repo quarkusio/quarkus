@@ -31,7 +31,7 @@ public class BouncyCastleJsseTestCase {
 
     static final Logger LOG = Logger.getLogger(BouncyCastleJsseTestCase.class);
 
-    @TestHTTPResource(ssl = true)
+    @TestHTTPResource(tls = true)
     URL url;
 
     @Test

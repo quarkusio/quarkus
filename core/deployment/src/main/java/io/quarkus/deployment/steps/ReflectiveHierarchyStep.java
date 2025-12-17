@@ -38,7 +38,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.deployment.util.JandexUtil;
 
 public class ReflectiveHierarchyStep {
@@ -238,13 +237,11 @@ public class ReflectiveHierarchyStep {
                 info.superName(), initialName,
                 processedReflectiveHierarchies,
                 unindexedClasses, reflectiveClass, visits));
-        if (NativeImageFutureDefault.COMPLETE_REFLECTION_TYPES.isEnabled(nativeConfig)) {
-            for (Type interfaceType : info.interfaceTypes()) {
-                visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
-                        reflectiveHierarchyBuildItem,
-                        source, interfaceType, processedReflectiveHierarchies, unindexedClasses,
-                        reflectiveClass, visits));
-            }
+        for (Type interfaceType : info.interfaceTypes()) {
+            visits.addLast(() -> addReflectiveHierarchy(nativeConfig, combinedIndexBuildItem, capabilities,
+                    reflectiveHierarchyBuildItem,
+                    source, interfaceType, processedReflectiveHierarchies, unindexedClasses,
+                    reflectiveClass, visits));
         }
         for (FieldInfo field : info.fields()) {
             if (reflectiveHierarchyBuildItem.getIgnoreFieldPredicate().test(field) ||

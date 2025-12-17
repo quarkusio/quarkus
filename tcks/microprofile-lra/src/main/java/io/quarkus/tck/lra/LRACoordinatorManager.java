@@ -18,8 +18,9 @@ public class LRACoordinatorManager {
     private final int coordinatorPort = getFreePort(50000, 60000);
     private String quarkusLraDevservicesEnabledValue = null;
 
-    private GenericContainer coordinatorContainer;
+    private GenericContainer<?> coordinatorContainer;
 
+    @SuppressWarnings("resource")
     public void beforeClass(
             @Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.BeforeSuite event) {
         Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LOGGER);
@@ -35,7 +36,6 @@ public class LRACoordinatorManager {
             coordinatorContainer.start();
             coordinatorContainer.followOutput(logConsumer);
             System.setProperty("lra.coordinator.url", String.format("http://localhost:%d/lra-coordinator", coordinatorPort));
-            // Can we reuse Dev Services for LRA coordinator here?
         }
 
         // Always disable Quarkus LRA Dev Services (even if ran without a separate coordinator)
@@ -47,6 +47,7 @@ public class LRACoordinatorManager {
             @Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.AfterSuite event) {
         if (coordinatorContainer != null && coordinatorContainer.isRunning()) {
             coordinatorContainer.stop();
+            coordinatorContainer.close();
 
             // clear the system property so that it does not affect other tests
             System.clearProperty("lra.coordinator.url");

@@ -21,6 +21,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildExecutionBuilder;
+import io.quarkus.builder.BuildMetrics;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
@@ -132,6 +133,14 @@ public class QuarkusAugmentor {
             if (launchMode.isDevOrTest()) {
                 chainBuilder.addFinal(RuntimeApplicationShutdownBuildItem.class);
             }
+            if (System.getProperty(BuildMetrics.BUILDER_METRICS_ENABLED) == null
+                    && launchMode.isDev()
+                    && !launchMode.isRemoteDev()) {
+                // If quarkus.builder.metrics.enabled is not set then
+                // collect build metrics in dev mode but not in remote-dev
+                // (as it could cause issues with container permissions)
+                System.setProperty("quarkus.builder.metrics.enabled", "true");
+            }
 
             final ArchiveRootBuildItem.Builder rootBuilder = ArchiveRootBuildItem.builder();
             if (root != null) {
@@ -162,18 +171,16 @@ public class QuarkusAugmentor {
                     + "ms";
             if (launchMode.isProduction()) {
                 log.info(message);
-                if (Boolean.parseBoolean(System.getProperty("quarkus.debug.dump-build-metrics"))) {
-                    buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
-                }
             } else {
                 //test and dev mode already report the total startup time, no need to add noise to the logs
                 log.debug(message);
-
-                // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container permissions)
-                if (launchMode.isDev() && !launchMode.isRemoteDev()) {
-                    buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
-                }
             }
+
+            // If enabled then dump build metrics to a JSON file in the build directory
+            if (targetDir != null) {
+                buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
+            }
+
             return buildResult;
         } finally {
             try {

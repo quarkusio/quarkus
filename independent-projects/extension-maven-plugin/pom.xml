@@ -39,8 +39,8 @@
         <maven-core.version>3.9.11</maven-core.version>
         <jackson-bom.version>2.20.1</jackson-bom.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
-        <junit5.version>5.13.4</junit5.version>
-        <mockito.version>5.20.0</mockito.version>
+        <junit.version>6.0.1</junit.version>
+        <mockito.version>5.21.0</mockito.version>
     </properties>
     <build>
         <testResources>
@@ -231,11 +231,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- JUnit 5 dependencies, imported as a BOM -->
+            <!-- JUnit dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
-                <version>${junit5.version}</version>
+                <version>${junit.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

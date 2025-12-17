@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.offline;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.tool.schema.Action.CREATE_DROP;
+import static org.hibernate.tool.schema.Action.SPEC_ACTION_DROP_AND_CREATE;
 
 import java.util.logging.LogRecord;
 
@@ -25,7 +25,7 @@ public class StartOfflineSchemaManagementTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline.properties", "application.properties"))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", CREATE_DROP.getExternalHbm2ddlName())
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SPEC_ACTION_DROP_AND_CREATE)
             .setLogRecordPredicate(record -> "io.quarkus.config".equals(record.getLoggerName()))
             .assertLogRecords(records -> {
                 assertThat(records) // Configuration keys mispelled

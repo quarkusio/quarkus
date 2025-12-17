@@ -134,7 +134,7 @@ public interface ElasticsearchCommonBuildTimeConfig {
         boolean reuse();
 
         /**
-         * Kibana configuration for Dev Services.
+         * Dashboards/Kibana configuration for Dev Services.
          */
         @ConfigDocSection
         DashboardDevServicesConfig dashboard();
@@ -149,7 +149,7 @@ public interface ElasticsearchCommonBuildTimeConfig {
             /**
              * Whether the Dashboard Dev Service should start with the application in dev mode or tests.
              * <p>
-             * Kibana Dev Services are disabled by default when Elasticsearch Dev Services are enabled.
+             * Dashboards/Kibana Dev Services are disabled by default when Elasticsearch Dev Services are enabled.
              *
              * @asciidoclet
              */
@@ -164,12 +164,12 @@ public interface ElasticsearchCommonBuildTimeConfig {
             Optional<Integer> port();
 
             /**
-             * The Elasticsearch container image to use.
+             * The Dashboards/Kibana container image to use.
              *
              * Defaults depend on the configured `distribution`:
              *
              * * For the `elastic` distribution: {kibana-image}
-             * * For the `opensearch` distribution: {dashboardimage}
+             * * For the `opensearch` distribution: {opensearch-dashboards-image}
              *
              * @asciidoclet
              */

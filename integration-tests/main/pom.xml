@@ -25,6 +25,12 @@
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
 
         <quarkus.config-tracking.enabled>true</quarkus.config-tracking.enabled>
+        <!-- This setting causes the main module to use container builder image
+        even if you have native-image installed locally and on PATH, GRAALVM_HOME and JAVA_HOME.
+        To counter this behavior, one has to explicitly set -Dquarkus.native.container-build=false
+        for the Maven run. This setting is required by the Quarkus caching extension see
+        https://github.com/gradle/quarkus-build-caching-extension?tab=readme-ov-file#limitations
+        to ensure native builds are as reproducible as possible and to make caching consistent. -->
         <quarkus.native.container-build>true</quarkus.native.container-build>
     </properties>
 

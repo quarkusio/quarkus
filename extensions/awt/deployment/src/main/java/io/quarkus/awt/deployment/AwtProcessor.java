@@ -4,7 +4,6 @@ import static io.quarkus.runtime.graal.GraalVM.Version.CURRENT;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
@@ -24,8 +23,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.runtime.graal.GraalVM;
@@ -50,9 +47,6 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        unsupported.produce(new UnsupportedOSBuildItem(OS.WINDOWS,
-                "Windows AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: no awt in java.library.path."));
         unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
                 "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
@@ -64,7 +58,6 @@ class AwtProcessor {
         } else {
             v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
         }
-
         if (v.compareTo(io.quarkus.deployment.pkg.steps.GraalVM.Version.VERSION_24_2_0) >= 0
                 && v.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
             unsupported.produce(new UnsupportedOSBuildItem(CPU.aarch64,
@@ -72,7 +65,6 @@ class AwtProcessor {
                             "GraalVM's native-image prior to JDK 25, see: " +
                             "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions"));
         }
-
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -123,11 +115,8 @@ class AwtProcessor {
     void setupAWTInit(BuildProducer<JniRuntimeAccessBuildItem> jc,
             BuildProducer<JniRuntimeAccessMethodBuildItem> jm,
             BuildProducer<JniRuntimeAccessFieldBuildItem> jf,
-            NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled,
-            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
-        nativeImageRunnerBuildItem.getBuildRunner()
-                .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+        final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
@@ -143,16 +132,93 @@ class AwtProcessor {
         jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK_COND"));
         jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.X11.XErrorHandlerUtil", "init", "long"));
         jc.produce(new JniRuntimeAccessBuildItem(false, false, true, "sun.awt.X11.XToolkit"));
-        jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.Thread", "yield"));
+        if (isWindowsTarget) {
+            // Win AWT hooks
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "isTouchKeyboardAutoShowEnabled"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Toolkit", "getDefaultToolkit"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.Toolkit", "getFontMetrics", "java.awt.Font"));
+            jc.produce(new JniRuntimeAccessBuildItem(true, true, true, "java.awt.Font"));
+            jc.produce(new JniRuntimeAccessBuildItem(true, true, true, "java.awt.FontMetrics"));
+            // (fontpath.c at al.)
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.String", "toLowerCase"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.String", "toLowerCase", "java.util.Locale"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "<init>"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "<init>", "int"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "add", "java.lang.Object"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.HashMap", "<init>", "int"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.HashMap", "containsKey", "java.lang.Object"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.HashMap", "put", "java.lang.Object", "java.lang.Object"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.Locale", "getISO3Country"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.Locale", "getISO3Language"));
+            // WToolkit callbacks
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.AWTAutoShutdown", "notifyToolkitThreadBusy",
+                    "java.lang.Thread"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.AWTAutoShutdown", "notifyToolkitThreadFree",
+                    "java.lang.Thread"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "displayChanged"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "eventLoop"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "quitSecondaryEventLoop"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "shutdown"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "startSecondaryEventLoop"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WToolkit", "windowsSettingChange"));
+            // device enum
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.DisplayMode", "<init>", "int", "int", "int", "int"));
+            // java.desktop/windows/native/libawt/windows/awt_Toolkit.cpp
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.image.VolatileSurfaceManager", "volSurfaceManager"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.image.VolatileSurfaceManager", "sdCurrent"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.java2d.SurfaceData", "pData"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WDesktopPeer", "userSessionCallback", "boolean",
+                    "java.awt.desktop.UserSessionEvent$Reason"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.windows.WDesktopPeer", "systemSleepCallback", "boolean"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "UNSPECIFIED"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "CONSOLE"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "REMOTE"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.desktop.UserSessionEvent$Reason", "LOCK"));
+            // java.desktop/windows/native/libawt/windows/awt_InputMethod.cpp
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.awt.event.InputEvent", "getButtonDownMasks"));
+            // java.desktop/windows/native/libawt/windows/awt_AWTEvent.cpp
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "bdata"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "id"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "consumed"));
+            // java.desktop/windows/native/libawt/windows/awt_InputEvent.cpp
+            jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.event.InputEvent", "modifiers"));
+        }
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    JniRuntimeAccessBuildItem setupJava2DClasses(NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled,
-            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
-        nativeImageRunnerBuildItem.getBuildRunner()
-                .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+    JniRuntimeAccessBuildItem setupJava2DClasses(NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+        final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
         final List<String> classes = new ArrayList<>();
+        if (isWindowsTarget) {
+            classes.add("java.awt.AWTEvent");
+            classes.add("java.awt.Component");
+            classes.add("java.awt.Cursor");
+            classes.add("java.awt.desktop.UserSessionEvent$Reason");
+            classes.add("java.awt.Dimension");
+            classes.add("java.awt.event.InputEvent");
+            classes.add("java.awt.event.KeyEvent");
+            classes.add("java.awt.event.MouseEvent");
+            classes.add("java.awt.Insets");
+            classes.add("java.awt.MenuComponent");
+            classes.add("java.awt.Point");
+            classes.add("sun.awt.AWTAutoShutdown");
+            classes.add("sun.awt.image.SunVolatileImage");
+            classes.add("sun.awt.image.VolatileSurfaceManager");
+            classes.add("sun.awt.Win32ColorModel24");
+            classes.add("sun.awt.Win32FontManager");
+            classes.add("sun.awt.Win32GraphicsConfig");
+            classes.add("sun.awt.Win32GraphicsDevice");
+            classes.add("sun.awt.Win32GraphicsEnvironment");
+            classes.add("sun.awt.windows.WComponentPeer");
+            classes.add("sun.awt.windows.WDataTransferer");
+            classes.add("sun.awt.windows.WDefaultFontCharset");
+            classes.add("sun.awt.windows.WDesktopPeer");
+            classes.add("sun.awt.windows.WDesktopProperties");
+            classes.add("sun.awt.windows.WDialogPeer");
+            classes.add("sun.awt.windows.WDragSourceContextPeer");
+            classes.add("sun.awt.windows.WDropTargetContextPeer");
+            classes.add("sun.awt.windows.WToolkit");
+        }
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReader");
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriter");
         classes.add("java.awt.AlphaComposite");
@@ -272,7 +338,6 @@ class AwtProcessor {
         classes.add("sun.java2d.pipe.ValidatePipe");
         classes.add("sun.java2d.SunGraphics2D");
         classes.add("sun.java2d.SurfaceData");
-
         // A new way of dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         classes.add("sun.awt.X11FontManager");
@@ -281,7 +346,6 @@ class AwtProcessor {
         classes.add("sun.awt.X11GraphicsDevice");
         classes.add("sun.java2d.SunGraphicsEnvironment");
         classes.add("sun.java2d.xr.XRSurfaceData");
-
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
     }
 
@@ -301,6 +365,7 @@ class AwtProcessor {
                 "java.awt",
                 "javax.imageio",
                 "sun.awt",
+                "sun.awt.datatransfer",
                 "sun.datatransfer",
                 "sun.font",
                 "sun.java2d")

@@ -23,6 +23,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     private final Set<String> roles;
     private final Set<Credential> credentials;
     private final Map<String, Object> attributes;
+    private final Set<Permission> permissions;
     private final List<Function<Permission, Uni<Boolean>>> permissionCheckers;
     private final boolean anonymous;
 
@@ -31,6 +32,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         this.roles = Collections.unmodifiableSet(builder.roles);
         this.credentials = Collections.unmodifiableSet(builder.credentials);
         this.attributes = Collections.unmodifiableMap(builder.attributes);
+        this.permissions = Collections.unmodifiableSet(builder.permissions);
         this.permissionCheckers = Collections.unmodifiableList(builder.permissionCheckers);
         this.anonymous = builder.anonymous;
     }
@@ -78,6 +80,11 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     @Override
     public Map<String, Object> getAttributes() {
         return attributes;
+    }
+
+    @Override
+    public Set<Permission> getPermissions() {
+        return permissions;
     }
 
     @Override
@@ -341,5 +348,4 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
         }
     }
-
 }

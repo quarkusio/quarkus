@@ -127,6 +127,11 @@ public class RolesMapping implements Function<SecurityIdentity, SecurityIdentity
             }
 
             @Override
+            public Set<Permission> getPermissions() {
+                return securityIdentity.getPermissions();
+            }
+
+            @Override
             public Uni<Boolean> checkPermission(Permission requiredPermission) {
                 if (addPerms) {
                     for (Permission possessedPermission : permissions) {

@@ -61,6 +61,11 @@ public class SecurityIdentityProxy implements SecurityIdentity {
     }
 
     @Override
+    public Set<Permission> getPermissions() {
+        return association.getIdentity().getPermissions();
+    }
+
+    @Override
     public Uni<Boolean> checkPermission(Permission permission) {
         return association.getDeferredIdentity()
                 .flatMap(new Function<>() {

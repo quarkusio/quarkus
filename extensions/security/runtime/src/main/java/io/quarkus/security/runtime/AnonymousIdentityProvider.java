@@ -54,6 +54,11 @@ public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuth
         }
 
         @Override
+        public Set<Permission> getPermissions() {
+            return Collections.emptySet();
+        }
+
+        @Override
         public <T> T getAttribute(String name) {
             return null;
         }

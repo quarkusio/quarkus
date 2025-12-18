@@ -47,6 +47,7 @@ public class SecurityContextFilter implements ContainerRequestFilter {
             return;
         }
         Set<Credential> oldCredentials = old.getCredentials();
+        Set<Permission> oldPermissions = old.getPermissions();
         Map<String, Object> oldAttributes = old.getAttributes();
         SecurityIdentity newIdentity = new SecurityIdentity() {
             @Override
@@ -83,6 +84,11 @@ public class SecurityContextFilter implements ContainerRequestFilter {
             @Override
             public Set<Credential> getCredentials() {
                 return oldCredentials;
+            }
+
+            @Override
+            public Set<Permission> getPermissions() {
+                return oldPermissions;
             }
 
             @Override

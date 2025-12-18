@@ -34,7 +34,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         }
 
         Instrumenter<REQ, RESP> instrumenter = getReceiveRequestInstrumenter();
-        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);
+        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getOtelContext(context);
         if (parentContext == null) {
             parentContext = io.opentelemetry.context.Context.current();
         }
@@ -89,7 +89,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         }
 
         Instrumenter<REQ, RESP> instrumenter = getSendRequestInstrumenter();
-        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);
+        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getOtelContext(context);
         if (parentContext == null) {
             parentContext = io.opentelemetry.context.Context.current();
         }

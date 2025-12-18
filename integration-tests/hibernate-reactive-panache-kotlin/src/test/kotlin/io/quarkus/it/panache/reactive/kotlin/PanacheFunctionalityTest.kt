@@ -281,9 +281,11 @@ open class PanacheFunctionalityTest {
     @DisabledOnIntegrationTest
     fun testDeleteUnmanaged(asserter: UniAsserter) {
         // This used to throw PersistenceException but that was invalid,
-        // see https://github.com/hibernate/hibernate-reactive/commit/10b0d421ae6a554528f1239ad74cde5a4400bf5d
+        // see
+        // https://github.com/hibernate/hibernate-reactive/commit/10b0d421ae6a554528f1239ad74cde5a4400bf5d
         // If you're wondering why we're testing this:
-        // apparently we're actually testing UniAsserter here, see https://github.com/quarkusio/quarkus/pull/18794
+        // apparently we're actually testing UniAsserter here, see
+        // https://github.com/quarkusio/quarkus/pull/18794
         asserter.assertFailedWith(
             { Panache.withSession { Person().delete() } },
             IllegalArgumentException::class.java,

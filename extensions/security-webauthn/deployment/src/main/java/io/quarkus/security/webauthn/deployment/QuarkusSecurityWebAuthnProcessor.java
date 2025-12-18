@@ -54,30 +54,31 @@ class QuarkusSecurityWebAuthnProcessor {
 
     @BuildStep
     public void registerJacksonTypes(BuildProducer<ReflectiveHierarchyBuildItem> reflection) {
+        String source = QuarkusSecurityWebAuthnProcessor.class.getSimpleName();
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).build());
+                ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).build());
-        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).build());
-        reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).build());
+                ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).source(source).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).source(source).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AttestationObject.class).build());
+                ReflectiveHierarchyBuildItem.builder(AttestationObject.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).build());
+                ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).source(source).build());
     }
 
     @BuildStep

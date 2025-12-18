@@ -265,7 +265,7 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Clear the current MDC map.
+     * Clear the contents of the current MDC map.
      * Tries to use the current Vert.x Context, if the context is non-existent
      * meaning that it was called out of a Vert.x thread it will fall back to
      * the thread local context map.
@@ -276,11 +276,23 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Clear the current MDC map.
+     * Clears the contents of the current MDC map in the Context.
      * If the informed context is null it falls back to the thread local context map.
      */
     public void clear(Context vertxContext) {
         contextualDataMap(vertxContext).clear();
+    }
+
+    /**
+     * Clears out the object ref from the context to force a new one to be created and prevent thread crosstalk.
+     * Should be used before adding data to the VertxMCD context on a new thread.
+     *
+     * @param vertxContext
+     */
+    public void clearVertxMdcFromContext(Context vertxContext) {
+        if (vertxContext != null) {
+            vertxContext.removeLocal(VertxMDC.class.getName());
+        }
     }
 
     /**

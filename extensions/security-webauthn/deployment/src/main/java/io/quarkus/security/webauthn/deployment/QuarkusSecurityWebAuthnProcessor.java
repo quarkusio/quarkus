@@ -8,17 +8,18 @@ import jakarta.inject.Singleton;
 import org.jboss.jandex.DotName;
 
 import com.webauthn4j.data.AuthenticationRequest;
-import com.webauthn4j.data.AuthenticatorAssertionResponse;
-import com.webauthn4j.data.AuthenticatorAttestationResponse;
+import com.webauthn4j.data.AuthenticatorResponse;
 import com.webauthn4j.data.PublicKeyCredential;
 import com.webauthn4j.data.PublicKeyCredentialCreationOptions;
+import com.webauthn4j.data.PublicKeyCredentialEntity;
 import com.webauthn4j.data.PublicKeyCredentialParameters;
 import com.webauthn4j.data.PublicKeyCredentialRequestOptions;
-import com.webauthn4j.data.PublicKeyCredentialRpEntity;
 import com.webauthn4j.data.PublicKeyCredentialType;
-import com.webauthn4j.data.PublicKeyCredentialUserEntity;
 import com.webauthn4j.data.RegistrationRequest;
 import com.webauthn4j.data.attestation.AttestationObject;
+import com.webauthn4j.data.attestation.authenticator.COSEKey;
+import com.webauthn4j.data.attestation.authenticator.Curve;
+import com.webauthn4j.data.attestation.statement.AttestationStatement;
 import com.webauthn4j.data.client.CollectedClientData;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -56,9 +57,7 @@ class QuarkusSecurityWebAuthnProcessor {
     public void registerJacksonTypes(BuildProducer<ReflectiveHierarchyBuildItem> reflection) {
         String source = QuarkusSecurityWebAuthnProcessor.class.getSimpleName();
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).source(source).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).source(source).build());
+                ReflectiveHierarchyBuildItem.builder(AuthenticatorResponse.class).source(source).build());
         reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).source(source).build());
         reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).source(source).build());
         reflection.produce(
@@ -66,9 +65,7 @@ class QuarkusSecurityWebAuthnProcessor {
         reflection.produce(
                 ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).source(source).build());
         reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).source(source).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).source(source).build());
+                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialEntity.class).source(source).build());
         reflection.produce(
                 ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).source(source).build());
         reflection.produce(
@@ -79,6 +76,12 @@ class QuarkusSecurityWebAuthnProcessor {
                 ReflectiveHierarchyBuildItem.builder(AttestationObject.class).source(source).build());
         reflection.produce(
                 ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).source(source).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(Curve.class).source(source).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(AttestationStatement.class).source(source).build());
+        reflection.produce(
+                ReflectiveHierarchyBuildItem.builder(COSEKey.class).source(source).build());
     }
 
     @BuildStep

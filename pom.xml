@@ -76,6 +76,7 @@
         <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.17.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <geolatte.version>1.10</geolatte.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-models.version>1.0.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>3.2.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>

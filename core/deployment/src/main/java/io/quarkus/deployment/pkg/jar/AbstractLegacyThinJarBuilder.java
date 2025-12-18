@@ -17,8 +17,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -36,10 +34,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends AbstractJarBuilder<T> {
 
-    private static final Logger LOG = Logger.getLogger(AbstractLegacyThinJarBuilder.class);
-
-    private final ExecutorService executorService;
-
     public AbstractLegacyThinJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
             ApplicationInfoBuildItem applicationInfo,
@@ -53,9 +47,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, jvmRequirements);
-
-        this.executorService = executorService;
+                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
     }
 
     public abstract T build() throws IOException;

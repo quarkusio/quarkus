@@ -48,6 +48,10 @@ public interface ArchiveCreator extends AutoCloseable {
         addFile(bytes, target, UNKNOWN_SOURCE);
     }
 
+    boolean isMultiVersion();
+
+    void makeMultiVersion() throws IOException;
+
     @Override
     void close();
 }

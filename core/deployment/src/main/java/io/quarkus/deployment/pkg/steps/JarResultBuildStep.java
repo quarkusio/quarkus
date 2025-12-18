@@ -131,6 +131,7 @@ public class JarResultBuildStep {
                     removedArtifactKeys,
                     uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems,
+                    buildExecutor,
                     jvmRequirements).build();
             case LEGACY_JAR -> new LegacyThinJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,

@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.Deflater;
 
@@ -42,6 +43,7 @@ import org.apache.commons.compress.parallel.InputStreamSupplier;
 public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     private static final Set<String> MANIFESTS = Set.of("META-INF/MANIFEST.MF", "META-INF\\MANIFEST.MF");
+    private static final Set<String> VERSIONS = Set.of("META-INF/versions/", "META-INF\\versions\\");
 
     private static final InputStreamSupplier EMPTY_SUPPLIER = () -> new ByteArrayInputStream(new byte[0]);
 
@@ -56,6 +58,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     private final int compressionMethod;
     private final Path tempDirectory;
 
+    private Manifest manifest;
     private final Map<String, String> addedFiles = new HashMap<>();
 
     ParallelCommonsCompressArchiveCreator(Path archivePath, boolean compressed, Instant entryTimestamp, Path outputTarget,
@@ -67,6 +70,11 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
         } else {
             compressionLevel = Deflater.NO_COMPRESSION;
             compressionMethod = ZipArchiveOutputStream.STORED;
+        }
+
+        // make sure we create the parent directory before creating the archive
+        if (archivePath.getParent() != null) {
+            Files.createDirectories(archivePath.getParent());
         }
 
         this.archivePath = archivePath;
@@ -86,22 +94,7 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
 
     @Override
     public void addManifest(Manifest manifest) throws IOException {
-        // we add the manifest directly to the final archive to make sure it is the first element added
-        ZipArchiveEntry metaInfArchiveEntry = new ZipArchiveEntry("META-INF/");
-        normalizeTimestampsAndPermissions(metaInfArchiveEntry);
-        archive.putArchiveEntry(metaInfArchiveEntry);
-        archive.closeArchiveEntry();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        manifest.write(baos);
-        byte[] manifestBytes = baos.toByteArray();
-
-        ZipArchiveEntry manifestEntry = new ZipArchiveEntry("META-INF/MANIFEST.MF");
-        normalizeTimestampsAndPermissions(manifestEntry);
-        manifestEntry.setSize(manifestBytes.length);
-        archive.putArchiveEntry(manifestEntry);
-        archive.write(manifestBytes);
-        archive.closeArchiveEntry();
+        this.manifest = manifest;
     }
 
     @Override
@@ -165,6 +158,26 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
             return;
         }
         addFile(joinWithNewlines(bytes), target, source);
+    }
+
+    @Override
+    public boolean isMultiVersion() {
+        for (String addedFile : addedFiles.keySet()) {
+            for (String version : VERSIONS) {
+                if (addedFile.startsWith(version)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void makeMultiVersion() throws IOException {
+        if (manifest == null) {
+            manifest = new Manifest();
+        }
+        manifest.getMainAttributes().put(Attributes.Name.MULTI_RELEASE, "true");
     }
 
     private void addDirectoryEntry(final ZipArchiveEntry zipArchiveEntry) throws IOException {
@@ -232,6 +245,25 @@ public class ParallelCommonsCompressArchiveCreator implements ArchiveCreator {
     @Override
     public void close() {
         try (archive) {
+            if (manifest != null) {
+                // we add the manifest directly to the final archive to make sure it is the first element added
+                ZipArchiveEntry metaInfArchiveEntry = new ZipArchiveEntry("META-INF/");
+                normalizeTimestampsAndPermissions(metaInfArchiveEntry);
+                archive.putArchiveEntry(metaInfArchiveEntry);
+                archive.closeArchiveEntry();
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                manifest.write(baos);
+                byte[] manifestBytes = baos.toByteArray();
+
+                ZipArchiveEntry manifestEntry = new ZipArchiveEntry("META-INF/MANIFEST.MF");
+                normalizeTimestampsAndPermissions(manifestEntry);
+                manifestEntry.setSize(manifestBytes.length);
+                archive.putArchiveEntry(manifestEntry);
+                archive.write(manifestBytes);
+                archive.closeArchiveEntry();
+            }
+
             directories.writeTo(archive);
             directories.close();
             scatterZipCreator.writeTo(archive);

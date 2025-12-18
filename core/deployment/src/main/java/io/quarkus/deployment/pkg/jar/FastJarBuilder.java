@@ -70,7 +70,6 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private final List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives;
     private final Set<ArtifactKey> parentFirstArtifactKeys;
-    private final ExecutorService executorService;
 
     public FastJarBuilder(CurateOutcomeBuildItem curateOutcome,
             OutputTargetBuildItem outputTarget,
@@ -87,10 +86,9 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             ExecutorService executorService,
             ResolvedJVMRequirements jvmRequirements) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, removedArtifactKeys, jvmRequirements);
+                generatedClasses, generatedResources, removedArtifactKeys, executorService, jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
-        this.executorService = executorService;
     }
 
     public JarBuildItem build() throws IOException {

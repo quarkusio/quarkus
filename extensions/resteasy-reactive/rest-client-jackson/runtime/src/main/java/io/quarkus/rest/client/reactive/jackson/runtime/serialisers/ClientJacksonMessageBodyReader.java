@@ -77,7 +77,7 @@ public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReade
             RestClientRequestContext context) {
         ObjectMapper effectiveMapper = getObjectMapperFromContext(responseMediaType, context);
         if (effectiveMapper == null) {
-            return defaultReader;
+            return applyJsonViewIfPresent(defaultReader, annotations);
         }
 
         return applyJsonViewIfPresent(objectReaderMap.computeIfAbsent(effectiveMapper, new Function<>() {

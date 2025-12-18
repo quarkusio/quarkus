@@ -23,7 +23,7 @@ public class AbstractDecoratorWithAbstractMethodTest {
     public void testFailure() {
         assertNotNull(container.getFailure());
         assertTrue(
-                container.getFailure().getMessage().contains("declares abstract methods:"),
+                container.getFailure().getMessage().contains("declares abstract methods"),
                 container.getFailure().getMessage());
     }
 

@@ -7,4 +7,4 @@ A size configuration option recognizes strings in this format (shown as a regula
 
 If no suffix is given, assume bytes.
 ====
-ifndef::no-memory-size-note[]
+endif::no-memory-size-note[]

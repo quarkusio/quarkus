@@ -127,9 +127,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.geolatte</groupId>
-            <artifactId>geolatte-geom</artifactId>
-            <version>1.10</version>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-spatial</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -91,7 +91,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.local-cache</groupId>
             <artifactId>quarkus-local-cache</artifactId>
             <exclusions>
                 <exclusion>

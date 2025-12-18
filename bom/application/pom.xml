@@ -99,7 +99,7 @@
         <narayana-lra.version>1.0.3.Final</narayana-lra.version>
         <agroal.version>2.8</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.1.5</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.2.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -167,7 +167,7 @@
         <mongo-client.version>5.6.2</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.27.1</javaparser.version>
-        <hibernate-quarkus-local-cache.version>0.3.1</hibernate-quarkus-local-cache.version>
+        <hibernate-quarkus-local-cache.version>0.5.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.21.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.5</quarkus-spring-data-api.version>
@@ -191,7 +191,7 @@
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.25.3</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.1.Final</log4j-jboss-logmanager.version>
-        <avro.version>1.12.0</avro.version>
+        <avro.version>1.12.1</avro.version>
         <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
         <testcontainers.version>2.0.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
@@ -5462,7 +5462,7 @@
                 <version>${hibernate-reactive.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate</groupId>
+                <groupId>org.hibernate.local-cache</groupId>
                 <artifactId>quarkus-local-cache</artifactId>
                 <version>${hibernate-quarkus-local-cache.version}</version>
             </dependency>

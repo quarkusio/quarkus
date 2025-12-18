@@ -373,7 +373,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         for (ProvidedService<?> providedService : rs.getProvidedServices()) {
-            if (!runtimeInitiatedServiceClasses.contains(providedService.getServiceRole())) {
+            if (!runtimeInitiatedServiceClasses.contains(providedService.serviceRole())) {
                 serviceRegistryBuilder.addService(providedService);
             }
         }

@@ -331,6 +331,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.DynamicUpdate"),
             createConstant("org.hibernate.annotations.EmbeddableInstantiator"),
             createConstant("org.hibernate.annotations.EmbeddedColumnNaming"),
+            createConstant("org.hibernate.annotations.EmbeddedTable"),
             createConstant("org.hibernate.annotations.EmbeddableInstantiatorRegistration"),
             createConstant("org.hibernate.annotations.EmbeddableInstantiatorRegistrations"),
             createConstant("org.hibernate.annotations.Fetch"),
@@ -434,7 +435,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.View"));
 
     public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = List.of(
-            createConstant("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"));
+            createConstant("org.hibernate.engine.jdbc.connections.internal.DataSourceConnectionProvider"));
 
     public static final List<DotName> JPA_LISTENER_ANNOTATIONS = List.of(
             createConstant("jakarta.persistence.PostLoad"),

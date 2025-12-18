@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
@@ -19,6 +21,8 @@ import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
+import org.hibernate.SharedSessionBuilder;
+import org.hibernate.SharedStatelessSessionBuilder;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
 import org.hibernate.graph.GraphSemantic;
@@ -809,6 +813,44 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getEntityGraphs(entityClass);
+        }
+    }
+
+    @Override
+    public SharedSessionBuilder sessionWithOptions() {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.sessionWithOptions();
+        }
+    }
+
+    @Override
+    public SharedStatelessSessionBuilder statelessWithOptions() {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.statelessWithOptions();
+        }
+    }
+
+    @Override
+    public void inTransaction(Consumer<? super Transaction> action) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            if (!emr.allowModification) {
+                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+            }
+            emr.statelessSession.inTransaction(action);
+        }
+    }
+
+    @Override
+    public <R> R fromTransaction(Function<? super Transaction, R> action) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            if (!emr.allowModification) {
+                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+            }
+            return emr.statelessSession.fromTransaction(action);
         }
     }
 

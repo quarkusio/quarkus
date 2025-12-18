@@ -5,6 +5,7 @@
   <groupId>org.acme</groupId>
   <artifactId>basic-command-mode</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>quarkus</packaging>
   <properties>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -49,15 +50,6 @@
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus-plugin.version}</version>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
           <argsString>plugin pom config</argsString> <!-- dev goal parameter -->
         </configuration>

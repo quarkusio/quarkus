@@ -4,6 +4,7 @@
     <groupId>org.acme</groupId>
     <artifactId>quarkus-flatten-maven-plugin</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <packaging>quarkus</packaging>
 
     <properties>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
@@ -75,15 +76,6 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus.platform.version}</version>
                 <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                            <goal>generate-code</goal>
-                            <goal>generate-code-tests</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -7,6 +7,7 @@
     <groupId>io.quarkus.quickstarts</groupId>
     <artifactId>reactive-routes-quickstart</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <packaging>quarkus</packaging>
 
     <properties>
         <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
@@ -72,13 +73,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <extensions>true</extensions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

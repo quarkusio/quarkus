@@ -9,7 +9,7 @@
     <groupId>org.acme</groupId>
     <artifactId>acme</artifactId>
     <version>1.0-SNAPSHOT</version>
-
+    <packaging>quarkus</packaging>
 
     <dependencies>
         <dependency>
@@ -48,13 +48,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>

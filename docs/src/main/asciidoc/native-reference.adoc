@@ -574,24 +574,8 @@ Doing in-container native builds with the default Mandrel builder image,
 is the safest way to keep both versions aligned.
 ====
 
-Additionally make sure that the `native-image-agent` goal is present in the `quarkus-maven-plugin` configuration:
-
-[source,bash]
-----
-<plugin>
-    <groupId>${quarkus.platform.group-id}</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    ...
-    <executions>
-        <execution>
-            <goals>
-                ...
-                <goal>native-image-agent</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
-----
+Additionally make sure that the `quarkus:native-image-agent` goal is executed:
+it is part of the default lifecycle when using the `quarkus` packaging.
 
 With a container runtime running,
 invoke Maven's `verify` goal with `-DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent` to run the JVM mode integration tests and

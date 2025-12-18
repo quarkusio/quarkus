@@ -5,6 +5,7 @@
   <groupId>de.turing85</groupId>
   <artifactId>quarkus-source-sets</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>quarkus</packaging>
   <properties>
     <!-- Maven plugin -->
     <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
@@ -117,15 +118,6 @@
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus.platform.version}</version>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>

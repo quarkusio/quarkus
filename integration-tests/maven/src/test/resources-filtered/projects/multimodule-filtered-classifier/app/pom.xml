@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>acme-app</artifactId>
+    <packaging>quarkus</packaging>
     <dependencies>
         <dependency>
             <groupId>org.acme</groupId>
@@ -23,13 +24,7 @@
             <plugin>
                 <groupId>\${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>

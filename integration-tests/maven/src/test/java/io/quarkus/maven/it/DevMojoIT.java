@@ -1925,4 +1925,11 @@ public class DevMojoIT extends LaunchMojoTestBase {
         assertThat(devModeClient.getHttpResponse("/model")).isEqualTo("Hello model");
         assertThat(devModeClient.getHttpResponse("/service")).isEqualTo("Hello service");
     }
+
+    @Test
+    public void testJarPackagingOnlyBuild() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/jar-packaging-only-build");
+        runAndCheck();
+        assertThat(devModeClient.getHttpResponse("/app/hello/")).isEqualTo("hello");
+    }
 }

@@ -8,6 +8,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>module-2</artifactId>
+  <packaging>quarkus</packaging>
   <properties>
     <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -28,6 +29,22 @@
         <version>\${quarkus-plugin.version}</version>
         <extensions>true</extensions>
         <executions>
+          <execution>
+            <id>default-generate-code</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-generate-code-tests</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-build</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>default-native-image-agent</id>
+            <phase>none</phase>
+          </execution>
           <!-- Opposite order compared to module-1 -->
           <execution>
             <id>bar-2</id>

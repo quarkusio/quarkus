@@ -823,7 +823,7 @@ Maven projects could add the following goal to their `quarkus-maven-plugin` conf
               <goal>track-config-changes</goal>
             </goals>
           </execution>
-          <!-- other executions would follow below -->
+        </executions>
 ----
 
 The `track-config-changes` goal looks for `${project.basedir}/.quarkus/quarkus-prod-config-dump` (file name and directory are configurable) and, if the file already exists, checks whether the values stored in the config dump have changed.

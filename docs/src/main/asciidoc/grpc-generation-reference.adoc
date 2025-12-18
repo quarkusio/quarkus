@@ -29,26 +29,8 @@ To enable gRPC code generation, add the following dependency to your project:
 </dependency>
 ----
 
-Next, ensure that the `generate-code` phase is enabled in the Quarkus Maven plugin:
-
-[source,xml,subs=attributes+]
-----
-<plugin>
-    <groupId>${quarkus.platform.group-id}</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <version>${quarkus.platform.version}</version>
-    <extensions>true</extensions>
-    <executions>
-        <execution>
-            <goals>
-                <goal>build</goal>
-                <goal>generate-code</goal>
-                <goal>generate-code-tests</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
-----
+The `quarkus:generate-code` goal is executed by default during the Quarkus Maven plugin default lifecycle when using the `quarkus` packaging,
+and will handle the code generation.
 
 === Using Gradle
 
@@ -75,11 +57,6 @@ With Maven, add the following configuration:
     <extensions>true</extensions>
     <executions>
         <execution>
-            <goals>
-                <goal>build</goal>
-                <goal>generate-code</goal>
-                <goal>generate-code-tests</goal>
-            </goals>
             <configuration>
                 <properties>
                     <quarkus.grpc.codegen.proto-directory>${project.basedir}/ext/proto</quarkus.grpc.codegen.proto-directory>

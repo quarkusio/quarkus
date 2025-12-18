@@ -5,6 +5,7 @@
   <groupId>org.acme</groupId>
   <artifactId>acme</artifactId>
   <version>1.0-SNAPSHOT</version>
+  <packaging>quarkus</packaging>
   <properties>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -52,19 +53,13 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
         <configuration>
           <ignoredEntries>
             <ignoredEntry>META-INF/swagger-ui-files/swagger-ui-bundle.js.map</ignoredEntry>
             <ignoredEntry>META-INF/swagger-ui-files/swagger-ui-standalone-preset.js.map</ignoredEntry>
           </ignoredEntries>
         </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

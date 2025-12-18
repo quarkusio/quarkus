@@ -21,6 +21,7 @@
         <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
+        <skipSurefireTests>${skipTests}</skipSurefireTests>
 
         <!-- for now, relax forbiddenapis in ITs entirely, we will provide a specific configuration file later -->
         <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
@@ -93,6 +94,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
+                        <skip>${skipSurefireTests}</skip>
                         <systemPropertyVariables>
                             <junit.quarkus.orderer.secondary-orderer>
                                 org.junit.jupiter.api.ClassOrderer$OrderAnnotation

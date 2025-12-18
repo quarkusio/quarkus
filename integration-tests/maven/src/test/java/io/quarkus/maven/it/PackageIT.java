@@ -179,7 +179,7 @@ public class PackageIT extends MojoTestBase {
 
         File targetDir = getTargetDir();
         List<File> jars = getFilesEndingWith(targetDir, ".jar");
-        assertThat(jars).hasSize(1);
+        assertThat(jars).hasSize(0);
 
         targetDir = new File(targetDir, "custom-output-dir");
         assertThat(targetDir).exists();
@@ -203,10 +203,7 @@ public class PackageIT extends MojoTestBase {
                 Collections.emptyMap());
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
-
-        File targetDir = getTargetDir();
-        List<File> jars = getFilesEndingWith(targetDir, ".jar");
-        assertThat(jars).hasSize(1);
+        assertThat(getTargetDir().toPath().resolve("quarkus-app/quarkus-run.jar")).exists();
     }
 
     @Test
@@ -217,6 +214,16 @@ public class PackageIT extends MojoTestBase {
         createAndVerifyUberJar();
         // ensure that subsequent package without clean also works
         createAndVerifyUberJar();
+    }
+
+    @Test
+    public void testPackageWorksWhenUberjarIsTrueJarPackaging()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/uberjar-check-jar-packaging");
+
+        createAndVerifyUberJarJarPackaging();
+        // ensure that subsequent package without clean also works
+        createAndVerifyUberJarJarPackaging();
     }
 
     private void createAndVerifyUberJar() throws IOException, MavenInvocationException, InterruptedException {
@@ -232,6 +239,23 @@ public class PackageIT extends MojoTestBase {
     }
 
     private void verifyUberJar() throws IOException {
+        final File targetDir = getTargetDir();
+        List<File> jars = getFilesEndingWith(targetDir, ".jar");
+        assertThat(jars).hasSize(1);
+        File uberJar = jars.get(0);
+        assertMultiReleaseJar(uberJar);
+        ensureManifestOfJarIsReadableByJarInputStream(uberJar);
+    }
+
+    private void createAndVerifyUberJarJarPackaging() throws IOException, MavenInvocationException, InterruptedException {
+        Properties p = new Properties();
+        p.setProperty("quarkus.package.jar.type", "uber-jar");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(List.of("package"),
+                Map.of(), p);
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
         final File targetDir = getTargetDir();
         List<File> jars = getFilesEndingWith(targetDir, ".jar");
         assertThat(jars).hasSize(1);
@@ -326,7 +350,6 @@ public class PackageIT extends MojoTestBase {
 
         final File targetDir = getTargetDir();
         assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(1);
-        assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
 
         final Path runnerJar = targetDir.toPath().resolve("acme-1.0-SNAPSHOT-runner.jar");
         Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
@@ -352,7 +375,7 @@ public class PackageIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
-        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(1);
 
         final Path runnerJar = targetDir.toPath().resolve("acme-1.0-SNAPSHOT-runner.jar");
         Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
@@ -370,6 +393,28 @@ public class PackageIT extends MojoTestBase {
     @Test
     public void testFastJarHasValidCRC() throws Exception {
         testDir = initProject("projects/uberjar-check", "projects/project-fastjar-crc");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final Path runnerJar = getTargetDir().toPath().resolve("quarkus-app").resolve("quarkus-run.jar");
+        Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
+        assertZipEntriesCanBeOpenedAndClosed(runnerJar);
+    }
+
+    /**
+     * Tests that the runner jar created by Quarkus has valid CRC entries. The verification
+     * is pretty trivial and involves opening and closing the ZipEntry entries that are part of the
+     * runner jar. That internally triggers the CRC checks.
+     * <p>
+     * This test makes sure building with the standard jar packaging is fine.
+     */
+    @Test
+    public void testJarPackagingHasValidCRC() throws Exception {
+        testDir = initProject("projects/jar-packaging", "projects/project-jar-packaging");
 
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),

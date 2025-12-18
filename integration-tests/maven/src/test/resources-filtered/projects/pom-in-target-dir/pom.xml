@@ -5,6 +5,7 @@
   <groupId>org.acme</groupId>
   <artifactId>code-with-quarkus</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>quarkus</packaging>
   <properties>
     <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     <maven.compiler.release>${maven.compiler.release}</maven.compiler.release>
@@ -67,15 +68,6 @@
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus.platform.version}</version>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>

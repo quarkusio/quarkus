@@ -5,6 +5,7 @@
   <groupId>org.acme</groupId>
   <artifactId>acme</artifactId>
   <version>1.0-SNAPSHOT</version>
+  <!-- let's keep the default jar packaging here as otherwise build is executed automatically (we could disable it but it seems better to test this with the jar packaging as the error is more frequent in this case) -->
   <properties>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -58,6 +59,7 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>\${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
       </plugin>
     </plugins>
   </build>

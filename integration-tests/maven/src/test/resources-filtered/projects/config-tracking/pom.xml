@@ -5,6 +5,7 @@
   <groupId>org.acme</groupId>
   <artifactId>code-with-quarkus</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>quarkus</packaging>
   <properties>
     <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     <maven.compiler.release>${maven.compiler.release}</maven.compiler.release>
@@ -44,13 +45,6 @@
             <phase>process-resources</phase>
             <goals>
               <goal>track-config-changes</goal>
-            </goals>
-          </execution>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
             </goals>
           </execution>
         </executions>

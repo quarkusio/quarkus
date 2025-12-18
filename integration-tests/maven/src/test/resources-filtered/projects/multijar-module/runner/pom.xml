@@ -7,6 +7,7 @@
         <version>\${revision}.\${changelist}\${sha1}</version>
     </parent>
     <artifactId>acme-runner</artifactId>
+    <packaging>quarkus</packaging>
 
     <dependencies>
         <dependency>
@@ -55,13 +56,7 @@
                 <groupId>\${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus.platform.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>

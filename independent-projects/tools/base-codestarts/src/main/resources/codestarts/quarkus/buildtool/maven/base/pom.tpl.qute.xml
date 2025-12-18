@@ -4,6 +4,9 @@
     <groupId>{project.group-id}</groupId>
     <artifactId>{project.artifact-id}</artifactId>
     <version>{project.version}</version>
+    {#if quarkus.version == null || quarkus.version.compareVersionTo("3.30.999") > 0}
+    <packaging>quarkus</packaging>
+    {/if}
     {#if project.name }
     <name>{project.name}</name>
     {/if}
@@ -138,6 +141,7 @@
                 <version>$\{quarkus.platform.version}</version>
             {/if}
                 <extensions>true</extensions>
+                {#if quarkus.version != null && quarkus.version.compareVersionTo("3.30.999") < 0}
                 <executions>
                     <execution>
                         <goals>
@@ -150,6 +154,7 @@
                         </goals>
                     </execution>
                 </executions>
+                {/if}
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>     

@@ -5,6 +5,7 @@
     <groupId>org.acme</groupId>
     <artifactId>quarkus-test-test-profile</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>quarkus</packaging>
 
     <properties>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
@@ -63,13 +64,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>
